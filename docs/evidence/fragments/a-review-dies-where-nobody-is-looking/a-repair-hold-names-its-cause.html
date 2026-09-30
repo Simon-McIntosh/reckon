@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-title" content="A repair held with no lane names each rule that removed one">
+  <meta name="plan-summary" content="The repair reflex's no-lane hold composed a bare reason, so a reader could not tell which rule had emptied the candidate list — the routing key's exclusion or a backend whose declared launch is the calling harness. The clause composition the review's hold already performed is now one function parameterised by the run kind, called from both, so a held repair names its cause and the review's wording is unchanged.">
+  <meta name="plan-evidence-for" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <title>A repair held with no lane names each rule that removed one | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A repair held with no lane names each rule that removed one</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>When the repair reflex found no candidate lane it recorded
+        <code>the repair for &lt;run&gt; has no eligible lane</code> and nothing else. The review's
+        hold, one branch away, named each rule that had removed a lane: the backends the routing key
+        excludes, the backends whose declared launch is the calling harness and so cannot be started
+        by anything, and the lane a previous attempt already dropped. Both holds draw their lanes from
+        the same candidate list, so a reader of the repair's pointer was told the run had no lane
+        while the configuration was the thing to change, and was given nothing that said which lever
+        to reach for. The review half of this was repaired earlier the same day; the repair's hold
+        kept the bare reason.</p>
+    </section>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ol>
+        <li><code>reckon/crew/recovery.py</code>: <code>_no_review_lane_reason</code> becomes
+          <code>_no_lane_reason(run_id, config, *, kind, previous_lane="")</code> — the same clause
+          composition, with the run the hold is about named by parameter rather than fixed. The
+          review call site passes <code>kind="review"</code> and its previously dropped lane, so the
+          review's wording is byte-for-byte unchanged; the repair call site passes
+          <code>kind="repair"</code>, which yields the same sentence it already wrote followed by the
+          clauses that explain it. The lane rules are shared between the two kinds, so the clauses
+          are composed once rather than copied.</li>
+        <li>An empty clause list still composes the bare sentence, so a configuration with nothing to
+          name reads exactly as before.</li>
+        <li>New <code>tests/test_a_repair_hold_names_its_cause.py</code>: a fleet whose only backend
+          launches in-harness holds the run with the harness's own declaration named; a fleet whose
+          every spawnable lane the routing key excludes holds it with the key and each named lane; and
+          a control in which one spawnable lane remains, which dispatches the same composition — so a
+          hold is read as the lane drop rather than as a fixture that never composed a repair.</li>
+      </ol>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Gate: the seven reflex modules</td>
+            <td>base <code>a27d3c6c0</code> (scratch tree, head test module copied in)</td>
+            <td><strong>2 failed, 47 passed</strong> in 154.95s, exit 1 &mdash; both failures are this
+              module's two hold cases, and the reproduction quotes the bare reason:
+              <code>assert 'launch as in-harness' in 'the repair for r-reviewed has no eligible lane'</code>
+              and <code>assert 'review_excluded_backends' in 'the repair for r-reviewed has no eligible lane'</code></td>
+          </tr>
+          <tr>
+            <td>Same gate</td>
+            <td>head <code>f4471999d</code></td>
+            <td><strong>49 passed</strong> in 157.52s, exit 0 &mdash; no failure id, and the six
+              pre-existing modules read the same 47 passes as at base</td>
+          </tr>
+          <tr>
+            <td>Declared mutation: the bare repair reason restored in
+              <code>dispatch_repair_for_run</code></td>
+            <td>head <code>f4471999d</code> plus that mutation</td>
+            <td><strong>2 failed, 1 passed</strong>, exit 1 &mdash; the in-harness case fails as
+              <code>assert 'launch as in-harness' in 'the repair for r-reviewed has no eligible lane'</code>,
+              and the control still passes, so the mutation moves only the naming</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The head arm adds no failure id. The review hold's wording is held by the pre-existing
+        <code>tests/test_a_review_never_runs_in_harness.py</code>, whose held-review case asserts the
+        in-harness clause on the review's own reason and passes unchanged at both revisions. The base
+        arm ran in a scratch tree extracted from <code>a27d3c6c0</code> with this module copied into
+        it; its header records the module under test as imported and the resolved working directory,
+        so the reading is of the base reason rather than of the worktree's.</p>
+    </section>
+
+    <section id="provenance">
+      <h2>Reproduction</h2>
+      <table>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Base revision</td><td><code>a27d3c6c0ecfa83b0e4fd44653b44b1e8bf667d8</code></td></tr>
+          <tr><td>Head commit</td><td><code>f4471999de4d3b20376947353a3a763189012fcc</code></td></tr>
+          <tr><td>Gate logs</td><td><code>base-gate.log</code>, <code>head-gate.log</code> in the run directory, each headed by its revision, tree, module as imported, resolved working directory and literal command, and ending with a bare <code>EXIT=</code> line</td></tr>
+          <tr><td>Control log</td><td><code>negative-control.log</code> in the run directory, first line the declared mutation verbatim</td></tr>
+          <tr><td>Basetemps</td><td>under <code>/tmp/a-repair-hold-names-its-cause/</code>, removed before this record was closed</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
