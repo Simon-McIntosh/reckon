@@ -25,9 +25,9 @@
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-29">
+<meta name="plan-modified" content="2026-09-30">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="145">
+<meta name="plan-version" content="146">
 </head>
 <body>
   <main class="plan-doc">
@@ -1461,7 +1461,10 @@
     <div class="r-comment-body"><p>the manifest template in reckon/crew/prompts.py now states, on the negative_control_log line (570), "The log's last line is a bare line reading EXIT= followed by the exit code", and on baseline_suite and after_suite (572-573), "command is the literal command that ran, with absolute paths and no angle-bracket placeholder"; four cases in tests/test_brief_prompt.py hold both clauses on each arm's own line of the composed contract and on the snapshot literal; gate at head 37b00cfaf 6 failed, 238 passed against 6 failed, 234 passed at base 52a910d2, adding no failure id; fragment at docs/evidence/fragments/crew-runtime-positive-controls/template-states-the-exit-line.html</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260929T195927507772-review-of-template-states-the-exit-line" data-who="reckon-build" data-when="2026-09-29T20:49:20.166Z">
-    <div class="r-comment-body"><p>an independent review of run r-20260929T192145946761-template-states-the-exit-line at base 52a910d2 / head 4a75003ac is stored as a parsed record totalling 94 (goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 19), carrying added_failure_count 0 and no added failure ids derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs, with two findings about the arm logs naming no revision on their first line and the head arm naming 37b00cfaf rather than the reviewed head</p></div>
+    <div class="r-comment-body"><p>an independent review of run r-20260929T192145946761-template-states-the-exit-line at base 52a910d2 / head 4a75003ac is stored as a parsed record totalling 94 (goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 19), carrying added_failure_count 0 and no added failure ids derived from the reviewed run's own baseline_suite and after_suite gate logs, with two findings about the arm logs naming no revision on their first line and the head arm naming 37b00cfaf rather than the reviewed head</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260930T072433250911-review-of-a-stale-manifest-does-not-license-promotion" data-who="reckon-build" data-when="2026-09-30T07:43:13.925Z">
+    <div class="r-comment-body"><p>the independent review of r-20260929T211819978587-a-stale-manifest-does-not-license-promotion at head 4d6dd38f2fc312eb08c97c824d285539e369198c is stored as a parsed five-dimension record — goal_fidelity 6, evidence 9, scope_discipline 19, durability 10, fit 17, total 61, added_failure_count 0 with no ids — and its substantive finding is that the landed guard&#x27;s superseded arm cannot fire for the case the node names: a probe that feeds the record a resume writes (attempt 2, manifest_baseline_mtime_ns equal to the inherited manifest&#x27;s mtime, worker launched after it) into reckon/crew/promotion.py:3419 gets ADMITTED while recovery._worker_launched_after_manifest reads True, because _fresh_manifest&#x27;s strict runs._manifest_freshness rejects exactly the manifest a resume inherits (reckon/crew/resumption.py:778); the other two findings record tests/test_a_stale_manifest_does_not_license_promotion.py:204 adding a W292 finding and reckon/crew/promotion.py:3764&#x27;s wording change being pinned by no assertion.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
