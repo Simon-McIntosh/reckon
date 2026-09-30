@@ -953,6 +953,30 @@ def _review_head_covers(reviewed_head: str, head: str) -> bool:
     return same_revision(reviewed, current)
 
 
+def _recorded_review_is_live(recorded: Any) -> bool:
+    """Whether a recorded dispatch still names a readable live review pointer.
+
+    The reflex's dispatch record is read by two callers that must agree: the
+    reflex consults it before composing another review, and the obligations
+    reader consults it to decide whether the run still owes one. A pointer path
+    that exists but cannot be read — truncated, not JSON, not an object, or
+    unreadable by permission — names no run anybody can observe, so the review
+    is not in flight and the run is free to be dispatched again. Failing the
+    read closed is what keeps the two callers from splitting on exactly the case
+    neither can resolve.
+    """
+    if not isinstance(recorded, Mapping):
+        return False
+    standing = str(recorded.get("run_id") or "")
+    if not standing:
+        return False
+    try:
+        read_pointer(standing)
+    except (CrewError, OSError):
+        return False
+    return True
+
+
 def _review_in_flight(record: Mapping[str, Any]) -> str:
     """The review run already standing for this run at this head, or empty.
 
@@ -980,8 +1004,7 @@ def _review_in_flight(record: Mapping[str, Any]) -> str:
         if (
             standing
             and _review_head_covers(str(recorded.get("head") or ""), head)
-            and runs.pointer_path(standing).exists()
-            and read_pointer(standing)
+            and _recorded_review_is_live(recorded)
         ):
             return standing
     project = fields["project"]

@@ -89,14 +89,14 @@ def _reflex_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     against the run's manifest: a run that re-completed after that launch has
     not taken the claim away, because the live review the reflex owns is still
     the thing under way and the reflex is what re-fires once it ends.
+
+    Whether the recorded pointer is live is decided by the reflex's own rule,
+    so this reader and the reflex cannot split on a pointer that exists but
+    cannot be read: both treat it as no review, and the run stays owed one.
     """
-    recorded = pointer.get(recovery.REVIEW_DISPATCH_FIELD)
-    if not isinstance(recorded, Mapping):
-        return False
-    review_run_id = str(recorded.get("run_id") or "")
-    if not review_run_id:
-        return False
-    return runs.pointer_path(review_run_id).exists()
+    return recovery._recorded_review_is_live(
+        pointer.get(recovery.REVIEW_DISPATCH_FIELD)
+    )
 
 
 def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
