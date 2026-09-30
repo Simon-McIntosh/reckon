@@ -2500,6 +2500,50 @@ def velocity(
     return compact_summary(result, weekly_cells)
 
 
+def _interface_week_rows(repo, branch, start, end, *, cache_root=None):
+    """The reckon package's interface level and weekly change over a window.
+
+    One row per ISO week the window touches: the first-parent revision at the
+    week's end, the four counts at that revision, and the change from the
+    previous week, taken as the revision at this week's start. Counts are cached
+    by resolved sha, so a week whose revision repeats a counted one recomputes
+    nothing.
+    """
+    from reckon import interface_counts
+
+    def level(repo_path, revision):
+        return interface_counts.count_revision_cached(
+            repo_path, revision, cache_root=cache_root
+        )
+
+    first_day, last_day = _window_day(start), _window_day(end)
+    monday = first_day - dt.timedelta(days=first_day.weekday())
+    rows = []
+    while monday <= last_day:
+        following = monday + dt.timedelta(days=7)
+        week_start = monday.isoformat()
+        week_end = min(end, following.isoformat() + "T00:00:00Z")
+        revision = _first_parent_head(repo, branch, week_end)
+        current = level(repo, revision)
+        previous = level(repo, _first_parent_head(repo, branch, week_start))
+        year, number, _ = monday.isocalendar()
+        rows.append(
+            {
+                "iso_week": f"{year}-W{number:02d}",
+                "week_start": week_start,
+                "week_end": week_end,
+                "revision": revision or None,
+                "counts": current,
+                "change": {
+                    key: current[key] - previous[key]
+                    for key in interface_counts.COUNT_KEYS
+                },
+            }
+        )
+        monday = following
+    return rows
+
+
 def report(
     projects,
     *,
@@ -2526,7 +2570,10 @@ def report(
 
     The returned mapping is the compact summary — no commit census — with the
     project-by-lane-by-day cells appended, so every quantity the view reports is
-    available by project, by lane, by day and in three-dimensional cells.
+    available by project, by lane, by day and in three-dimensional cells. When
+    the set names a project called ``reckon``, an ``interfaces`` block carries
+    that package's public-definition, CLI-option, MCP-view and coded-refusal
+    counts at each ISO week's end and their weekly change.
     """
     branches = branches or {}
     checkouts = {name: str(path) for name, path in projects.items()}
@@ -2557,6 +2604,22 @@ def report(
     )
     summary = compact_summary(full, weekly_cells)
     summary["by_project_day_lane"] = full["by_project_day_lane"]
+    # The reckon package is the one whose interface the plan-review rubric
+    # reads, so its weekly interface level is reported for the project that
+    # carries that name; a window over other projects reports an empty block
+    # rather than guessing which package is meant.
+    if "reckon" in checkouts:
+        summary["interfaces"] = {
+            "project": "reckon",
+            "weeks": _interface_week_rows(
+                checkouts["reckon"],
+                branches.get("reckon", "HEAD"),
+                start,
+                end,
+            ),
+        }
+    else:
+        summary["interfaces"] = {"project": None, "weeks": []}
     return summary
 
 
@@ -2581,6 +2644,7 @@ OPTIONAL_BLOCKS = frozenset(
         "named_episodes",
         "coordinator_cost",
         "by_project_day_lane",
+        "interfaces",
     }
 )
 
