@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="142">
+<meta name="plan-version" content="143">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1551,6 +1551,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260930T182720674538-skill-contracts-follow-the-shipped-surface" data-who="reckon-build" data-when="2026-09-30T19:21:16.466Z">
     <div class="r-comment-body"><p>Repaired the two stale expectations in tests/test_skill_contracts.py at base e7eca9f0: the leak scan now strips the harness env flag name before matching (still refusing a planted model identifier, asserted by a control test) and the exit-table check pairs each error key to the Exit(code) of its own innermost emitting block, replacing the fixed 350-character window; whole file 2 failed/57 passed at base to 61 passed at head, no id moved pass to fail.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260930T192122861608-review-of-skill-contracts-follow-the-shipped-surface" data-who="reckon-build" data-when="2026-09-30T19:29:32.721Z">
+    <div class="r-comment-body"><p>Reviewed run r-20260930T182720674538-skill-contracts-follow-the-shipped-surface at base e7eca9f0..head cea61e0b; stored a parsed record scoring all five dimensions (goal_fidelity 19, evidence 19, scope_discipline 19, durability 18, fit 18; total 93), added_failure_count 0 with no added ids derived from the reviewed run&#x27;s own gate logs logs/base-file.txt (2 failed at e7eca9f0) and logs/head-file.txt (61 passed at cea61e0b); no findings — the earlier union-binding durability finding is closed by the ast-based exit anchor and the swap negative control.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
