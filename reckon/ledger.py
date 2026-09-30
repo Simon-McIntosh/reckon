@@ -145,6 +145,7 @@ RECORD_FIELDS = (
     "resume_waiver",
     "watch_override",
     "review",
+    "clone_matches",
     "review_tier",
     "unreconciled_override",
 )
@@ -1398,6 +1399,26 @@ def measured_throughput(throughput: Mapping[str, Any] | None) -> dict[str, Any] 
     return dict(sorted(measured.items()))
 
 
+def unmeasured_clone_report(reason: str) -> dict[str, str]:
+    """The explicit ledger marker for a clone report no revision pair can supply.
+
+    A sha-diff that could not be read, a run that asserted no revision, and a
+    shadow that lands no code all reach this state. The marker is a mapping so a
+    reader tells it from the empty list a measured-but-matching-nothing run
+    carries, which an absent key or an empty list would each hide.
+    """
+    return {"status": "unmeasured", "reason": str(reason).strip()}
+
+
+def _clone_report(value: Any) -> list[dict[str, Any]] | dict[str, str]:
+    """Normalise a clone report to the list a measured run carries, or its marker."""
+    if value is None:
+        return unmeasured_clone_report("no clone comparison was run")
+    if isinstance(value, Mapping):
+        return dict(value)
+    return [dict(match) for match in value]
+
+
 def underivable_duration(reason: str, *, detail: str = "") -> dict[str, str]:
     """Return the explicit ledger marker for duration figures no record can supply."""
     marker = {"status": "underivable", "reason": str(reason).strip()}
@@ -1562,6 +1583,7 @@ def build_record(
     predecessor_run: str | None = None,
     dispute_count: int | str | None = None,
     review: Mapping[str, Any] | None = None,
+    clone_matches: Iterable[Mapping[str, Any]] | None = None,
     shadow_contaminated: str = "",
 ) -> dict[str, Any]:
     """Assemble one completed-run record, refusing an unknown gate verdict.
@@ -1668,6 +1690,12 @@ def build_record(
             None if unreconciled_override is None else dict(unreconciled_override)
         ),
         "review": None if review is None else dict(review),
+        # Every declared field is present on every row, so the clone report is
+        # always carried. A run the detector ran over carries the list of
+        # matches (empty when its functions copied nothing); a run no revision
+        # pair could be measured for carries the unmeasured marker instead, so
+        # the two never read alike.
+        "clone_matches": _clone_report(clone_matches),
     }
     # Both of these are absent from a record that has nothing to say about them,
     # which is why they are set after the literal rather than in it. The rate a

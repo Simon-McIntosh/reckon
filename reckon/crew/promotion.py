@@ -14,7 +14,7 @@ from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
-from reckon import _backends, _store, capabilities, flight, ledger, review_tiers
+from reckon import _backends, _store, capabilities, clones, flight, ledger, review_tiers
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew import review as review_module
 from reckon.crew import rollout
@@ -5688,6 +5688,30 @@ def _complete_locked(
     # The revision this promotion asserts landed, resolved while the run's tree
     # is still present. A shadow asserts no code, so it records none.
     promoted_revision = "" if shadow else _run_promoted_revision(record, commit_list)
+    # The six-line clone detector reports each function this run added or
+    # modified whose normalised window duplicates another function already in
+    # reckon/ or tests/ at the promoted revision. It is a review signal: a
+    # readable revision yields the list of matches (empty when none), and a
+    # case no revision pair can be measured for records the unmeasured marker
+    # rather than the empty list, so the two never read alike. Neither fails
+    # the promotion.
+    if shadow:
+        clone_matches: Any = ledger.unmeasured_clone_report("shadow run lands no code")
+    elif not (commit_list and promoted_revision):
+        clone_matches = ledger.unmeasured_clone_report(
+            "the run asserted no revision pair to compare"
+        )
+    else:
+        measured = clones.promotion_clone_matches(
+            tree,
+            base_sha=str(record.get("base_sha") or record.get("base") or ""),
+            tip=promoted_revision,
+        )
+        clone_matches = (
+            measured
+            if measured is not None
+            else ledger.unmeasured_clone_report("the revision pair could not be read")
+        )
     run = ledger.build_record(
         run_id=run_id,
         plan=str(node.get("plan") or ""),
@@ -5742,6 +5766,7 @@ def _complete_locked(
         predecessor_run=predecessor,
         dispute_count=dispute_count,
         review=reviewed,
+        clone_matches=clone_matches,
     )
     run["attempt"] = int(record.get("attempt") or 1)
     run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
