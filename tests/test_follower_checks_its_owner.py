@@ -76,21 +76,32 @@ OWNER_ENV = "RECKON_FOLLOWER_OWNER"
 
 # Reaching an arm costs a few seconds of interpreter and import latency.
 ARM_WITHIN_SECONDS = 30.0
-# The bound separates a follower that leaves its dead owner from one that never
-# will. The follower runs its owner check on every wait pass, and a pass sleeps
-# ``poll_interval`` (0.1 s) between iterations but also carries the pass's own
-# work — a registration checkpoint, and the recovery sweep when its cadence
-# fires — so the mechanism gives no bound on how long one pass takes on a loaded
-# node. Measured on this node saturated (24 busy processes beside eight pytest
-# workers): the holder's exit reached 5.325 s and the read-only follower's
-# 2.418 s, against 0.185-0.242 s and 0.811-0.905 s idle. Eight seconds sits
-# above the slowest loaded sample and matches the reload bound below, while the
-# failing direction it must catch — a follower whose check never runs — is
-# unbounded, so any finite bound still separates the two. The live-owner control
-# shows the same window is long enough to mean something: a follower which never
-# checked would still be running at its end.
-EXIT_WITHIN_SECONDS = 8.0
+# The exit a dead owner triggers is measured on this login node at 0.811, 0.839
+# and 0.905 s for a read-only follower and 0.185, 0.242 and 0.185 s for the
+# holder, from its owner's death to the process leaving. Two seconds is 2.2x the
+# slowest sample, which leaves room for the interpreter teardown and the jitter
+# of a loaded node while staying short enough to be a bound rather than a wait.
+# The follower's wait pass polls every 0.1 s (``poll_interval`` in
+# ``_follow_watch_lines``), so five seconds would allow fifty passes: a
+# regression that asked about the owner once every fifty passes would still
+# pass it. Two seconds allows about twenty, and the samples show the check
+# answering on the pass it runs. The live-owner control shows the same window is
+# long enough to mean something: a follower which never checked would still be
+# running at its end.
+EXIT_WITHIN_SECONDS = 2.0
 POLL_SECONDS = 0.05
+# The owner check runs once per wait pass, and ``_follow_watch_lines`` sleeps
+# ``poll_interval`` (0.1 s) between passes. A pass is not bounded by the
+# mechanism: a pass also carries the pass's own work — a registration
+# checkpoint, and the recovery sweep when its cadence fires — so a wall-clock
+# bound on the exit measures how slow the node is, not whether the follower
+# checked. The number of passes the follower ran before it left does not: a
+# starved pass still counts as one, and the samples above show the check
+# answering on the very first pass after its owner dies. The tolerance below is
+# the twenty passes the two-second bound allows at this cadence, so a regression
+# that asks about the owner once every fifty passes still fails it.
+OWNER_CHECK_SECONDS = 0.1
+OWNER_CHECK_PASSES = 20
 RELOAD_WITHIN_SECONDS = 8.0
 # The reloader polls its source stamp at most once per
 # ``runs.FOLLOWER_FRESHNESS_SECONDS``. A stopped follower must be held still for
@@ -137,6 +148,31 @@ SOURCE_CHANGE_GROUP = "follower-source-change"
 _STUB = """
 import os, subprocess, sys, time
 
+# The plain launch is what every case arms, byte for byte: the reload cases
+# identify the replacement image by its argv, so a launch that carried anything
+# extra would change what they observe. A case that asks for the pass log gets
+# a launch whose only addition is a sleeper that records one byte per wait pass,
+# injected through the follower's own module so the check itself is untouched.
+_LAUNCH = "from reckon.cli import main; main()"
+if os.environ.get("FOLLOWER_TEST_PASS_LOG"):
+    _LAUNCH = (
+        "import os, time\\n"
+        "log = os.environ.get('FOLLOWER_TEST_PASS_LOG')\\n"
+        "import reckon.cli as cli\\n"
+        "real_sleep = time.sleep\\n"
+        "def sleeper(seconds):\\n"
+        "    with open(log, 'a') as handle:\\n"
+        "        handle.write('p')\\n"
+        "    real_sleep(seconds)\\n"
+        "watch_lines = cli._follow_watch_lines\\n"
+        "def wrapped(*args, **kwargs):\\n"
+        "    kwargs['sleeper'] = sleeper\\n"
+        "    return watch_lines(*args, **kwargs)\\n"
+        "cli._follow_watch_lines = wrapped\\n"
+        "from reckon.cli import main\\n"
+        "main()\\n"
+    )
+
 root, out_path, err_path, pid_path = sys.argv[1:5]
 out = open(out_path, "w", encoding="utf-8")
 err = open(err_path, "w", encoding="utf-8")
@@ -144,7 +180,7 @@ proc = subprocess.Popen(
     [
         sys.executable,
         "-c",
-        "from reckon.cli import main; main()",
+        _LAUNCH,
         "crew",
         "follow",
         "--project",
@@ -220,15 +256,24 @@ def _stub_env(home: Path) -> dict[str, str]:
     return environment
 
 
-def _start_stub(home: Path, workdir: Path, tag: str) -> tuple[subprocess.Popen, Path]:
+def _start_stub(
+    home: Path, workdir: Path, tag: str, pass_log: Path | None = None
+) -> tuple[subprocess.Popen, Path]:
     """Start an owner stub, which arms one follower and waits to be killed.
 
     Returns the stub and the path its follower's pid lands in. The follower's
     owner is this stub through ``os.getppid()``, so no owner is stamped in the
     environment: a process that arms a follower directly is treated as that
     follower's owner without extra cooperation.
+
+    ``pass_log`` asks the follower to record one byte per wait pass, so a case
+    can measure the check against the mechanism's own cadence instead of a
+    wall-clock bound that a loaded node stretches past.
     """
     pid_path = workdir / f"{tag}.pid"
+    environment = _stub_env(home)
+    if pass_log is not None:
+        environment["FOLLOWER_TEST_PASS_LOG"] = str(pass_log)
     process = subprocess.Popen(
         [
             sys.executable,
@@ -242,7 +287,7 @@ def _start_stub(home: Path, workdir: Path, tag: str) -> tuple[subprocess.Popen, 
         stdout=subprocess.DEVNULL,
         stderr=subprocess.PIPE,
         text=True,
-        env=_stub_env(home),
+        env=environment,
     )
     return process, pid_path
 
@@ -489,6 +534,37 @@ def _wait_until_exited(pid: int, *, tag: str) -> float:
     )
 
 
+def _pass_count(pass_log: Path) -> int:
+    """The wait passes the follower has recorded, zero before its first."""
+    try:
+        return len(pass_log.read_bytes())
+    except FileNotFoundError:
+        return 0
+
+
+def _passes_until_exited(pid: int, pass_log: Path, *, tag: str) -> int:
+    """Wait for the follower to leave on its own; return its wait passes meanwhile.
+
+    The follower checks its owner on every wait pass, so the pass count measures
+    the check where a wall-clock bound measures the node: a pass the follower was
+    starved through still counts as one, and the check answers on the first pass
+    after its owner dies. A follower that asks about its owner rarely runs many
+    passes before it notices. Never killed to make it so: the property under
+    measure is that a dead owner ends the follower, and a killed process would
+    answer a different question.
+    """
+    before = _pass_count(pass_log)
+    deadline = time.monotonic() + ARM_WITHIN_SECONDS
+    while time.monotonic() < deadline:
+        if _exited(pid):
+            return _pass_count(pass_log) - before
+        time.sleep(POLL_SECONDS)
+    pytest.fail(
+        f"{tag}: the follower was still running long after its owner was killed, "
+        "so it did not check its owner"
+    )
+
+
 def _process_argv(pid: int) -> str:
     """Read a live image's command line, or an empty string once it is gone."""
     try:
@@ -641,14 +717,21 @@ def test_a_read_only_follower_leaves_when_its_own_owner_dies(home) -> None:
     reader_owner: subprocess.Popen | None = None
     holder_pid: int | None = None
     reader_pid: int | None = None
+    holder_passes = reader_passes = OWNER_CHECK_PASSES + 1
+    holder_log = home / "holder.passes"
+    reader_log = home / "reader.passes"
     try:
-        holder_owner, holder_pid_path = _start_stub(home, home, "holder")
+        holder_owner, holder_pid_path = _start_stub(
+            home, home, "holder", pass_log=holder_log
+        )
         holder_pid = _follower_pid(holder_pid_path, holder_owner, "holder")
         _wait_until_holder(
             holder_pid, deadline=time.monotonic() + ARM_WITHIN_SECONDS, tag="holder"
         )
 
-        reader_owner, reader_pid_path = _start_stub(home, home, "reader")
+        reader_owner, reader_pid_path = _start_stub(
+            home, home, "reader", pass_log=reader_log
+        )
         reader_pid = _follower_pid(reader_pid_path, reader_owner, "reader")
         _wait_until_read_only(
             reader_pid,
@@ -658,7 +741,9 @@ def test_a_read_only_follower_leaves_when_its_own_owner_dies(home) -> None:
         )
 
         _kill_and_reap(reader_owner)
-        read_only_elapsed = _wait_until_exited(reader_pid, tag="read-only follower")
+        reader_passes = _passes_until_exited(
+            reader_pid, reader_log, tag="read-only follower"
+        )
 
         # The holder's owner was alive throughout, so the holder is still the
         # holder: the read-only follower left by checking its owner, not by
@@ -670,7 +755,7 @@ def test_a_read_only_follower_leaves_when_its_own_owner_dies(home) -> None:
         )
 
         _kill_and_reap(holder_owner)
-        holder_elapsed = _wait_until_exited(holder_pid, tag="holder")
+        holder_passes = _passes_until_exited(holder_pid, holder_log, tag="holder")
     finally:
         if holder_pid is not None and not _exited(holder_pid):
             with contextlib.suppress(ProcessLookupError):
@@ -685,7 +770,11 @@ def test_a_read_only_follower_leaves_when_its_own_owner_dies(home) -> None:
         "a follower pointed at a temporary home must leave the real follower "
         "directory untouched"
     )
-    assert max(holder_elapsed, read_only_elapsed) <= EXIT_WITHIN_SECONDS
+    assert max(holder_passes, reader_passes) <= OWNER_CHECK_PASSES, (
+        "each follower must leave within the passes its owner-check cadence "
+        f"allows ({OWNER_CHECK_PASSES}); the holder ran {holder_passes} and the "
+        f"read-only follower {reader_passes}"
+    )
 
 
 @pytest.mark.xdist_group(SOURCE_CHANGE_GROUP)
