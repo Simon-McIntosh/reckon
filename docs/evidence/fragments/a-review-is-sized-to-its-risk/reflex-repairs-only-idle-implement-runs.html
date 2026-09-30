@@ -1,0 +1,80 @@
+<article class="landed-report" data-run-id="r-20260929T194125547716-reflex-repairs-only-idle-implement-runs">
+      <h3>reflex-repairs-only-idle-implement-runs — re-land the one-repair-per-round dispatch behind guards</h3>
+      <p>
+        The review reflex's one-repair-per-round dispatch was reverted at the
+        lead's direction after it misbehaved in a live fleet within minutes of
+        landing: it dispatched a repair for a run whose own worker had been
+        resumed on the same finding (withdrawn about fourteen seconds later and
+        re-fired on every sweep), raced four promotions, could name a promoted
+        run's manifest in a repair's fence, and chained repairs without a depth
+        bound. The composer in <code>reckon/crew/repair.py</code> stayed on main;
+        this node re-lands the reflex that calls it, behind the guards those
+        failures demanded.
+      </p>
+      <p>
+        <code>reckon/crew/recovery.py</code> composes and dispatches the one
+        repair node a finding-bearing review round stands for, and refuses every
+        run it must not touch. Only an implement run's findings open a repair,
+        recognised by role; a review run and a run minted by the composer
+        (<code>repair-of-</code>) are refused on identity, so a review of a
+        review and a review of a repair each open no further round and the chain
+        is bounded. A run whose worker is live — the supervisor's pid, or the
+        run's own worker-record pid, both checked on the host — or whose newest
+        stream is a resumed turn still producing work is left to that worker.
+        Every finding is filtered against the fleet's own records: a path that is
+        absolute or home-relative, or that lives under the evidence subtrees, is
+        a run record or an evidence document rather than source, so a round whose
+        findings cite only records grants no scope and dispatches nothing, and
+        the repair's write scope is narrowed to the repository source and test
+        paths the findings cite rather than the reviewed fence. The reviewed
+        run's pointer is re-read immediately before the launch call, so a run
+        promoted in that window is settled and skipped.
+      </p>
+      <p>
+        Two defects the revert exposed were repaired in passing.
+        <code>_review_tree</code> resolved the empty string to the current
+        working directory, so a record naming neither a worktree nor a repository
+        made the review-store lookup read whatever checkout the process stood in
+        rather than the run's own tree; the empty-string guard is restored. The
+        composed node's <code>done_when</code> spelled its placeholders in single
+        quotes, which the dispatch contract's placeholder scan does not treat as
+        a code span, and the node carried no <code>negative_control</code> though
+        its scope names test files; both are restored so the contract accepts the
+        node.
+      </p>
+      <p>
+        <strong>Gate.</strong> <code>tests/test_reflex_dispatches_one_repair.py</code>
+        drives the reflex through a real periodic sweep with a recording launcher
+        and observes: a stored review with three findings on an unpromoted
+        implement run whose worker has exited dispatches exactly one repair naming
+        all three findings, recorded on the reviewed run's pointer; a second
+        sweep yields none; a clean review yields none; and none for a live worker,
+        a resumed turn, a pointer gone or a run promoted at launch, a review of a
+        review, an investigate or test role, a repair's own findings, or a round
+        whose findings cite only records. The scope assertions check the finding
+        paths are present, the record path is absent, and no absolute path is
+        granted.
+      </p>
+      <p>
+        <strong>Measure.</strong> The focused file passes 14/14. Over the 102
+        <code>tests/</code> files whose AST imports <code>reckon.crew.recovery</code>
+        or <code>reckon.crew.repair</code>, run <code>-n 4</code> with a separate
+        <code>--basetemp</code> per arm: the base arm at
+        <code>25dabb31</code> reads 32 failed / 1166 passed; the head arm at
+        <code>7db5adb25</code> reads 31 failed / 1181 passed, and every head
+        failure id is also a base failure id — the head adds none. A first head
+        run added one teardown error in
+        <code>test_direct_resume_needs_an_observed_death.py</code>, whose
+        <code>home</code> fixture fingerprints the real <code>~/.config/reckon</code>
+        and raced with concurrent live peer runs writing there during the
+        seven-minute arm; that file passes standalone and alongside this node's
+        test, the new test writes only to its temporary crew home, and the second
+        head run is clean.
+      </p>
+      <p>
+        Logs: <code>arm-base.log</code>, <code>arm-head.log</code>, <code>arm-head2.log</code> and
+        <code>negative-control.log</code> in the run directory. The negative
+        control removes the live-or-resumed-worker check and shows the resumed
+        case failing on its no-dispatch assertion.
+      </p>
+    </article>
