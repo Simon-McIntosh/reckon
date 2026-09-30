@@ -1643,6 +1643,7 @@ _OP_VOCAB = {
     "retire_prose": "{op:'retire_prose', preimage:'<exact authored HTML>'} — removes one authored fragment outside every section[data-reckon], atomically with the batch's structured ops.",
     "insert_section": "{op:'insert_section', id, title, body, effort_hours, capability, links} — writes a new h2 with its typed section record; effort_hours, capability and links are required.",
     "collapse_section": "{op:'collapse_section', section, summary, evidence_anchor} — replaces the authored body under section's h2 with the landed card (✓ landed badge, summary, evidence link), keeps the heading and its id, and sets the section's declaration to done.",
+    "append_evidence": "{op:'append_evidence', plan, anchor, title, body} — appends one <section id=anchor> to that plan's cumulative landing record docs/evidence/archive/<plan>-landed.html, creating the record when absent and refusing an anchor that already exists.",
     "move": "{op:'move', target:'sprint_item', slug, to, to_version} — selected source sprint; checks both versions, preserves item metadata.",
     "push": "{op:'push'} — marks the selected sprint active (pushed) in one versioned write and leaves every other sprint's status untouched.",
     "create": "edit_plan(..., expected_version=0, create=True) on a NEW slug → creates a plan or named project resource by doc_type. A plan created at or beyond the project's declared pending-plan limit succeeds and its response carries a warning naming the limit, the pending count and the three pending plans nearest to closing.",

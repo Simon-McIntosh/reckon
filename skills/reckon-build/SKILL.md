@@ -865,6 +865,12 @@ artifact paths, evidence link + SHAs; `✓ landed YYYY-MM-DD` badge
 (`.badge-shipped`) on the header; original prose moves to the cumulative
 evidence anchor; **HTML, never markdown**.
 
+**This is an `edit_plan` write, not a hand edit.** `collapse_section` —
+`{op:'collapse_section', section, summary, evidence_anchor}` — replaces the
+authored body under that section's `h2` with the card, keeps its id, and sets
+the declaration to `done`. A direct HTML edit is the exception, announced under
+the bypass rule `reckon-edit` authors.
+
 In the same collapse-on-landing beat, reclassify its `section_declarations`
 entry to `done`. A section comment records a landed node, not completion: only
 `done` lowers its executable remainder.
@@ -915,6 +921,31 @@ a moved percentage is never the only new information. Preserve the manifest's
 exact measure and artifact paths rather than replacing them with “passed”. The
 cumulative evidence record receives the worker's anchor with its merge; edit or
 append to it in the same beat, never re-write what the worker authored.
+
+Both writes are ops, not hand edits. `append_evidence` —
+`{op:'append_evidence', plan, anchor, title, body}` — appends the node's
+anchored section to the cumulative landing record. `insert_section` —
+`{op:'insert_section', id, title, body, effort_hours, capability, links}` —
+writes a new `h2` for discovered work; `effort_hours`, `capability` (the
+versioned request object) and `links` are required, not defaulted.
+
+<!-- landing-beat-examples -->
+```json
+[
+  {"op": "collapse_section", "section": "s2",
+   "summary": "Landed <code>src/data_prep.py</code>; 11,237 shots encoded in 3h12m, eval MAE 0.04.",
+   "evidence_anchor": "s2"},
+  {"op": "append_evidence", "plan": "my-plan", "anchor": "s2",
+   "title": "§2 — data prep pipeline landed",
+   "body": "<p>Built <code>src/data_prep.py</code>; 11,237 shots in 3h12m; eval MAE 0.04.</p>"},
+  {"op": "insert_section", "id": "s3", "title": "§3 — checkpoint scoring",
+   "body": "<p>Score the checkpoint on the held-out split and record the MAE.</p>",
+   "effort_hours": 1.25,
+   "capability": {"version": "1.0", "class": "general",
+     "requirements": {"reasoning": "standard", "verification": "strict", "risk": "low"}},
+   "links": []}
+]
+```
 
 **`impl`** = (count of completed executable nodes) / (count of total executable
 nodes) over the whole selected plan (the orchestrator owns the denominator),
