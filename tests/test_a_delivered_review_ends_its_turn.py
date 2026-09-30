@@ -10,6 +10,7 @@ behaviour rather than a property of any one run.
 from __future__ import annotations
 
 import os
+import sys
 import time
 from pathlib import Path
 
@@ -270,23 +271,24 @@ def test_a_template_manifest_status_is_refused_by_the_template_guard(
     """A dispatch template is refused, and refused by the check that names it.
 
     The template is not the word ``complete``, so a reader that tested the
-    equality first would refuse it as a side effect and never consult the
-    template check at all. The spy pins which check refuses it, and the run is
-    left alive rather than stopped on a status no worker ever wrote.
+    equality first refuses it as a side effect and never consults the template
+    check — which is what the classifier elsewhere in the same tick does with
+    the same status. The spy records the calling site as well as the status, so
+    the assertion pins the guard rather than any mention of the template. The
+    run is left alive rather than stopped on a status no worker ever wrote.
     """
-    consulted: list[str] = []
+    template = "<complete | blocked | failed>"
+    consulted: list[tuple[str, str]] = []
     declared = recovery.manifest_status_is_template
 
     def spy(value: object) -> bool:
-        consulted.append(str(value))
+        caller = sys._getframe(1).f_code.co_name
+        consulted.append((str(value), caller))
         return declared(value)
 
     monkeypatch.setattr(recovery, "manifest_status_is_template", spy)
     pointer = _reviewer(
-        home,
-        delivered=True,
-        stream_offset=3 * 86400.0,
-        manifest_status="<complete | blocked | failed>",
+        home, delivered=True, stream_offset=3 * 86400.0, manifest_status=template
     )
 
     signals, stored = _tick(home, pointer)
@@ -294,7 +296,7 @@ def test_a_template_manifest_status_is_refused_by_the_template_guard(
     assert signals.calls == []
     assert stored["phase"] == "active"
     assert "ended_after_delivery" not in stored
-    assert "<complete | blocked | failed>" in consulted
+    assert (template, "_complete_manifest_write_time") in consulted
 
 
 def test_a_run_that_is_not_a_review_is_never_stopped(home: Path) -> None:
