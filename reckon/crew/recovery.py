@@ -17,6 +17,7 @@ from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
 from reckon import review_tiers
 from reckon._timestamps import parse_utc
+from reckon.crew import lane_document as _lane_document
 from reckon.crew import metering, quota_weight, runs
 from reckon.crew import repair as repair_module
 from reckon.crew import review as review_module
@@ -1243,10 +1244,18 @@ def _review_in_harness_backends(config: Mapping[str, Any]) -> set[str]:
     }
 
 
-def _review_lane_candidates(
+# How old a lane's own published reading may be before a review compose stops
+# trusting it. The lane publishes its occupancy on its own clock and states the
+# shelf life it suggests for the figure; this bound is the shorter of the two,
+# because a reading that old describes a fleet that has since drained or filled
+# and acting on it would hold work for a lane that is no longer busy.
+LANE_READING_FRESH_SECONDS = 45
+
+
+def _ordered_review_lanes(
     config: Mapping[str, Any], *, owning_backend: str = ""
 ) -> list[str]:
-    """Configured backends a composed review may run on, in selection order.
+    """Configured backends a composed review may run on, in preference order.
 
     The owning run's recorded backend leads when it is known and not excluded,
     because the review is of that run and the lane that carried it is the one
@@ -1285,10 +1294,115 @@ def _review_lane_candidates(
     return ordered
 
 
+def _current_lane_reading(
+    config: Mapping[str, Any], name: str
+) -> dict[str, Any] | None:
+    """The named lane's own published reading, while it still describes now.
+
+    A backend may declare ``lane_document``: the JSON a serving lane republishes
+    about its own occupancy. Only a current reading is returned. A document
+    that is absent, unreadable or malformed answers None without raising, and
+    so does a reading older than the lane's own declared shelf life or than
+    :data:`LANE_READING_FRESH_SECONDS`; each of those reads as a lane the
+    reflex has no measurement of, which is a lane it composes onto as before.
+    The direction is deliberate: a missing reading must never hold work.
+    """
+    backends = config.get("backends") or {}
+    settings = backends.get(name) if isinstance(backends, Mapping) else None
+    if not isinstance(settings, Mapping):
+        return None
+    declared = str(settings.get("lane_document") or "").strip()
+    if not declared:
+        return None
+    report = _lane_document.read_lane_document_file(declared)
+    age = report.get("age_seconds")
+    if report.get("stale") or isinstance(age, bool):
+        return None
+    if not isinstance(age, (int, float)) or age > LANE_READING_FRESH_SECONDS:
+        return None
+    return report
+
+
+def _lane_over_ceiling(
+    reading: Mapping[str, Any],
+) -> tuple[int | float, int | float] | None:
+    """The ``(running, ceiling)`` a reading reports at or over, else None.
+
+    Both figures are needed and both must be numbers the document published: a
+    document carrying a running count but no ceiling states no limit this lane
+    measured itself against, and either figure missing leaves the lane usable
+    rather than saturated, because a hold rests on a measurement and never on
+    its absence.
+    """
+    running = reading.get("running")
+    ceiling = reading.get("concurrent_requests")
+    for value in (running, ceiling):
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+    if running < ceiling:
+        return None
+    return running, ceiling
+
+
+def _review_lane_plan(
+    config: Mapping[str, Any], *, owning_backend: str = ""
+) -> tuple[list[str], tuple[str, int | float, int | float] | None]:
+    """The review lanes still eligible, and the lane withholding the selection.
+
+    The ordering is :func:`_ordered_review_lanes`; this pass then reads each
+    candidate's own published reading and removes a lane its own document
+    reports at or over the ceiling it computed for itself. A saturated lane
+    cannot take the review now, so the next eligible candidate follows it —
+    the reflex honours the destination lane's headroom rather than pinning
+    work to a lane that is already over its own limit.
+
+    The local lane is the exception, and the reason the withheld lane is
+    returned rather than only dropped: a review is local-lane-shaped work,
+    which stays on the local lane, so a saturated local lane with nothing
+    eligible ahead of it withholds the selection instead of handing the review
+    to a metered lane. The caller records the hold as ``awaiting-lane`` naming
+    it, and a later sweep composes the review once the lane has drained.
+
+    The lane that withholds the selection comes back with the counts its own
+    document published, so the hold can name the figures it rests on.
+    """
+    local = str(config.get("local_backend") or "").strip()
+    eligible: list[str] = []
+    for name in _ordered_review_lanes(config, owning_backend=owning_backend):
+        reading = _current_lane_reading(config, name)
+        over = None if reading is None else _lane_over_ceiling(reading)
+        if over is None:
+            eligible.append(name)
+            continue
+        if name == local and not eligible:
+            return [], (name, over[0], over[1])
+    return eligible, None
+
+
+def _review_lane_candidates(
+    config: Mapping[str, Any], *, owning_backend: str = ""
+) -> list[str]:
+    """Configured backends a composed review may run on, in selection order.
+
+    The ordering and the rules that remove a backend from it are
+    :func:`_ordered_review_lanes`; what this adds is the lane's own reading of
+    itself. A candidate whose published document reports it running at or above
+    its own concurrent-request ceiling is passed over while that reading is
+    current, and a saturated local lane with no eligible candidate ahead of it
+    yields no lane at all, so the review waits for that lane rather than moving
+    to a metered one. A lane whose reading is stale, unreadable or absent keeps
+    its place: the hold exists to avoid composing onto a lane measured over its
+    limit, not to withhold work no document speaks about.
+    """
+    eligible, _withheld = _review_lane_plan(config, owning_backend=owning_backend)
+    return eligible
+
+
 def _no_lane_reason(
     run_id: str,
     config: Mapping[str, Any],
     *,
+    owning_backend: str = "",
     kind: str,
     previous_lane: str = "",
 ) -> str:
@@ -1297,16 +1411,23 @@ def _no_lane_reason(
     Each rule that removes a lane is worth naming on its own: a reader told only
     that no configured backend remains would look for a lane to add, when what
     the configuration actually says is that the lane is deliberately withheld
-    (an exclusion) or that the lane cannot be started at all (an in-harness
-    launch). Either way the reader learns which lever to reach for rather than
-    reading a hold that names no cause. The rules are the same for every run the
-    reflex composes onto a lane — a review and the repair that answers it draw
-    from one candidate list — so ``kind`` names which run is being held rather
-    than which rules applied. ``previous_lane`` is the lane an attempt for the
-    same work already used, and is empty where a kind places no lane by that
-    rule.
+    (an exclusion), that the lane cannot be started at all (an in-harness
+    launch) or that the lane is saturated by its own published figures. Either
+    way the reader learns which lever to reach for rather than reading a hold
+    that names no cause. The rules are the same for every run the reflex
+    composes onto a lane — a review and the repair that answers it draw from one
+    candidate list — so ``kind`` names which run is being held rather than which
+    rules applied. ``previous_lane`` is the lane an attempt for the same work
+    already used, and is empty where a kind places no lane by that rule.
     """
     parts: list[str] = []
+    withheld = _review_lane_plan(config, owning_backend=owning_backend)[1]
+    if withheld is not None:
+        lane, running, ceiling = withheld
+        parts.append(
+            f"backend {lane!r} is saturated at {running:g} running against its "
+            f"{ceiling:g} concurrent_requests ceiling"
+        )
     excluded = _review_excluded_backends(config)
     if excluded:
         parts.append(
@@ -1450,7 +1571,11 @@ def dispatch_review_for_run(
     ]
     if not candidates:
         reason = _no_lane_reason(
-            run_id, resolved, kind="review", previous_lane=previous_lane
+            run_id,
+            resolved,
+            owning_backend=owning_lane,
+            kind="review",
+            previous_lane=previous_lane,
         )
         _record_review_dispatch(
             run_id,
@@ -1994,7 +2119,9 @@ def dispatch_repair_for_run(
     owning_lane = str(record.get("backend") or "").strip()
     candidates = _review_lane_candidates(resolved, owning_backend=owning_lane)
     if not candidates:
-        reason = _no_lane_reason(run_id, resolved, kind="repair")
+        reason = _no_lane_reason(
+            run_id, resolved, owning_backend=owning_lane, kind="repair"
+        )
         _record_repair_dispatch(
             run_id,
             status="awaiting-lane",
