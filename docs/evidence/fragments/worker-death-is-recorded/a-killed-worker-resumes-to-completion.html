@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="worker-death-is-recorded">
+  <meta name="plan-title" content="A killed worker is classified, resumed and landed">
+  <meta name="plan-summary" content="One test drives a dispatch, a worker ended by SIGTERM, an interrupted classification naming the signal, the resume offer, the resumed attempt and its promotion into the ledger. The negative control makes recovery ignore the exit record's signal and the run stops reading interrupted.">
+  <meta name="plan-evidence-for" content="worker-death-is-recorded">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <title>A killed worker is classified, resumed and landed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A killed worker is classified, resumed and landed</h1>
+
+    <section id="measure">
+      <h2>The measure</h2>
+      <p>The steps that make a worker's death legible — the supervisor's exit record, the
+        <code>interrupted</code> classification, the resume route, promotion — were each covered on
+        their own. What was missing was the sequence: a worker dispatched, ended by a signal it did
+        not choose, read as <code>interrupted</code> with that signal named, offered for resume,
+        resumed, and its second attempt landed. A phase an operator never reaches would have passed
+        every test the pieces had.</p>
+      <p><code>tests/test_a_killed_worker_resumes_to_completion.py</code> drives that sequence
+        against a stub worker in a temporary repository and crew home. The first attempt is started
+        through the run's own supervisor, which spawns the stub, waits on it and writes
+        <code>exit.json</code>; the stub writes one stream record and then lets <code>SIGTERM</code>
+        end it, so the run reached a model and is not a launch failure. The pointer carries no wait
+        status, which is the shape a supervisor-launched worker leaves: the record is the only
+        thing that can name the signal.</p>
+    </section>
+
+    <section id="assertions">
+      <h2>What is asserted, in order</h2>
+      <ol>
+        <li>The classification reads <code>interrupted</code>, and the recorded signal is named —
+          <code>interruption["signal"]</code> is 15 and <code>signal_name</code> is
+          <code>SIGTERM</code>, with <code>SIGTERM</code> in the row's own detail.</li>
+        <li>The run is offered for resume: the classifier routes it to <code>resume</code>, its
+          next action names <code>crew resume</code>, and the launcher that verb calls builds its
+          plan rather than refusing.</li>
+        <li>The resumed attempt runs as a supervised process of its own: its supervisor ends only
+          when its worker does, the run's pointer then names the second attempt with a
+          <code>resume</code> attempt kind, the attempt's own exit record reads
+          <code>exit_code</code> 0, and the manifest is one the worker wrote.</li>
+        <li>Promotion completes from that manifest, and the evidence is the committed ledger: the
+          row is read back from the store, and the exit it carries is the resumed attempt's
+          (<code>exit_code</code> 0). A promotion that had landed the killed attempt's record would
+          carry <code>SIGTERM</code> there instead.</li>
+      </ol>
+    </section>
+
+    <section id="negative-control">
+      <h2>The negative control</h2>
+      <p>Declared: <em>make recovery ignore the exit record's signal; the
+        interrupted-with-signal assertion in
+        <code>tests/test_a_killed_worker_resumes_to_completion.py</code> fails.</em> The mutation
+        replaces the exit-record signal arm of <code>_interruption_evidence</code> in
+        <code>reckon/crew/recovery.py</code> with <code>elif False:</code>, so a record exists but
+        its signal is never read.</p>
+      <p>The run then reads <code>abandoned</code> rather than <code>interrupted</code>, and the
+        case fails at the first half of the interrupted-with-signal assertion
+        (<code>assert 'abandoned' == 'interrupted'</code>). That is the honest reading of the
+        dependency: the signal arm is not a decoration on an interrupted verdict, it is what
+        produces one once a record is present, because the record's presence short-circuits the
+        dead-pid inferences. Log:
+        <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T131135159155-a-killed-worker-resumes-to-completion/logs/negative-control.log</code>,
+        whose first line repeats the declared mutation verbatim, <strong>EXIT=1</strong>.</p>
+      <p>A second control covers the wait that the resumed attempt's assertions rest on. It keeps
+        the resumed stub alive after it writes its manifest, so the wait for that attempt's
+        supervisor to end has nothing to observe, and the case reddens on it
+        (<code>the supervisor … was still running after 15s</code>). An earlier version of that
+        wait returned the last pointer it had read when its deadline expired, which held whatever
+        phase the run reached; the run never reaches <code>stopped</code> on this path because
+        nothing folds the pointer once a resumed worker ends. Log:
+        <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T131135159155-a-killed-worker-resumes-to-completion/logs/negative-control-unending-resumed-worker.log</code>,
+        <strong>EXIT=1</strong>.</p>
+    </section>
+
+    <section id="gate">
+      <h2>The gate</h2>
+      <p>Four files at <code>-n 8</code>: the new case plus <code>tests/test_crew_recovery.py</code>,
+        <code>tests/test_direct_resume_needs_an_observed_death.py</code> and
+        <code>tests/test_crew_launch_failure.py</code>. At the head, <strong>109 passed</strong>,
+        exit 0. At the base revision <code>598b19f51</code> the same selection without the new file
+        reads <strong>108 passed</strong>, exit 0, because the file did not exist there — so the
+        head arm adds one test and no failure. The logs are kept in this run's own directory,
+        outside the repository, because <code>.gitignore</code> matches <code>*.log</code> and a
+        log left under <code>docs/figures/</code> is never committed and vanishes with the
+        worktree:
+        <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T131135159155-a-killed-worker-resumes-to-completion/logs/gate-base.log</code>
+        and
+        <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T131135159155-a-killed-worker-resumes-to-completion/logs/gate-head.log</code>.
+        The manifest records both as absolute paths, so the added-failure derivation resolves them
+        rather than reading them relative to the run directory.</p>
+      <p>Verifying the merged result belongs to a separately dispatched test node; this gate
+        measures this node's own change.</p>
+    </section>
+  </main>
+</body>
+</html>
