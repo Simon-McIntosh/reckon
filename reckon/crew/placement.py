@@ -377,6 +377,31 @@ def _held_result(record: Mapping[str, Any], *, unknown: bool = False) -> dict[st
     return result
 
 
+def _adopted_result(record: Mapping[str, Any]) -> dict[str, Any]:
+    """The report for a live fleet allocation adopted rather than held anew.
+
+    ``started`` is False because nothing was submitted: the allocation was
+    already up and is published, not obtained. ``adopted`` marks the record as
+    one that names a job the fleet was already running, which a reader can tell
+    apart from a reservation this command minted.
+    """
+    size = record.get("size") or {}
+    return {
+        "job_id": record.get("job_id"),
+        "held": True,
+        "started": False,
+        "adopted": True,
+        "record": record,
+        "detail": (
+            f"adopted the live supervisor-running allocation "
+            f"{record.get('job_id')} on {record.get('partition')} with "
+            f"{size.get('cores')} cores and {size.get('memory_gb')} GB; "
+            "submitted nothing"
+        ),
+        "reason": "adopted",
+    }
+
+
 def ensure_reservation(
     *,
     project: str | None = None,
@@ -400,6 +425,13 @@ def ensure_reservation(
     Idempotence is fleet-wide, because the allocation is: the first session to
     ask holds it and every later session, whatever project it dispatches for,
     finds it already held and starts nothing.
+
+    With no record and a live supervisor-running allocation already held, that
+    allocation is adopted instead of a second one minted beside it: its job is
+    found from the queue through the fleet node's comment search, its declared
+    shape is read from the scheduler, and the record is published naming it with
+    nothing submitted. Only a job the fleet record names is adopted, so a job
+    carrying the comment whose batch step does not run the supervisor is not.
 
     It is also idempotent under a race, because several dispatches start at
     once and the allocation is shared: the whole read-decide-hold-publish
@@ -428,6 +460,65 @@ def ensure_reservation(
         )
 
 
+def _adopt_live_fleet_allocation(
+    *,
+    project: str | None,
+    session: str | None,
+    runner: Callable[..., subprocess.CompletedProcess[str]] | None,
+    now: float | None,
+) -> dict[str, Any] | None:
+    """The supervisor-running allocation already held for the fleet, or None.
+
+    An allocation this command did not hold may still be the fleet's: the
+    supervisor-running kind — the whole-node job whose batch step runs
+    ``fleet-supervisor`` and publishes the fleet record — is exactly what every
+    session should place into, so it is adopted rather than a second allocation
+    minted beside it. The job is found from the queue through the fleet node's
+    own comment search, and only the job the fleet record names is adopted: that
+    record is published by the allocation's own batch step, so it is what tells
+    the supervisor-running allocation apart from any other job carrying the
+    comment. The shape is read from the scheduler, so the published record
+    describes the size the adopted job was actually submitted with, and nothing
+    is submitted here.
+    """
+    from reckon.crew import fleet_node
+
+    recorded = fleet_node.recorded_job_id()
+    if not recorded:
+        return None
+    try:
+        jobs = fleet_node.query_jobs(fleet_node.fleet_size().account, runner=runner)
+    except fleet_node.FleetNodeError:
+        return None
+    job = fleet_node.find_allocation(jobs, preferred=recorded)
+    if job is None or str(job.get("jobid", "")).strip() != recorded:
+        return None
+    shape = fleet_node.allocation_shape(recorded, runner=runner)
+    if shape is None or shape.get("memory_gb") is None:
+        return None
+    partition = str(shape["partition"])
+    cores = int(shape["cores"])
+    memory_gb = int(shape["memory_gb"])
+    return {
+        "job_id": recorded,
+        "scheduler": "sbatch",
+        "step_scheduler": RESERVATION_STEP_SCHEDULER,
+        "options": reservation_options(
+            partition=partition, cores=cores, memory_gb=memory_gb
+        ),
+        "size": {"cores": cores, "memory_gb": memory_gb},
+        "partition": partition,
+        "memory": str(shape.get("memory") or ""),
+        "roster_limit": RESERVATION_ROSTER_LIMIT,
+        "roster_basis": RESERVATION_ROSTER_BASIS,
+        "held_for_project": project,
+        "held_by_session": session,
+        "held_at": time.time() if now is None else now,
+        "replaced": None,
+        "adopted": True,
+    }
+
+
 def _ensure_reservation_locked(
     *,
     project: str | None,
@@ -447,6 +538,13 @@ def _ensure_reservation_locked(
             answer = _await_probe(existing, alive_probe, runner)
         if answer is not False:
             return _held_result(existing, unknown=answer is None)
+    else:
+        adopted = _adopt_live_fleet_allocation(
+            project=project, session=session, runner=runner, now=now
+        )
+        if adopted is not None:
+            publish_reservation(adopted, project)
+            return _adopted_result(adopted)
 
     argv = [
         RESERVATION_SCHEDULER,

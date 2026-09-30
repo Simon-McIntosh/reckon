@@ -21,10 +21,11 @@ import getpass
 import json
 import os
 import subprocess
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from textwrap import dedent
+from typing import Any
 
 from reckon.crew.fleet_supervisor import RECORD_NAME, state_directory
 
@@ -72,6 +73,17 @@ _DRAINING_STATE_PREFIX = "DRAIN"
 # The queue fields read for each job: id, name, state, elapsed, node or pending
 # reason, allocated generic resources, comment, remaining time.
 _SQUEUE_FORMAT = "%i|%j|%T|%M|%R|%b|%k|%L"
+
+# The queue fields read for an allocation's declared shape: partition, the core
+# count the scheduler allocated, and the memory it reports for the job. Read
+# from the scheduler rather than from this module's defaults, so an allocation
+# held before reckon knew about it is described by the size it was submitted
+# with.
+_SHAPE_FORMAT = "%P|%C|%m"
+
+# Megabytes per scheduler memory unit. A unit-less value is read as the
+# megabytes the scheduler defaults to, so the parse never guesses upward.
+_MEMORY_UNIT_MB = {"": 1, "M": 1, "G": 1024, "T": 1024 * 1024}
 
 
 class FleetNodeError(RuntimeError):
@@ -164,15 +176,22 @@ def submit(script: str) -> str:
     return result.stdout.strip().split(";", maxsplit=1)[0]
 
 
-def query_jobs(account: str) -> list[dict[str, str]]:
+def query_jobs(
+    account: str,
+    *,
+    runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
+) -> list[dict[str, str]]:
     """This user's jobs charged to ``account``, one field mapping per row.
 
     A job charged to another account is invisible to a query filtered on this
     one, so the caller passes the account the allocation is billed to. A failed
-    query raises rather than reading as an empty queue.
+    query raises rather than reading as an empty queue. ``runner`` overrides the
+    process call, which is how a caller that already holds a scheduler seam
+    asks this question through it rather than reaching a real client.
     """
     user = os.environ.get("USER") or getpass.getuser()
-    result = subprocess.run(
+    run = subprocess.run if runner is None else runner
+    result = run(
         ["squeue", "-h", "-u", user, "-A", account, "-o", _SQUEUE_FORMAT],
         capture_output=True,
         text=True,
@@ -204,6 +223,77 @@ def find_allocations(jobs: Iterable[Mapping[str, str]]) -> list[Mapping[str, str
     """Every held fleet allocation among scheduler rows, found by its comment."""
     tokens = {FLEET_COMMENT, *EARLIER_FLEET_COMMENTS}
     return [job for job in jobs if job.get("comment", "").strip() in tokens]
+
+
+def parse_memory_gb(memory: str) -> int | None:
+    """Whole gigabytes a scheduler memory string names, or None.
+
+    The scheduler reports memory in the unit the job was requested with —
+    ``96G``, ``98304M`` — so the string is parsed rather than assumed, and a
+    value carrying no unit is read as the megabytes the scheduler defaults to.
+    A per-node or per-cpu suffix (``96Gn``) is dropped before the unit is read.
+    None means the value could not be read, which the caller treats as no shape
+    rather than as a zero-memory allocation.
+    """
+    raw = memory.strip().upper()
+    while raw and raw[-1] in "NC":
+        raw = raw[:-1]
+    digits = ""
+    for char in raw:
+        if not char.isdigit():
+            break
+        digits += char
+    if not digits:
+        return None
+    factor = _MEMORY_UNIT_MB.get(raw[len(digits) :])
+    if factor is None:
+        return None
+    return int(digits) * factor // 1024
+
+
+def allocation_shape(
+    job_id: str,
+    *,
+    runner: Callable[..., subprocess.CompletedProcess[str]] | None = None,
+) -> dict[str, Any] | None:
+    """The partition, cores and memory the scheduler reports for one job.
+
+    The shape is read from the scheduler rather than taken from this module's
+    declared defaults: an allocation held before reckon knew about it — the
+    supervisor-running kind :func:`find_allocation` returns — was submitted with
+    its own size, and publishing the defaults in its place would describe a
+    reservation sized differently from the one running. None means the shape
+    could not be read, so the caller records no size rather than a guess.
+    """
+    run = subprocess.run if runner is None else runner
+    try:
+        result = run(
+            ["squeue", "-h", "-j", job_id, "-o", _SHAPE_FORMAT],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if result.returncode != 0:
+        return None
+    lines = (result.stdout or "").strip().splitlines()
+    if not lines:
+        return None
+    parts = lines[0].split("|")
+    if len(parts) != 3:
+        return None
+    partition = parts[0].strip()
+    cores_text = parts[1].strip()
+    if not partition or not cores_text.isdigit():
+        return None
+    memory = parts[2].strip()
+    return {
+        "partition": partition,
+        "cores": int(cores_text),
+        "memory": memory,
+        "memory_gb": parse_memory_gb(memory),
+    }
 
 
 def recorded_job_id(environ: Mapping[str, str] | None = None) -> str | None:
