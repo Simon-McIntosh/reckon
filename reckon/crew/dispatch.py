@@ -5367,10 +5367,12 @@ def dispatch(
         # the reason above, and an unwind that refused here — a worktree
         # removal answering a claim — would report the cleanup instead, so the
         # operator would re-run the dispatch by hand to find out what actually
-        # happened. The unwind's own failure therefore rides the original as
-        # its cause, which a traceback prints, and is printed here too, where
-        # a caller that shows only the original's message would otherwise lose
-        # the tree the rollback could not remove.
+        # happened. The unwind's own failure therefore rides the original —
+        # attached as its cause when the original names none, and as a note
+        # when it already does, so the cause a launch refusal carries, the
+        # OSError that ended the spawn, is preserved rather than replaced.
+        # It is printed here too, where a caller that shows only the original's
+        # message would otherwise lose the tree the rollback could not remove.
         try:
             _unwire_peer_channels(run_id, wired_peer_run_ids)
             if spawned_pid is not None:
@@ -5400,7 +5402,16 @@ def dispatch(
                 f"crew: undoing run {run_id} failed: {rollback_failure}",
                 file=sys.stderr,
             )
-            raise exc from rollback_failure
+            # A launch refusal already carries the error that ended the spawn
+            # as its cause. Chaining the unwind onto it would replace that
+            # cause and drop the inner error a reader needs to diagnose an
+            # absent harness executable, so preserve it and carry the unwind
+            # as a note, which a traceback prints beside the cause.
+            cause = exc.__cause__
+            if cause is None:
+                raise exc from rollback_failure
+            exc.add_note(f"undoing run {run_id} failed: {rollback_failure}")
+            raise exc from cause
         raise
     return record
 
