@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="an-orchestrator-cannot-forget-its-obligations">
+  <meta name="plan-title" content="An orchestrator cannot forget its obligations">
+  <meta name="plan-evidence-for" content="reckon:an-orchestrator-cannot-forget-its-obligations">
+  <meta name="plan-verifies" content="reckon:an-orchestrator-cannot-forget-its-obligations#s5">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-09-30">
+  <title>In-flight review has one predicate | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="in-flight-review-has-one-predicate">
+  <h2>In-flight review has one predicate</h2>
+
+  <p><strong>What changed.</strong> Two readers decided whether a review was in
+  flight from the same recorded dispatch, and they disagreed on one shape of
+  pointer. <code>obligations._reflex_review_in_flight</code> counted the review
+  as in flight whenever
+  <code>runs.pointer_path(review_run_id).exists()</code>; the reflex's
+  recorded-dispatch rule in <code>recovery._review_in_flight</code> additionally
+  required <code>read_pointer</code> to return a record. A pointer file that
+  existed but could not be read therefore withheld <code>review-missing</code>
+  in the obligations reader while the reflex was free to dispatch a second
+  review against the same run. Both now call one predicate,
+  <code>_recorded_review_is_live</code> in <code>reckon/crew/recovery.py</code>
+  — the module that owns the reflex's rule — which reads the pointer and fails
+  the read closed on a missing, malformed, scalar or unreadable file. There is
+  no second copy of the check.</p>
+
+  <p><strong>Measured.</strong> A base and head arm over the named test files
+  plus the caller identified by <code>grep</code>
+  (<code>grep -rln _reflex_review_in_flight tests/</code> names
+  <code>tests/test_crew_obligations.py</code> and
+  <code>tests/test_review_in_flight_by_record_path.py</code>) are 29 passed at
+  the base revision and 33 passed at the head, zero added failures by id. The
+  head adds the four cases of
+  <code>tests/test_in_flight_review_has_one_predicate.py</code>: a readable live
+  pointer is in flight to both readers, and an absent, unreadable and
+  non-object pointer are in flight to neither.</p>
+
+  <p><strong>Negative control.</strong> Restoring the exists-only check in
+  <code>reckon/crew/obligations.py</code> reds the unreadable-pointer and
+  non-object cases (2 failed, <code>EXIT=1</code>), which is the declared
+  mutation for this node.</p>
+
+  <p><strong>Scope retained, deliberately.</strong> The driving followup stays
+  open and no terminal status is set: a worker knows its node landed, not
+  whether the section closed. Logs:
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T182454384865-in-flight-review-has-one-predicate/</code>.</p>
+</section>
+</main>
+</body>
+</html>
