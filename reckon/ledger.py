@@ -1670,6 +1670,11 @@ def build_record(
             None if unreconciled_override is None else dict(unreconciled_override)
         ),
         "review": None if review is None else dict(review),
+        # Every declared field is present on every row, so the clone report is
+        # always carried: a run that added or modified a function yields the
+        # matches (empty when none), and a run that changed no function yields
+        # the empty list, which is the same reading.
+        "clone_matches": [dict(match) for match in (clone_matches or [])],
     }
     # Both of these are absent from a record that has nothing to say about them,
     # which is why they are set after the literal rather than in it. The rate a
@@ -1696,12 +1701,6 @@ def build_record(
     # carries the key.
     if str(shadow_contaminated).strip():
         record["shadow_contaminated"] = str(shadow_contaminated).strip()
-    # Clone matches are a reading the caller either produced or could not: an
-    # empty list is a measurement of "no copy", so only a caller that supplies
-    # one carries the key, and a row promoted before this instrumentation keeps
-    # every existing field.
-    if clone_matches is not None:
-        record["clone_matches"] = [dict(match) for match in clone_matches]
     # Routing evidence is present whenever promotion could read it. An empty
     # ``follow_on_paths`` is a real measurement — the manifest declared no
     # follow-ons — and stays distinct from an absent key, which is a row never
