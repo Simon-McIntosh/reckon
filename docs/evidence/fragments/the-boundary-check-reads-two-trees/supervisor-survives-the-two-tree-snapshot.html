@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-boundary-check-reads-two-trees">
+  <meta name="plan-title" content="Dispatch returns when its supervisor finished the launch">
+  <meta name="plan-evidence-for" content="the-boundary-check-reads-two-trees">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <title>Dispatch returns when its supervisor finished the launch | reckon</title>
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Dispatch returns when its supervisor finished the launch</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>A fenced run's supervisor now takes its boundary snapshot over exactly two
+        trees, its own worktree and the main checkout. That snapshot completes in
+        milliseconds, so a supervisor whose worker exits at once spawns, collects it
+        and writes its completion exit record inside dispatch's two-second survival
+        window. <code>_confirm_supervisor_survived</code> read that record as a
+        refusal, so a dispatch whose supervisor reached its run and launched its worker
+        was refused anyway — a dispatch that launched was reported as one that never
+        did.</p>
+    </section>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ol>
+        <li><code>reckon/crew/dispatch.py</code> <code>_supervisor_launched_worker</code>
+          reads the supervisor's completion exit record and answers whether it names a
+          worker: a record with a <code>worker_pid</code> is the receipt of a launch
+          that happened, while a launch failure or a pre-spawn stop writes the same
+          record with no worker pid and a detail.</li>
+        <li><code>_confirm_supervisor_survived</code> returns the run id when that
+          record is present, and refuses only a supervisor that exits inside the window
+          without it — one that could not find its run or whose spawn failed. The
+          two-tree supervisor baseline is unchanged.</li>
+        <li><code>tests/test_dispatch_returns_without_worker.py</code> keys case one's
+          scan-gate hold on the trees a fenced supervisor actually scans — its own
+          worktree and the main checkout, both under the case's base — and skips calls
+          made by the dispatch process itself, so dispatch's own pre-return calls are
+          charged but never held. Case one now observes the two-tree scan: the snapshot
+          holds exactly the run's own worktree and the main checkout, and the
+          supervisor's charged status calls name exactly those two trees.</li>
+        <li><code>tests/test_boundary_check_reads_two_trees.py</code> adds a case that
+          drives the supervisor's own spec path: a fenced spec snapshots two trees and
+          an unfenced one the whole registry, so the section's supervisor clause is
+          tested and not only stated.</li>
+      </ol>
+    </section>
+
+    <section id="measure">
+      <h2>Measure</h2>
+      <ul>
+        <li>Base 57ccb6fe: <code>test_dispatch_returns_once_its_supervisor_runs</code>
+          fails — <code>CrewError: the supervisor ... exited within 2s of starting: the
+          supervisor exited without recording a detail</code>. After the rework it
+          passes 5 of 5 isolated runs.</li>
+        <li><code>tests/test_boundary_check_reads_two_trees.py</code>: 9 passed (8 kept
+          plus the new supervisor-spec case).</li>
+        <li><code>test_dispatch_returns_without_worker.py</code>: 7 passed, including the
+          completion-acceptance case and the refusal case.</li>
+        <li>Negative control: with the completion-record acceptance removed,
+          <code>test_dispatch_*</code> in the dispatch-returns module fails
+          <code>1 failed, 6 passed</code> — the completion-acceptance id fails with the
+          supervisor-exit refusal, while the held-scan case is unaffected.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

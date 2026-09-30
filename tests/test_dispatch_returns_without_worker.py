@@ -8,11 +8,13 @@ instruments make the measurements mean something:
 
 * a ``git`` shim first on the child processes' ``PATH`` that records the pid
   that ran each ``status`` call and, in the case that measures the return bound,
-  signals and holds every charged call the boundary scan makes under the
-  worktree root until that case releases it. The scan therefore cannot finish
-  inside dispatch's return bound, so the case observes dispatch's return with
-  the scan provably still in progress rather than waiting a fixed cost per
-  worktree for it to finish;
+  signals and holds every charged call the boundary scan makes under the case's
+  base until that case releases it. A fenced run's supervisor snapshots exactly
+  two trees — its own worktree and the main checkout — both under that root, so
+  the two-tree scan cannot finish inside dispatch's return bound and the case
+  observes dispatch's return with the scan provably still in progress. The hold
+  skips calls made by the dispatch process itself, so dispatch's own pre-return
+  calls are charged but never block its return;
 * a ``sitecustomize`` module on the driver's ``PYTHONPATH`` that parks a
   dispatch process immediately after it has started its supervisor, so a
   signal can be delivered while dispatch is still inside ``crew.dispatch`` —
@@ -34,6 +36,7 @@ as it found it.
 from __future__ import annotations
 
 import contextlib
+import importlib
 import json
 import os
 import shutil
@@ -59,6 +62,10 @@ from reckon.shim_lookup import real_executable
 # copy of the package carrying a deliberate defect and must then measure that
 # copy.
 PACKAGE_ROOT = Path(reckon.__file__).resolve().parents[1]
+
+# The module under test, imported as the gate's own package so the survival
+# check is exercised against the tree this case imported rather than any other.
+dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 # Captured at import, before the suite's autouse home fixture redirects
 # ``RECKON_HOME``. The guard at the end of the first case must name the
@@ -171,6 +178,10 @@ _boot = time.monotonic()
 payload = json.loads(Path(sys.argv[1]).read_text())
 os.environ["RECKON_HOME"] = payload["config"]
 os.environ["PATH"] = payload["bin_dir"] + os.pathsep + os.environ.get("PATH", "")
+# This dispatch process's own pid, so the shim can tell the supervisor's
+# boundary scan (a child of this process) apart from dispatch's own pre-return
+# calls and hold only the scan.
+os.environ["RECKON_DISPATCH_PID"] = str(os.getpid())
 
 import reckon
 from reckon import crew
@@ -265,23 +276,32 @@ if [ "$charge" = "1" ]; then
   here=$(pwd)
   printf '%s\\t%s\\t%s\\t%s\\n' "$PPID" "$(date +%s.%N)" "$here" "$*" \\
     >> "$RECKON_SHIM_LOG"
-  # A call run from under the worktree root is the boundary scan's: the scan
-  # charges one call per registered tree, and dispatch's own pre-return call
-  # runs from the repository root. Signal that the scan is in progress and hold
-  # it until the case releases it, so the case observes dispatch's return while
-  # the scan is still running rather than waiting a fixed cost per worktree.
+  # A call run from under the scan root by a process that is not the dispatch
+  # process is the boundary scan's: a fenced supervisor scans its own worktree
+  # and the main checkout, while dispatch's own pre-return calls are made by the
+  # dispatch process itself. Signal that the scan is in progress and hold it
+  # until the case releases it, so the case observes dispatch's return while the
+  # scan is still running rather than waiting for it to finish. Dispatch's own
+  # calls are never held, or dispatch would block before it could return.
   if [ -n "$RECKON_SHIM_SCAN_ROOT" ]; then
+    hold=1
     case "$here" in
-      "$RECKON_SHIM_SCAN_ROOT"/*)
-        : > "$RECKON_SHIM_SCAN_SIGNAL"
-        waited=0
-        while [ ! -e "$RECKON_SHIM_SCAN_RELEASE" ]; do
-          [ "$waited" -ge "$RECKON_SHIM_SCAN_WAITS" ] && break
-          sleep 0.02
-          waited=$((waited + 1))
-        done
-        ;;
+      "$RECKON_SHIM_SCAN_ROOT"/*) ;;
+      *) hold=0 ;;
     esac
+    if [ "$hold" = "1" ] && [ -n "$RECKON_DISPATCH_PID" ] \
+        && [ "$PPID" = "$RECKON_DISPATCH_PID" ]; then
+      hold=0
+    fi
+    if [ "$hold" = "1" ]; then
+      : > "$RECKON_SHIM_SCAN_SIGNAL"
+      waited=0
+      while [ ! -e "$RECKON_SHIM_SCAN_RELEASE" ]; do
+        [ "$waited" -ge "$RECKON_SHIM_SCAN_WAITS" ] && break
+        sleep 0.02
+        waited=$((waited + 1))
+      done
+    fi
   fi
 fi
 exec "$RECKON_SHIM_GIT" "$@"
@@ -620,11 +640,15 @@ def _start_dispatch(
     }
     if scan_gate:
         # The shim holds each charged call the boundary scan makes under the
-        # worktree root until this case releases it, so the case can observe
-        # dispatch's return while the scan is still in progress. Dispatch's own
-        # pre-return call runs from the repository root and is not held.
+        # scan root until this case releases it, so the case can observe
+        # dispatch's return while the scan is still in progress. A fenced run's
+        # supervisor snapshots only its own worktree and the main checkout, both
+        # under the case's base, so the scan root is the base; the shim holds
+        # only calls made by a process other than the dispatch process, so
+        # dispatch's own pre-return calls are charged but never held and dispatch
+        # is free to return while the scan waits.
         (home / "scan-gate").mkdir(parents=True, exist_ok=True)
-        environment["RECKON_SHIM_SCAN_ROOT"] = str(host["base"] / "worktrees")
+        environment["RECKON_SHIM_SCAN_ROOT"] = str(host["base"])
         environment["RECKON_SHIM_SCAN_SIGNAL"] = str(home / "scan-gate" / "scanning")
         environment["RECKON_SHIM_SCAN_RELEASE"] = str(home / "scan-gate" / "release")
         environment["RECKON_SHIM_SCAN_WAITS"] = str(SHIM_GATE_WAITS)
@@ -885,11 +909,31 @@ def test_dispatch_returns_once_its_supervisor_runs(
             f"no readable tree snapshot appeared at {snapshot_path} within "
             f"{MARKER_BOUND} s, so the supervisor never took the boundary"
         )
+        # The snapshot is the two-tree scan a fenced supervisor takes: the run's
+        # own worktree and the main checkout, and none of the thirty registered
+        # worktrees an unfenced scan would cross. The charged calls, separated by
+        # pid, name the same two trees and no more.
         trees = [str(tree.get("path") or "") for tree in snapshot.get("trees") or ()]
+        own_tree = Path(str((run.pointer or {}).get("worktree") or "")).resolve()
         outcome["tree_snapshot_tree_count"] = len(trees)
-        assert len(trees) >= WORKTREE_COUNT, (
-            f"the snapshot holds {len(trees)} trees, fewer than the "
-            f"{WORKTREE_COUNT} worktrees the scan had to cross"
+        outcome["own_worktree"] = str(own_tree)
+        assert {Path(tree).resolve() for tree in trees} == {
+            host["repo"].resolve(),
+            own_tree,
+        }, (
+            f"the snapshot holds {trees!r}, not the run's own worktree {own_tree} "
+            f"and the main checkout {host['repo']}, so this is not a fenced run's "
+            "two-tree scan"
+        )
+        scan_calls = [line for line in lines if line["pid"] == str(supervisor_pid)]
+        outcome["supervisor_scan_calls"] = scan_calls
+        assert {Path(line["cwd"]).resolve() for line in scan_calls} == {
+            host["repo"].resolve(),
+            own_tree,
+        }, (
+            f"the supervisor's charged status calls cover {scan_calls!r}, not "
+            f"exactly {own_tree} and {host['repo']}, so the scan read a tree a "
+            "fenced run's boundary check must not read"
         )
 
         # The promotion check reads that file. Proven by capturing the roots it
@@ -1273,3 +1317,101 @@ def test_a_delegated_launch_records_a_boundary_snapshot(
             stray.parent.rmdir()
         _finish(run, outcome)
         host["outcomes"].append(outcome)
+
+
+def test_dispatch_returns_when_its_supervisor_finished_the_launch(
+    host: dict[str, Any], tmp_path: Path
+) -> None:
+    """A supervisor that completed its launch is not read as a refusal.
+
+    No scan gate is armed, so the supervisor's two-tree scan completes at once,
+    spawns the stub worker, collects its exit and writes the completion exit
+    record -- all inside dispatch's survival window. Dispatch must return that
+    run rather than refuse it: a dispatch that launched a worker is never a
+    refusal, whatever the worker then did.
+    """
+    marker_dir = tmp_path / "markers"
+    marker_dir.mkdir()
+    run = _start_dispatch(
+        host, tag="finished", marker_dir=marker_dir, stub_sleep=0, hold=False
+    )
+    outcome: dict[str, Any] = {
+        "case": "a dispatch returns when its supervisor finished the launch"
+    }
+    try:
+        run.process.wait(timeout=SPAWN_BOUND)
+        output = run.output()
+        outcome["driver_output"] = output
+        outcome["driver_stderr_tail"] = run.stderr()
+        assert run.process.returncode == 0, (
+            "the dispatch process refused a launch whose supervisor reached it and "
+            f"spawned its worker: {outcome['driver_stderr_tail']!r}"
+        )
+        assert output is not None and output.get("run_id"), (
+            "the dispatch process returned no run id for a completed launch"
+        )
+        run.pointer = run.read_pointer()
+        assert run.pointer, "the dispatch process published no pointer"
+        assert run.pointer.get("pid"), (
+            "the dispatch process named no supervisor for a launch that completed"
+        )
+        # The supervisor's own receipt: its completion exit record names the
+        # worker it spawned, which is the record dispatch read as a launch.
+        exit_record = _wait_for(
+            lambda: _load_json(run.run_directory() / "exit.json"),
+            timeout=EXIT_RECORD_BOUND,
+        )
+        outcome["exit_record"] = exit_record
+        assert exit_record is not None and exit_record.get("worker_pid") is not None, (
+            "the supervisor left no completion exit record naming its worker, so "
+            f"this case did not exercise the completion acceptance: {exit_record!r}"
+        )
+    finally:
+        _finish(run, outcome)
+        host["outcomes"].append(outcome)
+
+
+def test_the_survival_check_refuses_a_supervisor_that_exited_without_a_worker(
+    tmp_path: Path,
+) -> None:
+    """A supervisor with no worker receipt inside the window is still refused.
+
+    The completion acceptance covers a supervisor that reached its run.
+
+    The refusal is reserved for a supervisor that exited inside the window
+    without a worker receipt: one that could not find its run, because it
+    started under the wrong crew home, or one whose spawn failed. Either must
+    still refuse, or a dispatch would report a live worker that never started.
+    A real, already-exited process stands in for such a supervisor, with no
+    record and then with a failure record.
+    """
+    directory = tmp_path / "run"
+    directory.mkdir()
+    run_id = "r-survival-refusal"
+    ended = subprocess.Popen(["true"])
+    ended.wait()
+    outcome: dict[str, Any] = {
+        "case": "a supervisor with no worker receipt is still refused"
+    }
+
+    with pytest.raises(CrewError) as no_record:
+        dispatch_module._confirm_supervisor_survived(ended.pid, directory, run_id)
+    outcome["refused_without_a_record"] = str(no_record.value)
+    assert "without writing an exit record" in str(no_record.value), (
+        f"a supervisor that ended with no record was not refused as one that "
+        f"never reached its run: {no_record.value}"
+    )
+
+    (directory / dispatch_module.EXIT_RECORD_NAME).write_text(
+        json.dumps(
+            {"run_id": run_id, "worker_pid": None, "detail": "worker did not spawn"}
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(CrewError) as failure_record:
+        dispatch_module._confirm_supervisor_survived(ended.pid, directory, run_id)
+    outcome["refused_with_a_failure_record"] = str(failure_record.value)
+    assert "worker did not spawn" in str(failure_record.value), (
+        f"a supervisor that exited with a launch-failure record was not refused: "
+        f"{failure_record.value}"
+    )
