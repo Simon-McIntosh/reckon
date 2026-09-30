@@ -1,3 +1,4 @@
+import ast
 import json
 import re
 from pathlib import Path
@@ -28,6 +29,23 @@ ROUTING_IDENTIFIERS = re.compile(
     r"|\b(sonnet|opus|haiku)\b",
     re.IGNORECASE,
 )
+
+# The harness's own environment flag is a name the dispatch layer must speak to
+# attribute a request to a run; it identifies the harness, not a routing choice.
+# Stripping the whole flag name before scanning keeps a model identifier refused
+# while a line that only carries the flag name is not a leak.
+HARNESS_FLAGS = re.compile(r"\bANTHROPIC_CUSTOM_HEADERS\b")
+
+
+def routing_identifier(line: str) -> str | None:
+    """The routing identifier a line carries, or None if it carries none.
+
+    A harness flag name is stripped first, so a line naming only the flag is
+    clean while one naming a model or provider is still refused.
+    """
+    match = ROUTING_IDENTIFIERS.search(HARNESS_FLAGS.sub("", line))
+    return match.group(0) if match else None
+
 
 # Translation must name a harness to speak its flags, and the legacy tier map
 # reads identifiers out of existing plan state without ever selecting a worker.
@@ -193,7 +211,8 @@ def test_no_routing_identifier_leaks_into_skills_or_source() -> None:
     The two exemptions are the translation module, which has to speak a harness's
     flags, and the legacy tier map, which reads identifiers out of plan state
     written before capability requests existed and never selects a worker with
-    them.
+    them. A harness flag name is allowed on any line, because the dispatch layer
+    must speak it to attribute a request; a model or provider identifier is not.
     """
     offenders: list[str] = []
     for directory in ("skills", "reckon"):
@@ -211,9 +230,30 @@ def test_no_routing_identifier_leaks_into_skills_or_source() -> None:
             for number, line in enumerate(
                 path.read_text(encoding="utf-8", errors="replace").splitlines(), 1
             ):
-                if ROUTING_IDENTIFIERS.search(line):
+                if routing_identifier(line):
                     offenders.append(f"{relative}:{number}: {line.strip()}")
     assert offenders == [], "routing identifiers leaked:\n" + "\n".join(offenders)
+
+
+def test_the_leak_guard_allows_the_harness_flag_and_refuses_a_model() -> None:
+    """The carve-out narrows the scan to a named flag; it does not blind it.
+
+    The refusal the guard exists for must survive the allowance, so plant a
+    concrete model identifier and a provider name and assert each is still
+    refused, beside the flag line that is not.
+    """
+    flag = 'runtime["ANTHROPIC_CUSTOM_HEADERS"] = ("\\n".join(headers))'
+    assert routing_identifier(flag) is None, "the harness flag is not a leak"
+
+    model = 'argv = ["claude-3-5-sonnet", "--effort", "high"]'
+    assert routing_identifier(model) == "claude-3", (
+        "a concrete model identifier must still be refused"
+    )
+
+    provider = "backend = 'openai'"
+    assert routing_identifier(provider) == "openai", (
+        "a provider name must still be refused"
+    )
 
 
 def test_ship_skill_carries_the_uniform_dispatch_instruction() -> None:
@@ -1163,6 +1203,125 @@ def test_closure_ledger_carries_both_drain_counts() -> None:
         assert "`still-working`" in text
 
 
+def _expression_descendants(statement: ast.stmt):
+    """Expression nodes of a statement, stopping at any nested statement.
+
+    A statement's own expression content is what belongs to its block; the
+    expression content of a nested ``if`` or ``try`` body belongs to that inner
+    block, which is walked separately.
+    """
+    stack: list[ast.AST] = [statement]
+    while stack:
+        node = stack.pop()
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, ast.stmt):
+                continue
+            yield child
+            stack.append(child)
+
+
+def _statement_blocks(tree: ast.Module) -> list[list[ast.stmt]]:
+    """Every statement block in the module, from the top down to the innermost."""
+    blocks: list[list[ast.stmt]] = []
+
+    def descend(block: list[ast.stmt]) -> None:
+        blocks.append(block)
+        for statement in block:
+            for nested in _nested_blocks(statement):
+                descend(nested)
+
+    descend(tree.body)
+    return blocks
+
+
+def _nested_blocks(statement: ast.stmt):
+    """The statement blocks a compound statement carries directly."""
+    for _, value in ast.iter_fields(statement):
+        if (
+            isinstance(value, list)
+            and value
+            and all(isinstance(item, ast.stmt) for item in value)
+        ):
+            yield value
+        elif isinstance(value, list) and any(
+            isinstance(item, ast.ExceptHandler) for item in value
+        ):
+            for item in value:
+                if isinstance(item, ast.ExceptHandler):
+                    yield item.body
+
+
+def _emitted_error_keys(statement: ast.stmt) -> list[str]:
+    """The ``"error"`` keys a statement's own expression content emits."""
+    keys: list[str] = []
+    for node in _expression_descendants(statement):
+        if not isinstance(node, ast.Dict):
+            continue
+        for key, value in zip(node.keys, node.values, strict=True):
+            if (
+                isinstance(key, ast.Constant)
+                and key.value == "error"
+                and isinstance(value, ast.Constant)
+                and isinstance(value.value, str)
+            ):
+                keys.append(value.value)
+    return keys
+
+
+def _exit_code_after(block: list[ast.stmt], start: int) -> int | None:
+    """The first exit code raised in ``block`` at or after index ``start``."""
+    for statement in block[start:]:
+        for node in _expression_descendants(statement):
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "Exit"
+            ):
+                for arg in node.args:
+                    if isinstance(arg, ast.Constant) and isinstance(arg.value, int):
+                        return arg.value
+    return None
+
+
+def _dispatch_exit_branches(source: str) -> dict[str, set[int]]:
+    """Map each emitted dispatch error key to its own branch's exit code.
+
+    An error key belongs to the innermost statement block that emits it, and its
+    code is the first ``Exit`` raised in that same block after the key -- not any
+    code raised elsewhere in the enclosing handler. A handler emitting two keys
+    from two branches therefore keeps each key bound to its own code, so swapping
+    the two codes is caught where binding the whole handler would not be. A key
+    with no ``Exit`` in its own block maps to the empty set and fails the check.
+    """
+
+    branches: dict[str, set[int]] = {}
+    for block in _statement_blocks(ast.parse(source)):
+        for index, statement in enumerate(block):
+            for key in _emitted_error_keys(statement):
+                code = _exit_code_after(block, index)
+                codes = branches.setdefault(key, set())
+                if code is not None:
+                    codes.add(code)
+    return branches
+
+
+def _assert_exit_table_matches(
+    documented: dict[str, int], branches: dict[str, set[int]]
+) -> None:
+    """Assert each documented error key is emitted with its documented exit."""
+    for error, code in documented.items():
+        if error in {"success", "request-error"}:
+            continue
+        assert error in branches, (
+            f"{error} is documented in the skill and no CLI branch emits it"
+        )
+        assert branches[error], f"{error} is emitted with no Exit in its own branch"
+        assert code in branches[error], (
+            f"{error} is documented as exit {code} and its branch raises "
+            f"{sorted(branches[error])}"
+        )
+
+
 def test_ship_dispatch_exit_table_matches_cli_branches() -> None:
     ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
     documented = {
@@ -1183,12 +1342,50 @@ def test_ship_dispatch_exit_table_matches_cli_branches() -> None:
     }
     source = (ROOT / "reckon" / "cli.py").read_text()
     assert "0 succeeded, 1 the configuration or request is wrong" in source
-    for error, code in documented.items():
-        if error in {"success", "request-error"}:
-            continue
-        assert re.search(rf'"error": "{error}"[\s\S]{{0,350}}Exit\({code}\)', source), (
-            error
-        )
+    branches = _dispatch_exit_branches(source)
+    _assert_exit_table_matches(documented, branches)
+
+
+def test_dispatch_exit_pairing_binds_each_key_to_its_own_branch() -> None:
+    """Two keys emitted from one handler stay bound to their own exit code.
+
+    The pairing must read the code raised in the emitting key's own block, not
+    every code the enclosing handler raises: binding the handler would let a
+    swap of the two branches' codes pass against the documented table.
+    """
+    source = (
+        "def dispatch():\n"
+        "    try:\n"
+        "        run()\n"
+        "    except CrewError as exc:\n"
+        "        if not ready:\n"
+        "            _emit({'ok': False, 'error': 'alpha'}, pretty)\n"
+        "            raise click.exceptions.Exit(4) from exc\n"
+        "        _emit({'ok': False, 'error': 'beta'}, pretty)\n"
+        "        raise click.exceptions.Exit(5) from exc\n"
+    )
+    branches = _dispatch_exit_branches(source)
+    assert branches == {"alpha": {4}, "beta": {5}}, (
+        "each key must map to exactly its own branch's code"
+    )
+
+    swapped = source.replace("Exit(4)", "Exit(9)").replace("Exit(5)", "Exit(4)")
+    swapped = swapped.replace("Exit(9)", "Exit(5)")
+    swapped_branches = _dispatch_exit_branches(swapped)
+    documented = {"alpha": 4, "beta": 5}
+    with pytest.raises(AssertionError):
+        _assert_exit_table_matches(documented, swapped_branches)
+
+    # A key with no Exit in its own block maps to the empty set, so it fails
+    # the documented-table check naming the key rather than passing silently.
+    unpaired = _dispatch_exit_branches(
+        "def dispatch():\n"
+        "    try:\n"
+        "        run()\n"
+        "    except CrewError as exc:\n"
+        "        _emit({'ok': False, 'error': 'gamma'}, pretty)\n"
+    )
+    assert unpaired == {"gamma": set()}
 
 
 def test_ship_documents_dispatch_prerequisites_and_refusal_remedies() -> None:
