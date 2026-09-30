@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="an-orchestrator-cannot-forget-its-obligations">
+  <meta name="plan-title" content="An orchestrator cannot forget its obligations">
+  <meta name="plan-evidence-for" content="reckon:an-orchestrator-cannot-forget-its-obligations">
+  <meta name="plan-verifies" content="reckon:an-orchestrator-cannot-forget-its-obligations#s5">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-09-30">
+  <title>The hook tests pin their own harness identity | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="hook-tests-pin-their-harness">
+  <h2>The hook tests pin their own harness identity</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_coordinator_obligations_hook.py</code>
+  now names its harness identity in every drive instead of inheriting it. The
+  hook subprocess is given <code>CLAUDE_PID</code> explicitly: the pid the
+  fixture registered as its follower's owner when a follower is registered, or
+  an absent-pid sentinel when none is. Nothing ambient can steer a case, so the
+  file passes whether the runner exports an unrelated <code>CLAUDE_PID</code>,
+  exports the real harness pid, or exports none. The hook itself is unchanged.</p>
+
+  <p><strong>Measured.</strong> At the base revision the file is 10 failed /
+  6 passed under an unrelated live <code>CLAUDE_PID</code>; the same conditions
+  against the change are 16 passed in each of the three drives — unrelated
+  <code>CLAUDE_PID</code>, <code>CLAUDE_PID</code> unset, and a plain run. A
+  base and head arm over the three hook files
+  (<code>tests/test_coordinator_obligations_hook.py</code>,
+  <code>tests/test_hook_installer.py</code>,
+  <code>tests/test_hooks_install_cli.py</code>) are 39 passed each, zero added
+  failures by id. The declared mutation was observed to fail: removing the
+  explicit identity reds one prompt-mode case under an unrelated
+  <code>CLAUDE_PID</code> (1 failed, <code>EXIT=1</code>).</p>
+
+  <p><strong>Scope retained, deliberately.</strong> The driving followup stays
+  open and no terminal status is set: a worker knows its node landed, not
+  whether the section closed. Logs:
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T163600050453-hook-tests-pin-their-harness/</code>.</p>
+</section>
+</main>
+</body>
+</html>

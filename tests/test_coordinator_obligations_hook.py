@@ -57,6 +57,11 @@ HELD_AGE_STEP = 60
 # An age the hook renders from wall-clock distances, such as "2s" or "1h3m".
 AGE = re.compile(r"\d+d\d+h|\d+h\d+m|\d+m\d+s|\d+s")
 
+# A pid no process can hold, so a case that registers no follower still names a
+# harness identity rather than letting the runner's CLAUDE_PID or the hook's
+# ancestry walk reach into the drive.
+_ABSENT_HARNESS_PID = 2_147_483_647
+
 
 def _stamp(path: Path) -> tuple[int, int] | None:
     """A file's identity for an untouched check, or None when it is absent."""
@@ -317,8 +322,14 @@ def _hook(
 ) -> subprocess.CompletedProcess[str]:
     environment = dict(os.environ)
     environment["PYTHONPATH"] = str(REPO_ROOT)
-    if claude_pid is not None:
-        environment["CLAUDE_PID"] = str(claude_pid)
+    # Every case names its harness identity, so nothing ambient steers the
+    # drive: the subprocess is told the pid the fixture registered as its owner
+    # rather than inheriting CLAUDE_PID from whichever runner started the test
+    # or falling back to the hook's ancestry walk, which under a real harness
+    # finds the real harness instead of the fixture's session.
+    environment["CLAUDE_PID"] = str(
+        claude_pid if claude_pid is not None else _pinned_harness_pid()
+    )
     return subprocess.run(
         [sys.executable, str(HOOK), "--hook", mode],
         input=json.dumps(payload),
@@ -372,13 +383,36 @@ def _age_seconds(rendered: str) -> int:
     )
 
 
-def _registered_parent_pid() -> int:
-    """The pid the follower registration names as the process that armed it."""
+def _pinned_harness_pid() -> int:
+    """The pid the fixture registers as its harness, or an absent sentinel.
+
+    The hook resolves the session by the pid that armed the fixture's follower,
+    so a drive that names no identity of its own is given exactly that pid. A
+    case that registers no follower has no identity to name, and returns the
+    sentinel so the subprocess still names one rather than inheriting the
+    runner's CLAUDE_PID.
+    """
     for row in runs.list_followers(PROJECT):
         if row.get("session") == SESSION:
-            record = row.get("follower") or {}
-            return int(record["parent_pid"])
-    raise AssertionError("the fixture registration is missing")
+            record = row.get("follower") and row["follower"]
+            if not isinstance(record, dict):
+                break
+            try:
+                owner = int(record.get("parent_pid") or 0)
+            except (TypeError, ValueError):
+                break
+            if owner > 1:
+                return owner
+            break
+    return _ABSENT_HARNESS_PID
+
+
+def _registered_parent_pid() -> int:
+    """The pid the follower registration names as the process that armed it."""
+    owner = _pinned_harness_pid()
+    if owner == _ABSENT_HARNESS_PID:
+        raise AssertionError("the fixture registration is missing")
+    return owner
 
 
 def test_prompt_mode_injects_the_checklist_for_a_coordinating_session(
