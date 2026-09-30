@@ -1115,6 +1115,27 @@ def _run_head_for_review(record: Mapping[str, Any]) -> str:
     return _record_carried_head(record)
 
 
+def _review_attempt_withdrawn_before_launch(run_id: str) -> bool:
+    """Whether a recorded review run's own exit record says no worker launched.
+
+    An attempt whose run was withdrawn during setup — a claim, node name or
+    worktree clash the supervisor refused before any worker existed — leaves an
+    exit record saying the attempt ended during launch with no stream byte read.
+    No review ever ran, so the lane is free to carry the next sweep's
+    composition rather than being withheld as one that dropped the head.
+
+    Only that positive evidence frees the lane. A run naming no id, or one whose
+    records are gone, is left standing as an attempt that stood: recomposing
+    onto a lane that did drop this exact head costs at most one refused
+    dispatch, whereas wrongly withholding a lane leaves a run with no review at
+    all.
+    """
+    if not run_id:
+        return False
+    exit_record = _run_exit_record({"run_id": run_id})
+    return exit_record is not None and _exit_record_is_launch_failure(exit_record)
+
+
 def _failed_review_backend(record: Mapping[str, Any]) -> str:
     """The lane the run's most recent recorded attempt used for its current head.
 
@@ -1124,17 +1145,29 @@ def _failed_review_backend(record: Mapping[str, Any]) -> str:
     dropped by, and recomposing onto it repeats the attempt rather than
     advancing it.
 
-    The head the attempt composed for gates that reading. A run that has since
-    moved past the recorded revision is owed a different review, so the lane
-    that dropped the earlier attempt is free to carry the new one: counting it
-    as dropped would refuse the re-review on the very lane that carried the run.
+    The attempt's status gates that reading: only a ``dispatched`` attempt ever
+    reached a lane. A dispatch refused at admission, or one recorded as
+    awaiting-lane, started nothing, so its named lane neither dropped the run
+    nor is barred from the next sweep.
+
+    The head the attempt composed for gates it too. A run that has since moved
+    past the recorded revision is owed a different review, so the lane that
+    dropped the earlier attempt is free to carry the new one: counting it as
+    dropped would refuse the re-review on the very lane that carried the run.
     An attempt naming no head cannot be tied to the current head and is not
     counted either — the conservative direction, because recomposing onto a lane
     that did drop this exact head costs one refused dispatch, whereas wrongly
     withholding a lane leaves a run with no review at all.
+
+    Finally an attempt withdrawn before a worker launched is not a drop the lane
+    earned, as :func:`_review_attempt_withdrawn_before_launch` reads from the
+    review run's own exit record; the caller has already established that no
+    review stands for the head.
     """
     recorded = record.get(REVIEW_DISPATCH_FIELD)
     if not isinstance(recorded, Mapping):
+        return ""
+    if str(recorded.get("status") or "").strip() != "dispatched":
         return ""
     backend = str(recorded.get("backend") or "").strip()
     if not backend:
@@ -1144,6 +1177,10 @@ def _failed_review_backend(record: Mapping[str, Any]) -> str:
         return ""
     current_head = _run_head_for_review(record)
     if not current_head or not same_revision(recorded_head, current_head):
+        return ""
+    if _review_attempt_withdrawn_before_launch(
+        str(recorded.get("run_id") or "").strip()
+    ):
         return ""
     return backend
 
