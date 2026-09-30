@@ -638,7 +638,14 @@ def test_ship_has_one_advisory_fleet_size_table() -> None:
 # explanatory history, exhaustive mechanics, and worked procedures to live in
 # conditional references. A word-count proxy is enough to make that review
 # visible; extracting material comes before widening this bound.
-FIXED_READ_SET_TOKEN_BUDGET = 15_000
+#
+# Raised from 15_000 when §4d and §5 each gained the two-sentence rule that the
+# obligations view is the coordinator's inbox, worked to empty or acknowledged
+# with `reckon crew ack` before the turn ends and enforced by the installed hook.
+# Both are dispatch-time rules — an orchestrator decides against them mid-beat and
+# cannot read them conditionally — so they stay in the file rather than moving to
+# a reference, and the file had 64 tokens of room against the old bound.
+FIXED_READ_SET_TOKEN_BUDGET = 15_200
 
 
 def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
@@ -879,6 +886,19 @@ def test_edit_skill_uses_version_safe_prose_tool() -> None:
 # an orchestrator's to call. An exemption asserts absence as well as presence, so
 # documenting one of these forces the entry to be removed rather than left to rot.
 CREW_VERBS_OUTSIDE_ORCHESTRATION = {
+    ("crew", "velocity"): (
+        "serves the delivery-rate ledger tables; an orchestrator reads that "
+        "window through the crew read view, never by composing it itself"
+    ),
+    ("crew", "split-runs"): (
+        "a one-off migration of aggregate ledger rows into per-run files, not "
+        "an orchestration action"
+    ),
+    ("crew", "dispose"): (
+        "writes one review store's disposition entry for a sub-floor dimension "
+        "that the obligations read-back resolves, a ledger write reached "
+        "through the review workflow"
+    ),
     ("crew", "repair-completion"): "ledger maintenance, not orchestration",
     ("crew", "path"): (
         "prints one state path for a consumer repository to call; an "
@@ -923,6 +943,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
     assert "Peer scopes come from live pointers" in ship
     assert "`--peer <other-node>=<their-paths>` is optional" in ship
     expected = {
+        ("crew", "ack"): {"--run", "--reason", "--until"},
         ("crew", "attach"): {"--run", "--task"},
         ("crew", "complete"): {
             "--run",
@@ -970,6 +991,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "resume-ready"): {"--project"},
         ("crew", "shadow"): set(),
         ("crew", "stop"): set(),
+        ("crew", "suite"): set(),
         ("crew", "unwatch"): {"--project"},
         ("crew", "verify-gate"): {"--project", "--run", "--checkout-path"},
         ("crew", "watch"): {"--project", "--stall-window"},
@@ -1224,3 +1246,43 @@ def test_the_plan_is_named_as_the_only_passing_surface() -> None:
     assert "a second store is a second stale source of truth" in ship
     # Large inputs already have an answer that is not a copy.
     assert "travel by reference" in ship
+
+
+def test_the_obligations_view_is_the_coordinator_inbox() -> None:
+    """§4d and §5 make the obligations view the inbox, and the harness reference
+    names how the hook enforces it.
+
+    The inbox is a derived view, so the skill points at what reckon computes
+    rather than at remembered state; the enforcement is the harness hook, so the
+    reference must name both of its modes and the command that installs them, or
+    a coordinator cannot arm the thing the fence leans on.
+    """
+    ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
+    closure = ship.split("### 4d.", 1)[1].split("### 4e.", 1)[0]
+    verify = ship.split("### 5. Verify every worker", 1)[1].split("### 5b.", 1)[0]
+
+    for section in (closure, verify):
+        assert "obligations view" in section
+        assert "reckon crew ack" in section
+
+    # The closure fence names the inbox sentence the mutation deletes, and the
+    # hook that refuses the Stop while an item is unacknowledged.
+    assert "The obligations view is the inbox" in closure
+    assert "refuses a Stop" in closure
+
+    reference = (
+        ROOT
+        / "skills"
+        / "reckon-build"
+        / "references"
+        / "orchestrator-harness"
+        / "claude-code.md"
+    ).read_text()
+    assert "reckon/hooks/coordinator_obligations.py" in reference
+    assert "--hook prompt" in reference
+    assert "--hook stop" in reference
+    for event in ("UserPromptSubmit", "SessionStart", "Stop"):
+        assert event in reference, event
+    assert "reckon hooks install --scope user" in reference
+    assert "install_hook_settings()" in reference
+    assert "install_hook_settings(write=True)" in reference
