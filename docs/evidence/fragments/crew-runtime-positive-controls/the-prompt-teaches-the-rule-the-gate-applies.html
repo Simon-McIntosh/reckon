@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="The prompt teaches the rule the gate applies">
+  <meta name="plan-summary" content="Two prompt sites told the worker its red log's first line had to repeat the declared mutation verbatim, which is a rule the promotion gate no longer applies: a control log is admitted on the facts its run recorded — a non-zero EXIT= line and at least one failing test id the head arm does not fail — and no wording of it is matched. The declaration block and the manifest template's negative_control_log gloss now state that rule and still show the declared string as what the worker applies and a reader compares, not a string any gate matches. A prompt composed before the change carries 'verbatim' twice; after it, zero. Gate: 46 passed at base, 51 passed at head, zero added ids; the restored-sentence mutation reddens the new case three ways at EXIT=1. tests/test_prompt_carries_the_declaration.py pins the same wording and lies outside this node's fence; its two wording cases are recorded under follow_ons.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="pass">
+  <title>The prompt teaches the rule the gate applies &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The prompt teaches the rule the control gate applies &mdash; evidence</h1>
+  <p>Two live prompt sites in <code>reckon/crew/prompts.py</code> told the worker its red log's first line had to repeat the declared mutation verbatim. The gate that discharges the declaration no longer does: <code>_require_declared_negative_control</code> in <code>reckon/crew/promotion.py</code> reads the run's terminal exit status and the failing test ids the log names, and matches no wording. A worker could satisfy the prompt exactly and still deliver a log the gate refuses.</p>
+  <p>The removed sentence was reproduced from the composed contract before the change &mdash; a prompt composed at base <code>0c32542d</code> carries the word <code>verbatim</code> twice, once in the declaration block and once on the manifest line (<code>logs/reproduction-base.txt</code>); at head it carries none (<code>logs/reproduction-head.txt</code>).</p>
+  <p>Both sites now state the rule the gate applies:</p>
+  <ul>
+    <li><code>NEGATIVE_CONTROL_DECLARED_RULE</code>: <em>admission is judged on the facts that log records &mdash; a non-zero <code>EXIT=</code> line and at least one failing test id the head arm does not fail &mdash; never on the log's wording. The declared string is what you apply and what a reader compares the log against, not a string any gate matches.</em></li>
+    <li>The manifest template's <code>negative_control_log</code> line: <em>Admission is judged on the facts the run recorded &mdash; a non-zero <code>EXIT=</code> line and at least one failing test id the head arm does not fail &mdash; never on the log's wording.</em> The bare-path requirement and the bare <code>EXIT=</code> last-line requirement are left exactly as they were.</li>
+  </ul>
+  <p>The declared mutation is still interpolated once, unchanged, and the block names it as what the worker applies and a reader compares the log against. No other prompt text changes: the diff holds the two sites plus the comments and the docstring that described the removed match. The four test modules that pinned the verbatim sentence now assert the facts rule, and <code>tests/test_the_prompt_teaches_the_rule_the_gate_applies.py</code> pins both sites against the removed wording, entering through <code>compose_prompt</code>.</p>
+  <section id="measure">
+    <h2>The measure</h2>
+    <ul>
+      <li><strong>Base arm</strong> (<code>0c32542d</code>, scratch tree): the five files present at base &mdash; <code>46 passed in 1.94s</code>, <code>EXIT=0</code>, zero failing ids. <code>logs/baseline.log</code>.</li>
+      <li><strong>Head arm</strong> (<code>3137d2961</code>, the commit): the same five files plus this node's new case &mdash; <code>51 passed in 2.95s</code>, <code>EXIT=0</code>, zero failing ids. The set difference against the base arm is empty. <code>logs/head.log</code>.</li>
+      <li><strong>Negative control</strong> (the old verbatim sentence restored in <code>NEGATIVE_CONTROL_DECLARED_RULE</code> in a scratch copy at the head revision): <code>3 failed, 2 passed in 0.30s</code>, <code>EXIT=1</code>. The failing ids are <code>test_the_declaration_block_states_the_facts_the_gate_reads</code>, <code>test_the_declaration_block_no_longer_asks_for_a_verbatim_first_line</code> and <code>test_the_declaration_is_still_shown_as_what_the_worker_applies</code>. Replaying the gate's own readers over the log records <code>exit=1</code> with those three ids and an empty head set, so the control is admitted on its facts. <code>logs/negative-control.log</code>.</li>
+      <li><strong>Lint</strong>: <code>ruff check</code> reports two findings over the changed paths at head, byte-identical in id and location to the two the same paths carry at base (<code>S608</code> in <code>prompts.py</code>, <code>PLC0207</code> in <code>test_brief_prompt.py</code>); <code>ruff format --check</code> is clean at head and at base.</li>
+    </ul>
+    <p>Each arm log names its revision, tree and the literal command on its first lines and ends with a bare <code>EXIT=</code> line; the two scratch-tree runs also name the imported <code>module.__file__</code> and the resolved working directory, both under the scratch tree. Each pytest process used a private basetemp. The scratch trees and basetemps under <code>/tmp/r-20260930T223448155313-the-prompt-teaches-the-rule-the-gate-applies</code> were deleted before the node closed; the logs named here live in the run directory.</p>
+  </section>
+  <section id="outside-the-delta">
+    <h2>A file outside the fence still pins the removed wording</h2>
+    <p><code>tests/test_prompt_carries_the_declaration.py</code> asserts the same verbatim first-line rule this node removed, and it is not one of the files this node was granted. Two of its cases now fail &mdash; <code>test_the_prompt_states_that_string_is_what_the_red_log_first_line_repeats</code> and <code>test_the_declaration_sits_beside_the_requirement_it_answers</code> (<code>2 failed, 8 passed</code>, <code>logs/out-of-scope-declaration-wording.log</code>). They are recorded under <code>follow_ons</code> rather than repaired here: the file is outside this node's write scope, and the same wording change its two cases pin is the deliverable this node landed.</p>
+  </section>
+ </main>
+</body>
+</html>
