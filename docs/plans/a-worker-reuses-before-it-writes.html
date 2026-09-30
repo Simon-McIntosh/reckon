@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="57">
-<meta name="plan-impl" content="0.85">
+<meta name="plan-version" content="59">
+<meta name="plan-impl" content="0.9">
 </head>
 <body>
   <main class="plan-doc">
@@ -95,10 +95,16 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-awrbiw-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awrbiw-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="2026-09-30T11:04:11+00:00" data-resolved-by="s25-coord">
     <h4 class="r-fu-title">Consolidate the primitives</h4>
     <div class="r-fu-body"><p>§2 and §3 are ready and write different modules; §4 follows §2, because its test names the new parser; §5 waits on the velocity view.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-reuses-before-it-writes</pre>
+    <p class="r-fu-outcome">Sections 2 and 3 landed. Every timestamp reader in dispatch, promotion and recovery reads through reckon._timestamps (04421a8c, 3374c7af, 653cd1e8). The runs, supervisor and CLI writers go through _store.write_json_atomically (1374b0f7, 3374c7af, 1dea5ab7). Stream enumeration goes through metering.run_streams (6d87c18a). Section 4's clone report runs at promotion (b4683397), and section 5's weekly interface counts are in the velocity view (b3c22b06). Each change landed after a population delta at the merged tree added no failing id.</p>
+    </article>
+<article class="r-fu" data-id="f-awrbiw-002" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-30T11:05:00Z" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Close sections 4 and 5</h4>
+    <div class="r-fu-body"><p>Three pieces remain:</p><ul><li>Section 4's velocity view does not yet count clone matches per week.</li><li>Section 4's test covers only functions a run adds in new files, not a function it modifies inside a file the base already carries. The review of promotion-reports-private-copies (88) found that arm untested.</li><li>Section 5's done-when also asks that the plan-review rubric of a-plan-is-reviewed-before-it-is-built cite the weekly interface counts.</li></ul><p>Each is one small node. The clone count reads the ledger's clone field, which records an unmeasured report distinguishably from an empty one.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-worker-reuses-before-it-writes §4</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -250,7 +256,10 @@
     <div class="r-comment-body"><p>review-of-promotion-reports-private-copies: an independent review of run r-20260930T074744951170-promotion-reports-private-copies, read at base 4e05e287a and head 60b209380, is stored at both granted paths; it scores goal_fidelity 19, evidence 14, scope_discipline 19, durability 16, fit 18 (total 86, no dimension absent), records added_failure_count null — unmeasured, because the reviewed manifest names no baseline_suite or after_suite — and files three findings: the ledger stores an unmeasured clone report as the empty list while promotion.py:5694-5695 and the node's own evidence fragment still state that an unreadable revision leaves the key absent; the reviewed manifest records no arm observation at all, so no reader can derive its added failures and its declared negative control has no readable comparison arm, which refuses its promotion until an arm is recorded or the control is waived, its only arm logs stopping mid-run at 40% and 43% with the head one naming 6d5c4655 rather than the promoted head; and the node's own named test was re-run by this node at the reviewed head and passes 2 of 2.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260930T103414416235-review-of-promotion-reports-private-copies" data-who="reckon-build" data-when="2026-09-30T10:47:49.076Z">
-    <div class="r-comment-body"><p>an independent review of run r-20260930T074744951170-promotion-reports-private-copies, read at base 4e05e287a and head a869cc1e, is stored at both granted paths; it scores goal_fidelity 19, evidence 13, scope_discipline 19, durability 18, fit 19 (total 88, no dimension absent), records added_failure_count null with no ids because the reviewed manifest names no baseline_suite or after_suite, and files three findings: the run&#x27;s own base and head arm logs stop at 40% and 43% with no summary or EXIT= line and the head one names the first of its three commits, so the promoted head has no completed gate observation; the three test logs the manifest cites are stamped with the parent revision while the file they exercised exists only in the promoted head; and no test covers the goal&#x27;s modified-in-place half, both clone tests promoting a run that adds a new file</p></div>
+    <div class="r-comment-body"><p>an independent review of run r-20260930T074744951170-promotion-reports-private-copies, read at base 4e05e287a and head a869cc1e, is stored at both granted paths; it scores goal_fidelity 19, evidence 13, scope_discipline 19, durability 18, fit 19 (total 88, no dimension absent), records added_failure_count null with no ids because the reviewed manifest names no baseline_suite or after_suite, and files three findings: the run's own base and head arm logs stop at 40% and 43% with no summary or EXIT= line and the head one names the first of its three commits, so the promoted head has no completed gate observation; the three test logs the manifest cites are stamped with the parent revision while the file they exercised exists only in the promoted head; and no test covers the goal's modified-in-place half, both clone tests promoting a run that adds a new file</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260930T074744951170-promotion-reports-private-copies" data-who="reckon-build" data-when="2026-09-30T10:33:45.179Z">
+    <div class="r-comment-body"><p>promotion reports each function a run adds or modifies that copies an existing function under the declared ledger field clone_matches; a measured run carries the list of matches (empty when its functions copied nothing) and an unmeasured run carries the marker {&quot;status&quot;: &quot;unmeasured&quot;, &quot;reason&quot;: ...}, so the two never read alike</p></div>
 </div>
 </section>
 </main>
