@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-shares-one-allocation">
+  <meta name="plan-title" content="The fleet shares one allocation">
+  <meta name="plan-summary" content="ensure_reservation adopts a live supervisor-running fleet allocation into the one unkeyed record, reading its shape from the scheduler and submitting nothing; the resume path resolves placement so a resumed worker runs as an overlapping step in the adopted job.">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-shares-one-allocation">
+  <meta name="plan-verifies" content="reckon:the-fleet-shares-one-allocation#s3">
+  <meta name="plan-commits" content="43ba4465">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,placement,reservation,fleet">
+  <title>Adopt the live fleet allocation — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-fleet-allocation-is-adopted" data-reckon="landed" data-when="2026-09-30">
+  <h2>Adopt the live fleet allocation</h2>
+  <p>ensure_reservation adopts a live supervisor-running fleet allocation into the one unkeyed record at crew_home()/placement/reservation.json, reading its partition, cores and memory from the scheduler and submitting nothing; with a record naming that job and a live probe it reports already-held, and with neither it keeps its hold behaviour. The resume launch path resolves placement exactly as a dispatch does, so a resumed worker of a placement-declaring backend runs as an overlapping step in the adopted job, and a backend declaring no placement is launched untouched. Focused gate: 4 passed. Population (the test files importing reckon.crew.placement, reckon.crew.fleet_node or reckon.crew.resumption) with pytest-xdist -n 8 at base 247 passed and 1 pre-existing failure (<code>tests/test_crew_launch_failure.py::test_a_launch_that_wrote_a_turn_is_not_a_launch_failure</code>), head 251 passed and the same 1 — 0 added failing ids. Negative control: the adoption branch removed in a scratch tree makes the first case fail with one allocation-obtaining request.</p>
+</article>
+</body>
+</html>

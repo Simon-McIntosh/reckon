@@ -8133,6 +8133,31 @@ def _recorded_manifest_path(record: Mapping[str, Any], run_id: str) -> str:
     return str(directory / "manifest.md")
 
 
+def _carry_declared_placement(
+    backend: dict[str, Any],
+    record: Mapping[str, Any],
+    config: Mapping[str, Any] | None,
+) -> None:
+    """Put the lane's declared placement onto a rebuilt backend, in place.
+
+    A resumed run is placed exactly as a dispatch is: its worker belongs in the
+    one shared allocation the host holds, and the placement that says so is a
+    property of the lane it resumes into rather than of the row it was recorded
+    on. The recorded row stays authoritative for the command the run launched
+    as, so only the placement is taken from the configured lane — a rebuilt
+    backend that already carries one keeps it, and a lane declaring none adds
+    nothing, which leaves an unplaced run launched as it always was.
+    """
+    if flight.placement_for(backend) is not None:
+        return
+    configured = ((config or {}).get("backends") or {}).get(
+        str(record.get("backend") or "")
+    )
+    placement = flight.placement_for(configured)
+    if placement is not None:
+        backend["placement"] = placement
+
+
 def resume_plan(
     run_id: str,
     advice: str,
@@ -8178,6 +8203,7 @@ def resume_plan(
             f"{session.get('detail') or 'no session authority resolved'}"
         )
     backend = _backend_settings(record, config)
+    _carry_declared_placement(backend, record, config)
     verdict = _budget_verdict(
         project=resume_project,
         root=resume_root,
@@ -8236,6 +8262,12 @@ def resume_plan(
             fence=FENCE_WORKERS,
         )
     )
+    # A resume runs where a dispatch runs. A placement-declaring backend's
+    # resumed worker must be a step in the one shared allocation a dispatch
+    # joins, not a child of the coordinator, so the placement is resolved
+    # exactly as a dispatch resolves it — holding or adopting the reservation,
+    # then prefixing the overlapping step that names its job id.
+    plan = resolve_backend_placement(plan, backend, resume_project or None)
     plan = _worker_runtime_plan(
         plan,
         run_id=run_id,
