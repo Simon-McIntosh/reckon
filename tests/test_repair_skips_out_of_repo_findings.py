@@ -17,6 +17,13 @@ reflex with the dispatch stubbed: the all-record round records a decline-only
 reason and launches nothing, and a round mixing a record path with a repository
 source path still composes and dispatches, with only the repository path in
 scope.
+
+A second defect on the same path is a refusal read as an absence. The repair
+inherits the reviewed run's suite command so its own review can reconcile its
+added-failure count against the same suite; when the pointer names no command it
+falls back to the project's standing ``review.suite`` declaration. That
+declaration refusing by name — present but malformed — must reach the
+coordinator as a refusal, not be caught and read as no standing suite.
 """
 
 from __future__ import annotations
@@ -30,7 +37,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import crew
+from reckon import crew, flight
 from reckon.crew import recovery, repair, resumption, runs
 from reckon.crew import review as review_module
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
@@ -393,3 +400,64 @@ def test_the_repair_falls_back_to_the_projects_standing_suite(
     repairs = _repair_calls(calls)
     assert len(repairs) == 1
     assert repairs[0]["config"]["gates"]["suite_command"] == "uv run pytest -q"
+
+
+def test_a_malformed_standing_suite_is_refused_by_name() -> None:
+    """A present-but-malformed standing suite is not read as no standing suite.
+
+    ``flight.review_suite`` returns ``None`` for an undeclared suite and refuses
+    a declaration that is present but malformed by raising ``FlightConfigError``.
+    The two are different states, and reading the second as the first launches
+    the repair with no inherited suite and no signal that anything was declared.
+    The refusal must propagate from the helper, so the caller can report it.
+    """
+    malformed = {"review": {"suite": {"command": "uv run pytest -q", "budget": "10m"}}}
+    with pytest.raises(flight.FlightConfigError):
+        recovery._reviewed_run_suite_command({"suite_command": ""}, malformed)
+
+
+def test_an_undeclared_standing_suite_is_no_command() -> None:
+    """An absent standing suite stays an absence, not a refusal.
+
+    The companion to the malformed case: a project declaring no ``review.suite``
+    at all inherits no command, exactly as a fresh run with no standing suite
+    carries none. Reading this absence as a refusal would refuse every repair in
+    a project that declares no standing suite.
+    """
+    assert recovery._reviewed_run_suite_command({"suite_command": ""}, {}) == ""
+
+
+def test_the_reflex_refuses_a_malformed_standing_suite_without_dispatching(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """A malformed standing suite is recorded as a refusal, not launched silently.
+
+    Driven through the reflex: the reviewed run names no suite command of its
+    own, so the repair falls back to the standing declaration, which is present
+    but malformed. The reflex must record the refusal against the reviewed run
+    and dispatch nothing — the swallow this repair answers converted that
+    refusal into a repair launched with no inherited suite.
+    """
+    config_home, repo, head_sha = isolated_project
+    _completed_pointer(config_home, repo)
+    _store_review(
+        head_sha,
+        [
+            _finding(
+                "reckon/crew/recovery.py",
+                "1748",
+                "the repair drops the reviewed run's suite command",
+            )
+        ],
+    )
+    malformed = {
+        **CONFIG,
+        "review": {"suite": {"command": "uv run pytest -q", "budget": "10m"}},
+    }
+    with _stubbed_dispatch(monkeypatch) as calls, _armed_fleet():
+        resumption.sweep(PROJECT, config=malformed)
+
+    assert _repair_calls(calls) == []
+    recorded = runs.read_pointer(RUN_ID)["repair_dispatch"]
+    assert recorded["status"] == "refused"
+    assert "malformed" in recorded["reason"]
