@@ -18,9 +18,10 @@ contract is rendered, and cover four facts: the template says a gate log's first
 line names the revision, the tree and the command; it says the recorded gate
 command is the one that ran rather than a template; the gate-command gloss
 carries no angle-bracket worktree placeholder, which is the negative half and is
-the shape the first measured instance produced; and the first-line convention
-for the negative-control log survives unchanged, so this change cannot loosen
-what the earlier landing established.
+the shape the first measured instance produced; and the negative-control gloss
+states the rule its gate applies — admission on the run's recorded facts, never
+the log's wording — so the earlier landing cannot be loosened back to a wording
+match.
 """
 
 from __future__ import annotations
@@ -44,12 +45,11 @@ TEMPLATE_COMMAND_REFUSED = "never a template command"
 # path it ran in. Its absence from the gate-command gloss is the negative half.
 WORKTREE_PLACEHOLDER = "<worktree>"
 
-# The convention the template already carried before this change: the red log's
-# own first line repeats the declared mutation verbatim. It must survive.
-NEGATIVE_CONTROL_FIRST_LINE_CONVENTION = (
-    "The log's first line repeats the declared mutation verbatim, so a log "
-    "that failed for any other reason is refused"
-)
+# The convention the template carries on the negative-control gloss: admission
+# is judged on the facts the control's run recorded, never on the log's wording.
+# The verbatim first-line rule this test used to pin is the rule the gate no
+# longer applies, so the assertion moves with the gate.
+NEGATIVE_CONTROL_FACTS_CONVENTION = "Admission is judged on the facts the run recorded"
 
 
 def _node() -> TaskNode:
@@ -114,5 +114,9 @@ def test_gate_command_gloss_carries_no_angle_bracket_worktree_placeholder():
     assert WORKTREE_PLACEHOLDER not in _manifest_gloss(prompt, "test_logs")
 
 
-def test_negative_control_first_line_convention_is_unchanged():
-    assert NEGATIVE_CONTROL_FIRST_LINE_CONVENTION in _prompt()
+def test_negative_control_gloss_states_the_facts_admission_rule():
+    gloss = _manifest_gloss(_prompt(), "negative_control_log")
+
+    assert NEGATIVE_CONTROL_FACTS_CONVENTION in gloss
+    assert "verbatim" not in gloss
+    assert "first line" not in gloss
