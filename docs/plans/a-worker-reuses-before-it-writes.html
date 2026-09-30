@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="63">
+<meta name="plan-version" content="64">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -271,7 +271,10 @@
     <div class="r-comment-body"><p>§4 — `tests/test_promotion_reports_clones.py:test_a_modified_function_becoming_a_copy_is_reported` proves promotion reports a clone when a run rewrites an existing function (`format_stamp` in a base-carried `reckon/stamps.py`) so its body matches `reckon/_timestamps.py:parse_utc`; the detector already handled the modified path, so `reckon/clones.py` is unchanged, and the named gate reports 4 passed.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260930T195500572735-velocity-counts-clone-matches" data-who="reckon-build" data-when="2026-09-30T20:25:08.047Z">
-    <div class="r-comment-body"><p>velocity.report now carries a clones block listing per ISO week the promoted runs with at least one recorded clone match, the total matches, the runs measured with no match, the runs carrying the unmeasured marker, and the runs whose row carries no clone report at all; the synthesised fixture&#x27;s 2026-W36 gives runs_with_match=1, matches=2, runs_no_match=1 and 2026-W37 gives runs_unmeasured=1 and runs_unrecorded=1, each missing or negative reading held apart from the others.</p></div>
+    <div class="r-comment-body"><p>velocity.report now carries a clones block listing per ISO week the promoted runs with at least one recorded clone match, the total matches, the runs measured with no match, the runs carrying the unmeasured marker, and the runs whose row carries no clone report at all; the synthesised fixture's 2026-W36 gives runs_with_match=1, matches=2, runs_no_match=1 and 2026-W37 gives runs_unmeasured=1 and runs_unrecorded=1, each missing or negative reading held apart from the others.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20260930T202748671313-review-of-velocity-counts-clone-matches" data-who="reckon-build" data-when="2026-09-30T20:41:26.249Z">
+    <div class="r-comment-body"><p>An independent review of run r-20260930T195500572735-velocity-counts-clone-matches, read at base 84b6364f1 and head 2710cc2ce, is stored at both granted paths as a parsed record scoring all five dimensions in 0..20 — goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 19, total 95, no dimension absent, all six checklist items reported, two production call sites verified — carrying added_failure_count null with added_failure_ids [] derived through reckon.crew.review over the reviewed run&#x27;s own after_suite arm (it names no baseline_suite, so the count is unmeasured, though both measurable arms carry zero failures), and filing two findings: the repaired unrecorded-state fold is fixed and independently falsified, but the reviewed manifest names no baseline_suite arm and its gate log&#x27;s first line spells the revision rev=&lt;sha&gt;, which the store&#x27;s recorded_log_revision does not resolve.</p></div>
 </div>
 </section>
 </main>
