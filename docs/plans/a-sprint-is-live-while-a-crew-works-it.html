@@ -24,8 +24,8 @@
   <title>A Sprint Is Live While A Crew Works It | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="22">
+<meta name="plan-modified" content="2026-09-30">
+<meta name="plan-version" content="23">
 <meta name="plan-commits" content="6c92861d,0ad5a171">
 <meta name="plan-impl" content="0.8">
 </head>
@@ -312,7 +312,7 @@
     <div class="r-comment-body"><p>fix(audit): retire the multiple-active-sprints finding — reckon/mcp.py no longer raises "multiple active sprints" for two active sprints and the push op description no longer claims it demotes the previously active sprint; existing test test_audit_raises_two_active_sprints_at_error_severity is replaced by test_audit_is_quiet_on_two_active_sprints in tests/test_sprint_push_status.py, and a new end-to-end tests/test_sprint_push_keeps_both_active.py pushes two sprints on a synthetic distributed project under a temporary config home, asserts both keep active and the isolated audit reports no multiple-active-sprints finding; gate 187 passed, 0 added failures vs base 186, and restoring the finding fails the new test</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260929T192808215495-review-of-multiple-active-sprints-finding-retires" data-who="reckon-build" data-when="2026-09-29T21:00:37.835Z">
-    <div class="r-comment-body"><p>an independent review of run r-20260929T190249974220-multiple-active-sprints-finding-retires, head 595b27e0ec154abdb682b040732cb2a296fab170 against base 0ed58e2266e9979d9d454023779d5ac2f1407120, is stored at both granted paths byte-identical (10048 bytes, sha256 d41d29376dfd7ba322e90dd008a39e79e190d05538635e99ec265d7eaa282b3d), reading status parsed with all five dimensions at 20 of 20 — goal_fidelity 20, evidence 20, scope_discipline 20, durability 20, fit 20, total 100 — six item verdicts, none absent, no findings, and added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs.</p></div>
+    <div class="r-comment-body"><p>an independent review of run r-20260929T190249974220-multiple-active-sprints-finding-retires, head 595b27e0ec154abdb682b040732cb2a296fab170 against base 0ed58e2266e9979d9d454023779d5ac2f1407120, is stored at both granted paths byte-identical (10048 bytes, sha256 d41d29376dfd7ba322e90dd008a39e79e190d05538635e99ec265d7eaa282b3d), reading status parsed with all five dimensions at 20 of 20 — goal_fidelity 20, evidence 20, scope_discipline 20, durability 20, fit 20, total 100 — six item verdicts, none absent, no findings, and added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline_suite and after_suite gate logs.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260925T090127451654-review-of-sprint-skill-teaches-liveness" data-who="reckon-build" data-when="2026-09-25T09:55:12.317Z">
     <div class="r-comment-body"><p>review of sprint-skill-teaches-liveness at a29717dd scored 77/100: the skill teaches live_sprint_ids and a liveness-derived active_sprint_id before either exists in code (closed by active-sprint-follows-the-live-crew); the push contradiction is resolved on main; the manifest's base sha is truncated and two changed_paths are misnamed</p></div>
@@ -325,6 +325,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20260929-s4-finding-retired" data-who="s23-coord" data-when="2026-09-29">
     <div class="r-comment-body"><p><strong>§4 is declared done.</strong> Push had already stopped demoting (landed earlier), and active_sprint_id follows the live sprint (<code>tests/test_active_sprint_follows_live_crew.py</code>). <code>multiple-active-sprints-finding-retires</code> merged at <code>aecade28</code> (review 100, no findings). It removes the audit finding, and corrects the push op description that still claimed demotion. <code>tests/test_sprint_push_keeps_both_active.py</code> asserts that two pushed sprints both stay active with no finding. The one existing test that asserted the finding, <code>test_audit_raises_two_active_sprints_at_error_severity</code>, is replaced by <code>test_audit_is_quiet_on_two_active_sprints</code>. The S22 coordinator was told on 2026-09-29 and acknowledged the change.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260929T212907518895-review-of-summaries-list-live-and-recent-sprints" data-who="reckon-build" data-when="2026-09-29T21:44:17.103Z">
+    <div class="r-comment-body"><p>Independent review of r-20260929T204340453599-summaries-list-live-and-recent-sprints stored parsed with all five dimensions scored 0..20 (goal_fidelity 14, evidence 15, scope_discipline 16, durability 13, fit 12; total 70) and added_failure_count 0 with no added failure ids, over three findings: the duplicated module-level CLOSED_SPRINT_STATUSES at reckon/roadmap.py:1116 is rebound at :1645 so the summary never uses its own two-member closed set; reckon/mcp.py:2094 leaves summary[&quot;sprints&quot;] an int for a sprint-less project and a list otherwise; and the reviewed run&#x27;s own head gate-log header names the base revision 192aa9a4 rather than the reviewed head 685657cbc.</p></div>
 </div>
 </section>
   </main>
