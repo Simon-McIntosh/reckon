@@ -53,11 +53,29 @@ FRAGMENT_BYTES = (
     b"</body></html>\n"
 )
 
+#: A full-document fragment that never names a ``body``: its content sits
+#: directly under ``html``. Its ``head`` carries the same two scalars as
+#: ``FRAGMENT_BYTES``, so a composer that falls through to the raw bytes for
+#: this shape re-introduces them.
+BODYLESS_FRAGMENT_BYTES = (
+    b'<!doctype html>\n<html lang="en"><head>\n'
+    b'  <meta charset="utf-8">\n'
+    b'  <meta name="plan-slug" content="demo">\n'
+    b'  <meta name="plan-evidence-for" content="demo">\n'
+    b"  <title>fragment</title>\n"
+    b"</head>\n"
+    b'  <section id="bodyless-content">\n'
+    b"    <h2>Bodyless fragment</h2>\n"
+    b"  </section>\n"
+    b"</html>\n"
+)
+
 NODE = "composed-record-takes-fragment-bodies"
 
 
-@pytest.fixture()
-def record_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def _seed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fragment_bytes: bytes
+) -> Path:
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     root = tmp_path / "repo"
     docs = root / "docs"
@@ -66,13 +84,18 @@ def record_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
     fragment_dir = docs / "evidence" / "fragments" / PLAN
     fragment_dir.mkdir(parents=True)
-    (fragment_dir / f"{NODE}.html").write_bytes(FRAGMENT_BYTES)
+    (fragment_dir / f"{NODE}.html").write_bytes(fragment_bytes)
 
     archive = docs / "evidence" / "archive"
     archive.mkdir(parents=True)
     path = archive / f"{PLAN}-landed.html"
     path.write_bytes(RECORD_BYTES)
     return path
+
+
+@pytest.fixture()
+def record_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    return _seed(tmp_path, monkeypatch, FRAGMENT_BYTES)
 
 
 def _meta_values(text: str, name: str) -> list[str]:
@@ -102,3 +125,18 @@ def test_the_record_keeps_one_of_each_scalar_over_a_fragment(record_path: Path) 
 def test_a_fragments_section_id_appears_once(record_path: Path) -> None:
     composed = compose_landed_record(record_path, PLAN, project=PROJECT).decode("utf-8")
     assert composed.count('id="what-changed"') == 1
+
+
+def test_a_bodyless_full_document_keeps_only_the_records_scalar(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = _seed(tmp_path, monkeypatch, BODYLESS_FRAGMENT_BYTES)
+
+    composed = compose_landed_record(path, PLAN, project=PROJECT).decode("utf-8")
+
+    # The fragment's head is dropped even though it never named a body, so its
+    # plan-slug does not re-enter beside the record's.
+    assert _meta_values(composed, "plan-slug") == ["demo-landed"]
+    assert _meta_values(composed, "plan-evidence-for") == ["demo"]
+    # The content that sat directly under html is kept.
+    assert 'id="bodyless-content"' in composed

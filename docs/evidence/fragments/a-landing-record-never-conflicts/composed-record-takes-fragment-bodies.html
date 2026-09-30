@@ -27,6 +27,7 @@
       <ul>
         <li><code>_fragment_body_bytes</code> in <code>reckon/evidence.py</code> returns the children of the fragment's <code>main</code> element when it has one, else the children of its <code>body</code>, so the document wrapper never enters the record.</li>
         <li>A fragment with no <code>html</code> and no <code>body</code> element &mdash; a bare anchor &mdash; is returned unchanged, so a fragment written before the wrapper existed still composes byte-identically.</li>
+        <li>A full document that carries a doctype, an <code>html</code> element or a <code>head</code> element but no <code>body</code> and no <code>main</code> &mdash; content sitting directly under <code>html</code> &mdash; is composed after removing the doctype, the whole <code>head</code> element and the <code>html</code> open and close tags, so its <code>head</code> metas cannot re-enter the record either.</li>
         <li>A record with no fragments still composes to its own bytes exactly: the no-fragment early return is untouched.</li>
       </ul>
       <p>The fragment anchor the composed record is expected to carry is its body content, which is kept; only the wrapper is dropped.</p>

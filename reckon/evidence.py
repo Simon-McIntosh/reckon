@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from bs4 import BeautifulSoup
+from bs4.element import Doctype
 
 from reckon import _plan_html, ledger
 from reckon.resources import ResourceCollision, resolve_resource
@@ -467,19 +468,41 @@ def _fragment_body_bytes(fragment: Path) -> bytes:
     content a reader is meant to see: the children of the fragment's ``main``
     element when it has one, else the children of its ``body``.
 
-    A fragment with no ``html`` and no ``body`` element — a bare fragment
-    anchor — is returned unchanged, so a fragment written before the document
-    wrapper existed composes exactly as it did.
+    A fragment can carry a document wrapper without ever naming a ``body``: the
+    content sits directly under ``html``. For that shape the wrapper is dropped
+    a level higher — the doctype, the whole ``head`` element and the ``html``
+    open and close tags are removed and what remains is composed, so the metas
+    the ``head`` held still cannot re-enter the record.
+
+    A fragment with none of those — a bare fragment anchor — is returned
+    unchanged, so a fragment written before the document wrapper existed
+    composes exactly as it did.
     """
 
     raw = fragment.read_bytes()
     soup = BeautifulSoup(raw, "html.parser")
-    if soup.find("body") is None and soup.find("html") is None:
+    body = soup.find("body")
+    main = soup.find("main")
+    if body is not None or main is not None:
+        container = main if main is not None else body
+        return "".join(str(child) for child in container.children).encode("utf-8")
+
+    html_element = soup.find("html")
+    head = soup.find("head")
+    if html_element is None and head is None and not _carries_doctype(soup):
         return raw
-    container = soup.find("main") or soup.find("body")
-    if container is None:
-        return raw
-    return "".join(str(child) for child in container.children).encode("utf-8")
+    scope = html_element if html_element is not None else soup
+    return "".join(
+        str(child)
+        for child in scope.children
+        if getattr(child, "name", None) != "head" and not isinstance(child, Doctype)
+    ).encode("utf-8")
+
+
+def _carries_doctype(soup: BeautifulSoup) -> bool:
+    """Return whether a parsed document holds a doctype declaration node."""
+
+    return soup.find(string=lambda node: isinstance(node, Doctype)) is not None
 
 
 def compose_landed_record(
