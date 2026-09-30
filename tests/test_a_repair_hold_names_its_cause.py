@@ -292,6 +292,57 @@ def test_a_repair_held_by_an_exclusion_names_the_exclusion(
     assert recovery.REVIEW_EXCLUDED_BACKENDS_KEY in recorded["reason"]
 
 
+# A forty-hex citation that names no object, the shape a worker writes when it
+# expands an abbreviation by hand. Kept distinct from any real id so the case
+# cannot pass by resolving to something that happens to exist.
+FABRICATED_REVISION = "3b945ad92310e71ffdbfe2d1e80b7a1b0dba2b0d"
+
+
+def _seed_repo(tmp_path: Path) -> tuple[Path, str]:
+    """A one-commit repository, so a resolvable citation has an object to name."""
+    repo = tmp_path / "seed"
+    repo.mkdir()
+    (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
+    for arguments in (
+        ["init", "-q", "-b", "main"],
+        ["config", "user.email", "worker@example.invalid"],
+        ["config", "user.name", "Worker"],
+        ["add", "seed.txt"],
+        ["commit", "-q", "-m", "chore: seed"],
+    ):
+        subprocess.run(["git", *arguments], cwd=repo, check=True, capture_output=True)
+    head = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    return repo, head
+
+
+def test_a_manifest_citation_that_names_no_object_is_not_propagated(
+    tmp_path: Path,
+) -> None:
+    """A fabricated revision is dropped by the resolver, and a real one is kept.
+
+    A manifest's ``commits:`` field is free text, and a worker that expands an
+    abbreviation by hand can write a revision that names no object. Every reader
+    that canonicalises the field — the remedy a refusal prints, the receipt a
+    promotion carries — must resolve each entry in the run's own tree rather
+    than pass the text through, or it hands on a citation the next reader cannot
+    open. The control arm keeps a resolvable citation, so an entry naming
+    nothing is dropped as unresolvable rather than every entry being dropped.
+    """
+    repo, head = _seed_repo(tmp_path)
+
+    assert recovery._canonical_commits(repo, [head]) == [head]
+    assert recovery._canonical_commits(repo, [FABRICATED_REVISION]) == []
+    assert recovery._canonical_commits(repo, [f"{head}, {FABRICATED_REVISION}"]) == [
+        head
+    ]
+
+
 def test_a_spawnable_lane_still_dispatches_the_composition(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
