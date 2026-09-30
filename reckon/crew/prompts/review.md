@@ -97,8 +97,19 @@ VERDICT <item>: <one sentence saying what you read and what you found>
 CALL_SITES: <comma-separated production call sites, or none>
 SCORE <dimension>: <integer 0..20>
 JUSTIFICATION <dimension>: <one sentence citing a path or a line>
-FINDING <file>:<line> <what is wrong and why it matters>
+FINDING <file>:<line> <severity>: <what is wrong and why it matters>
 ```
+
+**Say whether each finding blocks.** A finding opens with one of the two
+declared severities and a colon:
+
+- `blocking` — the defect has to be repaired before this node can land.
+- `follow-on` — the defect is worth recording and does not hold the node.
+
+A finding that opens with neither word carries no severity. It is recorded
+without one rather than defaulted to either, so a judgement you did not make is
+never read as one you did. Use a severity outside these two and the word stays
+in your text as prose, where no gate can read it.
 
 **Every checklist item needs a verdict.** A summary is not a substitute for
 one: an omitted item reads exactly like a checked one, which is how a review
@@ -141,5 +152,5 @@ SCORE durability: 19
 JUSTIFICATION durability: tests/test_review_scoring.py fails if an out-of-range score is clamped instead of refused.
 SCORE fit: 16
 JUSTIFICATION fit: the module follows the surrounding style of reckon/crew/summary.py:11.
-FINDING reckon/crew/query.py:120 an out-of-scope helper was added to a file the node was not fenced to write.
+FINDING reckon/crew/query.py:120 follow-on: an out-of-scope helper was added to a file the node was not fenced to write.
 ```

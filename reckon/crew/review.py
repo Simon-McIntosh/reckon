@@ -37,6 +37,12 @@ left absent so a missing measurement cannot be mistaken for a measured zero.
 A label with no usable value is also left absent, but carries a machine-readable
 emission state so a partial answer is not confused with an omitted question.
 
+A finding may state whether it blocks the node's landing, by opening with one
+of the declared severities and a colon. The value is recorded beside the
+finding's file, line and text; a finding that states none carries no severity
+field, because a defaulted severity is a judgement nobody made and the
+distinction a gate reads is exactly the one a default would erase.
+
 It records the revisions the review read under the canonical pair
 ``reviewed_base_sha`` and ``reviewed_head_sha``. A review is evidence about a
 diff between two revisions: once a repair lands, a stored verdict describes
@@ -97,6 +103,16 @@ REVIEW_ITEMS: tuple[str, ...] = (
     "diff",
     "call_sites",
 )
+
+# ── The severity a finding can state ────────────────────────────────────────
+# A finding may say whether it blocks the node's landing, which is the
+# distinction a gate reading findings has to make. The vocabulary is declared
+# here once and mirrored in the emission form in prompts/review.md, held by the
+# same falsifier that holds the dimension names. The blocking value is named on
+# its own because a gate that acts on blocking findings alone compares against
+# that name rather than against the literal it happens to hold.
+FINDING_SEVERITIES: tuple[str, ...] = ("blocking", "follow-on")
+BLOCKING_FINDING_SEVERITY = "blocking"
 
 # ── The plan rubrics ────────────────────────────────────────────────────────
 # A plan review reads a plan's authored content before it is built; a plan
@@ -243,6 +259,11 @@ def load_plan_design_review_prompt() -> str:
 #     SCORE <dimension>: <integer 0..20>
 #     JUSTIFICATION <dimension>: <one sentence citing a path or a line>
 #     FINDING <file>:<line> <what is wrong and why it matters>
+#     FINDING <file>:<line> <severity>: <what is wrong and why it matters>
+# The second finding form says whether the defect blocks the node's landing; the
+# severity is one of the declared values above. A finding that states no
+# severity carries no ``severity`` field: a defaulted one would be a judgement
+# nobody made, which is the state the gate exists to distinguish.
 # Lines in any other shape are ignored, so the reviewer may surround the
 # emitted lines with prose without breaking the parse.
 
@@ -265,6 +286,27 @@ def _as_int(text: str) -> int | None:
         return int(text)
     except ValueError:
         return None
+
+
+_DECLARED_SEVERITIES = frozenset(FINDING_SEVERITIES)
+
+
+def _stated_severity(text: str) -> str | None:
+    """Return the declared severity a finding's text states, or ``None``.
+
+    A finding states its severity by opening with one of the declared values
+    and a colon. The word is matched case-insensitively and recorded in its
+    declared spelling. A word outside the vocabulary states nothing this parser
+    can read, so it stays where the reviewer wrote it — in the text — and no
+    severity is recorded: a guess would put a judgement in the record that
+    nobody made. The text itself is never rewritten, so a finding parses to the
+    same ``file``, ``line`` and ``text`` it parsed to before this slot existed.
+    """
+    word, separator, _ = text.partition(":")
+    if not separator:
+        return None
+    word = word.strip().lower()
+    return word if word in _DECLARED_SEVERITIES else None
 
 
 def parse_review(
@@ -297,7 +339,9 @@ def parse_review(
     - ``call_sites_emission`` — ``"empty"`` when the reviewer emitted the
       label but supplied no site, whitespace, or only separators. The count
       remains absent in this state because the line measured nothing.
-    - ``findings`` — a list of ``{"file", "line", "text"}``.
+    - ``findings`` — a list of ``{"file", "line", "text"}``, each carrying a
+      ``severity`` key only when the finding stated one of the declared values;
+      a finding that states none is recorded without the key, never defaulted.
     - ``total`` — the arithmetic sum of the parsed scores when every dimension
       is present, otherwise ``None``. The total is never computed over a
       subset: a total taken over fewer dimensions is a lower score
@@ -392,9 +436,11 @@ def parse_review(
             ref, finding_text = match.group(1), match.group(2).strip()
             if ":" in ref:
                 file_path, _, line_ref = ref.rpartition(":")
-                findings.append(
-                    {"file": file_path, "line": line_ref, "text": finding_text}
-                )
+                finding = {"file": file_path, "line": line_ref, "text": finding_text}
+                severity = _stated_severity(finding_text)
+                if severity is not None:
+                    finding["severity"] = severity
+                findings.append(finding)
             continue
     absent = [dim for dim in REVIEW_DIMENSIONS if dim not in scores]
     absent_items = [item for item in REVIEW_ITEMS if item not in item_verdicts]
