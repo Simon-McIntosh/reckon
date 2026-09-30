@@ -75,7 +75,7 @@ def _write_pointer(
     run_id: str,
     *,
     role: str = "implement",
-    brief: str = "/tmp/brief.md",
+    brief: str = "brief.md",
     brief_sha256: str = BRIEF_SHA,
     brief_path: str = "",
 ) -> None:
@@ -179,3 +179,86 @@ def test_an_unplanned_reason_lands_on_the_row(repository: Path) -> None:
     row = _ledger_row(repository, run_id)
     assert row["unplanned_reason"] == "a measurement changes no plan's product"
     assert row["plan_link"] is None
+
+
+def _invoke_complete_cli(run_id: str, gate_log: Path, *extra: str):
+    """Drive ``crew complete`` through its command line, as a coordinator does.
+
+    The direct ``crew.complete`` calls above exercise the guard, but they leave
+    the option forwarding in ``reckon/cli.py`` uncovered: deleting the
+    ``--plan-link``/``--unplanned-reason`` pass-through would keep every one of
+    them green. This runs the command as written so the flags are read from the
+    argv a coordinator actually types.
+    """
+    from click.testing import CliRunner
+
+    from reckon.cli import main as cli_main
+
+    return CliRunner().invoke(
+        cli_main,
+        [
+            "crew",
+            "complete",
+            "--run",
+            run_id,
+            "--gate",
+            "passed",
+            "--outcome",
+            "the brief landed",
+            "--gate-command",
+            "probe check",
+            "--gate-exit-status",
+            "0",
+            "--gate-log-path",
+            str(gate_log),
+            "--waive-live-run",
+            _PLUMBING_WAIVER,
+            *extra,
+        ],
+    )
+
+
+def test_the_cli_refuses_an_implement_brief_run_without_an_owner(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260930T080400000000-node-a"
+    _write_pointer(repository, run_id, role="implement")
+    gate_log = tmp_path / "gate.log"
+    gate_log.write_text("probe check passed\n", encoding="utf-8")
+
+    refused = _invoke_complete_cli(run_id, gate_log)
+
+    assert refused.exit_code != 0
+    assert "--plan-link" in refused.output
+    assert "--unplanned-reason" in refused.output
+    assert pointer_path(run_id).exists()
+
+
+def test_the_cli_plan_link_reaches_the_row(repository: Path, tmp_path: Path) -> None:
+    run_id = "r-20260930T080500000000-node-a"
+    _write_pointer(repository, run_id, role="implement")
+    gate_log = tmp_path / "gate.log"
+    gate_log.write_text("probe check passed\n", encoding="utf-8")
+
+    promoted = _invoke_complete_cli(run_id, gate_log, "--plan-link", "plan-a")
+
+    assert promoted.exit_code == 0, promoted.output
+    assert _ledger_row(repository, run_id)["plan_link"] == "plan-a"
+
+
+def test_the_cli_unplanned_reason_reaches_the_row(
+    repository: Path, tmp_path: Path
+) -> None:
+    run_id = "r-20260930T080600000000-node-a"
+    _write_pointer(repository, run_id, role="implement")
+    gate_log = tmp_path / "gate.log"
+    gate_log.write_text("probe check passed\n", encoding="utf-8")
+
+    promoted = _invoke_complete_cli(
+        run_id, gate_log, "--unplanned-reason", "a probe changes no plan"
+    )
+
+    assert promoted.exit_code == 0, promoted.output
+    assert (
+        _ledger_row(repository, run_id)["unplanned_reason"] == "a probe changes no plan"
+    )

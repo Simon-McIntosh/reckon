@@ -148,6 +148,14 @@ RECORD_FIELDS = (
     "clone_matches",
     "review_tier",
     "unreconciled_override",
+    # A brief run's authority in place of a plan section: the digest and stored
+    # path of the brief it read, the plan an unplanned implement landing changed,
+    # and the reason it changed none. All three ride every row, null when the run
+    # needed neither, so a reader can tell an unrecorded value from one never
+    # asked for.
+    "brief",
+    "plan_link",
+    "unplanned_reason",
 )
 
 
