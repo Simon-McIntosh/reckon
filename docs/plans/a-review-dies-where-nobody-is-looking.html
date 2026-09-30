@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="77">
+<meta name="plan-version" content="78">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192,06a008fb,3263f5a1">
-<meta name="plan-impl" content="0.75">
+<meta name="plan-impl" content="0.88">
 </head>
 <body>
   <main class="plan-doc">
@@ -492,10 +492,16 @@
     <pre class="r-fu-prompt">/reckon-build a-review-dies-where-nobody-is-looking §4</pre>
     <p class="r-fu-outcome">All three items landed, each with its field case replayed and its control reddening. (1) An in-harness backend never carries a review (5c6db9202, review 92), and a held review or repair names the rule that left it no lane (d2d4eacb8, review 95; ae23d8b7e, review 95). The lane-pause arm stays with a-crew-process-ends-with-its-owner §9. (2) check-manifest accepts a review's store record and its .at sibling and asks no commit of a review (8a3b4190d, review 94). Promotion now judges the same grant with the same containment rule (93c757603, review 92; whole tests/ arms 0 added). (3a/3b) The delivered_at assertion can fail and the template-status clause can fire (c35fed54c, review 96). §1's correlation ran (3603de359, review 95): of 392 review/xhigh deaths in 1324 attempts, 130 carry an exit record and every one was signalled (SIGTERM 91, SIGKILL 39); 262 carry none.</p>
     </article>
-<article class="r-fu" data-id="f-ardwnil-003" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-30" data-recommends-skill="/reckon-build a-review-dies-where-nobody-is-looking §5" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ardwnil-003" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-30" data-recommends-skill="/reckon-build a-review-dies-where-nobody-is-looking §5" data-resolved-at="2026-09-30T19:34:57+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Keep a rollback&#x27;s cause, settle whether sessions still carry over, and run the effort experiment</h4>
     <div class="r-fu-body"><p>In order. <strong>§5</strong>: confirm the rollback still replaces the registration error with a worktree-claim refusal, then chain it and skip the claim check for the pointer the same call published. <strong>§8</strong>: measure inherited first-turn context on resumed sessions since new-work-gets-a-new-worker landed; a demonstrated zero closes it. <strong>§2</strong>: re-dispatch reviews at effort high on the local lane and compare the death rate against the xhigh population. <strong>§9</strong>: the flight-schema slot for effective_input_window can land now; the value for clive (about 200k against the 480k declared) changes fleet routing and waits for the lead. §1 is met and can be collapsed.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-dies-where-nobody-is-looking §5</pre>
+    <p class="r-fu-outcome">§5 landed at fcbc80e81 (review 93): a dispatch rollback surfaces the error that started it, and a capture-only roster no longer blocks a registration. A repair of its one finding, that raising from the rollback failure overwrites a cause the original already carried, is in flight. §8 is closed by measurement: after session reuse was keyed to the run's own task, 0 of 1,439 local dispatches and 0 of 75 codex dispatches inherited another task's session, against 270 of 1,828 local before (778333b1d, review 91). §2: the census already held both cells. Reviews at high died 1 of 46 against 392 of 1,333 at xhigh, and the gap held on every recorded confounder (report review-effort-confounders, review 87). The lead switched review effort to high in flight configuration (dotfiles f3f653a) instead of running the re-dispatch experiment. §9: the effective_input_window slot landed at dd916e58e (review 94), and the lead set clive to its declared 480000 (dotfiles cb070f4).</p>
+    </article>
+<article class="r-fu" data-id="f-ardwnil-004" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-30" data-recommends-skill="/reckon-build a-review-dies-where-nobody-is-looking §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Measure the review death rate after the switch to high, and land the rollback-chain repair</h4>
+    <div class="r-fu-body"><p>Once at least 60 local-lane reviews have run at effort high since dotfiles f3f653a (2026-09-30 about 18:36Z), re-run <code>docs/research/scripts/scan_local_lane_deaths.py</code> and write its after block, comparing the review death rate against the 29.4% xhigh before-rate. That is §2's experiment run as an after-window and §9's first after-rate. Land the repair of the §5 finding (keep the original exception's own cause when attaching the rollback failure). The whole-suite comparison of §5's merge against main (rollback-population) reports as the integration check. §1 is met and can be collapsed. Lowering clive's effective window below 480000 stays a lead decision.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-dies-where-nobody-is-looking §2</pre>
     </article>
 </section>
 
@@ -718,7 +724,7 @@
     <div class="r-comment-body"><p>reviewed r-20260930T165256817849-a-rollback-keeps-its-cause at base bcaf26dcf9f61ea6dd0832f04c28495fd0475a0c / head 153767e488bd38ab0d3764ca7435d02f00e02b37 and stored a parsed record at both granted paths, five dimensions scored in 0..20 (goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 18; total 93, no dimension absent), item_aggregate 6/6, call_sites five production sites, one finding, and added_failure_count 0 over added_failure_ids [] derived from the reviewed run's own gate logs with the positive control and the mutation both recorded.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T165256817849-a-rollback-keeps-its-cause" data-who="reckon-build" data-when="2026-09-30T17:39:01.520Z">
-    <div class="r-comment-body"><p>A dispatch&#x27;s rollback now surfaces the launch/registration error that started it, with its own removal failure attached as the cause and printed, and a capture-only roster no longer refuses a member registration while a real member change still does — gate 2 failed/102 passed at base bcaf26dcf, 104 passed at head 3f05a8815, declared-mutation red log 1 failed/4 passed; fragment docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-rollback-keeps-its-cause.html.</p></div>
+    <div class="r-comment-body"><p>A dispatch's rollback now surfaces the launch/registration error that started it, with its own removal failure attached as the cause and printed, and a capture-only roster no longer refuses a member registration while a real member change still does — gate 2 failed/102 passed at base bcaf26dcf, 104 passed at head 3f05a8815, declared-mutation red log 1 failed/4 passed; fragment docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-rollback-keeps-its-cause.html.</p></div>
 </div>
 </section>
 </main>
