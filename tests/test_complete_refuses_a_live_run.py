@@ -4,8 +4,11 @@ Promotion deletes the run's live pointer, so a run promoted while its own
 process is still alive continues with no pointer, no follower row and no
 obligation to any coordinator until it exits on its own. The guard fires only
 on the conjunction that makes that harm real: the recorded process is alive and
-its manifest states a status that is not terminal. A run whose process has
-exited, or whose manifest reads complete, blocked or failed, promotes as before.
+no manifest written for this attempt states a terminal status -- which covers a
+manifest still reading a status that is not terminal, a terminal status written
+before this attempt was launched, and no manifest of this attempt's own at all.
+A run whose process has exited, or whose own manifest reads complete, blocked or
+failed, promotes as before.
 """
 
 from __future__ import annotations
@@ -230,20 +233,32 @@ def test_a_waiver_with_no_live_worker_is_refused(
     assert ledger.runs(PROJECT, root=repository) == []
 
 
-def test_a_live_run_with_no_manifest_is_left_to_recovery(
+def test_a_live_run_with_no_manifest_is_refused_unless_the_waiver_is_given(
     repository: Path, tmp_path: Path
 ) -> None:
-    """A live process with no manifest states no status, so the guard is silent."""
+    """A live process that has delivered nothing is the guarded case itself."""
     base = _git(repository, "rev-parse", "HEAD")
     run_id = "r-live-no-manifest"
     proc = _spawn_stub()
+    reason = "the pointer is being retired by hand; the live worker may be orphaned"
     try:
         _pointer(repository, run_id, base, pid=proc.pid)
 
-        stored = _promote(repository, run_id)["record"]
+        with pytest.raises(crew.CrewError) as refusal:
+            _promote(repository, run_id)
 
-        assert stored["gate"] == "not-run"
-        assert "live_run_waiver" not in stored
+        message = str(refusal.value)
+        assert str(proc.pid) in message
+        assert "no manifest written by this attempt is on file" in message
+        assert pointer_path(run_id).is_file()
+        assert ledger.runs(PROJECT, root=repository) == []
+
+        stored = _promote(repository, run_id, live_run_waiver=reason)["record"]
+
+        assert stored["live_run_waiver"]["reason"] == reason
+        assert stored["live_run_waiver"]["status"] == ""
+        assert stored["live_run_waiver"]["pid"] == str(proc.pid)
         assert not pointer_path(run_id).exists()
+        assert len(ledger.runs(PROJECT, root=repository)) == 1
     finally:
         _stop_stub(proc)
