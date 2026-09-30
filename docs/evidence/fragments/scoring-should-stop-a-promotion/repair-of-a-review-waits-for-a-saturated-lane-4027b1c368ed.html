@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A held review's printed action names the hold, not the withheld lane">
+  <meta name="plan-summary" content="_composed_review_lane fell back to ['--local'] whenever the ordering yielded no candidate, which is the saturated-local-lane hold itself, so the retypeable command printed for a held review named the very lane the executed path was withholding. The withheld selection now composes no lane; _review_dispatch_action prints the hold, naming the saturated lane and the figures its own document published. Gate 50 passed, exit 0 against a focused set; the declared mutation reverts the product change and reddens the named check (1 failed, 1 passed, exit 1).">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <title>A held review's printed action names the hold, not the withheld lane | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A held review's printed action names the hold, not the withheld lane</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p><code>_composed_review_lane</code> returned <code>['--local']</code> whenever
+        <code>_review_lane_candidates</code> yielded nothing. That empty ordering is exactly the
+        <code>awaiting-lane</code> hold the saturated-lane repair introduces, so the display-only
+        command printed for a held review named the lane the executed path had withheld, and a
+        reader who retyped it would send the review onto the saturated lane.</p>
+      <p>Reproduced at base <code>4027b1c368</code>: a saturated local lane (<code>running 30</code>
+        against <code>concurrent_requests 22</code>) yields <code>_review_lane_plan == ([], ('alpha',
+        30, 22))</code>, <code>_composed_review_lane == ['--local']</code>, and the printed action
+        ends in <code>--local</code>.</p>
+    </section>
+
+    <section id="change">
+      <h2>The change</h2>
+      <p>In <code>reckon/crew/recovery.py</code>, <code>_composed_review_lane</code> consults
+        <code>_review_lane_plan</code> and returns <code>None</code> for a withheld selection rather
+        than the local spelling. <code>_review_dispatch_argv</code> refuses to compose without a
+        lane, and <code>_review_dispatch_action</code> prints the hold via
+        <code>_review_lane_hold_action</code>, which names the saturated lane and both figures it
+        published. A resolvable selection still composes a healthy dispatch, so the fallback does not
+        become a silent refusal of every printed command.</p>
+    </section>
+
+    <section id="gate">
+      <h2>The gate</h2>
+      <p><code>tests/test_a_review_waits_for_a_saturated_lane.py</code> and seven neighbouring
+        suites that drive the same reflex: <strong>50 passed</strong>, exit 0.</p>
+    </section>
+
+    <section id="negative-control">
+      <h2>The negative control</h2>
+      <p>Declared mutation, the log's first line verbatim: <em>revert each answering commit in turn
+        and confirm the check the finding names fails without it.</em> Reverting
+        <code>reckon/crew/recovery.py</code> to base while keeping the new test reddens
+        <code>test_a_held_review_prints_the_hold_not_the_saturated_lane</code> with
+        <code>assert ['--local'] is None</code> (<strong>1 failed, 1 passed, exit 1</strong>); the
+        healthy-lane case passes unchanged, which is the positive control.</p>
+    </section>
+  </main>
+</body>
+</html>
