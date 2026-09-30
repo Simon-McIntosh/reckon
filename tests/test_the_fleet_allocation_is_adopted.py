@@ -22,6 +22,7 @@ from __future__ import annotations
 import importlib
 import json
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -271,3 +272,35 @@ def test_a_backend_declaring_no_placement_is_untouched_on_resume(
     assert _step_job_id(plan.argv) is None
     assert _allocation_requests() == 0
     assert _asked("squeue") == [], "an unplaced backend asks the scheduler nothing"
+
+
+def test_an_unrunnable_query_client_reads_as_no_adoption(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A queue client that will not run is no adoption, not a leaked OSError.
+
+    Adoption asks the queue through the same subprocess seam the mint branch
+    uses, and a client that cannot be run raises before any row is read. That
+    must reach the caller as no adoption — the mint branch then holds the
+    reservation — rather than as a raw FileNotFoundError out of
+    ``ensure_reservation``, the same reading a query that fails already gets.
+    """
+    _isolate(monkeypatch, tmp_path)
+    _publish_fleet_record(tmp_path)
+    client_calls: list[str] = []
+
+    def client(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        client_calls.append(argv[0])
+        if argv[0] == "squeue":
+            raise FileNotFoundError(2, "No such file or directory", argv[0])
+        return subprocess.CompletedProcess(
+            argv, 0, stdout="salloc: Granted job allocation 1274051\n", stderr=""
+        )
+
+    result = placement.ensure_reservation(project="alpha", session="s-1", runner=client)
+
+    assert client_calls[:2] == ["squeue", "salloc"], "the queue is asked, then minted"
+    assert result["reason"] == "held"
+    assert result["job_id"] == "1274051"
+    assert result.get("adopted") is not True
+    assert placement.read_reservation()["job_id"] == "1274051"

@@ -479,7 +479,10 @@ def _adopt_live_fleet_allocation(
     the supervisor-running allocation apart from any other job carrying the
     comment. The shape is read from the scheduler, so the published record
     describes the size the adopted job was actually submitted with, and nothing
-    is submitted here.
+    is submitted here. A scheduler that cannot be asked — a client that will not
+    run, or a query that fails — is not an adoption: None is returned so the
+    caller holds the reservation its usual way, the same reading a failed query
+    already gets.
     """
     from reckon.crew import fleet_node
 
@@ -488,7 +491,7 @@ def _adopt_live_fleet_allocation(
         return None
     try:
         jobs = fleet_node.query_jobs(fleet_node.fleet_size().account, runner=runner)
-    except fleet_node.FleetNodeError:
+    except (fleet_node.FleetNodeError, OSError, subprocess.SubprocessError):
         return None
     job = fleet_node.find_allocation(jobs, preferred=recorded)
     if job is None or str(job.get("jobid", "")).strip() != recorded:
