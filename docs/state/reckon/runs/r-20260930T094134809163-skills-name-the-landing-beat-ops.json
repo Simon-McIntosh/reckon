@@ -85,6 +85,35 @@
     "reason": "corrective-run:resume",
     "verdict": "exempt"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "changed_paths_differing": null,
+    "checkout_descends_from_integrated_revision": false,
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "a904c6fb0c18a4f82522b664b634ff422bea3dfb",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_skill_contracts.py::test_no_routing_identifier_leaks_into_skills_or_source",
+        "tests/test_skill_contracts.py::test_ship_dispatch_exit_table_matches_cli_branches"
+      ],
+      "integrated_revision": "a904c6fb0c18a4f82522b664b634ff422bea3dfb",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision a904c6fb0c18: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/vg-bt-lb4-c0928396 tests/test_skill_contracts.py tests/test_skill_contract_parity.py tests/test_mcp_vocabulary_is_complete.py tests/test_edit_plan_collapse_section.py tests/test_edit_plan_append_evidence.py tests/test_monitor_invocation_docs.py tests/test_edit_plan_section_writes.py",
+    "gate_command_source": "stored",
+    "integrated_revision": "a904c6fb0c18a4f82522b664b634ff422bea3dfb",
+    "integrated_verdict": "failed",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T094134809163-skills-name-the-landing-beat-ops/verify-gate.log",
+    "ran": true,
+    "reason": null,
+    "timed_out": false,
+    "worktree_roots_rewritten": []
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
