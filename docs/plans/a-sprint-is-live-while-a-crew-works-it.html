@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-commits" content="6c92861d,0ad5a171">
 <meta name="plan-impl" content="0.9">
 </head>
@@ -330,7 +330,10 @@
     <div class="r-comment-body"><p>Independent review of r-20260929T204340453599-summaries-list-live-and-recent-sprints stored parsed with all five dimensions scored 0..20 (goal_fidelity 14, evidence 15, scope_discipline 16, durability 13, fit 12; total 70) and added_failure_count 0 with no added failure ids, over three findings: the duplicated module-level CLOSED_SPRINT_STATUSES at reckon/roadmap.py:1116 is rebound at :1645 so the summary never uses its own two-member closed set; reckon/mcp.py:2094 leaves summary["sprints"] an int for a sprint-less project and a list otherwise; and the reviewed run's own head gate-log header names the base revision 192aa9a4 rather than the reviewed head 685657cbc.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T204340453599-summaries-list-live-and-recent-sprints" data-who="reckon-build" data-when="2026-09-30T08:06:40.477Z">
-    <div class="r-comment-body"><p>Discovery and roadmap summaries share one Python-built sprint row list on the summary_sprints key, ordered live then open then recently closed within sprint_recent_days (default 14, flight config); archived and closed sprints stay in the open bucket per the section, discovery&#x27;s sprints key stays an int count; three mutations each turn a new assertion red, and the scoped suites held 143 passed at the base and 150 at the head with zero added failures by id.</p></div>
+    <div class="r-comment-body"><p>Discovery and roadmap summaries share one Python-built sprint row list on the summary_sprints key, ordered live then open then recently closed within sprint_recent_days (default 14, flight config); archived and closed sprints stay in the open bucket per the section, discovery's sprints key stays an int count; three mutations each turn a new assertion red, and the scoped suites held 143 passed at the base and 150 at the head with zero added failures by id.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260930T080724144935-review-of-summaries-list-live-and-recent-sprints" data-who="reckon-build" data-when="2026-09-30T08:32:54.480Z">
+    <div class="r-comment-body"><p>Independent review of r-20260929T204340453599-summaries-list-live-and-recent-sprints at head e0f9caf17 scores goal_fidelity 18, evidence 16, scope_discipline 19, durability 18, fit 16 for a total of 87 on a parsed record with two findings — the landing record&#x27;s stale test figures and a duplicated recent-days resolver — while the three defects the first review raised are repaired and re-verified at this head.</p></div>
 </div>
 </section>
   </main>
