@@ -573,11 +573,9 @@ def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, st
     project = str(record.get("project") or "")
     if not run_id or not project:
         return None, ""
-    head = _run_head_for_review(record)
+    head, tree = _review_head_and_tree(record)
     try:
-        review, _stale = select_review_for_head(
-            project, run_id, head, tree=_review_tree(record)
-        )
+        review, _stale = select_review_for_head(project, run_id, head, tree=tree)
     except (OSError, ValueError) as exc:
         return {}, str(exc)
     if review is not None and not isinstance(review, dict):
@@ -1097,6 +1095,30 @@ def _record_carried_head(record: Mapping[str, Any]) -> str:
     return _object_id(str(record.get("head") or "").strip())
 
 
+def _review_head_and_tree(
+    record: Mapping[str, Any],
+) -> tuple[str, Path | None]:
+    """The head a review of this run is about, and the tree that sourced it.
+
+    The head and the tree have to come from one source: a legacy review record
+    naming no revision has the revision it read reconstructed from the tree's
+    history, so a tree that did not supply the head would reconstruct against a
+    history the head does not belong to and the two sources could disagree.
+    While the worktree is readable it supplies both. Once it has been reclaimed
+    the run's own record supplies the head, and there is no tree left to
+    reconstruct against — ``None`` is returned rather than the shared checkout,
+    whose HEAD is not this run's head. A reclaimed worktree whose record names
+    no head of its own leaves the head to the repository fallback, the only
+    reading left, and the tree then matches it.
+    """
+    worktree_raw = str(record.get("worktree") or "").strip()
+    if worktree_raw and not Path(worktree_raw).is_dir():
+        carried = _record_carried_head(record)
+        if carried:
+            return carried, None
+    return _reviewed_run_head(record), _review_tree(record)
+
+
 def _run_head_for_review(record: Mapping[str, Any]) -> str:
     """The revision a review of this run is about: worktree head, or record head.
 
@@ -1105,14 +1127,11 @@ def _run_head_for_review(record: Mapping[str, Any]) -> str:
     the shared main checkout — whose HEAD is whatever that repository carries
     now rather than the revision this run reached, so a composed dispatch and a
     dropped-lane comparison would both key on the wrong commit. The run's own
-    record then supplies the head instead. A record naming no worktree at all
-    still resolves through its repository, which for such a record is the tree
-    it ran in.
+    record then supplies the head instead. A record that names no head of its
+    own, or names no worktree at all, still resolves through its repository,
+    which for such a record is the only tree left to read.
     """
-    worktree_raw = str(record.get("worktree") or "").strip()
-    if not worktree_raw or Path(worktree_raw).is_dir():
-        return _reviewed_run_head(record)
-    return _record_carried_head(record)
+    return _review_head_and_tree(record)[0]
 
 
 def _review_attempt_withdrawn_before_launch(run_id: str) -> bool:
