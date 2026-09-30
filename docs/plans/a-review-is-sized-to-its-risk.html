@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.65">
@@ -276,7 +276,10 @@
     <div class="r-comment-body"><p>review of r-20260930T074334690499-repair-starts-at-the-reviewed-head stored at head 91acbe6a72f6627c0d9162a384f3af2cf15c1d9c - 94/100 (goal_fidelity 20, evidence 18, scope_discipline 20, durability 16, fit 20), added_failure_count 0 derived from its own arm-base.log and arm-head.log over the exact 103-file import population, one finding at tests/test_reflex_dispatches_one_repair.py:407.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260930T074334690499-repair-starts-at-the-reviewed-head" data-who="reckon-build" data-when="2026-09-30T08:11:35.586Z">
-    <div class="r-comment-body"><p>dispatch_repair_for_run now cuts the repair worktree from the reviewed head (base=reviewed_head) and keeps every tests/ path in the reviewed run&#x27;s fence in the repair&#x27;s write scope; two new cases through the stubbed dispatch pass, and over the 103-file base/head arms the head adds no failing test id (13 failed / 1203 passed vs 13 failed / 1201 passed, the +2 being the new tests).</p></div>
+    <div class="r-comment-body"><p>dispatch_repair_for_run now cuts the repair worktree from the reviewed head (base=reviewed_head) and keeps every tests/ path in the reviewed run's fence in the repair's write scope; two new cases through the stubbed dispatch pass, and over the 103-file base/head arms the head adds no failing test id (13 failed / 1203 passed vs 13 failed / 1201 passed, the +2 being the new tests).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260930T090940013995-repair-of-repair-starts-at-the-reviewed-head-91acbe6a72f6" data-who="reckon-build" data-when="2026-09-30T09:19:58.613Z">
+    <div class="r-comment-body"><p>test_the_repair_keeps_the_reviewed_runs_test_paths gave its reviewed fence an uncited source path (reckon/crew/new_module.py) beside the cited one, so the assertion at line 407 can now fail for the defect its comment names — reverted fixture passes against a whole-fence composer (1 passed), the strengthened fixture reddens it (1 failed) and passes against the unmutated source (1 passed), with the whole file adding no failure id over clean HEAD (4 failed / 12 passed both sides, identical ids being pre-existing environment failures).</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260928T233552756785-review-of-the-suite-is-declared-and-recorded" data-who="reckon-build" data-when="2026-09-29T00:21:22.662Z">
     <div class="r-comment-body"><p>review stored for r-20260928T223146627061-the-suite-is-declared-and-recorded at cd36faeb against base 348688e8 - total 77 (goal_fidelity 14, evidence 15, scope_discipline 19, durability 13, fit 16), four findings, added_failure_count 0</p></div>
