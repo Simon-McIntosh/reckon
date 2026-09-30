@@ -355,11 +355,31 @@ adds a discovered section as a concrete section rather than a followup.
 | `move` | `target="sprint_item"`, `slug`, `from`, `to` | Index only. Moves item between sprints. |
 | `collapse_section` | `section`, `summary`, `evidence_anchor` | Landing beat: replaces the authored body under the section's `h2` with the landed card, keeps the heading and its id, and sets its declaration to `done`, in one versioned write. |
 | `append_evidence` | `plan`, `anchor`, `title`, `body` | Landing beat: appends one anchored `<section id=anchor>` to that plan's cumulative landing record, creating the record when absent and refusing a duplicate anchor. |
-| `insert_section` | `id`, `title`, `body` | Writes a new `h2` with its typed section record. |
+| `insert_section` | `id`, `title`, `body`, `effort_hours`, `capability`, `links` | Writes a new `h2` with its typed section record. `capability` is the versioned request object; `effort_hours`, `capability` and `links` are required, not defaulted. |
 
 A direct HTML edit of plan state is the exception, not a fourth write path:
 reach for it only when `edit_plan` cannot express the change or is unavailable,
 and announce the reason in your reply under the bypass rule above.
+
+Copyable landing-beat examples, one per op:
+
+<!-- landing-beat-examples -->
+```json
+[
+  {"op": "collapse_section", "section": "s2",
+   "summary": "Landed <code>src/data_prep.py</code>; 11,237 shots encoded in 3h12m, eval MAE 0.04.",
+   "evidence_anchor": "s2"},
+  {"op": "append_evidence", "plan": "my-plan", "anchor": "s2",
+   "title": "§2 — data prep pipeline landed",
+   "body": "<p>Built <code>src/data_prep.py</code>; 11,237 shots in 3h12m; eval MAE 0.04.</p>"},
+  {"op": "insert_section", "id": "s3", "title": "§3 — checkpoint scoring",
+   "body": "<p>Score the checkpoint on the held-out split and record the MAE.</p>",
+   "effort_hours": 1.25,
+   "capability": {"version": "1.0", "class": "general",
+     "requirements": {"reasoning": "standard", "verification": "strict", "risk": "low"}},
+   "links": []}
+]
+```
 
 **Dependency blocking is derived.** Keep a plan's persisted `status` at its
 underlying workflow state (`pending`, `active`, or `in-progress`) when

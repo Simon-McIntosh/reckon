@@ -1,11 +1,17 @@
+import json
 import re
 from pathlib import Path
 from typing import get_args
 
+import pytest
+
+from reckon import _plan_html
+from reckon import mcp as mcp_module
 from reckon._mcp_tools import CrewArgs
 from reckon.cli import main
 from reckon.crew.node import NODE_PROPERTIES
 from reckon.crew.runs import _watch_attach_line
+from reckon.mcp import _OP_VOCAB
 
 
 ROOT = Path(__file__).parents[1]
@@ -651,7 +657,13 @@ def test_ship_has_one_advisory_fleet_size_table() -> None:
 # fields its implementation accepts, alongside the rule that a direct HTML edit
 # is the announced exception. The landing beat is decided mid-write, so the op
 # names have to be in hand before the edit and cannot be read conditionally.
-FIXED_READ_SET_TOKEN_BUDGET = 15_350
+#
+# Raised from 15_350 when §7 added a copyable example per op, including the
+# capability object insert_section's record requires. A coordinator copies one
+# of these into an edit_plan call at the landing beat, so a wrong or partial
+# form returns op_error at exactly the moment there is no time to open the
+# source; a test applies each example verbatim, which is what keeps it correct.
+FIXED_READ_SET_TOKEN_BUDGET = 15_500
 
 
 def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
@@ -1296,30 +1308,42 @@ def test_the_obligations_view_is_the_coordinator_inbox() -> None:
 
 # The landing beat is three edit_plan ops, not a hand edit. A skill that
 # describes the beat in prose but names no op sends a coordinator to a text-mode
-# edit or a direct file write — the hand edit these ops exist to replace — so
-# both skills must name every op and the fields its implementation accepts.
-LANDING_BEAT_OPS = {
-    "collapse_section": ("section", "summary", "evidence_anchor"),
-    "append_evidence": ("plan", "anchor", "title", "body"),
-    "insert_section": ("id", "title", "body"),
-}
+# edit or a direct file write — the hand edit these ops exist to replace.
+LANDING_BEAT_OPS = ("collapse_section", "append_evidence", "insert_section")
+
+# Each op's signature as _OP_VOCAB declares it: "{op:'name', field, field, ...}".
+_OP_SIGNATURE = re.compile(r"\{op:'(?P<op>[a-z_]+)'(?P<fields>[^}]*)\}")
+
+
+def _required_fields(op: str) -> tuple[str, ...]:
+    """The op's required keys, read from the vocabulary it is dispatched under.
+
+    The vocabulary is the agent-facing contract and is held against the
+    dispatch table elsewhere, so reading it here pins the skills to the code
+    rather than to a second copy of the field list that can drift from it.
+    """
+    entry = _OP_VOCAB[op]
+    match = _OP_SIGNATURE.search(entry)
+    assert match is not None, f"_OP_VOCAB entry for {op} names no field signature"
+    assert match.group("op") == op, entry
+    return tuple(
+        field.strip() for field in match.group("fields").split(",") if field.strip()
+    )
 
 
 def test_both_skills_name_the_landing_beat_ops_with_their_fields() -> None:
-    """Both skills name the three landing-beat ops and the fields each takes.
+    """Both skills name every landing-beat op and the fields the code requires.
 
-    The fields are pinned as the exact signature the skill carries, matching
-    what ``reckon/_store.py`` accepts, so the two cannot drift silently. It is
-    an exact signature and not a bare token because "section" and "summary" are
-    ordinary words: a token check would stay green on prose that never showed a
-    caller what to send.
+    The fields are read from _OP_VOCAB, so the check tracks the implementation
+    rather than a copy of it: naming insert_section with three keys, when the
+    record's effort_hours, capability and links are required and not defaulted,
+    returns op_error, and this fails before that reaches a reader.
     """
     ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     edit = normalized((ROOT / "skills" / "reckon-edit" / "SKILL.md").read_text())
 
-    for op, fields in LANDING_BEAT_OPS.items():
-        assert op in ship, f"reckon-build does not name the {op} op"
-        assert op in edit, f"reckon-edit does not name the {op} op"
+    for op in LANDING_BEAT_OPS:
+        fields = _required_fields(op)
 
         signature = "{op:'" + op + "', " + ", ".join(fields) + "}"
         assert signature in ship, (
@@ -1328,5 +1352,102 @@ def test_both_skills_name_the_landing_beat_ops_with_their_fields() -> None:
 
         keys = ", ".join(f"`{field}`" for field in fields)
         assert f"| `{op}` | {keys} |" in edit, (
-            f"reckon-edit op reference does not list {op} with its fields"
+            f"reckon-edit op reference does not list {op} with its required fields"
         )
+
+
+# Each skill prints one copyable example per op between this marker's fence.
+_LANDING_BEAT_EXAMPLES = re.compile(
+    r"<!-- landing-beat-examples -->\s*```json\s*(?P<body>.*?)\s*```", re.DOTALL
+)
+
+
+def _documented_examples(skill_text: str) -> list[dict]:
+    match = _LANDING_BEAT_EXAMPLES.search(skill_text)
+    assert match is not None, "skill documents no landing-beat example block"
+    return json.loads(match.group("body"))
+
+
+def _synthesized_checkout(checkout: Path) -> None:
+    """A minimal plan whose slug, sections and docs dir the examples address.
+
+    Synthesised under the caller's temporary directory, never a real docs tree,
+    so applying the documented examples touches nothing outside the fixture.
+    """
+    path = checkout / "docs" / "plans" / "my-plan.html"
+    path.parent.mkdir(parents=True)
+    authored = (
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        '<meta name="docs-project" content="sample">'
+        '<meta name="reckon-type" content="plan">'
+        '<title>Example plan</title></head><body><main class="plan-doc">'
+        '<h2 id="s1">First section</h2><p>First body.</p>'
+        '<h2 id="s2">Second section</h2><p>Second body.</p>'
+        "</main></body></html>"
+    )
+    declarations = {"s1": "done", "s2": "implementable"}
+    state = {
+        "project": "sample",
+        "type": "plan",
+        "slug": "my-plan",
+        "title": "Example plan",
+        "status": "active",
+        "modified": "2026-09-30",
+        "version": 0,
+        "section_declarations": dict(declarations),
+        "sections": [
+            {
+                "id": section_id,
+                "effort_hours": 1.0,
+                "capability": {
+                    "version": "1.0",
+                    "class": "general",
+                    "requirements": {
+                        "reasoning": "standard",
+                        "verification": "strict",
+                        "risk": "low",
+                    },
+                },
+                "attempts": 0,
+                "status": status,
+                "links": [],
+            }
+            for section_id, status in declarations.items()
+        ],
+    }
+    path.write_text(_plan_html.write_state(authored, state), encoding="utf-8")
+
+
+def _apply_example(checkout: Path, example: dict) -> dict:
+    path = checkout / "docs" / "plans" / "my-plan.html"
+    state = _plan_html.read_state(path.read_text(encoding="utf-8"))
+    return mcp_module._edit_plan_tool(
+        "sample",
+        "my-plan",
+        expected_version=state["version"],
+        checkout_path=str(checkout),
+        doc_type="plan",
+        mode="state",
+        ops=[example],
+    )
+
+
+def test_each_skills_documented_examples_apply(tmp_path: Path) -> None:
+    """The exact example each skill prints applies through edit_plan unchanged.
+
+    An example a reader copies and submits has to work, so this takes each
+    skill's three op objects verbatim, applies each to a plan synthesised under
+    the temporary directory, and requires ok. Dropping a required field from a
+    documented example — capability from insert_section — turns its op into
+    op_error and fails here.
+    """
+    for name in ("reckon-build", "reckon-edit"):
+        text = (ROOT / "skills" / name / "SKILL.md").read_text()
+        examples = _documented_examples(text)
+        assert {example["op"] for example in examples} == set(LANDING_BEAT_OPS)
+
+        checkout = tmp_path / name
+        _synthesized_checkout(checkout)
+        for example in examples:
+            result = _apply_example(checkout, example)
+            assert result["ok"] is True, f"{name}: {example['op']} -> {result}"
