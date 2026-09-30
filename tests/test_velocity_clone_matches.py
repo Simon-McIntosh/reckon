@@ -5,8 +5,9 @@ list of matches the detector found (empty when its functions copied nothing),
 and an unmeasured run carries the ``{"status": "unmeasured", ...}`` marker, so
 the two never read alike. This module drives a synthesised repository whose
 ledger spans two ISO weeks — one run with two matches and one measured-empty run
-in the first week, one unmeasured run in the second — and asserts the per-week
-figures ``velocity.report`` derives from that field. Every expectation is
+in the first week, one unmeasured run and one row carrying no clone report at all
+in the second — and asserts the per-week figures ``velocity.report`` derives from
+that field. Every expectation is
 hand-computable from the fixture, so a counter that folds the unmeasured state
 into the measured-empty count moves a figure and fails the assertion rather than
 passing silently.
@@ -32,6 +33,9 @@ WINDOW_START = velocity.iso(BASE + 1 * DAY)  # 2026-09-02, a Wednesday
 WINDOW_END = velocity.iso(BASE + 12 * DAY)  # 2026-09-13, a Sunday
 PROJECT = "sample"
 BRANCH = "main"
+# A sentinel marking a ledger row that carries no clone_matches key at all, as
+# a promotion predating the field does.
+_UNRECORDED = object()
 
 
 def _iso(day: int, seconds: int = 0) -> str:
@@ -83,8 +87,8 @@ def _match(run_path: str, run_line: int, existing_path: str) -> dict:
     }
 
 
-def _row(run_id: str, day: int, clone_matches: object) -> dict:
-    return {
+def _row(run_id: str, day: int, clone_matches: object = _UNRECORDED) -> dict:
+    row = {
         "run_id": run_id,
         "node": run_id + "-node",
         "plan": "p",
@@ -96,8 +100,10 @@ def _row(run_id: str, day: int, clone_matches: object) -> dict:
         "worker_seconds": 100,
         "lineage": {},
         "attempt": 1,
-        "clone_matches": clone_matches,
     }
+    if clone_matches is not _UNRECORDED:
+        row["clone_matches"] = clone_matches
+    return row
 
 
 def _build_repository(root: Path) -> Path:
@@ -121,6 +127,7 @@ def _build_repository(root: Path) -> Path:
                     8,
                     {"status": "unmeasured", "reason": "no revision pair"},
                 ),
+                _row("r-unrecorded", 9),
             ]
         }
     }
@@ -135,6 +142,7 @@ def _build_repository(root: Path) -> Path:
     _commit(repo, "promote(r-two)", 1, {})
     _commit(repo, "promote(r-empty)", 3, {})
     _commit(repo, "promote(r-unmeasured)", 8, {})
+    _commit(repo, "promote(r-unrecorded)", 9, {})
     return repo
 
 
@@ -160,6 +168,7 @@ def test_clone_matches_are_counted_per_iso_week(report: dict):
         "matches": 2,
         "runs_no_match": 1,
         "runs_unmeasured": 0,
+        "runs_unrecorded": 0,
     }
     assert weeks[1] == {
         "iso_week": "2026-W37",
@@ -168,15 +177,26 @@ def test_clone_matches_are_counted_per_iso_week(report: dict):
         "matches": 0,
         "runs_no_match": 0,
         "runs_unmeasured": 1,
+        "runs_unrecorded": 1,
     }
 
 
 def test_an_unmeasured_run_is_not_a_measured_run_with_no_match(report: dict):
-    # The second week holds one run and it carries the unmeasured marker, which
-    # must land in runs_unmeasured and leave runs_no_match at zero; folding the
-    # two states together moves both and fails here.
+    # The second week holds one run carrying the unmeasured marker, which must
+    # land in runs_unmeasured and leave runs_no_match at zero; folding the two
+    # states together moves both and fails here.
     week = report["clones"]["weeks"][1]
     assert week["runs_unmeasured"] == 1
     assert week["runs_no_match"] == 0
     assert week["runs_with_match"] == 0
     assert week["matches"] == 0
+
+
+def test_a_row_with_no_clone_report_is_unrecorded_not_a_no_match(report: dict):
+    # A promotion predating the clone field carries no clone_matches key, which
+    # capture materialises as None. That run was never measured, so it must land
+    # in runs_unrecorded and leave runs_no_match at zero; counting None as an
+    # empty (measured) list moves both and fails here.
+    week = report["clones"]["weeks"][1]
+    assert week["runs_unrecorded"] == 1
+    assert week["runs_no_match"] == 0

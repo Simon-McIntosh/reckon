@@ -2553,12 +2553,16 @@ def _clone_week_cells(runs, window_start, window_end):
     figures line up with the promotions that week. A run is charged to the week
     it was promoted.
 
-    Three states are kept apart rather than folded together: a run whose
+    Four states are kept apart rather than folded together: a run whose
     function copied an existing one, counted once in ``runs_with_match`` with
     its matches summed into ``matches``; a run the detector measured and found
-    nothing in (``runs_no_match``); and a run no revision pair could be measured
-    for (``runs_unmeasured``), which is a missing reading and never counted as a
-    run that copied nothing.
+    nothing in, an empty list (``runs_no_match``); a run no revision pair could
+    be measured for, the explicit ``{"status": "unmeasured"}`` marker
+    (``runs_unmeasured``); and a run whose row carries no clone report at all,
+    ``None`` (``runs_unrecorded``) — a promotion predating the field. Only an
+    empty list is a measured run that copied nothing; a ``None`` was never
+    measured, so counting it as a no-match would report a measurement nobody
+    took.
     """
     first_day = _window_day(window_start)
     monday = first_day - dt.timedelta(days=first_day.weekday())
@@ -2567,12 +2571,14 @@ def _clone_week_cells(runs, window_start, window_end):
     while monday <= last_day:
         next_monday = monday + dt.timedelta(days=7)
         first, last = monday.isoformat(), next_monday.isoformat()
-        with_match = no_match = unmeasured = matches = 0
+        with_match = no_match = unmeasured = unrecorded = matches = 0
         for row in runs:
             if not first <= row["day"] < last:
                 continue
             report = row.get("clone_matches")
-            if isinstance(report, dict):
+            if report is None:
+                unrecorded += 1
+            elif isinstance(report, dict):
                 unmeasured += 1
             elif report:
                 with_match += 1
@@ -2588,6 +2594,7 @@ def _clone_week_cells(runs, window_start, window_end):
                 "matches": matches,
                 "runs_no_match": no_match,
                 "runs_unmeasured": unmeasured,
+                "runs_unrecorded": unrecorded,
             }
         )
         monday = next_monday
@@ -2660,9 +2667,12 @@ def report(
             "Promoted runs' recorded clone matches per UTC Monday-start week "
             "clipped to the window. runs_with_match counts runs whose function "
             "copied an existing one, matches sums their matches, runs_no_match "
-            "counts runs the detector measured and found nothing in, and "
-            "runs_unmeasured counts runs no revision pair could be measured for "
-            "— a missing reading, never counted as a run that copied nothing."
+            "counts runs the detector measured and found nothing in (an empty "
+            "list), runs_unmeasured counts runs no revision pair could be "
+            "measured for, and runs_unrecorded counts runs whose row carries no "
+            "clone report at all (a promotion predating the field). Each "
+            "missing reading is its own figure; only an empty list is a run "
+            "that copied nothing."
         ),
     }
     # The reckon package is the one whose interface the plan-review rubric
