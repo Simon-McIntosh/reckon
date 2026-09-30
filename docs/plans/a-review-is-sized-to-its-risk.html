@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="71">
+<meta name="plan-version" content="72">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.75">
@@ -399,7 +399,10 @@
     <div class="r-comment-body"><p>an independent review of run r-20260930T224423399297-an-unchanged-run-needs-no-suite-pair is stored at both fence paths against reviewed head ba7c0c749ed18a9681a281213f8f169d558bb69a (base 7132e05199f30edcb626f9b7530d7452e86f5e58) — parsed, five dimensions scored 0..20 (goal_fidelity 19, evidence 17, scope_discipline 18, durability 18, fit 19; total 91), added_failure_count 0 with added_failure_ids [] derived through the store's own reader from the reviewed run's base and head arms, and two follow-on findings.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260930T230821113573-repair-arming-follows-its-run" data-who="reckon-build" data-when="2026-09-30T23:16:36.202Z">
-    <div class="r-comment-body"><p>`reckon.crew.recovery._reviewed_run_suite_command` now returns only the reviewed run&#x27;s recorded pointer `suite_command`; the standing `review.suite` fallback and the `FlightConfigError` refusal branch it needed are removed, so a repair of an unarmed run is unarmed like the run it repairs. `reckon.crew.repair.compose_repair_node` gains a `suite_command` keyword (default empty) that `dispatch_repair_for_run` passes; when non-empty the composed done-when adds that the repair records `baseline_suite` at its base and `after_suite` at its head, each run with that literal command, and names neither when unarmed. Measure: 9 passed at revision 01e77b6d over the two named test files, exit 0.</p></div>
+    <div class="r-comment-body"><p>`reckon.crew.recovery._reviewed_run_suite_command` now returns only the reviewed run's recorded pointer `suite_command`; the standing `review.suite` fallback and the `FlightConfigError` refusal branch it needed are removed, so a repair of an unarmed run is unarmed like the run it repairs. `reckon.crew.repair.compose_repair_node` gains a `suite_command` keyword (default empty) that `dispatch_repair_for_run` passes; when non-empty the composed done-when adds that the repair records `baseline_suite` at its base and `after_suite` at its head, each run with that literal command, and names neither when unarmed. Measure: 9 passed at revision 01e77b6d over the two named test files, exit 0.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260930T224423399297-an-unchanged-run-needs-no-suite-pair" data-who="reckon-build" data-when="2026-09-30T22:56:42.888Z">
+    <div class="r-comment-body"><p>promotion._evaluate_suite_delta now returns suite_delta status &quot;unchanged&quot; (suite_command, added_failure_ids [], reason) in place of the missing-suite refusal for an armed run whose fresh manifest declares no changed path and no commit beyond base over a worktree still on base with no tracked modification; ledger.summary counts &quot;unchanged&quot; beside clean/refused/waived; new tests/test_an_unchanged_run_needs_no_suite_pair.py passes 3/3 and the two refusal cases still refuse.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260928T233552756785-review-of-the-suite-is-declared-and-recorded" data-who="reckon-build" data-when="2026-09-29T00:21:22.662Z">
     <div class="r-comment-body"><p>review stored for r-20260928T223146627061-the-suite-is-declared-and-recorded at cd36faeb against base 348688e8 - total 77 (goal_fidelity 14, evidence 15, scope_discipline 19, durability 13, fit 16), four findings, added_failure_count 0</p></div>
