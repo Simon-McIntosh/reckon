@@ -11,6 +11,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from reckon import ledger
 from reckon.crew import metering, promotion
 
@@ -131,3 +133,24 @@ def test_the_shared_helper_delegates(tmp_path: Path) -> None:
     assert promotion._run_streams(directory / "stream.jsonl") == metering.run_streams(
         directory / "stream.jsonl"
     )
+
+
+def test_callers_call_the_shared_helper_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sentinel = [tmp_path / "sentinel.jsonl"]
+    seen: list[Path] = []
+
+    def recording(path: str | Path) -> list[Path]:
+        seen.append(Path(path))
+        return sentinel
+
+    monkeypatch.setattr(metering, "run_streams", recording)
+
+    promotion_target = tmp_path / "run" / "stream.jsonl"
+    assert promotion._run_streams(promotion_target) == sentinel
+    assert seen == [promotion_target]
+
+    seen.clear()
+    assert ledger._run_streams("run", tmp_path) == sentinel
+    assert seen == [tmp_path / "run" / "stream.jsonl"]
