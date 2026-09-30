@@ -205,14 +205,11 @@ def served_entry_point(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     finally:
         entry_point.stop()
         # ``serve.main`` assigned ``_SIGNATURE_TTL_S`` on the served thread
-        # (reckon/serve.py:3399). ``stop()`` has joined that thread, so its last
-        # write is behind us; put the module back to the library default so no
-        # later test in the same process reads a live discovery memo.
+        # (reckon/serve.py:3399). ``stop()`` has joined that thread and asserted
+        # it stopped, so its last write is behind us; put the module back to the
+        # library default so no later test in the same process reads a live
+        # discovery memo.
         serve._SIGNATURE_TTL_S = 0.0
-        assert serve._SIGNATURE_TTL_S == 0.0, (
-            "the discovery memo was left live after the served entry-point "
-            "tests; a later test in the same process would read a memoised walk"
-        )
 
 
 def test_mounts_answer_before_the_watch_is_armed(served_entry_point) -> None:
