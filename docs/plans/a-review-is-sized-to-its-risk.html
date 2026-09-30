@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="45">
+<meta name="plan-version" content="47">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.7">
@@ -277,7 +277,13 @@
     <div class="r-comment-body"><p>reckon/crew/recovery.py _failed_review_backend now demotes a review lane only when the recorded attempt is status=dispatched, is for the run's current head, and its review run was not withdrawn before a worker launched (read from the run's own exit record); a refused, awaiting-lane, or withdrawn-before-launch attempt frees the lane. tests/test_rereview_keeps_its_lane.py gains three cases; gate 18 passed, exit 0.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T185521932342-review-of-reflex-skips-tier-none-reviews" data-who="reckon-build" data-when="2026-09-30T19:17:15.670Z">
-    <div class="r-comment-body"><p>an independent review of run r-20260930T182922411100-reflex-skips-tier-none-reviews is stored beside reviewed head f48deb9e0, scoring goal_fidelity 20, evidence 17, scope_discipline 20, durability 19 and fit 19 (total 95, no absent dimension, complete True), with one finding: the reviewed manifest&#x27;s artifacts line asserts no /tmp directory was created by this node, while the node&#x27;s own pytest left /tmp/reckon-crew-scratch/r-20260930T182922411100-reflex-skips-tier-none-reviews/pytest-of-mcintos behind and the done-when required every such directory be deleted and listed.</p></div>
+    <div class="r-comment-body"><p>an independent review of run r-20260930T182922411100-reflex-skips-tier-none-reviews is stored beside reviewed head f48deb9e0, scoring goal_fidelity 20, evidence 17, scope_discipline 20, durability 19 and fit 19 (total 95, no absent dimension, complete True), with one finding: the reviewed manifest's artifacts line asserts no /tmp directory was created by this node, while the node's own pytest left /tmp/reckon-crew-scratch/r-20260930T182922411100-reflex-skips-tier-none-reviews/pytest-of-mcintos behind and the done-when required every such directory be deleted and listed.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260930T185506277122-review-of-dropped-lane-means-a-launched-attempt" data-who="reckon-build" data-when="2026-09-30T19:13:01.011Z">
+    <div class="r-comment-body"><p>An independent review of run r-20260930T182510149377-dropped-lane-means-a-launched-attempt is stored beside reviewed head 334f272bc, scoring goal_fidelity 16, evidence 16, scope_discipline 19, durability 16 and fit 17 (total 84, no absent dimension, complete True), with one finding: _review_attempt_withdrawn_before_launch (reckon/crew/recovery.py:1094) reads only the review run's exit record and never worker.json, so a review worker that spawned and died before writing any stream byte is treated as never-launched and frees the lane that did drop the head (measured with a probe: worker.json present + exit.json {stream_records_seen: 0, ended_during: launch} returns withdrawn_before_launch True).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260930T192157705801-repair-of-reflex-skips-tier-none-reviews-f48deb9e0ca8" data-who="reckon-build" data-when="2026-09-30T19:25:10.953Z">
+    <div class="r-comment-body"><p>stopped by the coordinator before any work: its only finding was a record defect in the reviewed run&#x27;s manifest (the /tmp claim), the out-of-repo case repair-skips-out-of-repo-findings removes; no repository change can answer it</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T195034464501-review-of-review-findings-compose-one-repair" data-who="reckon-build" data-when="2026-09-28T20:06:07.166Z">
     <div class="r-comment-body"><p>review of r-20260928T193846170874-review-findings-compose-one-repair stored at ~/.config/reckon/crew/reviews/reckon/r-20260928T193846170874-review-findings-compose-one-repair.json (and its .at-fac12a7e… companion): status parsed, all 5 dimensions scored 0..20, total 86 (goal_fidelity 18, evidence 18, scope_discipline 20, durability 14, fit 16), added_failure_count 0 over the reviewed run's own baseline_suite/after_suite gate logs, 3 findings.</p></div>
