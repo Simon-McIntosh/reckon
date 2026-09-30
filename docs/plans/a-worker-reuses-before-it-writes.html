@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="64">
-<meta name="plan-impl" content="0.9">
+<meta name="plan-version" content="65">
+<meta name="plan-impl" content="0.95">
 </head>
 <body>
   <main class="plan-doc">
@@ -101,10 +101,16 @@
     <pre class="r-fu-prompt">/reckon-build a-worker-reuses-before-it-writes</pre>
     <p class="r-fu-outcome">Sections 2 and 3 landed. Every timestamp reader in dispatch, promotion and recovery reads through reckon._timestamps (04421a8c, 3374c7af, 653cd1e8). The runs, supervisor and CLI writers go through _store.write_json_atomically (1374b0f7, 3374c7af, 1dea5ab7). Stream enumeration goes through metering.run_streams (6d87c18a). Section 4's clone report runs at promotion (b4683397), and section 5's weekly interface counts are in the velocity view (b3c22b06). Each change landed after a population delta at the merged tree added no failing id.</p>
     </article>
-<article class="r-fu" data-id="f-awrbiw-002" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-30T11:05:00Z" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awrbiw-002" data-status="resolved" data-written-by="s25-coord" data-written-at="2026-09-30T11:05:00Z" data-recommends-skill="reckon-build" data-resolved-at="2026-09-30T20:49:13+00:00" data-resolved-by="s25-coord">
     <h4 class="r-fu-title">Close sections 4 and 5</h4>
     <div class="r-fu-body"><p>Three pieces remain:</p><ul><li>Section 4's velocity view does not yet count clone matches per week.</li><li>Section 4's test covers only functions a run adds in new files, not a function it modifies inside a file the base already carries. The review of promotion-reports-private-copies (88) found that arm untested.</li><li>Section 5's done-when also asks that the plan-review rubric of a-plan-is-reviewed-before-it-is-built cite the weekly interface counts.</li></ul><p>Each is one small node. The clone count reads the ledger's clone field, which records an unmeasured report distinguishably from an empty one.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-reuses-before-it-writes §4</pre>
+    <p class="r-fu-outcome">Two of three pieces landed. velocity.report now carries a weekly clones block (runs with a match, total matches, runs measured with none, runs unmeasured, and runs whose ledger row predates the clone report, each counted apart); review 91 then 95 after one repair round, merged at 512414af. A test proves promotion reports a clone when a run rewrites an existing function in a base-carried file into a copy of parse_utc; the detector already handled it (review 94, merged at 9c31c44c). The plan-review rubric citation remains, carried by f-awrbiw-003.</p>
+    </article>
+<article class="r-fu" data-id="f-awrbiw-003" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-30" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Cite the interface counts in the plan-review rubric</h4>
+    <div class="r-fu-body"><p>Section 5's done-when asks that the plan-review rubric of a-plan-is-reviewed-before-it-is-built cite the weekly interface counts that velocity.report now carries. It is the last open piece of this plan.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-worker-reuses-before-it-writes §5</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -274,7 +280,7 @@
     <div class="r-comment-body"><p>velocity.report now carries a clones block listing per ISO week the promoted runs with at least one recorded clone match, the total matches, the runs measured with no match, the runs carrying the unmeasured marker, and the runs whose row carries no clone report at all; the synthesised fixture's 2026-W36 gives runs_with_match=1, matches=2, runs_no_match=1 and 2026-W37 gives runs_unmeasured=1 and runs_unrecorded=1, each missing or negative reading held apart from the others.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260930T202748671313-review-of-velocity-counts-clone-matches" data-who="reckon-build" data-when="2026-09-30T20:41:26.249Z">
-    <div class="r-comment-body"><p>An independent review of run r-20260930T195500572735-velocity-counts-clone-matches, read at base 84b6364f1 and head 2710cc2ce, is stored at both granted paths as a parsed record scoring all five dimensions in 0..20 — goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 19, total 95, no dimension absent, all six checklist items reported, two production call sites verified — carrying added_failure_count null with added_failure_ids [] derived through reckon.crew.review over the reviewed run&#x27;s own after_suite arm (it names no baseline_suite, so the count is unmeasured, though both measurable arms carry zero failures), and filing two findings: the repaired unrecorded-state fold is fixed and independently falsified, but the reviewed manifest names no baseline_suite arm and its gate log&#x27;s first line spells the revision rev=&lt;sha&gt;, which the store&#x27;s recorded_log_revision does not resolve.</p></div>
+    <div class="r-comment-body"><p>An independent review of run r-20260930T195500572735-velocity-counts-clone-matches, read at base 84b6364f1 and head 2710cc2ce, is stored at both granted paths as a parsed record scoring all five dimensions in 0..20 — goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 19, total 95, no dimension absent, all six checklist items reported, two production call sites verified — carrying added_failure_count null with added_failure_ids [] derived through reckon.crew.review over the reviewed run's own after_suite arm (it names no baseline_suite, so the count is unmeasured, though both measurable arms carry zero failures), and filing two findings: the repaired unrecorded-state fold is fixed and independently falsified, but the reviewed manifest names no baseline_suite arm and its gate log's first line spells the revision rev=&lt;sha&gt;, which the store's recorded_log_revision does not resolve.</p></div>
 </div>
 </section>
 </main>

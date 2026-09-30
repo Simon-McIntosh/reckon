@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="55">
+<meta name="plan-version" content="56">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
-<meta name="plan-impl" content="0.7">
+<meta name="plan-impl" content="0.75">
 </head>
 <body>
   <main class="plan-doc">
@@ -206,10 +206,16 @@
     <div class="r-fu-body"><p>Make the reflex's repair of an unpromoted reviewed run a <code>crew resume</code> of that run, with the composed findings as advice. Keep a new repair node only for a promoted run. A test covers both cases: an unpromoted implement run with findings is resumed, not dispatched, with no scope-conflict refusal; a promoted one gets a new node based on its reviewed head. The section 3 comment of 10:25 has the refusal text.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §3</pre>
     </article>
-<article class="r-fu" data-id="f-arist-005" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-30T18:30:00Z" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arist-005" data-status="resolved" data-written-by="s25-coord" data-written-at="2026-09-30T18:30:00Z" data-recommends-skill="reckon-build" data-resolved-at="2026-09-30T20:49:14+00:00" data-resolved-by="s25-coord">
     <h4 class="r-fu-title">Scope the repair reflex to repository findings</h4>
     <div class="r-fu-body"><p>After a-repair-hold-names-its-cause merges into <code>dispatch_repair_for_run</code>:</p><ol><li>Skip a round, as decline-only, when no finding cites a repository path.</li><li>Give a repair dispatch the reviewed run's suite pair, so its review can count added failures.</li><li>Route <code>_stored_review</code> through the record-carried head.</li><li>Stop the review reflex from dispatching a review of a run whose tier is none.</li></ol><p>The section 5 comment of 18:30 has the measured cases.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §3</pre>
+    <p class="r-fu-outcome">Both landed. A repair dispatch now inherits the reviewed run's suite command (pointer suite_command, else the standing review.suite declaration), review 93, merged at 9c31c44c. _stored_review reads the head the run record carries once the worktree is reclaimed, review 93 with added 0, merged at 3c0a7d96. Population deltas against main added no failures. The reviews' remaining findings are carried by f-arist-006.</p>
+    </article>
+<article class="r-fu" data-id="f-arist-006" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-30" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Keep reflex launches alive past the follower, and fail closed on unknown heads</h4>
+    <div class="r-fu-body"><ul><li>Runs the review and repair reflex launch are children of the coordinator's follower, so they die when its monitor expires. On 2026-09-30 a re-review and a repair round were both stopped by SIGTERM at 20:30:40Z, the instant the follower's 30-minute monitor expired; each needed a resume. A reflex launch should outlive the follower that started it.</li><li>When a run's worktree is reclaimed and its record names neither a manifest commit nor a head, _record_carried_head returns empty and select_review_for_head accepts the newest stored review whatever revision it describes. It should fail closed.</li><li>_reviewed_run_suite_command swallows the FlightConfigError that a malformed review.suite block raises, so the repair proceeds with no suite instead of refusing.</li></ul></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §5</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -349,7 +355,7 @@
     <div class="r-comment-body"><p>the review of r-20260930T195433561538-repair-carries-the-suite-pair is stored as a parsed record at both assigned paths — five dimensions scored in 0..20 (goal_fidelity 20, evidence 16, scope_discipline 20, durability 19, fit 18; total 93), all six checklist items carrying verdicts (item_aggregate 6), a reviewed revision pair of 84b6364f162c8a4a04b430f191db7fe34a610e76..6f17d5c4b5b46c1b9d3b8090d56343c10442818f, one production call site verified (reckon/crew/recovery.py:2267), and two findings.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260930T195433561538-repair-carries-the-suite-pair" data-who="reckon-build" data-when="2026-09-30T20:13:04.090Z">
-    <div class="r-comment-body"><p>repair dispatches now carry the reviewed run&#x27;s recorded suite command (the reviewed pointer&#x27;s suite_command, else the project&#x27;s standing review.suite declaration) through the launch config, so the repair&#x27;s live pointer records a non-null suite_command and its own review can derive added failures against the same suite; measure: 20 passed, 0 failed over tests/test_repair_skips_out_of_repo_findings.py and tests/test_reflex_dispatches_one_repair.py.</p></div>
+    <div class="r-comment-body"><p>repair dispatches now carry the reviewed run's recorded suite command (the reviewed pointer's suite_command, else the project's standing review.suite declaration) through the launch config, so the repair's live pointer records a non-null suite_command and its own review can derive added failures against the same suite; measure: 20 passed, 0 failed over tests/test_repair_skips_out_of_repo_findings.py and tests/test_reflex_dispatches_one_repair.py.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260928T233552756785-review-of-the-suite-is-declared-and-recorded" data-who="reckon-build" data-when="2026-09-29T00:21:22.662Z">
     <div class="r-comment-body"><p>review stored for r-20260928T223146627061-the-suite-is-declared-and-recorded at cd36faeb against base 348688e8 - total 77 (goal_fidelity 14, evidence 15, scope_discipline 19, durability 13, fit 16), four findings, added_failure_count 0</p></div>

@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="13">
-<meta name="plan-impl" content="0.55">
+<meta name="plan-version" content="14">
+<meta name="plan-impl" content="0.6">
 </head>
 <body>
   <main class="plan-doc">
@@ -111,10 +111,11 @@
     <div class="r-fu-body"><p>§3, §4 and §5 are ready now; §2 waits on the brief carrier; §6 measures after the rest.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-small-change-is-a-small-node</pre>
     </article>
-<article class="r-fu" data-id="f-ascsn-002" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-30T10:05:00Z" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ascsn-002" data-status="resolved" data-written-by="s25-coord" data-written-at="2026-09-30T10:05:00Z" data-recommends-skill="reckon-build" data-resolved-at="2026-09-30T20:49:16+00:00" data-resolved-by="s25-coord">
     <h4 class="r-fu-title">Warn on a not-yet-created directory inside a live claim</h4>
     <div class="r-fu-body"><p>Section 5 landed at e554b4d8. Dispatch warns when a declared directory contains, or lies inside, another live run's claim, names the files the brief lists, and proceeds only with <code>--accept-directory-claim</code>. The review (87) found one arm unhandled. A declared directory that does not yet exist on disk is not recognised as a directory, so one created inside a live directory claim slips through. The dry-run conflict report's shape is unchanged. What remains: section 2 waits on the brief carrier, section 6 measures the small-change path end to end, and this gap is repaired as a small node.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-small-change-is-a-small-node §5</pre>
+    <p class="r-fu-outcome">Landed: an absent, suffix-less directory declared inside another live run's claimed directory now warns and requires --accept-directory-claim, as an existing directory does; review 95 with added 0, merged at 9c31c44c. The review's one finding, that a dotted directory name such as 2026.09 reads as a file and takes the plain refusal, is being worked by the reflex's repair round repair-of-directory-claim-sees-uncreated-dirs-3129f05e8a6d.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
