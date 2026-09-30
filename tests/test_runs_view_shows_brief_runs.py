@@ -150,6 +150,30 @@ def test_a_promoted_brief_run_shows_a_null_plan_and_its_digest(
     assert "brief_sha256" not in plan_row
 
 
+def test_a_live_brief_run_shows_a_null_plan_and_its_digest(
+    repository: Path,
+) -> None:
+    run_id = "r-20260930T131500000000-node-brief"
+    _write_brief_pointer(repository, run_id, role="investigate")
+
+    # Nothing is promoted here: the run is read while its live pointer is the
+    # only record, which is the state it spends its whole life in. The digest
+    # reaches the row from the node block dispatch writes, not the ledger.
+    result = mcp._crew(
+        PROJECT,
+        view="runs",
+        checkout_path=str(repository),
+        source="live",
+        run_id=run_id,
+    )
+
+    rows = [row for row in result["rows"] if row["run_id"] == run_id]
+    assert len(rows) == 1
+    live_row = rows[0]
+    assert live_row["plan"] is None
+    assert live_row.get("brief_sha256") == BRIEF_SHA
+
+
 def test_the_skill_retires_the_rule_and_names_the_brief_carrier() -> None:
     skill = " ".join(
         (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text().split()

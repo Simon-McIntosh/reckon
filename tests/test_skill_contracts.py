@@ -1245,23 +1245,27 @@ def test_ship_run_lifecycle_guidance_matches_launch_ownership() -> None:
     assert "The live classifier reads the manifest's recorded status" in ship
 
 
-def test_the_plan_is_named_as_the_only_passing_surface() -> None:
+def test_the_skill_names_the_right_carrier_for_each_kind_of_work() -> None:
     """A coordinator meeting exit 4 must read it as the design, not an obstacle.
 
     A session with audit findings to hand a worker asked whether a `--brief` flag
-    should exist. The answer is already the architecture's — the worker reads the
-    plan's section from its own worktree at the base revision, so a handoff copy
-    is a second store nothing can verify — but the exit-4 row said only "commit
-    the plan" without saying why that is right, which reads as friction.
+    should exist. The architecture's answer is split: work that changes a plan's
+    product still reads the plan's section from the worker's own worktree at the
+    base revision, while a probe, a measurement, a review or an investigation may
+    instead carry a stored brief through `reckon crew dispatch --brief`. The
+    skill has to name the right carrier for each, or a coordinator reads the
+    exit-4 refusal as friction in front of work that never needed a plan.
     """
     ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
 
     assert "The plan is the passing surface" in ship
     assert "record, commit, dispatch, in that order" in ship
-    # And the refusal of a second store has to be explicit, or someone will
-    # reasonably propose one again.
-    assert "no flag for passing prose to a worker" in ship
-    assert "a second store is a second stale source of truth" in ship
+    # Product work carries its plan; the brief is the carrier for work that
+    # changes no plan's product.
+    assert "changes a plan's product carries its plan" in ship
+    assert "may instead carry a **brief**" in ship
+    assert "reckon crew dispatch --brief <file>" in ship
+    assert "same eight node properties" in ship
     # Large inputs already have an answer that is not a copy.
     assert "travel by reference" in ship
 
