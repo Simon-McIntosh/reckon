@@ -1,0 +1,17 @@
+<section id="s5-repair-of-dropped-lane-means-a-launched-attempt-334f272bc2c0">
+    <h2>§5 — A review attempt is withdrawn only when no worker spawned</h2>
+    <p>Repairs review finding <code>f71f08bd4f0</code> on run
+      <code>r-20260930T182510149377-dropped-lane-means-a-launched-attempt</code>.
+      <code>_review_attempt_withdrawn_before_launch</code> (reckon/crew/recovery.py) judged an attempt withdrawn from
+      the review run's exit record alone, which reads the same for a genuine pre-launch withdrawal and for a worker
+      that spawned and died before writing a stream byte: both leave <code>ended_during: launch</code> and
+      <code>stream_records_seen: 0</code>. The lane that did carry the worker was therefore freed and the next sweep
+      recomposed onto it. The supervisor writes <code>worker.json</code> only after the worker process is spawned, so
+      its presence is positive evidence the launch happened; the helper now withholds the lane whenever that record
+      exists, and frees it only on a true withdrawal.</p>
+    <p>Measure: <code>tests/test_rereview_keeps_its_lane.py</code>, plus the two files that reach the changed helper
+      (<code>tests/test_review_lane_follows_its_run.py</code>, <code>tests/test_review_reflex_selects_a_backend.py</code>).
+      The new case — a spawned worker that wrote no stream record — passes with the fix and fails without it.
+      Negative control: reverting the worker-record guard reddens that case (<code>assert True is False</code> at
+      the helper's spawned-no-stream assertion, exit 1); the log is the run's <code>negative-control.log</code>.</p>
+   </section>
