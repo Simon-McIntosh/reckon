@@ -229,7 +229,10 @@ def test_a_review_whose_only_lane_is_in_harness_is_held_with_a_reason(
     """No lane the harness cannot start leaves the run held, not composed.
 
     The hold is the same one an empty candidate list produces, so the run keeps
-    its reason on its own pointer and no review run exists to hold a claim.
+    its reason on its own pointer and no review run exists to hold a claim. The
+    reason names the in-harness drop itself: on this configuration the exclusion
+    key is silent, so a reason that named only exclusions would read as a hold
+    with no cause at all.
     """
     config_home, repo = isolated_project
     record = _scoring_pointer(
@@ -240,6 +243,8 @@ def test_a_review_whose_only_lane_is_in_harness_is_held_with_a_reason(
         assert report["dispatched"] is False
         assert report["awaiting_lane"] is True
         assert "r-single-lane" in report["reason"]
+        assert recovery.IN_HARNESS_LAUNCH in report["reason"]
+        assert HARNESS_BACKEND in report["reason"]
         assert not any(
             row["node"].get("id", "").startswith(recovery.REVIEW_NODE_PREFIX)
             for row in runs.list_live(project="sample")

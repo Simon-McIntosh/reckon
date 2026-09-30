@@ -1198,11 +1198,14 @@ def _review_lane_candidates(
 def _no_review_lane_reason(
     run_id: str, previous_lane: str, config: Mapping[str, Any]
 ) -> str:
-    """Why a scoring run has no lane left, naming an exclusion when one applies.
+    """Why a scoring run has no lane left, naming each rule that removed one.
 
-    An exclusion is a rule, so it is worth naming on its own: a reader told only
+    Each rule that removes a lane is worth naming on its own: a reader told only
     that no configured backend remains would look for a lane to add, when what
-    the configuration actually says is that the lane is deliberately withheld.
+    the configuration actually says is that the lane is deliberately withheld
+    (an exclusion) or that the lane cannot be started at all (an in-harness
+    launch). Either way the reader learns which lever to reach for rather than
+    reading a hold that names no cause.
     """
     parts: list[str] = []
     excluded = _review_excluded_backends(config)
@@ -1211,6 +1214,13 @@ def _no_review_lane_reason(
             f"{REVIEW_EXCLUDED_BACKENDS_KEY} excludes "
             + ", ".join(sorted(excluded))
             + " from review routing"
+        )
+    in_harness = _review_in_harness_backends(config)
+    if in_harness:
+        parts.append(
+            "backend(s) "
+            + ", ".join(sorted(in_harness))
+            + f" launch as {IN_HARNESS_LAUNCH} and cannot be started"
         )
     if previous_lane:
         parts.append(f"backend {previous_lane!r} already dropped it")
