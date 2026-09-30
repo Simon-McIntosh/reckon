@@ -10,6 +10,7 @@ behaviour rather than a property of any one run.
 from __future__ import annotations
 
 import os
+import sys
 import time
 from pathlib import Path
 
@@ -23,6 +24,9 @@ PROJECT = "sample"
 REVIEWED_RUN = "source-run"
 REVIEW_RUN = "reviewer-run"
 GRACE = 300.0
+# The two writes that make a review delivered are dated apart, so a grace
+# measured from the record instead of the later manifest changes the outcome.
+WRITE_GAP = 60.0
 
 
 @pytest.fixture()
@@ -87,20 +91,28 @@ def _reviewer(
     manifest_status: str = "complete",
     role: str = "review",
     node_id: str = "review-of-source-node",
+    writes: dict[str, float] | None = None,
 ) -> dict:
     """A live reviewer pointer with its delivery and stream dated as asked.
 
-    ``stream_offset`` is the stream's mtime measured forward from the instant
-    the review delivered: positive means the stream kept growing after both
-    writes landed, negative means its newest write precedes them.
+    The record is written first and the manifest ``WRITE_GAP`` later, so the
+    delivery instant is the manifest's write and the two are never equal.
+    ``stream_offset`` is the stream's mtime measured forward from that later
+    instant: positive means the stream kept growing after both writes landed,
+    negative means its newest write precedes them. ``writes`` is filled with
+    both dates when a test needs to name them.
     """
-    delivered_at = time.time() - 3600.0
+    record_time = time.time() - 3600.0
+    delivered_at = record_time + WRITE_GAP
     record_path = review.review_path(PROJECT, REVIEWED_RUN)
     if delivered:
         review.store_review(_parsed_review())
-        os.utime(record_path, (delivered_at, delivered_at))
+        os.utime(record_path, (record_time, record_time))
     manifest = _write_manifest(home, manifest_status, delivered_at)
     stream = _write_stream(home, delivered_at + stream_offset)
+    if writes is not None:
+        writes["record_mtime"] = record_time
+        writes["manifest_mtime"] = delivered_at
     return {
         "run_id": REVIEW_RUN,
         "project": PROJECT,
@@ -179,14 +191,45 @@ def test_a_delivered_review_still_streaming_is_stopped(home: Path) -> None:
 
 
 def test_review_delivered_answers_the_delivered_facts(home: Path) -> None:
-    pointer = _reviewer(home, delivered=True, stream_offset=GRACE + 300.0)
+    writes: dict[str, float] = {}
+    pointer = _reviewer(
+        home, delivered=True, stream_offset=GRACE + 300.0, writes=writes
+    )
 
     facts = recovery.review_delivered(pointer)
 
     assert facts is not None
     assert facts["record_path"] == str(review.review_path(PROJECT, REVIEWED_RUN))
     assert facts["manifest_path"] == pointer["manifest_path"]
-    assert facts["delivered_at"] == max(facts["record_mtime"], facts["manifest_mtime"])
+    assert writes["manifest_mtime"] > writes["record_mtime"]
+    assert facts["record_mtime"] == writes["record_mtime"]
+    assert facts["manifest_mtime"] == writes["manifest_mtime"]
+    # The later of the two writes, named by the fixture rather than recomputed
+    # from the fields under test.
+    assert facts["delivered_at"] == writes["manifest_mtime"]
+
+
+def test_the_grace_is_measured_from_the_later_write(home: Path) -> None:
+    """A stream past the grace measured from the record can still be inside it.
+
+    The stream's newest write falls between the two dates the fixture wrote: it
+    is past the grace counted from the record and inside the grace counted from
+    the manifest, so a delivery dated from the earlier write stops a review the
+    later write leaves alone.
+    """
+    writes: dict[str, float] = {}
+    pointer = _reviewer(
+        home,
+        delivered=True,
+        stream_offset=GRACE - WRITE_GAP / 2.0,
+        writes=writes,
+    )
+
+    signals, stored = _tick(home, pointer)
+
+    assert signals.calls == []
+    assert stored["phase"] == "active"
+    assert "ended_after_delivery" not in stored
 
 
 def test_a_delivered_review_inside_the_grace_is_left_running(home: Path) -> None:
@@ -220,6 +263,40 @@ def test_an_incomplete_manifest_review_is_left_running(home: Path) -> None:
 
     assert signals.calls == []
     assert "ended_after_delivery" not in stored
+
+
+def test_a_template_manifest_status_is_refused_by_the_template_guard(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A dispatch template is refused, and refused by the check that names it.
+
+    The template is not the word ``complete``, so a reader that tested the
+    equality first refuses it as a side effect and never consults the template
+    check — which is what the classifier elsewhere in the same tick does with
+    the same status. The spy records the calling site as well as the status, so
+    the assertion pins the guard rather than any mention of the template. The
+    run is left alive rather than stopped on a status no worker ever wrote.
+    """
+    template = "<complete | blocked | failed>"
+    consulted: list[tuple[str, str]] = []
+    declared = recovery.manifest_status_is_template
+
+    def spy(value: object) -> bool:
+        caller = sys._getframe(1).f_code.co_name
+        consulted.append((str(value), caller))
+        return declared(value)
+
+    monkeypatch.setattr(recovery, "manifest_status_is_template", spy)
+    pointer = _reviewer(
+        home, delivered=True, stream_offset=3 * 86400.0, manifest_status=template
+    )
+
+    signals, stored = _tick(home, pointer)
+
+    assert signals.calls == []
+    assert stored["phase"] == "active"
+    assert "ended_after_delivery" not in stored
+    assert (template, "_complete_manifest_write_time") in consulted
 
 
 def test_a_run_that_is_not_a_review_is_never_stopped(home: Path) -> None:

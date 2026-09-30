@@ -678,7 +678,7 @@ def _complete_manifest_write_time(path: Path) -> float | None:
     except ManifestParseError:
         return None
     status = str(data.get("status") or "").strip().lower()
-    if status != "complete" or manifest_status_is_template(status):
+    if manifest_status_is_template(status) or status != "complete":
         return None
     try:
         return path.stat().st_mtime

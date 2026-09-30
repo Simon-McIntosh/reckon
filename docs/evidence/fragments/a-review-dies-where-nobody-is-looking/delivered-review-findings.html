@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-title" content="The delivered-review stop reads the later write, and its template guard fires">
+  <meta name="plan-summary" content="The delivered_at assertion in the delivered-review test now names the later of two dated-apart writes and reddens under the declared mutation that swaps max for min, while the template-status clause in the manifest reader is consulted before the equality test and a new case pins its call site. Base arm 99 passed, head arm 101 passed, the declared mutation fails the new assertion, and the template case fails at base where the guard never saw the status.">
+  <meta name="plan-evidence-for" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <title>The delivered-review stop reads the later write, and its template guard fires | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The delivered-review stop reads the later write, and its template guard fires</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>Two findings from the review of the delivered-review stop, both confirmed against the base
+        revision <code>b04701d0e</code> before either was repaired.</p>
+      <ol>
+        <li><strong>The <code>delivered_at</code> assertion could not fail.</strong> It compared the
+          reader's return value with <code>max()</code> of the two mtimes the reader had just
+          returned, so it was true by construction; and the fixture dated the record and the manifest
+          writes to one instant, so a regression that dated the delivery from the <em>earlier</em>
+          write would have left the file green. Reproduced: at the base revision with the declared
+          mutation applied (<code>max</code> replaced by <code>min</code> in
+          <code>review_delivered</code>), the original test file reported
+          <strong>7 passed, exit 0</strong>.</li>
+        <li><strong>The template-status clause could not fire.</strong> In
+          <code>_complete_manifest_write_time</code> the guard read
+          <code>status != "complete" or manifest_status_is_template(status)</code>. The second
+          operand is only reached when the status <em>is</em> <code>complete</code>, and a status
+          carrying the dispatch template never equals that word, so the clause could never decide
+          the branch. The behaviour was correct by accident; what was wrong was that a guard named
+          the template while nothing could reach it.</li>
+      </ol>
+    </section>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ol>
+        <li><code>reckon/crew/recovery.py</code>, one line: the clause is consulted before the
+          equality test, so the status that names the template is refused by the check written for
+          it rather than as a side effect of the equality. The clause is now reached, and the
+          template is refused by name.</li>
+        <li><code>tests/test_a_delivered_review_ends_its_turn.py</code>: the record and the manifest
+          are written <code>WRITE_GAP</code> (60 s) apart, the fixture hands the two dates to the
+          test through a <code>writes</code> mapping, and the assertion names the later manifest
+          write instead of recomputing a maximum from the fields under test.</li>
+        <li>A new case drives the stream offset into the gap between the two dates
+          (<code>GRACE - WRITE_GAP / 2</code>): the stream is past the grace counted from the record
+          and inside it counted from the manifest, so a delivery dated from the earlier write
+          changes the stop decision.</li>
+        <li>A new case feeds an unsubstituted template status and asserts both that the run is left
+          alive and that the template check was consulted <em>from
+          <code>_complete_manifest_write_time</code></em>. The call site is part of the assertion
+          because the first version of this case recorded only the status, and it passed at the base
+          revision: the tick's own classifier consults the same helper with the same status
+          (<code>classify_pointer</code>), which the reproduction output shows.</li>
+      </ol>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Gate: <code>tests/test_a_delivered_review_ends_its_turn.py tests/test_crew_recovery.py</code>, <code>-n 8</code></td>
+            <td>base <code>b04701d0e</code></td>
+            <td><strong>99 passed</strong>, exit 0</td>
+          </tr>
+          <tr>
+            <td>Same gate</td>
+            <td>head <code>82e7ac9e7</code></td>
+            <td><strong>101 passed</strong>, exit 0 (no new failure id)</td>
+          </tr>
+          <tr>
+            <td>Declared mutation (<code>max</code>&rarr;<code>min</code>), original test file</td>
+            <td>base <code>b04701d0e</code></td>
+            <td><strong>7 passed</strong>, exit 0 &mdash; the defect, reproduced</td>
+          </tr>
+          <tr>
+            <td>Declared mutation (<code>max</code>&rarr;<code>min</code>), repaired test file</td>
+            <td>head <code>82e7ac9e7</code></td>
+            <td><strong>2 failed, 7 passed</strong>, exit 1 &mdash; <code>assert 1790774168.757799
+            == 1790774228.757799</code> on <code>facts["delivered_at"]</code>, and the grace case
+            stops a review the later write leaves alone</td>
+          </tr>
+          <tr>
+            <td>Repaired test file, base reader</td>
+            <td>base <code>b04701d0e</code> <code>recovery.py</code></td>
+            <td><strong>1 failed, 8 passed</strong>, exit 1 &mdash; <code>assert ('&lt;complete |
+            blocked | failed&gt;', '_complete_manifest_write_time') in consulted</code>, with the
+            recorded callers all <code>classify_pointer</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The head arm adds no failure id: both arms run to their summary line, completed, with zero
+        failures each. The base arm ran in a scratch tree extracted from
+        <code>b04701d0e</code>, and its header records the module under test as imported
+        (<code>/tmp/reckon-delivered-review-findings/base-tree/reckon/__init__.py</code>) and the
+        resolved working directory, so the reading is of the base reader rather than of the
+        worktree's. Lint delta against the base revision is zero: the two staged paths carry the
+        same count before and after, and the pre-existing findings in
+        <code>recovery.py</code> are untouched by this change.</p>
+    </section>
+
+    <section id="provenance">
+      <h2>Reproduction</h2>
+      <table>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Base revision</td><td><code>b04701d0ed786a6a7ccecb582c253c136b90417e</code></td></tr>
+          <tr><td>Head commits</td><td><code>3db6ebdff</code> (fixture, assertion, guard), <code>82e7ac9e7</code> (call-site pin)</td></tr>
+          <tr><td>Gate logs</td><td><code>base-gate.log</code>, <code>head-gate.log</code> in the run directory, each headed by its revision and its literal command and ending with its exit code</td></tr>
+          <tr><td>Control logs</td><td><code>negative-control.log</code> (declared mutation at head), <code>mutation-at-base.log</code> (the defect reproduced), <code>reproduction-at-base.log</code> (the repaired case against the base reader)</td></tr>
+          <tr><td>Basetemps</td><td>under <code>/tmp/reckon-delivered-review-findings/</code>, removed before this record was closed</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
