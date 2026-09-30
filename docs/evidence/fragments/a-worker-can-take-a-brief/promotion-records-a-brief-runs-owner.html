@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-can-take-a-brief">
+  <meta name="plan-evidence-for" content="a-worker-can-take-a-brief">
+  <title>Promotion records a brief run's owner | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>Promotion records a brief run's owner</h1>
+      <p class="lead">A brief run carries no committed plan section, so the ordinary landing path had nothing to join a product change to the plan that owns it. Promotion now lands a brief run with <code>plan</code> null and the digest of the stored brief it read, skips the impl-move guard that has no plan to read, and refuses an implement-role brief run that names neither the plan it changed nor a reason it changed none.</p>
+    </header>
+
+    <section id="the-defect">
+      <h2>The gap: a product change with no owner</h2>
+      <p>A brief replaces <code>--plan</code> and <code>--section</code>, so its node carries an empty <code>plan</code>. The impl-move guard read that empty plan and exempted the run with <code>node-names-no-plan</code>, but nothing in the landing path required the run to say which plan its product change belonged to. An implement-role brief run could therefore land code without any row field naming the plan it touched.</p>
+      <p>The reproduction is the declared negative control below: with the implement-role check dropped, an implement brief run that names neither discharge promotes, and the refusal case fails.</p>
+    </section>
+
+    <section id="what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/promotion.py</code> gains <code>_require_brief_owner</code>, called before any store is written. It reads the node's brief, and for an implement-role run with neither <code>--plan-link</code> nor <code>--unplanned-reason</code> it refuses, naming both flags. A non-implementing role and a plan run are untouched.</li>
+        <li><code>_require_impl_moved</code> gains an explicit brief exemption (<code>brief-names-no-plan</code>) ahead of the role check, so a reader of the row sees the run's carrier as the reason rather than an absent plan that could read as a defect.</li>
+        <li><code>reckon/ledger.py</code>: <code>build_record</code> gains <code>brief</code>, <code>plan_link</code> and <code>unplanned_reason</code>. A brief run stores <code>plan</code> null and the brief's <code>sha256</code>/<code>path</code>; either discharge lands on the row or is null, so an unrecorded value is told from one never asked for.</li>
+        <li><code>reckon/cli.py</code>: <code>crew complete</code> gains <code>--plan-link SLUG</code> and <code>--unplanned-reason TEXT</code>, forwarded through <code>complete</code> and <code>_complete_locked</code>.</li>
+      </ul>
+    </section>
+
+    <section id="the-gate">
+      <h2>The gate</h2>
+      <p><code>tests/test_promotion_records_a_brief_runs_owner.py</code> writes a pointer over a synthesised temporary repository (<code>RECKON_HOME</code> moved into a temp tree, no real ledger or live pointer directory touched) and promotes through <code>crew.complete</code>, and, for the CLI cases, through <code>reckon crew complete</code> via the click runner.</p>
+      <ul>
+        <li><code>test_an_investigate_brief_run_promotes_with_no_extra_flag</code> &mdash; the row's <code>plan</code> is null, its <code>brief.sha256</code> is the pointer's digest, and the impl move is exempt with reason <code>brief-names-no-plan</code>.</li>
+        <li><code>test_an_implement_brief_run_without_an_owner_is_refused</code> &mdash; the refusal names both <code>--plan-link</code> and <code>--unplanned-reason</code>, and the pointer survives.</li>
+        <li><code>test_a_plan_link_lands_on_the_row</code> and <code>test_an_unplanned_reason_lands_on_the_row</code> &mdash; each discharge lands on the row and the other stays null.</li>
+        <li><code>test_the_cli_refuses_an_implement_brief_run_without_an_owner</code>, <code>test_the_cli_plan_link_reaches_the_row</code> and <code>test_the_cli_unplanned_reason_reaches_the_row</code> &mdash; the command line reads the refusal and forwards each option to the row. Deleting the forwarding in <code>reckon/cli.py</code> fails both option cases.</li>
+      </ul>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base at <code>d7b444ae</code>, this gate over ten files</td><td>209 passed, 1 skipped, 7 failed (<code>EXIT=1</code>); the seven are this gate's own cases, whose feature is absent at base</td><td><code>r-20260930T121057414157-promotion-records-a-brief-runs-owner/logs/base-suite.log</code></td></tr>
+          <tr><td>The delivered head, the same ten files (sha on the log's first line)</td><td>216 passed, 1 skipped, <code>EXIT=0</code>; zero added failures &mdash; the base's seven failure ids all pass here</td><td><code>r-20260930T121057414157-promotion-records-a-brief-runs-owner/logs/head-suite.log</code></td></tr>
+          <tr><td>Declared negative control at <code>b0dc6d67+dirty</code></td><td>1 failed, <code>EXIT=1</code>; first line repeats the declaration verbatim</td><td><code>r-20260930T121057414157-promotion-records-a-brief-runs-owner/negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Logs live under the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T121057414157-promotion-records-a-brief-runs-owner/</code>. The head arm ran in the assigned worktree with the module under test imported from <code>.../promotion-records-a-brief-runs-owner/reckon/crew/promotion.py</code>; the base arm ran in the scratch tree <code>/tmp/promotion-records-brief-base</code>. The gate is the node's six files plus <code>tests/test_ledger_declares_the_review_tier.py</code>, <code>tests/test_record_fields_declare_every_key.py</code>, <code>tests/test_promotion_harvests_the_receipt.py</code> and <code>tests/test_routing_evidence_fields.py</code> &mdash; every test that reads <code>RECORD_FIELDS</code>.</p>
+    </section>
+
+    <section id="negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>drop the implement-role check for brief runs in reckon/crew/promotion.py and confirm the refusal case fails</em>. Applied to <code>_require_brief_owner</code> (its refusal replaced by a bare return), <code>test_an_implement_brief_run_without_an_owner_is_refused</code> fails at its <code>pytest.raises</code>, <code>EXIT=1</code>. The mutation was reverted and the tree returned clean at <code>b0dc6d67</code>.</p>
+    </section>
+
+    <section id="commits">
+      <h2>Commits</h2>
+      <p><code>b0dc6d67</code> &mdash; feat(crew): record a brief run's owner at promotion. Changes <code>reckon/crew/promotion.py</code>, <code>reckon/cli.py</code>, <code>reckon/ledger.py</code>, <code>tests/test_promotion_records_a_brief_runs_owner.py</code>.</p>
+      <p><code>325ab920</code> &mdash; fix(crew): declare the brief-owner row fields and cover the CLI options. Declares <code>brief</code>, <code>plan_link</code> and <code>unplanned_reason</code> in <code>RECORD_FIELDS</code>, and adds the three click-runner cases. Changes <code>reckon/ledger.py</code>, <code>tests/test_promotion_records_a_brief_runs_owner.py</code>.</p>
+    </section>
+  </main>
+</body>
+</html>

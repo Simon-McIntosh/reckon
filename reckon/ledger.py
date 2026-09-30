@@ -148,6 +148,14 @@ RECORD_FIELDS = (
     "clone_matches",
     "review_tier",
     "unreconciled_override",
+    # A brief run's authority in place of a plan section: the digest and stored
+    # path of the brief it read, the plan an unplanned implement landing changed,
+    # and the reason it changed none. All three ride every row, null when the run
+    # needed neither, so a reader can tell an unrecorded value from one never
+    # asked for.
+    "brief",
+    "plan_link",
+    "unplanned_reason",
 )
 
 
@@ -1550,6 +1558,9 @@ def build_record(
     member_id: str = "",
     backend: str = "",
     agent: Mapping[str, Any] | None = None,
+    brief: Mapping[str, Any] | None = None,
+    plan_link: str = "",
+    unplanned_reason: str = "",
     dispatched_at: str = "",
     completed_at: str = "",
     completed_at_source: str = "promotion_time",
@@ -1641,11 +1652,24 @@ def build_record(
     )
     record: dict[str, Any] = {
         "run_id": str(run_id),
-        "plan": str(plan),
+        # A brief run names no plan, so its row carries ``plan`` null and the
+        # digest of the stored brief it read instead of a plan section. The key
+        # stays present on every row so a reader can tell a run with no plan
+        # from one whose field was never written.
+        "plan": None if brief is not None else str(plan),
         "section": normalize_section(section),
         "node": str(node),
         "node_definition": (None if node_definition is None else dict(node_definition)),
         "role": str(role),
+        # A brief run's authority is the stored brief, so its digest and stored
+        # path ride the row where a plan run carries only the plan identity.
+        # ``plan_link`` names the plan whose product an unplanned landing
+        # changed, and ``unplanned_reason`` states why no plan link was given;
+        # both are None on a run that needed neither, so a reader can tell an
+        # unrecorded value from one never asked for.
+        "brief": None if brief is None else dict(brief),
+        "plan_link": str(plan_link) or None,
+        "unplanned_reason": str(unplanned_reason) or None,
         "spec_level": str(spec_level),
         "member": str(member_id),
         # Routing is a property of the run, not only of the agent description.
