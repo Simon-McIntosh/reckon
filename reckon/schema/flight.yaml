@@ -464,6 +464,24 @@ slots:
     range: integer
     minimum_value: 1
 
+  effective_input_window:
+    description: >-
+      Lowest input size this backend's endpoint is recorded as refusing, so
+      that dispatch gates on the boundary that kills rather than on the
+      declared window alone. Measured from what the lane's own endpoint
+      refused, never declared by the configuration: a run whose last result is
+      an error carrying the endpoint's prompt-too-long text reports the input
+      size it was refused at, and the boundary is the smallest such input
+      recorded for this backend's own model — a census pooled across models
+      answers with the narrowest neighbour's figure instead. Dispatch refuses
+      an estimate that exceeds either this figure or usable_input_window,
+      naming both, so a node sized inside the band is refused before a
+      worktree is created rather than by the endpoint after three records and
+      no deliverable. Absence means the effective boundary is undeclared,
+      never zero: only the declared window gates such a lane.
+    range: integer
+    minimum_value: 1
+
   max_concurrent_runs:
     description: >-
       Maximum live worker runs this backend may carry at once. Dispatch counts
@@ -890,6 +908,7 @@ classes:
       - metered
       - budget_check
       - usable_input_window
+      - effective_input_window
       - max_concurrent_runs
       - fallback
       - budget_group

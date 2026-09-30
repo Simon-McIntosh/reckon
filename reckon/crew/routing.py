@@ -1553,6 +1553,8 @@ def _agent_configuration(
     }
     if backend.get("usable_input_window") is not None:
         configuration["usable_input_window"] = backend["usable_input_window"]
+    if backend.get("effective_input_window") is not None:
+        configuration["effective_input_window"] = backend["effective_input_window"]
     return configuration
 
 
