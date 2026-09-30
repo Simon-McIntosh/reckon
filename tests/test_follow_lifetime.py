@@ -94,6 +94,27 @@ def _write_unpromoted_run(home: Path) -> None:
     )
 
 
+def _follower_env(home: Path) -> dict[str, str]:
+    """The follower's environment: the ambient one with no crew identity in it.
+
+    A worker whose own session runs under ``crew follow`` exports RECKON_
+    variables describing *that* session — ``RECKON_FOLLOWER_OWNER`` names the
+    process that armed it, and ``RECKON_RUN_ID``/``RECKON_MANIFEST`` name its
+    run. Inherited unchanged, they make the follower this test arms believe it
+    belongs to someone else's session: with ``RECKON_FOLLOWER_OWNER`` set the
+    follower resolved a foreign owner and neither ended on its lifetime nor
+    stayed armed, so a worker inside a followed session could not reproduce this
+    file's own result. Keep only the variables the test sets deliberately — the
+    temporary home and the import path — and drop every other RECKON_ variable.
+    """
+    env = {
+        key: value for key, value in os.environ.items() if not key.startswith("RECKON_")
+    }
+    env["RECKON_HOME"] = str(home)
+    env["PYTHONPATH"] = str(REPO_ROOT)
+    return env
+
+
 def _arm(home: Path, *args: str) -> subprocess.Popen:
     """Start the real follower command against the temporary config home."""
     return subprocess.Popen(
@@ -113,7 +134,7 @@ def _arm(home: Path, *args: str) -> subprocess.Popen:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
-        env={**os.environ, "RECKON_HOME": str(home), "PYTHONPATH": str(REPO_ROOT)},
+        env=_follower_env(home),
     )
 
 
