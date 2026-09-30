@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-evidence-for" content="a-landing-record-never-conflicts">
+  <title>The audit flags an element id a composed record repeats | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>The audit flags an element id a composed record repeats</h1>
+      <p class="lead">A cumulative evidence record is audited in its composed form — the record's own bytes followed by its fragments. Two fragments that reuse one element id, or a fragment that reuses an id the record already carries, produce a document with two equal anchor targets: a link to the id resolves to the first occurrence and every later one is unreachable. <code>reckon/doccheck.py</code> now reports each repeated id once, naming the record file and each fragment that carries it.</p>
+    </header>
+
+    <section>
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/doccheck.py</code> reads a record's composed text and, for each element id that occurs more than once, emits one <code>error</code> finding with code <code>duplicate-element-id</code>. The finding names the id, its total count, and per occurrence whether it comes from the record file or a named fragment.</li>
+        <li>Attribution reads each source's own bytes rather than slicing the composed text, so a fragment composed as its body alone — with its head dropped — is still attributed to the fragment that carries the id.</li>
+        <li>The same check flags a single document with a duplicated id, outside any composition, with the whole document as the sole source.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>The gate</h2>
+      <ul>
+        <li><code>tests/test_audit_flags_duplicate_composed_ids.py</code>: a record and a fragment that share the section id <code>s3</code> yield one finding naming <code>s3</code> and the fragment's file; a fragment whose id is its own node name yields none; a standalone document with a duplicated id is flagged. 3 passing at head.</li>
+        <li>Base and head arms over the 19 <code>tests/</code> files whose AST imports <code>reckon.doccheck</code>, <code>-n 4</code> with a separate <code>--basetemp</code>: head 207 passed, exit 0; base (the two new cases run against the unmodified module) 2 failed, 205 passed. Head adds no failing test id.</li>
+        <li>Negative control: making the check skip ids that occur exactly twice fails the record-plus-fragment <code>s3</code> assertion (log first line repeats the declared mutation; exit 1).</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Measured on the live record</h2>
+      <p>A run of the audit over the 118 records under <code>docs/evidence/archive/</code> reports 29 <code>duplicate-element-id</code> findings across 10 records. The record for this plan carries four: <code>the-defect</code>, <code>what-changed</code>, and <code>negative-control</code> each appear in three fragments, <code>the-test</code> in two. The check sees a known collision before any absence is reported.</p>
+    </section>
+  </main>
+</body>
+</html>

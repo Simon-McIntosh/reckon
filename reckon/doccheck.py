@@ -1241,6 +1241,96 @@ def _composed_record_text(
         return path.read_text(encoding="utf-8", errors="replace"), exc
 
 
+def _element_id_counts(html_text: str) -> dict[str, int]:
+    """Count every non-empty element id in a document, keeping document order."""
+    soup = BeautifulSoup(html_text or "", "html.parser")
+    counts: dict[str, int] = {}
+    for element in soup.find_all(id=True):
+        ident = (element.get("id") or "").strip()
+        if ident:
+            counts[ident] = counts.get(ident, 0) + 1
+    return counts
+
+
+def _record_fragment_dir(record_path: Path, plan_slug: str) -> Path:
+    """Return the fragment directory composed beside a landing record.
+
+    A record is spelled at the archived path ``docs/evidence/archive/<plan>-landed.html``
+    or the live path ``docs/evidence/<plan>-landed.html``; fragments live beside
+    both spellings rather than beneath either.
+    """
+    parent = record_path.parent
+    evidence_dir = parent.parent if parent.name == "archive" else parent
+    return evidence_dir / "fragments" / plan_slug
+
+
+def _composed_record_sources(path: Path, plan_slug: str) -> list[tuple[str, str]]:
+    """Label each piece of a record's composed text by the source it comes from.
+
+    The record file's own bytes come first, then each fragment in the plan's
+    fragment directory. A duplicate id is attributed by reading each source's
+    own bytes rather than by slicing the composed text, so a fragment composed
+    as its body alone — with its head dropped — is still attributed to the
+    fragment that carries the id.
+    """
+    sources: list[tuple[str, str]] = [
+        ("the record file", _plan_html._read_plan_text(path))
+    ]
+    fragment_dir = _record_fragment_dir(path, plan_slug)
+    if fragment_dir.is_dir():
+        sources.extend(
+            (f"fragment {fragment.name}", _plan_html._read_plan_text(fragment))
+            for fragment in sorted(fragment_dir.glob("*.html"))
+        )
+    return sources
+
+
+def _duplicate_element_id_findings(
+    composed_text: str, sources: list[tuple[str, str]]
+) -> list[Finding]:
+    """Report an element id that appears more than once in a composed record.
+
+    Composition concatenates a record's own bytes with its fragments, so two
+    fragments — or a fragment and the record — that reuse one ``id`` yield a
+    document with two equal anchor targets. An ``href="#id"`` resolves to the
+    first occurrence and every later one is unreachable, and an author editing
+    the second sees no effect on the anchor a reader follows. The finding names
+    the id and, per occurrence, whether it comes from the record file or a named
+    fragment, so the conflicting fragment is identified rather than described.
+    """
+    duplicates = {
+        ident: count
+        for ident, count in _element_id_counts(composed_text).items()
+        if count > 1
+    }
+    if not duplicates:
+        return []
+
+    origins: dict[str, list[tuple[str, int]]] = {ident: [] for ident in duplicates}
+    for label, source_text in sources:
+        source_counts = _element_id_counts(source_text)
+        for ident in duplicates:
+            count = source_counts.get(ident, 0)
+            if count:
+                origins[ident].append((label, count))
+
+    details = {
+        ident: "; ".join(f"{count} in {label}" for label, count in entries)
+        for ident, entries in origins.items()
+    }
+    return [
+        Finding(
+            "error",
+            "duplicate-element-id",
+            f'element id "{ident}" appears {total} times in the composed'
+            f" record ({details.get(ident) or 'origin not attributed'}) — a link"
+            " to an id resolves to its first occurrence and every later one is"
+            " unreachable",
+        )
+        for ident, total in duplicates.items()
+    ]
+
+
 def audit_file(path: Path, *, project: str | None = None) -> list[Finding]:
     from reckon.evidence import evidence_record_plan
 
@@ -1248,9 +1338,18 @@ def audit_file(path: Path, *, project: str | None = None) -> list[Finding]:
         return [Finding("error", "io", f"cannot read {path}: file does not exist")]
     record_plan = evidence_record_plan(path)
     if record_plan is None:
-        return audit_html(_plan_html._read_plan_text(path), project=project)
+        text = _plan_html._read_plan_text(path)
+        findings = audit_html(text, project=project)
+        findings.extend(_duplicate_element_id_findings(text, [("the document", text)]))
+        findings.sort(key=lambda f: SEVERITIES.index(f.severity))
+        return findings
     text, compose_error = _composed_record_text(path, record_plan, project)
     findings = audit_html(text, project=project)
+    findings.extend(
+        _duplicate_element_id_findings(
+            text, _composed_record_sources(path, record_plan)
+        )
+    )
     if compose_error is not None:
         findings.append(
             Finding(
@@ -1261,7 +1360,7 @@ def audit_file(path: Path, *, project: str | None = None) -> list[Finding]:
                 "unchecked and unreported",
             )
         )
-        findings.sort(key=lambda f: SEVERITIES.index(f.severity))
+    findings.sort(key=lambda f: SEVERITIES.index(f.severity))
     return findings
 
 
