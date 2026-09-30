@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-placement-with-no-reservation-mints-one-per-worker">
   <meta name="plan-title" content="A placement with no reservation mints one per worker">
   <meta name="plan-summary" content="A declared placement with no published reservation prefixes a bare srun, taking an allocation per worker instead of holding one shared one and joining it.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="3.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,9 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="18">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="the-fleet-shares-one-allocation">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -66,59 +67,11 @@
     a project that did not publish it. Retiring the keying belongs to <em>the fleet shares
     one allocation</em>, which this plan blocks; the two land together or neither works.</p>
 
-    <h2 id="s3">&sect;3 &mdash; Hold one, then place into it</h2>
-    <p>The remedy is not to refuse and it is not to mint. A dispatch that finds no
-    readable reservation <strong>holds the shared one</strong> &mdash; the workstation-wide allocation every other
-    worker is placed into, which need not exist yet and is created here if it does not
-    &mdash; publishes it to the <em>host-global record</em> &mdash; the single unkeyed reservation
-    every project reads once the keying retirement has landed &mdash; and places itself
-    inside it as a step. <strong>That retirement is a precondition of this section, not a
-    consequence of it:</strong> implemented alone against today's code, a dispatch would
-    publish a record no other project reads, and the sharing mechanism would not share. Every follow-on worker then finds
-    that record and joins the allocation rather than asking for one. One allocation is
-    created, once, by whoever happens to dispatch first.</p>
-    <p>The distinction this plan turns on is between <em>minting</em> and
-    <em>ensuring</em>. Minting is per worker and is the defect: twenty workers ask for
-    twenty allocations and most of them queue. Ensuring is per workstation and is the
-    design: the first dispatch creates what is missing and the nineteenth finds it already
-    held. The current fallback looks like the second and behaves like the first, because a
-    bare <code>srun</code> carries no job id and publishes nothing for the next worker to
-    find.</p>
-    <p><code>ensure_reservation</code> already has the shape this needs. It probes whether
-    a recorded allocation is alive, returns <code>already-held</code> and starts nothing
-    when it is, and replaces the record only once the job has left. What is missing is the
-    call: placement resolution never reaches it.</p>
-    <p><strong>The guard that makes this safe is idempotence under a race, and it is the
-    part to get right.</strong> Several dispatches starting at once must produce one
-    allocation rather than one each, so the hold is serialised <em>across processes on the
-    workstation</em>. A lock inside one dispatching process is not enough, and a test that
-    races threads within one process would pass without providing it: the claim is made by
-    an operation that is atomic between separate processes, so exactly one of several
-    simultaneous dispatches proceeds to hold and the rest wait and then read.</p>
-    <p>The liveness probe is what decides, never the absence of a record, which is equally
-    true while another dispatch is mid-hold. <strong>A probe that could not be completed is
-    unknown, and unknown must not read as absent</strong>: where the scheduler cannot be
-    reached or the query fails, the dispatch waits and retries rather than concluding that
-    nothing is held. That is a different case from an allocation which is alive but cannot
-    be joined &mdash; a step creation failing against a live allocation is an error to
-    report, never a reason to hold a second one. The two cases are handled differently &mdash; one waits and retries, the other reports
-    &mdash; and they carry the same prohibition, which is that neither may end in a second
-    allocation. Mishandled, both converge on the same defect: a second allocation held
-    beside a live one is the per-worker minting this plan exists to remove, arriving by a
-    slower route.</p>
-    <p><strong>Done when.</strong> A dispatch declaring placement with no readable
-    reservation holds the shared allocation, publishes it, and runs its worker as a step
-    inside it with <code>--overlap</code> and the job id it just published. A second
-    dispatch under a different project reads that same host-global record, starts no
-    allocation of its own, and runs its worker as a step in the allocation it found,
-    asserted against a recording scheduler as exactly one <em>allocation-obtaining</em>
-    request across both dispatches together &mdash; the count is of requests that ask the
-    scheduler for an allocation, and the two step launches the clauses above require are
-    not counted.
-    Concurrent dispatches racing from no record still produce one allocation. A live
-    allocation is never replaced, and a backend declaring no placement is untouched. The
-    test that currently pins the bare-<code>srun</code> wrapping is replaced by one whose
-    name states the ensure.</p>
+<section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-09-30</span>
+    <h2 id="s3">&sect;3 &mdash; Hold one, then place into it</h2></header>
+  <p class="landed-summary">Placement resolution now reaches <code>ensure_reservation</code> before any wrapping. A dispatch that finds no readable reservation holds the shared allocation, publishes it to the one unkeyed host-global record, and runs its worker as a step inside it. A dispatch under another project joins that allocation, and a recording scheduler sees exactly one allocation request across both. The hold runs under a file lock that is atomic between processes, so four racing processes ask for one allocation. The liveness probe is three-valued, so an unaskable scheduler waits and re-asks rather than reading as absent. The integration merge added no failing test id over the 99 test files that import dispatch or placement. <a href="/reckon/evidence/archive/a-placement-with-no-reservation-mints-one-per-worker-landed">full record</a></p>
+</section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -136,10 +89,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-pnr-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-pnr-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="" data-resolved-at="2026-09-30T08:51:23+00:00" data-resolved-by="s21-1c">
     <h4 class="r-fu-title">Hold the shared reservation when none is readable, then place into it</h4>
     <div class="r-fu-body"><p>Replace the fallback that prefixes a bare <code>srun</code> with a call that holds the shared reservation, publishes it to the host-global record, and places the worker into it as a step. <code>ensure_reservation</code> already probes liveness and returns <code>already-held</code>; what is missing is the call from placement resolution. <strong>This cannot land alone:</strong> against today's per-project keying the record it publishes is read by no other project, so it pairs with the keying retirement in <em>the fleet shares one allocation</em>. Serialise the hold across processes, not merely within one, and decide on the liveness probe rather than on the absence of a record. Replace <code>test_an_unheld_reservation_leaves_the_declared_wrapping_unchanged</code>, asserting exactly one allocation request across two dispatches against a recording scheduler.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-placement-with-no-reservation-mints-one-per-worker</pre>
+    <p class="r-fu-outcome">Landed 2026-09-30 with the keying retirement in the fleet shares one allocation. ensure_reservation holds under a cross-process lock on a three-valued probe, dispatch places into the shared reservation, and the bare-srun pin is replaced. The integration measured 0 added failing ids over 99 files (review 96). done — no followup here. Adopting the fleet allocation on the resume path continues in the fleet shares one allocation §3.</p>
     </article>
 </section>
 
@@ -181,7 +135,7 @@
     <div class="r-comment-body"><p>measured the 99-file dispatch/placement import population at merge e46347e98 against first parent cbd90e41e under pytest -n 8 in git-archive scratch trees: base 17 failed/1088 passed, head 14 failed/1095 passed, 0 added failing ids — the pass condition — with 3 base-only ids isolated 3x at both revisions and shown to be xdist flakes; report /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-placement-wiring-integration.md</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260930T081922538909-review-of-placement-wiring-integration" data-who="reckon-build" data-when="2026-09-30T08:47:09.749Z">
-    <div class="r-comment-body"><p>stored the independent review of r-20260930T073804580479-placement-wiring-integration at the head-keyed and legacy review paths — 5 of 5 dimensions scored (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19; total 96; status parsed; no absent dimension), added_failure_count 0 with no added ids re-derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs, and one finding: the arm logs&#x27; first lines write revision=&lt;sha&gt; while the store&#x27;s recorded_log_revision (reckon/crew/review.py:507) accepts revision &lt;sha&gt;</p></div>
+    <div class="r-comment-body"><p>stored the independent review of r-20260930T073804580479-placement-wiring-integration at the head-keyed and legacy review paths — 5 of 5 dimensions scored (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19; total 96; status parsed; no absent dimension), added_failure_count 0 with no added ids re-derived from the reviewed run's own baseline_suite and after_suite gate logs, and one finding: the arm logs' first lines write revision=&lt;sha&gt; while the store's recorded_log_revision (reckon/crew/review.py:507) accepts revision &lt;sha&gt;</p></div>
 </div>
 </section>
 </main>
