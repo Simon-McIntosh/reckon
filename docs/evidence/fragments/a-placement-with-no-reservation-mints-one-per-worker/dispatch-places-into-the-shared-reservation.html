@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en-locale">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-placement-with-no-reservation-mints-one-per-worker">
+  <meta name="plan-title" content="A Placement With No Reservation Mints One Per Worker — dispatch places into the shared reservation">
+  <meta name="plan-summary" content="Placement resolution now reaches ensure_reservation before it wraps a launch, so a placed dispatch holds the one shared allocation once and runs its worker as an overlapping step inside it, and a second dispatch under another project reads the published record and joins that allocation rather than minting one of its own.">
+  <meta name="plan-evidence-for" content="a-placement-with-no-reservation-mints-one-per-worker">
+  <meta name="plan-verdict" content="qualified">
+  <title>Dispatch places into the shared reservation | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Dispatch places into the shared reservation</h1>
+  <p>A new resolution step in <code>reckon/crew/dispatch.py</code>, <code>resolve_backend_placement</code>, calls
+    <code>ensure_reservation</code> for a backend that declares a placement before delegating to the existing
+    <code>apply_backend_placement</code> wrapper. The ensure holds the shared allocation if none is readable,
+    publishes its job id to the unkeyed record, and starts nothing when a live one is already held, so the first
+    dispatch to arrive creates the one allocation and every later dispatch joins it. The dispatch site at
+    <code>dispatch.py:4911</code> now calls the resolution instead of the bare wrapper.</p>
+  <p>The declared wrapping is left in place inside <code>apply_backend_placement</code>, because other callers reach
+    it directly; the dispatch path no longer takes it, because it always reaches the ensure first. A resolution
+    guarded on <code>flight.placement_for(backend) is None</code> leaves a backend declaring no placement untouched:
+    nothing is held and the scheduler is not asked after.</p>
+
+  <h2>Gate</h2>
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>command</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>gate</td><td><code>6a104b893</code></td><td><code>pytest tests/test_dispatch_places_into_the_shared_reservation.py</code></td><td>4 passed, EXIT=0</td></tr>
+      <tr><td>base</td><td><code>6a104b893</code></td><td>13 placement-touching files</td><td>3 failed, 134 passed, EXIT=1</td></tr>
+      <tr><td>head</td><td><code>6a104b893</code> + this change</td><td>same 13 files + the new file</td><td>3 failed, 138 passed, EXIT=1</td></tr>
+    </tbody>
+  </table>
+  <p>Added failures: <strong>none</strong>. The same three ids fail in both arms —
+    <code>test_crew_placement.py::test_a_declared_placement_prefixes_the_resolved_launch</code>,
+    <code>test_crew_placement.py::test_an_unresolvable_scheduler_is_refused_before_launch</code> and
+    <code>test_crew_lane_agnostic_placement.py::test_adding_a_backend_needs_no_placement_code</code> — because this
+    worker runs inside the fleet allocation, where <code>reckon/host_shims/srun</code> shadows <code>/usr/bin/srun</code>
+    on the launch search path. The four head-only passes are this node's cases. A full arm over every file importing
+    <code>reckon.crew.dispatch</code> or <code>reckon.crew.placement</code> (~100 files) was started and stopped at
+    ~40&#37; when <code>/tmp</code> fell below the 5&nbsp;GB floor; <code>df</code> at that point is logged. The gate
+    itself needs no large <code>/tmp</code> and passes.</p>
+
+  <h2>Cases</h2>
+  <ul>
+    <li>A dispatch declaring placement with no readable reservation reaches the ensure from resolution: one
+      <code>salloc</code> is run, the job id is published to the unkeyed record, and the worker is placed as a step
+      with <code>--overlap</code> and that id.</li>
+    <li>A second dispatch under a different project reads the published record, starts no allocation, and steps into
+      the same allocation; across both dispatches exactly one allocation-obtaining request is logged.</li>
+    <li>A backend declaring no placement is untouched: no ensure, no request, wrapping identical.</li>
+    <li>A legacy per-project record (<code>placement/&lt;project&gt;/reservation.json</code>) is honoured: its job id
+      is placed into and no allocation is obtained.</li>
+  </ul>
+
+  <h2>Negative control</h2>
+  <p>The declared mutation — resolution keeps the bare-srun fallback and never reaches the ensure — was applied to
+    <code>resolve_backend_placement</code>. Case 2 then logs two allocation-obtaining requests and fails
+    (<code>assert 2 == 1</code>, EXIT=1). Log first line repeats the declared mutation verbatim.</p>
+
+  <h2>Evidence</h2>
+  <ul>
+    <li>Gate: <code>logs/dpr-gate.log</code>.</li>
+    <li>Head arm: <code>logs/dpr-delta-head-placement.log</code>.</li>
+    <li>Base arm: <code>logs/dpr-delta-base-placement.log</code>.</li>
+    <li>Negative control: <code>logs/dpr-negative-control.log</code>.</li>
+    <li><code>/tmp</code> at the stop point: <code>logs/dpr-tmp-space.log</code>.</li>
+  </ul>
+ </main>
+</body>
+</html>

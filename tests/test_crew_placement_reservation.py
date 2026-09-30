@@ -200,21 +200,41 @@ def test_two_sessions_place_two_workers_as_steps_in_one_reservation(
         assert plan.argv[-len(_plan(environment).argv) :] == _plan(environment).argv
 
 
-def test_an_unheld_reservation_leaves_the_declared_wrapping_unchanged(
+def test_an_unheld_reservation_is_held_then_the_worker_is_placed_into_it(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    """Resolution holds the shared reservation before placing the worker in it.
+
+    With no reservation readable, a dispatch must reach the ensure rather than
+    with a bare step client: the holding command is called once for the project,
+    the job id it holds is published, and the worker is placed into it as an
+    overlapping step carrying that id.
+    """
     _isolate(monkeypatch, tmp_path)
     scheduler_bin = _step_scheduler_bin(tmp_path)
+    held_for: list[str | None] = []
+
+    def record_hold(*, project: str | None = None, **_kwargs) -> dict:
+        held_for.append(project)
+        record = {"job_id": "1274051", "scheduler": "salloc", "options": []}
+        placement.publish_reservation(record, project)
+        return {"job_id": "1274051", "started": True, "record": record}
+
+    monkeypatch.setattr(placement, "ensure_reservation", record_hold)
+    monkeypatch.setattr(
+        placement, "reservation_alive", lambda record, runner=None: bool(record)
+    )
     plan = _plan({"PATH": str(scheduler_bin)})
 
-    wrapped = dispatch_module.apply_backend_placement(plan, _placed_backend())
+    wrapped = dispatch_module.resolve_backend_placement(
+        plan, _placed_backend(), "alpha"
+    )
 
-    assert "--overlap" not in wrapped.argv
-    assert [Path(wrapped.argv[0]).name, *wrapped.argv[1:3]] == [
-        "srun",
-        "--partition=all",
-        RESOLVED_EXECUTABLE,
-    ]
+    assert held_for == ["alpha"]
+    assert Path(wrapped.argv[0]).name == "srun"
+    assert "--overlap" in wrapped.argv
+    assert "--jobid=1274051" in wrapped.argv
+    assert wrapped.argv[-len(plan.argv) :] == plan.argv
 
 
 def test_the_roster_refuses_the_worker_past_the_cap_on_the_memory_axis() -> None:
