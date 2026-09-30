@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-evidence-for" content="reckon:a-review-dies-where-nobody-is-looking">
+  <meta name="plan-verifies" content="reckon:a-review-dies-where-nobody-is-looking#s4">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-09-30">
+  <meta name="evidence-commit" content="d62c8f6ed">
+  <title>A review's own manifest passes the check it runs | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-review-manifest-passes-its-own-check">
+  <h2>A review's own manifest passes the check it runs</h2>
+
+  <p>Read at base <code>b04701d0e</code>, changed at <code>d62c8f6ed</code> with the
+  cases at <code>01c66e55f</code>. Two nova reviews stored a parsed record at the only
+  path their dispatch granted, marked their manifest <code>complete</code>, and were
+  refused by the check a worker runs on itself before it ends its turn. Both refusals
+  were reproduced at base with the currency probe
+  (<code>review-dies-currency/review_currency_probe.py</code>), and both are gone at
+  head.</p>
+
+  <p><strong>What refused them.</strong> A review's whole deliverable is the record it
+  stores beside the run it read, and that store lies outside the repository. The
+  declaration mapping resolved only declarations lying under the worktree or the
+  repository, so the store path was dropped and every changed path was judged stray
+  against nothing; and the commit finding asked a commit of a role that has none. The
+  probe's four field cases, verbatim from the base run:</p>
+
+  <pre><code>=== A: reviews store path + .at-&lt;sha&gt; sibling, commits: none, status complete
+exit: 1   "status is complete but no commit is recorded",
+          "changed paths outside the write scope: &lt;record&gt;.at-&lt;sha&gt;.json, &lt;record&gt;.json"
+=== B: changed_paths: [] followed by prose
+exit: 1   "status is complete but no commit is recorded",
+          "changed paths outside the write scope: []  (a review writes no repository path)"
+=== C: commits: none with the exact declared store path only
+exit: 1   "changed paths outside the write scope: &lt;record&gt;.json"
+=== D: the .at-&lt;sha&gt; sibling alone
+exit: 1   "changed paths outside the write scope: &lt;record&gt;.at-&lt;sha&gt;.json"
+=== E positive control: an in-repository path with a commit recorded
+exit: 0   findings: []</code></pre>
+
+  <p><strong>The rule now.</strong> A declaration that resolves to no repository root is
+  compared as the absolute path it already is — equality or containment — so the
+  declaration the dispatch granted still decides what it grants, and a relative changed
+  path is still judged by the repository mapping alone. The head-keyed record the store
+  writes beside a granted record (<code>&lt;stem&gt;.at-&lt;7..64 hex&gt;&lt;suffix&gt;</code>)
+  is the same deliverable under the revision it read, and the declaration of the record
+  admits it. The commit finding is asked of no review, whose deliverable no commit
+  records. A list annotated in place is read as the list, so prose beside an empty
+  <code>changed_paths</code> is no longer reported as a changed path.</p>
+
+  <table class="outcomes">
+    <thead>
+      <tr><th>Field case (probe shape)</th><th>Base</th><th>Head</th><th>Test</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>A — the granted record and the head-keyed copy beside it, <code>commits: none</code></td>
+        <td>exit 1, two findings</td><td>exit 0, no findings</td>
+        <td class="t">naming_its_record_and_the_head_keyed_copy_passes</td>
+      </tr>
+      <tr>
+        <td>C — the exact granted store record alone</td>
+        <td>exit 1, scope finding</td><td>exit 0, no findings</td>
+        <td class="t">naming_the_granted_record_alone_passes</td>
+      </tr>
+      <tr>
+        <td>D — the head-keyed copy alone</td>
+        <td>exit 1, scope finding</td><td>exit 0, no findings</td>
+        <td class="t">naming_the_head_keyed_copy_alone_passes</td>
+      </tr>
+      <tr>
+        <td>B — <code>changed_paths: []</code> carrying an annotation</td>
+        <td>exit 1, the prose read as a changed path</td><td>exit 0, no findings</td>
+        <td class="t">annotating_an_empty_changed_paths_list_passes</td>
+      </tr>
+      <tr>
+        <td>A review naming a record it was not granted</td>
+        <td>exit 1, both paths stray</td><td>exit 1, the undeclared path alone</td>
+        <td class="t">naming_a_path_outside_its_declaration_is_still_refused</td>
+      </tr>
+      <tr>
+        <td>The same manifest under a role whose work a commit records</td>
+        <td>exit 1, no commit recorded</td><td>exit 1, no commit recorded</td>
+        <td class="t">a_non_review_run_is_still_asked_for_the_commit_it_owes</td>
+      </tr>
+      <tr>
+        <td>E — an in-repository path with a recorded commit</td>
+        <td>exit 0, no findings</td><td>exit 0, no findings</td>
+        <td class="t">a_run_inside_its_repository_declaration_still_passes</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The two right-hand rows are what keeps the acceptance declaration-bound rather than
+  blanket: the store path passes because the dispatch granted it, and the commit finding
+  is waived for the review role rather than for every role. An edge probe over the two
+  new rules records thirteen path comparisons and seven list shapes with no mismatch,
+  including the neighbours the rules must still refuse — a six-hex suffix, a different
+  stem, a different directory, and <code>r-x.bak</code> beside <code>r-x.json</code>
+  (<code>edge_probe.log</code>, 0 mismatches, exit 0).</p>
+
+  <p><strong>Negative control.</strong> Restoring the base
+  <code>audit_manifest</code> and <code>path_within_declared_scope</code> in
+  <code>reckon/crew/reports.py</code>, in a scratch tree, reddens the field cases:
+  <code>6 failed, 1 passed</code>, exit 1 (<code>negative-control.log</code>). The
+  surviving case is the positive control, which the base also accepts.</p>
+
+  <p><strong>Gate.</strong> The whole <code>tests/</code> directory at
+  <code>-n 8</code>, at base and at head, each log naming its revision on its first line
+  and its exit code on its last. Base <code>b04701d0e</code>: 75 failed, 8976 passed,
+  72 skipped, 4 errors, exit 1. Head <code>01c66e55f</code>: 57 failed, 9006 passed,
+  72 skipped, exit 1. The head arm carries no failure the base arm does not, with one
+  exception, and the exception is not this change: the head arm additionally reports
+  <code>tests/test_tag_inventory.py::test_discovery_derives_tag_inventory_from_every_resource_type</code>,
+  which passes in isolation at head and again alongside the server test in one
+  process (both reruns under
+  <code>~/.config/reckon/crew/runs/r-20260930T140824474288-a-review-manifest-passes-its-own-check/</code>,
+  as <code>tag-inventory-rerun.log</code> and <code>tag-inventory-with-server.log</code>,
+  beside the two gate logs this node ran).
+  That test is the cache discriminator — it authors a tag mid-run and requires the next
+  read to observe it — and its failure mode, a stale inventory, requires
+  <code>reckon/serve.py</code>'s memoised discovery signature to be live, whose only
+  writer is <code>serve.main()</code> setting <code>_SIGNATURE_TTL_S</code> to 60 s while
+  running in a daemon thread inside <code>tests/test_server_listens_before_it_watches.py</code>.
+  Neither <code>audit_manifest</code> nor <code>path_within_declared_scope</code> is on
+  that path, and <code>reckon/mcp.py</code> does not call either; a leak of that global
+  past the test's teardown is a race whose visibility depends on which tests share a
+  worker, which adding a file to <code>tests/</code> changes. Named here rather than
+  attributed as a regression, and carried as a follow-on.</p>
+
+  <p><strong>Not closed here.</strong> Promotion resolves declarations through the same
+  mapping and drops an out-of-repository declaration the same way
+  (<code>reckon/crew/promotion.py</code>, <code>_outside_declared_scope</code>). This
+  node's scope was the manifest audit alone, and a review commits no repository path, so
+  the two surfaces do not disagree on anything promotion measures — but a run outside
+  the repository that does cite a commit would be judged by the stricter of the two.
+  Recorded as a follow-on rather than repaired here.</p>
+</section>
+</main>
+</body>
+</html>
