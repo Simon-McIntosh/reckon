@@ -1,0 +1,381 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "4e05e287aa429d7c9a9aa2d290ffb1103316e4e7",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 5119969,
+      "input_tokens_cumulative": 5119969,
+      "output_tokens": 29220,
+      "output_tokens_cumulative": 29220,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 126,
+    "files": 3,
+    "removed": 1
+  },
+  "commit_resolution": null,
+  "commits": [
+    "91acbe6a72f6627c0d9162a384f3af2cf15c1d9c"
+  ],
+  "completed_at": "2026-09-30T08:11:35.586Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-30T07:44:00Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "ticker/fleet-counter/monitor/recovery-state"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -q -p no:cacheprovider -n 4 tests/test_reflex_dispatches_one_repair.py tests/test_review_findings_compose_a_repair.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074334690499-repair-starts-at-the-reviewed-head/merge-gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.65,
+    "at_dispatch": 0.65,
+    "plan": "a-review-is-sized-to-its-risk",
+    "reason": "a defect repair within section 3, whose impl was recorded at the re-land",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-30T08:43:36.330269+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-30T07:43:36Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 26,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 5,
+    "headroom": 5,
+    "mean_context": 184000,
+    "observed_at": "2026-09-30T07:43:10Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-30T08:11:35.586Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074334690499-repair-starts-at-the-reviewed-head/manifest.md",
+  "member": "disposable-r-20260930T074334690499-repair-starts-at-the-reviewed-head",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_reflex_dispatches_one_repair.py::test_the_repair_worktree_is_cut_from_the_reviewed_head"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_a_live_run_never_reads_dead.py::test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word",
+      "tests/test_a_resume_does_not_inherit_its_baseline.py::test_a_parked_resume_stays_in_the_resume_sweep",
+      "tests/test_blocked_names_both_reasons.py::test_a_run_with_neither_a_manifest_reason_nor_a_refusal_reads_as_today",
+      "tests/test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once",
+      "tests/test_crew_scoring_state.py::test_scoring_action_dispatches_the_named_review_worker",
+      "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+      "tests/test_fleet_counter_coverage.py::test_counts_add_up_to_the_row_count_for_every_emitted_state",
+      "tests/test_fleet_counter_coverage.py::test_every_emitted_state_is_watched_actionable_or_delivered",
+      "tests/test_fleet_counter_coverage.py::test_the_blocked_bucket_is_derived_from_the_attention_set",
+      "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[2026-09-08T10:00:00Z]",
+      "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[None]",
+      "tests/test_recovery_state_typing.py::test_ticker_carries_the_recovery_verb_in_an_actionable_row",
+      "tests/test_resume_is_aged_from_its_own_start.py::test_a_resumed_run_whose_own_log_is_quiet_still_stalls"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_reflex_dispatches_one_repair.py::test_the_repair_worktree_is_cut_from_the_reviewed_head"
+    ],
+    "declaration": "drop the --base argument from the repair dispatch argv; the unpromoted-run base assertion must fail",
+    "head_failure_ids": [
+      "tests/test_a_live_run_never_reads_dead.py::test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word",
+      "tests/test_a_resume_does_not_inherit_its_baseline.py::test_a_parked_resume_stays_in_the_resume_sweep",
+      "tests/test_blocked_names_both_reasons.py::test_a_run_with_neither_a_manifest_reason_nor_a_refusal_reads_as_today",
+      "tests/test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once",
+      "tests/test_crew_scoring_state.py::test_scoring_action_dispatches_the_named_review_worker",
+      "tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion",
+      "tests/test_fleet_counter_coverage.py::test_counts_add_up_to_the_row_count_for_every_emitted_state",
+      "tests/test_fleet_counter_coverage.py::test_every_emitted_state_is_watched_actionable_or_delivered",
+      "tests/test_fleet_counter_coverage.py::test_the_blocked_bucket_is_derived_from_the_attention_set",
+      "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[2026-09-08T10:00:00Z]",
+      "tests/test_recovery_state_typing.py::test_a_lane_hold_always_states_its_reset[None]",
+      "tests/test_recovery_state_typing.py::test_ticker_carries_the_recovery_verb_in_an_actionable_row",
+      "tests/test_resume_is_aged_from_its_own_start.py::test_a_resumed_run_whose_own_log_is_quiet_still_stalls"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074334690499-repair-starts-at-the-reviewed-head/negative-control-drop-base.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074334690499-repair-starts-at-the-reviewed-head/negative-control-drop-base.log",
+    "test_paths": [
+      "tests/test_reflex_dispatches_one_repair.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "repair-starts-at-the-reviewed-head",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1057,
+          "cached_input_tokens": 595495,
+          "input_tokens": 596554,
+          "output_tokens": 1013,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 597567,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "reckon.crew.recovery.dispatch_repair_for_run passes --base <reviewed head sha> to the repair dispatch whenever the reviewed run is unpromoted, so the repair worktree's HEAD has the reviewed head as an ancestor; its write scope keeps every tests/ path in the reviewed run's own fence as well as the paths the findings cite. tests/test_reflex_dispatches_one_repair.py gains cases, through the stubbed dispatch, asserting the argv carries --base with the reviewed head for an unpromoted run, and asserting that the reviewed run's test file is in the repair's write paths when a finding cites only source. Every existing case stays green. Base and head arms over every tests/ file whose AST imports reckon.crew.recovery or reckon.crew.repair run with -n 4 and a separate --basetemp under /tmp each, the file list is written into both logs, both logs end with an EXIT= line, and the head adds no failing test id. Before status complete, delete every directory you created under /tmp, print what you delete, and list it in artifacts.",
+    "estimated_hours": null,
+    "goal": "base the reflex's repair dispatch for an unpromoted reviewed run on that run's reviewed head, with the reviewed run's own test paths kept in the repair's write scope",
+    "id": "repair-starts-at-the-reviewed-head",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-30T07:43:36Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 26,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 5,
+      "headroom": 5,
+      "mean_context": 184000,
+      "observed_at": "2026-09-30T07:43:10Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074334690499-repair-starts-at-the-reviewed-head/manifest.md",
+    "negative_control": "drop the --base argument from the repair dispatch argv; the unpromoted-run base assertion must fail",
+    "plan": "a-review-is-sized-to-its-risk",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§3",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/recovery.py",
+      "reckon/crew/repair.py",
+      "tests/test_reflex_dispatches_one_repair.py",
+      "docs/evidence/fragments/a-review-is-sized-to-its-risk/repair-starts-at-the-reviewed-head.html",
+      "docs/figures/a-review-is-sized-to-its-risk/repair-starts-at-the-reviewed-head"
+    ]
+  },
+  "orientation_input_tokens": 1416637.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "repair-starts-at-the-reviewed-head",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-30T07:43:44.129711+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-review-is-sized-to-its-risk",
+  "plan_impl_at_dispatch": 0.65,
+  "promoted_revision": "91acbe6a72f6627c0d9162a384f3af2cf15c1d9c",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 16,
+      "evidence": 18,
+      "fit": 20,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 94
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260930T074334690499-repair-starts-at-the-reviewed-head",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§3",
+  "session_harness": "claude",
+  "session_id": "89f1560a-b12d-4e85-9e5b-f0c41cabb601",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 5119969,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 1637.193,
+    "generated_tokens": 29220,
+    "generation_seconds": 498.457,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 26.7,
+    "machine_seconds": 1138.736,
+    "peak_input_tokens": 128161,
+    "tokens_per_second": 58.62,
+    "wall_tokens_per_second": 17.85
+  },
+  "time_budget": "60m",
+  "tool_steps": 55.0,
+  "unreconciled_override": null,
+  "wall_seconds": 1655,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-30T08:11:36Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-30T07:44:03Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260930T074334690499-repair-starts-at-the-reviewed-head",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 5550,
+    "worker_pid": 3321902
+  },
+  "worker_seconds": 1628,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
