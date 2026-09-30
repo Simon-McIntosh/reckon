@@ -3388,6 +3388,16 @@ def _require_worker_stopped_before_promotion(
     status that is not terminal. A run whose process has exited, or whose
     manifest reads complete, blocked or failed, promotes as before.
 
+    A resumed attempt reuses its run directory, so the manifest beside the
+    pointer may be the verdict a superseded turn left. Its own launch time is
+    the fact that separates the two: a worker that started after the manifest
+    was last written cannot have written it, so a terminal status still on the
+    file states nothing about the attempt now running and the guard reads that
+    attempt as unfinished. A worker started before the manifest keeps the
+    reading its record already earns. The comparison is recovery's own, so the
+    classifier that defers such a run and the gate that refuses to promote it
+    cannot disagree about which attempt a manifest belongs to.
+
     A manifest that is absent or not fresh states no status, so there is nothing
     to judge and the guard stays silent: a live process with no manifest is a
     recovery case rather than a promotion one, and the release step that signals
@@ -3399,14 +3409,23 @@ def _require_worker_stopped_before_promotion(
     An unconditional waiver would stop meaning anything, so a waiver offered
     against a run with nothing to waive is itself refused.
     """
+    from reckon.crew.recovery import _worker_launched_after_manifest
+
     manifest = _fresh_manifest(record)
     status = (
         "" if manifest is None else str(manifest.get("status") or "").strip().lower()
     )
     reason = str(waiver_reason).strip()
+    superseded = (
+        manifest is not None
+        and status in TERMINAL_MANIFEST_STATUSES
+        and _worker_launched_after_manifest(
+            record, Path(str(record["manifest_path"]))
+        )
+    )
     live = (
         manifest is not None
-        and status not in TERMINAL_MANIFEST_STATUSES
+        and (status not in TERMINAL_MANIFEST_STATUSES or superseded)
         and record_process_alive(record, process_alive) is True
     )
     if not live:
@@ -3418,12 +3437,18 @@ def _require_worker_stopped_before_promotion(
         return None
     if reason:
         return {"reason": reason, "pid": str(record.get("pid")), "status": status}
+    reading = (
+        f"its manifest's {status!r} status was written before this attempt was "
+        "launched, so it reads a superseded attempt rather than the work running "
+        "now"
+        if superseded
+        else f"its manifest status is {status!r}"
+    )
     raise CrewError(
         f"run {run_id!r} cannot be promoted: its recorded worker process "
-        f"{record.get('pid')} is still alive and its manifest status is "
-        f"{status!r}. Promotion would delete the live pointer and orphan the "
-        "worker. Wait for the process to exit, or state why it may land "
-        "anyway with --waive-live-run REASON"
+        f"{record.get('pid')} is still alive and {reading}. Promotion would "
+        "delete the live pointer and orphan the worker. Wait for the process to "
+        "exit, or state why it may land anyway with --waive-live-run REASON"
     )
 
 
@@ -3723,7 +3748,10 @@ def _unreviewed_refusal(
     The classification is the one the refusal was reached under, so a delivery
     that owes a review while its process is still running is reported as the
     deferred run it is, rather than under the scoring word the gate's other arm
-    usually reaches.
+    usually reaches. It is stated beside the absent review rather than as its
+    cause: a run is classified from its own record, so "classified running
+    because no review is stored" would read as a claim that producing a review
+    changes the classification the run already holds.
     """
     revision = (
         f"the stored review read revision {stale_head[:12]} and this promotion "
@@ -3733,7 +3761,7 @@ def _unreviewed_refusal(
         else "no complete independent review is stored"
     )
     return (
-        f"run {run_id!r} is classified {classification} because {revision}. "
+        f"run {run_id!r} is classified {classification}; {revision}. "
         f"Produce it with `{review_action}`, or promote anyway with "
         "--waive-unreviewed-promotion REASON stating why this run may land "
         "without review"
