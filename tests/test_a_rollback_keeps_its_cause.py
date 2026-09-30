@@ -148,6 +148,11 @@ def _failing_launcher(plan, *, log_path, stderr_path, prompt_path):
     raise LaunchStepError("the launch step refused after the pointer was published")
 
 
+def _absent_executable_launcher(plan, *, log_path, stderr_path, prompt_path):
+    """A launch step that refuses the way a missing harness executable does."""
+    raise FileNotFoundError("the harness executable is absent")
+
+
 def _failing_removal(repository, path: str) -> None:
     raise WorktreeRemovalError(
         f"refusing to remove worktree {path}: claimed by live runs r-other"
@@ -183,6 +188,36 @@ def test_the_launch_failure_survives_its_own_rollback(
     # The rollback's own failure still reaches a reader: attached to the
     # surfaced error and printed, so the tree left behind is not silent.
     assert "claimed by live runs r-other" in str(surfaced.__cause__)
+    assert "claimed by live runs r-other" in capsys.readouterr().err
+
+
+def test_the_launch_cause_survives_when_the_unwind_also_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """A launch refusal that already names its own cause must keep it."""
+    repository = _dispatch_repository(tmp_path)
+    monkeypatch.setattr(dispatch_module, "_remove_worktree", _failing_removal)
+
+    with pytest.raises(crew.CrewError) as excinfo:
+        crew.dispatch(
+            node=_node("node-cause"),
+            project=PROJECT,
+            repo=repository,
+            config=CONFIG,
+            session="coordinator-a",
+            launcher=_absent_executable_launcher,
+            check_budget=False,
+        )
+
+    surfaced = excinfo.value
+    assert "the worker launch could not start" in str(surfaced)
+    # The absent executable is why the launch refused, and it stays reachable
+    # as the surfaced error's cause rather than only as text inside its message.
+    assert isinstance(surfaced.__cause__, FileNotFoundError)
+    assert "harness executable is absent" in str(surfaced.__cause__)
+    # The unwind's own failure is still visible to a reader — printed, and
+    # carried on the surfaced error as a note.
+    assert "claimed by live runs r-other" in "\n".join(surfaced.__notes__)
     assert "claimed by live runs r-other" in capsys.readouterr().err
 
 
