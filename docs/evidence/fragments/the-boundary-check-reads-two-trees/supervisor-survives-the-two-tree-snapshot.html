@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-boundary-check-reads-two-trees">
+  <meta name="plan-title" content="The supervisor's boundary baseline reads every registered tree">
+  <meta name="plan-evidence-for" content="the-boundary-check-reads-two-trees">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <title>The supervisor's boundary baseline reads every registered tree | reckon</title>
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The supervisor's boundary baseline reads every registered tree</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>The two-tree boundary change narrowed the per-run supervisor's baseline to the
+        run's own worktree and the main checkout. That baseline then completes in
+        milliseconds instead of crossing the registered worktrees, so a supervisor whose
+        worker exits at once spawns, collects it and writes its completion exit record
+        inside dispatch's two-second survival window. Dispatch reads that record and
+        refuses the launch, so a dispatch no longer returns once its supervisor runs.</p>
+    </section>
+
+    <section id="root-cause">
+      <h2>Root cause</h2>
+      <p><code>reckon/crew/dispatch.py:6915</code>
+        <code>_supervisor_tree_snapshot</code> read the captured <code>fenced</code> fact
+        and passed it to <code>_write_boundary_tree_snapshot</code>, which reduced a fenced
+        run's baseline to two trees via <code>_boundary_snapshot_roots</code>
+        (<code>reckon/crew/routing.py:562</code> <code>_boundary_tree_roots</code>). The
+        supervisor is not the fenced process: its baseline is the record of the trees
+        before any worker write, so it must stay complete. The narrowing belongs to the
+        comparison.</p>
+    </section>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>_supervisor_tree_snapshot</code> takes the full-registry baseline again,
+          as the delegated lane and every run without the fence fact already do.</li>
+        <li>The supervisor spec no longer carries <code>fenced</code>; it was read only to
+          narrow the supervisor's own baseline.</li>
+        <li>Unchanged: promotion's comparison still reads the two trees for a fenced record
+          (<code>_repository_tree_boundary_violations</code>), and the inline baseline
+          dispatch takes for a lane it launches itself still reads two.</li>
+      </ul>
+    </section>
+
+    <section id="measure">
+      <h2>Measure</h2>
+      <ul>
+        <li><code>tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs</code>
+          fails at the base (57ccb6fe) with <code>CrewError: the supervisor for
+          r-20260930T073108404283-gate-returns exited within 2s of starting: the supervisor
+          exited without recording a detail</code>, and passes 5 of 5 isolated runs after.</li>
+        <li><code>tests/test_boundary_check_reads_two_trees.py</code> still passes 8 of 8, so
+          the two-tree scan is kept.</li>
+        <li>Supervisor debug trace at the base: <code>fenced=True ... snapshot trees=2</code>,
+          the two <code>git status</code> calls charge to the supervisor's pid — correcting
+          the earlier attribution of those calls to the dispatch process.</li>
+        <li>Arms over the supervisor-reaching files (<code>-n 4</code> each): base 142 passed,
+          head 142 passed, 0 added failures.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
