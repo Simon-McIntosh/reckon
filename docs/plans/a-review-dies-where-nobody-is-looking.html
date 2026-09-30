@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="78">
+<meta name="plan-version" content="79">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192,06a008fb,3263f5a1">
 <meta name="plan-impl" content="0.88">
@@ -725,6 +725,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T165256817849-a-rollback-keeps-its-cause" data-who="reckon-build" data-when="2026-09-30T17:39:01.520Z">
     <div class="r-comment-body"><p>A dispatch's rollback now surfaces the launch/registration error that started it, with its own removal failure attached as the cause and printed, and a capture-only roster no longer refuses a member registration while a real member change still does — gate 2 failed/102 passed at base bcaf26dcf, 104 passed at head 3f05a8815, declared-mutation red log 1 failed/4 passed; fragment docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-rollback-keeps-its-cause.html.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260930T193022707126-repair-of-a-rollback-keeps-its-cause-153767e488bd" data-who="reckon-build" data-when="2026-09-30T19:43:53.368Z">
+    <div class="r-comment-body"><p>acted f2653dc4cc9: 0bdd53a17 — a dispatch whose unwind fails no longer replaces the cause its original already carries; when the surfaced error already names a cause (a launch refusal carrying the OSError that ended the spawn), the unwind failure rides as a note a traceback prints beside it, and is chained as the cause only when no cause exists. Gate: new case red at base 153767e48 (surfaced.__cause__ was the removal error, FileNotFoundError reachable only inside the message), 6 passed at head 0bdd53a17, declared-mutation red log 1 failed.</p></div>
 </div>
 </section>
 </main>
