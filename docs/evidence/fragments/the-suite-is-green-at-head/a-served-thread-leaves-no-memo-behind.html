@@ -10,7 +10,7 @@
   <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s3">
   <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-09-30">
-  <meta name="evidence-commit" content="83f453e2">
+  <meta name="evidence-commit" content="3a7781da">
   <title>Contain the served entry point's memo write within its own test | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -22,28 +22,34 @@
   <p><strong>Mechanism.</strong> <code>serve.main</code> runs on the fixture's daemon
   thread and assigns the discovery walk-reuse window at
   <code>reckon/serve.py:3399</code> (<code>_SIGNATURE_TTL_S = _served_signature_ttl()</code>,
-  global declared at <code>:3397</code>). The fixture stopped the server and the fleet
-  watch but never joined that thread, so a write could outlive the fixture's teardown.
-  The fixture no longer relies on monkeypatch's undo for this global — monkeypatch
-  restores <code>_SIGNATURE_TTL_S</code> to whatever it read at setup, which cannot be
-  ordered against the daemon thread's write.</p>
-  <p><strong>Fix.</strong> <code>_ServedEntryPoint.stop()</code> joins the served thread
-  (bounded by <code>_THREAD_STOP_S</code>) before teardown returns; the fixture then
-  restores the module to the library default <code>0.0</code> and asserts it is
-  <code>0.0</code>. Only <code>tests/test_server_listens_before_it_watches.py</code>
-  changed, 32 insertions and 1 deletion.</p>
-  <p><strong>Measure.</strong> At base, the pair
-  (<code>tests/test_server_listens_before_it_watches.py</code> and
-  <code>tests/test_tag_inventory.py</code>, one process, <code>-p no:xdist</code>) passed
-  3 of 3 in each order and the base failure did not reproduce; a probe logged
-  <code>_SIGNATURE_TTL_S=60.0</code> inside the server test's call. The write was
-  measured at t=0.009 s, before the fixture's teardown at t=0.039 s, and the thread had
-  stopped by then — the surviving write is the race the unjoined thread permits.
-  After the fix the pair passed 5 of 5 in each order, and a probe logged
-  <code>_SIGNATURE_TTL_S=0.0</code> after every server test's teardown in all 10 runs.
-  Dropping the fix in a scratch tree fails the teardown check on all three server tests
-  and then fails the tag-inventory test on the live memo
-  (<code>KeyError: 'invented-during-test'</code>).</p>
+  global declared at <code>:3397</code>), value <code>60.0</code> via
+  <code>_SERVED_SIGNATURE_TTL_S</code> (<code>:953</code>). The fixture stopped the
+  server and the fleet watch but never joined that thread, so the assignment could
+  outlive the fixture's teardown. The fixture no longer relies on monkeypatch's undo
+  for this global: monkeypatch restores <code>_SIGNATURE_TTL_S</code> to what it read
+  at setup, which cannot be ordered against the daemon thread's write.</p>
+  <p><strong>Fix.</strong> <code>_ServedEntryPoint.stop()</code> joins the served
+  thread (bounded by <code>_THREAD_STOP_S</code>) and asserts it is no writer that
+  remains (<code>assert not self.thread.is_alive()</code>); the fixture then restores
+  the module to the library default <code>0.0</code> after that join. An earlier
+  teardown assertion compared the memo with the <code>0.0</code> the fixture had
+  assigned on the preceding line and could never fail; it was removed. Only
+  <code>tests/test_server_listens_before_it_watches.py</code> changes.</p>
+  <p><strong>Measure.</strong> Log paths below are relative to the run directory. In a
+  scratch tree whose <code>serve.py</code> defers the
+  memo assignment until after its servers stop serving, the three runs are:
+  base, <code>logs/repro-base.log</code>, <code>1 failed, 3 passed</code> — the
+  tag-inventory test starts with <code>_SIGNATURE_TTL_S=60.0</code> and
+  <code>test_discovery_derives_tag_inventory_from_every_resource_type</code> fails on
+  the live memo; control (the join removed, the thread-alive check kept),
+  <code>logs/repro-control.log</code>, <code>1 failed, 3 passed, 3 errors</code> — the
+  check <code>assert not self.thread.is_alive()</code> fails each server test, then the
+  tag test fails; fix, <code>logs/repro-fixed.log</code>, <code>4 passed</code>, the tag
+  test starting at <code>_SIGNATURE_TTL_S=0.0</code>. The gate in the worktree —
+  <code>tests/test_server_listens_before_it_watches.py</code> with
+  <code>tests/test_tag_inventory.py</code>, one process, <code>-p no:xdist</code>,
+  five runs in each order — is <code>10/10 EXIT=0</code>, the memo
+  <code>0.0</code> after every server test's teardown.</p>
 </section>
 </main>
 </body>
