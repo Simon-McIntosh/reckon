@@ -145,6 +145,7 @@ RECORD_FIELDS = (
     "resume_waiver",
     "watch_override",
     "review",
+    "clone_matches",
     "review_tier",
     "unreconciled_override",
 )
@@ -1562,6 +1563,7 @@ def build_record(
     predecessor_run: str | None = None,
     dispute_count: int | str | None = None,
     review: Mapping[str, Any] | None = None,
+    clone_matches: Iterable[Mapping[str, Any]] | None = None,
     shadow_contaminated: str = "",
 ) -> dict[str, Any]:
     """Assemble one completed-run record, refusing an unknown gate verdict.
@@ -1694,6 +1696,12 @@ def build_record(
     # carries the key.
     if str(shadow_contaminated).strip():
         record["shadow_contaminated"] = str(shadow_contaminated).strip()
+    # Clone matches are a reading the caller either produced or could not: an
+    # empty list is a measurement of "no copy", so only a caller that supplies
+    # one carries the key, and a row promoted before this instrumentation keeps
+    # every existing field.
+    if clone_matches is not None:
+        record["clone_matches"] = [dict(match) for match in clone_matches]
     # Routing evidence is present whenever promotion could read it. An empty
     # ``follow_on_paths`` is a real measurement — the manifest declared no
     # follow-ons — and stays distinct from an absent key, which is a row never
