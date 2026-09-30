@@ -3178,7 +3178,7 @@ def summary(
         },
         "unclassified": 0,
     }
-    suite_deltas = {"clean": 0, "refused": 0, "waived": 0}
+    suite_deltas = {"clean": 0, "refused": 0, "waived": 0, "unchanged": 0}
     run_kinds = {"live": 0, "shadow": 0}
     for record in records:
         lineage = record.get("lineage")
