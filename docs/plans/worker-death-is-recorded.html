@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="43">
+<meta name="plan-version" content="44">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90,4bafc250,45eabfb6,f84945eb,b16fa8e1,729dea35,fb88efce">
@@ -405,9 +405,15 @@
     <pre class="r-fu-prompt">/reckon-build worker-death-is-recorded §5</pre>
     <p class="r-fu-outcome"><p>The write half landed through <code>a-dispatch-returns-without-its-worker</code> §3 (merged 3ad8b13c): the per-run supervisor writes <code>&lt;run_dir&gt;/exit.json</code> (<code>EXIT_RECORD_NAME</code>, <code>_supervisor_exit_record</code> in <code>reckon/crew/dispatch.py</code>). The read half has not landed. As of 2026-09-24 no code in <code>recovery.py</code>, <code>runs.py</code>, <code>promotion.py</code> or <code>routing.py</code> reads it. Carried by f-wdr-002.</p></p>
     </article>
-<article class="r-fu" data-id="f-wdr-002" data-status="open" data-written-by="reckon-e5" data-written-at="2026-09-24" data-recommends-skill="/reckon-build worker-death-is-recorded §5" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-wdr-002" data-status="resolved" data-written-by="reckon-e5" data-written-at="2026-09-24" data-recommends-skill="/reckon-build worker-death-is-recorded §5" data-resolved-at="2026-09-30T13:14:28+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Classify a dead worker from its exit record</h4>
     <div class="r-fu-body"><p><strong>Next.</strong> (1) Recovery's classification reads <code>exit.json</code> when present. A recorded signal, exit code, <code>stream_records_seen</code> of 0 (a launch failure) or a normal exit decides the state, and a run is inferred dead from a missing pid only when no exit record exists. Done when a test drives <code>crew observe</code> over three run directories, one with an exit record carrying a signal, one with exit code 0 and one with <code>stream_records_seen</code> 0, and each classifies as its record says; the negative control, making recovery ignore the file, reverts all three to the pid-inference verdict. (2) A redispatch refreshes the live pointer it replaces, since a stale pointer from the first attempt was measured surviving it. (3) A failed resume keeps the session id it was resuming, since it was measured erasing it. The death-shape correlation in <code>a-review-dies-where-nobody-is-looking</code> §1 depends on (1).</p></div>
+    <pre class="r-fu-prompt">/reckon-build worker-death-is-recorded §5</pre>
+    <p class="r-fu-outcome">Already met on main; no implementation was needed. The currency audit worker-death-currency (r-20260930T125410018592, review 92) found all three items met at 21571a7e. (1) Recovery reads exit.json and lets a recorded signal, exit code or stream_records_seen of 0 decide the state before pid inference, which falls back only when no readable record exists (test_an_unreadable_record_falls_back_to_the_pid_verdict). (2) A redispatch refreshes the live pointer it replaces; tests/test_a_pointer_names_its_launching_host.py:124 pins the host surviving that write. (3) A failed resume keeps the session id it was resuming. The §5 remaining text is stale for the redispatch half. One follow-on from the audit, not a defect against this followup: resumption.py:435-436 swallows a backend-settings rebuild failure and reports the run as having no session. That is reachable only for a pointer written before the command field existed. Report: ~/.config/reckon/crew/reports/reckon/s22-coord/worker-death-currency/report.md.</p>
+    </article>
+<article class="r-fu" data-id="f-wdr-003" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-30" data-recommends-skill="/reckon-build worker-death-is-recorded §5" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">An end-to-end test for a worker killed by a signal</h4>
+    <div class="r-fu-body"><p>§5 step 6, not covered by f-wdr-002's audit: a dispatched run whose worker is killed by a signal reports interrupted with the signal named, is offered for resume, and completes when resumed, pinned as one end-to-end test. In flight as a-killed-worker-resumes-to-completion (r-20260930T131135159155). If an existing test already drives the whole path, that node names it and commits nothing.</p></div>
     <pre class="r-fu-prompt">/reckon-build worker-death-is-recorded §5</pre>
     </article>
 </section>
@@ -525,7 +531,7 @@
     <div class="r-comment-body"><p>recovery classifies a finished worker from exit.json; 61-file cohort 2 failed at base to 922 passed; control failed 4 of 8; review 16-19 found a launch-failed crash, fixed in session; re-review 18-19, no findings</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T125410018592-worker-death-currency" data-who="reckon-build" data-when="2026-09-30T13:05:17.512Z">
-    <div class="r-comment-body"><p>f-wdr-002&#x27;s three items all measure met at 21571a7e1 — (1) recovery reads exit.json and decides from it before pid inference (8d10aa47, a683aaac), (2) a redispatch refreshes the pointer it replaces (b01329fcb, 276046298, 8ab1f3c76), (3) a failed resume keeps its session id (c23c83ab, merged f60b15a7) — so the followup can be resolved; the plan&#x27;s &quot;items 2 and 3 remain&quot; text last written 2026-09-25 is stale</p></div>
+    <div class="r-comment-body"><p>f-wdr-002's three items all measure met at 21571a7e1 — (1) recovery reads exit.json and decides from it before pid inference (8d10aa47, a683aaac), (2) a redispatch refreshes the pointer it replaces (b01329fcb, 276046298, 8ab1f3c76), (3) a failed resume keeps its session id (c23c83ab, merged f60b15a7) — so the followup can be resolved; the plan's "items 2 and 3 remain" text last written 2026-09-25 is stale</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260928T052249153006-s22-currency-crew-runtime" data-who="reckon-build" data-when="2026-09-28T05:54:34.454Z">
     <div class="r-comment-body"><p>read-only currency audit of 19 sections across six plans; report at the node's reports dir: 2 landed-but-undeclared (a-worker-is-charged-to-a-job s4 and s5), 8 partial, 9 not-started, no closure candidates</p></div>
