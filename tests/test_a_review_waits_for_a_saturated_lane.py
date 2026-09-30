@@ -344,3 +344,45 @@ def test_a_healthy_local_lane_still_carries_the_review(
         assert runs.read_pointer(report["review_run_id"])["backend"] == LOCAL_BACKEND
     finally:
         _release_watcher()
+
+
+def _action_record() -> dict:
+    return {
+        "run_id": "r-held",
+        "project": "sample",
+        "node": {"id": "r-held", "plan": "fixture", "section": "s2"},
+        "backend": LOCAL_BACKEND,
+        "session": "session-orchestrating",
+    }
+
+
+def test_a_held_review_prints_the_hold_not_the_saturated_lane(tmp_path: Path) -> None:
+    """The printed action must not send a review to the lane the hold withholds.
+
+    A reader retyping the printed command is exactly the caller a hold must keep
+    off the saturated lane: the executed path records ``awaiting-lane`` and
+    composes nothing, so the printed action names the lane and its figures in a
+    hold sentence rather than a command carrying ``--local``.
+    """
+    config = _lane_config(_saturated_document(tmp_path))
+    record = _action_record()
+
+    assert recovery._composed_review_lane("sample", record, config) is None
+
+    action = recovery._review_dispatch_action(record, config=config)
+    assert "--local" not in action
+    assert "--backend" not in action
+    assert LOCAL_BACKEND in action
+    assert "30" in action and "22" in action
+
+
+def test_a_healthy_lane_still_prints_a_dispatch_command(tmp_path: Path) -> None:
+    """The positive half: a resolvable lane still composes a runnable command."""
+    config = _lane_config(_healthy_document(tmp_path))
+    record = _action_record()
+
+    assert recovery._composed_review_lane("sample", record, config) == ["--local"]
+
+    action = recovery._review_dispatch_action(record, config=config)
+    assert "--local" in action
+    assert "reckon crew dispatch" in action

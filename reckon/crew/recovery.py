@@ -484,9 +484,25 @@ def _review_dispatch_argv(
     reconciled, and the reconciling action for each of those runs is exactly
     the review dispatch being refused. Without the waiver the composition is a
     command that cannot succeed on the runs it is composed for.
+
+    A withheld selection has no lane to name, so no dispatch composes; callers
+    that print an action use :func:`_review_dispatch_action`, which prints the
+    hold in place of a command.
     """
     fields = _review_dispatch_fields(record)
     lane = _composed_review_lane(fields["project"], record, config)
+    if lane is None:
+        raise ValueError(
+            "the review selection is withheld by a saturated lane, so no "
+            "dispatch command composes"
+        )
+    return _review_dispatch_tokens(fields, lane)
+
+
+def _review_dispatch_tokens(
+    fields: Mapping[str, Any], lane: Sequence[str]
+) -> list[str]:
+    """The dispatch argv for a resolved ``lane``, ready to run or to print."""
     write_paths: list[str] = []
     for path in fields["write_paths"]:
         write_paths += ["--write-path", path]
@@ -524,7 +540,7 @@ def _composed_review_lane(
     project: str,
     record: Mapping[str, Any],
     config: Mapping[str, Any] | None,
-) -> list[str]:
+) -> list[str] | None:
     """The ``--local``/``--backend`` argv naming a composed review's lane.
 
     The lane is selected by the same ordering the reflex uses to place its own
@@ -536,16 +552,24 @@ def _composed_review_lane(
     it had. A flight configuration that cannot be read leaves the ordering empty
     and the owning lane is named directly, because a composed command is a
     printed artifact and must always print.
+
+    A withheld selection is the one case that composes no lane: a saturated
+    local lane with nothing eligible ahead of it yields no candidate, and the
+    executed path holds the review rather than dispatching it. None is returned
+    there, because a command naming that lane would send a retyped review onto
+    the lane the hold is protecting; the caller prints the hold instead.
     """
     owning_backend = str(record.get("backend") or "").strip()
     try:
         resolved = _resolved_review_config(project, config)
     except Exception:  # noqa: BLE001 - a printed command must not raise
         return ["--backend", owning_backend] if owning_backend else ["--local"]
-    candidates = _review_lane_candidates(resolved, owning_backend=owning_backend)
-    if not candidates:
+    eligible, withheld = _review_lane_plan(resolved, owning_backend=owning_backend)
+    if withheld is not None:
+        return None
+    if not eligible:
         return ["--local"]
-    chosen = candidates[0]
+    chosen = eligible[0]
     local = str(resolved.get("local_backend") or "").strip()
     if chosen == local:
         return ["--local"]
@@ -555,9 +579,42 @@ def _composed_review_lane(
 def _review_dispatch_action(
     record: Mapping[str, Any], *, config: Mapping[str, Any] | None = None
 ) -> str:
-    """Return the review dispatch that advances one scoring run."""
-    return " ".join(
-        shlex.quote(part) for part in _review_dispatch_argv(record, config=config)
+    """Return the review dispatch that advances one scoring run.
+
+    A withheld selection prints the hold rather than a command: the printed
+    action and the executed path name one lane, and while a saturated local lane
+    withholds the review the executed path names none.
+    """
+    fields = _review_dispatch_fields(record)
+    lane = _composed_review_lane(fields["project"], record, config)
+    if lane is None:
+        return _review_lane_hold_action(record, config=config)
+    return " ".join(shlex.quote(part) for part in _review_dispatch_tokens(fields, lane))
+
+
+def _review_lane_hold_action(
+    record: Mapping[str, Any], *, config: Mapping[str, Any] | None = None
+) -> str:
+    """The action printed for a review its lane's own figures are withholding.
+
+    The reflex records ``awaiting-lane`` rather than dispatch when a saturated
+    local lane is the only lane a review may use, and the printed action says
+    the same: a command naming that lane is a command to send the review onto
+    the lane the hold is protecting. The sentence names the lane and the figures
+    its own document published, so a reader learns what the review waits for
+    rather than reading a hold that names no cause.
+    """
+    run_id = str(record.get("run_id") or "")
+    try:
+        resolved = _resolved_review_config(str(record.get("project") or ""), config)
+    except Exception:  # noqa: BLE001 - a printed action must not raise
+        return f"the review for {run_id} waits for its lane to drain"
+    return _no_lane_reason(
+        run_id,
+        resolved,
+        owning_backend=str(record.get("backend") or "").strip(),
+        kind="review",
+        previous_lane=_failed_review_backend(record),
     )
 
 
