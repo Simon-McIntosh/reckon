@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="71">
+<meta name="plan-version" content="72">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -352,7 +352,10 @@
     <div class="r-comment-body"><p>`reckon hooks install --scope user` prints the settings fragment and merges only with --write; --scope user maps explicitly to the installer's user_settings_path() and is passed through when --settings is absent; the command prints the checkout it names on stderr; a duplicate install is refused non-zero and an installer refusal is surfaced with its message; measure: base 2 failed/84 passed against head 2 failed/91 passed over the gate files, zero added failures by id and seven new cases green.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T110242427523-review-of-hooks-install-is-a-command" data-who="reckon-build" data-when="2026-09-30T11:15:27.241Z">
-    <div class="r-comment-body"><p>`hooks-install-is-a-command` at a750a7992 scores 92 (goal_fidelity 19, evidence 18, scope_discipline 19, durability 18, fit 18) with one finding — the test docstring and the delivered evidence fragment still say &quot;every case fingerprints the real user-scope settings file&quot; while the help case does neither — and zero added failures, both gate arms reproduced independently at 2 failed/84 passed (base 51f2d62de) and 2 failed/91 passed (head a750a7992) with the same two pre-existing ids.</p></div>
+    <div class="r-comment-body"><p>`hooks-install-is-a-command` at a750a7992 scores 92 (goal_fidelity 19, evidence 18, scope_discipline 19, durability 18, fit 18) with one finding — the test docstring and the delivered evidence fragment still say "every case fingerprints the real user-scope settings file" while the help case does neither — and zero added failures, both gate arms reproduced independently at 2 failed/84 passed (base 51f2d62de) and 2 failed/91 passed (head a750a7992) with the same two pre-existing ids.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260930T163600050453-hook-tests-pin-their-harness" data-who="reckon-build" data-when="2026-09-30T16:46:24.761Z">
+    <div class="r-comment-body"><p>The obligations-hook test file now names its harness identity in every drive — CLAUDE_PID is set to the fixture&#x27;s registered follower-owner pid when a follower exists, and to an absent-pid sentinel otherwise — so no case reads the inherited CLAUDE_PID or the real ancestry; the file is 16 passed under each of an unrelated CLAUDE_PID, no CLAUDE_PID, and a plain run, against 10 failed / 6 passed at base under an unrelated CLAUDE_PID.</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-20260925-no-heartbeat" data-who="reckon-build" data-when="2026-09-25T07:55:00Z">
     <div class="r-comment-body"><p>The lead's review on 2026-09-25 made two changes.</p><ul><li><strong>No heartbeat.</strong> The planned §4, a <code>NEEDS YOU</code> line repeating every ten minutes, is retired. A line that repeats trains its reader to ignore it. Obligations reach the coordinator through the §5 hooks instead: once per turn, where they cannot be skipped. The follower keeps reporting transitions, and the needs-you line folded into <code>the-fleet-counters-count-the-fleet</code> §5 fires on change only.</li><li><strong>Home install.</strong> The hooks go in <code>~/.claude/settings.json</code>, so every project benefits.</li></ul><p>The S22 coordinator added two reuse conditions:</p><ul><li>the kinds derive from <code>reckon.crew.recovery.recover</code>'s classification and the drain view's unreconciled-runs figure</li><li>the Stop hook waits on S21's false-liveness fix</li></ul></div>
