@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-title" content="A review is never composed onto an in-harness backend">
+  <meta name="plan-summary" content="The review lane ordering now drops any backend whose flight declaration carries an in-harness launch, before any ordering and regardless of review_excluded_backends, so a project layer that never names its in-harness backend can no longer have a review composed onto a lane nothing starts. When that leaves no candidate the existing no-lane hold records the reason and creates no pointer.">
+  <meta name="plan-evidence-for" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <title>A review is never composed onto an in-harness backend | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A review is never composed onto an in-harness backend</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p><code>_review_lane_candidates</code> removed lanes from review routing only by
+        <em>name</em>, from <code>review_excluded_backends</code>. A backend declared with an
+        in-harness launch is started by a coordinator attaching it to a task it already runs, so a
+        review composed onto one is written as a live pointer, holds the review's write-path claim,
+        and never executes. The exclusion therefore held only for project layers that happened to
+        name the in-harness backend in the exclusion key: the host layer and the committed reckon
+        layer both do, and a layer that omits the name gets the unlaunchable review back. Field
+        occurrences: pointers reading <code>backend: native, launch: in-harness, pid: null</code>.</p>
+    </section>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ol>
+        <li><code>reckon/crew/recovery.py</code>: a new <code>_review_in_harness_backends</code>
+          reads the launch kind from each backend's own flight declaration, and
+          <code>_review_lane_candidates</code> drops those names before ordering — from the sorted
+          rest and from the owning-run/local lanes that lead it, so the owning run's own recorded
+          backend and the declared local backend are dropped with the rest. The guard is a property
+          of the declaration, so a layer that never lists the name still cannot route a review onto
+          it. Both callers of the ordering (the review reflex and the repair composer) share the
+          drop.</li>
+        <li>With no candidate left, the existing no-lane hold records
+          <code>awaiting-lane</code> with its reason on the reviewed run's own pointer and creates
+          no review run.</li>
+        <li>New <code>tests/test_a_review_never_runs_in_harness.py</code>: the candidate list with
+          an in-harness backend the exclusion key does not name (including as the owning run's
+          backend); the hold when only in-harness lanes are configured; the fall-through case where
+          the owning run recorded the in-harness lane and a spawnable lane remains; and the control
+          that a spawnable lane still dispatches.</li>
+      </ol>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Gate: whole <code>tests/</code>, <code>-n 8</code></td>
+            <td>base <code>9e7ddce8f</code> (scratch tree)</td>
+            <td><strong>75 failed, 8979 passed, 72 skipped, 4 errors</strong> in 1504.99s, exit 1
+              &mdash; the same 75 failure ids and 4 errors this suite carries in a scratch tree
+              without a <code>.git</code> directory</td>
+          </tr>
+          <tr>
+            <td>Same gate</td>
+            <td>head <code>9082047c4</code></td>
+            <td><strong>56 failed, 9006 passed, 72 skipped</strong> in 1510.93s, exit 1 &mdash; no
+              failure id of this change's subject; one id outside it is added
+              (<code>tests/test_tag_inventory.py::test_discovery_derives_tag_inventory_from_every_resource_type</code>),
+              which passes 1/1 in isolation at both revisions and fails identically in a peer
+              head arm whose change touches only <code>reckon/crew/reports.py</code>, so it is a
+              load-sensitive id rather than this change's</td>
+          </tr>
+          <tr>
+            <td>New test module, head</td>
+            <td>head <code>9082047c4</code></td>
+            <td><strong>4 passed</strong>, exit 0</td>
+          </tr>
+          <tr>
+            <td>Declared mutation: the configuration-only exclusion restored in
+              <code>_review_lane_candidates</code></td>
+            <td>base revision files with the in-harness filter removed</td>
+            <td><strong>3 failed, 1 passed</strong>, exit 1 &mdash; both named cases fail; the
+              fall-through case reproduces the field defect as
+              <code>assert 'native' != 'native'</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The head arm adds no failure id in this change's subject. Its one added id, the tag
+        inventory case above, passes 1/1 in isolation at both revisions and fails identically in a
+        peer session's head arm whose change touches only <code>reckon/crew/reports.py</code>, so
+        it belongs to the suite under parallel load rather than to either change; it is recorded as
+        a follow-on. The base arm ran in a scratch tree extracted from <code>9e7ddce8f</code>; its
+        header records the module under test as imported and the resolved working directory, so the
+        reading is of the base ordering rather than of the worktree's.</p>
+    </section>
+
+    <section id="provenance">
+      <h2>Reproduction</h2>
+      <table>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Base revision</td><td><code>9e7ddce8fbd70090b8a7941f82789e5cf714de07</code></td></tr>
+          <tr><td>Head commit</td><td><code>9082047c4</code></td></tr>
+          <tr><td>Gate logs</td><td><code>base-suite.log</code>, <code>head-suite.log</code> in the run directory, each headed by its revision, tree, module and literal command, and ending with its exit code</td></tr>
+          <tr><td>Control log</td><td><code>negative-control.log</code></td></tr>
+          <tr><td>Basetemps</td><td>under <code>/tmp/a-review-never-runs-in-harness/</code>, removed before this record was closed</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
