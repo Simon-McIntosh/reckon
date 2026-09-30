@@ -47,7 +47,7 @@ import os
 import re
 import tempfile
 from collections.abc import Iterable, Iterator
-from pathlib import Path, PurePosixPath
+from pathlib import Path, PurePath, PurePosixPath
 from typing import Any, TypedDict
 
 import yaml
@@ -880,15 +880,45 @@ def _as_list(value: Any) -> list[str]:
     if isinstance(value, list):
         items = [str(item).strip() for item in value]
     else:
-        text = str(value).strip()
-        if text.startswith("[") and text.endswith("]"):
+        bracketed = _leading_bracketed_list(str(value).strip())
+        if bracketed is not None:
             # A bracketed list decodes to its elements; splitting a bracketed
             # value on commas leaves the bracket and quote characters in the
-            # items, which then travel verbatim into rendered commands.
-            items = _decode_bracketed_list(text)
+            # items, which then travel verbatim into rendered commands. Prose
+            # beside the list annotates it, so it is not an item of it.
+            items = _decode_bracketed_list(bracketed)
         else:
             items = [part.strip() for part in re.split(r"[,\n]", str(value))]
     return [item for item in items if item and item.lower() not in _NONE_VALUES]
+
+
+def _leading_bracketed_list(text: str) -> str | None:
+    """Return a value's leading bracketed list, or ``None`` when it has none.
+
+    A writer annotates a list in place — ``changed_paths: [] (a review writes no
+    repository path)`` — and the annotation explains the value rather than
+    being an element of it. Read whole, the explanation becomes an item, and in
+    a path field that item is a changed path the writer never named. The
+    closing bracket is found outside any quoted element, so a bracket or quote
+    inside one does not end the list.
+    """
+    if not text.startswith("["):
+        return None
+    quote = ""
+    depth = 0
+    for index, char in enumerate(text):
+        if quote:
+            if char == quote:
+                quote = ""
+        elif char in "\"'":
+            quote = char
+        elif char == "[":
+            depth += 1
+        elif char == "]":
+            depth -= 1
+            if depth == 0:
+                return text[: index + 1]
+    return None
 
 
 def _decode_bracketed_list(text: str) -> list[str]:
@@ -941,6 +971,23 @@ def parse_needs_help(text: str) -> dict[str, Any]:
     }
 
 
+def _role_owes_a_commit(node: TaskNode | None) -> bool:
+    """Whether the manifest's role has repository work a commit would record.
+
+    A review's whole deliverable is the record it stores beside the run it read,
+    so it has no commit to cite and a manifest that says so is complete. Asking
+    one of a review refuses the manifest the store's own reviews write. The
+    spelling is recovery's, imported rather than restated so the surfaces that
+    read the role cannot drift apart; an unknown role keeps the finding, so a
+    manifest the audit cannot attribute a role to is judged as a working run.
+    """
+    if node is None:
+        return True
+    from reckon.crew.recovery import REVIEW_ROLE
+
+    return str(node.role or "").strip() != REVIEW_ROLE
+
+
 def audit_manifest(
     text: str,
     node: TaskNode | None = None,
@@ -965,7 +1012,7 @@ def audit_manifest(
     status = str(manifest.get("status", "")).lower()
     if status not in ("complete", "blocked", "failed"):
         findings.append(f"status {status!r} is not complete, blocked or failed")
-    if status == "complete" and not manifest["commits"]:
+    if status == "complete" and not manifest["commits"] and _role_owes_a_commit(node):
         findings.append("status is complete but no commit is recorded")
     if status == "complete" and not manifest.get("tests"):
         findings.append("status is complete but no test result is recorded")
@@ -1036,6 +1083,32 @@ def _normalized_scope_path(text: Any) -> PurePosixPath:
     return PurePosixPath(str(text).strip())
 
 
+# The revision key the review store folds into a record's name: a record
+# written where the head the review read is named sits beside the record a
+# dispatch granted, as ``<stem>.at-<revision><suffix>``. Seven to 64 hex
+# characters is the store's own spelling, so a neighbour that merely resembles
+# a head-keyed record is not admitted by the declaration beside it.
+_HEAD_KEYED_SUFFIX = re.compile(r"^\.at-[0-9A-Fa-f]{7,64}$")
+
+
+def _head_keyed_beside(changed: PurePath, declared: PurePath) -> bool:
+    """Whether ``changed`` is the head-keyed record written beside ``declared``.
+
+    The two are one deliverable under two names — the record itself and the
+    copy keyed by the revision the review read — so a dispatch that grants the
+    record grants the copy the store reads back by its head. The names must
+    share a directory and a stem, which is what keeps the rule from admitting a
+    differently named neighbour.
+    """
+    if changed.parent != declared.parent or changed.suffix != declared.suffix:
+        return False
+    stem = declared.name[: -len(declared.suffix)] if declared.suffix else declared.name
+    tail = changed.name[: -len(changed.suffix)] if declared.suffix else changed.name
+    return tail.startswith(stem) and bool(
+        _HEAD_KEYED_SUFFIX.fullmatch(tail[len(stem) :])
+    )
+
+
 def path_within_declared_scope(
     changed: Any,
     declared: Iterable[str],
@@ -1060,16 +1133,52 @@ def path_within_declared_scope(
     absolutely would read as stray here and as in-scope at promotion. Each
     declaration is therefore resolved into a repository-relative root against
     the worktree and the repository before the comparison, which is the same
-    mapping promotion applies — a declaration naming a location outside the
-    repository resolves to no root and so rejects a repository path at both
-    surfaces. The worktree defaults to the working directory, which is where
-    the write-time audit runs.
+    mapping promotion applies. The worktree defaults to the working directory,
+    which is where the write-time audit runs.
+
+    A declaration naming a location outside the repository resolves to no
+    repository-relative root. Dropping it would leave the declaration out of
+    the comparison altogether, so the path it granted reads as stray here
+    however plainly the dispatch named it — a review's store record is the real
+    case, since its deliverable is stored beside the run it read rather than
+    inside the repository. Such a declaration is compared as the absolute path
+    it already is, by equality or containment, so the declaration still decides
+    what it grants.
     """
     tree = Path.cwd() if worktree is None else Path(worktree)
     repo = tree if repository is None else Path(repository)
+    declarations = tuple(str(item).strip() for item in declared)
     target = _normalized_scope_path(changed)
-    for root in _declared_scope_roots(declared, worktree=tree, repository=repo):
-        if target == root or root in target.parents:
+    for root in _declared_scope_roots(declarations, worktree=tree, repository=repo):
+        if target == root or root in target.parents or _head_keyed_beside(target, root):
+            return True
+    return _within_an_absolute_declaration(changed, declarations)
+
+
+def _within_an_absolute_declaration(changed: Any, declared: Iterable[str]) -> bool:
+    """Judge a changed path against the declarations written as absolute paths.
+
+    A relative changed path is judged against the repository mapping alone: an
+    absolute declaration outside the repository describes a location no
+    repository-relative path can name, so no comparison between the two says
+    anything. An absolute changed path, by contrast, is the location itself,
+    and is in scope when it is the declared path, lies beneath it, or is the
+    head-keyed record written beside it.
+    """
+    candidate = Path(str(changed).strip()).expanduser()
+    if not candidate.is_absolute():
+        return False
+    resolved = candidate.resolve()
+    for declaration in declared:
+        root = Path(declaration).expanduser()
+        if not root.is_absolute():
+            continue
+        resolved_root = root.resolve()
+        if (
+            resolved == resolved_root
+            or resolved.is_relative_to(resolved_root)
+            or _head_keyed_beside(resolved, resolved_root)
+        ):
             return True
     return False
 
