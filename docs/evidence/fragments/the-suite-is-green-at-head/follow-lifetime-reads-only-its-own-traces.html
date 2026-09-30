@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="The follower-lifetime case reads only its own traces">
+  <meta name="plan-summary" content="The follower-lifetime case asserts on its own session and run id in the shared crew home instead of demanding tree equality of that home, and waits on the follower's own end under a generous bound.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s2">
+  <meta name="plan-commits" content="6f4e9d491, 80f6a59b5">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,test-isolation,follow-lifetime,shared-home">
+  <title>The follower-lifetime case reads only its own traces — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="follow-lifetime-reads-only-its-own-traces" data-reckon="landed" data-when="2026-09-29">
+  <h2>The follower-lifetime case reads only its own traces</h2>
+  <p>At <code>6f4e9d491</code> and <code>80f6a59b5</code>, <code>tests/test_follow_lifetime.py::test_a_lifetime_ends_the_follower_with_one_line_a_reader_acts_on</code> asserts that no file under the real crew home's <code>watch/</code> or <code>live/</code> carries this test's own session or run id, rather than demanding tree equality of that shared home; the follower-exit wait is bounded at thirty seconds rather than five; and the follower subprocess now starts from an environment stripped of every <code>RECKON_</code> variable the fixture does not set itself, so a session that is itself under crew follow no longer hands its own crew identity to the follower. A peer-filing concurrency control passes; the declared negative control exits 1; and the file ran twenty times under <code>-n 8</code> with twenty passing runs, and passes with <code>RECKON_FOLLOWER_OWNER</code> exported in the calling shell where it previously returned two failed and one passed.</p>
+</article>
+</body>
+</html>
