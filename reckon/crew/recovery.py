@@ -1634,15 +1634,26 @@ def dispatch_repair_for_run(
         )
         return {"run_id": run_id, "dispatched": False, "reason": reason}
 
+    # The head the review read. The repair is cut from it so the reviewed head
+    # is an ancestor of the repair's own tree: a repair dispatched at the branch
+    # tip would answer findings against a revision the review never saw, and the
+    # round's identity — the run at the head it read — would name a tree the
+    # repair never stood on. A promoted run never reaches here (the launch
+    # refusal above settles it), so this is the unpromoted case by construction.
+    reviewed_head = _review_carried_head(review)
     composed = repair_module.compose_repair_for_run(
         project,
         run_id,
-        reviewed_head_sha=_review_carried_head(review) or None,
+        reviewed_head_sha=reviewed_head or None,
         source_node=fields["source_node"],
         plan=str(fields["plan"]),
         section=str(fields["section"]),
         session=str(fields["session"]),
         time_budget=str(fields["time_budget"]),
+        # Keep the reviewed run's own test paths in the repair's scope: the
+        # repair's gate is the run's tests, and a finding citing only source
+        # would otherwise leave the check that covers it unwritable.
+        fence=repair_module.reviewed_run_test_paths(record),
     )
     if composed is None:
         # The composer returns None for a finding-bearing record only when the
@@ -1763,6 +1774,11 @@ def dispatch_repair_for_run(
             repo=repo,
             config=resolved,
             session=str(composed["session"]),
+            # Cut the repair's worktree at the head the review read, so the
+            # reviewed head is an ancestor of the repair's tree. The reviewed
+            # run is unpromoted here — the launch refusal above settles any
+            # promoted one — so the base is always the reviewed head.
+            base=reviewed_head or "HEAD",
             launcher=launcher,
             watch_required=True,
             local=on_local_lane,
