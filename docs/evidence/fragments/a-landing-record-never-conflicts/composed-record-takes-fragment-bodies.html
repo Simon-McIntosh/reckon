@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <title>The composed record takes each fragment's body | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>The composed record takes each fragment's body</h1>
+      <p class="lead">A landing record composes its fragments by appending each fragment's body content rather than its whole document, so a fragment's own <code>head</code> metas can no longer duplicate the record's scalars.</p>
+    </header>
+
+    <section id="the-defect">
+      <h2>The defect: a fragment's document wrapper entered the record</h2>
+      <p><code>compose_landed_record</code> read each fragment with <code>read_bytes()</code> and extended the composed bytes with it whole. A fragment is written as a full HTML document, so its <code>&lt;!doctype&gt;</code>, <code>&lt;head&gt;</code> and <code>&lt;html&gt;</code> wrapper followed the record's own bytes into the composition. When the fragment's <code>head</code> carried the record's scalar metas &mdash; <code>plan-slug</code>, <code>plan-evidence-for</code> &mdash; the composed document held each twice, and <code>doccheck</code> reported it as a <code>duplicate-plan-scalar</code>: the reader takes the last value, so a writer updating the record's line would report success while the surface kept the fragment's.</p>
+    </section>
+
+    <section id="what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>_fragment_body_bytes</code> in <code>reckon/evidence.py</code> returns the children of the fragment's <code>main</code> element when it has one, else the children of its <code>body</code>, so the document wrapper never enters the record.</li>
+        <li>A fragment with no <code>html</code> and no <code>body</code> element &mdash; a bare anchor &mdash; is returned unchanged, so a fragment written before the wrapper existed still composes byte-identically.</li>
+        <li>A record with no fragments still composes to its own bytes exactly: the no-fragment early return is untouched.</li>
+      </ul>
+      <p>The fragment anchor the composed record is expected to carry is its body content, which is kept; only the wrapper is dropped.</p>
+    </section>
+
+    <section id="the-test">
+      <h2>The gate: <code>tests/test_composed_record_takes_fragment_bodies.py</code></h2>
+      <p>A record for plan <code>demo</code> carrying <code>plan-slug demo-landed</code> is composed beside one full-document fragment carrying its own <code>plan-slug demo</code> and <code>plan-evidence-for demo</code>. The composed text holds exactly one <code>plan-slug</code> and one <code>plan-evidence-for</code>, both the record's, and <code>reckon.doccheck.audit_file</code> reports no <code>duplicate-plan-scalar</code> finding. A second case asserts the fragment's section id appears once in the composed text.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base at <code>10ccd91a</code>, 22 importer files</td><td>232 passed, <code>EXIT=0</code></td><td><code>gate-base.log</code></td></tr>
+          <tr><td>Head at this tree, 23 files (adds the new test)</td><td>234 passed, <code>EXIT=0</code></td><td><code>gate-head.log</code></td></tr>
+          <tr><td>Declared negative control, whole-document append restored</td><td>1 failed / 1 passed, <code>EXIT=1</code></td><td><code>negative_control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Brackets are listed in both gate logs by the file whose AST imports <code>reckon.evidence</code> or <code>reckon.doccheck</code>, and the head arm adds no failing test id over the base arm.</p>
+    </section>
+
+    <section id="negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>append each fragment's whole document again; the single plan-slug assertion must fail</em>. Run in a scratch tree whose <code>reckon/evidence.py</code> returns <code>fragment.read_bytes()</code>, the plan-slug assertion fails with <code>['demo-landed', 'demo'] == ['demo-landed']</code> &mdash; the fragment's scalar reappears beside the record's.</p>
+    </section>
+
+    <section id="scope">
+      <h2>Scope</h2>
+      <p>The node changes <code>reckon/evidence.py</code> and its own test file, and writes this fragment. Verifying the merged result belongs to a separately dispatched test node; the worker does not resolve the driving followup or change terminal plan state. No figure is written: the relationship here is a table of gate arms, not a spatial one.</p>
+    </section>
+  </main>
+</body>
+</html>
