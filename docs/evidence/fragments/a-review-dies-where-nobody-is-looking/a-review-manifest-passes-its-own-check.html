@@ -122,8 +122,11 @@ exit: 0   findings: []</code></pre>
   72 skipped, exit 1. The head arm carries no failure the base arm does not, with one
   exception, and the exception is not this change: the head arm additionally reports
   <code>tests/test_tag_inventory.py::test_discovery_derives_tag_inventory_from_every_resource_type</code>,
-  which passes in isolation at head (<code>tag-inventory-rerun.log</code>) and again
-  alongside the server test in one process (<code>tag-inventory-with-server.log</code>).
+  which passes in isolation at head and again alongside the server test in one
+  process (both reruns under
+  <code>~/.config/reckon/crew/runs/r-20260930T140824474288-a-review-manifest-passes-its-own-check/</code>,
+  as <code>tag-inventory-rerun.log</code> and <code>tag-inventory-with-server.log</code>,
+  beside the two gate logs this node ran).
   That test is the cache discriminator — it authors a tag mid-run and requires the next
   read to observe it — and its failure mode, a stale inventory, requires
   <code>reckon/serve.py</code>'s memoised discovery signature to be live, whose only
