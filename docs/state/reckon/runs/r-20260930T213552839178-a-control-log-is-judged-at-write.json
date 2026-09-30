@@ -1,0 +1,441 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 480000,
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "1c20ca680a2b35119f6256431c5c62ef53b7bc34",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 12837415,
+      "input_tokens_cumulative": 12837415,
+      "output_tokens": 70026,
+      "output_tokens_cumulative": 70026,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 637,
+    "files": 3,
+    "removed": 1
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 853,
+        "name": "_parse_failure_attribution",
+        "path": "reckon/crew/reports.py"
+      },
+      "run_function": {
+        "line": 796,
+        "name": "_parse_suite_observation",
+        "path": "reckon/crew/reports.py"
+      },
+      "window_line": 798
+    },
+    {
+      "existing_function": {
+        "line": 796,
+        "name": "_parse_suite_observation",
+        "path": "reckon/crew/reports.py"
+      },
+      "run_function": {
+        "line": 853,
+        "name": "_parse_failure_attribution",
+        "path": "reckon/crew/reports.py"
+      },
+      "window_line": 860
+    },
+    {
+      "existing_function": {
+        "line": 894,
+        "name": "_recorded_exit_status",
+        "path": "reckon/crew/promotion.py"
+      },
+      "run_function": {
+        "line": 1013,
+        "name": "_terminal_exit_status",
+        "path": "reckon/crew/reports.py"
+      },
+      "window_line": 1015
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "30a5f18347410c3b2f057d8458ee5495e0794f0f",
+    "ef7fd092a5c8f04fb3b53eb8b04c32e7b01ac944"
+  ],
+  "completed_at": "2026-09-30T22:00:55.087Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-30T21:36:10Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest process",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_control_log_is_judged_at_write.py tests/test_manifest_check_command.py tests/test_worker_prompt_contract.py tests/test_a_review_manifest_passes_its_own_check.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T213552839178-a-control-log-is-judged-at-write/logs/gate-head.log"
+  },
+  "impl_move": {
+    "at_complete": 0.95,
+    "at_dispatch": 0.95,
+    "plan": "scoring-should-stop-a-promotion",
+    "reason": "impl for this plan's remaining items is written in one plan update after the §4b node lands",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-30T22:35:55.001035+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-30T21:35:55Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 22,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 3,
+    "headroom": 8,
+    "mean_context": 173333,
+    "observed_at": "2026-09-30T21:35:33Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-30T22:00:55.087Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T213552839178-a-control-log-is-judged-at-write/manifest.md",
+  "member": "disposable-r-20260930T213552839178-a-control-log-is-judged-at-write",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_bullet_list_of_control_parts_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_log_recording_a_zero_exit_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_log_with_no_exit_record_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_mapping_of_control_sub_keys_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_named_log_that_does_not_exist_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_path_carrying_prose_is_refused_rather_than_read_as_a_path",
+      "tests/test_a_control_log_is_judged_at_write.py::test_an_empty_control_log_is_refused_at_the_write",
+      "tests/test_a_control_log_is_judged_at_write.py::test_an_empty_waiver_records_nothing_and_the_log_is_still_judged",
+      "tests/test_a_control_log_is_judged_at_write.py::test_prose_written_before_the_path_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_the_command_refuses_a_path_carrying_prose",
+      "tests/test_a_control_log_is_judged_at_write.py::test_the_command_refuses_an_empty_control_log"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_bullet_list_of_control_parts_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_declared_none_exempts_the_control_log",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_heading_above_the_path_composes_to_the_bare_path_and_is_accepted",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_log_ending_in_a_non_zero_exit_is_accepted",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_log_recording_a_zero_exit_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_log_with_no_exit_record_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_mapping_of_control_sub_keys_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_named_log_that_does_not_exist_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_node_writing_no_check_is_not_judged",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_path_carrying_prose_is_refused_rather_than_read_as_a_path",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_recorded_waiver_leaves_the_log_to_a_reader",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_relative_path_resolves_beside_the_manifest_it_is_written_in",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_run_that_declared_no_control_is_not_judged",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_run_that_has_not_claimed_completion_is_not_judged",
+      "tests/test_a_control_log_is_judged_at_write.py::test_an_empty_control_log_is_refused_at_the_write",
+      "tests/test_a_control_log_is_judged_at_write.py::test_an_empty_waiver_records_nothing_and_the_log_is_still_judged",
+      "tests/test_a_control_log_is_judged_at_write.py::test_prose_written_before_the_path_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_the_command_refuses_a_path_carrying_prose",
+      "tests/test_a_control_log_is_judged_at_write.py::test_the_command_refuses_an_empty_control_log",
+      "tests/test_a_control_log_is_judged_at_write.py::test_the_nodes_own_manifest_path_resolves_a_relative_log"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_bullet_list_of_control_parts_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_log_recording_a_zero_exit_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_log_with_no_exit_record_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_mapping_of_control_sub_keys_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_named_log_that_does_not_exist_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_a_path_carrying_prose_is_refused_rather_than_read_as_a_path",
+      "tests/test_a_control_log_is_judged_at_write.py::test_an_empty_control_log_is_refused_at_the_write",
+      "tests/test_a_control_log_is_judged_at_write.py::test_an_empty_waiver_records_nothing_and_the_log_is_still_judged",
+      "tests/test_a_control_log_is_judged_at_write.py::test_prose_written_before_the_path_is_refused",
+      "tests/test_a_control_log_is_judged_at_write.py::test_the_command_refuses_a_path_carrying_prose",
+      "tests/test_a_control_log_is_judged_at_write.py::test_the_command_refuses_an_empty_control_log"
+    ],
+    "declaration": "remove the new control-log check from audit_manifest in reckon/crew/reports.py; the empty-log case in tests/test_a_control_log_is_judged_at_write.py fails",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T213552839178-a-control-log-is-judged-at-write/logs/negative-control-removed-check.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T213552839178-a-control-log-is-judged-at-write/logs/negative-control-removed-check.log",
+    "test_paths": [
+      "tests/test_a_control_log_is_judged_at_write.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-control-log-is-judged-at-write",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1945,
+          "cached_input_tokens": 508020,
+          "input_tokens": 509967,
+          "output_tokens": 1586,
+          "reasoning_output_tokens": 114,
+          "total_tokens": 511553,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "First reproduce at base: a manifest with status complete, a commit, a tests line and an empty negative_control_log audits with no finding (the currency report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/scoring-currency/report.md shows the call). Then, when the run armed a negative control, audit_manifest refuses each shape in §2j's table of control shapes (read it in the plan) with a finding that names the field and what it found, and accepts a control log that resolves to a readable file ending in a bare EXIT= line with a non-zero code. A run that armed no control, and a manifest carrying a recorded waiver, raise no control finding. A new tests/test_a_control_log_is_judged_at_write.py asserts each refused shape, the accepted shape, the no-control case and the waiver case through audit_manifest and through the crew check-manifest console script. The named negative control (remove the new control-log check) reddens the empty-log case. The gate is that new test plus tests/test_manifest_check_command.py, tests/test_worker_prompt_contract.py and tests/test_a_review_manifest_passes_its_own_check.py, run at base and at head. Each arm is recorded as JSON carrying completed true and a literal command with absolute paths and no angle-bracket placeholder; each log names its revision on the first line and ends with a bare line reading EXIT= followed by the exit code. Every pytest process uses a basetemp private to that process. The head arm adds no failure id; any added id means status blocked, naming each id. ruff check and ruff format --check over the changed paths report no finding the base did not. Scratch goes under /tmp in a directory named for this run and is deleted before status complete, printed and listed in artifacts. An evidence fragment at docs/evidence/fragments/scoring-should-stop-a-promotion/a-control-log-is-judged-at-write.html records the change. The turn ends once the manifest reads complete or blocked.",
+    "estimated_hours": null,
+    "goal": "The write-time manifest audit (audit_manifest in reckon/crew/reports.py, reached through crew check-manifest) judges negative_control_log the way scoring-should-stop-a-promotion §2j requires, so a worker learns at its own write that its control record is missing or malformed, while it can still fix it, instead of the coordinator discovering it at promotion.",
+    "id": "a-control-log-is-judged-at-write",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-30T21:35:55Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 22,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 3,
+      "headroom": 8,
+      "mean_context": 173333,
+      "observed_at": "2026-09-30T21:35:33Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T213552839178-a-control-log-is-judged-at-write/manifest.md",
+    "negative_control": "remove the new control-log check from audit_manifest in reckon/crew/reports.py; the empty-log case in tests/test_a_control_log_is_judged_at_write.py fails",
+    "plan": "scoring-should-stop-a-promotion",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2j",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/reports.py",
+      "tests/test_a_control_log_is_judged_at_write.py",
+      "docs/evidence/fragments/scoring-should-stop-a-promotion/a-control-log-is-judged-at-write.html",
+      "docs/figures/scoring-should-stop-a-promotion/a-control-log-is-judged-at-write"
+    ]
+  },
+  "orientation_input_tokens": 3330989.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "a-control-log-is-judged-at-write",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-30T21:36:02.980935+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "scoring-should-stop-a-promotion",
+  "plan_impl_at_dispatch": 0.95,
+  "plan_link": null,
+  "promoted_revision": "ef7fd092a5c8f04fb3b53eb8b04c32e7b01ac944",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 18,
+      "evidence": 19,
+      "fit": 18,
+      "goal_fidelity": 17,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 92
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260930T213552839178-a-control-log-is-judged-at-write",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2j",
+  "session_harness": "claude",
+  "session_id": "16a5554f-aab8-41a2-b38e-a54f9ae9949e",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 12837415,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 1477.883,
+    "generated_tokens": 70026,
+    "generation_seconds": 1314.769,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 40.5,
+    "machine_seconds": 163.114,
+    "peak_input_tokens": 194242,
+    "tokens_per_second": 53.26,
+    "wall_tokens_per_second": 47.38
+  },
+  "time_budget": "60m",
+  "tool_steps": 95.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 1485,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-30T22:00:56Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-30T21:36:14Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260930T213552839178-a-control-log-is-judged-at-write",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 14237,
+    "worker_pid": 265479
+  },
+  "worker_seconds": 1465,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
