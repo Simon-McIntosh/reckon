@@ -65,6 +65,31 @@ UNRELATED = """def unrelated(a):
     return scaled + pair[1]
 """
 
+STAMP_MODULE = '''"""A module the base already carries."""
+
+from __future__ import annotations
+
+
+def format_stamp(value):
+    """A helper the base carries and the run overwrites in place."""
+    return str(value)
+'''
+
+STAMP_MODULE_COPIED = '''"""A module the base already carries."""
+
+from __future__ import annotations
+
+
+def format_stamp(value):
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return _from_epoch(float(value))
+    if isinstance(value, str):
+        return _from_iso8601(value)
+    return None
+'''
+
 
 def _git(repository: Path, *arguments: str) -> str:
     result = subprocess.run(
@@ -185,6 +210,49 @@ def test_a_private_copy_is_reported_with_the_function_it_copies(
     assert existing["name"] == "parse_utc"
     assert existing["line"] == _parse_utc_line(repository)
     assert matches[0]["run_function"]["path"] == "reckon/private_copy.py"
+
+
+def test_a_modified_function_becoming_a_copy_is_reported(
+    repository: Path, tmp_path: Path
+) -> None:
+    """The run rewrites an existing function, in a file the base carries.
+
+    The file is present at the base and the function name is unchanged, so the
+    run's function is not an addition: it is a modification. The detector must
+    still see the rewritten body as a copy of ``parse_utc`` rather than treating
+    the file as untouched.
+    """
+    target = repository / "reckon" / "stamps.py"
+    target.write_text(STAMP_MODULE, encoding="utf-8")
+    _git(repository, "add", "reckon/stamps.py")
+    _git(repository, "commit", "-q", "-m", "feat: add a stamp formatter")
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    run_id = "r-clone-modified"
+    (run_tree / "reckon" / "stamps.py").write_text(
+        STAMP_MODULE_COPIED, encoding="utf-8"
+    )
+    _git(run_tree, "add", "reckon/stamps.py")
+    _git(run_tree, "commit", "-q", "-m", "test: rewrite the formatter as a copy")
+    commit = _git(run_tree, "rev-parse", "HEAD")
+    _pointer(
+        repository,
+        run_tree,
+        run_id,
+        base,
+        write_paths=("reckon/stamps.py",),
+    )
+
+    crew.complete(run_id, gate="passed", commits=[commit], root=repository)
+
+    row = _promoted_row(repository, run_id)
+    matches = row.get("clone_matches")
+    assert isinstance(matches, list) and matches, row
+    existing = matches[0]["existing_function"]
+    assert existing["path"] == "reckon/_timestamps.py"
+    assert existing["name"] == "parse_utc"
+    assert existing["line"] == _parse_utc_line(repository)
+    assert matches[0]["run_function"]["path"] == "reckon/stamps.py"
 
 
 def test_a_function_matching_nothing_reports_an_empty_list(

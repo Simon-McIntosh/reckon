@@ -1,0 +1,4 @@
+<section id="clone-report-sees-modified-functions">
+    <h2>§4 — promotion reports a copy introduced by modifying an existing function</h2>
+    <p><code>tests/test_promotion_reports_clones.py:test_a_modified_function_becoming_a_copy_is_reported</code> synthesises a run whose base already carries <code>reckon/stamps.py</code> and rewrites its <code>format_stamp</code> body in place to match <code>reckon/_timestamps.py:parse_utc</code>. Promotion records the match, naming <code>reckon/_timestamps.py</code> and <code>parse_utc</code> at its own line; the detector needed no change. The named gate file reports <strong>4 passed</strong> (EXIT=0). The declared mutation — restricting the detector to functions in files the base does not carry — makes this case fail (1 failed, 3 passed, EXIT=1) while the added-file case still passes.</p>
+  </section>
