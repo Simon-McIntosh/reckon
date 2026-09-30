@@ -1319,6 +1319,15 @@ def crew_preflight(
     ),
 )
 @click.option(
+    "--accept-directory-claim",
+    "accept_directory_claim",
+    is_flag=True,
+    help=(
+        "Proceed when a declared write path is a directory overlapping a live "
+        "run's claim, recording the exception instead of refusing."
+    ),
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     help="Validate and resolve only: no worktree, no process, no record.",
@@ -1356,6 +1365,7 @@ def crew_dispatch(
     allow_unreviewed_plan,
     local,
     repairs,
+    accept_directory_claim,
     dry_run,
     pretty,
 ):
@@ -1455,6 +1465,7 @@ def crew_dispatch(
                 watch_required=True,
                 watch_override=no_watch,
                 repairs=repairs,
+                accept_directory_claim=accept_directory_claim,
             )
         except crew_module.PlanVisibilityError as exc:
             _emit(
@@ -1543,6 +1554,7 @@ def crew_dispatch(
             backend_override=backend,
             default_backend_override=flight_backend_override,
             repairs=repairs,
+            accept_directory_claim=accept_directory_claim,
         )
     except crew_module.PlanVisibilityError as exc:
         _emit(
