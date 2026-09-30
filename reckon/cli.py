@@ -5161,6 +5161,27 @@ def _ledger_module():
         "Refused when the run has no live, in-progress worker to waive."
     ),
 )
+@click.option(
+    "--plan-link",
+    default="",
+    metavar="SLUG",
+    help=(
+        "Name the plan whose product an unplanned (brief) implement landing "
+        "changed. Required for an implement-role brief run unless "
+        "--unplanned-reason is given; the value lands on the ledger row as "
+        "plan_link."
+    ),
+)
+@click.option(
+    "--unplanned-reason",
+    default="",
+    metavar="TEXT",
+    help=(
+        "State why an unplanned (brief) implement landing changed no plan. "
+        "Required for an implement-role brief run unless --plan-link is given; "
+        "the value lands on the ledger row as unplanned_reason."
+    ),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_complete(
     run_id,
@@ -5185,6 +5206,8 @@ def crew_complete(
     accepted_paths,
     no_impl_change,
     waive_live_run,
+    plan_link,
+    unplanned_reason,
     pretty,
 ):
     """Promote one finished run into the owning repository's committed ledger.
@@ -5226,6 +5249,8 @@ def crew_complete(
             accepted_paths=dict(accepted_paths),
             no_impl_change=no_impl_change,
             live_run_waiver=waive_live_run,
+            plan_link=plan_link,
+            unplanned_reason=unplanned_reason,
         )
     except ledger_module.SuiteDeltaError as exc:
         _emit(

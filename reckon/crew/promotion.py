@@ -3863,6 +3863,8 @@ def complete(
     accepted_paths: Mapping[str, str] | None = None,
     no_impl_change: str = "",
     live_run_waiver: str = "",
+    plan_link: str = "",
+    unplanned_reason: str = "",
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed."""
     verdict = str(gate).strip().lower()
@@ -4041,6 +4043,8 @@ def complete(
             commit_list_shortfall=commit_list_shortfall,
             no_impl_change=no_impl_change,
             live_run_waived=live_run_waived,
+            plan_link=plan_link,
+            unplanned_reason=unplanned_reason,
         )
         if commit_list_shortfall is not None:
             result["commit_list_shortfall"] = dict(commit_list_shortfall)
@@ -4994,6 +4998,41 @@ _IMPL_MOVE_EXEMPT_CLASSIFICATIONS = frozenset({"negative-result", "correct-refus
 _IMPL_MOVE_CORRECTIVE_ATTEMPT_KINDS = frozenset({"resume", "redispatch"})
 
 
+def _require_brief_owner(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    plan_link: str,
+    unplanned_reason: str,
+) -> dict[str, Any] | None:
+    """Refuse an implement-role brief run that names no owner for its change.
+
+    A brief run has no plan section to move, so nothing joins a product change
+    to the plan it belongs to unless the promotion says so. An implement-role
+    brief run may land only with one of two discharges: ``--plan-link <slug>``
+    naming the plan whose product it changed, or ``--unplanned-reason <text>``
+    stating why it changed no plan. A non-implementing role needs neither, and a
+    plan run records its owner through the plan itself. Both discharges name the
+    flag a reader would pass, so the refusal is answered in one word of work.
+    """
+    node = record.get("node") or {}
+    if not str(node.get("brief") or "").strip():
+        return None
+    role = str(record.get("role") or "")
+    if role not in _IMPL_MOVE_ENFORCED_ROLES:
+        return None
+    link = str(plan_link).strip()
+    reason = str(unplanned_reason).strip()
+    if link or reason:
+        return {"plan_link": link, "unplanned_reason": reason}
+    raise CrewError(
+        f"implement-role brief run {run_id!r} names neither a plan link nor an "
+        "unplanned reason; pass --plan-link <slug> naming the plan whose "
+        "product it changed, or --unplanned-reason <text> stating why it "
+        "changed no plan"
+    )
+
+
 def _require_impl_moved(
     run_id: str,
     record: Mapping[str, Any],
@@ -5026,6 +5065,14 @@ def _require_impl_moved(
         "at_dispatch": recorded_value,
         "at_complete": None,
     }
+    # A brief run names no plan section, so there is no plan impl to move and
+    # nothing for this guard to read. The skip is named here rather than left to
+    # the empty-plan branch so a reader of the row sees the run's carrier as the
+    # reason, not an absent plan that might read as a defect.
+    if str(node.get("brief") or "").strip():
+        check["verdict"] = "exempt"
+        check["reason"] = "brief-names-no-plan"
+        return check
     if role not in _IMPL_MOVE_ENFORCED_ROLES:
         check["verdict"] = "exempt"
         check["reason"] = f"role-not-enforced:{role or 'unknown'}"
@@ -5414,6 +5461,8 @@ def _complete_locked(
     commit_list_shortfall: Mapping[str, Any] | None = None,
     no_impl_change: str = "",
     live_run_waived: Mapping[str, str] | None = None,
+    plan_link: str = "",
+    unplanned_reason: str = "",
 ) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
 
@@ -5608,6 +5657,15 @@ def _complete_locked(
     # did not move, unless the reason is recorded. The check reads the plan from
     # its own repository, ahead of anything this promotion writes.
     plan_state = _plan_state_for_run(record, fallback_root=ledger_root)
+    # An unplanned implement landing must name an owner before anything is
+    # written: a brief run has no plan section to join its product change to,
+    # so the check is what stops that change from landing unattributed.
+    brief_owner = _require_brief_owner(
+        run_id,
+        record,
+        plan_link=plan_link,
+        unplanned_reason=unplanned_reason,
+    )
     impl_move = _require_impl_moved(
         run_id,
         record,
@@ -5746,10 +5804,26 @@ def _complete_locked(
             if measured is not None
             else ledger.unmeasured_clone_report("the revision pair could not be read")
         )
+    # A brief run carries the digest and stored path of the brief it read in
+    # place of a plan section, so a promoted row still points at the exact text
+    # the worker saw. The block is present only for a brief run, which is what
+    # makes the row's ``plan`` null rather than empty.
+    brief_run = str(node.get("brief") or "").strip()
+    brief_block = (
+        {
+            "sha256": str(node.get("brief_sha256") or ""),
+            "path": str(node.get("brief_path") or ""),
+        }
+        if brief_run
+        else None
+    )
     run = ledger.build_record(
         run_id=run_id,
         plan=str(node.get("plan") or ""),
         section=str(node.get("section") or ""),
+        brief=brief_block,
+        plan_link=str((brief_owner or {}).get("plan_link") or ""),
+        unplanned_reason=str((brief_owner or {}).get("unplanned_reason") or ""),
         node=str(node.get("id") or ""),
         node_definition=node,
         role=str(record.get("role") or ""),
