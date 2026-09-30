@@ -4117,6 +4117,36 @@
     "reason": "corrective-run:resume",
     "verdict": "exempt"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "changed_paths_differing": null,
+    "checkout_descends_from_integrated_revision": false,
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "5e99a85647ca095b66eca559a0f1285d51222184",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_crew_live_honours_fields.py::test_runs_view_passes_through_the_coordinator_fields",
+        "tests/test_skill_contracts.py::test_no_routing_identifier_leaks_into_skills_or_source",
+        "tests/test_skill_contracts.py::test_ship_dispatch_exit_table_matches_cli_branches"
+      ],
+      "integrated_revision": "5e99a85647ca095b66eca559a0f1285d51222184",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision 5e99a85647ca: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/vg-bt-wb5-f1a59366 tests/test_runs_view_shows_brief_runs.py tests/test_skill_contracts.py tests/test_skill_contract_parity.py tests/test_promotion_records_a_brief_runs_owner.py tests/test_crew_live_honours_fields.py tests/test_crew_run_identity.py tests/test_crew_runs_by_run_id.py tests/test_crew_runs_view.py tests/test_mcp_crew_runs_run_id.py",
+    "gate_command_source": "stored",
+    "integrated_revision": "5e99a85647ca095b66eca559a0f1285d51222184",
+    "integrated_verdict": "failed",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T125913711305-the-skill-names-when-a-brief-fits/verify-gate.log",
+    "ran": true,
+    "reason": null,
+    "timed_out": false,
+    "worktree_roots_rewritten": []
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
