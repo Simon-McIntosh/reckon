@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="an-orchestrator-cannot-forget-its-obligations">
+  <meta name="plan-title" content="An orchestrator cannot forget its obligations">
+  <meta name="plan-evidence-for" content="reckon:an-orchestrator-cannot-forget-its-obligations">
+  <meta name="plan-verifies" content="reckon:an-orchestrator-cannot-forget-its-obligations#s5">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-09-30">
+  <title>The hook tests' pid-less fallback is driven | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="repair-of-hook-tests-pin-their-harness-a7219b131d65">
+  <h2>The hook tests' pid-less fallback is driven, and their arms are recorded</h2>
+
+  <p><strong>What changed.</strong> The obligations-hook test file pinned
+  <code>CLAUDE_PID</code> in every drive, which left the hook's documented
+  fallback &mdash; naming the nearest ancestor whose executable is
+  <code>claude</code>, for harness versions that export no pid &mdash; reached
+  by no test. <code>tests/test_coordinator_obligations_hook.py</code> gains one
+  case that launches a wrapper carrying <code>claude</code> as its
+  <code>argv[0]</code>, has that wrapper arm the follower from inside its own
+  process, and drives the hook with <code>CLAUDE_PID</code> removed. The
+  registration's owner is then the very pid the walk finds, so the injected
+  checklist shows the fallback resolved the session rather than the drive merely
+  staying silent. The hook module is unchanged.</p>
+
+  <p><strong>Measured.</strong> A base and head arm over the three hook files
+  (<code>tests/test_coordinator_obligations_hook.py</code>,
+  <code>tests/test_hook_installer.py</code>,
+  <code>tests/test_hooks_install_cli.py</code>) are 39 passed at the reviewed
+  base <code>1f88db44c</code> and 40 passed at the repair head
+  <code>afbb6722b</code>, zero added failures by id. The head-arm log's header
+  names the revision it measured, closing the earlier arm whose header named the
+  base commit. The declared negative control was observed to fail: reverting the
+  answering commit leaves the named check uncollected
+  (<code>EXIT=4</code>). The guard was shown to bite independently &mdash;
+  neutering the ancestry fallback in a scratch export reds the new case alone
+  (<code>1 failed</code>, <code>EXIT=1</code>).</p>
+
+  <p><strong>Findings answered.</strong> <code>f7a5753e6b8</code> (the
+  pid-absent ancestry branch reached by no test) by the new case;
+  <code>fc315d2dea3</code> (the arms named outside the
+  <code>baseline_suite</code>/<code>after_suite</code> fields, with placeholder
+  commands) by this run's manifest carrying both fields with the literal
+  commands that ran; <code>f25306429f5</code> (no head log naming the revision
+  it measured) by the head-arm log whose header names
+  <code>afbb6722b</code>.</p>
+
+  <p><strong>Scope retained, deliberately.</strong> The driving followup stays
+  open and no terminal status is set: a worker knows its node landed, not
+  whether the section closed. Logs:
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T170220223668-repair-of-hook-tests-pin-their-harness-a7219b131d65/</code>.</p>
+</section>
+</main>
+</body>
+</html>
