@@ -98,6 +98,7 @@ from reckon.crew.runs import (
     _mutate_pointer,
     _process_start_time,
     _project_derivations,
+    _repository_relative_scope,
     _scopes_overlap,
     _shared_write_paths,
     _utc_now,
@@ -127,6 +128,48 @@ from reckon.crew.runs import (
 )
 
 _INOTIFY_EVENTS = 0x00000100 | 0x00000008 | 0x00000080
+
+
+class DirectoryClaimConflict(ScopeConflict):
+    """A directory write claim overlaps a live run's exact path.
+
+    A directory claim is deliberately coarser than an exact file claim: it can
+    sweep up files a peer already holds. So it refuses by default and names the
+    exact paths that collide, letting the caller either narrow the claim to the
+    files its brief names or pass ``--accept-directory-claim`` to keep the whole
+    tree. The message states the claim, its owner, the exact alternative and the
+    flag, because a refusal that only says no costs a diagnosis.
+    """
+
+    def __init__(
+        self,
+        *,
+        run_id: str,
+        node_id: str,
+        candidate_path: str,
+        claimed_path: str,
+        alternatives: Iterable[str] = (),
+    ) -> None:
+        super().__init__(
+            run_id=run_id,
+            node_id=node_id,
+            candidate_path=candidate_path,
+            claimed_path=claimed_path,
+        )
+        self.alternatives = tuple(alternatives)
+        listing = ", ".join(repr(path) for path in self.alternatives) or "none"
+        self.args = (
+            format_refusal(
+                "D12",
+                f"write path {candidate_path!r} claims a directory overlapping "
+                f"the live claim {claimed_path!r} held by run {run_id!r} "
+                f"(node {node_id!r}); declare the files the brief names as the "
+                f"exact alternative ({listing}) or pass "
+                "--accept-directory-claim to claim the whole directory",
+            ),
+        )
+
+
 # Process startup and registration may receive only one scheduler slice in six
 # while two CPU-bound jobs share a loaded host. Keep every watcher condition
 # wait on this one six-times-unloaded bound so a red test reports a producer
@@ -1609,19 +1652,22 @@ def _live_conflict_rows(
     for claim in claims:
         if claim.absolute_path.resolve() in shared:
             continue
-        paths = [
-            {"left_path": path, "right_path": claim.path}
+        overlapping = [
+            (path, absolute)
             for repository, path, absolute, _declared, _derived_from in candidates
             if repository == claim.repository
             and _scopes_overlap(absolute.as_posix(), claim.absolute_path.as_posix())
             and not (path in shared_files and path == claim.path)
         ]
-        if not paths:
+        if not overlapping:
             continue
         if not claim.binding:
             if disregarded is not None and claim.disposition_reason not in disregarded:
                 disregarded.append(claim.disposition_reason)
             continue
+        paths = [
+            {"left_path": path, "right_path": claim.path} for path, _ in overlapping
+        ]
         conflict: dict[str, Any] = {
             "candidate": node.id,
             "run_id": claim.run_id,
@@ -1635,6 +1681,127 @@ def _live_conflict_rows(
     return conflicts
 
 
+def _directory_claim_overlaps(candidate: Path, claim: Path) -> bool:
+    """Whether a candidate write path claims a directory, not an exact file.
+
+    A directory claim can sweep up paths a peer already holds, so it is judged
+    apart from an exact-file claim. Two arms: the path exists as a directory on
+    disk, or it strictly contains the live claim by path component — a topic
+    directory with nothing on disk yet is still claimed as a tree. A candidate
+    that is an exact leaf inside a peer's directory claim is neither, so it keeps
+    the plain refusal.
+    """
+    if candidate.is_dir():
+        return True
+    candidate_parts = candidate.parts
+    claim_parts = claim.parts
+    return (
+        len(candidate_parts) < len(claim_parts)
+        and claim_parts[: len(candidate_parts)] == candidate_parts
+    )
+
+
+def _live_conflict_is_a_directory_claim(
+    row: Mapping[str, Any], repo_root: Path
+) -> bool:
+    """Whether a reported live-conflict row is a directory claim.
+
+    The row's own paths are the resolution's repository-relative spelling, so
+    the directory judgement is made here rather than stored on the row: the
+    stored row keeps exactly the shape every existing reader expects, and a
+    directory claim is derived from its own paths when the caller needs it.
+    """
+    claimed = _live_conflict_path(row["claimed_path"], repo_root)
+    for entry in row.get("paths") or ():
+        candidate = _live_conflict_path(entry["left_path"], repo_root)
+        if _directory_claim_overlaps(candidate, claimed):
+            return True
+    return False
+
+
+def _live_conflict_path(value: str, repo_root: Path) -> Path:
+    """Resolve one row path to an absolute path under the repository."""
+    path = Path(str(value)).expanduser()
+    return (path if path.is_absolute() else repo_root / path).resolve()
+
+
+def _directory_claim_alternatives(
+    node: TaskNode, *, repo: Path, candidate: str, claim_path: str
+) -> list[str]:
+    """The exact files a directory claim should name instead of the whole tree.
+
+    The files the brief declares inside the claimed directory, when it declares
+    any; otherwise the overlapping claim's own path, so the warning still names
+    the one path that collides rather than leaving the caller to guess it.
+    """
+    candidate_parts = Path(candidate.rstrip("/")).parts
+    inside: list[str] = []
+    for raw in node.write_paths:
+        declared = _repository_relative_scope(str(raw), repo)
+        if declared is None:
+            continue
+        declared = declared.rstrip("/")
+        parts = Path(declared).parts
+        if len(parts) > len(candidate_parts) and parts[: len(candidate_parts)] == (
+            candidate_parts
+        ):
+            inside.append(declared)
+    return sorted(set(inside)) or [claim_path]
+
+
+def _directory_claim_row(
+    claim: _RepositoryScopeClaim, candidate: str
+) -> dict[str, Any]:
+    """Describe one accepted directory claim for the run record."""
+    return {
+        "candidate_path": candidate,
+        "claimed_path": claim.path,
+        "run_id": claim.run_id,
+        "node": claim.node_id,
+        "project": claim.project,
+    }
+
+
+def _directory_claim_acceptance_kwargs(
+    accept_directory_claim: bool, accepted: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """The extra arguments the claim walk needs only when the flag was given.
+
+    A dispatch with no ``--accept-directory-claim`` passes no extra keyword, so
+    the walk keeps its original shape for the callers and spies that wrap it.
+    """
+    if not accept_directory_claim:
+        return {}
+    return {"accept_directory_claim": True, "accepted": accepted}
+
+
+def _directory_claim_warning_line(
+    *,
+    candidate: str,
+    claimed_path: str,
+    run_id: str,
+    node_id: str,
+    alternatives: Iterable[str],
+) -> str:
+    """One warning naming a directory-claim collision and the exact alternative."""
+    listing = ", ".join(repr(path) for path in alternatives) or "none"
+    return (
+        f"write path {candidate!r} claims a directory overlapping the live claim "
+        f"{claimed_path!r} held by run {run_id!r} (node {node_id!r}); declare the "
+        f"files the brief names as the exact alternative ({listing}) or pass "
+        "--accept-directory-claim to claim the whole directory"
+    )
+
+
+def _directory_claim_acceptance_line(row: Mapping[str, Any]) -> str:
+    """One warning line recording an accepted directory claim."""
+    return (
+        f"directory claim {row['candidate_path']!r} accepted with "
+        f"--accept-directory-claim over run {row['run_id']!r} "
+        f"(node {row['node']!r}) claiming {row['claimed_path']!r}"
+    )
+
+
 def _raise_repository_scope_conflict(
     node: TaskNode,
     *,
@@ -1643,6 +1810,8 @@ def _raise_repository_scope_conflict(
     authority: Mapping[str, Any],
     claims: Iterable[_RepositoryScopeClaim],
     disregarded: list[str] | None = None,
+    accept_directory_claim: bool = False,
+    accepted: list[dict[str, Any]] | None = None,
 ) -> None:
     candidates = _candidate_scope_entries(
         node, project=project, repo=repo, authority=authority
@@ -1673,6 +1842,30 @@ def _raise_repository_scope_conflict(
                 ):
                     disregarded.append(claim.disposition_reason)
                 continue
+            if _directory_claim_overlaps(absolute, claim.absolute_path):
+                # A directory claim is coarser than the exact file a peer holds,
+                # so it is refused with the exact alternative named rather than
+                # silently, and only an explicit --accept-directory-claim keeps
+                # the whole tree. An accepted claim is written down on the record
+                # so the exception survives the command line that gave it.
+                if accept_directory_claim:
+                    if accepted is not None:
+                        accepted.append(_directory_claim_row(claim, candidate))
+                    continue
+                refusal = DirectoryClaimConflict(
+                    run_id=claim.run_id,
+                    node_id=claim.node_id,
+                    candidate_path=candidate,
+                    claimed_path=claim.path,
+                    alternatives=_directory_claim_alternatives(
+                        node, repo=repo, candidate=candidate, claim_path=claim.path
+                    ),
+                )
+                refusal.project = claim.project
+                message = str(refusal)
+                if claim.project != project:
+                    refusal.args = (f"{message} in project {claim.project!r}",)
+                raise refusal
             refusal = ScopeConflict(
                 run_id=claim.run_id,
                 node_id=claim.node_id,
@@ -2198,6 +2391,7 @@ class DispatchPlan:
     competence: dict[str, Any] | None = None
     authority: dict[str, Any] | None = None
     live_conflicts: list[dict[str, Any]] | None = None
+    directory_claim_acceptances: list[dict[str, Any]] | None = None
     sandbox_write_roots: tuple[Path, ...] | None = None
     requested_backend: str | None = None
     default_backend: str | None = None
@@ -2253,6 +2447,10 @@ class DispatchPlan:
             payload["authority"] = dict(self.authority)
         if self.live_conflicts is not None:
             payload["live_conflicts"] = [dict(item) for item in self.live_conflicts]
+        if self.directory_claim_acceptances is not None:
+            payload["directory_claim_acceptances"] = [
+                dict(item) for item in self.directory_claim_acceptances
+            ]
         return payload
 
 
@@ -3217,6 +3415,7 @@ def plan_dispatch(
     watch_required: bool = False,
     watch_override: bool = False,
     repairs: str = "",
+    accept_directory_claim: bool = False,
 ) -> DispatchPlan:
     """Resolve routing and defaults for one node and judge it. No side effects.
 
@@ -3600,6 +3799,60 @@ def plan_dispatch(
                 claims=_repository_scope_claims(),
                 disregarded=resolution.warnings,
             )
+            directory_rows = [
+                row
+                for row in (resolution.live_conflicts or ())
+                if _live_conflict_is_a_directory_claim(row, repo_root)
+            ]
+            if directory_rows:
+                if accept_directory_claim:
+                    resolution.directory_claim_acceptances = [
+                        {
+                            "candidate_path": entry["left_path"],
+                            "claimed_path": row["claimed_path"],
+                            "run_id": row["run_id"],
+                            "node": row["node"],
+                            "project": row.get("project", project),
+                        }
+                        for row in directory_rows
+                        for entry in row["paths"]
+                    ]
+                    resolution.warnings.extend(
+                        _directory_claim_acceptance_line(entry)
+                        for entry in resolution.directory_claim_acceptances
+                    )
+                else:
+                    for row in directory_rows:
+                        for entry in row["paths"]:
+                            alternatives = _directory_claim_alternatives(
+                                node,
+                                repo=repo_root,
+                                candidate=entry["left_path"],
+                                claim_path=row["claimed_path"],
+                            )
+                            resolution.warnings.append(
+                                _directory_claim_warning_line(
+                                    candidate=entry["left_path"],
+                                    claimed_path=row["claimed_path"],
+                                    run_id=row["run_id"],
+                                    node_id=row["node"],
+                                    alternatives=alternatives,
+                                )
+                            )
+                    resolution.validation = NodeValidation(
+                        ok=False,
+                        findings=[
+                            *resolution.validation.findings,
+                            {
+                                "property": "write-scope",
+                                "detail": (
+                                    "a declared directory write path overlaps a "
+                                    "live claim; declare the files the brief "
+                                    "names, or pass --accept-directory-claim"
+                                ),
+                            },
+                        ],
+                    )
     resolution.sandbox_write_roots = sandbox_write_roots
     # A dry run must reach the verdict a real dispatch reaches, so the watcher
     # gate is evaluated here too when the caller asks for it. It reads the
@@ -4163,6 +4416,7 @@ def dispatch(
     backend_override: str | None = None,
     default_backend_override: str | None = None,
     repairs: str = "",
+    accept_directory_claim: bool = False,
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -4519,6 +4773,7 @@ def dispatch(
                 if pointer.get("member") == effective_member:
                     refuse_member_in_flight(effective_member, pointer)
         disregarded_claims: list[str] = []
+        accepted_directory_claims: list[dict[str, Any]] = []
         if shadow_lineage:
             adjacent_peers = []
         else:
@@ -4535,6 +4790,12 @@ def dispatch(
                 authority=authority,
                 claims=live_claims,
                 disregarded=disregarded_claims,
+                # The acceptance sink is passed only when the flag is given, so
+                # a call that carries no directory claim keeps the walk's own
+                # signature rather than threading an unused sink through it.
+                **_directory_claim_acceptance_kwargs(
+                    accept_directory_claim, accepted_directory_claims
+                ),
             )
             adjacent_peers = _adjacent_live_peers(
                 node,
@@ -4842,11 +5103,14 @@ def dispatch(
                 *budget_warnings,
                 *disregarded_claims,
                 *(
-                    [released_follower_warning]
-                    if released_follower_warning
-                    else []
+                    [
+                        _directory_claim_acceptance_line(row)
+                        for row in accepted_directory_claims
+                    ]
                 ),
+                *([released_follower_warning] if released_follower_warning else []),
             ],
+            "directory_claim_acceptances": list(accepted_directory_claims),
             "lineage": lineage,
             "unreconciled_override": waiver,
             "unreviewed_plan_override": plan_review_waiver,
@@ -5002,6 +5266,9 @@ def dispatch(
                 repo=repo_root,
                 authority=authority,
                 claims=_repository_scope_claims(exclude_run_ids=(run_id,)),
+                **_directory_claim_acceptance_kwargs(
+                    accept_directory_claim, accepted_directory_claims
+                ),
             )
         # Publish the pointer before probing the watcher. Otherwise a watcher
         # could drain an empty fleet between the probe and this write, leaving
