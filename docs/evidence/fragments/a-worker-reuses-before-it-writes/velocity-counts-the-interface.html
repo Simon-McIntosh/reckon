@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-evidence-for" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <title>The velocity view reports the interface level and its weekly change | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>The velocity view reports the interface level and its weekly change</h1>
+      <p class="lead">The velocity view measured what the fleet <em>delivered</em> but not the
+        interface that delivery grows. A new git-only counter ports the review census's own
+        counting rules and <code>velocity.report</code> now carries an <code>interfaces</code>
+        block: for each ISO week in the window: the revision at the week's end, the four counts
+        at that revision, and the change from the previous week.</p>
+    </header>
+
+    <section id="what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/interface_counts.py</code> is new. It parses one revision's
+          <code>reckon/</code> tree read straight out of git &mdash; the module list from
+          <code>ls-tree</code>, the bytes from one <code>cat-file --batch</code> pass, no
+          checkout and no import &mdash; and ports the census's <code>interfaces()</code> rules
+          and its public-definition count. The four counted families are public definitions
+          (non-underscore module-level functions/classes plus public methods; nested functions
+          excluded), CLI options (option decorators on command/group callbacks, aliases
+          together, <code>version_option</code> included), MCP views (read-plan
+          <code>VIEW_NAMES</code>, audit-reachable names, literal <code>view</code> annotations,
+          crew view comparisons, as distinct tool/name pairs) and coded refusal families
+          (distinct literal codes passed to <code>format_refusal</code>). Nothing under
+          <code>reckon/</code> imports from <code>docs/</code>; the census is imported only by
+          the test, for parity.</li>
+        <li>Counts are cached by resolved sha under the velocity cache root, so a warm read of
+          a revision already counted recomputes nothing; a corrupt or version-mismatched entry
+          is rebuilt rather than trusted.</li>
+        <li><code>reckon/velocity.py</code> gains <code>_interface_week_rows</code> and a
+          <code>report</code> <code>interfaces</code> block. Each row names the ISO week, its
+          start and end, the first-parent revision bounded by the week's end, the four counts
+          at that revision, and their delta against the revision at the week's start (so the
+          first in-window week carries a real change against the week before it). The block is
+          emitted for the project named <code>reckon</code>; <code>interfaces</code> is also
+          accepted as a <code>view</code> field.</li>
+      </ul>
+    </section>
+
+    <section id="parity">
+      <h2>Parity with the census at this repository's HEAD</h2>
+      <p><code>tests/test_velocity_interface_counts.py</code> extracts the committed
+        <code>reckon/</code> tree at HEAD into its own <code>tmp_path</code>, runs the review
+        census's own <code>load_modules</code> / <code>measure</code> over it, and requires the
+        four counts to equal <code>interface_counts.count_revision(repo, "HEAD")</code> exactly.
+        At this node's revision both readings are:</p>
+      <table class="r-table">
+        <thead><tr><th>Family</th><th>Count at HEAD</th></tr></thead>
+        <tbody>
+          <tr><td>public definitions</td><td>1213</td></tr>
+          <tr><td>CLI options</td><td>271</td></tr>
+          <tr><td>MCP views</td><td>32</td></tr>
+          <tr><td>coded refusal families</td><td>23</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="weekly-delta">
+      <h2>The synthetic weekly change</h2>
+      <p>The test builds a two-commit repository in two ISO weeks; the second commit adds exactly
+        one public function, one CLI option and one MCP view. Asserted level and change per week:</p>
+      <table class="r-table">
+        <thead><tr><th>ISO week</th><th>public defs</th><th>CLI options</th><th>MCP views</th><th>refusal families</th></tr></thead>
+        <tbody>
+          <tr><td>2026-W36 (level / change)</td><td>2 / +2</td><td>1 / +1</td><td>1 / +1</td><td>0 / 0</td></tr>
+          <tr><td>2026-W37 (level / change)</td><td>3 / +1</td><td>2 / +1</td><td>2 / +1</td><td>0 / 0</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="the-gate">
+      <h2>The gate</h2>
+      <p>Base and head arms ran every <code>tests/</code> file whose AST imports
+        <code>reckon.velocity</code>, with <code>-n 4</code> and a separate
+        <code>--basetemp</code> under <code>/tmp</code>. Logs:
+        <code>base-arm.log</code>, <code>head-arm.log</code> under the run directory.</p>
+      <ul>
+        <li><strong>Head</strong> (<code>4544e7ea2</code>, worktree): <code>232 passed</code>,
+          EXIT=0 &mdash; adds no failing test id.</li>
+        <li><strong>Base</strong> (<code>4e05e287a</code>, <code>git archive</code> scratch):
+          <code>1 failed, 227 passed</code>, EXIT=1. The one failure,
+          <code>test_reckon_cohort_reading_at_the_pinned_commit</code>, is an instrument
+          artifact: it reads <code>Path(velocity.__file__).parents[1]</code> as a repository and
+          a <code>git archive</code> extraction has no <code>.git</code>, so its history read
+          fails. It is green in the head arm's real worktree. No other failure appears in either
+          arm, so the head adds none.</li>
+        <li><strong>Negative control</strong> (<code>negative-control.log</code>): forcing the
+          MCP view counter to always return zero fails
+          <code>test_the_week_after_a_change_reports_its_delta</code> with
+          <code>{'mcp_views': 0} != {'mcp_views': 1}</code>, exit 1. The counter is restored and
+          the test passes.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
