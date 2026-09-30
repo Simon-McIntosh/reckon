@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-evidence-for" content="reckon:a-review-dies-where-nobody-is-looking">
+  <meta name="plan-verifies" content="reckon:a-review-dies-where-nobody-is-looking#s4">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-09-30">
+  <meta name="evidence-commit" content="b8e32ac96">
+  <title>A review's promotion scope is the declaration its manifest was checked against | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-review-promotes-what-it-passed">
+  <h2>A review's promotion scope is the declaration its manifest was checked against</h2>
+
+  <p>Read at base <code>3d8e1a680</code>, changed at <code>b8e32ac96</code>. A review's whole
+  deliverable is the record it stores beside the run it read — an absolute path outside every
+  repository, granted by its dispatch — with the copy the store keys by the revision it read.
+  The check a worker runs against its own manifest accepted that grant; the scope test
+  promotion applies hours later reported both paths as stray. One delivery, two verdicts, so
+  the same node that repaired its manifest to satisfy the early check would be refused by the
+  late one.</p>
+
+  <p><strong>What disagreed.</strong> Both surfaces answer one question — is this changed path
+  contained by a declared write root — and each had its own implementation. The write-time
+  audit resolves a declaration that names a location outside the repository to no
+  repository-relative root and then compares the absolute path it already is, so the
+  declaration still decides what it grants, and it admits the revision-keyed record written
+  beside a declared store path. Promotion skipped any declaration that resolved to no root and
+  compared nothing against it, so an out-of-repository grant read as no grant at all and the
+  paths it named were stray.</p>
+
+  <p><strong>The rule now.</strong>
+  <code>reckon/crew/promotion.py</code>'s <code>_outside_declared_scope</code> delegates to
+  <code>reckon/crew/reports.py</code>'s <code>path_within_declared_scope</code> instead of
+  repeating the containment test, so one implementation serves both surfaces and a change to
+  either cannot move them apart. The declaration is still resolved against the run's recorded
+  worktree before the comparison — a grant made under a worktree that has since been reclaimed
+  keeps its mapping — and a path under no declaration is still reported, which is what the
+  controls below pin.</p>
+
+  <table class="outcomes">
+    <thead>
+      <tr><th>Case</th><th>Before</th><th>After</th><th>Test</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>The review's granted store record and the copy keyed beside it, both declared</td>
+        <td>both reported stray</td><td>nothing outside</td>
+        <td class="t">promotion_finds_nothing_outside_the_review_declarations</td>
+      </tr>
+      <tr>
+        <td>The same manifest through the check a worker runs on itself</td>
+        <td>accepted</td><td>accepted</td>
+        <td class="t">the_manifest_check_accepts_the_review_record_and_its_sibling</td>
+      </tr>
+      <tr>
+        <td>The same run promoted end to end</td>
+        <td>promoted, no scope consult</td><td>promoted, no scope consult</td>
+        <td class="t">the_review_run_promotes_over_its_own_record</td>
+      </tr>
+      <tr>
+        <td>A neighbour of the record: another stem, a suffix too short to be a revision, another extension</td>
+        <td>stray</td><td>stray</td>
+        <td class="t">a_neighbour_of_the_store_record_is_still_outside_at_promotion</td>
+      </tr>
+      <tr>
+        <td>A non-review run whose cited commit changed a path no declaration grants</td>
+        <td>refused at promotion</td><td>refused at promotion</td>
+        <td class="t">a_committed_path_outside_every_declaration_is_still_refused</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Negative control.</strong> Restoring the base <code>_outside_declared_scope</code>
+  in a scratch tree of the changed revision, the declared mutation, reddens the review case
+  alone: <strong>1 failed, 6 passed</strong>, exit 1
+  (<code>negative-control.log</code>). The failing case is
+  <code>promotion_finds_nothing_outside_the_review_declarations</code>, whose refusal now names
+  the granted record and its head-keyed sibling — the same two paths the field case reported.
+  The neighbour controls and the committed-path refusal are unchanged by the mutation, which is
+  what distinguishes an acceptance restored from a rule loosened.</p>
+
+  <p><strong>Gate.</strong> The whole <code>tests/</code> directory at <code>-n 8</code>, base
+  and head, each log naming its revision, tree, module under test and command on its header
+  lines and ending with a bare <code>EXIT=</code> line. Base <code>3d8e1a680</code> in a
+  scratch tree: <strong>73 failed, 8996 passed, 72 skipped, 4 errors</strong>, exit 1. Head
+  <code>b8e32ac96</code> in this worktree: <strong>65 failed, 9015 passed, 72 skipped</strong>,
+  exit 1. The head arm adds <strong>no failure id</strong>; both arms are red at this
+  repository's standing base, and the comparison is by id, not by count.</p>
+
+  <p><strong>What this does not close.</strong> Promotion consults the scope test only for the
+  paths a run's cited commits changed, so a review that cites no commit has its declared
+  <code>changed_paths</code> judged by no scope rule at promotion at all — replayed at base, a
+  commitless review naming its store record is promoted with the scope test never called. The
+  two surfaces now agree wherever that test runs, which is what this node measured; a
+  promotion-time judgement of a commitless run's declared paths would be a new refusal with a
+  fleet-wide blast radius and is not part of this change.</p>
+</section>
+</main>
+</body>
+</html>
