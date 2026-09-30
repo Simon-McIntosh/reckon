@@ -15,6 +15,7 @@ from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
+from reckon import review_tiers
 from reckon._timestamps import parse_utc
 from reckon.crew import metering, quota_weight, runs
 from reckon.crew import repair as repair_module
@@ -2017,6 +2018,35 @@ def _sweeping_session(project: str | None) -> str:
     return ""
 
 
+def _sweep_review_tier(
+    record: Mapping[str, Any], manifest_commits: Sequence[Any]
+) -> str:
+    """The review tier a scoring run resolves to, through promotion's resolver.
+
+    The reflex must skip exactly the runs promotion's own gate would land
+    without a review, so it reads the tier through the same
+    :mod:`reckon.review_tiers` resolver promotion calls, on the same inputs —
+    changed paths, changed lines, declared spec level and declared capability
+    risk. Re-deriving the rule here is how a sweep and a promotion come to
+    disagree about which run owes a review, and the disagreement is silent in
+    both directions. A scope that cannot be measured is read as the fuller
+    tier, so a run whose change is unreadable is still reviewed rather than
+    skipped.
+    """
+    from reckon.crew import promotion
+
+    commits = _canonical_commits(_review_tree(record), manifest_commits)
+    try:
+        return promotion._run_review_tier(
+            str(record.get("run_id") or ""),
+            record,
+            commit_list=commits,
+            root=str(record.get("repo") or "") or None,
+        )
+    except Exception:  # noqa: BLE001 - an unreadable scope owes the fuller review
+        return review_tiers.FULL
+
+
 def dispatch_awaiting_reviews(
     *,
     project: str | None = None,
@@ -2067,19 +2097,45 @@ def dispatch_awaiting_reviews(
         except Exception:  # noqa: BLE001 - one unreadable run must not stop the sweep
             scan = None
         if scan is not None and scan["classification"] == "scoring":
-            report = dispatch_review_for_run(pointer, config=config, launcher=launcher)
-            reports.append(report)
-            if report.get("dispatched"):
-                dispatched.append(str(report.get("review_run_id") or ""))
-            elif report.get("awaiting_lane"):
-                awaiting_lane.append(str(report.get("run_id") or ""))
-            elif report.get("refused"):
-                # The report itself, not a generator over it: a refusal list is
-                # read and serialized by whoever consumes the sweep, and a
-                # generator is neither readable nor JSON-serializable, so the
-                # refusal would be lost at exactly the moment a reader needs to
-                # know which lane was refused.
-                refused.append(report)
+            # A run whose tier is none changes no runtime source, so promotion
+            # lands it with the review gate standing down and records the tier
+            # as the reason no review exists. Composing a review for it anyway
+            # spends a member and a lane on a diff no reviewer is owed, so the
+            # tier is resolved through promotion's own resolver and the skip is
+            # recorded here rather than left as a silent absence.
+            run_id = str(pointer.get("run_id") or "")
+            tier = _sweep_review_tier(pointer, scan.get("manifest_commits") or [])
+            if tier == review_tiers.NONE:
+                reason = (
+                    "the run changes no runtime source, so its review tier is "
+                    "none; no review is dispatched and the merged-head gate "
+                    "checks it instead"
+                )
+                _record_review_dispatch(run_id, status="skipped", reason=reason)
+                reports.append(
+                    {
+                        "run_id": run_id,
+                        "dispatched": False,
+                        "review_tier": review_tiers.NONE,
+                        "reason": reason,
+                    }
+                )
+            else:
+                report = dispatch_review_for_run(
+                    pointer, config=config, launcher=launcher
+                )
+                reports.append(report)
+                if report.get("dispatched"):
+                    dispatched.append(str(report.get("review_run_id") or ""))
+                elif report.get("awaiting_lane"):
+                    awaiting_lane.append(str(report.get("run_id") or ""))
+                elif report.get("refused"):
+                    # The report itself, not a generator over it: a refusal list
+                    # is read and serialized by whoever consumes the sweep, and a
+                    # generator is neither readable nor JSON-serializable, so the
+                    # refusal would be lost at exactly the moment a reader needs
+                    # to know which lane was refused.
+                    refused.append(report)
         # The repair pass, keyed on the stored review rather than on the run's
         # classification: a review carrying findings may leave the run reading
         # promotable, so gating this on ``scoring`` alone would leave a

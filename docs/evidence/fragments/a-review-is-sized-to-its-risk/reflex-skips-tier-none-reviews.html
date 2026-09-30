@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en-locale">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-is-sized-to-its-risk">
+  <meta name="plan-title" content="A Review Is Sized To Its Risk — the reflex skips a tier-none run">
+  <meta name="plan-summary" content="The review reflex composed and launched a review for every scoring run, including a docs-only run whose tier is none and which promotion lands with the review gate standing down.">
+  <meta name="plan-evidence-for" content="a-review-is-sized-to-its-risk">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Review Is Sized To Its Risk — the reflex skips a tier-none run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The review reflex dispatches no review for a tier-none run</h1>
+  <p>A scoring run that changes no runtime source — documents, evidence, research data, figures — is landed by
+    promotion with the review gate standing down, and the tier <code>none</code> is recorded on the ledger row as
+    the reason no review exists. The reflex in <code>reckon.crew.recovery.dispatch_awaiting_reviews</code> did not
+    consult that tier: it composed and launched a review for every scoring run, spending a member and a lane on a
+    diff no reviewer was owed.</p>
+
+  <h2>The change</h2>
+  <ul>
+    <li><code>reckon/crew/recovery.py</code> resolves each scoring candidate's tier through
+      <code>reckon.review_tiers.review_tier</code> — the same resolver promotion calls, on the same four inputs —
+      and skips the review dispatch for a run whose tier is <code>none</code>, recording the skip on the run's
+      pointer (<code>review_dispatch.status = "skipped"</code>) rather than leaving a silent absence. A scope that
+      cannot be measured is read as the fuller tier, so a run whose change is unreadable is still reviewed.</li>
+    <li><code>tests/test_reflex_skips_tier_none_reviews.py</code> drives the sweep with the dispatch stubbed for a
+      docs-only implement run and a run changing <code>reckon/</code> source, asserting the documentation run
+      composes no review while the source run is still dispatched in the same sweep.</li>
+  </ul>
+
+  <h2>Gate</h2>
+  <p>Two files, run in the node's worktree:
+    <code>tests/test_reflex_skips_tier_none_reviews.py</code> and
+    <code>tests/test_review_role_is_not_reviewed.py</code> —
+    <strong>8 passed, EXIT=0</strong>. The module under test resolved to this worktree's own
+    <code>reckon/crew/recovery.py</code>. Verifying the merged result belongs to a separately dispatched test node;
+    this gate measures only this node's own change.</p>
+
+  <h2>Negative control</h2>
+  <p>Declared mutation — <em>remove the tier check from the sweep</em> — applied in place and the new case run
+    against it. The sweep then composed a review for the docs-only run and the no-review assertion failed
+    (<code>AssertionError: ['r-docs-only', 'r-source']</code>, EXIT=1). The check is load-bearing: it fails on the
+    mutation and passes without it. The mutation was reverted before commit.</p>
+
+  <h2>Evidence</h2>
+  <ul>
+    <li>Gate log: <code>gate.log</code> — first line names revision, tree, module and command.</li>
+    <li>Negative-control log: <code>negative-control.log</code>, first line the declared mutation verbatim.</li>
+  </ul>
+ </main>
+</body>
+</html>
