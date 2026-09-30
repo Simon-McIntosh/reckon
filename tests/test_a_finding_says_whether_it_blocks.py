@@ -30,7 +30,11 @@ BASE_SHA = "1" * 40
 HEAD_SHA = "2" * 40
 
 # One finding, as the parsed form the store carries.
-PLAIN_FINDING = {"file": "tests/test_x.py", "line": "12", "text": "the guard never fires"}
+PLAIN_FINDING = {
+    "file": "tests/test_x.py",
+    "line": "12",
+    "text": "the guard never fires",
+}
 
 
 def _review(*finding_lines: str) -> str:
@@ -38,7 +42,10 @@ def _review(*finding_lines: str) -> str:
     return "\n".join(
         (
             *finding_lines,
-            *(f"SCORE {dimension}: 15" for dimension in review_module.REVIEW_DIMENSIONS),
+            *(
+                f"SCORE {dimension}: 15"
+                for dimension in review_module.REVIEW_DIMENSIONS
+            ),
         )
     )
 
@@ -83,7 +90,9 @@ def test_a_stated_severity_leaves_file_line_and_text_unchanged() -> None:
     # The shape a review carried before the severity slot existed, now with a
     # severity word: the finding still parses to the same file, line and text,
     # so a finding's id is the one the same text yielded before.
-    finding = _only_finding("FINDING tests/test_x.py:12 blocking: the guard never fires")
+    finding = _only_finding(
+        "FINDING tests/test_x.py:12 blocking: the guard never fires"
+    )
 
     assert finding == {
         **PLAIN_FINDING,
@@ -93,7 +102,9 @@ def test_a_stated_severity_leaves_file_line_and_text_unchanged() -> None:
 
 
 def test_an_undeclared_word_stays_in_the_text_with_no_severity() -> None:
-    finding = _only_finding("FINDING tests/test_x.py:12 critical: the guard never fires")
+    finding = _only_finding(
+        "FINDING tests/test_x.py:12 critical: the guard never fires"
+    )
 
     assert "severity" not in finding
     assert finding["text"] == "critical: the guard never fires"
@@ -102,7 +113,9 @@ def test_an_undeclared_word_stays_in_the_text_with_no_severity() -> None:
 def test_a_declared_word_is_recorded_in_its_declared_spelling() -> None:
     # Two records of one judgement must compare equal to a gate that reads the
     # declared spelling, whatever case the reviewer wrote it in.
-    finding = _only_finding("FINDING tests/test_x.py:12 Blocking: the guard never fires")
+    finding = _only_finding(
+        "FINDING tests/test_x.py:12 Blocking: the guard never fires"
+    )
 
     assert finding["severity"] == "blocking"
     assert finding["text"] == "Blocking: the guard never fires"
