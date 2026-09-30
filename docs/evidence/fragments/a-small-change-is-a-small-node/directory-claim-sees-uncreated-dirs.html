@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-small-change-is-a-small-node">
+  <meta name="plan-title" content="A directory claim sees a directory not yet on disk">
+  <meta name="plan-summary" content="The directory-claim overlap check reads an absent no-suffix write path inside a live claim as a directory, so a node declaring a topic directory a peer already covers is warned and asks first.">
+  <meta name="plan-evidence-for" content="reckon:a-small-change-is-a-small-node">
+  <meta name="plan-verifies" content="reckon:a-small-change-is-a-small-node#s5">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,dispatch,directory-claim,scope">
+  <title>A directory claim sees a directory not yet on disk — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="directory-claim-sees-uncreated-dirs" data-reckon="landed" data-when="2026-09-30">
+  <h2>A directory claim sees a directory not yet on disk</h2>
+  <p>The directory-claim overlap check now reads a declared write path that does not exist yet as a directory when it has no file suffix and sits strictly inside a live run's claimed directory, so dispatch warns and names the claim and requires <code>--accept-directory-claim</code> exactly as for an existing directory; a suffix-bearing path inside the same claim keeps the plain file refusal. <code>tests/test_directory_claim_asks_first.py</code> gains a dry-run case (a live run claiming <code>docs/evidence</code> with a dry run declaring the absent <code>docs/evidence/new-topic</code> warns and names the claim; with the flag it proceeds) and a classifier case, 9 passed at <code>EXIT=0</code> with the negative control red at <code>EXIT=1</code>.</p>
+</article>
+</body>
+</html>
