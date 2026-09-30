@@ -1092,13 +1092,21 @@ def _run_head_for_review(record: Mapping[str, Any]) -> str:
 
 
 def _review_attempt_withdrawn_before_launch(run_id: str) -> bool:
-    """Whether a recorded review run's own exit record says no worker launched.
+    """Whether a recorded review run never spawned a worker to read the head.
 
     An attempt whose run was withdrawn during setup — a claim, node name or
     worktree clash the supervisor refused before any worker existed — leaves an
     exit record saying the attempt ended during launch with no stream byte read.
     No review ever ran, so the lane is free to carry the next sweep's
     composition rather than being withheld as one that dropped the head.
+
+    The worker record the supervisor writes at spawn decides that, not the exit
+    record alone. A spawned worker killed before it wrote a single stream byte
+    also leaves an exit record saying the launch ended with no stream record
+    read, so classifying on that record alone frees the lane that did drop the
+    head and recomposes onto it — the refusal loop this rule exists to bound.
+    The presence of the worker record is positive evidence a worker launched,
+    whatever the stream count, and withholds the lane.
 
     Only that positive evidence frees the lane. A run naming no id, or one whose
     records are gone, is left standing as an attempt that stood: recomposing
@@ -1107,6 +1115,8 @@ def _review_attempt_withdrawn_before_launch(run_id: str) -> bool:
     all.
     """
     if not run_id:
+        return False
+    if _worker_record({"run_id": run_id}) is not None:
         return False
     exit_record = _run_exit_record({"run_id": run_id})
     return exit_record is not None and _exit_record_is_launch_failure(exit_record)

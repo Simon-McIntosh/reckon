@@ -226,29 +226,41 @@ def _failed_attempt(
     return recorded
 
 
-def _review_run_evidence(config_home: Path, run_id: str, *, launched: bool) -> None:
+def _review_run_evidence(run_id: str, *, state: str) -> None:
     """Write a dead review run's own records for the launch/withdrawal split.
 
-    A withdrawn-before-launch attempt leaves an exit record saying it ended
-    during launch with no stream byte read — the supervisor refused at the
-    claim, name or worktree and no worker ever existed. A launched attempt
-    leaves the worker record its supervisor wrote at spawn plus an exit record
-    showing a worker that read stream records: a run the lane did drop.
+    ``state`` names how far the attempt got, because the two records answer
+    different questions and a class of failure reads the same in one as a
+    never-launched attempt:
+
+    - ``withdrawn``: the supervisor refused before any worker existed, so no
+      worker record is written and the exit record says the launch ended with
+      no stream byte read.
+    - ``spawned-no-stream``: a worker was spawned and died before it read a
+      single stream record, so the worker record the supervisor writes at spawn
+      is present while the exit record still reads zero stream records and the
+      launch ending.
+    - ``launched``: a worker was spawned and read stream records before it
+      ended.
     """
     directory = runs.run_dir(run_id)
     directory.mkdir(parents=True, exist_ok=True)
-    if launched:
+    worker_record = directory / recovery.WORKER_RECORD_NAME
+    if state in {"spawned-no-stream", "launched"}:
         crew._write_json(
-            directory / recovery.WORKER_RECORD_NAME,
+            worker_record,
             {"run_id": run_id, "pid": 4242, "launched_at": "2026-09-22T10:00:00Z"},
         )
+    else:
+        worker_record.unlink(missing_ok=True)
+    read_stream = state == "launched"
     crew._write_json(
         directory / recovery.EXIT_RECORD_NAME,
         {
             "run_id": run_id,
             "attempt": 1,
-            "stream_records_seen": 12 if launched else 0,
-            "ended_during": "working" if launched else "launch",
+            "stream_records_seen": 12 if read_stream else 0,
+            "ended_during": "working" if read_stream else "launch",
         },
     )
 
@@ -391,7 +403,7 @@ def test_a_withdrawn_before_launch_attempt_recomposes_onto_its_lane(
             run_id="r-clive-withdrawn",
         ),
     )
-    _review_run_evidence(config_home, "r-clive-withdrawn", launched=False)
+    _review_run_evidence("r-clive-withdrawn", state="withdrawn")
     try:
         report = _compose(record)
         assert report["dispatched"] is True
@@ -444,7 +456,7 @@ def test_a_launched_attempt_with_no_stored_review_steers_off_its_lane(
             run_id="r-clive-launched",
         ),
     )
-    _review_run_evidence(config_home, "r-clive-launched", launched=True)
+    _review_run_evidence("r-clive-launched", state="launched")
     try:
         report = _compose(record)
         assert report["dispatched"] is True
@@ -452,3 +464,26 @@ def test_a_launched_attempt_with_no_stored_review_steers_off_its_lane(
         assert report["backend"] != LOCAL_BACKEND
     finally:
         _release_watcher()
+
+
+def test_a_spawned_worker_that_wrote_no_stream_record_is_not_withdrawn() -> None:
+    """A spawned worker is not read as withdrawn just because it wrote no stream.
+
+    The worker record the supervisor writes at spawn is present — positive
+    evidence a worker launched — even though the exit record reads zero stream
+    records and the launch ending, the same shape a never-launched withdrawal
+    leaves. Reading only the exit record reports the lane as one that never
+    dropped the head and frees it, so the check that gates the lane reads the
+    worker record too. The helper is asserted directly here rather than through
+    a composed dispatch, so the assertion holds wherever the helper runs; the
+    same run is then rewritten as a genuine withdrawal, which the helper must
+    still read as one.
+    """
+    _review_run_evidence("r-spawned-no-stream", state="spawned-no-stream")
+    assert (
+        recovery._review_attempt_withdrawn_before_launch("r-spawned-no-stream") is False
+    )
+    _review_run_evidence("r-spawned-no-stream", state="withdrawn")
+    assert (
+        recovery._review_attempt_withdrawn_before_launch("r-spawned-no-stream") is True
+    )
