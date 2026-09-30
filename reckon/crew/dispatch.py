@@ -5361,28 +5361,46 @@ def dispatch(
                 worktree=Path(str(worktree["path"])),
                 fenced=bool(record["fenced"]),
             )
-    except Exception:
-        _unwire_peer_channels(run_id, wired_peer_run_ids)
-        if spawned_pid is not None:
-            try:
-                _signal_process_group(spawned_pid, spawned_start_time)
-            except (CrewError, OSError):
-                pass
-        # The pointer goes first. The worktree remover refuses a worktree that a
-        # live pointer still claims, and until this run's own pointer is gone it
-        # is that claim — so removing the worktree first raised, and the unlink
-        # and the run-directory removal below never ran. A refusal reached after
-        # the pointer write therefore left a live pointer behind, which a reader
-        # takes for a run whose process died without a manifest. Unlinking first
-        # clears the claim, and the run directory follows, so a refusal is
-        # indistinguishable from a dispatch that never ran.
-        _release_launch_claim(run_id)
-        # A refusal can land before the worktree exists — the creation itself is
-        # the first thing inside this guard — and there is then nothing of this
-        # run's to remove. The pre-existing worktree of an earlier run is left
-        # in place either way, which is what its owner expects.
-        if worktree is not None:
-            _remove_worktree(repo_root, worktree["path"])
+    except Exception as exc:
+        # Undoing this run is the rollback, and a step of a rollback that fails
+        # must not become the error the caller reads: the dispatch stopped for
+        # the reason above, and an unwind that refused here — a worktree
+        # removal answering a claim — would report the cleanup instead, so the
+        # operator would re-run the dispatch by hand to find out what actually
+        # happened. The unwind's own failure therefore rides the original as
+        # its cause, which a traceback prints, and is printed here too, where
+        # a caller that shows only the original's message would otherwise lose
+        # the tree the rollback could not remove.
+        try:
+            _unwire_peer_channels(run_id, wired_peer_run_ids)
+            if spawned_pid is not None:
+                try:
+                    _signal_process_group(spawned_pid, spawned_start_time)
+                except (CrewError, OSError):
+                    pass
+            # The pointer goes first. The worktree remover refuses a worktree
+            # that a live pointer still claims, and until this run's own pointer
+            # is gone it is that claim — so removing the worktree first raised,
+            # and the unlink and the run-directory removal below never ran. A
+            # refusal reached after the pointer write therefore left a live
+            # pointer behind, which a reader takes for a run whose process died
+            # without a manifest. Unlinking first clears the claim, and the run
+            # directory follows, so a refusal is indistinguishable from a
+            # dispatch that never ran.
+            _release_launch_claim(run_id)
+            # A refusal can land before the worktree exists — the creation
+            # itself is the first thing inside this guard — and there is then
+            # nothing of this run's to remove. The pre-existing worktree of an
+            # earlier run is left in place either way, which is what its owner
+            # expects.
+            if worktree is not None:
+                _remove_worktree(repo_root, worktree["path"])
+        except Exception as rollback_failure:
+            print(
+                f"crew: undoing run {run_id} failed: {rollback_failure}",
+                file=sys.stderr,
+            )
+            raise exc from rollback_failure
         raise
     return record
 

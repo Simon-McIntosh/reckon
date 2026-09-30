@@ -1158,6 +1158,29 @@ def _state_checkout(
     return checkout, relative_path
 
 
+# The roster fields that carry a captured session: the resumable id a run
+# reported, the model it was captured under, and the per-model map a member
+# accumulates. A capture is written by whatever run last reported one rather
+# than by an author registering a member, so these fields are not part of what
+# a registration is a claim about.
+_SESSION_CAPTURE_FIELDS = frozenset({"session_id", "session_model", "sessions"})
+
+
+def _registration_content(member: Mapping[str, Any] | None) -> dict[str, Any]:
+    """The part of a member row a registration owns, without its capture.
+
+    Two rows with equal registration content are the same membership: a row
+    that gained or refreshed a session is not a different member, and a row
+    whose harness, role or identity moved. An absent row has no content, so it
+    still differs from any row present.
+    """
+    return {
+        key: value
+        for key, value in (member or {}).items()
+        if key not in _SESSION_CAPTURE_FIELDS
+    }
+
+
 def _roster_obstruction(
     project: str,
     member_id: str,
@@ -1177,7 +1200,12 @@ def _roster_obstruction(
     nothing. Refusing on it made a dispatch that had just recorded a hold on its
     own backend unable to commit the session member it registered next, and left
     the idle reaper's removal uncommitted, so the registration that followed saw
-    a removed row as another author's pending write.
+    a removed row as another author's pending write. A member row whose only
+    unrecorded difference is its captured session is the same bookkeeping for
+    the same reason: the resumable id is written by whichever run reported one,
+    not by an author registering a member, so it obstructs no named commit
+    either — refusing on it made a capture that nobody had committed block the
+    next registration until someone committed the roster by hand.
 
     Reporting the obstruction rather than raising lets a caller that is
     entitled to proceed without a commit, such as the idle reaper whose
@@ -1228,7 +1256,8 @@ def _roster_obstruction(
     changed_members = sorted(
         member
         for member in current_by_id.keys() | committed_by_id.keys()
-        if current_by_id.get(member) != committed_by_id.get(member)
+        if _registration_content(current_by_id.get(member))
+        != _registration_content(committed_by_id.get(member))
     )
     if changed_members:
         return "uncommitted member registration(s): " + ", ".join(changed_members)
