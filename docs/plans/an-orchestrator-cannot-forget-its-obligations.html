@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="67">
+<meta name="plan-version" content="68">
 <meta name="plan-impl" content="0.83">
 </head>
 <body>
@@ -345,6 +345,9 @@
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260925T192546816837-review-of-obligations-digest-clears-when-empty" data-who="reckon-build" data-when="2026-09-25T19:34:13.474Z">
     <div class="r-comment-body"><p>review stored: 94, no findings</p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260930T104735293203-review-of-hooks-install-is-a-command" data-who="reckon-build" data-when="2026-09-30T11:01:04.949Z">
+    <div class="r-comment-body"><p>review of r-20260930T103658421113-hooks-install-is-a-command at 34df161cb: total 86 over the five dimensions (goal_fidelity 17, evidence 16, scope_discipline 19, durability 17, fit 17), added_failure_count 0 with added_failure_ids [] from the run&#x27;s base and head arms (2 failed / 84 passed against 2 failed / 89 passed, the same two pytest ids in both), five findings recorded — the head gate log&#x27;s revision line naming the base rather than the head it measures, a real-settings guard resolved through getpwuid while the command resolves through HOME, the harness reference dropping the &quot;run from the checkout root&quot; instruction, an inert --scope, and an evidence sentence over-claiming its guard coverage.</p></div>
+</div>
 <div class="r-comment" data-section="s1" data-id="c-20260925-no-heartbeat" data-who="reckon-build" data-when="2026-09-25T07:55:00Z">
     <div class="r-comment-body"><p>The lead's review on 2026-09-25 made two changes.</p><ul><li><strong>No heartbeat.</strong> The planned §4, a <code>NEEDS YOU</code> line repeating every ten minutes, is retired. A line that repeats trains its reader to ignore it. Obligations reach the coordinator through the §5 hooks instead: once per turn, where they cannot be skipped. The follower keeps reporting transitions, and the needs-you line folded into <code>the-fleet-counters-count-the-fleet</code> §5 fires on change only.</li><li><strong>Home install.</strong> The hooks go in <code>~/.claude/settings.json</code>, so every project benefits.</li></ul><p>The S22 coordinator added two reuse conditions:</p><ul><li>the kinds derive from <code>reckon.crew.recovery.recover</code>'s classification and the drain view's unreconciled-runs figure</li><li>the Stop hook waits on S21's false-liveness fix</li></ul></div>
 </div>
@@ -415,7 +418,7 @@
     <div class="r-comment-body"><p>The harness reference's two hook install commands now name `.venv/bin/python` relative to the checkout root instead of the author's absolute home path, so a reader runs them from any checkout; a new test walks every file under `skills/` and asserts none names an absolute `/home/` or `/work/` path (head gate 27 passed; base gate 1 failed / 26 passed, the new test's expected base failure).</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260930T095025768281-review-of-harness-install-names-no-host-path" data-who="reckon-build" data-when="2026-09-30T10:11:52.284Z">
-    <div class="r-comment-body"><p>review-of-harness-install-names-no-host-path: an independent review of run r-20260930T094226197662-harness-install-names-no-host-path, read at base d6e2e0390 and head 6258b6ffa, is stored at both granted paths; it scores goal_fidelity 19, evidence 17, scope_discipline 19, durability 19, fit 18 (total 92, no dimension absent), records added_failure_count 0 with no added ids derived from the reviewed run&#x27;s own two gate logs (base d6e2e0390, head 6258b6ffa; the inverted-arms control yields 1 id, so the derivation measures differences), and files two findings: the reviewed manifest&#x27;s tests: field elides the base-arm command&#x27;s three operands as `&lt;same three paths&gt;`, and the reviewed gate&#x27;s three files omit tests/test_skill_contracts.py:1287, which pins the changed lines and passes at the reviewed head.</p></div>
+    <div class="r-comment-body"><p>review-of-harness-install-names-no-host-path: an independent review of run r-20260930T094226197662-harness-install-names-no-host-path, read at base d6e2e0390 and head 6258b6ffa, is stored at both granted paths; it scores goal_fidelity 19, evidence 17, scope_discipline 19, durability 19, fit 18 (total 92, no dimension absent), records added_failure_count 0 with no added ids derived from the reviewed run's own two gate logs (base d6e2e0390, head 6258b6ffa; the inverted-arms control yields 1 id, so the derivation measures differences), and files two findings: the reviewed manifest's tests: field elides the base-arm command's three operands as `&lt;same three paths&gt;`, and the reviewed gate's three files omit tests/test_skill_contracts.py:1287, which pins the changed lines and passes at the reviewed head.</p></div>
 </div>
 </section>
   </main>
