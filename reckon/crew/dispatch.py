@@ -1681,6 +1681,19 @@ def _live_conflict_rows(
     return conflicts
 
 
+def _absent_path_names_a_directory(path: Path) -> bool:
+    """Whether an absent path's own name reads as a directory, not a leaf file.
+
+    A file suffix does not settle it. A topic directory may carry a numeric,
+    version-style suffix (``docs/evidence/2026.09``), so reading any suffix as a
+    file extension would let a broad claim sweep a peer's tree unwarned. A
+    final component with no suffix, or a suffix holding no letter, names a
+    directory; an alphabetic extension (``notes.html``) names a leaf file.
+    """
+    suffix = path.suffix
+    return not any(character.isalpha() for character in suffix)
+
+
 def _directory_claim_overlaps(candidate: Path, claim: Path) -> bool:
     """Whether a candidate write path claims a directory, not an exact file.
 
@@ -1692,8 +1705,9 @@ def _directory_claim_overlaps(candidate: Path, claim: Path) -> bool:
     plain file — an exact leaf inside a peer's directory claim — is none of
     these, so it keeps the plain refusal.
 
-    A path with no file suffix is read as a directory when it is absent: a
-    topic directory such as ``docs/evidence/new-topic`` is declared by its
+    A path that is absent is read as a directory or a file from its own name
+    (``_absent_path_names_a_directory``): a topic directory such as
+    ``docs/evidence/new-topic`` or ``docs/evidence/2026.09`` is declared by its
     tree, while ``tests/test_x.py`` names a file and its collision is a plain
     file conflict.
     """
@@ -1708,7 +1722,7 @@ def _directory_claim_overlaps(candidate: Path, claim: Path) -> bool:
         return True
     return (
         not candidate.exists()
-        and candidate.suffix == ""
+        and _absent_path_names_a_directory(candidate)
         and len(candidate_parts) > len(claim_parts)
         and candidate_parts[: len(claim_parts)] == claim_parts
     )
