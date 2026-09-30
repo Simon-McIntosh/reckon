@@ -22,6 +22,11 @@ DEFAULT_RUN_FIELDS = (
     "node",
     "plan",
     "section",
+    # A brief run names no plan section, so its authority is the stored brief it
+    # read; its digest rides the row beside the null plan. A plan run has no
+    # brief, so the key is absent there rather than empty — absence is what says
+    # the row's authority is a plan section, not a digest.
+    "brief_sha256",
     "source",
     "classification",
     "process_alive",
@@ -208,13 +213,30 @@ def _compact_row(
     repository: Path | None,
     selected_fields: tuple[str, ...],
 ) -> dict[str, Any]:
-    """Project one source record into the stable compact row shape."""
+    """Project one source record into the stable compact row shape.
+
+
+    A brief run's authority is the stored brief it read, not a plan section, so
+    its row carries ``plan`` null and the digest of that brief. The live pointer
+    holds the digest on its node block; a promoted ledger row holds it in the
+    ``brief`` block promotion writes. A plan run has neither, so ``plan`` is the
+    section's plan and ``brief_sha256`` is left off the row (see the projection
+    below) rather than carried empty.
+    """
     classified = classify_pointer(record) if source == "live" else {}
     node_data = record.get("node")
     node_mapping = node_data if isinstance(node_data, Mapping) else {}
     node = classified.get("node") if source == "live" else record.get("node")
     plan = classified.get("plan") if source == "live" else record.get("plan")
     section = node_mapping.get("section") if source == "live" else record.get("section")
+    brief_record = record.get("brief")
+    brief_sha256 = (
+        str(brief_record.get("sha256") or "")
+        if source == "ledger" and isinstance(brief_record, Mapping)
+        else str(node_mapping.get("brief_sha256") or "")
+        if source == "live"
+        else ""
+    )
     worktree = record.get("worktree") or None
     worktree_exists = _path_exists(worktree, directory=True)
     transcript = record.get("transcript_path") or None
@@ -243,8 +265,9 @@ def _compact_row(
     complete = {
         "run_id": str(record.get("run_id") or ""),
         "node": str(node or ""),
-        "plan": str(plan or ""),
+        "plan": str(plan) if plan else None,
         "section": normalize_section(section) if section else "",
+        "brief_sha256": brief_sha256,
         "source": source,
         "classification": (
             classified.get("classification")
@@ -294,7 +317,13 @@ def _compact_row(
             else record.get("manifest_reported_status")
         ),
     }
-    return {field: complete[field] for field in selected_fields}
+    row = {field: complete[field] for field in selected_fields}
+    # Only a brief run carries a brief digest. Leaving the key off a plan run's
+    # row keeps that row's shape what it was before brief runs existed, so a
+    # reader tells the two authorities apart by the key's presence.
+    if not row.get("brief_sha256"):
+        row.pop("brief_sha256", None)
+    return row
 
 
 def _mounted_projects() -> dict[str, Path]:
