@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="45">
+<meta name="plan-version" content="46">
 <meta name="plan-commits" content="a69f554f,5bb66c48,41bc0eea,380dcd14,cf9160ff,32d932b2,53ceb356,cc44c453,65f5a378,3157768e,8602efcf,16ca61e7,d85fba28,6cdc5b8d,65c03d26,18719f5d,d41e0231">
 <meta name="plan-artifacts" content="reckon/evidence.py,tests/test_evidence_record_composition.py,reckon/serve.py,reckon/doccheck.py,tests/test_readers_compose_the_record.py,reckon/mcp.py,tests/test_read_plan_composes_the_record.py,reckon/crew/promotion.py,tests/test_promotion_writes_the_landing_line.py">
 <meta name="plan-impl" content="1.0">
@@ -388,7 +388,10 @@
     <div class="r-comment-body"><p>review of composed-record-takes-fragment-bodies at 998f6e2e0 (base 10ccd91a4): 95 — goal_fidelity 20, evidence 16, scope_discipline 20, durability 19, fit 20 — zero added failures, one finding (the 23-file head arm in gate-head.log:3 was taken at revision 10ccd91a4 with the change uncommitted and predates the repair commit, so its 234-passed result does not cover the reviewed head; the repair arm covers only the new test file, 3 passed)</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260930T081959787772-composed-record-takes-fragment-bodies" data-who="reckon-build" data-when="2026-09-30T09:00:27.644Z">
-    <div class="r-comment-body"><p>composed-record-takes-fragment-bodies: compose_landed_record appends each fragment&#x27;s readable content instead of its whole document — the children of its main element, else of its body, and for a bodyless full document (doctype/html/head but no body or main) the content left after removing the doctype, head and html tags — so a fragment head can never duplicate the record&#x27;s scalars; the composed record keeps exactly one plan-slug and one plan-evidence-for, both the record&#x27;s, and doccheck reports no duplicate-plan-scalar finding; gate base 232 passed / head 234 passed, both EXIT=0; repair at 998f6e2e0, tests/test_composed_record_takes_fragment_bodies.py 3 passed.</p></div>
+    <div class="r-comment-body"><p>composed-record-takes-fragment-bodies: compose_landed_record appends each fragment's readable content instead of its whole document — the children of its main element, else of its body, and for a bodyless full document (doctype/html/head but no body or main) the content left after removing the doctype, head and html tags — so a fragment head can never duplicate the record's scalars; the composed record keeps exactly one plan-slug and one plan-evidence-for, both the record's, and doccheck reports no duplicate-plan-scalar finding; gate base 232 passed / head 234 passed, both EXIT=0; repair at 998f6e2e0, tests/test_composed_record_takes_fragment_bodies.py 3 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260930T082827838228-audit-flags-duplicate-composed-ids" data-who="reckon-build" data-when="2026-09-30T08:52:25.635Z">
+    <div class="r-comment-body"><p>added the duplicate-element-id audit finding in reckon/doccheck.py — a composed record&#x27;s element ids that occur more than once each yield one error finding naming the id and each source (record file or named fragment); gate head 207 passed / 0 failed, base 2 failed (the two new cases, feature absent), archive scan over 118 records reports 29 findings across 10 records.</p></div>
 </div>
 </section>
 </main>
