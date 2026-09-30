@@ -874,6 +874,11 @@ REPAIR_SOURCE_ROLE = "implement"
 # so an exclusion a fallback can step over cannot be honoured.
 REVIEW_EXCLUDED_BACKENDS_KEY = "review_excluded_backends"
 
+# The declared launch kind of a backend a coordinator attaches to a task it is
+# already running, rather than one reckon spawns. A composed review names a run
+# nothing will start.
+IN_HARNESS_LAUNCH = "in-harness"
+
 
 # The head suffix the review store writes onto a head-keyed record path is
 # validated with the same pattern before the write, so the reader parses by the
@@ -1130,6 +1135,24 @@ def _review_excluded_backends(config: Mapping[str, Any]) -> set[str]:
     return {str(name).strip() for name in raw or () if str(name).strip()}
 
 
+def _review_in_harness_backends(config: Mapping[str, Any]) -> set[str]:
+    """Configured backends whose declared launch is the calling harness itself.
+
+    An in-harness backend is started by a coordinator attaching it to a task it
+    already runs, so a review composed onto one is recorded, holds the review's
+    write-path claim and never executes. Read from the backend declaration
+    rather than from a name list, because a list is maintained by hand in every
+    project layer and a layer that omits the name gets the unlaunchable review
+    back.
+    """
+    backends = config.get("backends") or {}
+    return {
+        str(name)
+        for name, settings in backends.items()
+        if isinstance(settings, Mapping) and settings.get("launch") == IN_HARNESS_LAUNCH
+    }
+
+
 def _review_lane_candidates(
     config: Mapping[str, Any], *, owning_backend: str = ""
 ) -> list[str]:
@@ -1140,20 +1163,33 @@ def _review_lane_candidates(
     its coordinator chose; the locally served backend follows, then the rest in
     a stable alphabetical order. Excluded backends never appear: a coordinator
     that has removed a backend from review routing must not see a fallback land
-    on it, or the exclusion is a note rather than a rule. The owning lane and
-    the local lane lead even when the configuration no longer lists them, so a
-    composed command names the lane the run was actually carried on rather than
-    substituting one the reader did not choose; whether a named lane can be
-    dispatched is dispatch's own check, not this ordering's.
+    on it, or the exclusion is a note rather than a rule. Neither does an
+    in-harness backend, whatever any list says about it: a review composed onto
+    one is a run nothing starts, which is the shape this ordering exists to
+    prevent. The owning lane and the local lane lead even when the configuration
+    no longer lists them, so a composed command names the lane the run was
+    actually carried on rather than substituting one the reader did not choose;
+    whether a named lane can be dispatched is dispatch's own check, not this
+    ordering's.
     """
     backends = config.get("backends") or {}
     excluded = _review_excluded_backends(config)
-    names = [str(name) for name in sorted(backends) if str(name) not in excluded]
+    in_harness = _review_in_harness_backends(config)
+    names = [
+        str(name)
+        for name in sorted(backends)
+        if str(name) not in excluded and str(name) not in in_harness
+    ]
     local = str(config.get("local_backend") or "").strip()
     owning = str(owning_backend or "").strip()
     ordered: list[str] = []
     for preferred in (owning, local):
-        if preferred and preferred not in excluded and preferred not in ordered:
+        if (
+            preferred
+            and preferred not in excluded
+            and preferred not in in_harness
+            and preferred not in ordered
+        ):
             ordered.append(preferred)
     ordered.extend(name for name in names if name not in ordered)
     return ordered
