@@ -43,6 +43,7 @@ from reckon.crew.reports import (
     TERMINAL_MANIFEST_STATUSES,
     ManifestParseError,
     parse_manifest,
+    path_within_declared_scope,
 )
 from reckon.crew.routing import (
     RECLAIMABLE_CLASSES,
@@ -2074,17 +2075,34 @@ def _outside_declared_scope(
     record: Mapping[str, Any],
     tree: Path,
 ) -> tuple[str, ...]:
-    """Return changed repository paths not contained by a declared write root."""
+    """Return changed paths the run's declared write scope does not contain.
+
+    One contract, one implementation: this delegates to the write-time audit's
+    own test rather than repeating its containment rule, so a manifest a worker
+    was told passes is a manifest promotion accepts. Delegating also carries two
+    declarations the containment rule alone dropped. A declaration naming a
+    location outside the repository resolves to no repository-relative root, and
+    is compared as the absolute path it already is, so it still decides what it
+    grants — a review's store record is the real case, since its deliverable is
+    written beside the run it read rather than inside the repository. And the
+    revision-keyed record written beside a declared store path is that same
+    deliverable under another name.
+
+    The worktree the declaration is resolved against is the run's recorded one,
+    not the caller's readable tree: a reclaimed worktree leaves the record as
+    the only place the resolution can be made, and resolving against the
+    repository instead loses the mapping for an absolute grant made under it.
+    """
+    worktree = _scope_worktree(record, tree)
     repository = Path(str(record.get("repo") or tree))
-    roots = _repository_scope_paths(
-        declared_paths, worktree=_scope_worktree(record, tree), repository=repository
+    declarations = tuple(str(path) for path in declared_paths)
+    return tuple(
+        str(changed)
+        for changed in changed_paths
+        if not path_within_declared_scope(
+            changed, declarations, worktree=worktree, repository=repository
+        )
     )
-    outside = []
-    for changed in changed_paths:
-        path = Path(changed)
-        if not any(path == root or path.is_relative_to(root) for root in roots):
-            outside.append(changed)
-    return tuple(outside)
 
 
 def _accepted_scope_exceptions(
