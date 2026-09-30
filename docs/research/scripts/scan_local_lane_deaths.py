@@ -22,6 +22,15 @@ role-wide figure beside it. They are stated separately because they are
 different populations, and because a headline that silently pooled them would
 not equal the effort cell a reader checks it against.
 
+The stream shape says a death happened; it cannot say what ended the process. A
+supervisor that waited on the worker writes a second record beside the stream —
+``attempt-N-exit.json``, carrying the signal or the exit code it collected — and
+each cell therefore also reports how many of its attempts carry one, what signal
+each names, and how that splits across the cell's own classifications. The
+record covers a subset of attempts rather than all of them, so the block states
+its coverage beside the share it computes: a signalled share quoted over every
+death would count the deaths that carry no record as though they exited cleanly.
+
 Usage (bounded by the caller; the corpus parses at roughly 55 MB/s):
 
     timeout 1200 <venv>/bin/python docs/research/scripts/scan_local_lane_deaths.py \
@@ -31,8 +40,11 @@ Usage (bounded by the caller; the corpus parses at roughly 55 MB/s):
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
+import signal
+import subprocess
 from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
@@ -236,6 +248,160 @@ def exit_signals(run_dir: Path) -> dict[str, dict]:
     return out
 
 
+def recorded_signal(exit_fact: dict | None) -> tuple[str, str] | None:
+    """The signal an exit record names, and where in the record it named it.
+
+    A supervisor that waited on its own child records the signal directly, so
+    its ``signal_name`` is the signal. A supervisor behind a shell wrapper sees
+    an ordinary exit whose code carries the same fact by the shell's ``128 + N``
+    convention — ``143`` is SIGTERM, ``137`` is SIGKILL — so a record with no
+    signal field and a code at or above 128 is read as that signal and says
+    which of the two readings produced it. Without that arm a signalled death
+    recorded that way reads as a clean exit, which is the confusion this block
+    exists to remove.
+    """
+    if not exit_fact:
+        return None
+    name = exit_fact.get("signal_name")
+    if name:
+        return str(name), "named_in_record"
+    code = exit_fact.get("exit_code")
+    if isinstance(code, int) and not isinstance(code, bool) and code >= 128:
+        number = code - 128
+        try:
+            decoded = signal.Signals(number).name
+        except ValueError:
+            decoded = f"signal {number}"
+        return decoded, "exit_code_128_plus"
+    return None
+
+
+def exit_record_counters() -> dict:
+    """An accumulator for one population's exit-record facts."""
+    return {
+        "with_exit_record": 0,
+        "without_exit_record": 0,
+        "by_classification": Counter(),
+        "signalled": 0,
+        "signal_source": Counter(),
+        "signals_by_name": Counter(),
+        "exit_codes": Counter(),
+        "deaths_with_exit_record": 0,
+        "deaths_signalled": 0,
+        "deaths_signal_source": Counter(),
+        "deaths_signals_by_name": Counter(),
+    }
+
+
+def fold_exit_record(counters: dict, row: dict) -> None:
+    """Add one attempt row's exit-record read to a population's counters."""
+    exit_fact = row.get("exit_record")
+    classification = str(row.get("classification"))
+    if not exit_fact:
+        counters["without_exit_record"] += 1
+        return
+    counters["with_exit_record"] += 1
+    counters["by_classification"][classification] += 1
+    code = exit_fact.get("exit_code")
+    counters["exit_codes"][code] += 1
+    named = recorded_signal(exit_fact)
+    if named is None:
+        return
+    name, source = named
+    counters["signalled"] += 1
+    counters["signal_source"][source] += 1
+    counters["signals_by_name"][name] += 1
+    if classification == "dead":
+        counters["deaths_signalled"] += 1
+        counters["deaths_signal_source"][source] += 1
+        counters["deaths_signals_by_name"][name] += 1
+
+
+def render_exit_records(counters: dict, *, attempts: int, deaths: int) -> dict:
+    """The exit-record block for one population, stated against its own counts.
+
+    Every figure here is drawn from the same attempts the surrounding cell
+    counts, so the block reconciles with the cell rather than sitting beside it:
+    ``with_exit_record + without_exit_record`` is the cell's attempt count and
+    the classification split sums to the recorded half. The denominator of the
+    signalled share is named because it is not the death count — a death whose
+    attempt carries no exit record is unread, and a share quoted over all deaths
+    would silently count those as clean.
+    """
+    with_record = counters["with_exit_record"]
+    deaths_recorded = counters["by_classification"]["dead"]
+    deaths_signalled = counters["deaths_signalled"]
+    return {
+        "population": (
+            "attempts carrying a supervisor exit record (attempt-N-exit.json in the "
+            "run directory), the same read the positive control goes through"
+        ),
+        "attempts": attempts,
+        "with_exit_record": with_record,
+        "without_exit_record": counters["without_exit_record"],
+        "by_classification": {
+            name: counters["by_classification"][name]
+            for name in ("completed", "dead", "running", "unreadable")
+        },
+        "signalled": counters["signalled"],
+        "signal_source": dict(sorted(counters["signal_source"].items())),
+        "signals_by_name": dict(sorted(counters["signals_by_name"].items())),
+        "exit_codes": {
+            str(code): count
+            for code, count in sorted(
+                counters["exit_codes"].items(), key=lambda pair: str(pair[0])
+            )
+        },
+        "deaths": deaths,
+        "deaths_with_exit_record": deaths_recorded,
+        "deaths_signalled": deaths_signalled,
+        "deaths_signal_source": dict(sorted(counters["deaths_signal_source"].items())),
+        "deaths_signals_by_name": dict(
+            sorted(counters["deaths_signals_by_name"].items())
+        ),
+        "death_exit_record_coverage": rate(deaths_recorded, deaths),
+        "signalled_share_of_recorded_deaths": rate(deaths_signalled, deaths_recorded),
+        "signalled_share_of_all_deaths": rate(deaths_signalled, deaths),
+    }
+
+
+def rate(dead: int, size: int) -> float | None:
+    return round(dead / size, 4) if size else None
+
+
+def script_revision() -> dict:
+    """Which revision of this scanner produced the file it wrote.
+
+    The digest is read from the script's own bytes, so it identifies the code
+    that ran whether or not the tree was clean; the tree revision is the commit
+    the run resolved against, and is recorded as absent rather than guessed when
+    the scan runs outside a git checkout.
+    """
+    path = Path(__file__).resolve()
+    try:
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        digest = None
+    revision = None
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(path.parent), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        )
+        if completed.returncode == 0:
+            revision = completed.stdout.strip() or None
+    except (OSError, subprocess.SubprocessError):
+        revision = None
+    return {
+        "script": MEASUREMENT_SCRIPT,
+        "script_sha256": digest,
+        "tree_revision": revision,
+    }
+
+
 def day_of(stamp: str | None) -> str | None:
     return stamp[:10] if stamp and len(stamp) >= 10 else None
 
@@ -310,7 +476,7 @@ def main(argv: list[str] | None = None) -> int:
             classification = classify_attempt(
                 facts, alive=alive if terminal else None, terminal=terminal
             )
-            exit_fact = signals.get(label, {})
+            exit_fact = signals.get(label)
             attempts.append(
                 {
                     "run_id": run_id,
@@ -328,15 +494,13 @@ def main(argv: list[str] | None = None) -> int:
                     "started_at": times["first"],
                     "last_at": times["last"],
                     "time_source": times["source"],
-                    "signal_name": exit_fact.get("signal_name"),
-                    "ended_during": exit_fact.get("ended_during"),
+                    "exit_record": exit_fact,
+                    "signal_name": (exit_fact or {}).get("signal_name"),
+                    "ended_during": (exit_fact or {}).get("ended_during"),
                 }
             )
 
     # ── aggregates ──────────────────────────────────────────────────────────
-    def rate(dead: int, size: int) -> float | None:
-        return round(dead / size, 4) if size else None
-
     cells: dict[tuple, dict] = {}
     for row in attempts:
         key = (str(row["role"]), str(row["effort"]))
@@ -350,6 +514,7 @@ def main(argv: list[str] | None = None) -> int:
                 "dead": 0,
                 "running": 0,
                 "unreadable": 0,
+                "exit_records": exit_record_counters(),
             },
         )
         cell["attempts"] += 1
@@ -358,8 +523,19 @@ def main(argv: list[str] | None = None) -> int:
             cell[classification] += 1
         else:
             cell["unreadable"] += 1
+        fold_exit_record(cell["exit_records"], row)
     for cell in cells.values():
         cell["death_rate"] = rate(cell["dead"], cell["attempts"])
+        cell["exit_records"] = render_exit_records(
+            cell["exit_records"], attempts=cell["attempts"], deaths=cell["dead"]
+        )
+
+    lane_exit_records = exit_record_counters()
+    review_exit_records = exit_record_counters()
+    for row in attempts:
+        fold_exit_record(lane_exit_records, row)
+        if str(row["role"]) == "review":
+            fold_exit_record(review_exit_records, row)
 
     per_day: dict[str, Counter] = defaultdict(Counter)
     deaths: list[dict] = []
@@ -369,6 +545,7 @@ def main(argv: list[str] | None = None) -> int:
         day = day_of(row["last_at"])
         per_day[day][str(row["role"])] += 1
         if str(row["role"]) == "review":
+            named = recorded_signal(row["exit_record"])
             deaths.append(
                 {
                     "run_id": row["run_id"],
@@ -378,7 +555,10 @@ def main(argv: list[str] | None = None) -> int:
                     "last_at": row["last_at"],
                     "last_record_type": row["last_record_type"],
                     "record_count": row["record_count"],
-                    "signal_name": row["signal_name"],
+                    "exit_record": row["exit_record"] is not None,
+                    "exit_code": (row["exit_record"] or {}).get("exit_code"),
+                    "signal_name": named[0] if named else None,
+                    "signal_source": named[1] if named else None,
                     "ended_during": row["ended_during"],
                 }
             )
@@ -407,6 +587,7 @@ def main(argv: list[str] | None = None) -> int:
         ),
     }
     scan_time = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    revision = script_revision()
 
     # ── controls ────────────────────────────────────────────────────────────
     # A census of deaths is only as good as its reader's ability to see the
@@ -498,12 +679,24 @@ def main(argv: list[str] | None = None) -> int:
             "role_source": "the run's own prompt.txt ROLE line, ledger record as fallback",
             "effort_source": "the run's recorded ledger row (the lane pins effort)",
             "liveness": "reckon.crew.death_census.pointer_process_alive on the live pointer",
+            "exit_record_source": (
+                "attempt-N-exit.json in the run directory, written by the supervisor that "
+                "collected the wait; a signal is read from the record's own signal_name, "
+                "or from an exit code at or above 128 by the shell's 128+N convention, "
+                "and the block names which of the two answered"
+            ),
+            "exit_record_is_not_the_classification": (
+                "the classification reads the stream shape; the exit record is a second, "
+                "independent fact about the same attempt and covers only the attempts the "
+                "supervisor wrote one for, so the block states its own coverage"
+            ),
             "effort_is_not_a_calibration_axis_here": (
                 "the lane's endpoint ignores thinking budgets, so the review reflex's effort "
                 "is the lane's declared one"
             ),
             "streams_root": str(runs_root),
             "measurement_script": MEASUREMENT_SCRIPT,
+            "scan_revision": revision,
             "invocation": (
                 "timeout 1200 <venv>/bin/python "
                 "docs/research/scripts/scan_local_lane_deaths.py "
@@ -541,6 +734,16 @@ def main(argv: list[str] | None = None) -> int:
                     "population": "every role at every effort",
                     "count": total_dead,
                 },
+            },
+            "exit_records": {
+                "all_attempts": render_exit_records(
+                    lane_exit_records, attempts=len(attempts), deaths=total_dead
+                ),
+                "review_role_all_efforts": render_exit_records(
+                    review_exit_records,
+                    attempts=review_attempts,
+                    deaths=review_dead,
+                ),
             },
             "trailing": trailing,
             "positive_control": death_control,
