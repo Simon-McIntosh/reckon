@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="48">
+<meta name="plan-version" content="49">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192,06a008fb,3263f5a1">
 <meta name="plan-impl" content="0.5">
@@ -534,7 +534,7 @@
     <div class="r-comment-body"><p>The delivered_at assertion names the later of the record and manifest writes, which the fixture now dates WRITE_GAP apart, and the stream offset GRACE - WRITE_GAP/2 falls between the two thresholds so the earlier-write regression changes the stop decision (base arm 99 passed, head arm 101 passed, declared max-to-min mutation: 7 passed at base, 2 failed at head with the delivered_at assertion among them); the template-status clause in _complete_manifest_write_time is consulted before the equality test and a new case pins its call site (repaired case against the base reader: 1 failed, 8 passed).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260930T142339329493-review-of-delivered-review-findings" data-who="reckon-build" data-when="2026-09-30T14:37:12.534Z">
-    <div class="r-comment-body"><p>Review of r-20260930T140908144005-delivered-review-findings at head 53d187367 over base b04701d0e stored parsed on both store paths at 96/100 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 18, fit 19) with all six checklist items spoken to and no findings; added_failure_count 0 with an empty id list, derived by reckon/crew/review.py&#x27;s own instrument from the reviewed run&#x27;s base and head gate logs (controls: the control log as head yields the two node ids, the same log both sides yields zero); the declared max-to-min mutation reddened exactly the two tests it names (2 failed, 7 passed, exit 1) and the repaired test file against the base reader failed only the call-site assertion (1 failed, 8 passed, exit 1), each reproduced independently in scratch trees, and the head gate re-ran at the reviewed worktree&#x27;s tip at 101 passed, exit 0.</p></div>
+    <div class="r-comment-body"><p>Review of r-20260930T140908144005-delivered-review-findings at head 53d187367 over base b04701d0e stored parsed on both store paths at 96/100 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 18, fit 19) with all six checklist items spoken to and no findings; added_failure_count 0 with an empty id list, derived by reckon/crew/review.py's own instrument from the reviewed run's base and head gate logs (controls: the control log as head yields the two node ids, the same log both sides yields zero); the declared max-to-min mutation reddened exactly the two tests it names (2 failed, 7 passed, exit 1) and the repaired test file against the base reader failed only the call-site assertion (1 failed, 8 passed, exit 1), each reproduced independently in scratch trees, and the head gate re-ran at the reviewed worktree's tip at 101 passed, exit 0.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T024644047165-review-of-review-deaths-by-effort-and-role" data-who="reckon-ship" data-when="2026-09-23T03:18:46.716Z">
     <div class="r-comment-body"><p>review stored and parsed at 79; its three findings went back to the census session as a repair</p></div>
@@ -632,6 +632,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260923T110228349429-review-of-deaths-against-lane-load" data-who="reckon-ship" data-when="2026-09-23T11:29:16.595Z">
     <div class="r-comment-body"><p>review stored at 80; read before promotion</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20260930T142338481330-death-shape-correlation" data-who="reckon-build" data-when="2026-09-30T14:57:28.437Z">
+    <div class="r-comment-body"><p>Scanner now emits, per cell and corpus-wide, the attempts carrying a supervisor exit record and the signal breakdown among them, and local-lane-death-rate.html §3 states the signalled share: of the 392 review deaths at xhigh, 130 carry a record (33.2%) and every one is signalled — SIGTERM 91, SIGKILL 39 — while the other 262 carry no record at all; gate tests/test_the_local_lane_death_rate_is_stated.py at base 6 passed, at head 7 passed, and the declared negative control reddens the reconciliation assertion.</p></div>
 </div>
 </section>
 </main>
