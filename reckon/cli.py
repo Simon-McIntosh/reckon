@@ -6653,3 +6653,50 @@ def install_skills(repair):
     )
     if updated == 0 and skipped == 0:
         click.echo("(No skills found in the reckon install's skills/ directory.)")
+
+
+@main.group(name="hooks")
+def hooks():
+    """Install reckon's harness hooks into a settings file."""
+
+
+@hooks.command(name="install")
+@click.option(
+    "--scope",
+    type=click.Choice(["user"], case_sensitive=False),
+    default="user",
+    show_default=True,
+    help="The settings scope the hooks are installed into.",
+)
+@click.option(
+    "--write",
+    is_flag=True,
+    help="Merge the fragment into the settings file; without it only the fragment prints.",
+)
+@click.option(
+    "--settings",
+    "settings_path",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Settings file to install into (default: the scope's own file).",
+)
+def hooks_install(scope, write, settings_path):
+    """Print the hook settings fragment, merging it only with --write.
+
+    The fragment binds the coordinator-obligations hook in both of its modes and
+    the worker stop hook. Without ``--write`` this prints the fragment and opens
+    no file; with it, the fragment is merged into the target settings file,
+    preserving every existing key and hook group. A target that already carries
+    the whole fragment is a duplicate install, and the command refuses rather
+    than reporting a silent no-op.
+    """
+    from reckon.hooks.install import HookInstallError, install_hook_settings
+
+    try:
+        result = install_hook_settings(settings_path, write=write)
+    except HookInstallError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if write and not result.added:
+        raise click.ClickException(
+            "hook entries already installed: " + ", ".join(result.skipped)
+        )

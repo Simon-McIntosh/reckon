@@ -271,24 +271,25 @@ fails with `No module named 'reckon'` and the hook silently does nothing. The
 installer composes each command from its own module's location, so the fragment
 always names the scripts of the checkout that composed it.
 
-The `reckon hooks install --scope user` verb that will name this arrives with the
-plan's installer-CLI section; until it lands, drive the installer directly with
-the checkout's own interpreter, run from the checkout root. The default call is a
-dry run — it prints the fragment and opens no file:
+`reckon hooks install --scope user` prints the fragment and merges it into
+`~/.claude/settings.json` only when `--write` is given. The verb wraps
+`install_hook_settings()`: the default call is a dry run, and a merge happens
+only under `install_hook_settings(write=True)`, which `--write` selects. A dry
+run prints the fragment and opens no file:
 
 ```text
-.venv/bin/python \
-  -c 'from reckon.hooks import install; install.install_hook_settings()'
+reckon hooks install --scope user
 ```
 
 A merge into `~/.claude/settings.json` happens only when the write is asked for:
 
 ```text
-.venv/bin/python \
-  -c 'from reckon.hooks import install; install.install_hook_settings(write=True)'
+reckon hooks install --scope user --write
 ```
 
 The merge adds each entry not already registered under its own event, preserves
 every other key in the settings file, and leaves a file that already carries the
-whole fragment byte for byte unchanged. A command registered under a *different*
-event suppresses nothing, because the two events mean different things.
+whole fragment byte for byte unchanged — a target that already carries the whole
+fragment is refused rather than reported as a silent no-op. A command registered
+under a *different* event suppresses nothing, because the two events mean
+different things.
