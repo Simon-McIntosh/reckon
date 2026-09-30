@@ -436,12 +436,15 @@ Three node-contract refusals are easy to mistake for infrastructure failures:
   copied into the handoff. Findings, constraints and evidence inputs discovered
   mid-session therefore go *into the plan first* — record, commit, dispatch, in
   that order. That is what makes them readable by the worker, by a reviewer, by
-  `roadmap`, and by the next session, instead of dying with one prompt. There is
-  deliberately no flag for passing prose to a worker: a second store is a second
-  stale source of truth, and the dispatch flags carry only what genuinely cannot
-  live in a plan — worktree, scope, manifest path, budgets, session, and routing
-  overrides. Large inputs travel by reference: put the artifact at a path and
-  name the path in the node's evidence inputs.
+  `roadmap`, and by the next session, instead of dying with one prompt. **Work
+  that changes a plan's product carries its plan.** A probe, a measurement, a
+  review or an investigation may instead carry a **brief**: `reckon crew dispatch
+  --brief <file>` names a stored file as the node's authority in place of
+  `--plan` and `--section`. The brief meets the same eight node properties, and
+  the done-when is still the specification. The flags carry only what genuinely
+  cannot live in a plan or a brief — worktree, scope, manifest path, budgets,
+  session, and routing overrides. Large inputs travel by reference: put the
+  artifact at a path and name the path in the node's evidence inputs.
 - A goal containing `;` is not one deliverable. Rewrite it as one outcome; use
   the DAG for sequential work. Action-bearing `and`, `&`, or `plus` clauses are
   refused for the same reason.

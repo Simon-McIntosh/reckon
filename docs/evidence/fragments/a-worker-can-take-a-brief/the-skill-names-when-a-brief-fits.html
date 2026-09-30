@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="a-worker-can-take-a-brief">
+  <meta name="plan-title" content="A Worker Can Take A Brief">
+  <meta name="plan-evidence-for" content="reckon:a-worker-can-take-a-brief">
+  <meta name="plan-verifies" content="reckon:a-worker-can-take-a-brief#s5">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-09-30">
+  <title>The skill names the brief when a brief fits | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-skill-names-when-a-brief-fits" data-reckon="landed" data-when="2026-09-30">
+  <h2>The skill names the brief when a brief fits</h2>
+
+  <p>Section 3b of <code>skills/reckon-build/SKILL.md</code> no longer states
+  that there is deliberately no flag for passing prose to a worker. It names
+  <code>reckon crew dispatch --brief &lt;file&gt;</code> as the carrier for a
+  probe, a measurement, a review or an investigation, says work that changes a
+  plan's product still carries its plan, states that the brief meets the same
+  eight node properties, and keeps the done-when as the specification.</p>
+
+  <p>The runs view in <code>reckon/crew/query.py</code> carries a brief run's
+  digest beside its null plan, read from the <code>brief</code> block promotion
+  writes onto the ledger row and, before promotion, from the live pointer's node
+  block; a plan row's shape is unchanged, its digest key absent and its
+  <code>plan</code> the section's plan. A plan-less row's plan is now null
+  rather than an empty string.</p>
+
+  <p><strong>Measure — zero added failures by id.</strong> Base arm at
+  <code>2be39bd4ed86488151147931833843063eb6864c</code> (a scratch export):
+  3 failed, 115 passed. Head arm at this worktree, clean tree: 3 failed, 118
+  passed. The three failure ids are identical on both arms —
+  <code>test_no_routing_identifier_leaks_into_skills_or_source</code>,
+  <code>test_ship_dispatch_exit_table_matches_cli_branches</code> and
+  <code>test_crew_live_honours_fields.py::test_runs_view_passes_through_the_coordinator_fields</code>
+  — so no failure is added. The skill-contract test that required the retired
+  sentence is renamed to
+  <code>test_the_skill_names_the_right_carrier_for_each_kind_of_work</code> and
+  asserts the rule that replaces it.</p>
+
+  <p><strong>Both declared mutations observed to fail.</strong> Dropping the
+  brief digest from the runs-view row reds exactly the promoted case (1 failed,
+  1 passed, <code>EXIT=1</code>); dropping the live branch of the digest in
+  <code>_compact_row</code> reds exactly the live case (1 failed, 2 passed,
+  <code>EXIT=1</code>), so the pre-promotion life of a brief run is covered and
+  not only its ledger row.</p>
+</article>
+</body>
+</html>
