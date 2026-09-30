@@ -273,18 +273,18 @@ always names the scripts of the checkout that composed it.
 
 The `reckon hooks install --scope user` verb that will name this arrives with the
 plan's installer-CLI section; until it lands, drive the installer directly with
-the checkout's own interpreter. The default call is a dry run — it prints the
-fragment and opens no file:
+the checkout's own interpreter, run from the checkout root. The default call is a
+dry run — it prints the fragment and opens no file:
 
 ```text
-/home/ITER/mcintos/Code/reckon/.venv/bin/python \
+.venv/bin/python \
   -c 'from reckon.hooks import install; install.install_hook_settings()'
 ```
 
 A merge into `~/.claude/settings.json` happens only when the write is asked for:
 
 ```text
-/home/ITER/mcintos/Code/reckon/.venv/bin/python \
+.venv/bin/python \
   -c 'from reckon.hooks import install; install.install_hook_settings(write=True)'
 ```
 
