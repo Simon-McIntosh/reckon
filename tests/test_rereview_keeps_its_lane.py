@@ -27,6 +27,7 @@ import pytest
 
 from reckon import crew
 from reckon.crew import recovery, runs
+from reckon.crew import review as review_module
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 
 # The reflex is gated by the watch admission, so these tests arm the producer
@@ -272,6 +273,24 @@ def _compose(record: dict) -> dict:
         )
 
 
+def _store_review(run_id: str, *, base: str, head: str) -> None:
+    """Store a complete review record for ``run_id`` at the given revision pair."""
+    emitted = "\n".join(
+        f"SCORE {dimension}: 20" for dimension in review_module.REVIEW_DIMENSIONS
+    )
+    stored = review_module.parse_review(emitted)
+    stored.update(
+        {
+            "project": "sample",
+            "reviewed_run_id": run_id,
+            "review_run_id": f"review-of-{run_id}",
+            "reviewed_base_sha": base,
+            "reviewed_head_sha": head,
+        }
+    )
+    review_module.store_review(stored)
+
+
 def test_a_review_at_a_new_head_keeps_the_lane_that_dropped_the_old_one(
     isolated_project: tuple[Path, Path, dict],
 ) -> None:
@@ -362,6 +381,40 @@ def test_a_reclaimed_worktree_composes_its_review_for_the_recorded_head(
     fields = recovery._review_dispatch_fields(record)
     assert fields["head"] == heads["earlier"]
     assert any(heads["earlier"] in path for path in fields["write_paths"])
+
+
+def test_a_reclaimed_worktree_keeps_a_standing_review_at_the_recorded_head(
+    isolated_project: tuple[Path, Path, dict],
+) -> None:
+    """A stored review stands for the head the run's own record names.
+
+    A review is evidence about a revision, and it stands only while it describes
+    the head the run reached. Once the worktree is reclaimed, resolving the head
+    through the repository fallback reads the shared checkout's HEAD — here a
+    later commit — so a review that describes the run's actual head reads as
+    stale and the run loses evidence that is in fact current. Reading the run's
+    own record keeps the review standing, and the negative half holds too: a
+    review of the *repository* head is not standing for this run.
+    """
+    config_home, repo, heads = isolated_project
+    run_id = "r-standing"
+    record = _scoring_pointer(
+        config_home,
+        repo,
+        run_id,
+        commits=heads["earlier"],
+        worktree=str(repo.parent / "worktrees" / "reclaimed-and-gone"),
+    )
+    _store_review(run_id, base=heads["earlier"], head=heads["current"])
+    stored, error = recovery._stored_review(record)
+    assert error == ""
+    assert stored is None
+
+    _store_review(run_id, base=heads["earlier"], head=heads["earlier"])
+    stored, error = recovery._stored_review(record)
+    assert error == ""
+    assert stored is not None
+    assert recovery.same_revision(stored["reviewed_head_sha"], heads["earlier"])
 
 
 def test_a_recorded_attempt_naming_no_head_does_not_demote_its_lane(
