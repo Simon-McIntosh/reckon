@@ -25,8 +25,9 @@
   <title>A Small Change Is A Small Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="7">
+<meta name="plan-modified" content="2026-09-30">
+<meta name="plan-version" content="8">
+<meta name="plan-impl" content="0.35">
 </head>
 <body>
   <main class="plan-doc">
@@ -96,10 +97,11 @@
     <p class="r-gate-required-evidence">a-worker-can-take-a-brief#s2</p>
     <a class="r-gate-evidence" href="a-worker-can-take-a-brief §2 landed on main: the --brief dispatch carrier at 35519a31 (brief copied into the run directory, sha256 and paths on the live pointer, the committed-section check skipped only for a brief, the node contract applied whole) and validate_node&#x27;s plan-and-brief exclusivity at b2f19666. tests/test_brief_dispatch.py and tests/test_brief_plan_exclusivity.py pass; verify-gate green at the integrated head 8bd1cbba; reviews 91, 91 and 93 with zero added failures. Evidence record: docs/evidence/archive/a-worker-can-take-a-brief-landed.html#s2.">Evidence</a>
 </div>
-<div class="r-gate" data-id="g-ascsn-measured-after" data-section="s6" data-gated-sections="s6" data-status="open" data-verdict="">
+<div class="r-gate" data-id="g-ascsn-measured-after" data-section="s6" data-gated-sections="s6" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">the review tiers are live, so a small repair is not reviewed at full depth when its time is measured</h4>
     <p class="r-gate-required-evidence">a-review-is-sized-to-its-risk#s2</p>
-    </div>
+    <a class="r-gate-evidence" href="The review tiers are live on main. reckon/review_tiers.py resolves a run to full, light or none (31509127), promotion gates on the tier and lets a none-tier run promote without a stored review (5539c1d5), and the ledger declares review_tier. A small repair&#x27;s measured time therefore no longer includes a full-depth review.">Evidence</a>
+</div>
 </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -127,7 +129,10 @@
     <div class="r-comment-body"><p>Add the small-node rule to the worker prompt's landing contracts beside the landing: sentence (reckon/crew/prompts.py SMALL_NODE_RULE, one constant interpolated into PLAN_LANDING_CONTRACT and BRIEF_LANDING_CONTRACT): a node is small when its diff has at most 50 changed lines, or with no product source or tests changed at most 300; a small node writes one landing: line and neither evidence prose nor a figure unless its done-when names that artifact, naming one not permitting the other; any single data file above 300,000 bytes belongs in the run directory. The figure allowance is composed per node from its done-when (ARTIFACT_NAMED_CLAUSE / ARTIFACT_UNNAMED_CLAUSE), and the brief contract states the landing: line stays on the run's own record. Measure: tests/test_small_node_prompt.py's 11 tests pass; the three pre-existing prompt modules keep their base six failing ids and add none.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T053738387505-review-of-small-node-prompt-rule" data-who="reckon-build" data-when="2026-09-29T06:06:31.149Z">
-    <div class="r-comment-body"><p>Independent review of run r-20260929T043829926587-small-node-prompt-rule (base 0f5ff9ed, head 10a55e57, 4 commits, 370 lines added and 13 deleted across 4 paths): the small-node rule now reaches both landing carriers, with the figure allowance composed per node from its own done-when (goal_fidelity 19, evidence 19, scope_discipline 16, durability 18, fit 19, total 91); added_failure_count 0 derived from the run&#x27;s own baseline_suite and after_suite gate logs with the instrument positively controlled; two findings — the brief carrier&#x27;s `landing:` manifest key is asserted by no test (reckon/crew/prompts.py:459), and the snapshot edit at tests/test_brief_prompt.py:278 lies outside the node&#x27;s declared write paths, which the run&#x27;s own `reckon crew check-manifest` already reports as ok=false.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20260929T043829926587-small-node-prompt-rule (base 0f5ff9ed, head 10a55e57, 4 commits, 370 lines added and 13 deleted across 4 paths): the small-node rule now reaches both landing carriers, with the figure allowance composed per node from its own done-when (goal_fidelity 19, evidence 19, scope_discipline 16, durability 18, fit 19, total 91); added_failure_count 0 derived from the run's own baseline_suite and after_suite gate logs with the instrument positively controlled; two findings — the brief carrier's `landing:` manifest key is asserted by no test (reckon/crew/prompts.py:459), and the snapshot edit at tests/test_brief_prompt.py:278 lies outside the node's declared write paths, which the run's own `reckon crew check-manifest` already reports as ok=false.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260930T075200-state" data-who="s25-coord" data-when="2026-09-30T07:52:00Z">
+    <div class="r-comment-body"><p>This plan's state lagged what landed.</p><ul><li><strong>Section 3:</strong> the small-node rule in both landing contracts in <code>reckon/crew/prompts.py</code> (a681ec79), the fragment scope granted only to landing roles (7f4f7758), and the landing contract chosen from the granted paths (5064a3e5).</li><li><strong>Section 4:</strong> the coordinator commit table in <code>skills/reckon-build/SKILL.md</code> (0eb2e8a6).</li><li><strong>Section 5:</strong> dispatched as its own node.</li><li><strong>Section 2:</strong> still waits on the brief carrier.</li><li><strong>Section 6:</strong> its gate has now passed.</li></ul></div>
 </div>
 </section>
 </main>
