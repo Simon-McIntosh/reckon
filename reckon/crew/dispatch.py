@@ -7191,8 +7191,9 @@ def _detach_supervisor(argv: list[str], write_fd: int, stderr_path: Path) -> Non
 
     Runs in the intermediate process. The supervisor is the fork's child; it
     calls ``setsid`` so it leads its own session and process group, wires the
-    standard streams to the devnull and the run's stderr log, and execs the
-    supervisor argv. The intermediate writes the child's pid and returns without
+    standard streams to the devnull and the run's stderr log, closes every
+    inherited descriptor above them, and execs the supervisor argv. The
+    intermediate writes the child's pid and returns without
     waiting: the immediate exit is what reparents the supervisor away from the
     launching process.
     """
@@ -7208,7 +7209,18 @@ def _detach_supervisor(argv: list[str], write_fd: int, stderr_path: Path) -> Non
         os.dup2(stdin_fd, 0)
         os.dup2(stdout_fd, 1)
         os.dup2(stderr_fd, 2)
-        os.execv(argv[0], argv)
+        # The subprocess.Popen this replaced used close_fds=True, so the
+        # supervisor must not inherit a launcher's non-close-on-exec descriptors
+        # — a pipe held by the MCP server or the fleet batch step, for instance —
+        # into a process that may run for an hour. Everything a supervisor needs
+        # was just wired onto 0, 1 and 2, so every higher descriptor goes.
+        try:
+            open_max = os.sysconf("SC_OPEN_MAX")
+        except (OSError, ValueError):
+            open_max = 1024
+        os.closerange(3, open_max)
+        # The argv is the supervisor's own composed vector, never user input.
+        os.execv(argv[0], argv)  # noqa: S606
     os.write(write_fd, f"{supervisor}\n".encode())
     os.close(write_fd)
 

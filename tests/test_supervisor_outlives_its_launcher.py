@@ -1,17 +1,19 @@
 """The per-run supervisor survives the process that launched it.
 
-Off the fleet a dispatch starts the run's supervisor by forking it. Forked with
-a single ``Popen`` the supervisor is the launcher's child, so when the launcher
-ends — a coordinator turn finishing, a shell returning — the supervisor goes
-with it and the run it is carrying is orphaned mid-flight. The launcher instead
-double-forks: an intermediate starts the supervisor in a session of its own and
-exits at once, and the launching process is never the supervisor's parent.
+Off the fleet a dispatch starts the run's supervisor by forking it.
+Forked with a single ``Popen`` the supervisor is the launcher's child, so when
+the launcher ends — a coordinator turn finishing, a shell returning — the
+supervisor goes with it and the run it is carrying is orphaned mid-flight. The
+launcher instead double-forks: an intermediate starts the supervisor in a
+session of its own and exits at once, and the launching process is never the
+supervisor's parent.
 
 The launcher must still return the pid ``crew stop`` signals, so the supervisor
 is the leader of its own session and process group, with the worker spawned
 inside that group. These tests start a supervisor from a long-lived child
 process — a launcher that is still running when the checks are taken — and read
-the kernel's own record of the supervisor's parent, session and group.
+the kernel's own record of the supervisor's parent, session, group and open
+descriptors.
 """
 
 from __future__ import annotations
@@ -53,6 +55,39 @@ print(pid, flush=True)
 time.sleep(120)
 """
 
+# The same launcher, but holding an inheritable pipe across the spawn so the
+# supervisor's open descriptors can be checked for a leak the launcher caused.
+CHILD_LAUNCHER_WITH_PIPE = """
+import importlib
+import os
+import sys
+import time
+from pathlib import Path
+
+d = importlib.import_module("reckon.crew.dispatch")
+
+d._supervisor_argv = lambda *, spec_path: [
+    sys.executable,
+    "-c",
+    "import time; time.sleep(120)",
+]
+
+read_fd, write_fd = os.pipe()
+os.set_inheritable(read_fd, True)
+os.set_inheritable(write_fd, True)
+
+spec = Path(sys.argv[1])
+directory = Path(sys.argv[2])
+pid = d._start_supervisor(spec, directory, "r-stub")
+print(
+    pid,
+    os.readlink(f"/proc/self/fd/{read_fd}"),
+    os.readlink(f"/proc/self/fd/{write_fd}"),
+    flush=True,
+)
+time.sleep(120)
+"""
+
 
 def _repo_root() -> Path:
     return Path(dispatch_module.__file__).resolve().parents[2]
@@ -85,6 +120,19 @@ def _alive(pid: int) -> bool:
     return _proc_state(pid) not in (None, "Z")
 
 
+def _fd_targets(pid: int) -> set[str]:
+    """The link target of every open descriptor a live pid holds."""
+    targets: set[str] = set()
+    try:
+        names = os.listdir(f"/proc/{pid}/fd")
+    except OSError:
+        return targets
+    for name in names:
+        with contextlib.suppress(OSError):
+            targets.add(os.readlink(f"/proc/{pid}/fd/{name}"))
+    return targets
+
+
 def _wait_until(pid: int, predicate, timeout: float = 10.0) -> None:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -94,12 +142,12 @@ def _wait_until(pid: int, predicate, timeout: float = 10.0) -> None:
     raise AssertionError(f"pid {pid} did not reach the awaited state in {timeout:g}s")
 
 
-@pytest.fixture()
-def launched_supervisor(tmp_path: Path):
-    """A supervisor launched from a long-lived child process.
+@contextlib.contextmanager
+def _supervisor_from(script: str, tmp_path: Path):
+    """Start a supervisor from a long-lived child running ``script``.
 
-    Yields (launcher_pid, supervisor_pid) with both processes still alive, and
-    reaps every process it started once the test is done.
+    Yields (launcher_pid, supervisor_pid, reported_tokens) with both processes
+    still alive, and reaps every process it started once the caller is done.
     """
     run_directory = tmp_path / "run"
     run_directory.mkdir()
@@ -111,7 +159,7 @@ def launched_supervisor(tmp_path: Path):
     environment["RECKON_FLEET_SPAWN"] = ""
 
     launcher = subprocess.Popen(
-        [sys.executable, "-c", CHILD_LAUNCHER, str(spec_path), str(run_directory)],
+        [sys.executable, "-c", script, str(spec_path), str(run_directory)],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -122,9 +170,10 @@ def launched_supervisor(tmp_path: Path):
     try:
         line = launcher.stdout.readline()
         assert line.strip(), f"the launcher reported no pid: {launcher.stderr.read()}"
-        supervisor_pid = int(line.strip())
+        tokens = line.split()
+        supervisor_pid = int(tokens[0])
         _wait_until(supervisor_pid, lambda: _alive(supervisor_pid))
-        yield launcher.pid, supervisor_pid
+        yield launcher.pid, supervisor_pid, tokens[1:]
     finally:
         if supervisor_pid is not None:
             # The supervisor is not this process's child, so killing it and
@@ -141,15 +190,29 @@ def launched_supervisor(tmp_path: Path):
         launcher.stderr.close()
 
 
+@pytest.fixture()
+def launched_supervisor(tmp_path: Path):
+    """A supervisor launched from a child that reports only its pid."""
+    with _supervisor_from(CHILD_LAUNCHER, tmp_path) as launched:
+        yield launched
+
+
+@pytest.fixture()
+def launched_supervisor_with_pipe(tmp_path: Path):
+    """A supervisor launched from a child holding an inheritable pipe."""
+    with _supervisor_from(CHILD_LAUNCHER_WITH_PIPE, tmp_path) as launched:
+        yield launched
+
+
 def test_supervisor_has_a_parent_other_than_the_launcher(launched_supervisor) -> None:
-    launcher_pid, supervisor_pid = launched_supervisor
+    launcher_pid, supervisor_pid, _ = launched_supervisor
     assert _alive(supervisor_pid)
     ppid, _, _ = _proc_ids(supervisor_pid)
     assert ppid != launcher_pid
 
 
 def test_supervisor_leads_its_own_session_and_group(launched_supervisor) -> None:
-    _, supervisor_pid = launched_supervisor
+    _, supervisor_pid, _ = launched_supervisor
     _, pgrp, session = _proc_ids(supervisor_pid)
     assert pgrp == supervisor_pid
     assert session == supervisor_pid
@@ -158,7 +221,24 @@ def test_supervisor_leads_its_own_session_and_group(launched_supervisor) -> None
 def test_supervisor_survives_a_signal_to_the_launchers_group(
     launched_supervisor,
 ) -> None:
-    launcher_pid, supervisor_pid = launched_supervisor
+    launcher_pid, supervisor_pid, _ = launched_supervisor
     os.killpg(launcher_pid, signal.SIGTERM)
     time.sleep(0.5)
     assert _alive(supervisor_pid)
+
+
+def test_supervisor_inherits_no_launcher_descriptor(
+    launched_supervisor_with_pipe,
+) -> None:
+    launcher_pid, supervisor_pid, pipe_targets = launched_supervisor_with_pipe
+    assert len(pipe_targets) == 2, pipe_targets
+    # Positive control: the pipe is live in the launcher, so its absence from the
+    # supervisor is the descriptor having been closed and not a pipe that was
+    # never opened.
+    launcher_fds = _fd_targets(launcher_pid)
+    assert set(pipe_targets) <= launcher_fds, (pipe_targets, launcher_fds)
+    supervisor_fds = _fd_targets(supervisor_pid)
+    assert not (set(pipe_targets) & supervisor_fds), (
+        f"the supervisor inherited the launcher's pipe descriptors: "
+        f"{set(pipe_targets) & supervisor_fds}"
+    )
