@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-small-change-is-a-small-node">
+  <meta name="plan-title" content="A small change is a small node">
+  <meta name="plan-summary" content="A declared write path that is a directory can contain, or sit inside, a path a live run already claims, so it can sweep up a peer's exact file. Dispatch refuses such a claim, naming the overlapping claim, its owning run and the exact alternative the brief's files give, and proceeds with the directory only when it carries --accept-directory-claim, which is recorded. A file path that overlaps nothing, and a directory that overlaps no live claim, dispatch as before with no warning.">
+  <meta name="plan-evidence-for" content="a-small-change-is-a-small-node">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <title>A directory claim that overlaps a peer asks first | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A directory claim that overlaps a peer asks first</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>The exclusive write-scope walk refuses any overlap, and a directory
+        claim is the coarsest scope a brief can declare. A node that declares
+        <code>tests</code> collides with every peer holding a single file under
+        it, and the refusal a coordinator reads is the same shape as a genuine
+        file-versus-file collision: no alternative is named, so the only visible
+        remedy is to stop and redispatch. The imas-ambix coordinator lost about
+        thirty minutes to its own <code>tests</code> claim blocking a peer.</p>
+      <p>The refinement here separates the two cases. A directory claim that
+        overlaps a live claim is a decision the caller should make explicitly;
+        an exact file claim that collides with another file is not narrowed by
+        anything dispatch can suggest.</p>
+    </section>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ol>
+        <li><code>reckon.crew.dispatch._directory_claim_overlaps</code> decides
+          whether a candidate write path claims a directory rather than an exact
+          file: the path exists as a directory on disk, or it strictly contains
+          the live claim by path component. A candidate that is an exact leaf
+          inside a peer's directory claim is neither, so it keeps the plain
+          refusal.</li>
+        <li><code>dispatch._directory_claim_alternatives</code> lists the files
+          the brief declares under the claimed directory, or the overlapping
+          claim's own path when the brief names no files inside it.</li>
+        <li><code>dispatch._raise_repository_scope_conflict</code> raises
+          <code>DirectoryClaimConflict</code> (a <code>ScopeConflict</code>) for a
+          directory claim, its message naming the claim, the owning run and node,
+          the exact alternative, and <code>--accept-directory-claim</code>. With
+          the flag the claim is admitted and the acceptance is recorded as
+          <code>directory_claim_acceptances</code> on the run.</li>
+        <li><code>crew dispatch</code> gains <code>--accept-directory-claim</code>,
+          threaded into both the launching path and the <code>--dry-run</code>
+          resolution. The dry run with the flag proceeds and records the
+          acceptance; without it the resolution is not ok and the warning names
+          the alternative.</li>
+        <li>The claim walk keeps its original signature when the flag is absent,
+          so the callers and spies that wrap it are unaffected.</li>
+      </ol>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <p><code>tests/test_directory_claim_asks_first.py</code> (6 passed under the
+        root <code>.venv</code> python) drives the <code>crew dispatch</code>
+        entry through <code>--dry-run</code> against a synthesized repository with
+        a live claimant whose launcher pid is this process:</p>
+      <ul>
+        <li>a live run claiming <code>tests/test_x.py</code> and a dry run claiming
+          the directory <code>tests</code> exit 2 with a warning naming the claim,
+          the owning run and node, and <code>--accept-directory-claim</code>;</li>
+        <li>the warning lists <code>tests/test_mine.py</code> —
+          the file the brief names — as the exact alternative;</li>
+        <li>the same dry run with <code>--accept-directory-claim</code> exits 0 and
+          records the acceptance naming <code>tests/test_x.py</code>;</li>
+        <li>a declared file path overlapping nothing, and a directory overlapping
+          no live claim, both dispatch with no directory warning;</li>
+        <li>the classifier itself: a directory over a leaf is a directory claim; a
+          sibling file and a leaf under a peer's directory claim are not.</li>
+      </ul>
+      <p>Negative control (<code>negative-control.log</code>): neutering the
+        overlap check so a directory claim over a live file claim dispatches
+        without the flag makes the no-flag case fail on its warning assertion.</p>
+    </section>
+
+    <section id="landing">
+      <h2>Landing line</h2>
+      <p><code>landing: docs/evidence/fragments/a-small-change-is-a-small-node/directory-claim-asks-first.html</code></p>
+    </section>
+  </main>
+</body>
+</html>
