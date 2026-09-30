@@ -888,6 +888,7 @@ def capture_project(
         "lineage",
         "predecessor_run",
         "failure_classification",
+        "clone_matches",
     )
     compact = []
     for rid, record in sorted(records.items()):
@@ -2544,6 +2545,62 @@ def _interface_week_rows(repo, branch, start, end, *, cache_root=None):
     return rows
 
 
+def _clone_week_cells(runs, window_start, window_end):
+    """Count promoted runs' recorded clone matches per ISO week of the window.
+
+    Each cell covers a UTC Monday-start week clipped to the window, the same
+    bucketing ``measure`` uses for its own weekly cells, so a week's clone
+    figures line up with the promotions that week. A run is charged to the week
+    it was promoted.
+
+    Four states are kept apart rather than folded together: a run whose
+    function copied an existing one, counted once in ``runs_with_match`` with
+    its matches summed into ``matches``; a run the detector measured and found
+    nothing in, an empty list (``runs_no_match``); a run no revision pair could
+    be measured for, the explicit ``{"status": "unmeasured"}`` marker
+    (``runs_unmeasured``); and a run whose row carries no clone report at all,
+    ``None`` (``runs_unrecorded``) — a promotion predating the field. Only an
+    empty list is a measured run that copied nothing; a ``None`` was never
+    measured, so counting it as a no-match would report a measurement nobody
+    took.
+    """
+    first_day = _window_day(window_start)
+    monday = first_day - dt.timedelta(days=first_day.weekday())
+    last_day = _window_day(window_end)
+    cells = []
+    while monday <= last_day:
+        next_monday = monday + dt.timedelta(days=7)
+        first, last = monday.isoformat(), next_monday.isoformat()
+        with_match = no_match = unmeasured = unrecorded = matches = 0
+        for row in runs:
+            if not first <= row["day"] < last:
+                continue
+            report = row.get("clone_matches")
+            if report is None:
+                unrecorded += 1
+            elif isinstance(report, dict):
+                unmeasured += 1
+            elif report:
+                with_match += 1
+                matches += len(report)
+            else:
+                no_match += 1
+        year, number, _ = monday.isocalendar()
+        cells.append(
+            {
+                "iso_week": f"{year}-W{number:02d}",
+                "week_start": first,
+                "runs_with_match": with_match,
+                "matches": matches,
+                "runs_no_match": no_match,
+                "runs_unmeasured": unmeasured,
+                "runs_unrecorded": unrecorded,
+            }
+        )
+        monday = next_monday
+    return cells
+
+
 def report(
     projects,
     *,
@@ -2604,6 +2661,20 @@ def report(
     )
     summary = compact_summary(full, weekly_cells)
     summary["by_project_day_lane"] = full["by_project_day_lane"]
+    summary["clones"] = {
+        "weeks": _clone_week_cells(full["runs"], start, end),
+        "definition": (
+            "Promoted runs' recorded clone matches per UTC Monday-start week "
+            "clipped to the window. runs_with_match counts runs whose function "
+            "copied an existing one, matches sums their matches, runs_no_match "
+            "counts runs the detector measured and found nothing in (an empty "
+            "list), runs_unmeasured counts runs no revision pair could be "
+            "measured for, and runs_unrecorded counts runs whose row carries no "
+            "clone report at all (a promotion predating the field). Each "
+            "missing reading is its own figure; only an empty list is a run "
+            "that copied nothing."
+        ),
+    }
     # The reckon package is the one whose interface the plan-review rubric
     # reads, so its weekly interface level is reported for the project that
     # carries that name; a window over other projects reports an empty block
@@ -2645,6 +2716,7 @@ OPTIONAL_BLOCKS = frozenset(
         "coordinator_cost",
         "by_project_day_lane",
         "interfaces",
+        "clones",
     }
 )
 
