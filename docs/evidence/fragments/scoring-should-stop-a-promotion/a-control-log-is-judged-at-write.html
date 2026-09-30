@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A control log is judged where its writer can still repair it">
+  <meta name="plan-summary" content="The write-time manifest audit validated status but never read negative_control_log, so a node whose declaration is discharged by a log could deliver an empty or malformed field and learn of it only at promotion. The audit now requires the bare path to a readable log whose terminal record is a non-zero EXIT, leaves the wording of the log to a human judgement, and exempts a declaration of none, a node that declared nothing, a run that has not claimed completion and a recorded waiver reason.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <title>A control log is judged where its writer can still repair it | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A control log is judged where its writer can still repair it</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>The write-time manifest audit read <code>status</code> and never read
+        <code>negative_control_log</code>. A node whose write paths include a test file
+        declares the mutation that check must fail against, and its manifest discharges the
+        declaration by naming the log that mutation produced; nothing judged that field until
+        promotion, hours after the worker's process had ended. Measured at base
+        <code>1c20ca680</code> (log <code>repro-empty-control-at-base.log</code>, module
+        resolved to the base tree): a manifest with <code>status: complete</code>, a commit,
+        a <code>tests:</code> line and an <strong>empty</strong>
+        <code>negative_control_log</code> audits to <code>findings: []</code>.</p>
+      <p>The shapes that reached promotion in that window were not one defect. The manifest
+        field is under-determined — a bare path, a path followed by prose, a mapping of
+        declared/log/result sub-keys, and a heading line above the path were all observed —
+        and a log that resolved but recorded no exit status, or exited zero, stated nothing
+        about whether the mutation ever failed.</p>
+    </section>
+
+    <section id="change">
+      <h2>The change</h2>
+      <p>In <code>reckon/crew/reports.py</code>, <code>_control_log_findings</code> judges the
+        field inside <code>audit_manifest</code>, for a node that writes a test path and
+        declares a negative control, once the manifest claims completion and records no
+        waiver reason. The field must be the bare path to a readable file whose last
+        non-blank line is a bare <code>EXIT=&lt;code&gt;</code> line with a non-zero code.
+        Each refusal names the field and what it found; the value's own text is quoted, so a
+        reader can tell an empty line from a path carrying prose.</p>
+      <p>A relative path resolves beside the manifest that carries it (the manifest path
+        argument, else the node's own recorded manifest path), because resolving against the
+        calling process's working directory would judge one manifest two ways.</p>
+      <p><strong>The log's wording is deliberately not compared against the declaration.</strong>
+        Pasting the declaration into a log satisfies that comparison while proving nothing, so
+        the match stays a judgement a reader makes at promotion rather than a test that
+        manufactures agreement. The facts this check does require — a path that resolves, an
+        exit status the run itself wrote — are properties of a run rather than of a string.</p>
+      <p>Four exemptions, each mirroring the promotion gate's own: a node that declared no
+        control, a declaration of <code>none: &lt;reason&gt;</code>, a node whose write paths
+        include no test file, and a run that has not claimed completion. A manifest recording
+        <code>negative_control_waiver: &lt;reason&gt;</code> is left for a reader to judge; an
+        <em>empty</em> waiver records nothing and the log is still judged.</p>
+    </section>
+
+    <section id="shapes">
+      <h2>Each shape, refused or accepted at the write</h2>
+      <table>
+        <thead>
+          <tr><th>What the manifest carries</th><th>At the write</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>negative_control_log:</code> empty</td><td>refused — the field is empty</td></tr>
+          <tr><td>a path followed by prose in the same value</td><td>refused — does not resolve</td></tr>
+          <tr><td>a mapping of declared/log/result sub-keys</td><td>refused — carries a dict, not a path</td></tr>
+          <tr><td>a bulleted list of control parts</td><td>refused — carries a list, not a path</td></tr>
+          <tr><td>a heading line above the path</td><td>accepted — the reader composes the heading away, so the field <em>is</em> the bare path</td></tr>
+          <tr><td>a path that does not exist</td><td>refused — no readable file</td></tr>
+          <tr><td>a log with no terminal <code>EXIT=</code> line</td><td>refused — whether its run failed is unknown</td></tr>
+          <tr><td>a log ending <code>EXIT=0</code></td><td>refused — the control did not fail</td></tr>
+          <tr><td>a log ending <code>EXIT=1</code></td><td>accepted</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="gate">
+      <h2>The gate</h2>
+      <p>Four files — the new file plus <code>tests/test_manifest_check_command.py</code>,
+        <code>tests/test_worker_prompt_contract.py</code> and
+        <code>tests/test_a_review_manifest_passes_its_own_check.py</code> — run in one pytest
+        process per arm, each with a private basetemp. The base arm is an export of
+        <code>1c20ca680</code> with the head test files copied in, so its failures are the
+        cases asserting behaviour the base lacks and nothing else.</p>
+      <table>
+        <thead>
+          <tr><th>arm</th><th>revision</th><th>result</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>base (head tests over the base module)</td>
+            <td><code>1c20ca680</code></td>
+            <td><code>20 failed, 33 passed</code>, exit 1</td>
+          </tr>
+          <tr>
+            <td>head</td>
+            <td><code>30a5f1834</code></td>
+            <td><code>53 passed</code>, exit 0 &mdash; no failure id the base arm did not have</td>
+          </tr>
+          <tr>
+            <td>declared negative control</td>
+            <td><code>30a5f1834</code> with the audit's control-log call removed</td>
+            <td><code>11 failed, 13 passed</code>, exit 1, the empty-log case among the failures</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Ruff over the changed paths, measured as a delta: <code>reckon/crew/reports.py</code>
+        <strong>2 &rarr; 2</strong> findings (one nested-<code>if</code> and one regex alias,
+        both pre-existing and untouched), the new test file <strong>0</strong> findings, and
+        all three paths formatted at the head.</p>
+      <p class="evidence-note">Logs: <code>gate-base.log</code>, <code>gate-head.log</code>,
+        <code>negative-control-removed-check.log</code>, <code>repro-empty-control-at-base.log</code>
+        and <code>ruff-delta.log</code> in the run directory. Changed paths:
+        <code>reckon/crew/reports.py</code> and
+        <code>tests/test_a_control_log_is_judged_at_write.py</code>, the change being commit
+        <code>30a5f1834</code>.</p>
+    </section>
+  </main>
+</body>
+</html>

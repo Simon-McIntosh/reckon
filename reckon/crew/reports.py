@@ -53,7 +53,14 @@ from typing import Any, TypedDict
 import yaml
 
 from reckon import ledger
-from reckon.crew.node import NEEDS_HELP_FIELDS, NEEDS_HELP_MARKER, CrewError, TaskNode
+from reckon.crew.node import (
+    NEEDS_HELP_FIELDS,
+    NEEDS_HELP_MARKER,
+    CrewError,
+    TaskNode,
+    is_test_path,
+    negative_control_is_none,
+)
 from reckon.crew.runs import _utc_now
 
 # ── Worker reports ──────────────────────────────────────────────────────────
@@ -988,6 +995,135 @@ def _role_owes_a_commit(node: TaskNode | None) -> bool:
     return str(node.role or "").strip() != REVIEW_ROLE
 
 
+# ── A control log is judged where its writer can still repair it ─────────────
+
+# The manifest key a worker writes when the log its declaration is discharged
+# by cannot be named as a path at the write. The promotion gate judges the log
+# itself, so a recorded reason keeps a genuine control from costing a
+# corrective node, and the reason stays on the delivered record for whoever
+# reads it next rather than being silent.
+NEGATIVE_CONTROL_WAIVER_FIELD = "negative_control_waiver"
+
+# The capture convention writes a command's own status as a final ``EXIT=<n>``
+# line, so only an end-of-log record is read: a status token inside the
+# runner's own output is not the evidence the convention names.
+_EXIT_RECORD = re.compile(r"EXIT=(-?\d+)")
+
+
+def _terminal_exit_status(log_text: str) -> int | None:
+    """The status a capture wrote as its final ``EXIT=<n>`` line, or ``None``."""
+    for raw_line in reversed(log_text.splitlines()):
+        line = raw_line.strip()
+        if not line:
+            continue
+        match = _EXIT_RECORD.fullmatch(line)
+        return int(match.group(1)) if match else None
+    return None
+
+
+def _read_control_log(
+    delivered: str, *, manifest_path: Path | None
+) -> tuple[str | None, Path]:
+    """Read a named control log, resolving a relative path beside its manifest.
+
+    A worker commonly writes the path relative to the manifest it delivered, so
+    the manifest's own directory is what a relative value resolves against.
+    Resolving against the calling process's working directory instead would
+    judge one manifest two ways depending on where the check was invoked.
+    """
+    path = Path(delivered).expanduser()
+    if not path.is_absolute() and manifest_path is not None:
+        path = manifest_path.expanduser().parent / path
+    try:
+        return path.read_text(encoding="utf-8"), path
+    except (OSError, UnicodeError):
+        return None, path
+
+
+def _control_log_findings(
+    manifest: dict[str, Any],
+    node: TaskNode | None,
+    *,
+    manifest_path: Path | None,
+) -> list[str]:
+    """Judge the control log a node's declaration is discharged by, at the write.
+
+    A node whose write paths include a test file declares the mutation that
+    check must fail against, and its manifest discharges the declaration by
+    naming the log that mutation produced. That field is judged here, while its
+    writer still holds a turn, rather than only hours later when a malformed
+    value costs a corrective node instead of an edit. The value is required to
+    be the bare path to a readable file whose terminal record is a non-zero
+    ``EXIT=<code>``: a field that is empty, carries anything besides a path, or
+    names a log that does not resolve, records no exit status, or exited zero
+    states too little to show the mutation ever failed.
+
+    A node that declared no control, and one whose declaration is ``none`` with
+    its reason, have nothing to discharge and are not judged here. A manifest
+    that records a waiver reason is left for a person to judge rather than
+    refused, because the honesty of that reason is not a fact this reader can
+    establish. The log's wording is deliberately not compared against the
+    declaration: a declaration pasted into a log satisfies that comparison
+    while proving nothing, so the match stays a human judgement rather than a
+    test that manufactures agreement.
+    """
+    if node is None:
+        return []
+    test_paths = sorted(
+        str(path) for path in node.write_paths or () if is_test_path(str(path))
+    )
+    if not test_paths:
+        return []
+    declaration = str(node.negative_control or "").strip()
+    if not declaration or negative_control_is_none(declaration):
+        return []
+    if str(manifest.get("status", "")).strip().lower() != "complete":
+        return []
+    if str(manifest.get(NEGATIVE_CONTROL_WAIVER_FIELD) or "").strip():
+        return []
+    value = manifest.get("negative_control_log")
+    if value is not None and not isinstance(value, str):
+        shorthand = (
+            "negative_control_log must be the bare path to the log the node's "
+            f"mutation produced; it carries a {type(value).__name__} "
+            f"({str(value)!r})"
+        )
+        return [shorthand]
+    delivered = str(value or "").strip()
+    if not delivered:
+        empty = (
+            "negative_control_log is empty: the node writes a check "
+            f"({', '.join(test_paths)}) and declares the mutation "
+            f"{declaration!r}, but no log path is recorded — name the log that "
+            "mutation produced, or record why it cannot be named on a "
+            f"{NEGATIVE_CONTROL_WAIVER_FIELD}: line"
+        )
+        return [empty]
+    text, resolved = _read_control_log(delivered, manifest_path=manifest_path)
+    if text is None:
+        unresolved = (
+            f"negative_control_log {delivered!r} does not resolve to a readable "
+            "file, so the mutation it was to evidence was never shown to fail"
+        )
+        return [unresolved]
+    status = _terminal_exit_status(text)
+    if status is None:
+        unrecorded = (
+            f"negative_control_log {str(resolved)!r} records no exit status: its "
+            "last non-blank line is not a bare EXIT=<code> line, so whether its "
+            "run failed is unknown"
+        )
+        return [unrecorded]
+    if status == 0:
+        passed = (
+            f"negative_control_log {str(resolved)!r} records EXIT=0, so the "
+            "control did not fail and shows nothing about the mutation it was "
+            "to evidence"
+        )
+        return [passed]
+    return []
+
+
 def audit_manifest(
     text: str,
     node: TaskNode | None = None,
@@ -995,6 +1131,7 @@ def audit_manifest(
     suite_armed: bool = False,
     worktree: Path | None = None,
     repository: Path | None = None,
+    manifest_path: Path | None = None,
 ) -> dict[str, Any]:
     """Judge a delivered manifest: is it complete, and does it stay in scope?"""
     try:
@@ -1062,6 +1199,12 @@ def audit_manifest(
                         else None,
                     )
                 )
+    resolved_manifest_path = manifest_path
+    if resolved_manifest_path is None and node is not None and node.manifest_path:
+        resolved_manifest_path = Path(node.manifest_path).expanduser()
+    findings.extend(
+        _control_log_findings(manifest, node, manifest_path=resolved_manifest_path)
+    )
     if node is not None and manifest["changed_paths"]:
         declared = tuple(node.write_paths or ())
         stray = sorted(
