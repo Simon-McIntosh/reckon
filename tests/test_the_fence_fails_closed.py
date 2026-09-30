@@ -166,14 +166,18 @@ def _stub_launcher(plan, *, log_path, stderr_path, prompt_path) -> int:
     return 4242
 
 
-def _node(scratch: Path) -> crew.TaskNode:
+def _node(
+    scratch: Path,
+    node_id: str = "fence-node",
+    write_paths: tuple[str, ...] = ("allowed.txt",),
+) -> crew.TaskNode:
     return crew.TaskNode(
-        id="fence-node",
+        id=node_id,
         goal="refuse a dispatch the fence cannot seal",
         plan="plan-a",
         section="§3",
         done_when="tests/test_the_fence_fails_closed.py reports its cases pass",
-        write_paths=["allowed.txt"],
+        write_paths=list(write_paths),
         time_budget="25m",
         manifest_path=str(scratch / "manifest.md"),
         spec_level="guided",
@@ -181,9 +185,16 @@ def _node(scratch: Path) -> crew.TaskNode:
     )
 
 
-def _dispatch(scratch: Path, repository: Path, **overrides):
+def _dispatch(
+    scratch: Path,
+    repository: Path,
+    *,
+    node_id: str = "fence-node",
+    write_paths: tuple[str, ...] = ("allowed.txt",),
+    **overrides,
+):
     kwargs = {
-        "node": _node(scratch),
+        "node": _node(scratch, node_id, write_paths),
         "project": PROJECT,
         "repo": repository,
         "config": DISPATCH_CONFIG,
@@ -299,6 +310,37 @@ def test_case_5_an_ordinary_fenced_dispatch_is_unchanged(
     assert record["fenced"] is True
     assert "fence_waiver" not in record
     assert record["argv"][0] == _backends.FENCE_BINARY
+
+
+@requires_bwrap
+def test_case_7_a_second_dispatch_does_not_reprobe(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The namespace probe forks once per process, not once per dispatch.
+
+    Dispatch asks the capability before anything is created, so a repeat pays
+    the probe's cost on its own critical path unless the verdict is memoised.
+    A counting probe stands in and the two dispatches carry distinct node ids
+    and write paths so the second is a real dispatch, not one refused earlier.
+    """
+    calls = {"n": 0}
+    real_probe = _backends._probe_user_namespace
+
+    def counting():
+        calls["n"] += 1
+        return real_probe()
+
+    monkeypatch.setattr(_backends, "_probe_user_namespace", counting)
+
+    _dispatch(tmp_path, repository, node_id="fence-node-a")
+    _dispatch(
+        tmp_path,
+        repository,
+        node_id="fence-node-b",
+        write_paths=("allowed-b.txt",),
+    )
+
+    assert calls["n"] == 1
 
 
 # ── Case 6: the fence the refusal protects, executed for real ────────────────

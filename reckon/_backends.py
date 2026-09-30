@@ -1947,6 +1947,13 @@ def _probe_user_namespace() -> subprocess.CompletedProcess[str]:
     )
 
 
+# The namespace probe forks a process, so its verdict is remembered per probe
+# callable: whether this process can create a user namespace cannot change while
+# it lives, and a fleet of dispatches in one process then pays for the fork
+# once rather than once per run.
+_fence_probe_verdicts: dict[object, tuple[str, str] | None] = {}
+
+
 def fence_capability_problem(
     probe: Callable[[], subprocess.CompletedProcess[str]] | None = None,
 ) -> tuple[str, str] | None:
@@ -1958,7 +1965,14 @@ def fence_capability_problem(
     fence that cannot be composed is refused rather than silently dropped — a
     launch that proceeds unfenced still reports a protection it does not have.
     The probe is injectable so a caller can pin it, and every test of the
-    refusal drives the real one by hiding the binary or forcing the probe.
+    refusal drives the default one by hiding the binary or replacing the probe.
+
+    The namespace probe forks a process, and dispatch asks this once per run, so
+    the verdict is memoised on the probe that produced it: whether this process
+    can make a user namespace cannot change while it lives, and a repeat
+    dispatch in one process then pays nothing for the check. The PATH lookup is
+    left unmemoised because it is a directory scan rather than a fork, and a
+    caller that hides the binary relies on it reading the current PATH.
 
     The returned pair is ``(capability, detail)``: a short name for what is
     missing and the refusal text that names it for the operator.
@@ -1969,18 +1983,27 @@ def fence_capability_problem(
             f"{FENCE_BINARY} is not on PATH, so the fence cannot be built",
         )
     run = probe or _probe_user_namespace
+    if run in _fence_probe_verdicts:
+        return _fence_probe_verdicts[run]
     try:
         result = run()
     except OSError as exc:
-        return (
+        verdict: tuple[str, str] | None = (
             "user namespace",
             f"the user-namespace probe could not run: {exc}",
         )
-    if result.returncode != 0:
-        reported = (result.stderr or "").strip()
-        detail = reported or f"the probe exited {result.returncode}"
-        return ("user namespace", f"a user namespace cannot be created: {detail}")
-    return None
+    else:
+        if result.returncode != 0:
+            reported = (result.stderr or "").strip()
+            detail = reported or f"the probe exited {result.returncode}"
+            verdict = (
+                "user namespace",
+                f"a user namespace cannot be created: {detail}",
+            )
+        else:
+            verdict = None
+    _fence_probe_verdicts[run] = verdict
+    return verdict
 
 
 def harness_home(dialect_name: str, run_directory: str | Path) -> Path | None:
