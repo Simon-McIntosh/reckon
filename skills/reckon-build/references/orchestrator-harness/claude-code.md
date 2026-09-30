@@ -272,10 +272,17 @@ installer composes each command from its own module's location, so the fragment
 always names the scripts of the checkout that composed it.
 
 `reckon hooks install --scope user` prints the fragment and merges it into
-`~/.claude/settings.json` only when `--write` is given. The verb wraps
-`install_hook_settings()`: the default call is a dry run, and a merge happens
-only under `install_hook_settings(write=True)`, which `--write` selects. A dry
-run prints the fragment and opens no file:
+`~/.claude/settings.json` only when `--write` is given. **Run it from the
+project's main checkout, never from a worker worktree.** The fragment names the
+hook scripts of the checkout the command runs from, so an install run inside a
+worktree writes commands pointing into that worktree — and when the worktree is
+reclaimed the commands resolve to nothing, leaving the hook a silent no-op. The
+command prints the checkout it resolved to stderr, so the caller can see which
+tree the installed hooks will read before trusting them.
+
+The verb wraps `install_hook_settings()`: the default call is a dry run, and a
+merge happens only under `install_hook_settings(write=True)`, which `--write`
+selects. A dry run prints the fragment and opens no file:
 
 ```text
 reckon hooks install --scope user
