@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="8">
-<meta name="plan-impl" content="0.35">
+<meta name="plan-version" content="10">
+<meta name="plan-impl" content="0.55">
 </head>
 <body>
   <main class="plan-doc">
@@ -111,6 +111,11 @@
     <div class="r-fu-body"><p>§3, §4 and §5 are ready now; §2 waits on the brief carrier; §6 measures after the rest.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-small-change-is-a-small-node</pre>
     </article>
+<article class="r-fu" data-id="f-ascsn-002" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-30T10:05:00Z" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Warn on a not-yet-created directory inside a live claim</h4>
+    <div class="r-fu-body"><p>Section 5 landed at e554b4d8. Dispatch warns when a declared directory contains, or lies inside, another live run's claim, names the files the brief lists, and proceeds only with <code>--accept-directory-claim</code>. The review (87) found one arm unhandled. A declared directory that does not yet exist on disk is not recognised as a directory, so one created inside a live directory claim slips through. The dry-run conflict report's shape is unchanged. What remains: section 2 waits on the brief carrier, section 6 measures the small-change path end to end, and this gap is repaired as a small node.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-small-change-is-a-small-node §5</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260926T130134428454-review-of-a-small-change-is-a-small-node-readback" data-who="reckon-build" data-when="2026-09-26T14:14:54.314Z">
@@ -133,6 +138,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260930T075200-state" data-who="s25-coord" data-when="2026-09-30T07:52:00Z">
     <div class="r-comment-body"><p>This plan's state lagged what landed.</p><ul><li><strong>Section 3:</strong> the small-node rule in both landing contracts in <code>reckon/crew/prompts.py</code> (a681ec79), the fragment scope granted only to landing roles (7f4f7758), and the landing contract chosen from the granted paths (5064a3e5).</li><li><strong>Section 4:</strong> the coordinator commit table in <code>skills/reckon-build/SKILL.md</code> (0eb2e8a6).</li><li><strong>Section 5:</strong> dispatched as its own node.</li><li><strong>Section 2:</strong> still waits on the brief carrier.</li><li><strong>Section 6:</strong> its gate has now passed.</li></ul></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260930T075109733525-directory-claim-asks-first" data-who="reckon-build" data-when="2026-09-30T09:44:01.499Z">
+    <div class="r-comment-body"><p>landing: reckon/crew/dispatch.py and reckon/cli.py add --accept-directory-claim: a declared directory write path that overlaps a live run&#x27;s claim now refuses with the overlapping claim, its owning run and node, and the exact alternative the brief&#x27;s files give named, and proceeds only with the flag, whose acceptance is recorded as directory_claim_acceptances; a file path overlapping nothing, a directory overlapping no live claim, and every plain file conflict&#x27;s dry-run row keep their existing shape; tests/test_directory_claim_asks_first.py 6 passed and tests/test_crew_dryrun.py 4 passed at head 005ea2a4, negative control red at EXIT=1</p></div>
 </div>
 </section>
 </main>
