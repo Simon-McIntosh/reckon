@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="the-fleet-shares-one-allocation">
 <meta name="plan-impl" content="1.0">
@@ -136,6 +136,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260930T081922538909-review-of-placement-wiring-integration" data-who="reckon-build" data-when="2026-09-30T08:47:09.749Z">
     <div class="r-comment-body"><p>stored the independent review of r-20260930T073804580479-placement-wiring-integration at the head-keyed and legacy review paths — 5 of 5 dimensions scored (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19; total 96; status parsed; no absent dimension), added_failure_count 0 with no added ids re-derived from the reviewed run's own baseline_suite and after_suite gate logs, and one finding: the arm logs' first lines write revision=&lt;sha&gt; while the store's recorded_log_revision (reckon/crew/review.py:507) accepts revision &lt;sha&gt;</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260930T183646837392" data-who="" data-when="">
+    <div class="r-comment-body">Regression found after shipping: the suite minted real allocations through this wiring. On 2026-09-30, five reckon-reservation jobs (1278947, 1278971, 1278981, 1278982 and 1278987) were each submitted by one whole-suite pytest run in s25's scratch trees, between 10:14 and 10:56 CEST. Each held partition all, 32 CPUs, 128 GB, with an unlimited time limit and only its extern step, which are ensure_reservation's built-in defaults. Because ensure submits with --no-shell and exits, each allocation outlived the test that made it by about nine hours, until the operator approved a cancel by id at 20:21 CEST. The cause: since e46347e98, dispatch's resolve_backend_placement reaches ensure_reservation with the real subprocess.run, so a test that dispatches a placement-declaring backend without its own recording scheduler submits a real salloc. The host flight layer declares no placement, so production dispatch is unaffected. The repair is the-suite-is-green-at-head §3's node the-suite-cannot-reach-a-real-scheduler: it names the reaching tests, gives each a scheduler it provides, and adds a conftest check that fails any test reaching a scheduler verb it did not provide. The integration measurement this plan shipped on (0 added failing ids over 99 files) was a test-outcome delta. It could not see a side effect on the scheduler, which is the gap a leak check closes.</div>
 </div>
 </section>
 </main>

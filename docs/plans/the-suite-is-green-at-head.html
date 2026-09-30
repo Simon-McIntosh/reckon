@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="136">
+<meta name="plan-version" content="137">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1606,6 +1606,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260930T085537531224" data-who="" data-when="">
     <div class="r-comment-body">Fixed waits removed: met for the attribution report's list. Commit 34e1b0d27 (2026-09-25) replaced both fixed sleeps it names. The dispatch shim in tests/test_dispatch_returns_without_worker.py signals and holds its scan rather than sleeping one second per charged call. The patched watch constructor in tests/test_server_listens_before_it_watches.py signals that arming began, rather than sleeping five seconds per tree. The report's fourth row, the 128-plan loop in tests/test_plan_read_warns_unparsed.py, is a parse cost, not a wait. Load-sensitive ids robust is dispatched as load-sensitive-ids-hold-under-load. It covers every named id except the tests/test_ledger.py one, which a peer node holds. Bounded full run is last, at the merged head, once the S21 dispatch.py nodes land.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20260930T183648710397" data-who="" data-when="">
+    <div class="r-comment-body">Three S21 nodes dispatched on 2026-09-30 around 20:25 CEST. First, the-suite-cannot-reach-a-real-scheduler. Five whole-suite runs each minted a real 32-core, 128 GB allocation with no time limit, through dispatch's ensure_reservation, and the operator cancelled them by id; the record is on a-placement-with-no-reservation-mints-one-per-worker §3. The node names the reaching tests under a refusing scheduler shim, gives each a scheduler it provides, and adds a conftest check that fails any test reaching a scheduler verb it did not provide. It is proven over the whole suite with -n 8, with no real scheduler verb run. s25 is holding whole-suite runs until it lands. Second, a-served-thread-leaves-no-memo-behind, for f-sgh-tag-inventory-reads-a-leaked-memo: the served-entry-point fixture waits for its thread to stop before restoring _SIGNATURE_TTL_S, and a teardown check fails the server test if the memo is left live. Third, skill-contracts-follow-the-shipped-surface (§2), for the two remaining stale expectations in tests/test_skill_contracts.py. load-sensitive-ids-hold-under-load delivered at 12:00, and its review is running.</div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260928T142353317590-s21-audit-placement" data-who="reckon-build" data-when="2026-09-28T15:23:36.908Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-suite-is-green-at-head/s21-audit-placement.html</p></div>
