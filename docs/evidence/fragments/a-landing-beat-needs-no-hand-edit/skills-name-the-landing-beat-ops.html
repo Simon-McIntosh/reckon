@@ -20,7 +20,7 @@
         <p class="lead">A landing beat is three <code>edit_plan</code> ops. Both skills named them only in prose, and the <code>_OP_VOCAB</code> grammar omitted <code>append_evidence</code> entirely, so the op was undiscoverable and the only route a reader could see was a hand edit. Both skills now name the three ops with the fields their implementation requires, state that a direct HTML edit is the announced exception, and print a copyable example per op.</p>
       </header>
 
-      <section id="what-changed">
+      <section id="skills-name-the-landing-beat-ops-what-changed">
         <h2>What changed</h2>
         <ul>
           <li><code>reckon/mcp.py</code> adds <code>append_evidence</code> to <code>_OP_VOCAB</code>. It was dispatched from <code>_OP_DISPATCH</code> while absent from the vocabulary, so <code>test_op_vocab_names_every_dispatchable_op</code> was red at the base and no agent reading the op grammar could find it.</li>
@@ -30,7 +30,7 @@
         </ul>
       </section>
 
-      <section id="the-gate">
+      <section id="skills-name-the-landing-beat-ops-the-gate">
         <h2>The gate</h2>
         <p>Two cases in <code>tests/test_skill_contracts.py</code> hold the skills to the code. <code>test_both_skills_name_the_landing_beat_ops_with_their_fields</code> derives each op's required fields from <code>_OP_VOCAB</code> at test time and asserts both skills show every one, so the check tracks the implementation rather than a second hardcoded list. <code>test_each_skills_documented_examples_apply</code> extracts each skill's example block, applies all three op objects verbatim through <code>reckon.mcp._edit_plan_tool</code> to a plan synthesised under a temporary directory, and requires <code>ok</code>.</p>
         <table>
@@ -43,13 +43,13 @@
         <p>Logs live under the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T094134809163-skills-name-the-landing-beat-ops/</code>. Each ran with the shared environment interpreter at <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code> and a neutral basetemp on node-local <code>/tmp</code>, deleted afterwards.</p>
       </section>
 
-      <section id="negative-controls">
+      <section id="skills-name-the-landing-beat-ops-negative-controls">
         <h2>Declared negative control</h2>
         <p>Declared mutation: <em>delete the <code>collapse_section</code> mention from <code>skills/reckon-edit/SKILL.md</code> and confirm the new skill-contract pin fails</em>. Removing the op name leaves <code>test_both_skills_name_the_landing_beat_ops_with_their_fields</code> red at <code>tests/test_skill_contracts.py:1354</code> &mdash; <em>reckon-edit op reference does not list collapse_section with its required fields</em> &mdash; and the file was restored with both mentions present at the committed head.</p>
         <p>A second mutation, over the new apply case: <em>drop capability from the documented <code>insert_section</code> example</em>. The example then no longer validates as a <code>SectionRecord</code>, the apply returns <code>op_error</code> instead of <code>ok</code>, and <code>test_each_skills_documented_examples_apply</code> fails.</p>
       </section>
 
-      <section id="commits">
+      <section id="skills-name-the-landing-beat-ops-commits">
         <h2>Commits</h2>
         <p><code>442670a05cd0b1e5adb57c6ed8fa8ebdcf31f23c</code> &mdash; docs(skills): name the landing-beat write ops and their fields; adds <code>append_evidence</code> to <code>_OP_VOCAB</code> and the first skill-contract pin.</p>
         <p><code>34a43322bae8a9c0574688d0f361e5b877c3f0fa</code> &mdash; fix(skills): teach <code>insert_section</code>'s full form and apply the examples; derives the required fields from <code>_OP_VOCAB</code> and adds the apply case.</p>

@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-landing-beat-needs-no-hand-edit">
   <meta name="plan-title" content="A Landing Beat Needs No Hand Edit">
   <meta name="plan-summary" content="edit_plan can collapse a landed section and append to a cumulative evidence record, so a coordinator edits plan HTML by hand only by exception.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="5.0">
   <meta name="plan-capability-version" content="1.0">
@@ -19,14 +19,14 @@
   <meta name="plan-sprint" content="S24">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
   <meta name="plan-standalone" content="Adds two edit_plan ops on top of the section records S22 landed; nothing upstream must land first, and the op table it writes is sequenced by live claims.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
   <title>A Landing Beat Needs No Hand Edit | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-commits" content="cf26c6df,91e978cc,5ca9701f,7a8d7051">
-<meta name="plan-impl" content="0.75">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -43,23 +43,11 @@
       <li><strong>Inserting a section.</strong> Solved on 2026-09-25 by <code>insert_section</code>, in <code>the-mcp-answers-within-its-ceiling</code> &sect;7.</li>
     </ul>
 
-    <h2 id="s2">&sect;2 &mdash; An op appends an anchored section to an evidence record</h2>
-    <p><code>edit_plan</code> accepts <code>{op:"append_evidence", plan, anchor, title, body}</code>. It targets the cumulative record <code>docs/evidence/archive/&lt;plan&gt;-landed.html</code>.</p>
-    <ul>
-      <li>If the record is missing, the op creates it with <code>reckon-type=evidence</code> and <code>plan-evidence-for</code>.</li>
-      <li>It appends one <code>&lt;section id=anchor&gt;</code> before <code>&lt;/main&gt;</code>.</li>
-      <li>It refuses an anchor that already exists, so two writers never overwrite each other.</li>
-    </ul>
-    <p>A second writer's append lands beside the first, removing the add/add splice.</p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>Tests assert creation with the required meta, an append beside an existing anchor, refusal of a duplicate anchor, and <code>reckon audit-doc</code> passing on the result.</li>
-      <li>The declared mutation, dropping the duplicate-anchor refusal, is applied and observed to fail. The log is recorded.</li>
-    </ul>
-
-    <div class="landed-summary" id="s2-landed">
-      <p><span class="badge badge-shipped">&#10003; landed 2026-09-25</span> <strong>append_evidence</strong> &mdash; the op appends one anchored section to <code>docs/evidence/archive/&lt;plan&gt;-landed.html</code>, creating it when absent and refusing a duplicate anchor by name. Commit <code>cf26c6df</code>; 5 new tests, 130 passing in the touched suites; audit-doc OK on the created record. <a href="/reckon/evidence/archive/a-landing-beat-needs-no-hand-edit-landed#s2">&sect;2 landed</a></p>
-    </div>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-09-30</span>
+    <h2 id="s2">&sect;2 &mdash; An op appends an anchored section to an evidence record</h2></header>
+  <p class="landed-summary">append_evidence appends one anchored section to a plan's cumulative landed record, creating the record through the synthesis renderer when absent, and refuses a duplicate anchor by name so a second writer lands beside the first. <a href="/reckon/evidence/archive/a-landing-beat-needs-no-hand-edit-landed#s2">full record</a></p>
+</section>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-09-30</span>
@@ -67,27 +55,27 @@
   <p class="landed-summary">collapse_section replaces a landed section's prose with its card and sets the declaration to done in one versioned write, refreshes an existing card in place, and refuses, leaving the file unchanged, any card span it cannot delimit. Each extent check is pinned by its own case. <a href="/reckon/evidence/archive/a-landing-beat-needs-no-hand-edit-landed#s3">full record</a></p>
 </section>
 
-    <h2 id="s4">&sect;4 &mdash; The skills name the ops and the exception</h2>
-    <p><code>reckon-build</code> &sect;6b and &sect;7, and <code>reckon-edit</code>, name <code>collapse_section</code>, <code>append_evidence</code> and <code>insert_section</code> as the landing-beat writes. They say a direct HTML edit is the exception, announced in the reply as the existing bypass rule already requires. <code>_OP_VOCAB</code> lists both new ops.</p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>Every test that greps <code>skills/</code> passes.</li>
-      <li>The vocabulary-completeness test from <code>the-mcp-answers-within-its-ceiling</code> &sect;8 passes with both ops present.</li>
-    </ul>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-09-30</span>
+    <h2 id="s4">&sect;4 &mdash; The skills name the ops and the exception</h2></header>
+  <p class="landed-summary">reckon-build and reckon-edit name collapse_section, append_evidence and insert_section as the landing-beat writes, each with the full field set the implementation accepts and an example applied through edit_plan in the contract test; a direct plan HTML edit is the announced exception. <a href="/reckon/evidence/archive/a-landing-beat-needs-no-hand-edit-landed#skills-name-the-landing-beat-ops">full record</a></p>
+</section>
 
     
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-albnnhe-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-landing-beat-needs-no-hand-edit" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-albnnhe-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-landing-beat-needs-no-hand-edit" data-resolved-at="2026-09-30T10:33:16+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">Land §2–§4</h4>
     <div class="r-fu-body"><p>§2 and §3 both write <code>reckon/_store.py</code> and run in order. §4 follows them.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-beat-needs-no-hand-edit</pre>
+    <p class="r-fu-outcome">done — no followup. §2 append_evidence and §3 collapse_section landed earlier; §4 landed as skills-name-the-landing-beat-ops (merge c09283969, review 92, zero added failures). Every implementable section is collapsed to its card.</p>
     </article>
-<article class="r-fu" data-id="f-albnnhe-ambiguous-span-refusal-is-tested" data-status="open" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-albnnhe-ambiguous-span-refusal-is-tested" data-status="resolved" data-written-by="s23-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build" data-resolved-at="2026-09-30T10:33:16+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">The ambiguous-span refusal in collapse_section has a test</h4>
     <div class="r-fu-body"><p>From the 93 re-review of <code>collapse-section-op-lands-a-section</code>. collapse_section refuses a section whose card span cannot be delimited unambiguously, leaving the file unchanged. No test exercises that refusal; the gate's only refusal case is a card missing its closing tag. So a regression that deleted the guard would leave the gate green. Done when a case in <code>tests/test_edit_plan_collapse_section.py</code> builds an ambiguous span, for example two landed cards under one heading, and asserts the refusal with the file byte-identical. The declared mutation, deleting the guard, fails it.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-beat-needs-no-hand-edit §3</pre>
+    <p class="r-fu-outcome">done — no followup. collapse-ambiguous-span-refusal-is-tested landed at merge 807a50ee7 with one case per extent check in _landed_card_span, review 96, zero added failures.</p>
     </article>
 </section>
 
@@ -123,7 +111,7 @@
     <div class="r-comment-body"><p><strong>§3 is declared done.</strong> <code>collapse-section-op-lands-a-section</code> merged at <code>bd388c8e</code>. The first review (88) found that collapsing an already-collapsed section nested a second card, destroyed the first summary and left the section unclosed. The fix derives the section's extent from its own structure and replaces an existing card in place. The re-review scored 93 with zero added failures by id. Every collapsed result in the tests passes <code>reckon audit-doc</code>.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260930T095447676990-review-of-skills-name-the-landing-beat-ops" data-who="reckon-build" data-when="2026-09-30T10:12:52.881Z">
-    <div class="r-comment-body"><p>independent review of run r-20260930T094134809163-skills-name-the-landing-beat-ops at head 442670a05cd0b1e5adb57c6ed8fa8ebdcf31f23c stored a parsed five-dimension record at both granted paths — goal_fidelity 16, evidence 18, scope_discipline 19, durability 14, fit 18, total 85, no dimension absent — carrying added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite and after_suite arm logs (logs/base-gate.log 3 failed ids at d6e2e0390, logs/head-gate.log 2 failed ids at 442670a05) against a synthetic-id control returning 1, and filing three findings: insert_section is shown with three of the six fields reckon/_store.py requires in both skills and the shown form is refused (op_error, reproduced), the new pin at tests/test_skill_contracts.py:1304 locks that incomplete signature in so a correct repair reddens it (measured, arm D 1 failed against arm C 1 passed), and the reviewed manifest records its arms under test_logs so the read-time annotation reports the count as unmeasured.</p></div>
+    <div class="r-comment-body"><p>independent review of run r-20260930T094134809163-skills-name-the-landing-beat-ops at head 442670a05cd0b1e5adb57c6ed8fa8ebdcf31f23c stored a parsed five-dimension record at both granted paths — goal_fidelity 16, evidence 18, scope_discipline 19, durability 14, fit 18, total 85, no dimension absent — carrying added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline_suite and after_suite arm logs (logs/base-gate.log 3 failed ids at d6e2e0390, logs/head-gate.log 2 failed ids at 442670a05) against a synthetic-id control returning 1, and filing three findings: insert_section is shown with three of the six fields reckon/_store.py requires in both skills and the shown form is refused (op_error, reproduced), the new pin at tests/test_skill_contracts.py:1304 locks that incomplete signature in so a correct repair reddens it (measured, arm D 1 failed against arm C 1 passed), and the reviewed manifest records its arms under test_logs so the read-time annotation reports the count as unmeasured.</p></div>
 </div>
 </section>
   </main>

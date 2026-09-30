@@ -19,7 +19,7 @@
       <p class="lead">Retiring a landed section used to take two writes: one to replace its authored prose with the landed card, another to set its declaration to done. Between them a reader could see the card without the declaration, or the reverse. A single op now does both in one versioned write, and collapsing an already-collapsed section refreshes its card in place rather than nesting a second one.</p>
     </header>
 
-    <section id="what-changed">
+    <section id="collapse-section-op-lands-a-section-what-changed">
       <h2>What changed</h2>
       <ul>
         <li><code>reckon/_store.py</code> gains <code>collapse_section</code>, dispatched from <code>_OP_DISPATCH</code> beside <code>insert_section</code> and <code>append_evidence</code>. It validates the section id, a non-empty summary and a non-empty evidence anchor, then queues the HTML replacement as a write effect and sets the section's declaration to <code>done</code> on the same working state, so the two cannot be observed apart.</li>
@@ -30,7 +30,7 @@
       </ul>
     </section>
 
-    <section id="the-gate">
+    <section id="collapse-section-op-lands-a-section-the-gate">
       <h2>The gate</h2>
       <p><code>tests/test_edit_plan_collapse_section.py</code> drives the plan-editing tool against a plan synthesised under a temporary directory at <code>_edit_plan_tool</code> (the same call site the MCP server uses), then reads the file back through <code>_plan_html.read_state</code> and audits it with <code>reckon audit-doc</code>.</p>
       <ul>
@@ -55,13 +55,13 @@
       <p>Logs live under the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T190319353906-collapse-section-op-lands-a-section/</code>. Each ran with the shared environment interpreter at <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code> and a neutral basetemp on node-local <code>/tmp</code>.</p>
     </section>
 
-    <section id="negative-controls">
+    <section id="collapse-section-op-lands-a-section-negative-controls">
       <h2>Declared negative controls</h2>
       <p><strong>Control 2 &mdash; extent.</strong> Declared mutation: <em>restore the scan-to-next-region extent when collapsing</em>. Forcing the card-span path off, so the extent is again scanned to the next structured-state region, the twice-collapsed case fails on <code>assert 2 == 1</code>: two cards remain and the first is left unclosed. This is the defect the fix repairs.</p>
       <p><strong>Control 1 &mdash; declaration.</strong> Declared mutation: <em>leave the section declaration unchanged when collapsing</em>. With the declaration assignment replaced by a no-op the declaration case fails, because the write is refused when the section record and the declaration disagree.</p>
     </section>
 
-    <section id="commits">
+    <section id="collapse-section-op-lands-a-section-commits">
       <h2>Commits</h2>
       <p><code>98df7f327a9b6566e025374a7da18f86a20753b9</code> &mdash; feat(store): collapse a landed section to its card in one versioned write.</p>
       <p><code>f3601c024f194f39221815c90feaa0626eb61bd7</code> &mdash; fix(store): replace a landed card in place when collapsing again.</p>
