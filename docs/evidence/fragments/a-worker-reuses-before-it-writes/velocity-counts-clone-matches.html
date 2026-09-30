@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-evidence-for" content="a-worker-reuses-before-it-writes">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <title>The velocity view counts promotion's clone matches per week | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>The velocity view counts promotion's clone matches per week</h1>
+      <p class="lead">Promotion already records a <code>clone_matches</code> report on every
+        ledger row, but nothing surfaced it. <code>velocity.report</code> now carries a
+        <code>clones</code> block: for each ISO week in the window it counts the promoted runs
+        whose function copied an existing one, the total matches, the runs measured with no
+        match, and the runs no revision pair could be measured for.</p>
+    </header>
+
+    <section id="what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/velocity.py</code> carries <code>clone_matches</code> on each captured
+          run row (the compact field list gains it), so the ledger's own clone report reaches
+          the measurement rather than being dropped at capture.</li>
+        <li><code>_clone_week_cells</code> buckets the promoted runs by UTC Monday-start ISO
+          week, clipped to the window the same way <code>measure</code> buckets its own weekly
+          cells, and charges each run to the week it was promoted. Three states stay apart: a
+          run whose function copied an existing one (<code>runs_with_match</code>, its matches
+          summed into <code>matches</code>), a run the detector measured and found nothing in
+          (<code>runs_no_match</code>), and a run carrying the unmeasured marker
+          (<code>runs_unmeasured</code>). The last is a missing reading and is never folded
+          into the no-match count &mdash; an empty list is a measurement, the
+          <code>{"status": "unmeasured"}</code> mapping is not.</li>
+        <li>The block is emitted by <code>report</code> as
+          <code>{"weeks": [...], "definition": ...}</code>, and <code>clones</code> is accepted
+          as a <code>view</code> field.</li>
+      </ul>
+    </section>
+
+    <section id="the-fixture">
+      <h2>The two-week fixture</h2>
+      <p><code>tests/test_velocity_clone_matches.py</code> builds a repository whose ledger
+        spans two ISO weeks: a run with two matches and a measured-empty run in the first week,
+        one unmeasured run in the second, each dated by its own <code>promote</code> commit.
+        The figures are hand-computable from the fixture, so folding the unmeasured state into
+        the no-match count moves a figure and fails an assertion.</p>
+      <table class="r-table">
+        <thead><tr><th>ISO week</th><th>runs with match</th><th>matches</th><th>runs no match</th><th>runs unmeasured</th></tr></thead>
+        <tbody>
+          <tr><td>2026-W36 (from 2026-08-31)</td><td>1</td><td>2</td><td>1</td><td>0</td></tr>
+          <tr><td>2026-W37 (from 2026-09-07)</td><td>0</td><td>0</td><td>0</td><td>1</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="the-gate">
+      <h2>The gate</h2>
+      <ul>
+        <li><strong>Gate</strong> <code>tests/test_velocity_clone_matches.py</code>:
+          <code>2 passed</code>, EXIT=0 (log <code>gate-clone-matches.log</code>).</li>
+        <li><strong>Regression</strong> the neighbouring velocity modules
+          (<code>test_velocity.py</code>, <code>test_velocity_session_continuity.py</code>,
+          <code>test_velocity_interface_counts.py</code>): <code>15 passed</code>, EXIT=0
+          (log <code>regression-velocity.log</code>).</li>
+        <li><strong>Negative control</strong> (<code>negative-control.log</code>): forcing the
+          unmeasured branch off so unmeasured runs fall into the no-match count fails
+          <code>test_an_unmeasured_run_is_not_a_measured_run_with_no_match</code> with
+          <code>assert 0 == 1</code>, EXIT=1; the classifier is restored and the suite passes.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

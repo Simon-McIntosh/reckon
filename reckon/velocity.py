@@ -888,6 +888,7 @@ def capture_project(
         "lineage",
         "predecessor_run",
         "failure_classification",
+        "clone_matches",
     )
     compact = []
     for rid, record in sorted(records.items()):
@@ -2544,6 +2545,55 @@ def _interface_week_rows(repo, branch, start, end, *, cache_root=None):
     return rows
 
 
+def _clone_week_cells(runs, window_start, window_end):
+    """Count promoted runs' recorded clone matches per ISO week of the window.
+
+    Each cell covers a UTC Monday-start week clipped to the window, the same
+    bucketing ``measure`` uses for its own weekly cells, so a week's clone
+    figures line up with the promotions that week. A run is charged to the week
+    it was promoted.
+
+    Three states are kept apart rather than folded together: a run whose
+    function copied an existing one, counted once in ``runs_with_match`` with
+    its matches summed into ``matches``; a run the detector measured and found
+    nothing in (``runs_no_match``); and a run no revision pair could be measured
+    for (``runs_unmeasured``), which is a missing reading and never counted as a
+    run that copied nothing.
+    """
+    first_day = _window_day(window_start)
+    monday = first_day - dt.timedelta(days=first_day.weekday())
+    last_day = _window_day(window_end)
+    cells = []
+    while monday <= last_day:
+        next_monday = monday + dt.timedelta(days=7)
+        first, last = monday.isoformat(), next_monday.isoformat()
+        with_match = no_match = unmeasured = matches = 0
+        for row in runs:
+            if not first <= row["day"] < last:
+                continue
+            report = row.get("clone_matches")
+            if isinstance(report, dict):
+                unmeasured += 1
+            elif report:
+                with_match += 1
+                matches += len(report)
+            else:
+                no_match += 1
+        year, number, _ = monday.isocalendar()
+        cells.append(
+            {
+                "iso_week": f"{year}-W{number:02d}",
+                "week_start": first,
+                "runs_with_match": with_match,
+                "matches": matches,
+                "runs_no_match": no_match,
+                "runs_unmeasured": unmeasured,
+            }
+        )
+        monday = next_monday
+    return cells
+
+
 def report(
     projects,
     *,
@@ -2604,6 +2654,17 @@ def report(
     )
     summary = compact_summary(full, weekly_cells)
     summary["by_project_day_lane"] = full["by_project_day_lane"]
+    summary["clones"] = {
+        "weeks": _clone_week_cells(full["runs"], start, end),
+        "definition": (
+            "Promoted runs' recorded clone matches per UTC Monday-start week "
+            "clipped to the window. runs_with_match counts runs whose function "
+            "copied an existing one, matches sums their matches, runs_no_match "
+            "counts runs the detector measured and found nothing in, and "
+            "runs_unmeasured counts runs no revision pair could be measured for "
+            "— a missing reading, never counted as a run that copied nothing."
+        ),
+    }
     # The reckon package is the one whose interface the plan-review rubric
     # reads, so its weekly interface level is reported for the project that
     # carries that name; a window over other projects reports an empty block
@@ -2645,6 +2706,7 @@ OPTIONAL_BLOCKS = frozenset(
         "coordinator_cost",
         "by_project_day_lane",
         "interfaces",
+        "clones",
     }
 )
 
