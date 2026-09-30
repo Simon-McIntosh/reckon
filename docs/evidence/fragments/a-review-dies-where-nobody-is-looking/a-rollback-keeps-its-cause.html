@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-title" content="A rollback keeps its cause, and a capture blocks no registration">
+  <meta name="plan-summary" content="A dispatch that failed after publishing its pointer and cutting its worktree surfaced the failure of its own unwind — a worktree-removal refusal answering the run's own claim — instead of the registration or launch error that stopped it. The unwind now runs inside one guard and its failure rides the original as the cause the traceback prints and is printed as its own line. Separately, the roster guard read any member-row difference as another author's pending registration, so a session capture on a member row refused the next named commit; member rows are now compared on their registration content, so a capture-only difference admits the registration while a row whose identity, harness or role moved still refuses it.">
+  <meta name="plan-evidence-for" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <title>A rollback keeps its cause, and a capture blocks no registration | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A rollback keeps its cause, and a capture blocks no registration</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>A dispatch publishes a live pointer, cuts its worktree, and then runs the steps that can
+        still refuse it — the launch above all. If one of those refuses, the dispatch unwinds: it
+        unwires peer channels, signals the worker, unlinks its own pointer, and removes the worktree
+        it created. The unwind ran unprotected, so a failure inside it became the exception the
+        caller read. Reproduced at base by forcing both failures at once: the launcher raised
+        <code>LaunchStepError: the launch step refused after the pointer was published</code> and the
+        removal raised <code>WorktreeRemovalError: refusing to remove worktree
+        …/coordinator-a/node-launch: claimed by live runs r-other</code>; what surfaced was the
+        <strong>removal</strong> error, with the launch failure demoted to a context the message never
+        showed. The reader of a dispatch failure is told about the cleanup, not about the failure —
+        which is how the run that motivated this section was diagnosed only by running the
+        registration by hand afterwards.</p>
+      <p>The roster half is the same shape one layer down. A commit names one change, so a
+        registration's own commit is refused while the roster holds another author's unrecorded
+        member write. The comparison was of whole member rows, so a member row that had gained only a
+        <em>captured session</em> — the resumable id a run reported, written by whatever run last
+        reported one and not by anyone registering a member — read as a pending registration and
+        refused the next named commit. Reproduced at base: a roster whose only uncommitted change was
+        <code>worker-a</code>'s captured session refused
+        <code>cannot commit roster registration 'worker-b': uncommitted member registration(s):
+        worker-a; commit or discard that roster write before retrying</code>.</p>
+    </section>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ol>
+        <li><code>reckon/crew/dispatch.py</code>: the unwind in <code>dispatch</code>'s guard now
+          runs inside one <code>try</code>. A failure in it is printed as
+          <code>crew: undoing run &lt;id&gt; failed: …</code> and re-raised as the <em>cause</em> of the
+          original — <code>raise exc from rollback_failure</code> — so the surfaced exception is the
+          one that started the rollback, its message names the launch or registration step, and the
+          rollback's own failure is still visible, both on the exception and on stderr, where a
+          caller that prints only the original's message would otherwise lose it. The pointer-first
+          ordering the unwind already had is unchanged: the run's own pointer is unlinked before the
+          removal, so the removal no longer meets a claim this call published.</li>
+        <li><code>reckon/ledger.py</code>: <code>_roster_obstruction</code> compares member rows on
+          their <em>registration content</em> — everything but <code>session_id</code>,
+          <code>session_model</code> and the per-model <code>sessions</code> map — through the new
+          <code>_registration_content</code> and <code>_SESSION_CAPTURE_FIELDS</code>. A row that
+          differs only by a capture therefore obstructs nothing, exactly as a hold history or a
+          completed-run row already did; a row that gained, lost or moved identity, harness or role
+          still refuses the commit and still names the member.</li>
+        <li>New <code>tests/test_a_rollback_keeps_its_cause.py</code>: the two red cases above, plus
+          guards for behaviour already correct at base — the rollback releases its own claim so the
+          worktree the same call created is removed and the launch error surfaces, an uncommitted
+          <em>new</em> member still refuses a registration, and an existing member row whose harness
+          moved still refuses one.</li>
+      </ol>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Reproduction, this node's module alone</td>
+            <td>base <code>bcaf26dcf</code>, new test file untracked</td>
+            <td><strong>2 failed, 3 passed</strong> in 13.35s, exit 1 — the launch-failure case sees
+              <code>WorktreeRemovalError: refusing to remove worktree …: claimed by live runs
+              r-other</code> rather than the launch error, and the capture case sees
+              <code>LedgerError: cannot commit roster registration 'worker-b': uncommitted member
+              registration(s): worker-a</code></td>
+          </tr>
+          <tr>
+            <td>Gate: this module, <code>tests/test_roster_write_commits.py</code>,
+              <code>tests/test_ledger.py</code></td>
+            <td>base <code>bcaf26dcf</code>, new test file untracked</td>
+            <td><strong>2 failed, 102 passed</strong> in 357.56s, exit 1 — both failures are this
+              module's red cases; no other file in the gate fails</td>
+          </tr>
+          <tr>
+            <td>Same gate</td>
+            <td>head <code>3f05a8815</code></td>
+            <td><strong>104 passed</strong> in 354.87s, exit 0 — no failure id added</td>
+          </tr>
+          <tr>
+            <td>Declared mutation: the rollback region of <code>reckon/crew/dispatch.py</code>
+              restored to its base text</td>
+            <td>head <code>3f05a8815</code> plus that mutation</td>
+            <td><strong>1 failed, 4 passed</strong>, exit 1 — the first case fails with
+              <code>WorktreeRemovalError: refusing to remove worktree …: claimed by live runs
+              r-other</code> surfaced in place of the launch error, and the four guards still pass,
+              so the mutation moves only which error is read</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The head arm adds no failure id: the two base failures are this node's own cases, now green,
+        and the 102 passes <code>tests/test_ledger.py</code> and
+        <code>tests/test_roster_write_commits.py</code> read at base are the same 102 at head. Both
+        arms ran in this node's worktree — the base arm at the base revision with the new test file
+        untracked and no source change — so no scratch tree was involved and no
+        <code>module.__file__</code> reading is recorded. The negative control restores the base
+        rollback by splicing the base revision's own lines for that region, and the worktree was
+        restored byte-for-byte from a copy taken at head afterwards
+        (<code>git diff</code> empty), so the red log measures the mutation and nothing else.</p>
+    </section>
+
+    <section id="provenance">
+      <h2>Reproduction</h2>
+      <table>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Base revision</td><td><code>bcaf26dcf9f61ea6dd0832f04c28495fd0475a0c</code></td></tr>
+          <tr><td>Head commits</td><td><code>86deb9c1a7d4aa44005832ce3d7f171f53e1f09b</code> (test),
+            <code>3f05a8815511d853062a1627954025b34f207304</code> (fix)</td></tr>
+          <tr><td>Gate logs</td><td><code>logs/gate-base.log</code> and <code>logs/gate-head.log</code>
+            in the run directory, each headed by its revision, tree and literal command, and ending
+            with a bare <code>EXIT=</code> line</td></tr>
+          <tr><td>Reproduction log</td><td><code>logs/repro-base-new-test.log</code> in the run
+            directory</td></tr>
+          <tr><td>Control log</td><td><code>logs/negative-control.log</code> in the run directory,
+            first line the declared mutation verbatim</td></tr>
+          <tr><td>Basetemps</td><td>under
+            <code>/tmp/reckon-crew-scratch/r-20260930T165256817849-a-rollback-keeps-its-cause/</code>,
+            removed before this record was closed</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
