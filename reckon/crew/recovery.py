@@ -1195,17 +1195,26 @@ def _review_lane_candidates(
     return ordered
 
 
-def _no_review_lane_reason(
-    run_id: str, previous_lane: str, config: Mapping[str, Any]
+def _no_lane_reason(
+    run_id: str,
+    config: Mapping[str, Any],
+    *,
+    kind: str,
+    previous_lane: str = "",
 ) -> str:
-    """Why a scoring run has no lane left, naming each rule that removed one.
+    """Why the composed ``kind`` for a run has no lane left, naming each rule.
 
     Each rule that removes a lane is worth naming on its own: a reader told only
     that no configured backend remains would look for a lane to add, when what
     the configuration actually says is that the lane is deliberately withheld
     (an exclusion) or that the lane cannot be started at all (an in-harness
     launch). Either way the reader learns which lever to reach for rather than
-    reading a hold that names no cause.
+    reading a hold that names no cause. The rules are the same for every run the
+    reflex composes onto a lane — a review and the repair that answers it draw
+    from one candidate list — so ``kind`` names which run is being held rather
+    than which rules applied. ``previous_lane`` is the lane an attempt for the
+    same work already used, and is empty where a kind places no lane by that
+    rule.
     """
     parts: list[str] = []
     excluded = _review_excluded_backends(config)
@@ -1225,7 +1234,7 @@ def _no_review_lane_reason(
     if previous_lane:
         parts.append(f"backend {previous_lane!r} already dropped it")
     detail = "; ".join(parts)
-    reason = f"the review for {run_id} has no eligible lane"
+    reason = f"the {kind} for {run_id} has no eligible lane"
     return f"{reason} ({detail})" if detail else reason
 
 
@@ -1350,7 +1359,9 @@ def dispatch_review_for_run(
         if name != previous_lane
     ]
     if not candidates:
-        reason = _no_review_lane_reason(run_id, previous_lane, resolved)
+        reason = _no_lane_reason(
+            run_id, resolved, kind="review", previous_lane=previous_lane
+        )
         _record_review_dispatch(
             run_id,
             status="awaiting-lane",
@@ -1828,7 +1839,7 @@ def dispatch_repair_for_run(
     owning_lane = str(record.get("backend") or "").strip()
     candidates = _review_lane_candidates(resolved, owning_backend=owning_lane)
     if not candidates:
-        reason = f"the repair for {run_id} has no eligible lane"
+        reason = _no_lane_reason(run_id, resolved, kind="repair")
         _record_repair_dispatch(
             run_id,
             status="awaiting-lane",
