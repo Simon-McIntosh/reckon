@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from bs4 import BeautifulSoup
+from bs4.element import Doctype
 
 from reckon import _plan_html, ledger
 from reckon.resources import ResourceCollision, resolve_resource
@@ -457,6 +458,53 @@ def _record_evidence_dir(record_path: Path) -> Path:
     return parent.parent if parent.name == "archive" else parent
 
 
+def _fragment_body_bytes(fragment: Path) -> bytes:
+    """Return a fragment's readable content, without its document wrapper.
+
+    A fragment is written as a full HTML document, so appending its bytes whole
+    would carry its doctype, ``head`` and ``html`` element into the record — and
+    with its ``head``, the ``plan-*`` metas it holds, which would then read as
+    duplicates of the record's own scalars. The composed record takes the
+    content a reader is meant to see: the children of the fragment's ``main``
+    element when it has one, else the children of its ``body``.
+
+    A fragment can carry a document wrapper without ever naming a ``body``: the
+    content sits directly under ``html``. For that shape the wrapper is dropped
+    a level higher — the doctype, the whole ``head`` element and the ``html``
+    open and close tags are removed and what remains is composed, so the metas
+    the ``head`` held still cannot re-enter the record.
+
+    A fragment with none of those — a bare fragment anchor — is returned
+    unchanged, so a fragment written before the document wrapper existed
+    composes exactly as it did.
+    """
+
+    raw = fragment.read_bytes()
+    soup = BeautifulSoup(raw, "html.parser")
+    body = soup.find("body")
+    main = soup.find("main")
+    if body is not None or main is not None:
+        container = main if main is not None else body
+        return "".join(str(child) for child in container.children).encode("utf-8")
+
+    html_element = soup.find("html")
+    head = soup.find("head")
+    if html_element is None and head is None and not _carries_doctype(soup):
+        return raw
+    scope = html_element if html_element is not None else soup
+    return "".join(
+        str(child)
+        for child in scope.children
+        if getattr(child, "name", None) != "head" and not isinstance(child, Doctype)
+    ).encode("utf-8")
+
+
+def _carries_doctype(soup: BeautifulSoup) -> bool:
+    """Return whether a parsed document holds a doctype declaration node."""
+
+    return soup.find(string=lambda node: isinstance(node, Doctype)) is not None
+
+
 def compose_landed_record(
     record_path: Path,
     plan_slug: str,
@@ -468,7 +516,9 @@ def compose_landed_record(
 
     The composed form is the record file's own bytes followed by each fragment
     under ``docs/evidence/fragments/<plan>/`` in the order the ledger records
-    the fragments' promotions. A fragment is named for the ledger row's
+    the fragments' promotions. Only a fragment's body content is appended, not
+    its document wrapper, so a fragment's own ``head`` metas cannot duplicate
+    the record's scalars. A fragment is named for the ledger row's
     ``node``, so a redispatch of the same node replaces its predecessor's
     fragment and the composed record carries that node's latest fragment once,
     at its earliest promotion.
@@ -527,7 +577,7 @@ def compose_landed_record(
     )
 
     for fragment in ordered:
-        composed.extend(fragment.read_bytes())
+        composed.extend(_fragment_body_bytes(fragment))
     return bytes(composed)
 
 
