@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="153">
+<meta name="plan-version" content="154">
 </head>
 <body>
   <main class="plan-doc">
@@ -1484,6 +1484,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260930T122204648089-stale-manifest-guard-cli-callers" data-who="reckon-build" data-when="2026-09-30T12:41:32.005Z">
     <div class="r-comment-body"><p>Measured the 15-file CLI-caller population of `reckon crew complete` in git-archive scratch trees at 4663e8f4 and 41e8d410: the merge adds 0 and removes 0 failing ids (base 1 failed / 324 passed EXIT=1; merged 1 failed / 324 passed EXIT=1; identical failure set; no repository file changed).</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20260930T124159484530-review-of-stale-manifest-guard-cli-callers" data-who="reckon-build" data-when="2026-09-30T12:52:08.102Z">
+    <div class="r-comment-body"><p>Reviewed run r-20260930T122204648089-stale-manifest-guard-cli-callers — record parsed with all five dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 19, durability 17, fit 18; total 90), added_failure_count 0 with an empty id list derived from the reviewed run&#x27;s own baseline_suite/after_suite logs, 2 findings; I reproduced its population independently and its marker positive control (0 at 4663e8f4, 2 at 41e8d410).</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
