@@ -1,0 +1,59 @@
+<article class="landed-report" data-run-id="r-20260930T224423399297-an-unchanged-run-needs-no-suite-pair">
+      <h3>an-unchanged-run-needs-no-suite-pair — an armed run that changed nothing promotes without a suite pair</h3>
+      <p>
+        An armed promotion required a complete <code>baseline_suite</code> and
+        <code>after_suite</code> pair so it could measure the delta between them.
+        A run that changed nothing has no delta for a pair to measure, so the
+        requirement refused exactly the run whose own tree proves it is
+        unchanged: a decline-only repair that answered every finding in prose,
+        or a report-only node that cited no commit, had no baseline to record and
+        was turned away with <code>missing baseline_suite, after_suite</code>.
+      </p>
+      <p>
+        <code>reckon/crew/promotion.py</code> now exempts that run.
+        <code>_evaluate_suite_delta</code> returns a delta of
+        <code>status: "unchanged"</code> with the <code>suite_command</code>,
+        <code>added_failure_ids: []</code> and a reason, in place of the
+        missing-suite refusal, when <code>_run_changed_nothing</code> holds. The
+        predicate reads the run's own declarations and then the worktree, which
+        cannot be spoofed: the fresh manifest must claim no changed path and name
+        no commit other than the base the run was dispatched against
+        (<code>_manifest_declares_no_change</code>), and, when the worktree still
+        exists, its <code>HEAD</code> must equal the recorded base with no tracked
+        file modified against it (<code>_worktree_unchanged_since_base</code>). A
+        run whose head moved past its base, or whose manifest names a changed path
+        or a commit past the base, is refused exactly as before.
+        <code>reckon/ledger.py</code> counts the new status beside
+        <code>clean</code>, <code>refused</code> and <code>waived</code> in its
+        suite-delta tally.
+      </p>
+      <p>
+        <strong>Measure.</strong> <code>tests/test_an_unchanged_run_needs_no_suite_pair.py</code>
+        passes 3/3: a decline-only armed run with a <code>suite_command</code> and
+        no suite fields promotes with <code>suite_delta</code> status unchanged;
+        a run with one commit past its base and no suite fields is still refused
+        with <code>missing baseline_suite, after_suite</code>; and a run whose
+        empty manifest is contradicted by a worktree whose head moved is still
+        refused. The gate ran only the named file, no call reached SLURM.
+      </p>
+      <p>
+        <strong>Negative control.</strong> Against a scratch copy of the tree with
+        the unchanged-run exemption removed, the decline-only case fails with
+        <code>missing baseline_suite, after_suite</code> (module under test
+        resolved to the scratch <code>promotion.py</code>, confirmed on the log's
+        header). The red log is
+        <code>negctl-unchanged-run-exemption-removed.log</code> under the run
+        directory, its first line the declared mutation:
+        <em>remove the unchanged-run exemption; the decline-only case must fail
+        with the missing-suite refusal</em>.
+      </p>
+      <p>
+        <strong>Scope.</strong> The required ledger tally change adds an
+        <code>unchanged</code> key to the always-present suite-delta dict, which
+        the pinned exact-dict assertion in
+        <code>tests/test_ledger.py::test_ledger_summary_counts_suite_delta_outcomes</code>
+        then contradicted; that one-line assertion was updated in the same commit
+        so the tally change lands without a failure on the wider suite. No other
+        file outside the node's fence was touched.
+      </p>
+    </article>

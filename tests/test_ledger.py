@@ -1097,6 +1097,7 @@ def test_ledger_summary_counts_suite_delta_outcomes(repo) -> None:
         "clean": 1,
         "refused": 1,
         "waived": 1,
+        "unchanged": 0,
     }
 
 

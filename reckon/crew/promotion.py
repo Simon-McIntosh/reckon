@@ -582,6 +582,79 @@ def _worktree_repository_changes(record: Mapping[str, Any]) -> tuple[str, ...]:
     return tuple(sorted(changed))
 
 
+def _manifest_declares_no_change(
+    record: Mapping[str, Any], manifest: Mapping[str, Any], manifest_text: str
+) -> bool:
+    """Whether a run's manifest declares no repository work against its base.
+
+    The manifest half of the unchanged-run exemption. A fresh manifest whose
+    ``changed_paths`` claims no repository path and which cites no commit other
+    than the base the run was dispatched against has declared that it changed
+    nothing. Like every other declaration this is read, not believed: whether
+    the claim holds is settled from the worktree by
+    ``_worktree_unchanged_since_base``.
+    """
+    if not _changed_paths_declare_no_paths(manifest, record, manifest_text):
+        return False
+    base = str(record.get("base_sha") or "").strip()
+    tree = Path(str(record.get("worktree") or "")).expanduser()
+    canonical_base = _commit_canonical_id(tree, base) if base else None
+    for raw in manifest.get("commits") or ():
+        cited = str(raw).strip()
+        if not cited:
+            continue
+        canonical = _commit_canonical_id(tree, cited)
+        if canonical is None or canonical_base is None or canonical != canonical_base:
+            return False
+    return True
+
+
+def _worktree_unchanged_since_base(record: Mapping[str, Any]) -> bool:
+    """Whether the run's worktree still sits on its base with no tracked change.
+
+    The worktree half of the unchanged-run exemption, and the only measurement
+    of it: the manifest cannot be written to or spoofed by the worktree. A
+    worktree that is gone leaves the condition vacuous — there is nothing to
+    check — so the manifest declaration stands alone there. A worktree that
+    exists must have its ``HEAD`` equal to the recorded base and no tracked
+    file modified against it, staged or not.
+    """
+    tree = Path(str(record.get("worktree") or "")).expanduser()
+    base = str(record.get("base_sha") or "").strip()
+    if not base or not tree.is_dir():
+        return True
+    canonical_base = _commit_canonical_id(tree, base)
+    head = _worktree_git_paths(tree, "rev-parse", "HEAD")
+    if canonical_base is None or not head:
+        return False
+    if _commit_canonical_id(tree, head[0]) != canonical_base:
+        return False
+    return not _worktree_git_paths(tree, "diff", "--name-only", "HEAD")
+
+
+def _run_changed_nothing(record: Mapping[str, Any]) -> bool:
+    """Whether an armed run's own manifest and worktree show no change.
+
+    The single condition under which an armed promotion may carry a suite delta
+    of ``unchanged`` with no baseline and after suite pair: a fresh manifest
+    declaring no changed path and no commit beyond the base, beside a worktree
+    still sitting on that base. A run whose worktree head moved past the base,
+    or whose manifest names a changed path or a commit past the base, is not
+    this case and is refused as before.
+    """
+    manifest_present, fresh = _manifest_freshness(record)
+    if not (manifest_present and fresh):
+        return False
+    manifest_text = _manifest_text(record)
+    try:
+        manifest = parse_manifest(manifest_text)
+    except (OSError, KeyError, ValueError):
+        return False
+    if not _manifest_declares_no_change(record, manifest, manifest_text):
+        return False
+    return _worktree_unchanged_since_base(record)
+
+
 def _commitless_raw_field(
     manifest_text: str, record: Mapping[str, Any], key: str
 ) -> str | None:
@@ -4075,7 +4148,14 @@ def _evaluate_suite_delta(
     *,
     waiver_reason: str,
 ) -> dict[str, Any] | None:
-    """Validate an armed run's paired suite evidence and calculate its delta."""
+    """Validate an armed run's paired suite evidence and calculate its delta.
+
+    An armed run that changed nothing against its base — a fresh manifest
+    declaring no changed path and no commit beyond the base, over a worktree
+    still sitting on that base — carries a delta of ``unchanged`` and needs no
+    baseline and after pair. Every other run with missing suite evidence is
+    refused as before.
+    """
     suite_command = str(record.get("suite_command") or "").strip()
     if not suite_command:
         return None
@@ -4107,6 +4187,23 @@ def _evaluate_suite_delta(
     ):
         missing.append("baseline_suite.revision_matches_base_sha")
     if missing:
+        if _run_changed_nothing(record):
+            # An armed run that changed nothing has nothing for a suite pair to
+            # measure: no baseline and after suite can differ over an empty
+            # delta, so requiring the pair would refuse a run whose own tree
+            # proves it is unchanged. The refusal below still fires for a run
+            # that moved its head or declared a changed path.
+            return {
+                "status": "unchanged",
+                "suite_command": suite_command,
+                "added_failure_ids": [],
+                "reason": (
+                    "run changed nothing against its base: its fresh manifest "
+                    "declares no changed path and no commit beyond the base, and "
+                    "its worktree sits on the base with no tracked modification, "
+                    "so no baseline and after suite pair is required"
+                ),
+            }
         refusal = {
             "status": "refused",
             "suite_command": suite_command,
