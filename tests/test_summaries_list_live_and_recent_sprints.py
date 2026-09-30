@@ -330,6 +330,35 @@ def test_the_window_is_read_from_flight_config(project) -> None:
     assert [row["id"] for row in _roadmap_sprints()] == expected
 
 
+def test_both_summaries_window_through_the_roadmaps_resolver(
+    project, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One owner for the window: both surfaces follow the roadmap's resolver.
+
+    The resolver is replaced with one returning a wide sentinel window, so the
+    sprint closed forty days ago — outside the default window and outside the
+    fixture's configured one — appears only if both summaries read the window
+    through that resolver rather than resolving a copy of their own.
+    """
+
+    import reckon.roadmap as roadmap_module
+
+    seen: list[str] = []
+
+    def _wide(project_name: str, docs_dir) -> int:
+        seen.append(project_name)
+        return 100
+
+    monkeypatch.setattr(roadmap_module, "_sprint_recent_days", _wide)
+
+    # Closed rows are ordered by id within their bucket, so the long closed
+    # sprint sorts ahead of the recently closed one once the window admits it.
+    expected = [LIVE, ARCHIVED, CLOSED, OPEN, OLDER, RECENT]
+    assert [row["id"] for row in _discovery_sprints()] == expected
+    assert [row["id"] for row in _roadmap_sprints()] == expected
+    assert PROJECT in seen
+
+
 def test_reckon_discovery_summary_stays_under_the_budget(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
