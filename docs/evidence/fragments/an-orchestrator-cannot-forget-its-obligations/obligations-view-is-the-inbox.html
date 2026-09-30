@@ -6,6 +6,8 @@
   <meta name="docs-project" content="reckon">
   <meta name="reckon-type" content="evidence">
   <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="an-orchestrator-cannot-forget-its-obligations">
+  <meta name="plan-title" content="An orchestrator cannot forget its obligations">
   <meta name="plan-evidence-for" content="reckon:an-orchestrator-cannot-forget-its-obligations">
   <meta name="plan-verifies" content="reckon:an-orchestrator-cannot-forget-its-obligations#s6">
   <meta name="evidence-verdict" content="pass">
@@ -42,19 +44,22 @@
   <code>test_ship_cli_instructions_match_registered_commands_and_flags</code>,
   with its <code>--run/--reason/--until</code> flags.</p>
 
-  <p><strong>Measure — zero added failures by id.</strong> The tests that read
-  <code>skills/</code> are run in a base arm (a scratch export of
-  <code>4e05e287</code>) and a head arm (this worktree), each log headed with its
-  revision, tree, working directory, imported module path and command. The
-  reachable set — the files that read the changed artifacts — is
-  <code>test_skill_contracts.py</code>, <code>test_skill_contract_parity.py</code>
-  and <code>test_crew_monitor_output.py</code>. Seven of the eight skill-reading
-  files ran in both arms: base is 4 failed / 106 passed against head 3 failed /
-  108 passed, and every base failure id is a head failure id except
+  <p><strong>Measure — zero added failures by id.</strong> A base arm (a scratch
+  export of <code>4e05e287</code>) and a head arm (this worktree at the commit
+  below, clean tree) each run the six files that read the paths this node
+  changed: <code>tests/test_skill_contracts.py</code>,
+  <code>tests/test_skill_contract_parity.py</code>,
+  <code>tests/test_crew_monitor_output.py</code>,
+  <code>tests/test_monitor_invocation_docs.py</code>,
+  <code>tests/test_crew_directory.py</code> and
+  <code>tests/test_hook_installer.py</code>. Each log's first line is
+  <code>revision: &lt;full sha&gt;</code>. The counts and the failure ids are in
+  those logs; every base failure id is a head failure id except
   <code>test_every_registered_crew_verb_is_documented_or_exempt</code>, which
-  this node turns green — zero added, one removed.
-  <code>test_crew.py</code> was not run in either arm: it is the dominant runtime
-  and did not fit the time fence. Logs: <code>logs/</code>.</p>
+  this node turns green — zero added, one removed. Logs:
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074401332971-obligations-view-is-the-inbox/gate-base.log</code>
+  and
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T074401332971-obligations-view-is-the-inbox/gate-head.log</code>.</p>
 
   <p><strong>The declared mutation was observed to fail.</strong> Deleting the
   inbox sentence from §4d in a scratch copy of the head reds exactly the new
@@ -85,16 +90,18 @@
   <code>CREW_VERBS_OUTSIDE_ORCHESTRATION</code>, each with its own reason naming
   its mechanism from its <code>--help</code>. The id passes at this head.</p>
 
-  <p><strong>Reported, not triaged.</strong> The registered command
-  <code>reckon hooks install --scope user</code> named in the reference follows
-  the plan's §5 interface; the verb is not registered in this tree
-  (<code>reckon hooks install --help</code> exits 2, <code>No such command
-  'hooks'</code>), so the reference's install command could not be verified by
-  its <code>--help</code> and is carried as a follow-on for the installer-CLI
-  node. Two further ids in that file are red at the base and belong to a peer
-  session — <code>test_no_routing_identifier_leaks_into_skills_or_source</code>
-  and <code>test_ship_dispatch_exit_table_matches_cli_branches</code> — and are
-  left red as pre-existing.</p>
+  <p><strong>The documented invocation runs at this head.</strong>
+  <code>reckon hooks install --scope user</code> is still unregistered
+  (<code>--help</code> exits 2, <code>No such command 'hooks'</code>), so the
+  reference names it only as the verb that arrives with the plan's installer-CLI
+  section and otherwise documents the invocation that works now — the checkout's
+  interpreter driving <code>install_hook_settings()</code>, dry by default and
+  merging only under <code>write=True</code>. That dry run is recorded: exit 0,
+  the settings fragment printed. Two ids in the skill-contract file are red at
+  the base and belong to a peer session —
+  <code>test_no_routing_identifier_leaks_into_skills_or_source</code> and
+  <code>test_ship_dispatch_exit_table_matches_cli_branches</code> — and are left
+  red as pre-existing.</p>
 
   <p><strong>Scope retained, deliberately.</strong> The driving followup stays
   open and no terminal status is set: a worker knows its node landed, not whether

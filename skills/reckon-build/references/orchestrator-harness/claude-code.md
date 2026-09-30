@@ -271,15 +271,24 @@ fails with `No module named 'reckon'` and the hook silently does nothing. The
 installer composes each command from its own module's location, so the fragment
 always names the scripts of the checkout that composed it.
 
-Install it with:
+The `reckon hooks install --scope user` verb that will name this arrives with the
+plan's installer-CLI section; until it lands, drive the installer directly with
+the checkout's own interpreter. The default call is a dry run — it prints the
+fragment and opens no file:
 
 ```text
-reckon hooks install --scope user          # print the settings fragment
-reckon hooks install --scope user --write  # merge it into ~/.claude/settings.json
+/home/ITER/mcintos/Code/reckon/.venv/bin/python \
+  -c 'from reckon.hooks import install; install.install_hook_settings()'
 ```
 
-The default is a dry run: it prints the fragment and opens no file. `--write`
-merges each entry not already registered under its own event, preserves every
-other key in the settings file, and leaves a file that already carries the whole
-fragment byte for byte unchanged. A command registered under a *different* event
-suppresses nothing, because the two events mean different things.
+A merge into `~/.claude/settings.json` happens only when the write is asked for:
+
+```text
+/home/ITER/mcintos/Code/reckon/.venv/bin/python \
+  -c 'from reckon.hooks import install; install.install_hook_settings(write=True)'
+```
+
+The merge adds each entry not already registered under its own event, preserves
+every other key in the settings file, and leaves a file that already carries the
+whole fragment byte for byte unchanged. A command registered under a *different*
+event suppresses nothing, because the two events mean different things.

@@ -1284,4 +1284,5 @@ def test_the_obligations_view_is_the_coordinator_inbox() -> None:
     for event in ("UserPromptSubmit", "SessionStart", "Stop"):
         assert event in reference, event
     assert "reckon hooks install --scope user" in reference
-    assert "--write" in reference
+    assert "install_hook_settings()" in reference
+    assert "install_hook_settings(write=True)" in reference
