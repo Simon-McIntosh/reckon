@@ -417,9 +417,12 @@ WORKTREE AND PARALLEL-SAFETY RULES (binding):
    path restoration.
 3. Stage only explicit assigned paths. Never use git add -A, git add .,
    wildcards, git commit -a, or git commit -am.
-4. Append your landing record to your own section of the plan and your evidence
-   anchor to the cumulative evidence record; both live in this worktree and both
-   go into your final commit. Never mutate the shared project index, sprint
+4. Write your landing record to your own fragment path and never to the plan:
+   your evidence anchor to your scope's fragment under
+   docs/evidence/fragments/<plan>/<node-id>.html, and exactly one `landing:`
+   line in your manifest in place of a plan edit. The fragment goes into your
+   final commit; promotion lands the `landing:` line on your plan section.
+   Never mutate the shared project index, sprint
    state, or a plan other than the one you are landing against. Do not edit the
    plan-version or plan-modified meta lines: every worker touching them makes
    every merge conflict there. Return outcome data to the orchestrator.
@@ -503,10 +506,12 @@ beat is a review of an authored record, not a transcription of a manifest. Do
 not promote another run or merge another commit between those operations. The
 plan write is mandatory, but dispatching an unrelated ready node is outside this
 freeze and may refill a free slot. Workers author their own landing record in
-the same beat, per the contract the prompt embeds verbatim: "Append your landing
-record to your own section of the plan and your evidence anchor to the
-cumulative evidence record; both live in this worktree and both go into your
-final commit." The shared-state ban narrows with it: "Never mutate the shared
+the same beat, per the contract the prompt embeds verbatim: "Write your landing
+record to your own fragment path and never to the plan: your evidence anchor to
+your scope's fragment under docs/evidence/fragments/<plan>/<node-id>.html, and
+exactly one `landing:` line in your manifest in place of a plan edit. The
+fragment goes into your final commit; promotion lands the `landing:` line on
+your plan section." The shared-state ban narrows with it: "Never mutate the shared
 project index, sprint state, or a plan other than the one you are landing
 against. Do not edit the plan-version or plan-modified meta lines: every worker
 touching them makes every merge conflict there." Two limits hold even though the

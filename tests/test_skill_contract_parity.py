@@ -2,10 +2,10 @@
 
 Four clauses once told a worker never to write plan or index state. Each now
 carries the narrowed prohibition plus the positive requirement: the worker
-appends its landing record to its own section of the plan and its evidence
-anchor to the cumulative evidence record, both in its worktree and both in its
-final commit, and never touches shared project index, sprint state, another
-plan, or the version and modified meta lines.
+writes its landing record to its own fragment path and its evidence anchor to
+the scope's fragment, both into its final commit, and never touches shared
+project index, sprint state, another plan, or the version and modified meta
+lines.
 
 The measure is not that the prohibitions are gone but that the skill and the
 prompt say the same thing. The expected sentences below are therefore derived
@@ -88,8 +88,8 @@ def _landing_requirement() -> str:
     return _flat(
         _slice_between(
             _flat(PLAN_LANDING_CONTRACT),
-            "Append your landing record to your own section",
-            "go into your final commit.",
+            "Write your landing record to your own fragment path",
+            "lands the `landing:` line on your plan section.",
         )
     )
 

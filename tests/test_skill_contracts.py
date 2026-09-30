@@ -746,7 +746,7 @@ def test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer() -> None:
     # its evidence anchor -- and never the shared index, sprint state or another
     # plan.
     assert "Workers author their own landing record in the same beat" in ship
-    assert "Append your landing record to your own section of the plan" in reference
+    assert "Write your landing record to your own fragment path and never to the plan: your evidence anchor to your scope's fragment under docs/evidence/fragments/<plan>/<node-id>.html, and exactly one `landing:` line in your manifest in place of a plan edit." in reference
     assert "Never mutate the shared project index, sprint state" in ship
     assert "Never mutate the shared project index, sprint state" in reference
 

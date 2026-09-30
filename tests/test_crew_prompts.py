@@ -212,15 +212,17 @@ def test_manifest_path_delivery_instruction_survives_unchanged():
 # ── The worktree-landing contract reaches a repo-writing role only ──────────
 
 LANDING_HEADER = "CONTRACT — LANDING YOUR RECORD"
-LAND_OWN_SECTION = "your landing record to your own section of the plan"
-LAND_EVIDENCE_ANCHOR = "your evidence anchor to the cumulative evidence record"
-LAND_IN_WORKTREE = "both live in this worktree"
-LAND_IN_COMMIT = "both go into your final commit"
+LAND_OWN_FRAGMENT = (
+    "Write your landing record to your own fragment path and never to the plan:"
+)
+LAND_EVIDENCE_ANCHOR = "your evidence anchor to your scope's fragment under"
+LAND_FRAGMENT_PATH = "docs/evidence/fragments/<plan>/<node-id>.html"
+LAND_IN_COMMIT = "The fragment goes into your final commit"
 FIGURE_WHEN_SHOWN = (
     "Use a figure wherever a spatial, plotted or sequential relationship is clearer"
     " shown than described"
 )
-FIGURES_DIRECTORY = "docs/figures/<topic>/"
+FIGURES_DIRECTORY = "docs/figures/<plan>/<node-id>/"
 PROJECT_ABSOLUTE_SRC = "src /<project>/figures/"
 NO_IMAGE_OF_A_TABLE = "never an image of what is naturally a table"
 NO_META_EDIT = "Do not edit the plan-version or plan-modified meta lines"
@@ -245,9 +247,9 @@ def test_repo_writing_role_is_told_to_land_both_records_in_the_tree():
     prompt = _flat(_prompt(role="implement"))
 
     assert LANDING_HEADER in prompt
-    assert LAND_OWN_SECTION in prompt
+    assert LAND_OWN_FRAGMENT in prompt
     assert LAND_EVIDENCE_ANCHOR in prompt
-    assert LAND_IN_WORKTREE in prompt
+    assert LAND_FRAGMENT_PATH in prompt
     assert LAND_IN_COMMIT in prompt
 
 
