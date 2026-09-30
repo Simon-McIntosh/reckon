@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-evidence-for" content="reckon:a-review-dies-where-nobody-is-looking">
+  <meta name="plan-verifies" content="reckon:a-review-dies-where-nobody-is-looking#s8">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-09-30">
+  <meta name="evidence-commit" content="f2ba004b8">
+  <title>Local-lane session inheritance is zero across the task key | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Local-lane session inheritance is zero across the task key</h1>
+
+    <section id="question">
+      <h2>The question</h2>
+      <p>A dispatch that resumes a session sends the earlier conversation on its opening request, so
+      a node inherits whatever an earlier node gathered — the cost §8 recorded as 284 of 318 local
+      resumed runs carrying more history than their own prompt, with a median of about 82,000
+      inherited tokens. Dispatch session reuse was then keyed to the run's own task, and the codex
+      half of this census measured the metered lane afterwards:
+      <code>docs/research/data/codex-resume-burn-after.json</code> reports zero cross-task resumes
+      over 75 codex dispatches, but over a window in which no session was reused at all. This node
+      measures the local lane the same way, over a window in which reuse was exercised.</p>
+    </section>
+
+    <section id="method">
+      <h2>Method</h2>
+      <p><code>docs/research/scripts/scan_local_session_carryover.py</code> walks the run
+      directories, keeps every run whose <em>recorded backend</em> is the local lane
+      (<code>clive</code> or its <code>clive-glm</code> alias — the two names the ledger's unmetered
+      discriminator carries) and whose own stream opens the claude grammar, and reads two things: the
+      run's launch records (the run store's row, plus the run directory's <code>attempt.json</code>
+      and <code>worker.json</code> where they exist) and a <em>prefix</em> of its stream that stops at
+      the first assistant record carrying usage. No run's whole stream is parsed; 6,748 streams cost
+      137 MB of prefix reads and the pass took 28.6 seconds, both recorded in the file.</p>
+      <p>The classes, the window rule and the summary fields are the ones the codex census uses, so the
+      two files compare field for field. A run is <strong>fresh</strong> when it opened its session,
+      and <strong>resumed</strong> when an earlier run by dispatch order opened the same session id,
+      which is the only durable record of what the first turn actually sent: a launch argv that
+      declares a resume while the stream opens a new session inherited nothing. A resume is
+      <strong>same-task</strong> when the session's owner shares this run's (project, plan, node)
+      identity and <strong>cross-task</strong> when it does not. Inherited tokens are the first turn's
+      charged input less the fresh-run median of the same population (64,636 tokens on this lane,
+      against 41,002 on codex). The boundary is the committer time of
+      <code>adbb6067</code>, 2026-09-23T10:40:20Z, matched against the run id's own timestamp.</p>
+    </section>
+
+    <section id="measurement">
+      <h2>The measurement, beside the codex figures</h2>
+      <table>
+        <thead>
+          <tr><th>Lane · window</th><th>Dispatches</th><th>Fresh</th><th>Same-task resumes</th>
+            <th>Cross-task resumes</th><th>Inherited tokens</th><th>Runs with inherited</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>local · before</td><td class="n">1,828</td><td class="n">1,555</td>
+            <td class="n">3</td><td class="n">270</td><td class="n">23,998,533</td>
+            <td class="n">246</td>
+          </tr>
+          <tr>
+            <td>local · after</td><td class="n">1,439</td><td class="n">1,439</td>
+            <td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td>
+          </tr>
+          <tr>
+            <td>codex · before</td><td class="n">2,933</td><td class="n">1,785</td>
+            <td class="n">18</td><td class="n">1,114</td><td class="n">146,847,735</td>
+            <td class="n">1,144</td>
+          </tr>
+          <tr>
+            <td>codex · after</td><td class="n">75</td><td class="n">75</td>
+            <td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The codex before window also carries 16 resumes whose prior run could not be paired
+      (<code>resumed_prior_unknown</code>); the local windows carry none. On the local lane 27 of the
+      273 resumed runs read zero inherited tokens because the resumed session's own turn was refused
+      by the endpoint, and the first-turn instrument under-reports a refusal by construction — the
+      plan's motivating death is one of them, below. The reproduced figure over the resumed runs that
+      were charged is a median of 74,725 inherited tokens and a maximum of 492,702.</p>
+      <p><strong>The zero is read over a window in which reuse was exercised.</strong> Every local
+      dispatch after the boundary opened a new session in its own stream, so the stream population
+      alone would read as a window in which nothing was reused at all. The launch records say
+      otherwise: 148 of the 1,439 after dispatches carry an attempt whose argv declares
+      <code>--resume</code>, and every one of the 148 targets the declaring run's own session — a
+      <code>crew resume</code> continuing the attempt it succeeds, which is the same task by
+      construction. Zero target another task and zero target a session outside the population. The
+      launch recorder begins 2026-09-24T08:08:24Z, a day after the boundary, so the declarations cover
+      1,270 of the 1,439 after dispatches; the other 169 are the first day after the boundary, where no
+      declaration is recorded rather than none made.</p>
+    </section>
+
+    <section id="controls">
+      <h2>Controls</h2>
+      <p><strong>Positive control.</strong> The instrument is shown to read a cross-task resume it
+      already knew: <code>r-20260911T082453435340-n-swcr-cut-the-candidate-now-the-guard-reads-it-right</code>
+      is classified <code>cross_task</code> with 492,702 inherited tokens (first turn 557,338), its
+      prior session owner
+      <code>r-20260911T054747432149-n-swcr-cut-the-candidate-and-open-the-fork-review-request</code> is
+      a different node of the same project, and the run is named as resumed with that same prior run by
+      the earlier census <code>docs/research/data/session-carryover.json</code> — a different
+      instrument, taken on 2026-09-23, which reported 494,181 inherited for it. That the two figures
+      agree to 0.3% while the bases differ is the check that both are reading the same quantity.</p>
+      <p><strong>Negative control.</strong> Classifying every dispatch as fresh in a scratch copy of
+      the scanner reddens the gate: <code>positive_control</code> becomes null and
+      <code>test_positive_control_is_a_before_window_cross_task_resume</code> fails,
+      <code>1 failed, EXIT=1</code> (<code>negative-control.log</code> in this node's run directory).
+      The same scratch copy unmutated runs the gate green first, so the red is the mutation and not the
+      scratch tree (<code>negative-control/clean-gate.log</code> beside it). The scanner's
+      first-record histogram is its own
+      positive control: 3,695 claude streams and 3,017 codex streams are both present, so the pass
+      discriminates rather than returning nothing.</p>
+      <p><strong>The motivating death, re-read.</strong>
+      <code>r-20260923T031542572571-cca-exact-bank-callback-capacity-from-the-mesh</code> is in this
+      census as a cross-task resume whose prior owner is
+      <code>r-20260922T213154046276-cpu-fold-duplicate-probe-exit-tests</code>, with a first turn of
+      zero charged tokens because the endpoint refused it — the same run and the same owner §8
+      records, reached here from the stream rather than from the run record.</p>
+    </section>
+
+    <section id="figure">
+      <h2>Figure</h2>
+      <figure>
+        <img src="/reckon/figures/a-review-dies-where-nobody-is-looking/local-session-carryover/class-carryover.png"
+             alt="Stacked share bars: the local lane's before window is 85.1% fresh sessions, 14.8% cross-task resumes and 0.16% same-task; its after window is 100% fresh. The codex lane's before window is 60.9% fresh and 38.0% cross-task; its after window is 100% fresh over 75 dispatches.">
+        <figcaption>Session-inheritance classes as a share of each window's dispatches, both lanes,
+        drawn from <code>docs/research/data/local-session-carryover.json</code> and
+        <code>docs/research/data/codex-resume-burn-after.json</code> by
+        <code>docs/figures/a-review-dies-where-nobody-is-looking/local-session-carryover/plot_class_carryover.py</code>.
+        The sub-one-percent classes are labelled with leaders because the segment cannot hold its own
+        text. The codex after window's 75 dispatches are drawn at their share, not their count; the
+        dispatch count is printed under each bar.</figcaption>
+      </figure>
+    </section>
+
+    <section id="limits">
+      <h2>What this does not claim</h2>
+      <ul>
+        <li><strong>The resumed attempt's own first turn is not measured, only its declaration.</strong>
+          A <code>crew resume</code> writes its stream to a later file, and this census reads the
+          dispatch stream. So the 148 after-window resumes are attributed by their launch record's
+          argv — same-task or cross-task — but the context their resumed turn carried in is not read
+          here. On the before window the same path exists and is visible in the stream population
+          because reuse then happened at dispatch.</li>
+        <li><strong>26 claude-dialect runs are unplaced.</strong> They have no run-store row, no launch
+          record and no local model name in their opening record, so no record places them on a lane
+          and they are excluded from both windows rather than guessed at. A further 14 runs recorded
+          local have a stream that opens in another grammar, so their dispatch stream is another
+          attempt's and they are excluded too.</li>
+        <li><strong>A session opener whose own run directory is gone reads as fresh.</strong> The
+          session join can only see run directories that still exist; the drift this causes is bounded
+          by the 26 unplaced runs above, and a resumed run misread this way carries its inherited
+          tokens in a row still classified fresh.</li>
+        <li><strong>This measures the local lane's dispatch path.</strong> The merged result is a
+          separately dispatched test node's job, and anything failing outside this node's declared
+          paths is carried under <code>follow_ons</code> rather than repaired here.</li>
+      </ul>
+    </section>
+
+    <section id="gate">
+      <h2>Gate and evidence</h2>
+      <p>Gate: <code>tests/test_local_session_carryover.py</code> and
+      <code>tests/test_resume_burn_after_the_fix.py</code> at this node's head,
+      <code>9 passed</code>, <code>EXIT=0</code>
+      (<code>~/.config/reckon/crew/runs/r-20260930T165623463836-local-session-carryover/gate.log</code>,
+      whose first line names the revision it ran at and whose last line is the exit code). The census
+      itself was committed at <code>f2ba004b8</code>. It was produced by
+      <code>timeout 1200 .venv/bin/python docs/research/scripts/scan_local_session_carryover.py --out docs/research/data/local-session-carryover.json</code>
+      in 28.6 seconds on the fleet node (<code>scan.log</code> in the same run directory). The data
+      file is 256,957 bytes, under the 300 KB the census is bounded to. Both logs name their revision
+      on the first line and their exit code on the last.</p>
+    </section>
+  </main>
+</body>
+</html>
