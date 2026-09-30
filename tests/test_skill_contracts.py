@@ -645,7 +645,13 @@ def test_ship_has_one_advisory_fleet_size_table() -> None:
 # Both are dispatch-time rules — an orchestrator decides against them mid-beat and
 # cannot read them conditionally — so they stay in the file rather than moving to
 # a reference, and the file had 64 tokens of room against the old bound.
-FIXED_READ_SET_TOKEN_BUDGET = 15_200
+#
+# Raised from 15_200 when §6b and §7 named the three landing-beat write ops —
+# `collapse_section`, `append_evidence` and `insert_section` — each with the
+# fields its implementation accepts, alongside the rule that a direct HTML edit
+# is the announced exception. The landing beat is decided mid-write, so the op
+# names have to be in hand before the edit and cannot be read conditionally.
+FIXED_READ_SET_TOKEN_BUDGET = 15_350
 
 
 def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
@@ -1286,3 +1292,41 @@ def test_the_obligations_view_is_the_coordinator_inbox() -> None:
     assert "reckon hooks install --scope user" in reference
     assert "install_hook_settings()" in reference
     assert "install_hook_settings(write=True)" in reference
+
+
+# The landing beat is three edit_plan ops, not a hand edit. A skill that
+# describes the beat in prose but names no op sends a coordinator to a text-mode
+# edit or a direct file write — the hand edit these ops exist to replace — so
+# both skills must name every op and the fields its implementation accepts.
+LANDING_BEAT_OPS = {
+    "collapse_section": ("section", "summary", "evidence_anchor"),
+    "append_evidence": ("plan", "anchor", "title", "body"),
+    "insert_section": ("id", "title", "body"),
+}
+
+
+def test_both_skills_name_the_landing_beat_ops_with_their_fields() -> None:
+    """Both skills name the three landing-beat ops and the fields each takes.
+
+    The fields are pinned as the exact signature the skill carries, matching
+    what ``reckon/_store.py`` accepts, so the two cannot drift silently. It is
+    an exact signature and not a bare token because "section" and "summary" are
+    ordinary words: a token check would stay green on prose that never showed a
+    caller what to send.
+    """
+    ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
+    edit = normalized((ROOT / "skills" / "reckon-edit" / "SKILL.md").read_text())
+
+    for op, fields in LANDING_BEAT_OPS.items():
+        assert op in ship, f"reckon-build does not name the {op} op"
+        assert op in edit, f"reckon-edit does not name the {op} op"
+
+        signature = "{op:'" + op + "', " + ", ".join(fields) + "}"
+        assert signature in ship, (
+            f"reckon-build does not show {op}'s fields: {signature}"
+        )
+
+        keys = ", ".join(f"`{field}`" for field in fields)
+        assert f"| `{op}` | {keys} |" in edit, (
+            f"reckon-edit op reference does not list {op} with its fields"
+        )

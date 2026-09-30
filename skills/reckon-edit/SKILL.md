@@ -341,6 +341,11 @@ their own tree and `read_plan(..., checkout_path=…)` for state.
 
 ## Op reference
 
+The landing beat is three of these ops, never a hand edit: `collapse_section`
+collapses a shipped section in the evergreen, `append_evidence` writes the
+node's anchored section into the cumulative landing record, and `insert_section`
+adds a discovered section as a concrete section rather than a followup.
+
 | Op | Required keys | Notes |
 |---|---|---|
 | `set` | `path`, `value` | Plan: `status`, `impl`, `roi`, `effort`, `milestone`, `sprint`, `capability`, `owner`, `summary`, `title`, `type`, `archived`, `read`, `depends_on`, `blocks`, `informs`, `followups.<id>.prompt`. Index: `active_sprint_id`, `sprints.<id>.<field>` |
@@ -348,6 +353,13 @@ their own tree and `read_plan(..., checkout_path=…)` for state.
 | `resolve` | `target`, `id`, `by`, `outcome` or `resolution` | `followups` uses `outcome`; `questions` uses `resolution` |
 | `lock` | `key`, `choice`, `rationale`, `by` | Locks a decision (`data-choice` + by/when). |
 | `move` | `target="sprint_item"`, `slug`, `from`, `to` | Index only. Moves item between sprints. |
+| `collapse_section` | `section`, `summary`, `evidence_anchor` | Landing beat: replaces the authored body under the section's `h2` with the landed card, keeps the heading and its id, and sets its declaration to `done`, in one versioned write. |
+| `append_evidence` | `plan`, `anchor`, `title`, `body` | Landing beat: appends one anchored `<section id=anchor>` to that plan's cumulative landing record, creating the record when absent and refusing a duplicate anchor. |
+| `insert_section` | `id`, `title`, `body` | Writes a new `h2` with its typed section record. |
+
+A direct HTML edit of plan state is the exception, not a fourth write path:
+reach for it only when `edit_plan` cannot express the change or is unavailable,
+and announce the reason in your reply under the bypass rule above.
 
 **Dependency blocking is derived.** Keep a plan's persisted `status` at its
 underlying workflow state (`pending`, `active`, or `in-progress`) when

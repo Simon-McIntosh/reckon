@@ -865,6 +865,12 @@ artifact paths, evidence link + SHAs; `✓ landed YYYY-MM-DD` badge
 (`.badge-shipped`) on the header; original prose moves to the cumulative
 evidence anchor; **HTML, never markdown**.
 
+**This is an `edit_plan` write, not a hand edit.** `collapse_section` —
+`{op:'collapse_section', section, summary, evidence_anchor}` — replaces the
+authored body under that section's `h2` with the card, keeps its id, and sets
+the declaration to `done`. A direct HTML edit is the exception, announced under
+the bypass rule `reckon-edit` authors.
+
 In the same collapse-on-landing beat, reclassify its `section_declarations`
 entry to `done`. A section comment records a landed node, not completion: only
 `done` lowers its executable remainder.
@@ -915,6 +921,12 @@ a moved percentage is never the only new information. Preserve the manifest's
 exact measure and artifact paths rather than replacing them with “passed”. The
 cumulative evidence record receives the worker's anchor with its merge; edit or
 append to it in the same beat, never re-write what the worker authored.
+
+Both writes are ops, not hand edits. `append_evidence` —
+`{op:'append_evidence', plan, anchor, title, body}` — appends the node's
+anchored section to the cumulative landing record. `insert_section` —
+`{op:'insert_section', id, title, body}` — writes a new `h2` for discovered
+work.
 
 **`impl`** = (count of completed executable nodes) / (count of total executable
 nodes) over the whole selected plan (the orchestrator owns the denominator),
