@@ -25,11 +25,11 @@
   <title>A Review Is Sized To Its Risk | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="29">
+<meta name="plan-modified" content="2026-09-30">
+<meta name="plan-version" content="31">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
-<meta name="plan-impl" content="0.55">
+<meta name="plan-impl" content="0.65">
 </head>
 <body>
   <main class="plan-doc">
@@ -190,10 +190,16 @@
     <div class="r-fu-body"><p>§2 first; then §3, §4 and §5, which all touch the review reflex and run in that order; §6 is independent and can run beside §2.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk</pre>
     </article>
-<article class="r-fu" data-id="f-arist-002" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-29T19:35:00Z" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arist-002" data-status="resolved" data-written-by="s25-coord" data-written-at="2026-09-29T19:35:00Z" data-recommends-skill="reckon-build" data-resolved-at="2026-09-30T07:37:08+00:00" data-resolved-by="s25-coord">
     <h4 class="r-fu-title">Re-land the repair reflex with its guards</h4>
     <div class="r-fu-body"><p>Section 3's wiring returns as one node on <code>reckon/crew/recovery.py</code> and <code>reckon/crew/repair.py</code> with the five guards in the section 3 comment of 19:35. Its test drives each guard: a live or resumed worker, a promoted pointer re-read at launch, run records kept out of the fence, a non-implement or non-blocking finding, and a repair of a repair. Its whole-suite delta runs at the merged tree. Sections 4 and 5 follow it.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §3</pre>
+    <p class="r-fu-outcome">The guarded reflex re-landed at ea59b7ea (reflex-repairs-only-idle-implement-runs, review 94). It skips a run whose worker is live or resumed, re-reads the reviewed pointer before launch and skips a promoted run, and skips review, investigate and test roles. It also skips rounds whose findings cite only run records. The repair fence keeps out run directories and review-store paths, narrowing to the cited source and test paths, and a review of a repair opens no further round. The whole tests/ suite ran at af8529a7 and with the change merged: 61 failed at both, no id added. One gap remains: the worker-record liveness refusal at recovery.py:1386 has no driving test, since the test file's _write_worker_record helper is never called.</p>
+    </article>
+<article class="r-fu" data-id="f-arist-003" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-30T07:40:00Z" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Drive the worker-record liveness guard, then build section 4</h4>
+    <div class="r-fu-body"><p>First, a test-only node gives the reflex's worker-record liveness refusal (<code>reckon/crew/recovery.py</code>, the guard fed by the worker record) a driving case, using the helper <code>_write_worker_record</code> that <code>tests/test_reflex_dispatches_one_repair.py</code> already defines but never calls. Then section 4 (a clean review promotes without a coordinator) extends the same reflex. Watch peer sessions for an hour after the re-land lands, since the first landing misbehaved only in the live fleet.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §4</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -259,6 +265,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260929T193500-reflex-reverted" data-who="s25-coord" data-when="2026-09-29T19:35:00Z">
     <div class="r-comment-body"><p>The reflex wiring (reflex-dispatches-one-repair, merged at 76fd1b23, review 95, whole-suite delta clean) was <strong>reverted at a9d0a296 at the lead's direction</strong> after peer sessions reported, within hours of landing:</p><ul><li><strong>Churn.</strong> A repair for a run whose own worker was resumed on the same finding was withdrawn about 14 s after dispatch and redispatched on every sweep, about every two minutes.</li><li><strong>Promotion races.</strong> Four repairs were dispatched seconds before or after the coordinator promoted the reviewed run. Two of them targeted non-implement runs, for findings that were only manifest form or report wording.</li><li><strong>Run records inside the fence.</strong> A repair's fence could name the reviewed run's manifest and report.</li><li><strong>Unbounded chains.</strong> A finding on a repair opened another repair, up to a fourth round, and each round inherited the parent's whole fence.</li></ul><p>No run record was written: every stray repair was stopped, and its worktree was clean. The composer in <code>reckon/crew/repair.py</code> stays on main. The re-land must:</p><ul><li>skip a reviewed run whose worker is live or resumed;</li><li>re-read the reviewed run's pointer immediately before launch, and skip a run that is promoted or being promoted;</li><li>keep run directories and review-store paths out of the fence, narrowing it to the paths the findings cite;</li><li>act only on blocking findings of implement runs;</li><li>bound the chain, so that a repair's own findings do not open a further repair.</li></ul><p>The done-when's test covers each guard.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260929T194125547716-reflex-repairs-only-idle-implement-runs" data-who="reckon-build" data-when="2026-09-29T21:03:43.477Z">
+    <div class="r-comment-body"><p>re-landed the review reflex&#x27;s one-repair-per-round dispatch behind guards in reckon/crew/recovery.py — one repair for a three-finding implement round, none for a live/resumed worker, a run promoted at launch, a review/investigate/test/repair run, or record-only findings; measure: tests/test_reflex_dispatches_one_repair.py 14/14 pass, and over 102 recovery/repair-importing test files the head arm adds no failing test id (head 31 failed/1181 passed vs base 32 failed/1166 passed)</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260928T233552756785-review-of-the-suite-is-declared-and-recorded" data-who="reckon-build" data-when="2026-09-29T00:21:22.662Z">
     <div class="r-comment-body"><p>review stored for r-20260928T223146627061-the-suite-is-declared-and-recorded at cd36faeb against base 348688e8 - total 77 (goal_fidelity 14, evidence 15, scope_discipline 19, durability 13, fit 16), four findings, added_failure_count 0</p></div>
