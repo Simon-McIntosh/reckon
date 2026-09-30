@@ -20,14 +20,23 @@
     <h1>The Local Lane Death Rate</h1>
 
     <p><strong>Three in ten review attempts on the locally served lane end with nothing they
-    were asked to produce, and the runs' own streams say so.</strong> Over the 26 days to
-    2026-09-28, 299 of 1018 review attempts at <code>xhigh</code> — the effort this lane
+    were asked to produce, and the runs' own streams say so.</strong> Over the 28 days to
+    2026-09-30, 392 of 1324 review attempts at <code>xhigh</code> — the effort this lane
     declares for the review reflex — ended mid-turn on the <code>clive</code> lane: the
     process was gone and its stream carried no <code>result</code> record. Counting the
-    review role at every declared effort gives 300 of 1066 (28.1%), and the same lane
-    killed implement attempts at every effort at 161 of 1969 (8.2%). That gap is the
+    review role at every declared effort gives 393 of 1372 (28.6%), and the same lane
+    killed implement attempts at every effort at 164 of 2297 (7.1%). That gap is the
     reason sessions moved their review reflex onto the orchestrator lane, and it is the
     number this record exists to state.</p>
+
+    <p><strong>Every death that carries a supervisor exit record ended by a signal, and
+    that record covers a third of the review deaths.</strong> A second, independent read of
+    the same corpus — §3 below — finds 130 of the 392 review deaths carrying the record the
+    supervisor wrote when it collected the process, and all 130 are signalled: 91
+    <code>SIGTERM</code> and 39 <code>SIGKILL</code>. Not one recorded death shows the
+    process exiting cleanly. The remaining 262 review deaths carry no record at all, so the
+    distinction §1 of the plan needs — a signal the worker did not choose against a clean
+    exit — is now drawn for a third of the population and still unavailable for the rest.</p>
 
     <p><strong>Why it is a record rather than a footnote.</strong> The plan that fences
     background work off the orchestrator lane gates its own default on this figure:
@@ -43,9 +52,9 @@
       <p><strong>The population is the runs' own attempt streams.</strong> Every run
       directory under <code>~/.config/reckon/crew/runs/</code> holds one stream per attempt:
       <code>stream.jsonl</code> for the first, <code>resume-N.jsonl</code> for each later
-      one. 6290 run directories were enumerated, 2486 were recorded on the local lane
-      (<code>backend: clive</code> in the ledger), and the 2484 of those carrying streams
-      hold 3354 attempts.</p>
+      one. 6835 run directories were enumerated, 3035 were recorded on the local lane
+      (<code>backend: clive</code> in the ledger), and the 3033 of those carrying streams
+      hold 4019 attempts.</p>
 
       <p><strong>A death is a stream that stops without a result.</strong> The harness
       writes a top-level <code>{"type":"result"}</code> record when a turn reaches its end.
@@ -53,6 +62,13 @@
       alive, is an attempt that died mid-turn. No summary, rollup or ledger field was read
       for this classification — the streams were read directly, and the ledger supplied only
       the run's recorded backend, role and effort.</p>
+
+      <p><strong>The stream says a death happened and cannot say what ended it.</strong>
+      That is a second fact about the same attempt, recorded separately: the supervisor that
+      waited on the worker writes an exit record beside the stream, carrying the signal or
+      the exit code it collected. §3 reports that read for every cell, and it covers only
+      the attempts a supervisor wrote a record for, so it is stated with its own coverage
+      rather than as a figure over the whole population.</p>
 
       <p><strong>Two populations, named wherever they appear.</strong> The headline death
       count is <em>the review reflex's own configuration</em> — the review role at the effort
@@ -78,19 +94,21 @@
       the node. The measurement it writes is the committed file
       <code>docs/research/data/local-lane-deaths.json</code> — which names the script that
       produced it, and the moment of the scan — and the assertions over that file live in
-      <code>tests/test_the_local_lane_death_rate_is_stated.py</code>. The figure below is
+      <code>tests/test_the_local_lane_death_rate_is_stated.py</code>. The chart below is
       drawn from that same file by
-      <code>docs/research/scripts/plot_local_lane_deaths.py</code>, also committed, so the
-      chart and the number a fence reads cannot drift apart.</p>
+      <code>docs/research/scripts/plot_local_lane_deaths.py</code>, also committed, so it is
+      a view of the measurement rather than a second one. It was drawn from the 2026-09-28
+      scan and says so; the table beside it carries the current scan, and re-running the
+      plot script against the current file redraws the chart.</p>
     </section>
 
     <section id="s2" data-reckon="section">
       <h2>§2 — The before-rate</h2>
 
-      <p><strong>Window and population.</strong> 2026-09-02T13:32Z to 2026-09-28T08:05Z,
+      <p><strong>Window and population.</strong> 2026-09-02T13:32Z to 2026-09-30T14:37Z,
       the whole life of the local lane's recorded history, closed at the moment of the scan.
-      Population: 2486 local-lane runs carrying 3354 attempts, of which 1066 are review-role
-      attempts and 1018 are review attempts at <code>xhigh</code>.</p>
+      Population: 3035 local-lane runs carrying 4019 attempts, of which 1372 are review-role
+      attempts and 1324 are review attempts at <code>xhigh</code>.</p>
 
       <figure>
         <img src="/reckon/figures/the-orchestrator-lane-is-not-a-worker-lane/deaths-per-day-by-role.png"
@@ -99,32 +117,33 @@
         <figcaption>Mid-turn deaths read from the runs' own streams, 2026-09-02 to 2026-09-28,
         on the <code>clive</code> lane, <code>deepseek-v4.1-flash</code>,
         <code>effort xhigh</code>. Left: deaths per day by role. Right: the death rate by
-        role, all efforts pooled, with the count behind each rate.</figcaption>
+        role, all efforts pooled, with the count behind each rate. Drawn from the
+        2026-09-28 scan of the data file; the table below carries the current scan.</figcaption>
       </figure>
 
-      <p><strong>The rate at the review reflex's effort is 29.4%.</strong> 299 deaths in
-      1018 review attempts at <code>xhigh</code> — the population the chart's headline and
+      <p><strong>The rate at the review reflex's effort is 29.6%.</strong> 392 deaths in
+      1324 review attempts at <code>xhigh</code> — the population the chart's headline and
       the data file's <code>deaths.headline</code> both count, and the one the fence reads.
-      The review role at every effort is 300 deaths in 1066 attempts (28.1%), and every
-      role at every effort is 488 deaths in 3354. Split by role and the effort the run was
+      The review role at every effort is 393 deaths in 1372 attempts (28.6%), and every
+      role at every effort is 584 deaths in 4019. Split by role and the effort the run was
       dispatched at:</p>
 
       <table>
         <caption>Attempt-view deaths on the local lane by role and declared effort,
-        2026-09-02 to 2026-09-28.</caption>
+        2026-09-02 to 2026-09-30.</caption>
         <thead>
           <tr><th>Role</th><th>Effort</th><th>Attempts</th><th>Deaths</th><th>Death rate</th></tr>
         </thead>
         <tbody>
-          <tr><td>review</td><td>xhigh</td><td>1018</td><td>299</td><td>29.4%</td></tr>
+          <tr><td>review</td><td>xhigh</td><td>1324</td><td>392</td><td>29.6%</td></tr>
           <tr><td>review</td><td>high</td><td>46</td><td>1</td><td>2.2%</td></tr>
           <tr><td>review</td><td>medium</td><td>2</td><td>0</td><td>0.0%</td></tr>
-          <tr><td>implement</td><td>high</td><td>1814</td><td>153</td><td>8.4%</td></tr>
+          <tr><td>implement</td><td>high</td><td>2064</td><td>156</td><td>7.6%</td></tr>
           <tr><td>implement</td><td>medium</td><td>49</td><td>4</td><td>8.2%</td></tr>
-          <tr><td>implement</td><td>xhigh</td><td>106</td><td>4</td><td>3.8%</td></tr>
-          <tr><td>investigate</td><td>xhigh</td><td>133</td><td>12</td><td>9.0%</td></tr>
+          <tr><td>implement</td><td>xhigh</td><td>184</td><td>4</td><td>2.2%</td></tr>
+          <tr><td>investigate</td><td>xhigh</td><td>140</td><td>12</td><td>8.6%</td></tr>
           <tr><td>documentation</td><td>xhigh</td><td>103</td><td>8</td><td>7.8%</td></tr>
-          <tr><td>test</td><td>xhigh</td><td>77</td><td>7</td><td>9.1%</td></tr>
+          <tr><td>test</td><td>xhigh</td><td>101</td><td>7</td><td>6.9%</td></tr>
           <tr><td>four further cells</td><td>—</td><td>6</td><td>0</td><td>0.0%</td></tr>
         </tbody>
       </table>
@@ -137,11 +156,12 @@
       which died. <code>review</code> at <code>medium</code> has its own row above.</p>
 
       <p><strong>Recent windows are worse, not better.</strong> Trailing seven days
-      (2026-09-22 to 2026-09-28): 228 review deaths in 715 attempts, 31.9%. Trailing day:
-      6 in 17, 35%. The rate is not decaying on its own, and the two heaviest days on the
-      chart — 2026-09-25 with 80 deaths (72 of them review) and 2026-09-18 with 65 — are
-      the recent ones. The lane was not improving while sessions were migrating their
-      reviews off it.</p>
+      (2026-09-24 to 2026-09-30): 243 review deaths in 727 attempts, 33.4%. Trailing day:
+      2 in 44, 4.5%. The rate is not decaying on its own, and the three heaviest days on
+      the chart — 2026-09-25 with 80 deaths (72 of them review), 2026-09-18 with 66 and
+      2026-09-29 with 63 — all fall in the final fortnight. The lane was not improving
+      while sessions were migrating their reviews off it. The trailing day is the one
+      window that reads better, on 44 attempts, and one day is not a trend.</p>
 
       <p><strong>What this figure is for.</strong> It is the before block: a fence that
       refuses background work on the orchestrator lane is only defensible once the
@@ -161,7 +181,92 @@
     the gap's larger share.</p>
 
     <section id="s3" data-reckon="section">
-      <h2>§3 — The parser that read every run as dead</h2>
+      <h2>§3 — What ended the review deaths that carry a record</h2>
+
+      <p><strong>The rate says how many died and cannot say what ended them, and nothing
+      did.</strong> The classifier reads the stream's shape, which is all a stream carries.
+      A supervisor that waited on the worker writes a second record beside the stream —
+      <code>attempt-N-exit.json</code> in the run directory, carrying the signal or the exit
+      code it collected — and this section is that record read across the whole corpus. It
+      is a separate fact about the same attempt rather than a second classification, so
+      where it is absent the attempt is unread and is <em>not</em> assigned an ending.</p>
+
+      <p><strong>Every recorded review death ended by a signal.</strong> Of the 392 review
+      deaths at <code>xhigh</code>, 130 carry an exit record — 33.2% of them — and all 130
+      name a signal: 91 <code>SIGTERM</code> and 39 <code>SIGKILL</code>. Sixty-eight of
+      the 130 name it in the record's own signal field; the other 62 carry it in an exit
+      code at or above 128, by the shell's <code>128+N</code> convention — <code>143</code>
+      is SIGTERM and <code>137</code> is SIGKILL — which the block reads as that signal and
+      labels with the reading it used, so a death recorded that way is not mistaken for a
+      clean exit. Not one recorded death shows the process exiting on its own terms.</p>
+
+      <p><strong>The 100% is a reading and not a rule, and the same reader reports clean
+      exits where they exist.</strong> Across the lane, 959 attempts carry a record: 827 of
+      them completed and 132 died. The completed ones hold 818 records with exit code 0 and
+      8 with exit code 1, reported as clean exits by the same block that reports the
+      signals, so the reader is not labelling every record a signal and the absence of a
+      clean exit among the deaths is a property of the deaths. The one recorded completion
+      that does carry a signal is the shape of a run killed after its result was written.
+      The block's own construction carries the distinction rather than deriving it: a
+      recorded death whose exit code was 0 would be counted in
+      <code>deaths_with_exit_record</code> and left out of <code>deaths_signalled</code>,
+      and the two figures happen to be equal here because no such record exists.</p>
+
+      <p><strong>The gap is the more consequential half.</strong> 262 of the 392 review
+      deaths — 66.8% — carry no exit record at all, so for two thirds of the population the
+      question the plan's §1 exists to answer is still unanswered: the record distinguishes
+      a signal the worker did not choose from a clean exit where it was written, and the
+      supervisor wrote one for a third of the review deaths. A lane-wide figure of 33.1%
+      holds for the review role at every effort — 130 of 393 — and the corpus-wide coverage
+      is 132 of 584 (22.6%).</p>
+
+      <table>
+        <caption>Supervisor exit records on the local lane by role and declared effort,
+        2026-09-02 to 2026-09-30. A cell's record count is never larger than its attempt
+        count, and the recorded deaths are a subset of its deaths.</caption>
+        <thead>
+          <tr><th>Role</th><th>Effort</th><th>Attempts</th><th>With an exit record</th>
+          <th>Deaths</th><th>Deaths with a record</th><th>Signalled (by name)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>review</td><td>xhigh</td><td>1324</td><td>408 (30.8%)</td><td>392</td>
+          <td>130 (33.2%)</td><td>130 — SIGTERM 91, SIGKILL 39</td></tr>
+          <tr><td>implement</td><td>high</td><td>2064</td><td>370 (17.9%)</td><td>156</td>
+          <td>2 (1.3%)</td><td>2 — SIGTERM 2</td></tr>
+          <tr><td>implement</td><td>xhigh</td><td>184</td><td>130 (70.7%)</td><td>4</td>
+          <td>0</td><td>0</td></tr>
+          <tr><td>investigate</td><td>xhigh</td><td>140</td><td>24 (17.1%)</td><td>12</td>
+          <td>0</td><td>0</td></tr>
+          <tr><td>test</td><td>xhigh</td><td>101</td><td>24 (23.8%)</td><td>7</td>
+          <td>0</td><td>0</td></tr>
+          <tr><td>documentation</td><td>xhigh</td><td>103</td><td>3 (2.9%)</td><td>8</td>
+          <td>0</td><td>0</td></tr>
+          <tr><td>implement</td><td>medium</td><td>49</td><td>0</td><td>4</td>
+          <td>0</td><td>0</td></tr>
+          <tr><td>review</td><td>high</td><td>46</td><td>0</td><td>1</td>
+          <td>0</td><td>0</td></tr>
+          <tr><td>five further cells</td><td>—</td><td>8</td><td>0</td><td>0</td>
+          <td>0</td><td>0</td></tr>
+        </tbody>
+      </table>
+
+      <p>The rows sum to the corpus block in the data file: 4019 attempts, 959 records, 584
+      deaths and 132 of them recorded. The last row is the five cells holding no record and
+      no death between them — <code>investigate</code> at <code>high</code> and
+      <code>medium</code>, <code>review</code> at <code>medium</code>,
+      <code>cleanup</code> at <code>xhigh</code> and <code>test</code> at
+      <code>high</code>.</p>
+
+      <p><strong>What the record names, and what it does not.</strong> It names the signal
+      and the process it ended; it does not name who sent it, so an external kill and the
+      harness's own stop of a run look identical in this block. A deliberate stop is
+      recorded on the run's live pointer, which is deleted when a run is promoted, so it is
+      not available for the historical corpus. The signal breakdown is therefore a divided
+      account of <em>how</em> these runs ended and not of <em>why</em>.</p>
+    </section>
+
+    <section id="s4" data-reckon="section">
+      <h2>§4 — The parser that read every run as dead</h2>
 
       <p><strong>The first measurement of this rate was wrong in the direction that would
       have made the plan look right.</strong> The first classifier matched each line against
@@ -182,7 +287,7 @@
 
       <p><strong>The fix is the record's own field, and the control rides with it.</strong>
       Every line is now parsed whole and the record's own top-level <code>type</code> is
-      read. Parsing the corpus that way costs about 120 seconds, which is why the scan is
+      read. Parsing the corpus that way costs about four minutes, which is why the scan is
       bounded. Because a classifier that reads a completion as a death and one that reads a
       death as a completion fail differently — the second inflates confidence in the lane,
       the first destroys it — the measurement carries both directions on one run. The
@@ -201,7 +306,7 @@
             <td><code>user</code></td><td>dead — SIGTERM, ended during <em>working</em></td>
           </tr>
           <tr>
-            <td>completed</td><td><code>resume-1.jsonl</code></td><td>7394+</td><td>present</td>
+            <td>completed</td><td><code>resume-1.jsonl</code></td><td>11689</td><td>present</td>
             <td><code>result</code> / <code>success</code></td><td>completed</td>
           </tr>
         </tbody>
@@ -225,8 +330,8 @@
       parser produced.</p>
     </section>
 
-    <section id="s4" data-reckon="section">
-      <h2>§4 — The after-rate does not exist yet</h2>
+    <section id="s5" data-reckon="section">
+      <h2>§5 — The after-rate does not exist yet</h2>
 
       <p><strong>Only a before block is reported, because the repair it would measure has
       not landed.</strong> The work that is to fix this is
@@ -248,13 +353,13 @@
       whatever attempts exist when it is run, and it groups them by the effort each run
       declared. The comparison needs a window that begins after the repair's first
       successful review, and enough attempts in it to distinguish a drop from noise — at
-      roughly 100 review attempts a day on this lane (715 in the trailing seven days, 228 of
+      roughly 100 review attempts a day on this lane (727 in the trailing seven days, 243 of
       them deaths), the trailing-seven-day figure is the
       smallest window that carries a rate worth gating on.</p>
     </section>
 
-    <section id="s5" data-reckon="section">
-      <h2>§5 — Method limits a reader should carry</h2>
+    <section id="s6" data-reckon="section">
+      <h2>§6 — Method limits a reader should carry</h2>
 
       <ul>
         <li><strong>Attempt, not run.</strong> A run that died and was resumed contributes
@@ -266,9 +371,12 @@
         after its last record lands on the wrong day. The daily series is therefore good for
         shape and not for a single day's exact count.</li>
         <li><strong>Signals are corroboration, not classification.</strong> Only some
-        attempts carry a supervisor exit record naming the signal. The classification never
-        depends on one as a stream may die for reasons the exit record does not capture, and
-        the classifier reads the stream shape.</li>
+        attempts carry a supervisor exit record — 959 of 4019 lane-wide, and 130 of the 392
+        review deaths. The classification never depends on one, as a stream may die for
+        reasons the exit record does not capture, and the classifier reads the stream shape;
+        §3 reads the record separately and states its coverage beside every figure it
+        quotes. The record names the signal and not the sender, so a signalled death is not
+        evidence of a fault on its own.</li>
         <li><strong>The window is the lane's whole recorded life.</strong> The start is the
         first local-lane attempt the corpus holds, not a chosen boundary; a rate computed
         over a sub-window is not directly comparable to it without recomputing.</li>
@@ -276,7 +384,7 @@
         <code>prompt.txt</code> declares its role; the ledger row is the fallback where the
         prompt is absent, and disagreements between the two are recorded in the data file
         rather than silently resolved. On this corpus the two sources did not disagree:
-        all 2484 local-lane runs carrying streams declared a role in the prompt, and none
+        all 3033 local-lane runs carrying streams declared a role in the prompt, and none
         contradicted its ledger row — the file's <code>role_attribution</code> block carries
         those counts so a reader can check the claim rather than take it.</li>
       </ul>
