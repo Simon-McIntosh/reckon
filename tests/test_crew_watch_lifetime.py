@@ -14,8 +14,9 @@ from pathlib import Path
 import pytest
 
 from reckon import crew, ledger
-from reckon.crew.recovery import watch_ticker
 from reckon.crew import runs
+from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
+from reckon.crew.recovery import watch_ticker
 from reckon.crew.runs import project_watch_visibility
 
 
@@ -156,8 +157,17 @@ class _ControlledPoll:
         self.release = threading.Event()
 
     def __call__(self, _seconds: float) -> None:
+        """Signal a completed poll, then hold the watcher until it is released.
+
+        The window that follows contains a real dispatch — dozens of subprocess
+        launches whose cost is the machine's, not the dispatch's. A short
+        ceiling here bounds that dispatch rather than the watcher, so a slow but
+        correct run reads as a failure. The case always sets ``release``; the
+        bound is a watchdog against a case that never does, not a budget for the
+        work between the two events.
+        """
         self.reached.set()
-        assert self.release.wait(timeout=5)
+        assert self.release.wait(timeout=WATCHER_LOAD_BOUND_SECONDS)
 
 
 def _assert_seat_held_after_poll(poll: _ControlledPoll, future) -> None:
