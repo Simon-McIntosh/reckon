@@ -310,6 +310,7 @@ def compose_repair_node(
     session: str = "<session>",
     spec_level: str = "exact",
     time_budget: str = _DEFAULT_TIME_BUDGET,
+    suite_command: str = "",
 ) -> dict[str, Any] | None:
     """Compose the single repair node a finding-bearing review round produces.
 
@@ -321,6 +322,14 @@ def compose_repair_node(
     dispatch it or print it without re-deriving any of the three. The reviewed
     run's node id names the node when the record carries one, so the repair
     reads as work on the run rather than on the review.
+
+    ``suite_command`` is the reviewed run's own recorded suite command, when it
+    had one. A non-empty command adds both suite observations to the done-when —
+    the repair records a ``baseline_suite`` at its base and an ``after_suite`` at
+    its head, each run with that literal command — so its own review can
+    reconcile its added-failure count against the same suite the reviewed run was
+    measured with. An unarmed reviewed run passes no command, and the composed
+    node names neither arm.
     """
     findings = blocking_findings(review)
     if not findings:
@@ -332,6 +341,19 @@ def compose_repair_node(
     scope = repair_write_scope(review, run_record=run_record, fence=fence)
     brief = compose_repair_brief(review, findings, reviewed_run_id=run_id)
     ids = ", ".join(finding["id"] for finding in findings)
+    done_when = (
+        f"the repair for {round_id} commits a change answering each of the "
+        f"{len(findings)} finding(s) ({ids}) and its manifest names every "
+        f"finding by id — `{ACTED_ACTION} <id>: <commit>` for a finding it "
+        f"answered and `{DECLINED_ACTION} <id>: <reason>` for one it declines "
+        "— with no finding left unanswered"
+    )
+    if suite_command:
+        done_when += (
+            f", and records in its manifest both `baseline_suite`, measured at "
+            f"the repair's base, and `after_suite`, measured at its head, each "
+            f"run with exactly `{suite_command}`"
+        )
     return {
         "node_id": node_id,
         "round_id": round_id,
@@ -348,13 +370,7 @@ def compose_repair_node(
         "findings": findings,
         "write_path": scope[0] if scope else "",
         "write_paths": scope,
-        "done_when": (
-            f"the repair for {round_id} commits a change answering each of the "
-            f"{len(findings)} finding(s) ({ids}) and its manifest names every "
-            f"finding by id — `{ACTED_ACTION} <id>: <commit>` for a finding it "
-            f"answered and `{DECLINED_ACTION} <id>: <reason>` for one it declines "
-            "— with no finding left unanswered"
-        ),
+        "done_when": done_when,
         # The scope is composed from the findings, so it names the test files
         # the review flagged. A node that writes a check declares the mutation
         # that check must fail against, and the mutation here is the repair's own

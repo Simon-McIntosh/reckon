@@ -1946,33 +1946,20 @@ def _repair_launch_refusal(run_id: str, project: str) -> str:
     return ""
 
 
-def _reviewed_run_suite_command(
-    record: Mapping[str, Any], config: Mapping[str, Any] | None
-) -> str:
+def _reviewed_run_suite_command(record: Mapping[str, Any]) -> str:
     """The suite command the repair inherits from the run it repairs.
 
     The repair's own review derives its added-failure count from the pair of
     suite observations its manifest carries, and it can only reconcile that pair
     against the reviewed run when both were measured with the same command. So
     the repair inherits the reviewed run's own recorded suite command, read from
-    its pointer's ``suite_command``, and falls back to the project's standing
-    ``review.suite`` declaration when the pointer names none. An *undeclared*
-    standing suite is no command: the repair then carries the same absence a
-    fresh run would. A declaration that is present but malformed is not an
-    absence — ``flight.review_suite`` refuses it by name, and that refusal
-    propagates so the caller reports it rather than silently inheriting no
-    suite, which would leave the repair running a different measurement from
-    the run it answers.
+    its pointer's ``suite_command``. A reviewed run that recorded none was
+    unarmed, and its repair is unarmed too: the project's standing
+    ``review.suite`` declaration is the project's own gate, not a measurement the
+    reviewed run was ever taken with, so inheriting it would compare the repair's
+    observation against one the reviewed run never made.
     """
-    recorded = str(record.get("suite_command") or "").strip()
-    if recorded:
-        return recorded
-    from reckon import flight
-
-    declaration = flight.review_suite(config)
-    if declaration is None:
-        return ""
-    return " ".join(declaration.command)
+    return str(record.get("suite_command") or "").strip()
 
 
 def _config_carrying_suite(
@@ -1985,8 +1972,8 @@ def _config_carrying_suite(
     recorded measurement supplies the inherited command here. The original
     mapping is left untouched, because the lane above already resolved against
     it and the caller owns it. An empty command returns the config unchanged, so
-    a run with no inherited suite records the project declaration's value rather
-    than a blank that would overwrite it.
+    an unarmed reviewed run's repair records no suite command rather than a blank
+    that would overwrite the config's own value.
     """
     if not suite_command:
         return config
@@ -2091,6 +2078,11 @@ def dispatch_repair_for_run(
     # repair never stood on. A promoted run never reaches here (the launch
     # refusal above settles it), so this is the unpromoted case by construction.
     reviewed_head = _review_carried_head(review)
+    # The repair inherits the reviewed run's own recorded suite command, so its
+    # review measures added failures against the same suite the reviewed run was
+    # measured with. An unarmed reviewed run yields no command, and the repair is
+    # unarmed like the run it repairs.
+    inherited_suite = _reviewed_run_suite_command(record)
     composed = repair_module.compose_repair_for_run(
         project,
         run_id,
@@ -2104,6 +2096,7 @@ def dispatch_repair_for_run(
         # repair's gate is the run's tests, and a finding citing only source
         # would otherwise leave the check that covers it unwritable.
         fence=repair_module.reviewed_run_test_paths(record),
+        suite_command=inherited_suite,
     )
     if composed is None:
         # The composer returns None for a finding-bearing record only when the
@@ -2237,31 +2230,7 @@ def dispatch_repair_for_run(
     # measured with. dispatch stamps the command it records on a run's pointer
     # from ``config.gates.suite_command``, so the inherited command rides the
     # config handed to the launch rather than editing the resolved config the
-    # lane above already read. A standing ``review.suite`` block that is present
-    # but malformed is refused by name rather than read as no standing suite, so
-    # the malformed declaration reaches the coordinator as a refusal instead of
-    # a repair launched with no inherited suite.
-    from reckon import flight
-
-    try:
-        inherited_suite = _reviewed_run_suite_command(record, resolved)
-    except flight.FlightConfigError as exc:
-        reason = f"the project's standing review suite is malformed: {exc}"
-        _record_repair_dispatch(
-            run_id,
-            status="refused",
-            reason=reason,
-            round_id=round_id,
-            node_id=node_id,
-            backend=backend,
-        )
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "refused": True,
-            "backend": backend,
-            "reason": reason,
-        }
+    # lane above already read.
     repair_config = _config_carrying_suite(resolved, inherited_suite)
     try:
         launched = dispatch_module.dispatch(
