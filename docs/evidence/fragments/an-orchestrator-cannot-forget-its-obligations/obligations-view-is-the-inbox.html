@@ -42,16 +42,19 @@
   <code>test_ship_cli_instructions_match_registered_commands_and_flags</code>,
   with its <code>--run/--reason/--until</code> flags.</p>
 
-  <p><strong>Measure — zero added failures by id.</strong> Every test file that
-  reads <code>skills/</code> was run in a base arm (a scratch export of
+  <p><strong>Measure — zero added failures by id.</strong> The tests that read
+  <code>skills/</code> are run in a base arm (a scratch export of
   <code>4e05e287</code>) and a head arm (this worktree), each log headed with its
   revision, tree, working directory, imported module path and command. The
   reachable set — the files that read the changed artifacts — is
   <code>test_skill_contracts.py</code>, <code>test_skill_contract_parity.py</code>
-  and <code>test_crew_monitor_output.py</code>; the same four failures appear by
-  id in both arms and no fifth is added. <code>test_crew.py</code> and
-  <code>test_session_lives_on_its_run.py</code> are the slow files, run under a
-  bound in both arms. Logs: <code>logs/</code>.</p>
+  and <code>test_crew_monitor_output.py</code>. Seven of the eight skill-reading
+  files ran in both arms: base is 4 failed / 106 passed against head 3 failed /
+  108 passed, and every base failure id is a head failure id except
+  <code>test_every_registered_crew_verb_is_documented_or_exempt</code>, which
+  this node turns green — zero added, one removed.
+  <code>test_crew.py</code> was not run in either arm: it is the dominant runtime
+  and did not fit the time fence. Logs: <code>logs/</code>.</p>
 
   <p><strong>The declared mutation was observed to fail.</strong> Deleting the
   inbox sentence from §4d in a scratch copy of the head reds exactly the new
@@ -67,7 +70,8 @@
   paragraphs took <code>SKILL.md</code> from 14,936 to 15,107 estimated tokens
   against the old 15,000 bound, past its 64 tokens of headroom, so
   <code>FIXED_READ_SET_TOKEN_BUDGET</code> is raised to 15,200 with that reason
-  recorded beside it.</p>
+  recorded beside it. The suite sentence added later in this node takes the file
+  to 15,159, inside the raised bound.</p>
 
   <p><strong>Widened — the registered-verb contract goes green in one landing.</strong>
   <code>test_every_registered_crew_verb_is_documented_or_exempt</code> stopped at
