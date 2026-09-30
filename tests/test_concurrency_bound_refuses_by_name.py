@@ -20,8 +20,10 @@ sentences, so a refusal for the wrong reason is not read as a pass.
 
 Every case is hermetic. ``RECKON_HOME`` moves the crew directory into a temp
 tree, the cgroup tree is synthesised under a temp path, the repository is a
-real but throwaway git repo, and the launcher is substituted so nothing spawns
-a harness and nothing reaches a network.
+real but throwaway git repo, the launcher is substituted so nothing spawns a
+harness and nothing reaches a network, and a recording scheduler is on PATH so
+the admitted case's reservation ensure is intercepted rather than reaching the
+host's real scheduler.
 """
 
 from __future__ import annotations
@@ -37,6 +39,26 @@ from reckon import crew
 from reckon.crew import summary as summary_module
 
 GIB = 1024**3
+
+# The scheduler verbs a placed dispatch may run, and a recording stub for each.
+# A stub appends its own argv to FAKE_SCHEDULER_LOG, grants a job id for
+# ``salloc`` and answers a probe for ``squeue``, so a dispatch that reaches the
+# ensure is intercepted here rather than reaching the host's real scheduler.
+_SCHEDULER_VERBS = ("salloc", "sbatch", "srun", "squeue", "scontrol", "scancel")
+
+_RECORDING_SCHEDULER = """#!/bin/sh
+name=${0##*/}
+printf '%s\\t%s\\n' "$name" "$*" >> "$FAKE_SCHEDULER_LOG"
+case "$name" in
+  salloc)
+    printf 'salloc: Granted job allocation 88000001\\n'
+    ;;
+  squeue)
+    printf '%s\\n' RUNNING
+    ;;
+esac
+exit 0
+"""
 
 # Every run this module dispatches is named for this node, and the node id is
 # what the minted run id carries, so a scan of the real live-pointer directory
@@ -77,20 +99,37 @@ def _real_home_gains_no_pointer():
 
 @pytest.fixture(autouse=True)
 def _resolvable_backend_command(tmp_path, monkeypatch):
-    """Put a stub backend command on PATH so no case needs the host's own.
+    """Put a stub backend command and a recording scheduler on PATH.
 
     Only the admitted case reaches launch composition — a refusal is raised
     before any launch is composed — but a module that resolved the backend's
     command from the host would pass or fail on what that host happens to have
     installed. The stub is never executed: the launcher is substituted, so
     nothing spawns a harness.
+
+    The admitted case also reaches the ensure that holds the shared reservation.
+    With no reservation in the temp home the ensure would ask the host's real
+    ``salloc`` for an allocation, so this module provides a recording scheduler
+    whose ``salloc`` grants a job id without touching a scheduler: the case
+    keeps its assertion on the admitted dispatch and the suite never holds a real
+    allocation.
     """
     directory = tmp_path / "stub-bin"
     directory.mkdir()
     stub = directory / "codex"
     stub.write_text("#!/bin/sh\nexit 0\n")
     stub.chmod(0o755)
-    monkeypatch.setenv("PATH", f"{directory}{os.pathsep}{os.environ.get('PATH', '')}")
+    scheduler = directory / "scheduler"
+    scheduler.mkdir()
+    for verb in _SCHEDULER_VERBS:
+        recording = scheduler / verb
+        recording.write_text(_RECORDING_SCHEDULER)
+        recording.chmod(0o755)
+    monkeypatch.setenv("FAKE_SCHEDULER_LOG", str(directory / "scheduler.log"))
+    monkeypatch.setenv(
+        "PATH",
+        os.pathsep.join([str(scheduler), str(directory), os.environ.get("PATH", "")]),
+    )
 
 
 # A placement that declares no requirement, so the placement-requirement check
