@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A finding states whether it blocks">
+  <meta name="plan-summary" content="A review finding can now say whether it blocks a node's landing: a two-value vocabulary is declared once in the schema and taught in the review prompt's emission form, and the parser records the value a finding states. A finding that states none carries no severity field rather than a default. The base revision parses the blocking finding to file, line and text alone; at head it carries severity blocking, with file, line and text unchanged, and the declared negative control reddens five cases including the blocking one.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <title>A finding states whether it blocks | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A finding states whether it blocks</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>A finding's emitted form carried a file, a line and free text, and nothing
+        else. A reviewer's judgement that a defect has to be repaired before the node
+        lands &mdash; the judgement that decides whether a node carrying one open finding
+        should land at all &mdash; therefore lived as prose inside <code>text</code>, legible
+        to a human and invisible to any gate reading the record.</p>
+      <p>Reproduced at the base revision <code>1c20ca680a2b</code>, in a scratch export of
+        that tree (<code>logs/repro-base.out</code>): a review carrying
+        <code>FINDING tests/test_x.py:12 blocking: the guard never fires</code> parses to
+        a finding whose key set is exactly <code>['file', 'line', 'text']</code>, with the word
+        <code>blocking</code> surviving only inside the text. The same run's score parses, so
+        the empty severity is a parse that read the file, not a parser that read nothing.</p>
+      <table>
+        <thead>
+          <tr><th>finding line</th><th>keys at base</th><th>keys at head</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>FINDING tests/test_x.py:12 blocking: the guard never fires</code></td>
+            <td><code>file, line, text</code></td>
+            <td><code>file, line, severity, text</code></td>
+          </tr>
+          <tr>
+            <td><code>FINDING tests/test_y.py:3 critical: the guard never fires</code></td>
+            <td><code>file, line, text</code></td>
+            <td><code>file, line, text</code></td>
+          </tr>
+          <tr>
+            <td><code>FINDING tests/test_z.py:7 the guard never fires</code></td>
+            <td><code>file, line, text</code></td>
+            <td><code>file, line, text</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="change">
+      <h2>The change</h2>
+      <p><code>reckon/crew/review.py</code> declares the vocabulary once, as the module
+        constant <code>FINDING_SEVERITIES = ("blocking", "follow-on")</code>, with
+        <code>BLOCKING_FINDING_SEVERITY</code> naming the blocking value on its own so a gate
+        acting on blocking findings compares against a name rather than a literal. The
+        parser records a finding's <code>severity</code> only when the finding opens with one
+        of the declared words and a colon; an undeclared word is left where the reviewer
+        wrote it &mdash; in the text &mdash; and a finding that states no word carries no
+        <code>severity</code> key at all, because a defaulted severity is a judgement nobody
+        made.</p>
+      <p>A finding's <code>file</code>, <code>line</code> and <code>text</code> are never
+        rewritten by the new slot, so the parse an existing reader got is the parse it still
+        gets, and a finding's identity &mdash; derived from those three fields &mdash; does not
+        move when a reviewer adds a severity word.</p>
+      <p><code>reckon/crew/prompts/review.md</code> teaches the same two values in the
+        emission form the reviewer is asked for
+        (<code>FINDING &lt;file&gt;:&lt;line&gt; &lt;severity&gt;: &lt;what is wrong and why it matters&gt;</code>),
+        states which one holds a node and which does not, and says that a finding opening
+        with neither carries none rather than defaulting to either.</p>
+    </section>
+
+    <section id="gate">
+      <h2>The gate</h2>
+      <p>The new falsifiers plus three files that already read the review record and the
+        composed evidence record, run in a scratch export of the base revision and in
+        the worktree at head, each arm with its own <code>--basetemp</code> and with
+        <code>PYTHONPATH</code> pointing at its own tree. Each log's header names the
+        revision, the tree, the imported <code>reckon/crew/review.py</code> and the working
+        directory the run resolved from:</p>
+      <table>
+        <thead>
+          <tr><th>arm</th><th>revision</th><th>result</th><th>failed ids</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>base</td>
+            <td><code>1c20ca680a2b</code></td>
+            <td><code>15 passed</code> in 8.27s</td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td>head</td>
+            <td><code>970f9dd14</code></td>
+            <td><code>25 passed</code> in 8.77s</td>
+            <td>0</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The head arm adds no failure id; its ten extra tests are the new falsifiers, which
+        assert that each declared value parses to itself, that the blocking value is a
+        declared one, that an undeclared word stays in the text with no severity, that a
+        finding with no severity word has no <code>severity</code> key, that a severity word
+        leaves file, line and text unchanged, that the prompt names every declared value and
+        carries the slot in its emission form, and that a stored review round-trips the field
+        through both production readers.</p>
+      <p><code>ruff check</code> and <code>ruff format --check</code> over the changed paths
+        report no finding at head that the base did not: zero findings and both files
+        formatted, at both revisions.</p>
+    </section>
+
+    <section id="negative-control">
+      <h2>The negative control</h2>
+      <p>The declared control makes the parser ignore severity and requires the blocking
+        case to go red. Its log's first line, verbatim:</p>
+      <pre><code>make the finding parser in reckon/crew/review.py ignore severity; the blocking case in tests/test_a_finding_says_whether_it_blocks.py fails</code></pre>
+      <p>Run against a scratch export of the head revision whose only change is the helper's
+        return replaced by <code>None</code>: <code>5 failed, 5 passed</code>, exit 1, the
+        failures including the blocking case and the stored round-trip. The five that pass
+        are the ones asserting an absence, which a parser that records nothing satisfies
+        trivially &mdash; which is why the blocking case is the declared control rather than
+        any of them.</p>
+    </section>
+
+    <section id="limits">
+      <h2>What this node does not do</h2>
+      <p>Nothing downstream reads the new field yet: the promotion refusal is unchanged, and
+        a gate that acts on blocking findings alone is a separate node. Findings already in
+        the store that carry a <code>severity</code> key were written by hand rather than
+        parsed from an emitted line, and this change does not touch them &mdash; the parser
+        reads the emitted form, and a record written by hand still stores whatever it
+        carries.</p>
+    </section>
+  </main>
+</body>
+</html>
