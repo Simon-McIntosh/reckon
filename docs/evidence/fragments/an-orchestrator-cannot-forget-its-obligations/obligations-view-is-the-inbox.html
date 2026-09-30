@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:an-orchestrator-cannot-forget-its-obligations">
+  <meta name="plan-verifies" content="reckon:an-orchestrator-cannot-forget-its-obligations#s6">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-09-30">
+  <title>The obligations view is named as the inbox | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="obligations-view-is-the-inbox">
+  <h2>The obligations view is named as the coordinator's inbox</h2>
+
+  <p><strong>What changed.</strong> <code>skills/reckon-build/SKILL.md</code>
+  §4d (the closure fence) and §5 (verifying every worker) now each state that the
+  obligations view is the coordinator's inbox: work it to empty, or acknowledge
+  each item with <code>reckon crew ack</code>, before the turn ends, and the
+  installed harness hook refuses a Stop while an item is unacknowledged. The
+  per-harness reference
+  <code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code>
+  gains an <em>Installing the coordinator-obligations hooks</em> section naming
+  both modes of <code>reckon/hooks/coordinator_obligations.py</code> —
+  <code>--hook prompt</code> under <code>SessionStart</code> and
+  <code>UserPromptSubmit</code>, and <code>--hook stop</code> under
+  <code>Stop</code> — and the install command.</p>
+
+  <p><strong>Pin.</strong> <code>tests/test_skill_contracts.py</code> gains
+  <code>test_the_obligations_view_is_the_coordinator_inbox</code>, which slices
+  §4d and §5 out of the skill and requires both to name the obligations view and
+  <code>reckon crew ack</code>, requires the closure fence to carry the inbox
+  sentence and the Stop refusal, and requires the reference to name the hook
+  script, both modes, the three events and the install command. The
+  <code>crew ack</code> verb is added to the registered-command map in
+  <code>test_ship_cli_instructions_match_registered_commands_and_flags</code>,
+  with its <code>--run/--reason/--until</code> flags.</p>
+
+  <p><strong>Measure — zero added failures by id.</strong> Every test file that
+  reads <code>skills/</code> was run in a base arm (a scratch export of
+  <code>4e05e287</code>) and a head arm (this worktree), each log headed with its
+  revision, tree, working directory, imported module path and command. The
+  reachable set — the files that read the changed artifacts — is
+  <code>test_skill_contracts.py</code>, <code>test_skill_contract_parity.py</code>
+  and <code>test_crew_monitor_output.py</code>; the same four failures appear by
+  id in both arms and no fifth is added. <code>test_crew.py</code> and
+  <code>test_session_lives_on_its_run.py</code> are the slow files, run under a
+  bound in both arms. Logs: <code>logs/</code>.</p>
+
+  <p><strong>The declared mutation was observed to fail.</strong> Deleting the
+  inbox sentence from §4d in a scratch copy of the head reds exactly the new
+  case (1 failed, <code>EXIT=1</code>); the red log's first line repeats the
+  declared mutation verbatim. The base module carrying the case is the defect
+  reproduced rather than assumed. Ruff <code>check</code> and
+  <code>format --check</code> add no finding on the changed test path (4 before,
+  4 after).</p>
+
+  <p><strong>Ratchet moved, with its reason recorded.</strong> §4d and §5 are
+  dispatch-time rules an orchestrator decides against mid-beat, so they stay in
+  the file rather than moving to a conditional reference. Adding the two rule
+  paragraphs took <code>SKILL.md</code> from 14,936 to 15,107 estimated tokens
+  against the old 15,000 bound, past its 64 tokens of headroom, so
+  <code>FIXED_READ_SET_TOKEN_BUDGET</code> is raised to 15,200 with that reason
+  recorded beside it.</p>
+
+  <p><strong>Reported, not triaged.</strong> The registered command
+  <code>reckon hooks install --scope user</code> named in the reference follows
+  the plan's §5 interface; the verb is not registered in this tree
+  (<code>reckon hooks install --help</code> exits 2, <code>No such command
+  'hooks'</code>), so the reference's install command could not be verified by
+  its <code>--help</code> and is carried as a follow-on for the installer-CLI
+  node. <code>test_every_registered_crew_verb_is_documented_or_exempt</code> is
+  red in both arms because <code>reckon crew dispose</code>, <code>split-runs</code>,
+  <code>suite run</code>, <code>suite waive</code> and <code>velocity</code>
+  remain undocumented — unrelated to this node and reported under follow-ons.</p>
+
+  <p><strong>Scope retained, deliberately.</strong> The driving followup stays
+  open and no terminal status is set: a worker knows its node landed, not whether
+  the section closed.</p>
+</section>
+</main>
+</body>
+</html>

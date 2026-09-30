@@ -737,13 +737,11 @@ gets the heavier machinery.
 
 **The obligations view is the inbox.** `crew(view="obligations", session=<session>)`
 lists every duty this session still owes — a review owed, a blocked run to resume,
-a worktree to release — each with its kind, its age and the exact next command.
-Work it to empty, or acknowledge each item with `reckon crew ack --run <run-id>
---reason "<why the deferral is deliberate>" --until <iso-time>`, before the turn
-ends. The item is state reckon derives from the live fleet, so it is read and
-re-read rather than remembered. When the coordinator hook is installed in the
-harness it opens every turn with that checklist and refuses a Stop while an item
-is unacknowledged, which is the enforcement §5 leans on.
+a worktree to release. Work it to empty, or acknowledge each item with
+`reckon crew ack --run <run-id> --reason "<why the deferral is deliberate>"
+--until <iso-time>`, before the turn ends. When the coordinator hook is installed
+in the harness it opens every turn with that checklist and refuses a Stop while an
+item is unacknowledged.
 
 Before the closing summary, **refuse to end the session while any queue row is
 foldable or any live pointer is unreconciled.** Run the followup drain of §7c,
@@ -796,11 +794,10 @@ visibly incomplete rather than plausibly done. Completion and hold examples:
 
 Verify each finished worker before integration or releasing a dependent node: read its manifest, confirm its commit and clean worktree, compare `git show --stat` with declared scope, open the named gate log, then read the diff by anomaly. Fold final stream state with `reckon crew observe --run <id>` and promote only with `reckon crew complete --run <id> --gate <verdict> --commit <sha>` after the evidence is coherent. The landing is a **review of an authored record, not a transcription of a manifest**. Workers author their own landing record in the same beat — "Write your landing record to your own fragment path and never to the plan: your evidence anchor to your scope's fragment under docs/evidence/fragments/<plan>/<node-id>.html, and exactly one `landing:` line in your manifest in place of a plan edit. The fragment goes into your final commit; promotion lands the `landing:` line on your plan section." The shared-state ban narrows with it: "Never mutate the shared project index, sprint state, or a plan other than the one you are landing against. Do not edit the plan-version or plan-modified meta lines: every worker touching them makes every merge conflict there." Two limits hold even though the worker authors its own record, and both are about what it can see rather than about merge mechanics: it must not resolve its own driving followup and must not set a terminal status, because only the coordinator observes the other nodes — a worker knows its node landed, not whether the section closed. Immediately perform that review and plan write before another promotion; dispatching an unrelated ready node is outside this freeze.
 
-**The inbox bounds a verification beat.** Read the obligations view —
-`crew(view="obligations", session=<session>)` — as part of verifying a worker, and
-work it to empty, or acknowledge each item with `reckon crew ack`, before the turn
-ends. An item left unreconciled is work the installed hook refuses a Stop over;
-§4d owns that fence and states the acknowledgement form.
+**The obligations view is the inbox.** Read `crew(view="obligations",
+session=<session>)` as part of verifying a worker, and work it to empty, or
+acknowledge each item with `reckon crew ack`, before the turn ends; an item left
+unreconciled is work the installed hook refuses a Stop over. §4d owns that fence.
 
 **Dispatch a test worker and audit its compact result manifest** before
 releasing a dependent node: the implementing worker's own gate is not

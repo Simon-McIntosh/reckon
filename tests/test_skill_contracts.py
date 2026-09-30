@@ -638,7 +638,14 @@ def test_ship_has_one_advisory_fleet_size_table() -> None:
 # explanatory history, exhaustive mechanics, and worked procedures to live in
 # conditional references. A word-count proxy is enough to make that review
 # visible; extracting material comes before widening this bound.
-FIXED_READ_SET_TOKEN_BUDGET = 15_000
+#
+# Raised from 15_000 when §4d and §5 each gained the two-sentence rule that the
+# obligations view is the coordinator's inbox, worked to empty or acknowledged
+# with `reckon crew ack` before the turn ends and enforced by the installed hook.
+# Both are dispatch-time rules — an orchestrator decides against them mid-beat and
+# cannot read them conditionally — so they stay in the file rather than moving to
+# a reference, and the file had 64 tokens of room against the old bound.
+FIXED_READ_SET_TOKEN_BUDGET = 15_200
 
 
 def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
