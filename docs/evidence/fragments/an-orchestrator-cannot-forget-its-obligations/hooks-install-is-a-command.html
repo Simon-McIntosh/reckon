@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="an-orchestrator-cannot-forget-its-obligations">
+  <meta name="plan-title" content="An orchestrator cannot forget its obligations">
+  <meta name="plan-evidence-for" content="reckon:an-orchestrator-cannot-forget-its-obligations">
+  <meta name="plan-verifies" content="reckon:an-orchestrator-cannot-forget-its-obligations#s5">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-09-30">
+  <title>The hooks install command prints before it writes | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="hooks-install-is-a-command">
+  <h2>The hooks install command prints before it writes</h2>
+
+  <p><strong>What changed.</strong> <code>reckon/cli.py</code> gains a
+  <code>hooks</code> group with an <code>install</code> command. It wraps
+  <code>install_hook_settings</code> from <code>reckon/hooks/install.py</code>
+  without reimplementing the merge: without <code>--write</code> it prints the
+  fragment and opens no file, and with <code>--write</code> it merges into the
+  named settings file. <code>--scope user</code> is mapped explicitly to
+  <code>install.user_settings_path()</code>, and the resolved path is passed to
+  the installer when <code>--settings</code> is not given, so a scope added later
+  cannot be silently ignored. A target that already carries the whole fragment is
+  refused, exiting non-zero, rather than reported as a silent no-op. The command
+  catches the installer's <code>HookInstallError</code> and exits non-zero with
+  its message, so a file the installer cannot parse surfaces the refusal rather
+  than a traceback. The command prints, to stderr, the checkout whose hook
+  scripts the fragment names, so the caller can see which tree the installed
+  hooks will read — stdout stays the pure JSON fragment.</p>
+
+  <p><strong>Pin.</strong> <code>tests/test_hooks_install_cli.py</code> drives
+  the command through the click test runner: the dry run prints the fragment and
+  leaves the target byte-identical; the fragment's script paths lie under the
+  checkout the command ran from, computed from the test file's own location, and
+  stderr names that checkout; <code>--write</code> merges into a temporary
+  settings file; a second <code>--write</code> refuses the duplicate install and
+  leaves the file as the first install left it; an unparsable target exits
+  non-zero with the installer's message; and with <code>HOME</code> redirected
+  to a temporary directory, a dry run and a <code>--write</code> with no
+  <code>--settings</code> land in that temporary <code>HOME</code> while the real
+  file is untouched. Every case that installs points its target at a file under
+  the pytest temporary directory — a named <code>--settings</code> file, or the
+  <code>HOME</code> redirect — and every case fingerprints the real user-scope
+  settings file, resolved through the password database rather than
+  <code>HOME</code>, before and after, so a command that reached for the real
+  path fails here rather than installing onto the machine running the suite.</p>
+
+  <p><strong>Measure — zero added failures by id.</strong> A base arm (a scratch
+  export of <code>51f2d62de0c14d9bcf8da7ce0d956dd3d4dd0289</code>, the shared
+  <code>.venv</code> linked so the interpreter case is fair) and a head arm
+  (this worktree, clean tree) each run the files that read the paths this node
+  changed. Each log's first line is <code>revision: &lt;full sha&gt;</code> and
+  names the imported module path and the resolved working directory. Base is
+  2 failed / 84 passed over the four pre-existing files against head 2 failed /
+  91 passed over those four plus the new file: zero added failures by id, the
+  seven new cases all green. Logs:
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T103658421113-hooks-install-is-a-command/logs/gate-base.log</code>
+  and <code>.../logs/gate-head.log</code>.</p>
+
+  <p><strong>The declared mutation was observed to fail.</strong> Making the
+  command write the settings file even without <code>--write</code>, in a
+  scratch copy of the head, reds the dry-run byte-identical case (1 failed,
+  <code>EXIT=1</code>); the red log's first line repeats the declared mutation
+  verbatim. Log:
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T103658421113-hooks-install-is-a-command/logs/negative-control.log</code>.</p>
+
+  <p><strong>Pre-existing failures left red.</strong> Two ids in
+  <code>tests/test_skill_contracts.py</code> are red at the base and at the head
+  with identical offender lists —
+  <code>test_no_routing_identifier_leaks_into_skills_or_source</code> (the
+  <code>ANTHROPIC_CUSTOM_HEADERS</code> reads in
+  <code>reckon/crew/dispatch.py</code>) and
+  <code>test_ship_dispatch_exit_table_matches_cli_branches</code>. They are
+  outside this node's scope and are left as they were found.</p>
+
+  <p><strong>Scope retained, deliberately.</strong> The driving followup stays
+  open and no terminal status is set: a worker knows its node landed, not whether
+  the section closed.</p>
+</section>
+</main>
+</body>
+</html>
