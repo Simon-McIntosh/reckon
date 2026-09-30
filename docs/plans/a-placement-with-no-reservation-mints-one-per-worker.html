@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="the-fleet-shares-one-allocation">
 </head>
@@ -170,6 +170,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260930T0930-s3-landed" data-who="s21-1c" data-when="2026-09-30T09:30:00Z">
     <div class="r-comment-body">Section 3 landed in two nodes. (1) ensure-holds-one-reservation, merge 3cc6942a, review 99: an exclusive fcntl.flock on crew_home()/placement/reservation.lock, so four racing processes make one allocation-obtaining request; the probe is three-valued, so unknown is never read as absent; a live allocation is never replaced; the hold goes through fleet_node's existing path. (2) dispatch-places-into-the-shared-reservation, merge e46347e98, run r-20260929T203219213039, commit 3209ea00, review 89: placement resolution calls ensure_reservation, so a dispatch with no published record holds, publishes and runs its worker as a step with --overlap. A second dispatch under another project joins that record, one allocation-obtaining request across the pair. A backend declaring no placement is untouched, and a legacy per-project record is still placed into. The pinned bare-srun test is replaced. Open: the review found this node's population arm stopped at about 40%, so an integration measure over the dispatch and placement test population at the merged head follows. Adopting 1277272 and placing on the resume path remain for the-fleet-shares-one-allocation, f-tfsoa-handoff-01.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260929T203219213039-dispatch-places-into-the-shared-reservation" data-who="reckon-build" data-when="2026-09-29T21:17:22.108Z">
+    <div class="r-comment-body"><p>dispatch-places-into-the-shared-reservation — added resolve_backend_placement in reckon/crew/dispatch.py so a placed dispatch reaches ensure_reservation before wrapping; the dispatch site at dispatch.py:4911 calls it. Gate: 4 passed in tests/test_dispatch_places_into_the_shared_reservation.py (hold-and-place, join-across-projects with exactly one allocation-obtaining request, no-placement untouched, legacy per-project record placed into without a hold), against a recording scheduler in a temporary RECKON_HOME with no real scheduling client. Delta over 13 placement-touching test files: base 3 failed/134 passed, head 3 failed/138 passed, 0 added (the same 3 ids fail in both arms because this worker is inside the fleet allocation where reckon/host_shims/srun shadows /usr/bin/srun). Negative control red as declared.</p></div>
 </div>
 </section>
 </main>

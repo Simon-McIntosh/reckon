@@ -1,0 +1,371 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "6a104b893df8dc5129593a9116353d72465c04cc",
+  "boundary_waiver": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 12010334,
+      "input_tokens_cumulative": 12010334,
+      "output_tokens": 75451,
+      "output_tokens_cumulative": 75451,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 380,
+    "files": 5,
+    "removed": 10
+  },
+  "commit_resolution": null,
+  "commits": [
+    "3209ea0066426d5f4634f2280c3173e8e4fa593b"
+  ],
+  "completed_at": "2026-09-29T21:17:22.108Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-09-29T20:32:38Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "reckon.crew.dispatch/placement",
+    "/tmp"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_dispatch_places_into_the_shared_reservation.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/logs/dpr-gate.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": null,
+    "plan": "a-placement-with-no-reservation-mints-one-per-worker",
+    "reason": "no-impl-recorded-at-dispatch",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-09-29T21:32:20.884681+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-09-29T20:32:20Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 24,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 10,
+    "headroom": 1,
+    "mean_context": 172000,
+    "observed_at": "2026-09-29T20:31:56Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-09-29T21:17:22.108Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/manifest.md",
+  "member": "disposable-r-20260929T203219213039-dispatch-places-into-the-shared-reservation",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_dispatch_places_into_the_shared_reservation.py::test_a_dispatch_with_no_reservation_holds_one_and_places_into_it",
+      "tests/test_dispatch_places_into_the_shared_reservation.py::test_a_second_project_joins_the_one_allocation_across_both_dispatches"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_crew_lane_agnostic_placement.py::test_adding_a_backend_needs_no_placement_code",
+      "tests/test_crew_placement.py::test_a_declared_placement_prefixes_the_resolved_launch",
+      "tests/test_crew_placement.py::test_an_unresolvable_scheduler_is_refused_before_launch"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_dispatch_places_into_the_shared_reservation.py::test_a_dispatch_with_no_reservation_holds_one_and_places_into_it",
+      "tests/test_dispatch_places_into_the_shared_reservation.py::test_a_second_project_joins_the_one_allocation_across_both_dispatches"
+    ],
+    "declaration": "keep the bare-srun fallback in placement resolution; case 2's second dispatch then makes its own allocation-obtaining request and the one-request count fails",
+    "head_failure_ids": [
+      "tests/test_crew_lane_agnostic_placement.py::test_adding_a_backend_needs_no_placement_code",
+      "tests/test_crew_placement.py::test_a_declared_placement_prefixes_the_resolved_launch",
+      "tests/test_crew_placement.py::test_an_unresolvable_scheduler_is_refused_before_launch"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/logs/dpr-negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/logs/dpr-negative-control.log",
+    "test_paths": [
+      "tests/test_crew_placement_reservation.py",
+      "tests/test_dispatch_places_into_the_shared_reservation.py",
+      "tests/test_ensure_holds_one_reservation.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "dispatch-places-into-the-shared-reservation",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 899,
+          "cached_input_tokens": 775104,
+          "input_tokens": 776005,
+          "output_tokens": 274,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 776279,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "caa2d324-580b-4245-9533-3aec9e945566",
+      "session_id": "s21-1c"
+    },
+    "done_when": "tests/test_dispatch_places_into_the_shared_reservation.py passes under the root .venv python. It runs in a temporary RECKON_HOME against a recording scheduler; no real sbatch, salloc, srun or scancel runs. Four cases. (1) A dispatch declaring placement, with no published reservation, reaches ensure_reservation from placement resolution in reckon/crew/dispatch.py. It holds the shared allocation, publishes it to the unkeyed record, and runs its worker as a step inside it with --overlap and the job id just published. (2) A second dispatch under a different project reads that same record, starts no allocation of its own, and runs its worker as a step in the allocation it found. Across both dispatches the recording scheduler logs exactly one allocation-obtaining request; the two step launches are not counted. (3) A backend declaring no placement is untouched: no ensure call, no request, and wrapping unchanged. (4) A legacy per-project record, the shape of placement/imas-ambix/reservation.json, is still honoured: its job id is placed into, and no hold is made. tests/test_crew_placement_reservation.py::test_an_unheld_reservation_leaves_the_declared_wrapping_unchanged is replaced by a test whose name states the ensure. The retry assertion in tests/test_ensure_holds_one_reservation.py asserts a literal attempt count that fails if _UNKNOWN_PROBE_ATTEMPTS is reduced to 1, instead of reading the module constant. The declared negative control is executed and logged. The test files importing reckon.crew.dispatch or reckon.crew.placement show 0 added failures between a base arm and a head arm, run with pytest-xdist -n 8, each arm with its own --basetemp under /tmp deleted afterwards. Stop and log df if /tmp has under 5 GB free. Every log sits under the run directory, headed with revision, tree and command and ending EXIT=. Out of scope, listed as follow_ons: adopting 1277272, and placement on the crew resume path.",
+    "estimated_hours": null,
+    "goal": "Make placement resolution hold or join the one shared reservation through ensure_reservation",
+    "id": "dispatch-places-into-the-shared-reservation",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-09-29T20:32:20Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 24,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 10,
+      "headroom": 1,
+      "mean_context": 172000,
+      "observed_at": "2026-09-29T20:31:56Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/manifest.md",
+    "negative_control": "keep the bare-srun fallback in placement resolution; case 2's second dispatch then makes its own allocation-obtaining request and the one-request count fails",
+    "plan": "a-placement-with-no-reservation-mints-one-per-worker",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§3",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/dispatch.py",
+      "reckon/crew/placement.py",
+      "tests/test_dispatch_places_into_the_shared_reservation.py",
+      "tests/test_crew_placement_reservation.py",
+      "tests/test_ensure_holds_one_reservation.py",
+      "docs/evidence/fragments/a-placement-with-no-reservation-mints-one-per-worker/dispatch-places-into-the-shared-reservation.html",
+      "docs/figures/a-placement-with-no-reservation-mints-one-per-worker/dispatch-places-into-the-shared-reservation"
+    ]
+  },
+  "orientation_input_tokens": 1537471.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "dispatch-places-into-the-shared-reservation",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-09-29T20:32:30.606950+00:00",
+    "score": 0.7375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-placement-with-no-reservation-mints-one-per-worker",
+  "promoted_revision": "3209ea0066426d5f4634f2280c3173e8e4fa593b",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "scores": {
+      "durability": 15,
+      "evidence": 15,
+      "fit": 20,
+      "goal_fidelity": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 89
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20260929T203219213039-dispatch-places-into-the-shared-reservation",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§3",
+  "session_harness": "claude",
+  "session_id": "016b464e-08f6-40f5-b814-6413577dbb00",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 4,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 12010334,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2676.951,
+    "generated_tokens": 75451,
+    "generation_seconds": 2373.422,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 39.6,
+    "machine_seconds": 303.529,
+    "peak_input_tokens": 189952,
+    "tokens_per_second": 31.79,
+    "wall_tokens_per_second": 28.19
+  },
+  "time_budget": "60m",
+  "tool_steps": 89.0,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 2684,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-09-29T21:17:22Z",
+    "last_record_type": "result",
+    "launched_at": "2026-09-29T20:32:41Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20260929T203219213039-dispatch-places-into-the-shared-reservation",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 17742,
+    "worker_pid": 1174954
+  },
+  "worker_seconds": 2667,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
