@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-worker-can-take-a-brief">
   <meta name="plan-title" content="A Worker Can Take A Brief">
   <meta name="plan-summary" content="Dispatch accepts a stored, contract-checked brief in place of a committed plan section, so probes and reviews need no plan edit first.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="7.0">
   <meta name="plan-capability-version" content="1.0">
@@ -21,14 +21,14 @@
   <meta name="plan-sprint" content="S24">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Relaxes one dispatch precondition; nothing upstream must land first, and the files it writes are sequenced by live claims rather than a plan edge.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>A Worker Can Take A Brief | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-commits" content="488d3e92,ba1fe43c,e4d70125,2ab372f0,dcb66ac8,9f6f58b3,92b7eca7,cea78e5e,35519a31,e3b07de5,f04e0304,b2f19666">
-<meta name="plan-impl" content="0.8">
+<meta name="plan-impl" content="1.0">
 <meta name="plan-artifacts" content="reckon/crew/prompts.py,tests/test_brief_prompt.py,reckon/cli.py,reckon/crew/dispatch.py,reckon/crew/node.py,tests/test_brief_dispatch.py,tests/test_brief_plan_exclusivity.py">
 </head>
 <body>
@@ -133,14 +133,11 @@
   <p class="landed-summary">Promotion records a brief run with plan null and its brief digest, skipping the impl-move guard; an implement-role brief run is refused unless crew complete names --plan-link or --unplanned-reason, and whichever is given lands on the row. <a href="/reckon/evidence/archive/a-worker-can-take-a-brief-landed#promotion-records-a-brief-runs-owner-what-changed">full record</a></p>
 </section>
 
-    <h2 id="s5">&sect;5 &mdash; The skill says when a brief is the right carrier</h2>
-    <p><code>reckon-build</code> SKILL.md &sect;3b currently says "there is deliberately no flag for passing prose to a worker". It is rewritten: a probe, measurement, review or investigation may carry a brief, and work that changes a plan's product carries its plan. The brief meets the same eight properties, and the done-when is still the specification. <code>crew(view="runs")</code> shows brief runs with <code>plan</code> null and their brief digest.</p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>The skill text no longer states the retired rule.</li>
-      <li>Every test that greps <code>skills/</code> passes.</li>
-      <li>A runs-view test shows a promoted brief run's row carrying its brief digest.</li>
-    </ul>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-09-30</span>
+    <h2 id="s5">&sect;5 &mdash; The skill says when a brief is the right carrier</h2></header>
+  <p class="landed-summary">reckon-build says a probe, measurement, review or investigation may carry a brief while product changes carry their plan, and the runs view shows a brief run's null plan and brief digest. <a href="/reckon/evidence/archive/a-worker-can-take-a-brief-landed#s5">full record</a></p>
+</section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -156,10 +153,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-awctab-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-worker-can-take-a-brief" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awctab-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-worker-can-take-a-brief" data-resolved-at="2026-09-30T13:45:29+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">Land §2–§5</h4>
     <div class="r-fu-body"><p>§2 comes first. §3 and §4 can then run in parallel, and §5 follows once they have landed.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-can-take-a-brief</pre>
+    <p class="r-fu-outcome">done — no followup. §4 landed as promotion-records-a-brief-runs-owner (merge 21571a7e1, review 94) and §5 as the-skill-names-when-a-brief-fits (merge f1a59366c, review 89), both with zero added failures. Every implementable section is collapsed to its card.</p>
     </article>
 </section>
 
@@ -210,7 +208,7 @@
     <div class="r-comment-body"><p>the independent review of r-20260930T121057414157-promotion-records-a-brief-runs-owner at head c25d0dd78b95d0937c70ab7683bba92b4c2bb6b8 is stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260930T121057414157-promotion-records-a-brief-runs-owner.at-c25d0dd78b95d0937c70ab7683bba92b4c2bb6b8.json with the identical record at the legacy path, as a parsed record — goal_fidelity 19, evidence 18, scope_discipline 19, durability 19, fit 19, total 94, added_failure_count 0 with no ids derived from the reviewed run's own baseline_suite and after_suite gate logs — with no findings: the earlier review's three findings (three ledger row keys undeclared in RECORD_FIELDS with the declared-schema guard red at the then-head, the two CLI options untested, and the head log measuring one commit behind the delivered head) are each repaired at this head by 325ab920/fe4a311f/c25d0dd7, and this node re-ran the declared-schema guard and the node's own seven cases green at c25d0dd7.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T131549183077-review-of-the-skill-names-when-a-brief-fits" data-who="reckon-build" data-when="2026-09-30T13:27:49.364Z">
-    <div class="r-comment-body"><p>review of r-20260930T125913711305-the-skill-names-when-a-brief-fits at head a8efb2ba against base 2be39bd4 stores five dimensions — goal_fidelity 18, evidence 15, scope_discipline 19, durability 14, fit 19, total 85, every score at or above the declared floor of 10 — with added_failure_count 1 derived from the run&#x27;s own gate logs, and leaves two findings: the digest&#x27;s live branch at reckon/crew/query.py:236 has no test, and tests/test_skill_contracts.py:1263 reds at head so armed promotion refuses the run until that assertion is updated or a waiver reason is recorded</p></div>
+    <div class="r-comment-body"><p>review of r-20260930T125913711305-the-skill-names-when-a-brief-fits at head a8efb2ba against base 2be39bd4 stores five dimensions — goal_fidelity 18, evidence 15, scope_discipline 19, durability 14, fit 19, total 85, every score at or above the declared floor of 10 — with added_failure_count 1 derived from the run's own gate logs, and leaves two findings: the digest's live branch at reckon/crew/query.py:236 has no test, and tests/test_skill_contracts.py:1263 reds at head so armed promotion refuses the run until that assertion is updated or a waiver reason is recorded</p></div>
 </div>
 </section>
   </main>
