@@ -15,6 +15,7 @@ import os
 import re
 import subprocess
 import sys
+import sysconfig
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -415,6 +416,74 @@ def _registered_parent_pid() -> int:
     return owner
 
 
+# A harness version that exports no CLAUDE_PID is recognised by the hook's
+# ancestry walk: the nearest ancestor whose executable is named ``claude``. The
+# wrapper's argv[0] names it ``claude`` while the real interpreter -- passed in
+# as the last argument, since sys.executable reports the argv[0] here -- runs
+# it, so the walk names this process and the follower it arms carries this pid.
+_BARE_HARNESS_WRAPPER = """\
+import os
+import subprocess
+import sys
+
+from reckon.crew import runs
+
+
+def main() -> int:
+    mode, payload, hook, project, session, interpreter = sys.argv[1:7]
+    os.environ["RECKON_FOLLOWER_OWNER"] = runs._format_follower_owner(
+        (os.getpid(), runs._process_start_time(os.getpid()) or "")
+    )
+    environment = dict(os.environ)
+    environment.pop("CLAUDE_PID", None)
+    with runs.follower_claim(project, session):
+        completed = subprocess.run(
+            [interpreter, hook, "--hook", mode],
+            input=payload,
+            capture_output=True,
+            text=True,
+            env=environment,
+        )
+    sys.stdout.write(completed.stdout)
+    sys.stderr.write(completed.stderr)
+    return completed.returncode
+
+
+raise SystemExit(main())
+"""
+
+
+def _hook_under_bare_harness(
+    mode: str, payload: dict[str, object], *, tmp_path: Path
+) -> subprocess.CompletedProcess[str]:
+    """Drive the hook with no CLAUDE_PID, under a ``claude``-named ancestor."""
+    wrapper = tmp_path / "bare_harness.py"
+    wrapper.write_text(_BARE_HARNESS_WRAPPER, encoding="utf-8")
+    environment = dict(os.environ)
+    # Renaming argv[0] hides the interpreter's own directory from CPython, so
+    # the virtual environment is found through the path rather than the layout.
+    environment["PYTHONPATH"] = os.pathsep.join(
+        [str(REPO_ROOT), sysconfig.get_paths()["purelib"]]
+    )
+    return subprocess.run(
+        [
+            str(tmp_path / "claude"),
+            str(wrapper),
+            mode,
+            json.dumps(payload),
+            str(HOOK),
+            PROJECT,
+            SESSION,
+            sys.executable,
+        ],
+        executable=sys.executable,
+        capture_output=True,
+        text=True,
+        env=environment,
+        check=False,
+    )
+
+
 def test_prompt_mode_injects_the_checklist_for_a_coordinating_session(
     repository: Path, tmp_path: Path
 ) -> None:
@@ -522,6 +591,35 @@ def test_a_follower_armed_by_this_session_names_it_and_another_sessions_does_not
     )
     assert theirs.returncode == 0
     assert theirs.stdout == ""
+
+
+def test_the_ancestry_walk_resolves_a_session_when_the_harness_exports_no_pid(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A harness that exports no CLAUDE_PID is recognised from its own process.
+
+    The hook's fallback names the nearest ancestor whose executable is
+    ``claude``, for harness versions that do not export a pid. Every other case
+    here pins CLAUDE_PID itself, so without this one that branch is driven by no
+    test. The wrapper carries ``claude`` as its argv[0] and arms the follower
+    from inside that process, so the registration's owner is exactly the pid the
+    walk finds and the injection proves the fallback resolved the session rather
+    than the drive merely staying silent.
+    """
+    _blocked_run(repository, tmp_path)
+    manifest = tmp_path / "manifests" / f"{RUN_ID}.md"
+
+    completed = _hook_under_bare_harness(
+        "prompt", _prompt_payload(repository, "harness-session"), tmp_path=tmp_path
+    )
+
+    assert completed.returncode == 0
+    assert completed.stderr == ""
+    emitted = json.loads(completed.stdout)
+    checklist = emitted["hookSpecificOutput"]["additionalContext"]
+    assert _normalised(checklist, manifest=manifest) == _expected_checklist(
+        unreconciled=1
+    )
 
 
 def test_the_real_settings_home_is_never_read_or_written(
