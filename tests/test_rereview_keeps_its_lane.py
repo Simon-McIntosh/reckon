@@ -196,17 +196,27 @@ def _scoring_pointer(
     return record
 
 
-def _failed_attempt(backend: str, *, head: str | None) -> dict:
+def _failed_attempt(
+    backend: str,
+    *,
+    head: str | None,
+    status: str = "dispatched",
+    run_id: str | None = None,
+) -> dict:
     """A review dispatch the run records, whose review run is no longer alive.
 
     ``head`` is the revision the attempt composed for: the field the reflex
     compares against the run's current head to decide whether the attempt still
     speaks for it. ``None`` models a record that names no head at all.
+    ``status`` selects what the attempt reached: a ``refused`` or
+    ``awaiting-lane`` attempt never started a lane. ``run_id`` names the review
+    run the attempt launched, whose own records then show whether a worker ever
+    started; ``None`` models a record naming no review run at all.
     """
     recorded = {
-        "status": "dispatched",
+        "status": status,
         "reason": f"the review dispatched automatically as run r-{backend}-dead",
-        "run_id": None,
+        "run_id": run_id,
         "backend": backend,
         "at": "2026-09-22T10:00:00Z",
         "attempt": 1,
@@ -214,6 +224,33 @@ def _failed_attempt(backend: str, *, head: str | None) -> dict:
     if head is not None:
         recorded["head"] = head
     return recorded
+
+
+def _review_run_evidence(config_home: Path, run_id: str, *, launched: bool) -> None:
+    """Write a dead review run's own records for the launch/withdrawal split.
+
+    A withdrawn-before-launch attempt leaves an exit record saying it ended
+    during launch with no stream byte read — the supervisor refused at the
+    claim, name or worktree and no worker ever existed. A launched attempt
+    leaves the worker record its supervisor wrote at spawn plus an exit record
+    showing a worker that read stream records: a run the lane did drop.
+    """
+    directory = runs.run_dir(run_id)
+    directory.mkdir(parents=True, exist_ok=True)
+    if launched:
+        crew._write_json(
+            directory / recovery.WORKER_RECORD_NAME,
+            {"run_id": run_id, "pid": 4242, "launched_at": "2026-09-22T10:00:00Z"},
+        )
+    crew._write_json(
+        directory / recovery.EXIT_RECORD_NAME,
+        {
+            "run_id": run_id,
+            "attempt": 1,
+            "stream_records_seen": 12 if launched else 0,
+            "ended_during": "working" if launched else "launch",
+        },
+    )
 
 
 def _compose(record: dict) -> dict:
@@ -330,5 +367,88 @@ def test_a_recorded_attempt_naming_no_head_does_not_demote_its_lane(
         report = _compose(record)
         assert report["dispatched"] is True
         assert report["backend"] == LOCAL_BACKEND
+    finally:
+        _release_watcher()
+
+
+def test_a_withdrawn_before_launch_attempt_recomposes_onto_its_lane(
+    isolated_project: tuple[Path, Path, dict],
+) -> None:
+    """A run withdrawn before a worker launched never dropped the lane.
+
+    The attempt reached the claim and was refused there — a name, claim or
+    worktree clash — so no review ever ran and the lane that carried the run is
+    free to carry the next sweep's composition rather than being withheld.
+    """
+    config_home, repo, heads = isolated_project
+    record = _scoring_pointer(
+        config_home,
+        repo,
+        "r-withdrawn",
+        previous=_failed_attempt(
+            LOCAL_BACKEND,
+            head=heads["current"],
+            run_id="r-clive-withdrawn",
+        ),
+    )
+    _review_run_evidence(config_home, "r-clive-withdrawn", launched=False)
+    try:
+        report = _compose(record)
+        assert report["dispatched"] is True
+        assert report["backend"] == LOCAL_BACKEND
+    finally:
+        _release_watcher()
+
+
+def test_a_refused_attempt_recomposes_onto_its_lane(
+    isolated_project: tuple[Path, Path, dict],
+) -> None:
+    """A dispatch refused at admission started no lane, so none was dropped."""
+    config_home, repo, heads = isolated_project
+    record = _scoring_pointer(
+        config_home,
+        repo,
+        "r-refused",
+        previous=_failed_attempt(
+            LOCAL_BACKEND,
+            head=heads["current"],
+            status="refused",
+            run_id="r-clive-refused",
+        ),
+    )
+    try:
+        report = _compose(record)
+        assert report["dispatched"] is True
+        assert report["backend"] == LOCAL_BACKEND
+    finally:
+        _release_watcher()
+
+
+def test_a_launched_attempt_with_no_stored_review_steers_off_its_lane(
+    isolated_project: tuple[Path, Path, dict],
+) -> None:
+    """An attempt whose worker ran and stored nothing is a real drop.
+
+    The review run's own record shows a worker that read stream records and
+    ended, and no review stands for the head — so the lane that carried the run
+    is steered away from.
+    """
+    config_home, repo, heads = isolated_project
+    record = _scoring_pointer(
+        config_home,
+        repo,
+        "r-launched",
+        previous=_failed_attempt(
+            LOCAL_BACKEND,
+            head=heads["current"],
+            run_id="r-clive-launched",
+        ),
+    )
+    _review_run_evidence(config_home, "r-clive-launched", launched=True)
+    try:
+        report = _compose(record)
+        assert report["dispatched"] is True
+        assert report["backend"] == OTHER_BACKEND
+        assert report["backend"] != LOCAL_BACKEND
     finally:
         _release_watcher()
