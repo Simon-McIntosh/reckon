@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="A stale terminal manifest does not license promotion">
+  <meta name="plan-summary" content="Recovery already treats a run as working when its live worker was launched after its manifest's last write, because a worker that started later cannot have written it. Promotion read the same file as delivery, so crew complete on a resumed run recorded the previous attempt's outcome and deleted the live pointer under a worker still mid-turn. reckon/crew/promotion.py now reads such a manifest as unfinished, reusing recovery's own _worker_launched_after_manifest rather than composing a second reading, and names the superseded status in the refusal while --waive-live-run still admits it. The every-importer gate adds no failure id over the base arm, and restoring the terminal-manifest-only admission reddens the stale-manifest case with EXIT=1.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="pass">
+  <title>A stale terminal manifest does not license promotion &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A stale terminal manifest does not license promotion &mdash; evidence</h1>
+  <p>A resumed attempt reuses its run directory, so a complete or blocked manifest beside the pointer may be the verdict a superseded turn left. Recovery already reads that pair correctly: a worker launched after the manifest's last write cannot have written it, so <code>_worker_launched_after_manifest</code> and the <code>superseded_manifest</code> arm of <code>deferred_outcome</code> defer the run's outcome instead of calling it delivered. <code>_require_worker_stopped_before_promotion</code> stayed silent on the same file, so <code>crew complete</code> accepted the previous attempt's record as the delivery and removed the live pointer &mdash; the one harm that guard exists to prevent, since promotion deletes the pointer and the still-running worker is then orphaned with no follower row and no claim on a coordinator.</p>
+  <p>The gate now asks recovery's own question rather than a second version of it. A terminal manifest whose file predates the live attempt's launch is read as unfinished, and the refusal names the superseded status instead of presenting it as this attempt's verdict:</p>
+  <ul>
+    <li><code>reckon/crew/promotion.py:3412</code>&ndash;<code>3430</code>: <code>superseded</code> is computed with <code>recovery._worker_launched_after_manifest(record, Path(str(record["manifest_path"])))</code>, and <code>live</code> admits a terminal status only when the manifest is not superseded. The reading is fail-open on unreadable evidence, exactly as the helper's own contract states, so a run with no worker record behaves as it did before.</li>
+    <li><code>reckon/crew/promotion.py:3440</code>&ndash;<code>3452</code>: the refusal distinguishes the two cases &mdash; a stale status reads &ldquo;its manifest's <code>'complete'</code> status was written before this attempt was launched, so it reads a superseded attempt rather than the work running now&rdquo; &mdash; and still offers <code>--waive-live-run REASON</code>, which rides the promoted row as before.</li>
+    <li><code>reckon/crew/promotion.py:3732</code>&ndash;<code>3768</code>: <code>_unreviewed_refusal</code> states the classification and the absent review as two statements (<code>is classified {classification}; {revision}</code>). It previously wrote <em>classified running because no complete independent review is stored</em>, which reads as a claim that producing a review moves the classification a run already holds.</li>
+  </ul>
+  <section id="measure">
+    <h2>The measure</h2>
+    <ul>
+      <li><strong>The positive control.</strong> <code>tests/test_a_stale_manifest_does_not_license_promotion.py</code> dispatches a run against the live test process, so the pointer and the worker record both name a running pid, then orders a complete manifest against that attempt's launch with <code>os.utime</code> rather than waiting. Manifest older than the launch: recovery classifies the run <code>running</code>, <code>crew complete</code> raises, the refusal carries the superseded clause and <code>--waive-live-run</code>, and the live pointer survives. Manifest newer than the launch: the same run promotes, with the review waiver the deferred classification requires. <code>2 passed in 16.67s</code>, <code>EXIT=0</code> (<code>logs/new-test-at-head.log</code>).</li>
+      <li><strong>Base arm</strong> (<code>cf729cc7d</code>, the base revision in a scratch tree at <code>/tmp/a-stale-manifest-base</code>): <code>1 failed, 487 passed in 251.26s</code>, <code>EXIT=1</code>. <code>logs/base-suite.log</code>.</li>
+      <li><strong>Head arm</strong> (<code>94ed8d38d</code>, this worktree after the commit): <code>1 failed, 487 passed in 319.29s</code>, <code>EXIT=1</code> &mdash; the same single failure id, none added. <code>logs/head-suite.log</code>. The population is the same 38 files in both arms: every test module that imports <code>reckon.crew.promotion</code>, plus <code>tests/test_ledger.py</code> and <code>tests/test_a_live_worker_still_owes_its_review.py</code>, run with <code>-n 8</code>.</li>
+      <li><strong>The fallout measurement, before the repair was trusted.</strong> The gate was closed in a scratch copy of the base tree (<code>/tmp/a-stale-manifest-gate-closed</code>) and the same population re-run: <code>1 failed, 487 passed in 279.17s</code>, <code>EXIT=1</code> &mdash; the same single id (<code>logs/gate-closed-scratch.log</code>). So no test passes at base only because a stale manifest was admitted, and the set of ids outside this node's fence is empty. The copy's own code was the code under test: the failing case's subprocess traceback names <code>/tmp/a-stale-manifest-gate-closed/reckon/crew/dispatch.py</code>.</li>
+      <li><strong>Negative control</strong> (the terminal-manifest-only admission restored in a scratch copy of the head tree: <code>(status not in TERMINAL_MANIFEST_STATUSES or superseded)</code> back to <code>status not in TERMINAL_MANIFEST_STATUSES</code>): <code>1 failed, 1 passed in 17.18s</code>, <code>EXIT=1</code>. The stale-manifest case reddens, and its failure text shows the run reaching the next gate instead &mdash; refused for a missing independent review, which is the defect the guard now catches one gate earlier: <code>assert 'cannot be promoted' in "run 'r-20260930T071505943521-node-a' is classified running; no complete independent review is stored..."</code>. The promote case stays green, since it never depended on the admission. <code>logs/negative-control.log</code>; its first line repeats the declared mutation verbatim and its last line is <code>EXIT=1</code>.</li>
+    </ul>
+    <p>Both arms and the control read the tree they name: each log's header records its revision, its tree, the literal command and the imported <code>module.__file__</code>, and <code>promotion.py</code> resolved to the scratch tree for the base arm and to this worktree for the head arm. The marker used to tell the two apart is source-contiguous (<code>or superseded)</code>), read 0 at base and 1 at head, so the arms cannot have measured the same file.</p>
+    <p>Two earlier arm attempts are recorded as void rather than reported as measurements. The compute node's <code>/tmp</code> was exhausted by other workers' basetemps, so the harness could not create its own output file and no shell command ran at all; one attempt before that ran a wrongly anchored file list (8 of 38 modules, <code>190 passed</code>) and is kept as <code>logs/base-suite-8file-mislisted.log</code>. Every arm reported here ran after the node was swept and with its own basetemp under <code>/tmp</code>.</p>
+  </section>
+  <section id="outside-the-delta">
+    <h2>The one red id is not this change's</h2>
+    <p><code>tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs</code> fails in all three arms &mdash; base, head and the gate-closed copy &mdash; with a supervisor that exits within two seconds of starting and records no detail. The set difference between the arms is empty, so it tracks this node's environment rather than its change, and it has its own standing question on this workstation rather than a repair here.</p>
+  </section>
+ </main>
+</body>
+</html>
