@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="63">
+<meta name="plan-version" content="64">
 <meta name="plan-impl" content="0.83">
 </head>
 <body>
@@ -404,6 +404,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260930T085651080799-review-of-obligations-view-is-the-inbox" data-who="reckon-build" data-when="2026-09-30T09:17:55.188Z">
     <div class="r-comment-body"><p>review-of-obligations-view-is-the-inbox: an independent review of run r-20260930T074401332971-obligations-view-is-the-inbox, read at base 4e05e287a and head d2ddb2c3f, is stored at both granted paths; it scores goal_fidelity 19, evidence 14, scope_discipline 18, durability 18, fit 16 (total 85, no dimension absent), records added_failure_count 0 with no added ids derived from the reviewed run's own baseline_suite and after_suite gate logs, and files six findings: the reference documents `reckon hooks install --scope user`, which exits 2 with "No such command 'hooks'" at this head so the done-when's --help clause is unmet; each gate log's first line names no revision, so the store's own recorded_log_revision returns None from both arms and the revision cannot be tied to a commit from the logs; the fragment's reachable-set claim omits tests/test_monitor_invocation_docs.py and tests/test_crew_directory.py, which read the changed reference and SKILL.md and ran in neither arm (both run here at this head, 16 passed, so nothing was hidden); the fragment's "Logs: logs/" pointer names a directory that does not exist; the fragment fails reckon audit-doc (missing required meta plan-slug) while the sibling fragment in the same directory passes it; and the manifest's after_suite revision contradicts the header of the log it names.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260930T074401332971-obligations-view-is-the-inbox" data-who="reckon-build" data-when="2026-09-30T09:23:20.760Z">
+    <div class="r-comment-body"><p>§4d and §5 of skills/reckon-build/SKILL.md name the obligations view as the coordinator&#x27;s inbox (worked to empty, or each item acknowledged with `reckon crew ack` before the turn ends, enforced by the installed hook); §7 names `reckon crew suite run`/`suite waive`; the claude-code.md reference documents both hook modes and gives a hook-install invocation that runs at this head (the checkout&#x27;s interpreter driving install_hook_settings(), dry by default, merging only under write=True; verified exit 0), naming `reckon hooks install` only as the verb arriving with the installer-CLI section. tests/test_skill_contracts.py pins both texts and turns test_every_registered_crew_verb_is_documented_or_exempt green. Measure: six skill-reading/reading-adjacent files are 4 failed / 106 passed (base 4e05e287) against 3 failed / 108 passed (head 61338063d), zero added failures by id and one removed; the mutation (deleting the §4d inbox sentence) reds the new case 1 failed.</p></div>
 </div>
 </section>
   </main>
