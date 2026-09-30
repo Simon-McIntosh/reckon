@@ -380,6 +380,13 @@ def test_the_refusal_leaves_no_row_behind_it(repository: Path, tmp_path: Path) -
     A report beside a stored row would read as a promotion that happened; this
     exits non-zero and appends nothing, which is the difference between a
     defective citation being caught and being filed.
+
+    The refusal's own words are asserted beside that outcome, because the exit
+    code and the unwritten row are what the guards after the citation check
+    produce as well: with the citation check skipped, an unresolved citation
+    falls through to the worktree-head guard and leaves the same four facts
+    behind. Naming the unresolved value and the reason it was refused is what
+    makes this case fail when the citation check does not run.
     """
     _commit_of(repository, "landed")
 
@@ -392,6 +399,8 @@ def test_the_refusal_leaves_no_row_behind_it(repository: Path, tmp_path: Path) -
 
     assert result.exit_code != 0, result.output
     assert "Traceback" not in result.output
+    assert _FABRICATED in result.output
+    assert "does not resolve" in result.output
     assert _rows(repository) == []
     # The pointer survives the refusal, so the coordinator can fix the citation
     # and promote the run rather than rediscovering it as a lost session.
