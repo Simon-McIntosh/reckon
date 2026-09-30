@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;}">
 <meta name="plan-informs" content="the-fleet-shares-one-allocation">
 </head>
@@ -173,6 +173,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260929T203219213039-dispatch-places-into-the-shared-reservation" data-who="reckon-build" data-when="2026-09-29T21:17:22.108Z">
     <div class="r-comment-body"><p>dispatch-places-into-the-shared-reservation — added resolve_backend_placement in reckon/crew/dispatch.py so a placed dispatch reaches ensure_reservation before wrapping; the dispatch site at dispatch.py:4911 calls it. Gate: 4 passed in tests/test_dispatch_places_into_the_shared_reservation.py (hold-and-place, join-across-projects with exactly one allocation-obtaining request, no-placement untouched, legacy per-project record placed into without a hold), against a recording scheduler in a temporary RECKON_HOME with no real scheduling client. Delta over 13 placement-touching test files: base 3 failed/134 passed, head 3 failed/138 passed, 0 added (the same 3 ids fail in both arms because this worker is inside the fleet allocation where reckon/host_shims/srun shadows /usr/bin/srun). Negative control red as declared.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260929T211816801666-review-of-dispatch-places-into-the-shared-reservation" data-who="reckon-build" data-when="2026-09-29T21:42:37.515Z">
+    <div class="r-comment-body"><p>review-of-dispatch-places-into-the-shared-reservation — independent review of head 3209ea006 scored 89/100 (goal_fidelity 19, evidence 15, scope_discipline 20, durability 15, fit 20); 0 added failures, 5 findings, record at crew/reviews/reckon/r-20260929T203219213039-dispatch-places-into-the-shared-reservation.at-3209ea0066426d5f4634f2280c3173e8e4fa593b.json.</p></div>
 </div>
 </section>
 </main>
