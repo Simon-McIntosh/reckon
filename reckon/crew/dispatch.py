@@ -5047,7 +5047,6 @@ def dispatch(
                             repo_root=repo_root,
                             worktree=Path(worktree["path"]),
                             plan=plan,
-                            fenced=bool(record["fenced"]),
                             prompt_path=prompt_path,
                             log_path=log_path,
                             stderr_path=stderr_path,
@@ -6488,7 +6487,6 @@ def _supervisor_spec(
     repo_root: Path,
     worktree: Path,
     plan: _backends.LaunchPlan,
-    fenced: bool = False,
     prompt_path: Path,
     log_path: Path,
     stderr_path: Path,
@@ -6512,10 +6510,6 @@ def _supervisor_spec(
         # starts this supervisor under the dispatcher's home rather than its own.
         "environment": _carried_crew_environment(),
         "worktree": str(worktree),
-        # Whether this launch was composed inside the fence, carried so the
-        # supervisor's boundary baseline reads the same two trees the dispatch
-        # record names.
-        "fenced": fenced,
         "prompt_path": str(prompt_path),
         "log_path": str(log_path),
         "stderr_path": str(stderr_path),
@@ -6754,7 +6748,6 @@ def supervised_launch(
             repo_root=repo_root,
             worktree=worktree,
             plan=plan,
-            fenced=bool(record.get("fenced")),
             prompt_path=prompt_path,
             log_path=log_path,
             stderr_path=stderr_path,
@@ -6919,13 +6912,21 @@ def _write_boundary_tree_snapshot(
 
 
 def _supervisor_tree_snapshot(spec: Mapping[str, Any]) -> None:
-    """Write the boundary snapshot, or its failure, into the run directory."""
-    worktree_value = str(spec.get("worktree") or "").strip()
+    """Write the boundary baseline, or its failure, into the run directory.
+
+    The supervisor's baseline reads every registered worktree. A fenced run's
+    boundary *check* narrows to its own worktree and the main checkout, but the
+    baseline those two are compared against must be complete: it is the record
+    of the trees before any worker write, and a baseline missing a tree cannot
+    refuse a change to it. The narrowing belongs to the comparison — promotion
+    reads the recorded fence fact and scans the two trees — and to the inline
+    baseline dispatch takes for a lane it launches itself. The supervisor takes
+    the full registry snapshot, exactly as the delegated lane and every run
+    recorded before the fence fact existed do.
+    """
     _write_boundary_tree_snapshot(
         Path(str(spec["run_directory"])),
         Path(str(spec["repo"])),
-        worktree=Path(worktree_value) if worktree_value else None,
-        fenced=bool(spec.get("fenced")),
     )
 
 
