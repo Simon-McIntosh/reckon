@@ -1037,6 +1037,53 @@ def _record_review_dispatch(
     _mutate_pointer(run_id, record)
 
 
+def _object_id(text: str) -> str:
+    """``text`` when it already names a git object id, otherwise empty."""
+    return text if re.fullmatch(r"[0-9A-Fa-f]{40,64}", text) else ""
+
+
+def _record_carried_head(record: Mapping[str, Any]) -> str:
+    """The head a run's own record names, for a worktree that has been reclaimed.
+
+    A manifest's ``commits:`` field is a run's last word on the revisions it
+    landed, so its last object-id entry is the head the run reached. A citation
+    that is not already an object id cannot be resolved without a tree and is
+    skipped rather than guessed; the pointer's own recorded head is read after
+    the manifest, because a run that has not yet written one still names the
+    revision it was dispatched against.
+    """
+    manifest = Path(str(record.get("manifest_path") or ""))
+    try:
+        data = parse_manifest(manifest.read_text())
+    except (OSError, ManifestParseError):
+        data = {}
+    entries = data.get("commits") or []
+    if isinstance(entries, str):
+        entries = [entries]
+    for entry in reversed(list(entries)):
+        sha = _object_id(str(entry).strip())
+        if sha:
+            return sha
+    return _object_id(str(record.get("head") or "").strip())
+
+
+def _review_head_for_failed_attempt(record: Mapping[str, Any]) -> str:
+    """The head a recorded attempt must cover to count as a dropped lane.
+
+    The run's worktree is the authority while it is readable. Once that worktree
+    has been reclaimed, ``_review_tree`` falls back to the run's repository —
+    the shared main checkout — whose HEAD is whatever that repository carries
+    now rather than the revision this run reached, so the comparison would key
+    on the wrong commit. The run's own record then supplies the head instead. A
+    record naming no worktree at all still resolves through its repository,
+    which for such a record is the tree it ran in.
+    """
+    worktree_raw = str(record.get("worktree") or "").strip()
+    if not worktree_raw or Path(worktree_raw).is_dir():
+        return _reviewed_run_head(record)
+    return _record_carried_head(record)
+
+
 def _failed_review_backend(record: Mapping[str, Any]) -> str:
     """The lane the run's most recent recorded attempt used for its current head.
 
@@ -1064,7 +1111,7 @@ def _failed_review_backend(record: Mapping[str, Any]) -> str:
     recorded_head = str(recorded.get("head") or "").strip()
     if not recorded_head:
         return ""
-    current_head = _reviewed_run_head(record)
+    current_head = _review_head_for_failed_attempt(record)
     if not current_head or not same_revision(recorded_head, current_head):
         return ""
     return backend

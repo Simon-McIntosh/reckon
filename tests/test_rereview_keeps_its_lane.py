@@ -162,11 +162,17 @@ def _scoring_pointer(
     run_id: str,
     *,
     previous: dict | None = None,
+    commits: str | None = None,
+    worktree: str | None = None,
 ) -> dict:
     manifest = config_home / "manifests" / (run_id + ".md")
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text(
-        "node: " + run_id + "\nstatus: complete\ncommits: " + run_id + "\n",
+        "node: "
+        + run_id
+        + "\nstatus: complete\ncommits: "
+        + (commits or run_id)
+        + "\n",
         encoding="utf-8",
     )
     record = {
@@ -182,6 +188,8 @@ def _scoring_pointer(
         "session": "session-orchestrating",
         "manifest_path": str(manifest),
     }
+    if worktree is not None:
+        record["worktree"] = worktree
     if previous is not None:
         record[recovery.REVIEW_DISPATCH_FIELD] = previous
     crew._write_json(crew.pointer_path(run_id), record)
@@ -247,6 +255,34 @@ def test_a_recorded_attempt_for_the_current_head_still_demotes_its_lane(
         repo,
         "r-same-head",
         previous=_failed_attempt(LOCAL_BACKEND, head=heads["current"]),
+    )
+    try:
+        report = _compose(record)
+        assert report["dispatched"] is True
+        assert report["backend"] == OTHER_BACKEND
+        assert report["backend"] != LOCAL_BACKEND
+    finally:
+        _release_watcher()
+
+
+def test_a_reclaimed_worktree_reads_the_head_from_the_run_record(
+    isolated_project: tuple[Path, Path, dict],
+) -> None:
+    """A gone worktree must not make the comparison read the shared checkout.
+
+    The run's repository HEAD (``current``) differs from the revision its own
+    record names (``earlier``), so a comparison that falls back to the
+    repository would free the lane at a head its record never reached. Reading
+    the record instead keeps the lane demoted for the head the attempt covered.
+    """
+    config_home, repo, heads = isolated_project
+    record = _scoring_pointer(
+        config_home,
+        repo,
+        "r-reclaimed",
+        previous=_failed_attempt(LOCAL_BACKEND, head=heads["earlier"]),
+        commits=heads["earlier"],
+        worktree=str(repo.parent / "worktrees" / "reclaimed-and-gone"),
     )
     try:
         report = _compose(record)
