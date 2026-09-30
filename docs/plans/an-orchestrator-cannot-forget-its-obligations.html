@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="76">
+<meta name="plan-version" content="77">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -368,6 +368,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T170220223668-repair-of-hook-tests-pin-their-harness-a7219b131d65" data-who="reckon-build" data-when="2026-09-30T17:47:32.114Z">
     <div class="r-comment-body"><p>The obligations-hook test file gains a case that drives the hook with CLAUDE_PID removed under a wrapper whose argv[0] is `claude` and which arms the follower from its own process, so the fallback that resolves a session from ancestry is reached by a test for the first time; the three hook files are 39 passed at base 1f88db44c and 40 passed at head afbb6722b (zero added failures by id), the head-arm log's header names afbb6722b, and neutering the fallback reds only the new case (1 failed, EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260930T182454384865-in-flight-review-has-one-predicate" data-who="reckon-build" data-when="2026-09-30T18:40:24.378Z">
+    <div class="r-comment-body"><p>both the obligations reader and the reflex&#x27;s recorded-dispatch rule now call the one predicate, _recorded_review_is_live in reckon/crew/recovery.py; base 29 passed / head 33 passed over the named files, zero added failures by id; the declared negative control reds the unreadable-pointer case</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-20260925-no-heartbeat" data-who="reckon-build" data-when="2026-09-25T07:55:00Z">
     <div class="r-comment-body"><p>The lead's review on 2026-09-25 made two changes.</p><ul><li><strong>No heartbeat.</strong> The planned §4, a <code>NEEDS YOU</code> line repeating every ten minutes, is retired. A line that repeats trains its reader to ignore it. Obligations reach the coordinator through the §5 hooks instead: once per turn, where they cannot be skipped. The follower keeps reporting transitions, and the needs-you line folded into <code>the-fleet-counters-count-the-fleet</code> §5 fires on change only.</li><li><strong>Home install.</strong> The hooks go in <code>~/.claude/settings.json</code>, so every project benefits.</li></ul><p>The S22 coordinator added two reuse conditions:</p><ul><li>the kinds derive from <code>reckon.crew.recovery.recover</code>'s classification and the drain view's unreconciled-runs figure</li><li>the Stop hook waits on S21's false-liveness fix</li></ul></div>
