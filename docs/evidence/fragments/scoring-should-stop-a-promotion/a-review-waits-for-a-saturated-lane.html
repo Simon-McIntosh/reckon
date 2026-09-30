@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A review waits for a lane its own document reports saturated">
+  <meta name="plan-summary" content="The review reflex read no lane document, so it composed onto the local lane while that lane's own publication read running 30 against a concurrent_requests ceiling of 22. _review_lane_candidates now passes over a candidate whose current reading reports it at or over its own ceiling, and a saturated local lane withholds the review as awaiting-lane naming the lane and both figures instead of handing it to a metered lane; stale, absent and drained readings leave the ordering unchanged. Base arm 39 passed, head arm 46 passed, 0 added failure ids; the declared mutation reddens the saturated case.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <title>A review waits for a lane its own document reports saturated | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A review waits for a lane its own document reports saturated</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>The reflex selected the lane it composes an automatic review onto from the ordering alone:
+        the owning run's backend, then the locally served one, then the rest alphabetically.
+        <code>_review_lane_candidates</code> never opened the document a serving lane publishes about
+        its own occupancy, so a review was composed onto a lane already over the ceiling that lane had
+        computed for itself. Measured 2026-09-30: the local lane sampled at
+        <code>running 30</code> against <code>concurrent_requests 22</code> with <code>waiting 0</code>
+        &mdash; degrading rather than queueing &mdash; and runs composed onto it emitted turns and tool
+        calls and produced nothing.</p>
+      <p>Reproduced at base (the reproduction script and every log named here are in
+        <code>~/.config/reckon/crew/runs/r-20260930T214124855580-a-review-waits-for-a-saturated-lane/logs/</code>,
+        revision
+        <code>1c20ca680a2b35119f6256431c5c62ef53b7bc34</code>), with the positive control that the
+        reader sees the saturation present in the document rather than a blind instrument:</p>
+      <table>
+        <thead><tr><th>call</th><th>base</th><th>head</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>read_lane_document_file</code> (control)</td>
+            <td><code>running=30 concurrent_requests=22 age_seconds=0 stale=False</code></td>
+            <td>same</td>
+          </tr>
+          <tr>
+            <td><code>_review_lane_candidates(config)</code>, local saturated</td>
+            <td><code>['alpha', 'beta']</code> &mdash; the saturated lane leads</td>
+            <td><code>[]</code> &mdash; held</td>
+          </tr>
+          <tr>
+            <td><code>_no_lane_reason(...)</code> on that hold</td>
+            <td>names only the exclusion key</td>
+            <td>names <code>'alpha' ... 30 running ... 22 concurrent_requests</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The live project config makes this path live rather than theoretical: the local backend
+        <code>clive</code> declares <code>lane_document: ~/public/imas-ambix/lane.json</code> in
+        <code>docs/state/reckon/flight.yaml</code>, printed by the same reproduction.</p>
+    </section>
+
+    <section id="change">
+      <h2>The change</h2>
+      <p><code>_review_lane_candidates</code> in <code>reckon/crew/recovery.py</code> now walks the
+        ordering through <code>_review_lane_plan</code>, reading each candidate's own declared
+        <code>lane_document</code> when it is current. A lane whose fresh reading reports it running at
+        or above its own <code>concurrent_requests</code> is passed over. A saturated local lane with
+        nothing eligible ahead of it withholds the selection entirely: a review is local-lane-shaped
+        work, so it waits rather than moving to a metered lane. The hold lands in the existing
+        empty-candidate path, recording <code>awaiting-lane</code> with a reason naming the lane and
+        the two figures its document published; because the hold is not recorded as a dropped
+        attempt, the lane is free to carry the review once it drains.</p>
+      <p>Currency is what makes the reading usable. A document that is absent, unreadable, malformed,
+        older than the lane's own <code>suggested_shelf_life_seconds</code>, or older than the
+        reflex's 45-second bound answers no reading at all, and the lane keeps its place: the hold
+        rests on a measurement the document made, never on its absence.</p>
+    </section>
+
+    <section id="measurement">
+      <h2>The measurement</h2>
+      <p>Gate: the new file plus the six suites that drive the same reflex and its holds, at base
+        (scratch tree at <code>1c20ca68</code>) and at head (<code>51a199df2</code>).</p>
+      <table>
+        <thead><tr><th>arm</th><th>result</th><th>log</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>base 1c20ca68, 6 files</td>
+            <td>39 passed, 0 failed, EXIT=0</td>
+            <td><code>gate-base.log</code></td>
+          </tr>
+          <tr>
+            <td>head 51a199df2, 7 files</td>
+            <td>46 passed, 0 failed, EXIT=0</td>
+            <td><code>gate-head.log</code></td>
+          </tr>
+          <tr>
+            <td>declared mutation, 7 files</td>
+            <td>2 failed, 5 passed, EXIT=1 &mdash; both saturation cases, including the saturated local lane held</td>
+            <td><code>negative-control-ignore-lane-document.log</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The base arm carries no added failure id: 46 head results are the 39 base results plus the
+        7 new tests. Ruff over the changed paths adds no finding the base did not have; the pre-existing
+        findings in <code>reckon/crew/recovery.py</code> are unchanged in count and kind.</p>
+    </section>
+
+    <section id="what-it-does-not-close">
+      <h2>What this does not close</h2>
+      <p>A saturated non-local lane reached only after the review path's own filter removes the
+        previously-failed lane is not re-read; that filter runs after the candidate function, so the
+        lane it exposes is composed onto without a document check. The printed
+        <code>_composed_review_lane</code> command still falls back to <code>--local</code> when the
+        ordering is empty, naming the saturated lane in a display-only artifact; the executed path
+        holds.</p>
+    </section>
+  </main>
+</body>
+</html>
