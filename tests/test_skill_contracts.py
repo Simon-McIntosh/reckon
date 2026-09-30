@@ -886,6 +886,19 @@ def test_edit_skill_uses_version_safe_prose_tool() -> None:
 # an orchestrator's to call. An exemption asserts absence as well as presence, so
 # documenting one of these forces the entry to be removed rather than left to rot.
 CREW_VERBS_OUTSIDE_ORCHESTRATION = {
+    ("crew", "velocity"): (
+        "serves the delivery-rate ledger tables; an orchestrator reads that "
+        "window through the crew read view, never by composing it itself"
+    ),
+    ("crew", "split-runs"): (
+        "a one-off migration of aggregate ledger rows into per-run files, not "
+        "an orchestration action"
+    ),
+    ("crew", "dispose"): (
+        "writes one review store's disposition entry for a sub-floor dimension "
+        "that the obligations read-back resolves, a ledger write reached "
+        "through the review workflow"
+    ),
     ("crew", "repair-completion"): "ledger maintenance, not orchestration",
     ("crew", "path"): (
         "prints one state path for a consumer repository to call; an "
@@ -978,6 +991,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "resume-ready"): {"--project"},
         ("crew", "shadow"): set(),
         ("crew", "stop"): set(),
+        ("crew", "suite"): set(),
         ("crew", "unwatch"): {"--project"},
         ("crew", "verify-gate"): {"--project", "--run", "--checkout-path"},
         ("crew", "watch"): {"--project", "--stall-window"},

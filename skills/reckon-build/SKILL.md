@@ -876,6 +876,11 @@ and evidence anchor arrive in its committed plan, which this beat merges. Read
 that record and may edit or append to it — never write from the manifest a
 record the worker is required to author.
 
+A project's declared suite holds a lighter promotion. `reckon crew suite run
+--project <project>` runs that suite under its budget and records the result;
+`reckon crew suite waive --project <project> --reason "<why>"` records the
+waiver that lifts the hold.
+
 ```python
 # Immediately after reckon crew complete, update this node atomically.
 state = read_plan(
