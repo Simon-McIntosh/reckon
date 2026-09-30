@@ -278,6 +278,49 @@ def test_collapsing_a_neighbour_keeps_both_cards(three_section_plan, order) -> N
     assert audit.exit_code == 0, audit.output
 
 
+def test_a_span_reaching_a_second_heading_is_refused_and_leaves_the_file_unchanged(
+    plan,
+) -> None:
+    checkout, path = plan
+    assert _edit(checkout, _collapse_op())["ok"] is True
+    text = path.read_text(encoding="utf-8")
+    card_close = text.index("</section>", text.index("landed-summary"))
+    # One cardinality fault only: a second heading sits in the card's span with
+    # no structural boundary (a second card or a structured-state region) beside
+    # it, so this exercises the second-heading check on its own.
+    extra = '<h2 id="stray-heading">Stray heading</h2>\n'
+    path.write_text(text[:card_close] + extra + text[card_close:], encoding="utf-8")
+    before = path.read_text(encoding="utf-8")
+
+    result = _edit(checkout, _collapse_op(summary=SUMMARY_2, anchor=ANCHOR_2))
+
+    assert result["ok"] is False, result
+    assert result["error"] == "op_error"
+    assert "cannot determine the extent of 's2' unambiguously" in result["detail"]
+    assert path.read_text(encoding="utf-8") == before
+
+
+def test_a_span_reaching_a_structured_region_is_refused_and_leaves_the_file_unchanged(
+    plan,
+) -> None:
+    checkout, path = plan
+    assert _edit(checkout, _collapse_op())["ok"] is True
+    text = path.read_text(encoding="utf-8")
+    card_close = text.index("</section>", text.index("landed-summary"))
+    # One fault only: a structured-state region sits in the card's span and
+    # carries no heading, so this exercises the boundary check on its own.
+    region = '<section data-reckon="evidence"></section>\n'
+    path.write_text(text[:card_close] + region + text[card_close:], encoding="utf-8")
+    before = path.read_text(encoding="utf-8")
+
+    result = _edit(checkout, _collapse_op(summary=SUMMARY_2, anchor=ANCHOR_2))
+
+    assert result["ok"] is False, result
+    assert result["error"] == "op_error"
+    assert "cannot determine the extent of 's2' unambiguously" in result["detail"]
+    assert path.read_text(encoding="utf-8") == before
+
+
 def test_a_card_without_a_closing_tag_is_refused_and_leaves_the_file_unchanged(
     plan,
 ) -> None:
