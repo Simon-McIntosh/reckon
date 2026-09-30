@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="worker-scratch-is-not-dirt">
+  <meta name="plan-title" content="A worktree holding only harness scratch reads integrated">
+  <meta name="plan-summary" content="crew gc no longer reads the harness's own untracked codex-home/ and harness/ directories as a worktree's uncommitted work: _tree_state leaves those top-level untracked entries out of both the status entries and the digest, and _inspect_workspace derives its dirty list from _tree_state, so a finished merged worktree classifies integrated and reclaimable.">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>A worktree holding only harness scratch reads integrated | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A worktree holding only harness scratch reads integrated</h1>
+      <p class="lead">
+        The harness plants two untracked directories of its own — <code>codex-home/</code>
+        and <code>harness/</code> — in every worktree it provisions. <code>crew gc</code>
+        read them as the run's uncommitted work, so a finished, merged worktree classified
+        <code>dirty</code> and withheld; a coordinator had to force-remove it or leave it
+        holding. The tree state that both <code>gc</code> and the promotion boundary check
+        read now leaves exactly those top-level untracked entries out.
+      </p>
+    </header>
+
+    <section id="defect">
+      <h2>The defect, reproduced at base</h2>
+      <p>
+        A temporary repository with one merged branch and a registered worktree holding
+        only <code>codex-home/</code> and <code>harness/</code>, passed to
+        <code>reckon.crew.routing.garbage_collect(repo=..., apply=False)</code>, answered
+        at revision <code>27c67a3a</code>:
+      </p>
+      <pre><code>{"classification": "dirty", "integrated": false,
+ "dirty": ["?? codex-home/", "?? harness/"], "counts": {"integrated": 0, "dirty": 1, "reclaimable": 0}}</code></pre>
+      <p>
+        <code>_tree_state</code> in <code>reckon/crew/routing.py</code> recorded every
+        entry of <code>git status --porcelain=v1 -z --untracked-files=all</code>, and
+        <code>_inspect_workspace</code> ran its own <code>git status --porcelain</code>,
+        so both the boundary snapshot and the classification saw the scratch as content.
+      </p>
+    </section>
+
+    <section id="change">
+      <h2>The change</h2>
+      <p>
+        One named constant, <code>_HARNESS_SCRATCH_DIRS = frozenset({"codex-home",
+        "harness"})</code>, and one predicate, <code>_harness_scratch_entry(code,
+        path)</code>: an entry is harness scratch only when it is untracked
+        (<code>??</code>) and its first path component matches the constant. Nested
+        paths carrying the same name, tracked files a run modified, and every other
+        untracked path still count as dirt.
+      </p>
+      <p>
+        <code>_tree_state</code> drops those entries from <code>status_entries</code> and
+        computes <code>status_digest</code> over the kept stream, so a scratch-only
+        change moves neither. <code>_inspect_workspace</code> now takes <code>head</code>
+        and its <code>dirty</code> list from <code>_tree_state</code>, so gc's
+        classification and the boundary snapshot read one exclusion rather than two.
+        At head the same reproduction answers:
+      </p>
+      <pre><code>{"classification": "integrated", "integrated": true,
+ "dirty": [], "counts": {"integrated": 1, "dirty": 0, "reclaimable": 1}}</code></pre>
+    </section>
+
+    <section id="gate">
+      <h2>Gate</h2>
+      <p>
+        The gate is <code>tests/test_crew_gc.py</code> plus every other test file that
+        calls <code>garbage_collect</code> or <code>_tree_state</code>:
+        <code>tests/test_gc_covers_run_directory_trees.py</code>. Three cases were added
+        to <code>tests/test_crew_gc.py</code>: a merged worktree holding only the
+        harness scratch reads <code>integrated</code> and <code>reclaimable</code>; the
+        same scratch plus one other untracked file still reads <code>dirty</code> with
+        that file named; and an untracked <code>notes/codex-home/keep.md</code> is not
+        excluded.
+      </p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base reproduction, driver script</td><td><code>dirty</code>, exit 0</td><td><code>base_repro.log</code></td></tr>
+          <tr><td>Base gate, routing.py at <code>27c67a3a</code> in a scratch tree, new cases present</td><td>3 failed, 28 passed, exit 1 — exactly the three new cases</td><td><code>base_gate.log</code></td></tr>
+          <tr><td>Head gate, <code>60fd7d26</code></td><td>31 passed, exit 0; no failure id</td><td><code>head_gate.log</code></td></tr>
+          <tr><td>Head reproduction, driver script</td><td><code>integrated</code>, exit 0</td><td><code>head_repro.log</code></td></tr>
+          <tr><td>Declared negative control (exclusion removed from <code>_tree_state</code>)</td><td>1 failed as declared, exit 1</td><td><code>negative_control.log</code></td></tr>
+          <tr><td>Boundary-check tests over the changed symbol</td><td>9 passed, exit 0</td><td><code>head_boundary_extra.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>
+        Logs sit in the run directory
+        <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T222043832987-worker-scratch-is-not-dirt/logs/</code>;
+        each names its revision on the first line and ends with a bare <code>EXIT=</code>
+        line, and each pytest process ran with a private <code>--basetemp</code>.
+      </p>
+    </section>
+  </main>
+</body>
+</html>

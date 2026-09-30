@@ -507,8 +507,30 @@ def _extraction_report(path: Path) -> dict[str, Any]:
     }
 
 
+# The scratch a harness plants in every worktree it provisions: the agent home
+# a worker runs against, and the directory carrying the run's own harness
+# record. Both are untracked by construction and neither is part of what a run
+# delivered, so a tree holding nothing else is still integrated.
+_HARNESS_SCRATCH_DIRS: frozenset[str] = frozenset({"codex-home", "harness"})
+
+
+def _harness_scratch_entry(code: str, path: str) -> bool:
+    """Whether one status entry names harness scratch rather than tree content.
+
+    Only an untracked entry at the worktree root qualifies: the harness creates
+    these directories there itself, while a nested path merely carrying the
+    same name, or a tracked file a run modified, is the run's own work.
+    """
+    return code == "??" and path.partition("/")[0] in _HARNESS_SCRATCH_DIRS
+
+
 def _tree_state(path: Path) -> dict[str, Any]:
-    """Return the commit and working-tree state needed for a boundary check."""
+    """Return the commit and working-tree state needed for a boundary check.
+
+    Harness scratch is left out of both the entries and the digest, so the
+    bookkeeping the harness writes into every worktree never reads as a run's
+    uncommitted work.
+    """
     if not path.is_dir():
         return {
             "path": str(path),
@@ -546,15 +568,21 @@ def _tree_state(path: Path) -> dict[str, Any]:
             "detail": detail,
         }
     entries = []
+    kept: list[bytes] = []
     for raw in (item for item in status.stdout.split(b"\0") if item):
         if len(raw) < 4 or raw[2:3] != b" ":
             continue
-        entries.append({"code": os.fsdecode(raw[:2]), "path": os.fsdecode(raw[3:])})
+        code = os.fsdecode(raw[:2])
+        entry_path = os.fsdecode(raw[3:])
+        if _harness_scratch_entry(code, entry_path):
+            continue
+        kept.append(raw)
+        entries.append({"code": code, "path": entry_path})
     return {
         "path": str(path),
         "available": True,
         "head": os.fsdecode(head.stdout).strip(),
-        "status_digest": "sha256:" + hashlib.sha256(status.stdout).hexdigest(),
+        "status_digest": "sha256:" + hashlib.sha256(b"\0".join(kept)).hexdigest(),
         "status_entries": entries,
     }
 
@@ -598,8 +626,11 @@ def _inspect_workspace(
     claimed_by: Iterable[str],
     shadow_record: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    dirty = _git(path, "status", "--porcelain").stdout.splitlines()
-    head = _git(path, "rev-parse", "HEAD").stdout.strip()
+    state = _tree_state(path)
+    if not state.get("available"):
+        raise CrewError(f"worktree {path} is unavailable: {state.get('detail')}")
+    dirty = [f"{entry['code']} {entry['path']}" for entry in state["status_entries"]]
+    head = str(state.get("head") or "")
     reachable = (
         _git(
             repo,
