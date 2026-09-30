@@ -171,6 +171,32 @@ def _run_fence(run_record: Mapping[str, Any] | None) -> list[str]:
     return [str(path).strip() for path in declared if str(path).strip()]
 
 
+# The prefix every test path in a fence carries. The repository keeps its
+# tests under one top-level directory, so the prefix is what distinguishes a
+# test the repair must run from a source path it need only touch when a finding
+# names it.
+_TEST_PATH_PREFIX = "tests/"
+
+
+def _is_test_path(path: str) -> bool:
+    """Whether a fence path names a test, by the repository's own convention."""
+    return str(path or "").strip().startswith(_TEST_PATH_PREFIX)
+
+
+def reviewed_run_test_paths(run_record: Mapping[str, Any] | None) -> list[str]:
+    """The test paths among the fence the reviewed run was itself granted.
+
+    A repair dispatched against a stored review is measured by a gate, and the
+    gate is the reviewed run's own tests — which the run's fence already named,
+    because the run was granted them when it was dispatched. Carrying only the
+    test paths rather than the whole fence keeps the repair off the source files
+    the findings did not cite, while ensuring the checks that cover its answering
+    commits are writable: a repair granted its source but not its test cannot
+    fix a stale assertion, which is the same defect seen from the other side.
+    """
+    return [path for path in _run_fence(run_record) if _is_test_path(path)]
+
+
 def repair_write_scope(
     review: Mapping[str, Any],
     *,

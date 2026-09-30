@@ -282,6 +282,34 @@ def _sweep(calls: list[dict]) -> dict:
         )
 
 
+@contextmanager
+def _stubbed_dispatch(monkeypatch, *, repair_run_id: str = "r-repair-stub"):
+    """Replace the dispatch with a recorder so the launch call can be read.
+
+    The reflex dispatches through ``reckon.crew.dispatch.dispatch``, so a stub
+    on that attribute observes the exact call the reflex composes — its base and
+    the node whose write scope it carries — without a worktree being cut.
+    """
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    calls: list[dict] = []
+
+    def fake_dispatch(**kwargs):
+        calls.append(kwargs)
+        return {"run_id": repair_run_id}
+
+    monkeypatch.setattr(dispatch_module, "dispatch", fake_dispatch)
+    yield calls
+
+
+def _repair_calls(calls: list[dict]) -> list[dict]:
+    """The recorded calls whose node is a composed repair, in dispatch order."""
+    return [
+        call
+        for call in calls
+        if str(getattr(call["node"], "id", "")).startswith(repair.REPAIR_NODE_PREFIX)
+    ]
+
+
 def test_a_three_finding_review_dispatches_exactly_one_repair(
     isolated_project: tuple[Path, Path, str],
 ) -> None:
@@ -322,6 +350,61 @@ def test_a_three_finding_review_dispatches_exactly_one_repair(
     recorded = runs.read_pointer(RUN_ID)["repair_dispatch"]
     assert recorded["status"] == "dispatched"
     assert recorded["run_id"] == repaired[0]
+
+
+def test_the_repair_worktree_is_cut_from_the_reviewed_head(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """An unpromoted reviewed run's repair is based on the head the review read."""
+    config_home, repo, head_sha = isolated_project
+    _completed_pointer(config_home, repo)
+    _store_review(head_sha, FINDINGS)
+    with _stubbed_dispatch(monkeypatch) as calls, _armed_fleet():
+        resumption.sweep(PROJECT, config=CONFIG)
+
+    repairs = _repair_calls(calls)
+    assert len(repairs) == 1
+    # The base handed to the dispatch is the reviewed head, so the reviewed head
+    # is an ancestor of the repair's tree — not the branch tip, which the review
+    # never read.
+    assert repairs[0]["base"] == head_sha
+
+
+def test_the_repair_keeps_the_reviewed_runs_test_paths(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """A finding citing only source still grants the reviewed run's test paths.
+
+    The repair's gate is the reviewed run's own tests. A fence holding a source
+    path and a test path, with the finding naming only the source, must carry
+    the test path into the repair's scope; the uncited source path must not.
+    """
+    config_home, repo, head_sha = isolated_project
+    reviewed_fence = ["reckon/crew/thing.py", "tests/test_reviewed_run.py"]
+    _completed_pointer(
+        config_home,
+        repo,
+        node={
+            "id": NODE_ID,
+            "plan": "fixture",
+            "section": "s2",
+            "write_paths": list(reviewed_fence),
+        },
+    )
+    _store_review(
+        head_sha, [_finding("reckon/crew/thing.py", "10", "off-by-one in the loop")]
+    )
+    with _stubbed_dispatch(monkeypatch) as calls, _armed_fleet():
+        resumption.sweep(PROJECT, config=CONFIG)
+
+    repairs = _repair_calls(calls)
+    assert len(repairs) == 1
+    scope = list(repairs[0]["node"].write_paths)
+    assert "reckon/crew/thing.py" in scope
+    assert "tests/test_reviewed_run.py" in scope
+    # The reviewed fence's uncited source path is not carried, so the repair is
+    # not granted a file no finding named.
+    assert "reckon/crew/new_module.py" not in scope
 
 
 def test_a_second_sweep_over_a_live_round_dispatches_nothing(
