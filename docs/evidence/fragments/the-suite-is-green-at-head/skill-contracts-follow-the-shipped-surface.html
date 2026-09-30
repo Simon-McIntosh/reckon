@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="Two stale skill-contracts expectations met with a narrower scan and a structural anchor">
+  <meta name="plan-summary" content="Two ids in tests/test_skill_contracts.py failed at head. The leak scan flagged the harness env flag the dispatch layer must speak, so the scan now strips that one flag name before matching and still refuses a planted model identifier. The exit-table test bounded each error key to its Exit(code) by a fixed 350-character window a six-line insertion overran, so the pairing is now read from the parsed except handlers that emit the key and raise the exit. 60 passed, no failure id added.">
+  <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <title>Two stale skill-contracts expectations met | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Two stale skill-contracts expectations met with a narrower scan and a structural anchor">
+    </h1>
+
+    <section id="cause">
+      <h2>Cause repaired</h2>
+      <p>Both ids are the stale-expectation class (&sect;2): the shipped behaviour is intended and the
+        guard or the assertion lagged it. <code>reckon/crew/dispatch.py</code> injects the run's identity
+        through the harness's own <code>ANTHROPIC_CUSTOM_HEADERS</code> flag, which cannot be named
+        without matching the leak scan; and the <code>ScopeConflict</code> branch gained four payload
+        fields between <code>"error": "scope-conflict"</code> and <code>Exit(7)</code>, overrunning a
+        fixed 350-character proximity bound. Neither moved the behaviour: both correct the assertion.</p>
+    </section>
+
+    <section id="changes">
+      <h2>What changed &mdash; <code>tests/test_skill_contracts.py</code></h2>
+      <ol>
+        <li>The scan strips the harness flag name before matching, so a line naming only the flag is
+          clean while a model or provider identifier is still refused. A new control test plants a
+          concrete model identifier and a provider name and asserts each is refused, beside the flag
+          line that is not.</li>
+        <li>The exit table is paired to its CLI branches structurally: the parse locates each
+          <code>except</code> handler, reads the error key it emits and the exit code it raises, and
+          asserts the documented code is one the emitting branch raises. No assertion is deleted and
+          no constant replaces the bound.</li>
+      </ol>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Base, whole file</td><td><code>e7eca9f0</code></td>
+            <td>2 failed, 57 passed, exit 1 &mdash; the two ids only</td></tr>
+          <tr><td>Head, whole file</td><td><code>e7eca9f0</code> plus this change</td>
+            <td>60 passed, exit 0 &mdash; 2 prior failures gone, 1 control test added, no id moved pass to fail</td></tr>
+          <tr><td>Declared mutation</td><td>head plus a planted model identifier in a scratch skill copy</td>
+            <td>1 failed, exit 1 &mdash; names <code>skills/reckon-build/SKILL.md:1293: backend = "claude-3-5-sonnet-20241022"</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="provenance">
+      <h2>Reproduction</h2>
+      <table>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Base revision</td><td><code>e7eca9f0361b661cc4a435b3a39015497a795688</code></td></tr>
+          <tr><td>Gate logs</td><td><code>base-file.txt</code>, <code>head-file.txt</code>, <code>base-*.txt</code>, <code>head-*.txt</code> in the run directory, each headed by revision, tree and literal command, ending in a bare <code>EXIT=</code> line</td></tr>
+          <tr><td>Control log</td><td><code>negative-control.txt</code>, first line the declared mutation verbatim</td></tr>
+          <tr><td>Basetemps</td><td>under <code>/tmp/s21-1c/</code>, removed before this record was closed</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,3 +1,4 @@
+import ast
 import json
 import re
 from pathlib import Path
@@ -28,6 +29,23 @@ ROUTING_IDENTIFIERS = re.compile(
     r"|\b(sonnet|opus|haiku)\b",
     re.IGNORECASE,
 )
+
+# The harness's own environment flag is a name the dispatch layer must speak to
+# attribute a request to a run; it identifies the harness, not a routing choice.
+# Stripping the whole flag name before scanning keeps a model identifier refused
+# while a line that only carries the flag name is not a leak.
+HARNESS_FLAGS = re.compile(r"\bANTHROPIC_CUSTOM_HEADERS\b")
+
+
+def routing_identifier(line: str) -> str | None:
+    """The routing identifier a line carries, or None if it carries none.
+
+    A harness flag name is stripped first, so a line naming only the flag is
+    clean while one naming a model or provider is still refused.
+    """
+    match = ROUTING_IDENTIFIERS.search(HARNESS_FLAGS.sub("", line))
+    return match.group(0) if match else None
+
 
 # Translation must name a harness to speak its flags, and the legacy tier map
 # reads identifiers out of existing plan state without ever selecting a worker.
@@ -193,7 +211,8 @@ def test_no_routing_identifier_leaks_into_skills_or_source() -> None:
     The two exemptions are the translation module, which has to speak a harness's
     flags, and the legacy tier map, which reads identifiers out of plan state
     written before capability requests existed and never selects a worker with
-    them.
+    them. A harness flag name is allowed on any line, because the dispatch layer
+    must speak it to attribute a request; a model or provider identifier is not.
     """
     offenders: list[str] = []
     for directory in ("skills", "reckon"):
@@ -211,9 +230,30 @@ def test_no_routing_identifier_leaks_into_skills_or_source() -> None:
             for number, line in enumerate(
                 path.read_text(encoding="utf-8", errors="replace").splitlines(), 1
             ):
-                if ROUTING_IDENTIFIERS.search(line):
+                if routing_identifier(line):
                     offenders.append(f"{relative}:{number}: {line.strip()}")
     assert offenders == [], "routing identifiers leaked:\n" + "\n".join(offenders)
+
+
+def test_the_leak_guard_allows_the_harness_flag_and_refuses_a_model() -> None:
+    """The carve-out narrows the scan to a named flag; it does not blind it.
+
+    The refusal the guard exists for must survive the allowance, so plant a
+    concrete model identifier and a provider name and assert each is still
+    refused, beside the flag line that is not.
+    """
+    flag = 'runtime["ANTHROPIC_CUSTOM_HEADERS"] = ("\\n".join(headers))'
+    assert routing_identifier(flag) is None, "the harness flag is not a leak"
+
+    model = 'argv = ["claude-3-5-sonnet", "--effort", "high"]'
+    assert routing_identifier(model) == "claude-3", (
+        "a concrete model identifier must still be refused"
+    )
+
+    provider = "backend = 'openai'"
+    assert routing_identifier(provider) == "openai", (
+        "a provider name must still be refused"
+    )
 
 
 def test_ship_skill_carries_the_uniform_dispatch_instruction() -> None:
@@ -1163,6 +1203,44 @@ def test_closure_ledger_carries_both_drain_counts() -> None:
         assert "`still-working`" in text
 
 
+def _dispatch_exit_branches(source: str) -> dict[str, set[int]]:
+    """Map each emitted dispatch error key to the exit codes its branch raises.
+
+    The anchor is structural: an error key belongs to the ``except`` handler
+    that emits it, and the exit code is the one that same handler raises.
+    Binding both to the parsed handler keeps the pairing exact however many
+    lines a later field insertion adds between the key and the exit.
+    """
+
+    branches: dict[str, set[int]] = {}
+    for handler in ast.walk(ast.parse(source)):
+        if not isinstance(handler, ast.ExceptHandler):
+            continue
+        codes = {
+            arg.value
+            for call in ast.walk(handler)
+            if isinstance(call, ast.Call)
+            and isinstance(call.func, ast.Attribute)
+            and call.func.attr == "Exit"
+            for arg in call.args
+            if isinstance(arg, ast.Constant) and isinstance(arg.value, int)
+        }
+        if not codes:
+            continue
+        for node in ast.walk(handler):
+            if not isinstance(node, ast.Dict):
+                continue
+            for key, value in zip(node.keys, node.values, strict=True):
+                if (
+                    isinstance(key, ast.Constant)
+                    and key.value == "error"
+                    and isinstance(value, ast.Constant)
+                    and isinstance(value.value, str)
+                ):
+                    branches.setdefault(value.value, set()).update(codes)
+    return branches
+
+
 def test_ship_dispatch_exit_table_matches_cli_branches() -> None:
     ship = (ROOT / "skills" / "reckon-build" / "SKILL.md").read_text()
     documented = {
@@ -1183,11 +1261,16 @@ def test_ship_dispatch_exit_table_matches_cli_branches() -> None:
     }
     source = (ROOT / "reckon" / "cli.py").read_text()
     assert "0 succeeded, 1 the configuration or request is wrong" in source
+    branches = _dispatch_exit_branches(source)
     for error, code in documented.items():
         if error in {"success", "request-error"}:
             continue
-        assert re.search(rf'"error": "{error}"[\s\S]{{0,350}}Exit\({code}\)', source), (
-            error
+        assert error in branches, (
+            f"{error} is documented in the skill and no CLI branch emits it"
+        )
+        assert code in branches[error], (
+            f"{error} is documented as exit {code} and its branch raises "
+            f"{sorted(branches[error])}"
         )
 
 
