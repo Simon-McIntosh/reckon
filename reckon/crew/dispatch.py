@@ -1673,10 +1673,6 @@ def _live_conflict_rows(
             "run_id": claim.run_id,
             "node": claim.node_id,
             "claimed_path": claim.path,
-            "directory_claim": any(
-                _directory_claim_overlaps(absolute, claim.absolute_path)
-                for _, absolute in overlapping
-            ),
             "paths": paths,
         }
         if claim.project != project:
@@ -1703,6 +1699,30 @@ def _directory_claim_overlaps(candidate: Path, claim: Path) -> bool:
         len(candidate_parts) < len(claim_parts)
         and claim_parts[: len(candidate_parts)] == candidate_parts
     )
+
+
+def _live_conflict_is_a_directory_claim(
+    row: Mapping[str, Any], repo_root: Path
+) -> bool:
+    """Whether a reported live-conflict row is a directory claim.
+
+    The row's own paths are the resolution's repository-relative spelling, so
+    the directory judgement is made here rather than stored on the row: the
+    stored row keeps exactly the shape every existing reader expects, and a
+    directory claim is derived from its own paths when the caller needs it.
+    """
+    claimed = _live_conflict_path(row["claimed_path"], repo_root)
+    for entry in row.get("paths") or ():
+        candidate = _live_conflict_path(entry["left_path"], repo_root)
+        if _directory_claim_overlaps(candidate, claimed):
+            return True
+    return False
+
+
+def _live_conflict_path(value: str, repo_root: Path) -> Path:
+    """Resolve one row path to an absolute path under the repository."""
+    path = Path(str(value)).expanduser()
+    return (path if path.is_absolute() else repo_root / path).resolve()
 
 
 def _directory_claim_alternatives(
@@ -3782,7 +3802,7 @@ def plan_dispatch(
             directory_rows = [
                 row
                 for row in (resolution.live_conflicts or ())
-                if row.get("directory_claim")
+                if _live_conflict_is_a_directory_claim(row, repo_root)
             ]
             if directory_rows:
                 if accept_directory_claim:
