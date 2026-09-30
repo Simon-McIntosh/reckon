@@ -315,11 +315,18 @@ def test_a_killed_worker_is_classified_resumed_and_completed(
     # finishes the work: it writes the manifest and exits of its own accord.
     _stub_worker(bin_directory, WORKER_BINARY, RESUMED_WORKER)
     turn = resumption._resume(RUN_ID, runs.read_pointer(RUN_ID), config=config)
+    assert turn["turn"] == 1
+    # The run's second attempt is the one the pointer now names, and its
+    # supervisor ends only when its worker does. Both readings come from the
+    # resumed worker's own exit, so a resumed worker that never ends leaves
+    # this wait to fail rather than passing on a pointer nobody updated.
+    _wait_until_gone(int(turn["pid"]))
+    pointer_after = runs.read_pointer(RUN_ID)
+    assert pointer_after["attempt"] == 2
+    assert pointer_after["attempt_kind"] == "resume"
     second = _wait_for_exit_record(attempt=2, timeout=30.0)
     assert second["exit_code"] == 0
     assert manifest.is_file(), "the resumed worker did not write its manifest"
-    assert _wait_for_phase(RUN_ID, "stopped", timeout=20.0) is not None
-    assert turn["turn"] == 1
 
     # 5. Promotion completes from that manifest, and the ledger is the proof:
     #    the row is read back from the committed store.
@@ -349,15 +356,6 @@ def _wait_until_gone(pid: int, *, timeout: float = 15.0) -> None:
     raise AssertionError(f"the supervisor {pid} was still running after {timeout:g}s")
 
 
-def _wait_for_phase(run_id: str, phase: str, *, timeout: float) -> dict | None:
-    deadline = time.monotonic() + timeout
-    record = runs.read_pointer(run_id)
-    while time.monotonic() < deadline:
-        record = runs.read_pointer(run_id)
-        if str(record.get("phase") or "") == phase:
-            return record
-        time.sleep(0.05)
-    return record
 
 
 def _gate_check(log: Path) -> dict:
