@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-title" content="The review deaths that carry an exit record are all signalled">
+  <meta name="plan-summary" content="Per cell, the local-lane scanner now reports how many attempts carry a supervisor exit record and what signal each names. Of the 392 review deaths at xhigh, 130 carry a record and every one is signalled; the other 262 carry none.">
+  <meta name="plan-evidence-for" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-recorded-at" content="2026-09-30">
+  <meta name="plan-verdict" content="passed">
+  <title>The review deaths that carry an exit record are all signalled | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The review deaths that carry an exit record are all signalled</h1>
+
+    <section id="measure">
+      <h2>The measure</h2>
+      <p>§1 of the plan asks the death record to distinguish a signal the worker did not
+      choose from a clean exit, and the death rate had no read of it: the census classified
+      attempts by stream shape, which says a death happened and nothing about what ended the
+      process. <code>docs/research/scripts/scan_local_lane_deaths.py</code> now reads the
+      supervisor's exit record — <code>attempt-N-exit.json</code> in the run directory, the
+      same read its positive control already made — and emits, per cell, how many attempts
+      carry one, how that splits across the cell's classifications, and what signal each
+      names. A signal is read from the record's own field, or from an exit code at or above
+      128 by the shell's <code>128+N</code> convention, and the block names which answered.</p>
+      <p>The block states its coverage beside the share it computes, because a death whose
+      attempt carries no record is unread and a share quoted over all deaths would count
+      those as clean exits.</p>
+    </section>
+
+    <section id="figures">
+      <h2>The figures</h2>
+      <p>Scanner at <code>af3e7bf0</code>, script digest
+      <code>03d7f845</code>, run 2026-09-30T14:46:58Z over the lane's whole recorded history
+      (2026-09-02T13:32Z to 2026-09-30T14:37Z). 6835 run directories enumerated, 3035
+      recorded on the <code>clive</code> lane, 3033 carrying streams, 4019 attempts.</p>
+      <ul>
+        <li><strong>Headline cell, review at <code>xhigh</code>:</strong> 392 deaths in 1324
+        attempts (29.6%). 130 of the 392 deaths carry an exit record — 33.2% — and
+        <strong>all 130 are signalled</strong>: 91 <code>SIGTERM</code> and 39
+        <code>SIGKILL</code>. 68 are named in the record's own signal field; 62 are read
+        from a <code>128+N</code> exit code. The remaining 262 deaths carry no record.</li>
+        <li><strong>Review role at every effort:</strong> 130 of 393 deaths recorded
+        (33.1%), 130 of 130 signalled; 408 of 1372 attempts carry a record (29.7%).</li>
+        <li><strong>Whole lane:</strong> 132 of 584 deaths recorded (22.6%), 132 of 132
+        signalled (<code>SIGTERM</code> 93, <code>SIGKILL</code> 39); 959 of 4019 attempts
+        carry a record (23.9%).</li>
+        <li><strong>Every other cell with a recorded death:</strong> implement at
+        <code>high</code>, 2 of 156 deaths recorded and both <code>SIGTERM</code>. Six
+        further cells hold 36 deaths between them and not one record.</li>
+      </ul>
+      <p>Stated in <code>docs/research/local-lane-death-rate.html</code> §3, with the
+      per-cell table.</p>
+    </section>
+
+    <section id="controls">
+      <h2>The controls</h2>
+      <p><strong>The 100% is a reading and not a rule.</strong> A uniform column is a claim
+      about the instrument until the instrument is shown able to produce the other answer,
+      so the block builder was driven over synthetic rows — its own function, not a copy:</p>
+      <pre><code>dead, record names SIGTERM           with_record=1 deaths_with_record=1 deaths_signalled=1 names={'SIGTERM': 1} src={'named_in_record': 1}
+dead, record carries code 143        with_record=1 deaths_with_record=1 deaths_signalled=1 names={'SIGTERM': 1} src={'exit_code_128_plus': 1}
+dead, record carries clean code 0    with_record=1 deaths_with_record=1 deaths_signalled=0 names={} src={}
+dead, no record                      with_record=0 deaths_with_record=0 deaths_signalled=0 names={} src={}
+completed, record carries code 0     with_record=1 deaths_with_record=0 deaths_signalled=0 names={} src={}</code></pre>
+      <p>A recorded death with a clean exit code is counted in
+      <code>deaths_with_exit_record</code> and left out of <code>deaths_signalled</code>, so
+      the two are equal in the corpus because no such record exists there and not because
+      the reader cannot express one.</p>
+      <p><strong>The reader reports clean exits where they exist.</strong> Of the 959
+      recorded attempts, 827 completed and hold 818 records with exit code 0 and 8 with exit
+      code 1, reported as clean exits by the same block that reports the signals. One
+      recorded completion does carry a signal — the shape of a run killed after its result
+      was written.</p>
+      <p><strong>The classifier's own control is unchanged.</strong>
+      <code>r-20260928T044354744785-review-of-reflex-keys-on-reviewed-run-and-head</code> is
+      still read as dead on its first attempt (7394 records, no result record, last record
+      <code>user</code>) and completed on its resumed attempt (11689 records, last record
+      <code>result</code>/<code>success</code>), and its exit record still names
+      <code>SIGTERM</code>.</p>
+    </section>
+
+    <section id="gates">
+      <h2>The gate and the negative control</h2>
+      <p><code>tests/test_the_local_lane_death_rate_is_stated.py</code> gained
+      <code>test_the_exit_record_block_reconciles_with_the_attempt_counts_it_summarises</code>:
+      each block's recorded and unrecorded halves are the attempt count it summarises, its
+      classification split is the recorded half, the signals named are the signalled
+      attempts, the per-cell blocks sum to the corpus block, and the block is tied to a
+      record the file names independently — the positive control's <code>SIGTERM</code>,
+      whose run is a review at the headline effort and so sits inside that cell. Every one
+      of those sums holds for a block of zeros, which is why the control tie is there as
+      well as the arithmetic.</p>
+      <ul>
+        <li><strong>Base arm</strong> (revision <code>4c16a902</code>, scratch tree
+        <code>/tmp/death-rate-base-arm</code>): 6 passed, <code>EXIT=0</code>.</li>
+        <li><strong>Head arm</strong> (worktree at <code>712f3f88</code>): 7 passed,
+        <code>EXIT=0</code>. No failure id is added.</li>
+        <li><strong>Negative control</strong> — the declared mutation, making the scanner
+        skip exit records (<code>scan_local_lane_deaths.py:470</code>,
+        <code>signals = exit_signals(entry)</code> to <code>signals = {}</code>), with the
+        corpus regenerated by the mutated scanner: the reconciliation test fails —
+        <code>the headline cell carries no exit record at all, so every sum above holds
+        trivially and the reconciliation establishes nothing</code>, 1 failed, 6 passed,
+        <code>EXIT=1</code>.</li>
+      </ul>
+      <p>Logs: <code>gate-base.log</code>, <code>gate-head.log</code>,
+      <code>negative-control.log</code>, <code>scan-head.log</code> and
+      <code>instrument-control.log</code>, all in this run's directory. The committed data
+      file was restored from a copy taken before the control and verified by object hash
+      against the commit that holds it.</p>
+    </section>
+
+    <section id="limits">
+      <h2>What this does not establish</h2>
+      <p>The record names the signal and not the sender: an external kill and the harness's
+      own stop of a run are indistinguishable in this block. A deliberate stop is recorded
+      on the run's live pointer, which is deleted on promotion and so is absent for the
+      historical corpus. The breakdown is therefore a divided account of how these runs
+      ended and not of why.</p>
+      <p>The coverage gap remains the larger fact: for 262 of the 392 review deaths no
+      record was written, so the distinction §1 asks for is available for a third of that
+      population and unavailable for the rest.</p>
+    </section>
+  </main>
+</body>
+</html>

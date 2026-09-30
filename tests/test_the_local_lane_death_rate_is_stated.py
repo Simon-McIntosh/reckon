@@ -10,6 +10,12 @@ same file therefore carries both directions on one run — an attempt the parser
 reads as dead and a later attempt of the same run it reads as completed — so a
 reader anchored on the wrong record shape reports itself rather than a lane
 that kills everything it is given.
+
+The file also states, per cell, how many attempts carry a supervisor exit record
+and what signal each names. That block is a second read of attempts the cell
+already counts, so its parts are checked against the cell's own totals — and
+because a block of zeros satisfies every one of those sums, it is tied to a
+signal the file names independently: the positive control's own exit record.
 """
 
 from __future__ import annotations
@@ -94,6 +100,107 @@ def test_the_same_run_also_carries_an_attempt_the_parser_read_as_completed() -> 
     assert completion["classification"] == "completed"
     assert completion["has_result_record"] is True
     assert completion["run_id"] == control["run_id"]
+
+
+def test_the_exit_record_block_reconciles_with_the_attempt_counts_it_summarises() -> (
+    None
+):
+    """The signal breakdown is a second read of the same attempts, and it must add up.
+
+    Every figure in the block is drawn from the attempts the cell already counts:
+    the recorded half plus the unrecorded half is the cell's attempt count, the
+    classification split is the recorded half, and the signals named are the
+    signalled attempts. Those sums hold for a block of zeros as readily as for a
+    measured one, so the reconciliation is anchored to a record the file names
+    independently — the positive control's SIGTERM, whose run is a review at the
+    headline effort and therefore sits inside the headline cell's own population.
+    """
+    stated = _stated()
+    before = stated["before"]
+    headline = before["deaths"]["headline"]
+    cell = next(
+        c
+        for c in before["cells"]
+        if c["role"] == headline["role"] and c["effort"] == headline["effort"]
+    )
+
+    populations = [
+        (cell["exit_records"], cell["attempts"]),
+        (
+            before["exit_records"]["all_attempts"],
+            before["population"]["attempts_on_local_lane"],
+        ),
+        (
+            before["exit_records"]["review_role_all_efforts"],
+            before["population"]["review_attempts_all_efforts"],
+        ),
+    ]
+    for block, attempts in populations:
+        where = f"{block['population']}: "
+        assert block["attempts"] == attempts, where
+        assert block["with_exit_record"] + block["without_exit_record"] == attempts, (
+            where
+        )
+        assert sum(block["by_classification"].values()) == block["with_exit_record"], (
+            where
+        )
+        assert block["by_classification"]["dead"] == block["deaths_with_exit_record"], (
+            where
+        )
+        assert block["signalled"] == sum(block["signals_by_name"].values()), where
+        assert block["signalled"] == sum(block["signal_source"].values()), where
+        assert block["deaths_signalled"] == sum(
+            block["deaths_signal_source"].values()
+        ), where
+        assert block["deaths_signalled"] == sum(
+            block["deaths_signals_by_name"].values()
+        ), where
+        assert (
+            block["deaths_signalled"]
+            <= block["deaths_with_exit_record"]
+            <= block["with_exit_record"]
+            <= attempts
+        ), where
+        assert block["deaths_with_exit_record"] <= block["deaths"], where
+
+    corpus = before["exit_records"]["all_attempts"]
+    for key in (
+        "with_exit_record",
+        "without_exit_record",
+        "signalled",
+        "deaths_with_exit_record",
+        "deaths_signalled",
+    ):
+        assert sum(c["exit_records"][key] for c in before["cells"]) == corpus[key], (
+            f"the per-cell {key} figures do not sum to the corpus block's {corpus[key]}"
+        )
+    assert (
+        sum(c["attempts"] for c in before["cells"])
+        == before["population"]["attempts_on_local_lane"]
+    )
+    assert (
+        sum(c["dead"] for c in before["cells"])
+        == before["deaths"]["all_roles"]["count"]
+    )
+
+    assert cell["exit_records"]["with_exit_record"] > 0, (
+        "the headline cell carries no exit record at all, so every sum above holds "
+        "trivially and the reconciliation establishes nothing"
+    )
+
+    control = before["positive_control"]
+    assert control["classification"] == "dead"
+    assert control["signal_exit_record"] is True, (
+        "the control's exit record is not being read, so neither is the corpus's"
+    )
+    assert control["signal_name"] == "SIGTERM"
+    assert (
+        cell["exit_records"]["signals_by_name"].get(control["signal_name"], 0) >= 1
+    ), (
+        f"the control died by {control['signal_name']} inside this cell, and the "
+        f"block's breakdown {cell['exit_records']['signals_by_name']} does not contain it"
+    )
+    assert cell["exit_records"]["deaths_signalled"] >= 1
 
 
 def test_an_after_block_carries_the_same_shape_when_one_exists() -> None:
