@@ -189,7 +189,7 @@
         code and nothing else.</p>
     </section>
     <section id="s4">
-    <h2 id="s4">§4 — The one-active cap, push no longer demotes</h2>
+    <h2>§4 — The one-active cap, push no longer demotes</h2>
 
     <p><code>push_sprint</code> in <code>reckon/project_state.py</code> no longer
     treats <code>active</code> as an exclusive slot. It writes <code>active</code> on its
@@ -262,7 +262,7 @@
     </ul>
     </section>
     <section id="s4-focus">
-      <h2 id="s4-focus">§4 — The focus follows the live crew, and what it costs</h2>
+      <h2>§4 — The focus follows the live crew, and what it costs</h2>
 
       <p><strong>Verdict: complete.</strong> The behaviour landed at <code>bec9f24a</code>. The one
       check it failed when it was written — the added cost, measured while
@@ -430,6 +430,12 @@
         <li>Required statements present: all ten, with whole lines reporting the retired word zero.</li>
       </ul>
     </section>
-  </main>
+    <section id="s3">
+    <h2>§3 — Every summary lists open and recently closed sprints</h2>
+    <p>Discovery and the roadmap summary take their sprint rows from one shared builder in <code>reckon/roadmap.py</code>. It lists every sprint whose stored status is not done or shipped as open, archived and closed included, and lists done or shipped sprints closed within the flight window <code>sprint_recent_days</code> (default 14 days) as recently closed, ordered live, then open, then recently closed. Discovery resolves that window through the roadmap's own resolver, so the setting has one owner, and every summary key keeps one shape for a project with or without sprints.</p>
+    <p>Run <code>r-20260929T204340453599-summaries-list-live-and-recent-sprints</code> (commits <code>cffc63fd5</code>, <code>685657cbc</code>, <code>e0f9caf17</code>) holds 150 passed at its head against 143 at base <code>192aa9a4</code>, with zero added failures. Its review scored 87, and the gate re-ran green at merged main. Three mutations each fail their own case: dropping the recently-closed window, treating archived and closed sprints as finished, and giving the rows key a second shape. Run <code>r-20260930T083227467811-discovery-reads-the-roadmap-sprint-window</code> (commit <code>ec9da9532</code>, merged at <code>195dd037a</code>) removes discovery's copy of the window resolver, with 123 passed against 122 and zero added failures. Its review scored 93, and a sentinel-window case fails when a separate resolver is reinstated. The reckon discovery summary measures 1328 characters against its 80000-character ceiling.</p>
+  </section>
+
+</main>
 </body>
 </html>

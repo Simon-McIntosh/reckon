@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-sprint-is-live-while-a-crew-works-it">
   <meta name="plan-title" content="A Sprint Is Live While A Crew Works It">
   <meta name="plan-summary" content="A sprint&#x27;s liveness is derived from the crews implementing it, the one-active cap is removed, and every summary lists open and recently closed sprints.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -20,14 +20,14 @@
   <meta name="plan-sprint" content="S24">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-standalone" content="Replaces a stored scheduling marker with a derived signal; nothing upstream must land first. It supersedes the one-active invariant work-scheduling-surface holds, recorded as a lead directive rather than a plan edge.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>A Sprint Is Live While A Crew Works It | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="26">
+<meta name="plan-version" content="27">
 <meta name="plan-commits" content="6c92861d,0ad5a171">
-<meta name="plan-impl" content="0.9">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -48,220 +48,39 @@
     <p>None of this consults the crew. Discovery returns a <code>state</code> block with counts <code>by_sprint</code>, but no sprint list. <code>roadmap(view="summary")</code> lists <code>open_sprints</code> ids and nothing about sprints closed recently.</p>
     <p>The live crew is already readable. Every live pointer names its project and plan, and every plan names its sprint.</p>
 
-    <h2 id="s2">&sect;2 &mdash; Liveness is derived from live crews</h2>
-    <p>A sprint is <strong>live</strong> when at least one live pointer in its project serves a plan whose <code>plan-sprint</code> is that sprint, and that pointer is classified as working, starting or dispatched. A blocked or unpromoted pointer counts as <em>held</em>, not live. Liveness is computed at read time from the same classification <code>crew(view="live")</code> uses, and is never written to any resource.</p>
-    <p>Each sprint row carries four fields:</p>
-    <ul>
-      <li><code>live</code></li>
-      <li><code>live_runs</code></li>
-      <li><code>live_sessions</code>: the coordinator session ids</li>
-      <li><code>last_activity_at</code>: the newest stream write among its runs</li>
-    </ul>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>A test with a synthetic config home, holding live pointers for plans in two sprints and a terminal pointer for a third, asserts that exactly those two sprints read <code>live: true</code> with the right run and session counts.</li>
-      <li>The third sprint reads <code>live: false</code>.</li>
-      <li>No resource file changes as a result of the read.</li>
-      <li>The declared mutation, reading the stored <code>active</code> status instead of pointers, is applied, and the test is observed to fail. The log is recorded.</li>
-    </ul>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-09-30</span>
+    <h2 id="s2">&sect;2 &mdash; Liveness is derived from live crews</h2></header>
+  <p class="landed-summary">reckon/sprint_liveness.py derives a sprint's liveness from the live crew pointers working it, composing the recovery classifier and the live-run listing rather than a stored marker. <a href="/reckon/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed#s2">full record</a></p>
+</section>
 
-    <div class="r-note" data-reckon="landed" data-node="sprint-liveness-reads-the-recorded-fleet" data-when="2026-09-25">
-      <p><strong>Outcome &mdash; the read uses the fleet's recorded classification.</strong>
-      Commit <code>17983be1</code> changes <code>reckon/sprint_liveness.py</code> to read
-      <code>runs.watch_stream_path(project)</code> once, parse it with
-      <code>runs.parse_stream_line</code>, and use the latest <code>to_state</code> per run.
-      A recorded <code>working</code>, <code>starting</code> or <code>dispatched</code> state is
-      live; <code>blocked</code> or an unpromoted completion is held. A run absent from the
-      stream uses only a bounded manifest status-prefix read and stream mtime against the
-      stall window. The sprint row shape and read-only behaviour remain unchanged.</p>
-      <p><strong>Measured.</strong> <code>tests/test_sprint_liveness.py</code>: 5 passed,
-      exit 0; scoped ruff check and format check: clean. The recorded-state test writes a
-      <code>working</code> event while the pointer itself says failed and patches both
-      classifier entry points to fail, proving the stream path is used. The fallback test
-      does the same for an unrecorded, recent, non-terminal pointer. The required negative
-      control is retained at
-      <code>~/.config/reckon/crew/runs/r-20260925T124727387419-sprint-liveness-reads-the-recorded-fleet/negative-control.log</code>:
-      its first line is <code>call classify_pointer per pointer again</code>, followed by
-      the two expected test failures against the per-pointer implementation.</p>
-      <p>On the real reckon project with 39 live pointers, three read-only calls took
-      <code>0.164233s</code>, <code>0.136719s</code> and <code>0.138047s</code> (all under
-      0.5s; 4 sprint rows, 4 live). The prior recorded comparison was 11.6s at
-      <code>bec9f24a</code> in
-      <code>active-sprint-follows-the-live-crew</code>'s
-      <code>logs/latency-interleaved.txt</code>. Evidence:
-      <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html">cumulative landed record</a>.</p>
-    </div>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-09-30</span>
+    <h2 id="s3">&sect;3 &mdash; Every summary lists open and recently closed sprints</h2></header>
+  <p class="landed-summary">Discovery and the roadmap summary share one builder listing live, open and recently closed sprints, with one owner for the recent window and one shape per key. <a href="/reckon/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed#s3">full record</a></p>
+</section>
 
-    <div class="r-note" data-reckon="landed" data-node="recorded-liveness-has-an-age-bound" data-when="2026-09-25">
-      <p><strong>Outcome &mdash; a recorded state is trusted only while it is fresh.</strong>
-      Commit <code>81279f94</code> carries each watch-stream record's own
-      <code>observed_at</code> beside its <code>to_state</code> and uses the recorded state
-      only while that observation is inside the stall window the fleet classifier uses
-      (<code>DEFAULT_WATCH_STALL_WINDOW</code>, 15m) or the run's own stream was written
-      inside it. An older record falls through to the unchanged bounded manifest-status and
-      stream-mtime fallback, so a run that died after its last recorded working event no
-      longer reads live. The sprint row shape and the read-only behaviour are unchanged.</p>
-      <p><strong>Measured.</strong> <code>tests/test_sprint_liveness.py</code>: 7 passed,
-      exit 0; scoped ruff check and format check: clean. Two new tests: a recorded
-      <code>working</code> event aged 3h with a stream aged 3h reads <code>live: false</code>,
-      and a record observed 5s ago against a quiet, terminal manifest reads
-      <code>live: true</code>. The declared mutation &mdash; trusting the recorded state with
-      no age bound &mdash; makes the stale-record test fail (<code>assert True is False</code>,
-      1 failed / 6 passed); its log begins with the declared string at
-      <code>~/.config/reckon/crew/runs/r-20260925T135516711111-recorded-liveness-has-an-age-bound/negative-control.log</code>.
-      Three read-only warm calls on the real reckon fleet (39 pointers) took
-      <code>0.174067s</code>, <code>0.153108s</code> and <code>0.148877s</code>, all under
-      0.5s. Evidence:
-      <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html">cumulative landed record</a>.</p>
-    </div>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-09-30</span>
+    <h2 id="s4">&sect;4 &mdash; The one-active cap is removed</h2></header>
+  <p class="landed-summary">push_sprint writes active on its target alone and leaves every other sprint's status untouched, so several sprints can be active; the focus follows the live crew. <a href="/reckon/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed#s4">full record</a></p>
+</section>
 
-    <h2 id="s3">&sect;3 &mdash; Every summary lists open and recently closed sprints</h2>
-    <p>Discovery's <code>read_plan(project)</code> and <code>roadmap(view="summary")</code> both gain a compact <code>sprints</code> list:</p>
-    <ul>
-      <li>every sprint not <code>done</code> or <code>shipped</code></li>
-      <li>every sprint closed within <code>sprint_recent_days</code>, which defaults to 14 and is configurable in flight config</li>
-    </ul>
-    <p>Each row gives the sprint id, theme, stored status, the &sect;2 liveness fields, member and pending counts, completion percentage, and <code>closed_at</code> for a closed sprint. Rows are ordered live first, then open, then recently closed.</p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>A test on a synthetic project with one live, one open idle, one closed 3 days ago and one closed 40 days ago asserts that the first three appear, in that order, and the fourth does not.</li>
-      <li>The recorded length of the reckon project's discovery summary at the worktree head stays under the response budget.</li>
-    </ul>
-
-    <h2 id="s4">&sect;4 &mdash; The one-active cap is removed</h2>
-    <p>The changes:</p>
-    <ul>
-      <li><code>push</code> no longer demotes other sprints. It sets <code>active</code> on its target as a scheduling hint and leaves every other sprint's status alone.</li>
-      <li>The <code>multiple-active-sprints</code> audit finding is retired.</li>
-      <li><code>active_sprint_id</code> stays as a compatibility field. It now names the live sprint with the most recent activity, or the stored <code>active</code> sprint when no sprint is live. It sits beside a new <code>live_sprint_ids</code> list.</li>
-    </ul>
-    <p>The <code>reckon-sprint</code> skill text and the roadmap's <code>active_sprint_id</code> description are updated to match. The S22 coordinator is told, because <code>work-scheduling-surface</code> records the old invariant.</p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li>A test pushes two sprints and asserts both keep <code>active</code>.</li>
-      <li>The audit on that project reports no <code>multiple-active-sprints</code> finding.</li>
-      <li><code>active_sprint_id</code> follows the live sprint when crews exist, and falls back to the stored status when none do.</li>
-      <li>Every existing sprint test that asserted demotion is updated to the new contract in the same commit. Each such change is named in the landing record.</li>
-    </ul>
-
-    <h3 id="s4-landed">Landed &mdash; push no longer demotes</h3>
-    <p><code>push_sprint</code> in <code>reckon/project_state.py</code> writes <code>active</code>
-    on its target alone under one resource lock and a recovery journal, leaves every other sprint's
-    stored status untouched, and returns only <code>new_version</code>; the <code>push</code> branch
-    of the apply op no longer emits demotion warnings. Landed in <code>0ad5a171</code>.</p>
-    <p>Reproduced at the base revision first: pushing S2 while S1 was active returned
-    <code>demoted=['S1']</code> and left S1 at <code>open</code>. Repaired, it returns no
-    <code>demoted</code> key and both stay <code>active</code>. The gate
-    <code>tests/test_sprint_push_status.py</code> is 11 passed; the declared mutation restoring the
-    demote loop makes <code>test_push_leaves_other_sprints_active</code> fail
-    (<code>{'S1': 'open'}</code> != <code>{'S1': 'active'}</code>) and nothing else. The audit
-    finding and <code>reckon/mcp.py</code> are untouched here, so
-    <code>multiple-active-sprints</code> remains live and is retired by the node that owns
-    <code>reckon/mcp.py</code>.</p>
-    <figure>
-      <img src="/reckon/figures/a-sprint-is-live-while-a-crew-works-it/push-sprint-before-after.png"
-           alt="Two panels: under the retired one-active cap, pushing S2 demotes S1 to open; under the current hint semantics, pushing S2 leaves S1 active.">
-      <figcaption>Pushing S2 while S1 is active: the retired cap demoted S1; the current behaviour
-      leaves it active.</figcaption>
-    </figure>
-    <p>Tests changed in the same commit:
-    <code>test_push_demotes_the_previous_active_sprint_in_one_write</code> is replaced by
-    <code>test_push_leaves_other_sprints_active</code> (pushes S2 after S1, asserts no
-    <code>demoted</code> key and both <code>active</code>);
-    <code>test_push_on_a_stale_version_changes_neither_sprint</code> is unchanged and still passes.
-    Evidence: <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html">execution
-    record</a>.</p>
-
-    <h3 id="s4-focus">Landed &mdash; the focus follows the live crew, and its cost is closed</h3>
-    <p><strong>Closed.</strong> The latency blocker described below was removed when <code>reckon.sprint_liveness</code> began reading each run's latest state from the watcher's recorded stream in one pass, re-measured at 0.14&ndash;0.16 s for 39 live pointers against the 11.6 s recorded below. Recorded states now carry an age bound, so a run that stopped writing no longer reads live. The paragraphs that follow record the blocker as it was measured. See the <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html#s4-focus">execution record</a>.</p>
-    <p><code>active_sprint_id</code> now names the live sprint with the most recent stream
-    activity, and falls back to the stored <code>active</code> sprint when no crew is live. It sits
-    beside a new <code>live_sprint_ids</code> list, live sprints most recent first. Both surfaces
-    carry it: the composed project state and the roadmap report. The liveness read happens once per
-    composition, not once per sprint.</p>
-    <p>When several sprints are stored <code>active</code> and none is live, the choice is
-    deterministic: the first stored-active sprint that still carries an unfinished item, else the
-    first stored-active sprint, else the earliest sprint with unfinished work. The rule is stated in
-    <code>focus_sprint_id</code>'s docstring, and the <code>_sprint_status_buckets</code> docstring
-    no longer states the retired one-active rule.</p>
-    <p><strong>Blocked on cost, not on behaviour.</strong> The wiring is correct and the tests
-    pass, but the read it depends on is far too expensive to sit in a hot path. The done-when
-    allowed the roadmap summary to gain at most one second; measured against a base built from
-    <code>be8f1330</code> and run in the same minutes, it gains about twenty-four.
-    <code>reckon.sprint_liveness.sprint_liveness</code> costs 11.6&nbsp;s for the reckon project
-    &mdash; 34 live pointers, four live sprints, 340&nbsp;ms each &mdash; because
-    <code>classify_pointer</code> parses each run's whole stream (2.33&nbsp;M JSON lines across the
-    set). The roadmap summary path invokes it twice, so it pays 24.3&nbsp;s of a 68.6&nbsp;s read,
-    and the summary projection emits neither <code>active_sprint_id</code> nor
-    <code>live_sprint_ids</code>.</p>
-    <figure>
-      <img src="/reckon/figures/a-sprint-is-live-while-a-crew-works-it/roadmap-liveness-cost.png"
-           alt="Three panels: an interleaved base-versus-head roadmap summary latency comparison showing 12.7 and 10.8 seconds at base against 36.1 and 35.2 seconds at head; a stacked bar showing 24.3 of 68.6 seconds spent in two sprint_liveness calls; and a bar showing 6.7 of an 11.6 second liveness call spent parsing 2.33 million JSON lines.">
-      <figcaption>Left: the same read at base and at head, minutes apart on one host. Middle: two
-      <code>sprint_liveness</code> calls are 24.3&nbsp;s of the head read. Right: a single call is
-      dominated by parsing every live run's stream.</figcaption>
-    </figure>
-    <p>The behaviour itself is what &sect;4 asks for; the cost is the liveness reader's, and that
-    module is another node's. What unblocks this: classify a pointer from a bounded part of its
-    stream rather than all of it, or derive the focus from a liveness snapshot the fleet records
-    once. Evidence, with the interleaved numbers and the profile:
-    <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html#s4-focus">execution
-    record</a>.</p>
-
-    <div class="r-note" data-reckon="landed" data-node="roadmap-docstring-names-the-focus-home" data-when="2026-09-26">
-      <p><strong>Outcome &mdash; the docstring's cross-reference resolves.</strong> The
-      <code>_sprint_status_buckets</code> docstring in <code>reckon/roadmap.py</code> credited the
-      deterministic focus rule to <code>reckon.sprint_liveness.focus_sprint_id</code>, but
-      <code>focus_sprint_id</code> is defined in <code>reckon/project_state.py</code> and imported
-      from there; <code>reckon.sprint_liveness</code> defines no such name. The reference now reads
-      <code>:func:`reckon.project_state.focus_sprint_id`</code>, and the docstring it names does
-      state the rule the sentence describes.</p>
-      <p><strong>Measured.</strong> At the base revision the docstring read
-      <code>reckon.sprint_liveness.focus_sprint_id</code>; at head it reads
-      <code>reckon.project_state.focus_sprint_id</code>,
-      <code>from reckon.project_state import focus_sprint_id</code> exits 0, and
-      <code>tests/test_roadmap.py</code> is 41 passed at both revisions &mdash; zero added failures.
-      Evidence: <a href="../evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html#s4-focus">execution
-      record</a>.</p>
-    </div>
-
-    <h2 id="s5">&sect;5 &mdash; The skills teach liveness, not the marker</h2>
-    <p><code>reckon-sprint</code> SKILL.md's "One pushed sprint" section, and every <code>reckon-build</code> sentence that tells a coordinator to read <code>active_sprint_id</code>, are rewritten to the &sect;2 definition. The <code>push</code> op is described as a hint.</p>
-    <p><strong>Done when:</strong></p>
-    <ul>
-      <li><code>grep -rn "exactly one sprint\|one active sprint\|demotes" skills/</code> returns no line that states the retired invariant.</li>
-      <li>Every test that greps <code>skills/</code> passes.</li>
-    </ul>
-
-    <div class="r-note" data-reckon="landed" data-node="sprint-skill-teaches-liveness" data-when="2026-09-25">
-      <p><strong>Outcome &mdash; the skill teaches the crew definition.</strong> Commit
-      <code>21077dfa</code>. The section once titled "One pushed sprint" now states that a
-      sprint is live when at least one live run pointer in its project serves a plan whose
-      <code>plan-sprint</code> is that sprint and the pointer is classified working, starting
-      or dispatched; a blocked or unpromoted pointer is held, not live; liveness is derived
-      at read time from the same classification the live crew view uses and is never stored.
-      <code>push</code> is taught as a scheduling hint that leaves every other sprint's
-      status alone, several sprints may be active or live at once, and
-      <code>active_sprint_id</code> is a compatibility field following the most recently
-      active live sprint.</p>
-      <p><strong>Measured.</strong> The retired-invariant grep returns no line at the edited
-      revision (exit 1), against five at the base (SKILL.md lines 50, 65, 137, 190, 192; the
-      fifth is a plan-membership line reworded to "a single sprint" and disclosed in the
-      evidence record, since the grep cannot distinguish the two uses).
-      <code>tests/test_skill_contracts.py</code> and
-      <code>tests/test_skill_contract_parity.py</code>: 71 passed, exit 0. No file outside
-      <code>skills/</code> was changed by the code commit. Evidence:
-      <code>docs/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed.html</code>.</p>
-    </div>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-09-30</span>
+    <h2 id="s5">&sect;5 &mdash; The skills teach liveness, not the marker</h2></header>
+  <p class="landed-summary">The skills teach the crew-derived definition: a pointer's own classification decides its sprint's live state, and the stored marker is only a scheduling hint. <a href="/reckon/evidence/archive/a-sprint-is-live-while-a-crew-works-it-landed#s5">full record</a></p>
+</section>
 
     
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-asilwacwi-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-sprint-is-live-while-a-crew-works-it" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-asilwacwi-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-sprint-is-live-while-a-crew-works-it" data-resolved-at="2026-09-30T09:09:11+00:00" data-resolved-by="s23-coord">
     <h4 class="r-fu-title">Land §2–§5</h4>
     <div class="r-fu-body"><p>§3 reads §2's fields. §4 and §5 follow §2.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-sprint-is-live-while-a-crew-works-it</pre>
+    <p class="r-fu-outcome">done — no followup. §2, §4 and §5 landed earlier; §3 landed as summaries-list-live-and-recent-sprints (merge 854d9133b) and discovery-reads-the-roadmap-sprint-window (merge 195dd037a). Every section is collapsed to its card and recorded in the landed record.</p>
     </article>
 </section>
 
@@ -333,7 +152,7 @@
     <div class="r-comment-body"><p>Discovery and roadmap summaries share one Python-built sprint row list on the summary_sprints key, ordered live then open then recently closed within sprint_recent_days (default 14, flight config); archived and closed sprints stay in the open bucket per the section, discovery's sprints key stays an int count; three mutations each turn a new assertion red, and the scoped suites held 143 passed at the base and 150 at the head with zero added failures by id.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260930T080724144935-review-of-summaries-list-live-and-recent-sprints" data-who="reckon-build" data-when="2026-09-30T08:32:54.480Z">
-    <div class="r-comment-body"><p>Independent review of r-20260929T204340453599-summaries-list-live-and-recent-sprints at head e0f9caf17 scores goal_fidelity 18, evidence 16, scope_discipline 19, durability 18, fit 16 for a total of 87 on a parsed record with two findings — the landing record&#x27;s stale test figures and a duplicated recent-days resolver — while the three defects the first review raised are repaired and re-verified at this head.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20260929T204340453599-summaries-list-live-and-recent-sprints at head e0f9caf17 scores goal_fidelity 18, evidence 16, scope_discipline 19, durability 18, fit 16 for a total of 87 on a parsed record with two findings — the landing record's stale test figures and a duplicated recent-days resolver — while the three defects the first review raised are repaired and re-verified at this head.</p></div>
 </div>
 </section>
   </main>
