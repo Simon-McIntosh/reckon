@@ -7176,17 +7176,34 @@ def _spawn_detached_supervisor(argv: list[str], stderr_path: Path) -> int:
         [sys.executable, "-c", _SUPERVISOR_LAUNCHER_SOURCE],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
+        stderr=subprocess.PIPE,
         text=True,
         close_fds=True,
     )
-    stdout, _ = intermediate.communicate(f"{payload}\n")
+    stdout, stderr = intermediate.communicate(f"{payload}\n")
     reported = stdout.strip()
     if not reported:
         raise CrewError(
             "the supervisor's launcher exited without reporting a pid"
+            f"{_intermediate_failure_detail(stderr, intermediate.returncode)}"
         )
     return int(reported.splitlines()[0])
+
+
+def _intermediate_failure_detail(stderr: str, returncode: int | None) -> str:
+    """The exit status and stderr tail that explain a silent intermediate.
+
+    An intermediate that prints no pid failed before it could start a
+    supervisor, and its own stderr — which a caller cannot see once this
+    recursive launch returns — is the only account of why. The last few lines
+    carry the exception or the refusal.
+    """
+    status = "unknown" if returncode is None else str(returncode)
+    lines = [line for line in stderr.strip().splitlines() if line.strip()]
+    tail = " | ".join(lines[-3:])
+    if tail:
+        return f" (exit status {status}; stderr: {tail})"
+    return f" (exit status {status})"
 
 
 # The intermediate: start the supervisor from the argv it is handed and report

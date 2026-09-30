@@ -272,11 +272,18 @@ def test_supervisor_inherits_no_launcher_descriptor(
 
 def test_launcher_that_reports_no_pid_is_refused(tmp_path, monkeypatch) -> None:
     # An intermediate that exits without printing stands in for one that failed
-    # before it could start a supervisor.
+    # before it could start a supervisor; its own stderr is the only account of
+    # why, so the refusal must carry it.
     monkeypatch.setattr(
-        dispatch_module, "_SUPERVISOR_LAUNCHER_SOURCE", "import sys; sys.exit(0)"
+        dispatch_module,
+        "_SUPERVISOR_LAUNCHER_SOURCE",
+        "import sys; sys.stderr.write('no supervisor argv\\n'); sys.exit(3)",
     )
-    with pytest.raises(dispatch_module.CrewError):
+    with pytest.raises(dispatch_module.CrewError) as error:
         dispatch_module._spawn_detached_supervisor(
             ["true"], tmp_path / "supervisor.stderr.log"
         )
+    message = str(error.value)
+    assert "exited without reporting a pid" in message
+    assert "no supervisor argv" in message
+    assert "3" in message
