@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="61">
+<meta name="plan-version" content="62">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.75">
@@ -216,6 +216,11 @@
     <h4 class="r-fu-title">Keep reflex launches alive past the follower, and fail closed on unknown heads</h4>
     <div class="r-fu-body"><ul><li>Runs the review and repair reflex launch are children of the coordinator's follower, so they die when its monitor expires. On 2026-09-30 a re-review and a repair round were both stopped by SIGTERM at 20:30:40Z, the instant the follower's 30-minute monitor expired; each needed a resume. A reflex launch should outlive the follower that started it.</li><li>When a run's worktree is reclaimed and its record names neither a manifest commit nor a head, _record_carried_head returns empty and select_review_for_head accepts the newest stored review whatever revision it describes. It should fail closed.</li><li>_reviewed_run_suite_command swallows the FlightConfigError that a malformed review.suite block raises, so the repair proceeds with no suite instead of refusing.</li></ul></div>
     <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §5</pre>
+    </article>
+<article class="r-fu" data-id="f-arist-007" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-30" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Repair only the findings that block</h4>
+    <div class="r-fu-body"><p>compose_repair_for_run repairs every in-repo finding a review records, because a parsed finding carries only file, line and text. The s22 session's a-finding-says-whether-it-blocks node (run r-20260930T213947598269) adds a declared severity vocabulary to the review prompt and parser. The field is absent rather than defaulted when a review does not give it, and the blocking value is named explicitly. Once it lands, the repair composer should dispatch a repair only for blocking findings of implement runs, record non-blocking findings without a repair round, and treat an absent severity as blocking so older records are not dropped. This waits on s22's merge sha.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §3</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
