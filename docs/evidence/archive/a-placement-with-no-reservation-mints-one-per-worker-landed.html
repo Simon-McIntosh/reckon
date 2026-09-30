@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-placement-with-no-reservation-mints-one-per-worker-landed">
+  <meta name="plan-title" content="A placement with no reservation mints one per worker — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A placement with no reservation mints one per worker: 10 committed run(s), 13 section-anchored comment(s), and 3 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-placement-with-no-reservation-mints-one-per-worker">
+  <meta name="plan-verdict" content="qualified">
+  <meta name="plan-recorded-at" content="2026-09-30T08:47:09.749Z">
+  <meta name="plan-commits" content="a269887f25ad036a98644e1ffb15ad8ce4620b04,4beb7f46dd973e7afa5677624fcf1f7d59a8bcc8,3209ea0066426d5f4634f2280c3173e8e4fa593b">
+  <title>A placement with no reservation mints one per worker — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A placement with no reservation mints one per worker — landed record</h1>
+  <p>Closure synthesis for A placement with no reservation mints one per worker: 10 committed run(s), 13 section-anchored comment(s), and 3 landed commit(s).</p>
+
+  <section id="s3">
+    <h2>§3 — Hold one, then place into it</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20260923T135301065484-review-of-a-placement-with-no-reservation-mints-one-per-worker">
+      <p><small>reckon-ship · 2026-09-23T14:50:53.965Z</small></p>
+      <div class="r-comment-body"><p>restated the plan and listed its two-way sentences; findings were applied to the plan HTML</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260923T141354864780-second-review-of-a-placement-with-no-reservation-mints-one-per-worker">
+      <p><small>reckon-ship · 2026-09-23T15:10:40.145Z</small></p>
+      <div class="r-comment-body"><p>restated the plan and listed its two-way sentences; findings were applied to the plan HTML</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260923T152331662484-third-review-of-a-placement-with-no-reservation-mints-one-per-worker">
+      <p><small>reckon-ship · 2026-09-23T17:05:35.236Z</small></p>
+      <div class="r-comment-body"><p>restated the plan and listed its two-way sentences; the findings were applied to the plan HTML</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260923T165405649569-fourth-review-of-a-placement-with-no-reservation-mints-one-per-worker">
+      <p><small>reckon-ship · 2026-09-23T18:04:52.387Z</small></p>
+      <div class="r-comment-body"><p>restated the plan and listed its two-way sentences; the findings were applied to the plan HTML</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260928T1730-s21-currency-audit">
+      <p><small>s21-coord · 2026-09-28T15:30:00Z</small></p>
+      <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T142353317590-s21-audit-placement). The report is at <code>~/.config/reckon/crew/reports/reckon/s21-audit-placement.{json,md}</code>.</p><ul><li><b>§1 and §2: done.</b> The fallback at <code>dispatch.py:5592</code> is accurately described, and a test pins it.</li><li><b>§3 and f-pnr-001: still required.</b> Resolution never calls <code>ensure_reservation</code>, so each dispatch mints its own allocation.</li></ul><p><b>This plan is still needed, and today's <code>reckon fleet-node</code> work does not supersede it.</b> That work holds the sessions' allocation, but crew dispatch placement does not use it. Two allocations were alive at audit time: 1276262 (5 days 9 hours) and 1277272.</p><p><b>Wiring change.</b> §3 and the-fleet-shares-one-allocation §2 depend on each other. The placement call needs the unkeyed record, and the unkeyed record exists only for the shared reservation, so neither can land alone. The previous blocks/depends_on pair therefore deadlocked: the sibling waited for this plan to ship, and this plan cannot ship alone. The hard edge is replaced by an <code>after</code> edge on the sibling. <b>Dispatch this §3 and the sibling's §2 and §3 as one node</b>, joint estimate 9 to 11 worker-hours.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260929T0750-joint-node">
+      <p><small>s21-1c · 2026-09-29T07:50:00Z</small></p>
+      <div class="r-comment-body">Dispatched as one joint node with the-fleet-shares-one-allocation §2 and §3, because each needs the other. That plan's §2 comment of 2026-09-29 carries the reuse (reckon/crew/fleet_node.py, merged at 15390017) and the allocation decisions.</div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260929T125345398730-ensure-holds-one-reservation">
+      <p><small>reckon-build · 2026-09-29T13:50:59.549Z</small></p>
+      <div class="r-comment-body"><p>ensure-holds-one-reservation — ensure_reservation holds the one shared reservation under a cross-process flock with a three-valued liveness probe; gate 1 pre-existing failure and 0 added; fragment docs/evidence/fragments/a-placement-with-no-reservation-mints-one-per-worker/ensure-holds-one-reservation.html</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260929T135120663109-review-of-ensure-holds-one-reservation">
+      <p><small>reckon-build · 2026-09-29T14:42:17.546Z</small></p>
+      <div class="r-comment-body"><p>the review record for r-20260929T125345398730-ensure-holds-one-reservation is stored identically at both granted paths — five dimensions scored (goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20; total 99), six checklist verdicts and an empty absent list, two production call sites, one finding (tests/test_ensure_holds_one_reservation.py:214, the retry count asserted against the module's own constant), and the derived added-failure pair count 0 / ids [] carried with its provenance and its two controls</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260930T0930-s3-landed">
+      <p><small>s21-1c · 2026-09-30T09:30:00Z</small></p>
+      <div class="r-comment-body">Section 3 landed in two nodes. (1) ensure-holds-one-reservation, merge 3cc6942a, review 99: an exclusive fcntl.flock on crew_home()/placement/reservation.lock, so four racing processes make one allocation-obtaining request; the probe is three-valued, so unknown is never read as absent; a live allocation is never replaced; the hold goes through fleet_node's existing path. (2) dispatch-places-into-the-shared-reservation, merge e46347e98, run r-20260929T203219213039, commit 3209ea00, review 89: placement resolution calls ensure_reservation, so a dispatch with no published record holds, publishes and runs its worker as a step with --overlap. A second dispatch under another project joins that record, one allocation-obtaining request across the pair. A backend declaring no placement is untouched, and a legacy per-project record is still placed into. The pinned bare-srun test is replaced. Open: the review found this node's population arm stopped at about 40%, so an integration measure over the dispatch and placement test population at the merged head follows. Adopting 1277272 and placing on the resume path remain for the-fleet-shares-one-allocation, f-tfsoa-handoff-01.</div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260929T203219213039-dispatch-places-into-the-shared-reservation">
+      <p><small>reckon-build · 2026-09-29T21:17:22.108Z</small></p>
+      <div class="r-comment-body"><p>dispatch-places-into-the-shared-reservation — added resolve_backend_placement in reckon/crew/dispatch.py so a placed dispatch reaches ensure_reservation before wrapping; the dispatch site at dispatch.py:4911 calls it. Gate: 4 passed in tests/test_dispatch_places_into_the_shared_reservation.py (hold-and-place, join-across-projects with exactly one allocation-obtaining request, no-placement untouched, legacy per-project record placed into without a hold), against a recording scheduler in a temporary RECKON_HOME with no real scheduling client. Delta over 13 placement-touching test files: base 3 failed/134 passed, head 3 failed/138 passed, 0 added (the same 3 ids fail in both arms because this worker is inside the fleet allocation where reckon/host_shims/srun shadows /usr/bin/srun). Negative control red as declared.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260929T211816801666-review-of-dispatch-places-into-the-shared-reservation">
+      <p><small>reckon-build · 2026-09-29T21:42:37.515Z</small></p>
+      <div class="r-comment-body"><p>review-of-dispatch-places-into-the-shared-reservation — independent review of head 3209ea006 scored 89/100 (goal_fidelity 19, evidence 15, scope_discipline 20, durability 15, fit 20); 0 added failures, 5 findings, record at crew/reviews/reckon/r-20260929T203219213039-dispatch-places-into-the-shared-reservation.at-3209ea0066426d5f4634f2280c3173e8e4fa593b.json.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260930T073804580479-placement-wiring-integration">
+      <p><small>reckon-build · 2026-09-30T08:18:26.286Z</small></p>
+      <div class="r-comment-body"><p>measured the 99-file dispatch/placement import population at merge e46347e98 against first parent cbd90e41e under pytest -n 8 in git-archive scratch trees: base 17 failed/1088 passed, head 14 failed/1095 passed, 0 added failing ids — the pass condition — with 3 base-only ids isolated 3x at both revisions and shown to be xdist flakes; report /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-placement-wiring-integration.md</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260930T081922538909-review-of-placement-wiring-integration">
+      <p><small>reckon-build · 2026-09-30T08:47:09.749Z</small></p>
+      <div class="r-comment-body"><p>stored the independent review of r-20260930T073804580479-placement-wiring-integration at the head-keyed and legacy review paths — 5 of 5 dimensions scored (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19; total 96; status parsed; no absent dimension), added_failure_count 0 with no added ids re-derived from the reviewed run's own baseline_suite and after_suite gate logs, and one finding: the arm logs' first lines write revision=&lt;sha&gt; while the store's recorded_log_revision (reckon/crew/review.py:507) accepts revision &lt;sha&gt;</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20260923T135301065484-review-of-a-placement-with-no-reservation-mints-one-per-worker</code></td>
+        <td>review-of-a-placement-with-no-reservation-mints-one-per-worker</td>
+        <td>—</td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>55m 22s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260923T141354864780-second-review-of-a-placement-with-no-reservation-mints-one-per-worker</code></td>
+        <td>second-review-of-a-placement-with-no-reservation-mints-one-per-worker</td>
+        <td>—</td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>55m 14s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260923T152331662484-third-review-of-a-placement-with-no-reservation-mints-one-per-worker</code></td>
+        <td>third-review-of-a-placement-with-no-reservation-mints-one-per-worker</td>
+        <td>—</td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>100m 17s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260923T165405649569-fourth-review-of-a-placement-with-no-reservation-mints-one-per-worker</code></td>
+        <td>fourth-review-of-a-placement-with-no-reservation-mints-one-per-worker</td>
+        <td>—</td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>70m 3s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260929T125345398730-ensure-holds-one-reservation</code></td>
+        <td>ensure-holds-one-reservation</td>
+        <td><code>a269887f25ad036a98644e1ffb15ad8ce4620b04</code><br><code>4beb7f46dd973e7afa5677624fcf1f7d59a8bcc8</code></td>
+        <td><strong>passed</strong></td>
+        <td>4</td>
+        <td>56m 27s</td>
+        <td><code>{&quot;added&quot;:473,&quot;files&quot;:3,&quot;removed&quot;:16}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260929T135120663109-review-of-ensure-holds-one-reservation</code></td>
+        <td>review-of-ensure-holds-one-reservation</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>49m 45s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260929T203219213039-dispatch-places-into-the-shared-reservation</code></td>
+        <td>dispatch-places-into-the-shared-reservation</td>
+        <td><code>3209ea0066426d5f4634f2280c3173e8e4fa593b</code></td>
+        <td><strong>passed</strong></td>
+        <td>4</td>
+        <td>44m 27s</td>
+        <td><code>{&quot;added&quot;:380,&quot;files&quot;:5,&quot;removed&quot;:10}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260929T211816801666-review-of-dispatch-places-into-the-shared-reservation</code></td>
+        <td>review-of-dispatch-places-into-the-shared-reservation</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>23m 51s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260930T073804580479-placement-wiring-integration</code></td>
+        <td>placement-wiring-integration</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>39m 44s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260930T081922538909-review-of-placement-wiring-integration</code></td>
+        <td>review-of-placement-wiring-integration</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>27m 14s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report landed-report-unreadable" data-run-id="r-20260923T135301065484-review-of-a-placement-with-no-reservation-mints-one-per-worker">
+      <h3>review-of-a-placement-with-no-reservation-mints-one-per-worker &mdash; no record composed</h3>
+      <p>This run landed no commits and no path in its manifest resolves to a readable file (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-scope-20260923/review-of-a-placement-with-no-reservation-mints-one-per-worker/restatement.md — 3 section restatements; 7 done-when clauses; 1 decision question with 3 options; 8 sentences carrying two or more readings. Mutant copy: /home/ITER/mcintos/.config/reckon/crew/runs/r-20260923T135301065484-review-of-a-placement-with-no-reservation-mints-one-per-worker/gate-negative-control-mutant.md, /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-scope-20260923/review-of-a-placement-with-no-reservation-mints-one-per-worker), so no section could be composed from a report. The absence is recorded here rather than left as an anchored section with no content.</p>
+    </article>
+    <article class="landed-report landed-report-unreadable" data-run-id="r-20260923T141354864780-second-review-of-a-placement-with-no-reservation-mints-one-per-worker">
+      <h3>second-review-of-a-placement-with-no-reservation-mints-one-per-worker &mdash; no record composed</h3>
+      <p>This run landed no commits and no path in its manifest resolves to a readable file (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-scope-20260923/second-review-of-a-placement-with-no-reservation-mints-one-per-worker/restatement.md (196 lines; 3 section paragraphs; the 1 decision with all 4 options and the locked ensure-and-place choice; done-when as 5 sentences / 11 clauses; 5 doubly-readable sentences listed); check_restatement.py (plan-anchored gate); restatement-check.log (green, /home/ITER/mcintos/Code/reckon/exit 0); restatement-check-mutation.log (exit 1); restatement-check-clause-count-red.log (first gate run, /home/ITER/mcintos/Code/reckon/red on a real declared-vs-enumerated clause mismatch — gate liveness evidence); restatement.mutated.md (negative-control input), /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-scope-20260923/second-review-of-a-placement-with-no-reservation-mints-one-per-worker), so no section could be composed from a report. The absence is recorded here rather than left as an anchored section with no content.</p>
+    </article>
+    <article class="landed-report landed-report-unreadable" data-run-id="r-20260923T152331662484-third-review-of-a-placement-with-no-reservation-mints-one-per-worker">
+      <h3>third-review-of-a-placement-with-no-reservation-mints-one-per-worker &mdash; no record composed</h3>
+      <p>This run landed no commits and no path in its manifest resolves to a readable file (/home/ITER/mcintos/Code/reckon/restatement.md — one paragraph per numbered plan section (3), the 1 decision with its 4 options and the locked choice, the 5 done-when sentences in 13 enumerated clauses, and 3 sentences carrying two or more readings, /home/ITER/mcintos/Code/reckon/check_restatement.py — the gate, deriving every expectation from the plan file rather than from a transcription, /home/ITER/mcintos/Code/reckon/restatement-check.log and restatement-check-mutation.log — the gate run and its control, each naming the revision and command on its first lines, /home/ITER/mcintos/Code/reckon/restatement.mutated.md — the falsified copy the control ran on, kept so the control is auditable, /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-scope-20260923/third-review-of-a-placement-with-no-reservation-mints-one-per-worker), so no section could be composed from a report. The absence is recorded here rather than left as an anchored section with no content.</p>
+    </article>
+    <article class="landed-report landed-report-unreadable" data-run-id="r-20260923T165405649569-fourth-review-of-a-placement-with-no-reservation-mints-one-per-worker">
+      <h3>fourth-review-of-a-placement-with-no-reservation-mints-one-per-worker &mdash; no record composed</h3>
+      <p>This run landed no commits and no path in its manifest resolves to a readable file (/home/ITER/mcintos/Code/reckon/restatement.md — one paragraph per numbered plan section (3), the 5 done-when sentences enumerated in 13 clauses, the 1 decision with its 4 options and the locked choice, the previous read-back&#x27;s 3 items re-read, and 3 sentences carrying two or more readings, /home/ITER/mcintos/Code/reckon/check_restatement.py — the gate, deriving every expectation from the plan file (sections, decision, done-when sentences and clause counts, readings-list quotations), /home/ITER/mcintos/Code/reckon/restatement-check.log and restatement-check-mutation.log — the gate run and its controls, each naming the revision and command on its first lines, /home/ITER/mcintos/Code/reckon/restatement.mutated-sentence.md and restatement.mutated-quote.md — the falsified copies the controls ran on, kept so each refusal is auditable, /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-scope-20260923/fourth-review-of-a-placement-with-no-reservation-mints-one-per-worker), so no section could be composed from a report. The absence is recorded here rather than left as an anchored section with no content.</p>
+    </article>
+    <article class="landed-report" data-run-id="r-20260929T135120663109-review-of-ensure-holds-one-reservation" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T125345398730-ensure-holds-one-reservation.json">
+      <h3>review-of-ensure-holds-one-reservation &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T125345398730-ensure-holds-one-reservation.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;added_failure_count&quot;: 0,
+  &quot;added_failure_ids&quot;: [],
+  &quot;added_failures_source&quot;: {
+    &quot;baseline&quot;: &quot;/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T125345398730-ensure-holds-one-reservation/logs/tests-base.log&quot;,
+    &quot;after&quot;: &quot;/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T125345398730-ensure-holds-one-reservation/logs/tests-head.log&quot;,
+    &quot;count_derivation&quot;: &quot;set difference of pytest FAILED/ERROR node ids over the reviewed run&#x27;s two arm logs, computed with review.added_failures_from_gate_logs; the reviewed manifest carries no baseline_suite/after_suite fields (an unarmed run), so annotate at read time resolves no log and reports the count unmeasured while the stored record keeps the derived pair. Derivation log: .../r-20260929T135120663109-review-of-ensure-holds-one-reservation/logs/added-failures.out&quot;,
+    &quot;pair_usable_as_suite_delta&quot;: true,
+    &quot;pair_note&quot;: &quot;both arms carry the one pre-existing failure tests/test_a_rewritten_terminal_manifest_transitions.py::test_the_rewrite_marker_does_not_leak_into_a_later_departure at the same assertion, so the head log adds no failing id; the head arm carries four further passes, the node&#x27;s own new test file&quot;,
+    &quot;positive_control&quot;: {
+      &quot;count&quot;: 1,
+      &quot;ids&quot;: [
+        &quot;tests/test_fabricated:replaced&quot;
+      ],
+      &quot;ids_actual&quot;: [
+        &quot;tests/test_fabricated_control.py::test_the_instrument_sees_a_failure&quot;
+      ],
+      &quot;mutation&quot;: &quot;append one FAILED line to a copy of the head log text in memory&quot;
+    },
+    &quot;absent_arm_control&quot;: &quot;a missing arm returns (None, []) — unmeasured, not zero&quot;
+  },
+  &quot;call_site_count&quot;: 2,
+  &quot;call_sites&quot;: [
+    &quot;reckon/crew/runs.py:ensure_placement_reservation&quot;,
+    &quot;reckon/cli.py:crew_placement&quot;
+  ],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;tests/test_ensure_holds_one_reservation.py&quot;,
+      &quot;line&quot;: &quot;214&quot;,
+      &quot;text&quot;: &quot;the retry assertion is written against the module&#x27;s own constant (len(_asked(\&quot;squeue\&quot;)) == placement._UNKNOWN_PROBE_ATTEMPTS), so it holds whatever that constant is set to: with _UNKNOWN_PROBE_ATTEMPTS reduced to 1 the ensure asks once, nothing is waited on or re-asked, and the assertion still passes. The wait-and-retry property the case exists for is therefore pinned by a number both sides move with rather than by an independent figure or by an assertion that the ask count is at least two.&quot;
+    }
+  ],
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;verified 2 production call site(s)&quot;,
+    &quot;diff&quot;: &quot;read commit by commit against 18d6c2dd: a269887f (+419/-16) adds reservation_lock_path and the fcntl.flock context manager around the whole read-decide-hold-publish sequence at reckon/crew/placement.py:418, splits the probe into held/released/unaskable with the bounded re-ask at placement.py:335, corrects the record&#x27;s project comment at placement.py:487, and adds the four-case test file; 4beb7f46 appends the 54-line landing fragment as a new file with no line deleted.&quot;,
+    &quot;done_when&quot;: &quot;the done-when names tests/test_ensure_holds_one_reservation.py with its four cases, both arms and an executed negative control; logs/tests-head.log (a269887f, 1 failed 199 passed, EXIT=1) and logs/tests-base.log (18d6c2dd, materialized via git archive with the module-under-test path in its header, 1 failed 195 passed, EXIT=1) carry the same single failing id.&quot;,
+    &quot;goal&quot;: &quot;the goal is that ensure_reservation holds exactly one shared allocation under a cross-process race; reckon/crew/placement.py:418 wraps the whole read-decide-hold-publish sequence in fcntl.flock LOCK_EX on crew_home()/placement/reservation.lock (placement.py:102), and the four-process case at tests/test_ensure_holds_one_reservation.py:139 records exactly one salloc invocation with all four processes returning that one job id.&quot;,
+    &quot;manifest&quot;: &quot;read; it reports complete at 4beb7f46 with both arm logs, the pre-existing failure and its attribution, the executed negative control with its declared mutation, the reused fleet-node hold path, and follow-ons naming the dispatch wiring and the fleet allocation; it is unarmed, so the added-failure pair is derived from the two logs it names under test_logs.&quot;,
+    &quot;write_paths&quot;: &quot;the manifest declares five paths; git diff --name-only 18d6c2dd 4beb7f46 names exactly three of them (reckon/crew/placement.py, tests/test_ensure_holds_one_reservation.py, the evidence fragment), with fleet_node.py deliberately untouched and the declared figures directory left unused.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;tests/test_ensure_holds_one_reservation.py:182 reddens on the process-local claim — both the reviewed run&#x27;s declared control and my own independent mutation in a scratch tree log 4 salloc requests against 1, EXIT=1 in each — and cases 2 to 4 name the change that reddens them (unknown read as absent, a live allocation replaced, a replaced one not recorded), but one line of case 2, tests/test_ensure_holds_one_reservation.py:214, is written against the module&#x27;s own constant and would keep passing if the retry it guards were removed.&quot;,
+    &quot;evidence&quot;: &quot;the gate the done-when names is recorded at the reviewed head and reproduces: my re-run of tests/test_ensure_holds_one_reservation.py at 4beb7f46 records 4 passed, EXIT=0, with the module importing from the reviewed worktree; the base arm&#x27;s header names the tree it was materialized into and the module path it imported, the negative control&#x27;s first line repeats the declared mutation verbatim and reddens as predicted, and my own derivation of the added-failure pair (0 added, positive control 1) is stored with its provenance and both controls.&quot;,
+    &quot;fit&quot;: &quot;the new helpers follow the module&#x27;s existing idiom (reservation_lock_path beside reservation_path, both resolving crew_home locally; the lock is a contextlib.contextmanager, as at reckon/crew/dispatch.py:1259), names are mechanism words with no plan, version or ticket labels, and ruff check under the repo config reports no findings on either changed file with ruff format --check clean.&quot;,
+    &quot;goal_fidelity&quot;: &quot;reckon/crew/placement.py:418 holds the claim for the whole read-decide-hold-publish sequence on an operation atomic between processes, so a racer blocked on the lock reads the record the winner published rather than minting its own allocation, and only a definite released answer (placement.py:314) replaces a record while an unaskable probe returns _held_result(unknown=True) without submitting.&quot;,
+    &quot;scope_discipline&quot;: &quot;every path in the node&#x27;s two commits lies inside its five declared write paths — the three touched paths are the product module, the new test file and the fragment for this node — and the node neither edited the plan nor wrote to a path held by a concurrent node.&quot;
+  },
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: the goal is that ensure_reservation holds exactly one shared allocation under a cross-process race; reckon/crew/placement.py:418 wraps the whole read-decide-hold-publish sequence in fcntl.flock LOCK_EX on crew_home()/placement/reservation.lock (placement.py:102), and the four-process case at tests/test_ensure_holds_one_reservation.py:139 records exactly one salloc invocation with all four processes returning that one job id.\nVERDICT done_when: the done-when names tests/test_ensure_holds_one_reservation.py with its four cases, both arms and an executed negative control; logs/tests-head.log (a269887f, 1 failed 199 passed, EXIT=1) and logs/tests-base.log (18d6c2dd, materialized via git archive with the module-under-test path in its header, 1 failed 195 passed, EXIT=1) carry the same single failing id.\nVERDICT write_paths: the manifest declares five paths; git diff --name-only 18d6c2dd 4beb7f46 names exactly three of them (reckon/crew/placement.py, tests/test_ensure_holds_one_reservation.py, the evidence fragment), with fleet_node.py deliberately untouched and the declared figures directory left unused.\nVERDICT manifest: read; it reports complete at 4beb7f46 with both arm logs, the pre-existing failure and its attribution, the executed negative control with its declared mutation, the reused fleet-node hold path, and follow-ons naming the dispatch wiring and the fleet allocation; it is unarmed, so the added-failure pair is derived from the two logs it names under test_logs.\nVERDICT diff: read commit by commit against 18d6c2dd: a269887f (+419/-16) adds reservation_lock_path and the fcntl.flock context manager around the whole read-decide-hold-publish sequence at reckon/crew/placement.py:418, splits the probe into held/released/unaskable with the bounded re-ask at placement.py:335, corrects the record&#x27;s project comment, and adds the four-case test file; 4beb7f46 appends the 54-line landing fragment as a new file with no line deleted.\nCALL_SITES: reckon/crew/runs.py:ensure_placement_reservation, reckon/cli.py:crew_placement\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/placement.py:418 holds the claim for the whole read-decide-hold-publish sequence on an operation atomic between processes, so a &#x27;racer&#x27; blocked on the lock reads the record the winner published rather than minting its own allocation, and only a definite released answer (placement.py:314) replaces a record while an unaskable probe returns _held_result(unknown=True) without submitting.\nSCORE evidence: 20\nJUSTIFICATION evidence: the gate the done-when names is recorded at the reviewed head and reproduces: my re-run of tests/test_ensure_holds_one_reservation.py at 4beb7f46 records 4 passed, EXIT=0, with the module importing from the reviewed worktree; the base arm&#x27;s header names the tree it was materialized into and the module path it imported, the negative control&#x27;s first line repeats the declared mutation verbatim and reddens as predicted, and my own derivation of the added-failure pair (0 added, positive control 1) is stored with its provenance and both controls.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the node&#x27;s two commits lies inside its five declared write paths — the three touched paths are the product module, the new test file and the fragment for this node — and the node neither edited the plan nor wrote to a path held by a concurrent node.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_ensure_holds_one_reservation.py:182 reddens on the process-local claim — both the reviewed run&#x27;s declared control and my own independent mutation in a scratch tree log 4 salloc requests against 1, EXIT=1 in each — and cases 2 to 4 name the change that reddens them (unknown read as absent, a live allocation replaced, a replaced one not recorded), but one line of case 2, tests/test_ensure_holds_one_reservation.py:214, is written against the module&#x27;s own constant and would keep passing if the retry it guards were removed.\nSCORE fit: 20\nJUSTIFICATION fit: the new helpers follow the module&#x27;s existing idiom (reservation_lock_path beside reservation_path; the lock is a contextlib.contextmanager, as at reckon/crew/dispatch.py:1259), names are mechanism words with no plan, version or ticket labels, and ruff check under the repo config reports no findings on either changed file with ruff format --check clean.\nFINDING tests/test_ensure_holds_one_reservation.py:214 the retry assertion is written against the module&#x27;s own constant (len(_asked(\&quot;squeue\&quot;)) == placement._UNKNOWN_PROBE_ATTEMPTS), so it holds whatever that constant is set to: with _UNKNOWN_PROBE_ATTEMPTS reduced to 1 nothing is waited on or re-asked and the assertion still passes; the wait-and-retry property is pinned by a number both sides move with rather than by an independent figure or by asserting at least two asks.\n&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;18d6c2dd71372b70acf7d0d8c08d7f018a973d87&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;4beb7f46dd973e7afa5677624fcf1f7d59a8bcc8&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20260929T125345398730-ensure-holds-one-reservation&quot;,
+  &quot;reviewer&quot;: {
+    &quot;backend&quot;: &quot;clive&quot;,
+    &quot;model&quot;: &quot;deepseek-v4.1-flash&quot;,
+    &quot;model_actual&quot;: &quot;deepseek-v4.1-flash&quot;
+  },
+  &quot;reviewer_run_id&quot;: &quot;r-20260929T135120663109-review-of-ensure-holds-one-reservation&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 19,
+    &quot;evidence&quot;: 20,
+    &quot;fit&quot;: 20,
+    &quot;goal_fidelity&quot;: 20,
+    &quot;scope_discipline&quot;: 20
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-09-29T14:30:00+00:00&quot;,
+  &quot;total&quot;: 99
+}</pre></div>
+    </article>
+    <article class="landed-report" data-run-id="r-20260929T211816801666-review-of-dispatch-places-into-the-shared-reservation" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T203219213039-dispatch-places-into-the-shared-reservation.at-3209ea0066426d5f4634f2280c3173e8e4fa593b.json">
+      <h3>review-of-dispatch-places-into-the-shared-reservation &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260929T203219213039-dispatch-places-into-the-shared-reservation.at-3209ea0066426d5f4634f2280c3173e8e4fa593b.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20260929T203219213039-dispatch-places-into-the-shared-reservation&quot;,
+  &quot;review_run_id&quot;: &quot;r-20260929T211816801666-review-of-dispatch-places-into-the-shared-reservation&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;6a104b893df8dc5129593a9116353d72465c04cc&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;3209ea0066426d5f4634f2280c3173e8e4fa593b&quot;,
+  &quot;backend&quot;: &quot;clive&quot;,
+  &quot;model&quot;: &quot;deepseek-v4.1-flash&quot;,
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;scores&quot;: {
+    &quot;goal_fidelity&quot;: 19,
+    &quot;evidence&quot;: 15,
+    &quot;scope_discipline&quot;: 20,
+    &quot;durability&quot;: 15,
+    &quot;fit&quot;: 20
+  },
+  &quot;absent&quot;: [],
+  &quot;total&quot;: 89,
+  &quot;justifications&quot;: {
+    &quot;goal_fidelity&quot;: &quot;reckon/crew/dispatch.py:4911 is the only production caller, so a dispatch declaring a placement reaches placement.ensure_reservation (reckon/crew/placement.py:418, under the cross-process lock) before the wrapper reads the published record at dispatch.py:6002, and a second project therefore joins the one allocation rather than minting another while a backend declaring no placement returns untouched at dispatch.py:6041.&quot;,
+    &quot;evidence&quot;: &quot;the gate and both arms are recorded and reconcile -- 4 passed with EXIT=0, and the two arms carry the same three failure ids (134 passed at base, 138 at head) so the added count is 0 -- but all three head-side logs open with the base revision (logs/dpr-gate.log:1, logs/dpr-delta-head-placement.log:1, logs/dpr-negative-control.log:1) and the importing-set arm the done-when names stands unfinished at about 40%.&quot;,
+    &quot;scope_discipline&quot;: &quot;git diff --name-only 6a104b893..3209ea006 lists exactly five paths and every one is inside the manifest&#x27;s declared write paths, and the literal retry assertion in tests/test_ensure_holds_one_reservation.py:214 is named in the node&#x27;s own done-when rather than carried in from elsewhere.&quot;,
+    &quot;durability&quot;: &quot;tests/test_dispatch_places_into_the_shared_reservation.py:188 fails under the declared mutation (logs/dpr-negative-control.log records assert 2 == 1 with EXIT=1) and is independent of the value under test because it counts the recording scheduler&#x27;s own log, but no test drives dispatch() with a placed backend, so the wiring at reckon/crew/dispatch.py:4911 is unguarded.&quot;,
+    &quot;fit&quot;: &quot;the resolver follows the module&#x27;s existing idiom -- a lazy import as at reckon/crew/dispatch.py:5981, a docstring stating the mechanism rather than the incident, and delegation to the existing wrapper instead of a second implementation -- and introduces no symbol or comment carrying a plan, stage or ticket identifier.&quot;
+  },
+  &quot;item_verdicts&quot;: {
+    &quot;goal&quot;: &quot;the goal is that placement resolution holds or joins the one shared reservation through ensure_reservation, and reckon/crew/dispatch.py:6018 adds resolve_backend_placement which calls placement.ensure_reservation before delegating to the existing wrapper, with dispatch.py:4911 its only production caller.&quot;,
+    &quot;done_when&quot;: &quot;the four cases the done-when names are the four tests at tests/test_dispatch_places_into_the_shared_reservation.py:144,170,197,216, the gate log records &#x27;4 passed&#x27; with EXIT=0, and the two arms record 3 pre-existing failures with 134 passed at base and 138 at head, so the added-failure count is 0.&quot;,
+    &quot;write_paths&quot;: &quot;the declared paths were read from the manifest; git diff --name-only across the base and head lists exactly five paths and every one is declared, with reckon/crew/placement.py and the figures directory declared and untouched.&quot;,
+    &quot;manifest&quot;: &quot;read; it states status complete, names the gate log and both arm logs, records 0 added failures and no attribution, and discloses both the /tmp-truncated importing-set arm and the wrapper&#x27;s bare branch left in place.&quot;,
+    &quot;diff&quot;: &quot;read against base 6a104b893: 380 insertions and 10 deletions over five files, dispatch.py gaining the resolver and changing the call at :4911, the replacement test stating the ensure, the new file holding the four cases, and the retry assertion becoming a literal.&quot;,
+    &quot;call_sites&quot;: &quot;verified 4 production call site(s)&quot;
+  },
+  &quot;absent_items&quot;: [],
+  &quot;item_aggregate&quot;: 6,
+  &quot;call_sites&quot;: [
+    &quot;reckon/crew/dispatch.py:4911&quot;,
+    &quot;reckon/crew/dispatch.py:6046&quot;,
+    &quot;reckon/crew/placement.py:380&quot;,
+    &quot;reckon/crew/placement.py:165&quot;
+  ],
+  &quot;call_site_count&quot;: 4,
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/logs/dpr-delta-head-placement.log&quot;,
+      &quot;line&quot;: &quot;1&quot;,
+      &quot;text&quot;: &quot;the head arm&#x27;s header line names the base revision 6a104b893df8dc5129593a9116353d72465c04cc while the arm measured 3209ea006, and logs/dpr-gate.log:1 and logs/dpr-negative-control.log:1 name the base revision too; reckon/crew/review.py:1245 records that header as head_log_revision, so every read of this review carries a head revision that disagrees with reviewed_head_sha and the node&#x27;s own requirement that each log be headed with the revision it ran at is unmet for the three head-side logs.&quot;
+    },
+    {
+      &quot;file&quot;: &quot;/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/logs/delta-head-arm.log&quot;,
+      &quot;line&quot;: &quot;4&quot;,
+      &quot;text&quot;: &quot;the arm over every file importing reckon.crew.dispatch or reckon.crew.placement, which the done-when names as the population for the 0-added figure, was stopped at about 40% and its header carries an empty module field; the cited after_suite arm stands in over 13 files, so the figure is measured over a narrower population than the measure names (disclosed in the manifest&#x27;s evidence_inputs, and the stop itself was the instructed response to /tmp under the 5 GB floor).&quot;
+    },
+    {
+      &quot;file&quot;: &quot;/home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/manifest.md&quot;,
+      &quot;line&quot;: &quot;21&quot;,
+      &quot;text&quot;: &quot;the suite observations record a template command rather than the command that ran (&#x27;--basetemp=&lt;run&gt;/bt-head &lt;same files&gt; plus tests/test_dispatch_places_into_the_shared_reservation.py&#x27;, against the log&#x27;s own command line, which carries no --basetemp) and an abbreviated revision (&#x27;3209ea006&#x27;), and while the run is unarmed (suite_command is null in the live pointer, so promotion.py:3989 skips the suite-delta gate) an armed promotion would refuse it, because promotion.py:4012 compares baseline_suite.revision with the pointer&#x27;s full base_sha by exact string equality.&quot;
+    },
+    {
+      &quot;file&quot;: &quot;reckon/crew/dispatch.py&quot;,
+      &quot;line&quot;: &quot;4911&quot;,
+      &quot;text&quot;: &quot;the call site that makes placement resolution hold the reservation -- the change the plan&#x27;s section exists to make -- is asserted by no test: no test file both declares a placement and drives the dispatch entry point, and every placed-wrapping assertion calls resolve_backend_placement or apply_backend_placement directly (tests/test_crew_placement.py:51,65,75,91, tests/test_crew_lane_agnostic_placement.py:208, tests/test_placement_steps_under_reservation.py:135), so reverting this line to apply_backend_placement restores the per-worker minting with the suite still green.&quot;
+    },
+    {
+      &quot;file&quot;: &quot;reckon/crew/dispatch.py&quot;,
+      &quot;line&quot;: &quot;6013&quot;,
+      &quot;text&quot;: &quot;the bare step-client fallback the plan&#x27;s section asks to replace is still present in apply_backend_placement and reachable by any future direct caller, whereas production now reaches it only through resolve_backend_placement, which always ensures first; the choice is deliberate and stated in the reviewed manifest, but a caller that reaches the wrapper directly mints an allocation per worker silently, which is the defect this node removed from the dispatch path.&quot;
+    }
+  ],
+  &quot;raw_text&quot;: &quot;VERDICT goal: the goal is that placement resolution holds or joins the one shared reservation through ensure_reservation, and reckon/crew/dispatch.py:6018 adds resolve_backend_placement which calls placement.ensure_reservation before delegating to the existing wrapper, with dispatch.py:4911 its only production caller.\nVERDICT done_when: the four cases the done-when names are the four tests at tests/test_dispatch_places_into_the_shared_reservation.py:144,170,197,216, the gate log records &#x27;4 passed&#x27; with EXIT=0, and the two arms record 3 pre-existing failures with 134 passed at base and 138 at head, so the added-failure count is 0.\nVERDICT write_paths: the declared paths were read from the manifest; git diff --name-only across the base and head lists exactly five paths and every one is declared, with reckon/crew/placement.py and the figures directory declared and untouched.\nVERDICT manifest: read; it states status complete, names the gate log and both arm logs, records 0 added failures and no attribution, and discloses both the /tmp-truncated importing-set arm and the wrapper&#x27;s bare branch left in place.\nVERDICT diff: read against base 6a104b893: 380 insertions and 10 deletions over five files, dispatch.py gaining the resolver and changing the call at :4911, the replacement test stating the ensure, the new file holding the four cases, and the retry assertion becoming a literal.\nCALL_SITES: reckon/crew/dispatch.py:4911, reckon/crew/dispatch.py:6046, reckon/crew/placement.py:380, reckon/crew/placement.py:165\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:4911 is the only production caller, so a dispatch declaring a placement reaches placement.ensure_reservation (reckon/crew/placement.py:418, under the cross-process lock) before the wrapper reads the published record at dispatch.py:6002, and a second project therefore joins the one allocation rather than minting another while a backend declaring no placement returns untouched at dispatch.py:6041.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate and both arms are recorded and reconcile -- 4 passed with EXIT=0, and the two arms carry the same three failure ids (134 passed at base, 138 at head) so the added count is 0 -- but all three head-side logs open with the base revision (logs/dpr-gate.log:1, logs/dpr-delta-head-placement.log:1, logs/dpr-negative-control.log:1) and the importing-set arm the done-when names stands unfinished at about 40%.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 6a104b893..3209ea006 lists exactly five paths and every one is inside the manifest&#x27;s declared write paths, and the literal retry assertion in tests/test_ensure_holds_one_reservation.py:214 is named in the node&#x27;s own done-when rather than carried in from elsewhere.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_dispatch_places_into_the_shared_reservation.py:188 fails under the declared mutation (logs/dpr-negative-control.log records assert 2 == 1 with EXIT=1) and is independent of the value under test because it counts the recording scheduler&#x27;s own log, but no test drives dispatch() with a placed backend, so the wiring at reckon/crew/dispatch.py:4911 is unguarded.\nSCORE fit: 20\nJUSTIFICATION fit: the resolver follows the module&#x27;s existing idiom -- a lazy import as at reckon/crew/dispatch.py:5981, a docstring stating the mechanism rather than the incident, and delegation to the existing wrapper instead of a second implementation -- and introduces no symbol or comment carrying a plan, stage or ticket identifier.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/logs/dpr-delta-head-placement.log:1 the head arm&#x27;s header line names the base revision 6a104b893df8dc5129593a9116353d72465c04cc while the arm measured 3209ea006, and logs/dpr-gate.log:1 and logs/dpr-negative-control.log:1 name the base revision too; reckon/crew/review.py:1245 records that header as head_log_revision, so every read of this review carries a head revision that disagrees with reviewed_head_sha and the node&#x27;s own requirement that each log be headed with the revision it ran at is unmet for the three head-side logs.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/logs/delta-head-arm.log:4 the arm over every file importing reckon.crew.dispatch or reckon.crew.placement, which the done-when names as the population for the 0-added figure, was stopped at about 40% and its header carries an empty module field; the cited after_suite arm stands in over 13 files, so the figure is measured over a narrower population than the measure names (disclosed in the manifest&#x27;s evidence_inputs, and the stop itself was the instructed response to /tmp under the 5 GB floor).\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T203219213039-dispatch-places-into-the-shared-reservation/manifest.md:21 the suite observations record a template command rather than the command that ran (&#x27;--basetemp=&lt;run&gt;/bt-head &lt;same files&gt; plus tests/test_dispatch_places_into_the_shared_reservation.py&#x27;, against the log&#x27;s own command line, which carries no --basetemp) and an abbreviated revision (&#x27;3209ea006&#x27;), and while the run is unarmed (suite_command is null in the live pointer, so promotion.py:3989 skips the suite-delta gate) an armed promotion would refuse it, because promotion.py:4012 compares baseline_suite.revision with the pointer&#x27;s full base_sha by exact string equality.\nFINDING reckon/crew/dispatch.py:4911 the call site that makes placement resolution hold the reservation -- the change the plan&#x27;s section exists to make -- is asserted by no test: no test file both declares a placement and drives the dispatch entry point, and every placed-wrapping assertion calls resolve_backend_placement or apply_backend_placement directly (tests/test_crew_placement.py:51,65,75,91, tests/test_crew_lane_agnostic_placement.py:208, tests/test_placement_steps_under_reservation.py:135), so reverting this line to apply_backend_placement restores the per-worker minting with the suite still green.\nFINDING reckon/crew/dispatch.py:6013 the bare step-client fallback the plan&#x27;s section asks to replace is still present in apply_backend_placement and reachable by any future direct caller, whereas production now reaches it only through resolve_backend_placement, which always ensures first; the choice is deliberate and stated in the reviewed manifest, but a caller that reaches the wrapper directly mints an allocation per worker silently, which is the defect this node removed from the dispatch path.\n&quot;,
+  &quot;added_failure_count&quot;: 0,
+  &quot;added_failure_ids&quot;: [],
+  &quot;base_log_revision&quot;: &quot;6a104b893df8dc5129593a9116353d72465c04cc&quot;,
+  &quot;head_log_revision&quot;: &quot;6a104b893df8dc5129593a9116353d72465c04cc&quot;
+}</pre></div>
+    </article>
+    <article class="landed-report" data-run-id="r-20260930T073804580479-placement-wiring-integration" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-placement-wiring-integration.md">
+      <h3>placement-wiring-integration &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-placement-wiring-integration.md</code>.</p>
+      <div class="landed-report-body"><pre># Placement wiring integration — added failures against the first parent
+
+**Measure.** Merge `e46347e98349c77bdb4a56b01f253bf0ebd0cf4a` against its first
+parent `cbd90e41ef83933ce914e3ffbe78390ca5cf86ae`, over every test file under
+`tests/` that imports `reckon.crew.dispatch` or `reckon.crew.placement`.
+
+**Result: 0 added failing ids. The merge adds no failure that its first parent
+does not already carry across this population.**
+
+| | base `cbd90e41e` | head `e46347e98` |
+|---|---|---|
+| files in the arm | 98 | 99 |
+| summary line | `17 failed, 1088 passed, 2 skipped, 1 warning, 1 error in 645.50s (0:10:45)` | `14 failed, 1095 passed, 2 skipped, 1 warning, 1 error in 394.40s (0:06:34)` |
+| exit status | 1 | 1 |
+| FAILED/ERROR ids | 18 | 15 |
+| `df` for `/tmp` before the arm | 47G size, 33G used, **14G available** | 47G size, 4.4G used, **42G available** |
+
+- **Added ids (fail at head, pass at base): none.**
+- Removed ids (fail at base, pass at head): 3 — measured to be parallel-run
+  flakes, not merge effects (see *Removed ids*).
+- Every id failing at head also fails at base: the 15 head ids are a strict
+  subset of the 18 base ids.
+
+## Method
+
+- Repository (read-only for this role):
+  `/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-1c/placement-wiring-integration`.
+  No repository file was written; the deliverable is this report plus the
+  manifest and logs under the run directory.
+- Both revisions were extracted with `git archive &lt;rev&gt; | tar -x -C &lt;tree&gt;` into
+  scratch trees **outside any git repository**:
+  - base `cbd90e41e` → `/tmp/s21-pwi/base` (98 population files present)
+  - head `e46347e98` → `/tmp/s21-pwi/head` (99)
+- Module resolution verified in each tree around the runs: the imported
+  `reckon.crew.dispatch` resolved to that tree&#x27;s own file
+  (`/tmp/s21-pwi/base/reckon/crew/dispatch.py` and
+  `/tmp/s21-pwi/head/reckon/crew/dispatch.py`); each arm&#x27;s log carries that path
+  on its `measurement_module:` header line, and the marker the merge introduced —
+  `resolve_backend_placement` — is present at head and absent at base.
+- Each arm: `pytest-xdist -n 8`, `-p no:cacheprovider`, its own `--basetemp`
+  under `/tmp/s21-pwi/`, under the root `.venv` interpreter
+  (`/home/ITER/mcintos/Code/reckon/.venv/bin/python`), with the working
+  directory set by `env -C` to the scratch tree and `PYTHONPATH` pointing at the
+  same tree. The literal command with its full path list is the `command:` line
+  of each log; the shared prefix is:
+
+  ```
+  env -C /tmp/s21-pwi/&lt;tree&gt; PYTHONPATH=/tmp/s21-pwi/&lt;tree&gt; \
+    /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -q \
+    -p no:cacheprovider -n 8 --basetemp=/tmp/s21-pwi/basetemp-&lt;arm&gt; &lt;population paths&gt;
+  ```
+
+- Each arm&#x27;s whole output was captured once to its log under this run directory.
+  Each log is headed with the revision, the tree, the literal command, the
+  imported module path, the resolved working directory and `df` for `/tmp`, and
+  ends with a bare `EXIT=` line.
+- `/tmp` floor 5 GB free: 14 GB and 42 GB were available before the respective
+  arms, so neither arm was stopped.
+
+## The merge
+
+`e46347e98` is a merge of `dispatch-places-into-the-shared-reservation` into
+`main`; first parent `cbd90e41e`, second parent `3209ea006`. The whole delta
+between the two measured revisions is the single commit `3209ea006`
+(&quot;feat(crew): hold the shared reservation before a placed dispatch&quot;):
+
+```
+ ...ispatch-places-into-the-shared-reservation.html |  76 +++++++
+ reckon/crew/dispatch.py                            |  33 ++-
+ tests/test_crew_placement_reservation.py           |  36 +++-
+ ..._dispatch_places_into_the_shared_reservation.py | 239 +++++++++++++++++++++
+ tests/test_ensure_holds_one_reservation.py         |   6 +-
+ 5 files changed, 380 insertions(+), 10 deletions(-)
+```
+
+The product change is confined to `reckon/crew/dispatch.py`: at the
+placed-dispatch site the call changes from
+`apply_backend_placement(plan, backend, project)` to
+`resolve_backend_placement(plan, backend, project)`, and the new function
+ensures the shared reservation before falling through to the old wrapper.
+
+## Population
+
+Derived with `git grep -l -E &#x27;reckon\.crew\.(dispatch|placement)&#x27; e46347e98 -- tests/`:
+**99 files**, listed below. All 99 exist at `e46347e98`; 98 exist at
+`cbd90e41e`. The one absent at base is
+`tests/test_dispatch_places_into_the_shared_reservation.py`, added by the merge
+itself and so present only at head.
+
+Two of the 99 match through a string literal rather than an import statement:
+`tests/test_brief_prompt.py` (line 314) and `tests/test_crew_peer_client_reach.py`
+(lines 121, 163) both quote the peer-client prefix that names
+`reckon.crew.dispatch`. They are kept because the stated derivation is the grep,
+and a file that merely mentions the module costs nothing to include.
+
+&lt;details&gt;&lt;summary&gt;99 population paths&lt;/summary&gt;
+
+```
+tests/conftest.py
+tests/test_a_brief_points_rather_than_quotes.py
+tests/test_a_reexec_keeps_its_children.py
+tests/test_backend_environment.py
+tests/test_backend_reconstruction_settings.py
+tests/test_boundary_check_reads_two_trees.py
+tests/test_brief_dispatch.py
+tests/test_brief_plan_exclusivity.py
+tests/test_brief_prompt.py
+tests/test_context_estimate_excludes_granted_paths.py
+tests/test_context_estimate_reads_declared_files.py
+tests/test_crew.py
+tests/test_crew_binding_bound.py
+tests/test_crew_cli_repository.py
+tests/test_crew_coordinator_spend.py
+tests/test_crew_dispatch_arming.py
+tests/test_crew_dispatch_guard.py
+tests/test_crew_dispatch_watcher_required.py
+tests/test_crew_interrupted_phase.py
+tests/test_crew_lane_agnostic_placement.py
+tests/test_crew_lane_change.py
+tests/test_crew_launch_failure.py
+tests/test_crew_launch_resolution.py
+tests/test_crew_obligations.py
+tests/test_crew_orphan.py
+tests/test_crew_peer_client_reach.py
+tests/test_crew_peers.py
+tests/test_crew_placed_liveness.py
+tests/test_crew_placed_promotion.py
+tests/test_crew_placement.py
+tests/test_crew_placement_reservation.py
+tests/test_crew_recovery.py
+tests/test_crew_refusal_visibility.py
+tests/test_crew_repository_from_the_project.py
+tests/test_crew_routes.py
+tests/test_crew_session_delivery.py
+tests/test_crew_shadow_overrides.py
+tests/test_crew_shadow_paths.py
+tests/test_crew_test_role.py
+tests/test_crew_ticker_layout.py
+tests/test_crew_watch_lifetime.py
+tests/test_direct_resume_needs_an_observed_death.py
+tests/test_dispatch_guard_consults_liveness.py
+tests/test_dispatch_launch_is_not_its_own_conflict.py
+tests/test_dispatch_lifetime_probe.py
+tests/test_dispatch_names_its_backend.py
+tests/test_dispatch_places_into_the_shared_reservation.py
+tests/test_dispatch_reads_derivations_cheaply.py
+tests/test_dispatch_records_the_pace_row.py
+tests/test_dispatch_spawns_through_the_fleet.py
+tests/test_dispatch_timestamps_reuse_the_parser.py
+tests/test_dry_run_predicts_the_launcher.py
+tests/test_every_attempt_is_supervised.py
+tests/test_every_run_carries_a_session_id.py
+tests/test_fence_is_on_again.py
+tests/test_fenced_launch_resolves_the_backend.py
+tests/test_fenced_resume_reaches_its_harness.py
+tests/test_fleet_lane_carries_the_dispatch_environment.py
+tests/test_follow_observes_other_sessions.py
+tests/test_host_facts.py
+tests/test_landing_contract_follows_the_grant.py
+tests/test_lane_advisory_on_dispatch.py
+tests/test_lane_change_reads_the_worktree.py
+tests/test_lane_readers_share_the_gate_aware_headroom.py
+tests/test_lane_reading_at_dispatch.py
+tests/test_no_member_dispatch_runs_alone.py
+tests/test_paused_is_not_blocked.py
+tests/test_placement_steps_under_reservation.py
+tests/test_promotion_requires_impl_move.py
+tests/test_recovery_reads_the_exit_record.py
+tests/test_reflex_keys_on_reviewed_run_and_head.py
+tests/test_refused_dispatch_leaves_no_pointer.py
+tests/test_removed_flag_migration.py
+tests/test_reservation_is_shared_across_projects.py
+tests/test_resume_anchors_the_run_harness_home.py
+tests/test_resume_evidence_freshness.py
+tests/test_resume_reaps_its_child.py
+tests/test_review_lane_follows_its_run.py
+tests/test_review_reflex_selects_a_backend.py
+tests/test_review_reflex_sweep.py
+tests/test_review_role_is_not_reviewed.py
+tests/test_review_store_reads_and_fences_by_head.py
+tests/test_role_write_scope.py
+tests/test_run_record_reports_actual_resume.py
+tests/test_scope_refusal_names_its_claimant.py
+tests/test_scoring_dispatches_its_review.py
+tests/test_session_lives_on_its_run.py
+tests/test_session_resumes_only_its_own_task.py
+tests/test_shared_landing_paths.py
+tests/test_shim_never_resolves_to_a_shim.py
+tests/test_supervisor_write_reuses_the_store.py
+tests/test_test_watchers_are_reaped.py
+tests/test_unmanaged_producer_keeps_a_log.py
+tests/test_unmeasured_horizon_never_refuses.py
+tests/test_watch_arming_isolation.py
+tests/test_watcher_arming_fallback.py
+tests/test_worker_env_export.py
+tests/test_worker_path_carries_shims.py
+tests/test_worker_scratch_lives_with_its_run.py
+```
+&lt;/details&gt;
+
+## Arm A — base `cbd90e41e`
+
+- Log: `/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T073804580479-placement-wiring-integration/arm-base-cbd90e41e.log`
+  (`measurement_module: /tmp/s21-pwi/base/reckon/crew/dispatch.py`,
+  `measurement_cwd: /tmp/s21-pwi/base`)
+- Command: the shared prefix above with `&lt;tree&gt; = base` and the 98 population
+  paths present at base (the literal list is the log&#x27;s `command:` line).
+- `df` for `/tmp` before the arm: 47G size, 33G used, 14G available.
+- Summary line: `17 failed, 1088 passed, 2 skipped, 1 warning, 1 error in 645.50s (0:10:45)`
+- Final line: `EXIT=1`
+
+FAILED/ERROR ids (18):
+
+```
+tests/conftest.py::test_temp_config_home
+tests/test_a_brief_points_rather_than_quotes.py::test_a_report_changes_no_other_dry_run_field
+tests/test_a_reexec_keeps_its_children.py::test_the_reloader_exports_launched_pids_beside_the_checkpoint
+tests/test_crew_lane_agnostic_placement.py::test_adding_a_backend_needs_no_placement_code
+tests/test_crew_placement.py::test_a_declared_placement_prefixes_the_resolved_launch
+tests/test_crew_placement.py::test_an_unresolvable_scheduler_is_refused_before_launch
+tests/test_crew_routes.py::test_fitting_and_unbounded_backends_dispatch_without_context_refusal
+tests/test_crew_session_delivery.py::test_a_scoped_follower_receives_only_the_runs_its_session_dispatched
+tests/test_dispatch_launch_is_not_its_own_conflict.py::test_a_second_dispatch_meets_the_claim_made_before_the_preflight
+tests/test_dispatch_launch_is_not_its_own_conflict.py::test_a_second_dispatch_meets_the_claim_of_the_launch_in_flight
+tests/test_follow_observes_other_sessions.py::test_a_follower_with_an_owning_and_two_observed_sessions_delivers_all_three
+tests/test_follow_observes_other_sessions.py::test_a_follower_without_observed_sessions_behaves_exactly_as_today
+tests/test_lane_advisory_on_dispatch.py::test_a_promoted_row_carries_the_advisory_and_the_lane_fields
+tests/test_lane_advisory_on_dispatch.py::test_a_run_with_no_advisory_promotes_with_no_advisory_key
+tests/test_lane_advisory_on_dispatch.py::test_advice_taken_and_advice_declined_are_told_apart_from_the_rows
+tests/test_supervisor_write_reuses_the_store.py::test_bytes_and_mode_match_the_base_revision_writer
+tests/test_watch_arming_isolation.py::test_an_opted_in_caller_is_not_refused
+tests/test_watch_arming_isolation.py::test_arming_refuses_a_configuration_home_under_a_test_directory
+```
+
+## Arm B — head `e46347e98`
+
+- Log: `/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T073804580479-placement-wiring-integration/arm-head-e46347e98.log`
+  (`measurement_module: /tmp/s21-pwi/head/reckon/crew/dispatch.py`,
+  `measurement_cwd: /tmp/s21-pwi/head`)
+- Command: the shared prefix above with `&lt;tree&gt; = head` and all 99 population
+  paths (the literal list is the log&#x27;s `command:` line).
+- `df` for `/tmp` before the arm: 47G size, 4.4G used, 42G available.
+- Summary line: `14 failed, 1095 passed, 2 skipped, 1 warning, 1 error in 394.40s (0:06:34)`
+- Final line: `EXIT=1`
+
+FAILED/ERROR ids (15):
+
+```
+tests/conftest.py::test_temp_config_home
+tests/test_a_brief_points_rather_than_quotes.py::test_a_report_changes_no_other_dry_run_field
+tests/test_crew_lane_agnostic_placement.py::test_adding_a_backend_needs_no_placement_code
+tests/test_crew_placement.py::test_a_declared_placement_prefixes_the_resolved_launch
+tests/test_crew_placement.py::test_an_unresolvable_scheduler_is_refused_before_launch
+tests/test_crew_routes.py::test_fitting_and_unbounded_backends_dispatch_without_context_refusal
+tests/test_dispatch_launch_is_not_its_own_conflict.py::test_a_second_dispatch_meets_the_claim_made_before_the_preflight
+tests/test_dispatch_launch_is_not_its_own_conflict.py::test_a_second_dispatch_meets_the_claim_of_the_launch_in_flight
+tests/test_follow_observes_other_sessions.py::test_a_follower_with_an_owning_and_two_observed_sessions_delivers_all_three
+tests/test_lane_advisory_on_dispatch.py::test_a_promoted_row_carries_the_advisory_and_the_lane_fields
+tests/test_lane_advisory_on_dispatch.py::test_a_run_with_no_advisory_promotes_with_no_advisory_key
+tests/test_lane_advisory_on_dispatch.py::test_advice_taken_and_advice_declined_are_told_apart_from_the_rows
+tests/test_supervisor_write_reuses_the_store.py::test_bytes_and_mode_match_the_base_revision_writer
+tests/test_watch_arming_isolation.py::test_an_opted_in_caller_is_not_refused
+tests/test_watch_arming_isolation.py::test_arming_refuses_a_configuration_home_under_a_test_directory
+```
+
+## Added ids: none
+
+Set difference computed over the two id lists above (`head` minus `base`):
+**0 ids**. The pass condition of this node is met. There is therefore nothing to
+rerun in isolation and nothing to attribute to a candidate commit; had anything
+appeared, the only candidate in the measured delta is `3209ea006`.
+
+Three controls, so that an empty difference is not read off an instrument that
+cannot report one:
+
+1. **The differential moves.** The same computation over the same population
+   found 3 ids in the other direction, so the comparison detects movement rather
+   than returning empty by construction.
+2. **The pass counts reconcile: 1088 + 4 + 3 = 1095.** head passed 7 more tests
+   than base; +4 is the 4 tests of the merge&#x27;s new file (verified by running that
+   file in isolation at head — `4 passed in 0.23s`, log `iso-new-file-head.log`)
+   and +3 is the three ids that failed at base and passed at head.
+3. **Both arms produced failure ids.** 18 and 15 respectively, so the arms are
+   demonstrably reporting failures rather than silently collecting nothing.
+
+## Removed ids (base-only) — measured to be parallel flakes
+
+These failed at `cbd90e41e` and passed at `e46347e98`:
+
+```
+tests/test_a_reexec_keeps_its_children.py::test_the_reloader_exports_launched_pids_beside_the_checkpoint
+tests/test_crew_session_delivery.py::test_a_scoped_follower_receives_only_the_runs_its_session_dispatched
+tests/test_follow_observes_other_sessions.py::test_a_follower_without_observed_sessions_behaves_exactly_as_today
+```
+
+The merge touches none of these files, so a merge effect is implausible; the
+alternative is that `-n 8` made them flaky. Tested directly — each id was rerun
+**3 times in isolation at both revisions** (18 runs, serial,
+`-p no:cacheprovider`, per-run `--basetemp`, logs
+`iso-&lt;id&gt;-&lt;rev&gt;-&lt;n&gt;.log` under the run directory):
+
+- all 18 runs exited 0; every one reported `1 passed`.
+
+So all three are load-sensitive under xdist rather than fixed by the merge. This
+is the one caveat on the arm comparison, and it cuts one way only: a flake can
+manufacture an apparent *removal* when a test that really fails at base happens
+to pass at head, but it cannot manufacture an *addition*, because for an id to be
+added it must have failed at head — a real event recorded in the head log. The
+added set is empty, so no flake can have fabricated it.
+
+## The pre-existing set, and why it is not the state of `main`
+
+All 15 head ids also fail at `cbd90e41e`, so none of them is introduced by the
+merge. Reading them as &quot;main is red&quot; would be wrong, because two of the
+mechanisms are artefacts of this measurement&#x27;s environment:
+
+- **`tests/conftest.py::test_temp_config_home` is not a test.** It is a helper
+  inside `conftest.py` whose name begins with `test_`; it is collected only
+  because this population names `tests/conftest.py` as a path. It errors with
+  `fixture &#x27;prefix&#x27; not found` in both arms. It is a collection artefact of the
+  grep-derived population, not a suite failure.
+- **Two ids fail on shim resolution.** `test_a_declared_placement_prefixes_the_resolved_launch`
+  and `test_adding_a_backend_needs_no_placement_code` assert
+  `argv[0] == &quot;/usr/bin/srun&quot;` but receive `/tmp/s21-pwi/&lt;tree&gt;/reckon/host_shims/srun`;
+  a scratch tree does not carry the host shim layer a provisioned checkout has
+  on `PATH`.
+
+The remainder are ordinary parallel-run failures present at both revisions:
+`DID NOT RAISE` refusals in `test_an_unresolvable_scheduler_is_refused_before_launch`,
+`test_arming_refuses_a_configuration_home_under_a_test_directory` and
+`test_an_opted_in_caller_is_not_refused`; two claim-conflict assertions in
+`test_dispatch_launch_is_not_its_own_conflict.py`; three `FileNotFoundError`s on
+a `crew.json` state file under `test_lane_advisory_on_dispatch.py`;
+`test_fitting_and_unbounded_backends_dispatch_without_context_refusal`; a
+stopped-follower assertion in `test_follow_observes_other_sessions.py`;
+`test_a_report_changes_no_other_dry_run_field`; and
+`test_bytes_and_mode_match_the_base_revision_writer`. None is affected by, or
+attributable to, the merge.
+
+## Attribution
+
+| id | attributed candidate commit |
+|---|---|
+| — | *no added ids* |
+
+The candidate set for anything that had appeared is exactly the one commit in
+the delta: `3209ea006` (the merge&#x27;s second parent). Nothing in the added set is
+attributed to it, because `e46347e98` introduced no failing id not already
+present at `cbd90e41e`.
+
+## Cleanup
+
+After this report was written, `/tmp/s21-pwi/` (both scratch trees, the
+isolation basetemps and the helper scripts) was removed and the deletion&#x27;s
+output and exit status captured to
+`/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T073804580479-placement-wiring-integration/cleanup.log`.
+Both arm logs, all isolation logs and the population lists live under the run
+directory, outside `/tmp`, and survive.</pre></div>
+    </article>
+    <article class="landed-report" data-run-id="r-20260930T081922538909-review-of-placement-wiring-integration" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260930T073804580479-placement-wiring-integration.json">
+      <h3>review-of-placement-wiring-integration &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260930T073804580479-placement-wiring-integration.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;added_failure_count&quot;: 0,
+  &quot;added_failure_ids&quot;: [],
+  &quot;base_log_revision&quot;: null,
+  &quot;call_site_count&quot;: 3,
+  &quot;call_sites&quot;: [
+    &quot;reckon/crew/dispatch.py:4911 dispatch reaches resolve_backend_placement&quot;,
+    &quot;reckon/crew/dispatch.py:6045 resolve_backend_placement reaches placement.ensure_reservation&quot;,
+    &quot;reckon/crew/runs.py:3083 ensure_placement_reservation reaches the same ensure&quot;
+  ],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;/home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T073804580479-placement-wiring-integration/arm-base-cbd90e41e.log&quot;,
+      &quot;line&quot;: &quot;1&quot;,
+      &quot;text&quot;: &quot;the first line writes revision=&lt;sha&gt; where the store&#x27;s recorded_log_revision (reckon/crew/review.py:507) accepts revision: &lt;sha&gt; or revision &lt;sha&gt;; the head log&#x27;s first line has the identical shape, so annotate_review_of_run records base_log_revision and head_log_revision as null for this run (positive control: the same reader returns 4568a5553f0883b4dea3a4ea0c860ff645f7b533 from r-20260929T104521381409&#x27;s log whose first line is `revision: &lt;sha&gt;`), and a reader of the annotated record cannot tie the count to the commits the logs measured even though the manifest&#x27;s own suite records name both revisions.&quot;
+    }
+  ],
+  &quot;head_log_revision&quot;: null,
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;verified 3 production call site(s)&quot;,
+    &quot;diff&quot;: &quot;the node changed no repository file so its own diff is empty; the change it measured is merge e46347e98, whose delta is the single incoming commit 3209ea006 across five paths, product-confined to reckon/crew/dispatch.py where resolve_backend_placement (dispatch.py:6018) is reached from the placed-dispatch site (dispatch.py:4911) and calls placement.ensure_reservation (placement.py:380), with four cases added in tests/test_dispatch_places_into_the_shared_reservation.py against a recording scheduler (4 passed in 0.23s at head).&quot;,
+    &quot;done_when&quot;: &quot;every clause of the done-when holds \u2014 the report is 18269 bytes (under 200 KB), names the revision pair, and lists the 99-path population that is identical to a fresh `git grep -l -E &#x27;reckon\\.crew\\.(dispatch|placement)&#x27; e46347e98 -- tests/`; each arm log is headed with revision, tree and the literal command and ends EXIT=1; each arm&#x27;s FAILED/ERROR ids are listed and match the logs exactly (18 and 15, the head set a strict subset of the base set); /tmp df is recorded before each arm (14G and 42G against the 5 GB stop); and /tmp/s21-pwi was removed with the deletion&#x27;s output logged (cleanup.log: RMRF_EXIT=0 with the after-check finding no such directory) \u2014 with one caveat recorded as a FINDING below: neither arm log&#x27;s first line parses under the store&#x27;s own recorded_log_revision.&quot;,
+    &quot;goal&quot;: &quot;the goal is to measure the failures the placement wiring merge added across the tests importing reckon.crew.dispatch or reckon.crew.placement, and the report (s21-placement-wiring-integration.md:7) states 0 added ids for merge e46347e98 against first parent cbd90e41e over 99 files, which I re-derived myself from the two arm logs (18 base ids, 15 head ids, head-minus-base empty).&quot;,
+    &quot;manifest&quot;: &quot;read with its logs; its baseline_suite and after_suite records carry completed true with 18 and 15 failure_ids that equal the ids in the logs each names, the 0-added claim and the 1088+4+3=1095 pass reconciliation hold, and failure_attribution is empty as an empty added set requires; the log-revision reader the record counts on reads nothing from these logs (FINDING).&quot;,
+    &quot;write_paths&quot;: &quot;the declared write path was the report alone; the reviewed worktree is clean at be2a2b8b3 (git status --porcelain empty and HEAD unmoved from its orientation_base_sha) and every other write is the manifest and logs inside its own run directory.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;the measurement is re-derivable \u2014 the population grep is re-runnable at a pinned revision and all 99 paths are also listed in the report:98-199, with the arm and isolation logs and the population files on durable storage \u2014 though the scratch trees are gone and must be re-extracted with git archive.&quot;,
+    &quot;evidence&quot;: &quot;the store&#x27;s own instrument (reckon/crew/review.py:1022 annotate_review_of_run) re-derives added_failure_count 0 and no ids from the manifest&#x27;s baseline_suite and after_suite logs, and each arm&#x27;s failure text carries its own tree&#x27;s shim path (/tmp/s21-pwi/base vs /tmp/s21-pwi/head) so neither arm imported the other&#x27;s tree, but the revision tie the annotated record carries is null because the logs&#x27; first line writes revision=&lt;sha&gt; where reckon/crew/review.py:507 accepts revision: &lt;sha&gt;.&quot;,
+    &quot;fit&quot;: &quot;the report and manifest follow the run-directory conventions and introduce no forbidden name, but the gate-log first line (arm-base-cbd90e41e.log:1 `gate-log: revision=&lt;sha&gt; tree=&lt;path&gt; command=&lt;cmd&gt;`) departs from the header spelling reckon/crew/review.py:503 documents as conventional.&quot;,
+    &quot;goal_fidelity&quot;: &quot;the report at s21-placement-wiring-integration.md:7 answers the goal with 0 added ids and separates the 3 removed and 15 pre-existing ids, and I reproduced the added set from arm-base-cbd90e41e.log and arm-head-e46347e98.log as 0.&quot;,
+    &quot;scope_discipline&quot;: &quot;the reviewed tree is clean at be2a2b8b3 and every path written \u2014 report, manifest, arm logs, isolation logs, cleanup log \u2014 lies in its declared report path or its own run directory.&quot;
+  },
+  &quot;node&quot;: &quot;review-of-placement-wiring-integration&quot;,
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;Independent review of r-20260930T073804580479-placement-wiring-integration (role test, spec exact, plan a-placement-with-no-reservation-mints-one-per-worker \u00a73), read from the reviewed run&#x27;s report, manifest, two arm logs, eighteen isolation logs, cleanup log and population lists, and from git at cbd90e41e and e46347e98.\n\nVERDICT goal: the goal is to measure the failures the placement wiring merge added across the tests importing reckon.crew.dispatch or reckon.crew.placement, and the report (s21-placement-wiring-integration.md:7) states 0 added ids for merge e46347e98 against first parent cbd90e41e over 99 files, which I re-derived myself from the two arm logs (18 base ids, 15 head ids, head-minus-base empty).\nVERDICT done_when: every clause of the done-when holds \u2014 the report is 18269 bytes (under 200 KB), names the revision pair, and lists the 99-path population that is identical to a fresh `git grep -l -E &#x27;reckon\\.crew\\.(dispatch|placement)&#x27; e46347e98 -- tests/`; each arm log is headed with revision, tree and the literal command and ends EXIT=1; each arm&#x27;s FAILED/ERROR ids are listed and match the logs exactly (18 and 15, the head set a strict subset of the base set); /tmp df is recorded before each arm (14G and 42G against the 5 GB stop); and /tmp/s21-pwi was removed with the deletion&#x27;s output logged (cleanup.log: RMRF_EXIT=0 with the after-check finding no such directory) \u2014 with one caveat recorded as a FINDING below: neither arm log&#x27;s first line parses under the store&#x27;s own recorded_log_revision.\nVERDICT write_paths: the declared write path was the report alone; the reviewed worktree is clean at be2a2b8b3 (git status --porcelain empty and HEAD unmoved from its orientation_base_sha) and every other write is the manifest and logs inside its own run directory.\nVERDICT manifest: read with its logs; its baseline_suite and after_suite records carry completed true with 18 and 15 failure_ids that equal the ids in the logs each names, the 0-added claim and the 1088+4+3=1095 pass reconciliation hold, and failure_attribution is empty as an empty added set requires; the log-revision reader the record counts on reads nothing from these logs (FINDING).\nVERDICT diff: the node changed no repository file so its own diff is empty; the change it measured is merge e46347e98, whose delta is the single incoming commit 3209ea006 across five paths, product-confined to reckon/crew/dispatch.py where resolve_backend_placement (dispatch.py:6018) is reached from the placed-dispatch site (dispatch.py:4911) and calls placement.ensure_reservation (placement.py:380), with four cases added in tests/test_dispatch_places_into_the_shared_reservation.py against a recording scheduler (4 passed in 0.23s at head).\nCALL_SITES: reckon/crew/dispatch.py:4911 dispatch reaches resolve_backend_placement, reckon/crew/dispatch.py:6045 resolve_backend_placement reaches placement.ensure_reservation, reckon/crew/runs.py:3083 ensure_placement_reservation reaches the same ensure\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the report at s21-placement-wiring-integration.md:7 answers the goal with 0 added ids and separates the 3 removed and 15 pre-existing ids, and I reproduced the added set from arm-base-cbd90e41e.log and arm-head-e46347e98.log as 0.\nSCORE evidence: 18\nJUSTIFICATION evidence: the store&#x27;s own instrument (reckon/crew/review.py:1022 annotate_review_of_run) re-derives added_failure_count 0 and no ids from the manifest&#x27;s baseline_suite and after_suite logs, and each arm&#x27;s failure text carries its own tree&#x27;s shim path (/tmp/s21-pwi/base vs /tmp/s21-pwi/head) so neither arm imported the other&#x27;s tree, but the revision tie the annotated record carries is null because the logs&#x27; first line writes revision=&lt;sha&gt; where reckon/crew/review.py:507 accepts revision: &lt;sha&gt;.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed tree is clean at be2a2b8b3 and every path written \u2014 report, manifest, arm logs, isolation logs, cleanup log \u2014 lies in its declared report path or its own run directory.\nSCORE durability: 19\nJUSTIFICATION durability: the measurement is re-derivable \u2014 the population grep is re-runnable at a pinned revision and all 99 paths are also listed in the report:98-199, with the arm and isolation logs and the population files on durable storage \u2014 though the scratch trees are gone and must be re-extracted with git archive.\nSCORE fit: 19\nJUSTIFICATION fit: the report and manifest follow the run-directory conventions and introduce no forbidden name, but the gate-log first line (arm-base-cbd90e41e.log:1 `gate-log: revision=&lt;sha&gt; tree=&lt;path&gt; command=&lt;cmd&gt;`) departs from the header spelling reckon/crew/review.py:503 documents as conventional.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T073804580479-placement-wiring-integration/arm-base-cbd90e41e.log:1 the first line writes revision=&lt;sha&gt; where the store&#x27;s recorded_log_revision (reckon/crew/review.py:507) accepts revision: &lt;sha&gt; or revision &lt;sha&gt;; the head log&#x27;s first line has the identical shape, so annotate_review_of_run records base_log_revision and head_log_revision as null for this run (positive control: the same reader returns 4568a5553f0883b4dea3a4ea0c860ff645f7b533 from r-20260929T104521381409&#x27;s log whose first line is `revision: &lt;sha&gt;`), and a reader of the annotated record cannot tie the count to the commits the logs measured even though the manifest&#x27;s own suite records name both revisions.\n&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;be2a2b8b3f1578f81441120a2d8b6b56d23f72b8&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;be2a2b8b3f1578f81441120a2d8b6b56d23f72b8&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20260930T073804580479-placement-wiring-integration&quot;,
+  &quot;reviewer&quot;: &quot;review-of-placement-wiring-integration&quot;,
+  &quot;reviewer_run_id&quot;: &quot;r-20260930T081922538909-review-of-placement-wiring-integration&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 19,
+    &quot;evidence&quot;: 18,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 20,
+    &quot;scope_discipline&quot;: 20
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-09-30T08:42:46.048315+00:00&quot;,
+  &quot;total&quot;: 96
+}
+</pre></div>
+    </article>
+  </section>
+ </main>
+</body>
+</html>
