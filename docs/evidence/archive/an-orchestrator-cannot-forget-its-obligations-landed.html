@@ -245,6 +245,17 @@
     <p>The lead approved the install in the coordinator's session on 2026-09-25. The Stop group was appended to <code>~/.claude/settings.json</code> by an atomic JSON merge that kept every other key and hook.</p><table><thead><tr><th>Receipt</th><th>Value</th></tr></thead><tbody><tr><td>Command</td><td><code>/home/ITER/mcintos/Code/reckon/reckon/hooks/worker_stop.py</code></td></tr><tr><td>Before</td><td>sha256 <code>6bafa8d72966f7d71b3731bf284eddefede61c0407d3f18d582dc5cbea80555b</code>, 4,965 bytes</td></tr><tr><td>After</td><td>sha256 <code>d594d599834fb153939103251ae1cb01477a9355c9c878e488b4b5f1300adb24</code>, 5,197 bytes</td></tr><tr><td>Preserved</td><td>top-level keys and every non-hook value identical; both PreToolUse guards unchanged</td></tr><tr><td>Smoke test</td><td>a Stop payload from the main checkout with no <code>RECKON_MANIFEST</code> exits 0 with no output</td></tr></tbody></table><p>The hook takes effect in Claude Code sessions that start or resume after the install; running workers keep the settings they launched with.</p>
   </section>
 
+  <section id="s3">
+    <h2>§3 — A deferral is recorded and expires</h2>
+    <p><code>reckon crew ack --run X --reason &lt;text&gt; --until &lt;iso-time&gt;</code> records a deliberate deferral beside the closure disposition on the live pointer, so it travels with the run it excuses and expires on its own. The obligations reader withholds a run whose deferral has not yet passed and returns it once it has. The deferred rows appear with their reason and expiry in a separate acknowledged block, which both the view and the hook read. A malformed <code>--until</code> is refused at the store and at the command. The node's own record is the <code>crew-ack-defers-an-obligation</code> fragment composed below.</p>
+  </section>
+
+  <section id="s5">
+    <h2>§5 — The harness is bound to the list</h2>
+    <p>The coordinator hook, <code>reckon/hooks/coordinator_obligations.py</code>, runs in two modes. <code>--hook prompt</code> returns the unacknowledged obligations as a checklist on SessionStart and UserPromptSubmit. <code>--hook stop</code> blocks a turn from ending while unacknowledged obligations remain, once per list, guarded by <code>stop_hook_active</code>. <code>reckon hooks install --scope user</code> prints the settings fragment and merges it only with <code>--write</code>. It names the checkout it composed the fragment from, and must be run from the main checkout (merge <code>eca6d2d6e</code>, review 92). The hook's tests pin their harness identity, so they pass whatever CLAUDE_PID or process tree they run under (merge <code>4d454fd1c</code>, review 93; the CLAUDE_PID-absent ancestry fallback is covered at <code>ad0491f99</code>, review 97).</p>
+    <p>Installed 2026-09-30 at the lead's direction, after the gate named in the section cleared: the false-liveness guard <code>tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py</code> landed at <code>d65253fe2</code> and passed at its base. The prompt entries and the worker stop hook were already in the user-scope settings, so the install added one entry, the coordinator <code>--hook stop</code> command under Stop. A trial write into a copy of the settings file was diffed first, and every other key and hook group was left unchanged.</p>
+  </section>
+
 </main>
 <section id="obligations-hook-stop-silence">
       <h2>Revision: the no-follower case drives the stop mode too</h2>
