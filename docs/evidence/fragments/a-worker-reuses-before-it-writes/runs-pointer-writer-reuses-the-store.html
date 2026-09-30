@@ -1,4 +1,4 @@
-<section id="s3">
+<section id="runs-pointer-writer-reuses-the-store">
     <h2>§3 — the live-pointer writer reuses the shared atomic JSON writer</h2>
     <p><code>reckon/crew/runs.py:_write_json</code> now stamps the pointer's launch host and hands the payload to <code>reckon/_store.py:write_json_atomically</code>, keeping the bytes, the private <code>0o600</code> mode and the no-leftover-temporary guarantee it produced before; <code>tests/test_runs_pointer_writer_reuses_the_store.py</code> asserts those against a replica of the pre-migration writer for a plain, a non-ASCII and a nested payload and covers the launch-host stamp, and the head arm of the every-importer gate added no failing test id over the base arm.</p>
   </section>
