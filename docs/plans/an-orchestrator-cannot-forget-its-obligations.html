@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="66">
+<meta name="plan-version" content="67">
 <meta name="plan-impl" content="0.83">
 </head>
 <body>
@@ -412,7 +412,10 @@
     <div class="r-comment-body"><p>review-of-obligations-view-is-the-inbox: an independent review of run r-20260930T074401332971-obligations-view-is-the-inbox, read at base 4e05e287a and head 61338063d, is stored at both granted paths; it scores goal_fidelity 19, evidence 16, scope_discipline 19, durability 18, fit 17 (total 89, no dimension absent), records added_failure_count 0 with no added ids derived from the reviewed run's own baseline_suite and after_suite gate logs, and files three findings: the evidence fragment attributes the head arm to b9173ef83 while gate-head.log — the log its own paragraph names — opens `revision: 61338063d...` and was written after 61338063d was committed; the harness reference hardcodes /home/ITER/mcintos/Code/reckon/.venv/bin/python in both documented install commands, the only absolute host paths under skills/, so the step cannot run from another checkout; and the manifest's tests: field carries &lt;tree&gt;/&lt;tmp&gt; placeholders, a shape the manifest contract names as forbidden.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260930T094226197662-harness-install-names-no-host-path" data-who="reckon-build" data-when="2026-09-30T09:49:39.863Z">
-    <div class="r-comment-body"><p>The harness reference&#x27;s two hook install commands now name `.venv/bin/python` relative to the checkout root instead of the author&#x27;s absolute home path, so a reader runs them from any checkout; a new test walks every file under `skills/` and asserts none names an absolute `/home/` or `/work/` path (head gate 27 passed; base gate 1 failed / 26 passed, the new test&#x27;s expected base failure).</p></div>
+    <div class="r-comment-body"><p>The harness reference's two hook install commands now name `.venv/bin/python` relative to the checkout root instead of the author's absolute home path, so a reader runs them from any checkout; a new test walks every file under `skills/` and asserts none names an absolute `/home/` or `/work/` path (head gate 27 passed; base gate 1 failed / 26 passed, the new test's expected base failure).</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20260930T095025768281-review-of-harness-install-names-no-host-path" data-who="reckon-build" data-when="2026-09-30T10:11:52.284Z">
+    <div class="r-comment-body"><p>review-of-harness-install-names-no-host-path: an independent review of run r-20260930T094226197662-harness-install-names-no-host-path, read at base d6e2e0390 and head 6258b6ffa, is stored at both granted paths; it scores goal_fidelity 19, evidence 17, scope_discipline 19, durability 19, fit 18 (total 92, no dimension absent), records added_failure_count 0 with no added ids derived from the reviewed run&#x27;s own two gate logs (base d6e2e0390, head 6258b6ffa; the inverted-arms control yields 1 id, so the derivation measures differences), and files two findings: the reviewed manifest&#x27;s tests: field elides the base-arm command&#x27;s three operands as `&lt;same three paths&gt;`, and the reviewed gate&#x27;s three files omit tests/test_skill_contracts.py:1287, which pins the changed lines and passes at the reviewed head.</p></div>
 </div>
 </section>
   </main>
