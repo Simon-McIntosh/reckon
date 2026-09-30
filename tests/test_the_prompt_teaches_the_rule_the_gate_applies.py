@@ -8,7 +8,8 @@ no longer applies — so a worker could satisfy the prompt and still deliver a
 log the gate refuses. These cases enter through ``compose_prompt``, the surface
 the worker actually receives, and assert that neither the declaration block nor
 the manifest template's ``negative_control_log`` gloss asks for a verbatim
-first line, and that both state the facts admission reads.
+first line, and that both state the facts admission reads, including which arm
+decides when the manifest records no readable head arm.
 """
 
 from __future__ import annotations
@@ -25,12 +26,18 @@ DECLARATION = "removing the guard turns its case red"
 
 # The rule the control gate applies, read from its reader in promotion.py: the
 # control log is judged on the facts its run recorded and on no wording of it.
-# Both sites must state the two facts, and the declaration must be shown as
-# something the worker applies rather than a string a gate matches.
+# Both sites must state the two facts, which arm decides when the head arm is
+# unreadable, and the declaration must be shown as something the worker applies
+# rather than a string a gate matches.
 FACTS_RULE = (
     "a non-zero `EXIT=` line and at least one failing test id the head arm "
     "does not fail"
 )
+FALLBACK_RULE = (
+    "falling back to the baseline's failing ids only when the manifest "
+    "records no readable head arm"
+)
+READABLE_RULE = "an arm being readable only when it declares its run complete"
 WORDING_REFUSED = "never on the log's wording"
 DECLARATION_NOT_MATCHED = "not a string any gate matches"
 
@@ -103,6 +110,15 @@ def test_the_manifest_log_line_no_longer_asks_for_a_verbatim_first_line():
 
     assert "verbatim" not in gloss
     assert "first line" not in gloss
+
+
+def test_both_sites_state_which_arm_decides_the_control():
+    prompt = _prompt()
+    sites = (_flat(_declaration_block(prompt)), _flat(_manifest_log_line(prompt)))
+
+    for site in sites:
+        assert FALLBACK_RULE in site
+        assert READABLE_RULE in site
 
 
 def test_the_declaration_is_still_shown_as_what_the_worker_applies():
