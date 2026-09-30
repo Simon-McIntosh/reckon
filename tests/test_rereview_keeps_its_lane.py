@@ -417,6 +417,81 @@ def test_a_reclaimed_worktree_keeps_a_standing_review_at_the_recorded_head(
     assert recovery.same_revision(stored["reviewed_head_sha"], heads["earlier"])
 
 
+def test_a_reclaimed_worktree_does_not_reconstruct_a_legacy_review_from_the_checkout(
+    isolated_project: tuple[Path, Path, dict],
+) -> None:
+    """A legacy review is not read against the shared checkout's history.
+
+    The run's recorded head (``earlier``) is not the repository's HEAD
+    (``current``). A legacy record names no revision, so the revision it read is
+    reconstructed from a tree's history — and reconstructing it from the shared
+    checkout, whose HEAD is ``current``, names a revision the run never reached
+    and refuses a review that is in fact current. The recorded head has no tree
+    of its own once the worktree is reclaimed, so no reconstruction is attempted
+    and the legacy record stands.
+    """
+    config_home, repo, heads = isolated_project
+    run_id = "r-legacy-reclaimed"
+    record = _scoring_pointer(
+        config_home,
+        repo,
+        run_id,
+        commits=heads["earlier"],
+        worktree=str(repo.parent / "worktrees" / "reclaimed-and-gone"),
+    )
+    # A record carrying no revision pair, written after both commits, so a
+    # reconstruction against the shared checkout would name ``current``.
+    emitted = "\n".join(
+        f"SCORE {dimension}: 20" for dimension in review_module.REVIEW_DIMENSIONS
+    )
+    legacy = review_module.parse_review(emitted)
+    legacy.update(
+        {
+            "project": "sample",
+            "reviewed_run_id": run_id,
+            "review_run_id": f"review-of-{run_id}",
+            "timestamp": "2099-01-01T00:00:00+00:00",
+        }
+    )
+    review_module.store_review(legacy)
+    stored, error = recovery._stored_review(record)
+    assert error == ""
+    assert stored is not None
+
+
+def test_a_reclaimed_worktree_with_no_recorded_head_does_not_accept_the_newest(
+    isolated_project: tuple[Path, Path, dict],
+) -> None:
+    """A run whose own record names no head cannot stand on whatever is newest.
+
+    With the worktree reclaimed and the run's manifest naming no resolvable
+    commit, the run's own head is unknown; the repository fallback resolves the
+    head the base code used, and a review of any other revision must not be read
+    as this run's evidence merely because it is the newest stored record. The
+    head the repository does carry is the only key left, and a review of it
+    stands.
+    """
+    config_home, repo, heads = isolated_project
+    run_id = "r-no-recorded-head"
+    record = _scoring_pointer(
+        config_home,
+        repo,
+        run_id,
+        commits="not-an-object-id",
+        worktree=str(repo.parent / "worktrees" / "reclaimed-and-gone"),
+    )
+    _store_review(run_id, base=heads["earlier"], head=heads["earlier"])
+    stored, error = recovery._stored_review(record)
+    assert error == ""
+    assert stored is None
+
+    _store_review(run_id, base=heads["earlier"], head=heads["current"])
+    stored, error = recovery._stored_review(record)
+    assert error == ""
+    assert stored is not None
+    assert recovery.same_revision(stored["reviewed_head_sha"], heads["current"])
+
+
 def test_a_recorded_attempt_naming_no_head_does_not_demote_its_lane(
     isolated_project: tuple[Path, Path, dict],
 ) -> None:
