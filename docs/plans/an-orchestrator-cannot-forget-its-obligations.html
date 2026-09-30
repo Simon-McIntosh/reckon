@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="78">
+<meta name="plan-version" content="79">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -372,6 +372,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T182454384865-in-flight-review-has-one-predicate" data-who="reckon-build" data-when="2026-09-30T18:40:24.378Z">
     <div class="r-comment-body"><p>both the obligations reader and the reflex's recorded-dispatch rule now call the one predicate, _recorded_review_is_live in reckon/crew/recovery.py; base 29 passed / head 33 passed over the named files, zero added failures by id; the declared negative control reds the unreadable-pointer case</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260930T184052325951-review-of-in-flight-review-has-one-predicate" data-who="reckon-build" data-when="2026-09-30T19:04:18.560Z">
+    <div class="r-comment-body"><p>an independent review of r-20260930T182454384865-in-flight-review-has-one-predicate at head bb1ace4aab24fb33a1677c0f0d970897be6c3c12 is stored (status parsed, total 97) and discoverable by head; the change makes both readers of the reflex&#x27;s recorded review dispatch call recovery._recorded_review_is_live, closing the split on a pointer that exists but cannot be read</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-20260925-no-heartbeat" data-who="reckon-build" data-when="2026-09-25T07:55:00Z">
     <div class="r-comment-body"><p>The lead's review on 2026-09-25 made two changes.</p><ul><li><strong>No heartbeat.</strong> The planned §4, a <code>NEEDS YOU</code> line repeating every ten minutes, is retired. A line that repeats trains its reader to ignore it. Obligations reach the coordinator through the §5 hooks instead: once per turn, where they cannot be skipped. The follower keeps reporting transitions, and the needs-you line folded into <code>the-fleet-counters-count-the-fleet</code> §5 fires on change only.</li><li><strong>Home install.</strong> The hooks go in <code>~/.claude/settings.json</code>, so every project benefits.</li></ul><p>The S22 coordinator added two reuse conditions:</p><ul><li>the kinds derive from <code>reckon.crew.recovery.recover</code>'s classification and the drain view's unreconciled-runs figure</li><li>the Stop hook waits on S21's false-liveness fix</li></ul></div>
