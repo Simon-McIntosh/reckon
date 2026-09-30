@@ -1,0 +1,61 @@
+<section id="the-suite-cannot-reach-a-real-scheduler">
+  <h2>the-suite-cannot-reach-a-real-scheduler — one dispatch test held the fleet allocation; the suite now refuses any scheduler it did not provide</h2>
+
+  <p><strong>Reaching test, named with its call path.</strong> One test reached the
+  host's real <code>salloc</code> through dispatch. It is
+  <code>tests/test_concurrency_bound_refuses_by_name.py::test_a_dispatch_under_both_bounds_is_admitted</code>.
+  Its admitted dispatch follows <code>reckon/crew/dispatch.py:5175</code>
+  <code>resolve_backend_placement</code> → <code>dispatch.py:6312</code>
+  <code>ensure_reservation(project=project)</code> → <code>reckon/crew/placement.py:380</code>
+  <code>ensure_reservation</code> → <code>placement.py:431</code>
+  <code>_ensure_reservation_locked</code> → <code>placement.py:457</code>
+  <code>subprocess.run(["salloc", "--no-shell", "--job-name=reckon-reservation", …])</code>.
+  Under <code>RECKON_HOME</code> as a temporary tree no reservation record is published, so the
+  ensure concluded the allocation was absent and asked for one. The test provided no recording
+  scheduler of its own — only a <code>codex</code> stub — so nothing intercepted the call, and the
+  paths listed as candidates for this node were checked one at a time under the shim:
+  <code>test_dispatch_places_into_the_shared_reservation.py</code> already puts a recording
+  <code>salloc</code>/<code>squeue</code> on PATH and logged none; the others logged none, so the
+  others' recording schedulers (where they had one) did intercept, and where they had none they
+  never reached the ensure. A second test, <code>test_crew_placed_liveness.py::test_the_payload_log_decides_that_the_work_ran</code>,
+  reaches the real <code>squeue</code> with no recording stub; it is outside this node's write
+  scope and is named under <code>follow_ons</code> with its one-line fix.</p>
+
+  <p><strong>Fix.</strong> Two parts, one commit (<code>b62d9fde</code>).
+  <code>tests/test_concurrency_bound_refuses_by_name.py</code> now writes a recording scheduler
+  beside its backend-command stub and prepends it to PATH, so the admitted case's ensure is
+  answered by a granted job id and its assertion is unchanged.
+  <code>tests/conftest.py</code> gained a session guard: a refusing stub for each of
+  <code>salloc</code>, <code>sbatch</code>, <code>srun</code>, <code>squeue</code>,
+  <code>scontrol</code>, <code>scancel</code> goes first on PATH, each records its own argv and
+  its <code>PYTEST_CURRENT_TEST</code>, and a per-test fixture fails the test that reached one,
+  naming the verb and its argv. A test's own recording scheduler, prepended later, still takes
+  precedence. No assertion was deleted.</p>
+
+  <p><strong>Measure.</strong> The whole suite was run once under the refusing shim,
+  <code>-n 8</code>, per-worker <code>--basetemp</code>, with a shim directory under the run
+  directory first on PATH and <code>squeue -u $USER -h -o '%i %j %M'</code> logged before and after:
+  <strong>58 failed, 9038 passed, 72 skipped, 3 errors in 1842.60s (0:30:42)</strong>
+  (<code>logs/suite-head.log</code>). The shim log and the guard log record
+  <strong>zero <code>salloc</code> and zero <code>sbatch</code></strong> calls; no job named
+  <code>reckon-reservation</code> appears. The single refused reach is the out-of-scope
+  <code>squeue</code> in <code>test_crew_placed_liveness</code>.</p>
+
+  <p><strong>Negative control.</strong> With the recording scheduler reverted in a scratch tree at
+  the head revision, run under the refusing shim, the conftest guard fails that test and quotes
+  the refused call: <em>"this test reached a scheduler verb it did not provide: salloc --no-shell
+  --job-name=reckon-reservation --partition=all --cpus-per-task=32 --mem=128G"</em>
+  (<code>logs/negative-control.log</code>). The same refused call also raises a <code>CrewError</code>
+  from <code>placement.py:471</code>, so the log shows both.</p>
+
+  <p><strong>Attribution of the head failures.</strong> The 61 head failing ids were re-run at the
+  base revision (<code>008a18f12</code>) under the shim: 40 fail there too, so they are
+  base-attributable. The other 21 were re-run in isolation at the head under the shim: 21 passed
+  and exactly one errored — the guard's refusal of <code>test_crew_placed_liveness</code>. The
+  remaining 20 are load-only: they fail under the 30-minute whole-suite run at host load 34 and
+  pass in isolation. This node's change adds no failure other than the guard's intended refusal.
+  Logs: <code>logs/suite-base-targeted.log</code>, <code>logs/head-isolated-recheck.log</code>.</p>
+
+  <p><strong>Edit scope.</strong> <code>tests/conftest.py</code> and
+  <code>tests/test_concurrency_bound_refuses_by_name.py</code> only.</p>
+</section>
