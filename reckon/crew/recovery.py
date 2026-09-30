@@ -418,8 +418,9 @@ def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, Any]:
     named. Granting only the legacy path is what made the store's head key
     unusable from the reflex: the compose step chose the path, so a reviewer
     told to write there was refused the very path the store would read back.
-    The head is read from the run's own tree; when it cannot be resolved the
-    legacy path is granted alone rather than a guessed key.
+    The head is read from the run's own tree while it is readable, and from the
+    run's own record once that worktree has been reclaimed; when neither
+    resolves it the legacy path is granted alone rather than a guessed key.
 
     The resolved head is returned beside the paths because recognition keys on
     the pair a review stands for — the run it reviews and the head it read —
@@ -430,7 +431,7 @@ def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, Any]:
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
     source_node = str(node.get("id") or run_id)
-    head = _reviewed_run_head(record)
+    head = _run_head_for_review(record)
     write_paths = [str(review_module.review_path(project, run_id))]
     if head:
         write_paths.append(
@@ -1067,16 +1068,17 @@ def _record_carried_head(record: Mapping[str, Any]) -> str:
     return _object_id(str(record.get("head") or "").strip())
 
 
-def _review_head_for_failed_attempt(record: Mapping[str, Any]) -> str:
-    """The head a recorded attempt must cover to count as a dropped lane.
+def _run_head_for_review(record: Mapping[str, Any]) -> str:
+    """The revision a review of this run is about: worktree head, or record head.
 
     The run's worktree is the authority while it is readable. Once that worktree
     has been reclaimed, ``_review_tree`` falls back to the run's repository —
     the shared main checkout — whose HEAD is whatever that repository carries
-    now rather than the revision this run reached, so the comparison would key
-    on the wrong commit. The run's own record then supplies the head instead. A
-    record naming no worktree at all still resolves through its repository,
-    which for such a record is the tree it ran in.
+    now rather than the revision this run reached, so a composed dispatch and a
+    dropped-lane comparison would both key on the wrong commit. The run's own
+    record then supplies the head instead. A record naming no worktree at all
+    still resolves through its repository, which for such a record is the tree
+    it ran in.
     """
     worktree_raw = str(record.get("worktree") or "").strip()
     if not worktree_raw or Path(worktree_raw).is_dir():
@@ -1111,7 +1113,7 @@ def _failed_review_backend(record: Mapping[str, Any]) -> str:
     recorded_head = str(recorded.get("head") or "").strip()
     if not recorded_head:
         return ""
-    current_head = _review_head_for_failed_attempt(record)
+    current_head = _run_head_for_review(record)
     if not current_head or not same_revision(recorded_head, current_head):
         return ""
     return backend

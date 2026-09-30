@@ -293,6 +293,28 @@ def test_a_reclaimed_worktree_reads_the_head_from_the_run_record(
         _release_watcher()
 
 
+def test_a_reclaimed_worktree_composes_its_review_for_the_recorded_head(
+    isolated_project: tuple[Path, Path, dict],
+) -> None:
+    """The composed dispatch names the run's own head, not the shared checkout.
+
+    The run's repository HEAD (``current``) differs from the head its record
+    names (``earlier``), so a composition that fell back to the checkout would
+    grant the head-keyed record path for the wrong revision.
+    """
+    config_home, repo, heads = isolated_project
+    record = _scoring_pointer(
+        config_home,
+        repo,
+        "r-compose-reclaimed",
+        commits=heads["earlier"],
+        worktree=str(repo.parent / "worktrees" / "gone"),
+    )
+    fields = recovery._review_dispatch_fields(record)
+    assert fields["head"] == heads["earlier"]
+    assert any(heads["earlier"] in path for path in fields["write_paths"])
+
+
 def test_a_recorded_attempt_naming_no_head_does_not_demote_its_lane(
     isolated_project: tuple[Path, Path, dict],
 ) -> None:
