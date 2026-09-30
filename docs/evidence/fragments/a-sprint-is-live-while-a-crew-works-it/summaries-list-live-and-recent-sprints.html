@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-sprint-is-live-while-a-crew-works-it">
+  <meta name="plan-title" content="Every summary lists open and recently closed sprints">
+  <meta name="plan-summary" content="Discovery and the roadmap summary share one compact sprints list, built once in Python. Both carry the same rows in the same order: live first, then open, then recently closed.">
+  <meta name="plan-evidence-for" content="a-sprint-is-live-while-a-crew-works-it">
+  <meta name="plan-recorded-at" content="2026-09-29">
+  <meta name="plan-verdict" content="passed">
+  <title>Every summary lists open and recently closed sprints | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Every summary lists open and recently closed sprints</h1>
+    <article class="landed-fragment" data-node="summaries-list-live-and-recent-sprints">
+      <p>Discovery's <code>read_plan(project)</code> and
+      <code>roadmap(view="summary")</code> both call
+      <code>roadmap.sprint_summary_rows</code>, so the two surfaces cannot
+      disagree about which sprints are open or recently closed.</p>
+      <p>A row carries the sprint id, theme, stored status, the liveness
+      fields, member and pending counts, completion percentage and, for a
+      closed sprint, its close date. Liveness is the read the fleet pane
+      uses; a stored marker is never consulted.</p>
+      <p>Ordering is live first, then open, then recently closed. The window
+      defaults to 14 days and is read from flight config as
+      <code>sprint_recent_days</code>.</p>
+      <p>Measured: five new tests pass; the sprint, roadmap and mcp summary
+      suites hold 143 passed at the dispatch base and 148 passed at the
+      worktree head, zero added failures by id. The reckon discovery summary
+      measures 1328 characters against an 80000-character ceiling. The
+      declared mutation, dropping the recently-closed window, fails the
+      ordering case.</p>
+    </article>
+  </main>
+</body>
+</html>
