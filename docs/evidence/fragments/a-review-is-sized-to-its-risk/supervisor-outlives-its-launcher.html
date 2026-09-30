@@ -1,0 +1,19 @@
+<section id="s5-supervisor-outlives-its-launcher">
+    <h2>§5 — The per-run supervisor survives the process that launched it</h2>
+    <p>Off the fleet, <code>_start_supervisor</code> (reckon/crew/dispatch.py) no longer forks the supervisor with
+      a single <code>Popen</code>. A <code>Popen</code> made the supervisor the launcher's child, so the launcher's
+      own end — a coordinator turn finishing, a shell returning — reaped the supervisor and orphaned the run it was
+      carrying. The forking path now double-forks: an intermediate process starts the supervisor in a session of its
+      own (<code>setsid</code>) and exits at once, so the supervisor is reparented away from the launcher before it
+      does any work. The intermediate reports the supervisor's pid back over a pipe, so <code>_start_supervisor</code>
+      still returns the pid <code>crew stop</code> signals and still runs <code>_confirm_supervisor_survived</code> on
+      it. The returned pid is the leader of its own session and process group, with the worker spawned inside that
+      group. The fleet batch-step path is unchanged.</p>
+    <p>Measure: <code>tests/test_supervisor_outlives_its_launcher.py</code> starts a supervisor from a long-lived child
+      launcher whose argv is a sleep stub and reads the kernel's <code>/proc/&lt;pid&gt;/stat</code> — 3 passed, exit 0.
+      The checks are that the supervisor's parent pid differs from the launcher's, that its pgrp and session both equal
+      its own pid, and that <code>SIGTERM</code> to the launcher's process group leaves it alive. Negative control:
+      restoring the single <code>Popen</code> with <code>start_new_session=True</code> fails the parent-pid assertion
+      on exactly the launcher's pid (<code>assert 448375 != 448375</code>), 1 failed / 2 passed, exit 1. Only the named
+      test file was run; the coordinator runs the wider population at merge.</p>
+</section>
