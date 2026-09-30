@@ -228,6 +228,67 @@ def test_a_fenced_snapshot_holds_two_trees_and_an_unfenced_one_the_registry(
     assert len(unfenced_calls) == FULL_SCAN
 
 
+def test_the_supervisor_snapshot_reads_two_trees_only_when_the_spec_is_fenced(
+    repository: Path, worktrees: list[Path], status_log: Path
+) -> None:
+    """The per-run supervisor's own spec path reads two trees when fenced.
+
+    The supervisor takes the boundary baseline from its spec rather than from a
+    direct call, so the fence fact must survive the spec. A fenced spec snapshots
+    the run's own worktree and the main checkout; an unfenced spec reads every
+    registered worktree.
+    """
+    run_tree = worktrees[0]
+
+    fenced_id = "r-supervisor-fenced"
+    fenced_directory = run_dir(fenced_id)
+    fenced_directory.mkdir(parents=True, exist_ok=True)
+    _reset(status_log)
+    dispatch_module._supervisor_tree_snapshot(
+        {
+            "run_directory": str(fenced_directory),
+            "repo": str(repository),
+            "worktree": str(run_tree),
+            "fenced": True,
+        }
+    )
+    fenced = json.loads(
+        (fenced_directory / dispatch_module.TREE_SNAPSHOT_NAME).read_text(
+            encoding="utf-8"
+        )
+    )
+    fenced_calls = _status_calls(status_log)
+
+    unfenced_id = "r-supervisor-unfenced"
+    unfenced_directory = run_dir(unfenced_id)
+    unfenced_directory.mkdir(parents=True, exist_ok=True)
+    _reset(status_log)
+    dispatch_module._supervisor_tree_snapshot(
+        {
+            "run_directory": str(unfenced_directory),
+            "repo": str(repository),
+            "worktree": str(run_tree),
+            "fenced": False,
+        }
+    )
+    unfenced = json.loads(
+        (unfenced_directory / dispatch_module.TREE_SNAPSHOT_NAME).read_text(
+            encoding="utf-8"
+        )
+    )
+    unfenced_calls = _status_calls(status_log)
+
+    assert len(fenced["trees"]) == 2
+    assert {Path(t["path"]).resolve() for t in fenced["trees"]} == {
+        repository.resolve(),
+        run_tree.resolve(),
+    }
+    assert len(fenced_calls) == 2
+
+    assert len(unfenced["trees"]) == FULL_SCAN
+    assert len(unfenced_calls) == FULL_SCAN
+
+
 def test_a_fenced_promotion_makes_two_status_calls_and_an_unfenced_one_fifty_one(
     repository: Path, worktrees: list[Path], status_log: Path
 ) -> None:

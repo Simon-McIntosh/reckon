@@ -5047,6 +5047,7 @@ def dispatch(
                             repo_root=repo_root,
                             worktree=Path(worktree["path"]),
                             plan=plan,
+                            fenced=bool(record["fenced"]),
                             prompt_path=prompt_path,
                             log_path=log_path,
                             stderr_path=stderr_path,
@@ -6450,19 +6451,50 @@ def _supervisor_exit_detail(run_directory: Path) -> str | None:
     return detail or "the supervisor exited without recording a detail"
 
 
-def _confirm_supervisor_survived(pid: int, run_directory: Path, run_id: str) -> None:
-    """Fail the dispatch when the supervisor has already exited.
+def _supervisor_launched_worker(run_directory: Path) -> bool:
+    """Whether the supervisor's exit record names a worker it spawned.
 
-    The batch step acknowledges a spawn as soon as the child exists, so a
-    supervisor that cannot find its run -- because it started under the wrong
-    crew home -- is acknowledged and then exits at once. A dispatch that
-    returned that pid would report a live worker that never started. The
-    supervisor writes its exit record before it ends and ``process_alive``
-    reads a zombie as dead, so a short bounded wait tells a supervisor that
-    reached its run from one that did not.
+    A supervisor that reached its run spawns the worker and writes the exit
+    record with the worker's pid; a launch failure or a pre-spawn stop writes
+    the same record with no worker pid and a detail. So a record naming a worker
+    is the receipt of a launch that happened, whatever the worker then did. Each
+    attempt clears the canonical record before its supervisor starts, so the one
+    read here belongs to the supervisor this dispatch just started.
+    """
+    try:
+        record = json.loads(
+            (run_directory / EXIT_RECORD_NAME).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return False
+    if not isinstance(record, Mapping):
+        return False
+    return record.get("worker_pid") is not None
+
+
+def _confirm_supervisor_survived(pid: int, run_directory: Path, run_id: str) -> str:
+    """Confirm the supervisor reached its run, and name the run on success.
+
+    A dispatch that launched a worker must never be refused, so a supervisor
+    whose exit record names the worker it spawned counts as having reached its
+    run: the launch happened and its outcome belongs to the worker, not to the
+    dispatch. That is the case a fast launch produces — the supervisor scans,
+    spawns, collects and records inside this window — and it must return, not
+    refuse.
+
+    The refusal is reserved for a supervisor that exits inside the window
+    without such a record: one that could not find its run, because it started
+    under the wrong crew home, or one whose spawn failed. The batch step
+    acknowledges a spawn as soon as the child exists, so a dispatch that
+    returned such a pid would report a live worker that never started. The
+    supervisor writes its exit record before it ends and ``process_alive`` reads
+    a zombie as dead, so a short bounded wait tells a supervisor that reached
+    its run from one that did not.
     """
     deadline = time.monotonic() + SUPERVISOR_SURVIVAL_SECONDS
     while True:
+        if _supervisor_launched_worker(run_directory):
+            return run_id
         detail = _supervisor_exit_detail(run_directory)
         if detail is not None:
             raise CrewError(
@@ -6476,7 +6508,7 @@ def _confirm_supervisor_survived(pid: int, run_directory: Path, run_id: str) -> 
                 "an exit record"
             )
         if time.monotonic() >= deadline:
-            return
+            return run_id
         time.sleep(SUPERVISOR_SURVIVAL_POLL_SECONDS)
 
 
@@ -6487,6 +6519,7 @@ def _supervisor_spec(
     repo_root: Path,
     worktree: Path,
     plan: _backends.LaunchPlan,
+    fenced: bool = False,
     prompt_path: Path,
     log_path: Path,
     stderr_path: Path,
@@ -6510,6 +6543,10 @@ def _supervisor_spec(
         # starts this supervisor under the dispatcher's home rather than its own.
         "environment": _carried_crew_environment(),
         "worktree": str(worktree),
+        # Whether this launch was composed inside the fence, carried so the
+        # supervisor's boundary baseline reads the same two trees the dispatch
+        # record names.
+        "fenced": fenced,
         "prompt_path": str(prompt_path),
         "log_path": str(log_path),
         "stderr_path": str(stderr_path),
@@ -6748,6 +6785,7 @@ def supervised_launch(
             repo_root=repo_root,
             worktree=worktree,
             plan=plan,
+            fenced=bool(record.get("fenced")),
             prompt_path=prompt_path,
             log_path=log_path,
             stderr_path=stderr_path,
@@ -6912,21 +6950,13 @@ def _write_boundary_tree_snapshot(
 
 
 def _supervisor_tree_snapshot(spec: Mapping[str, Any]) -> None:
-    """Write the boundary baseline, or its failure, into the run directory.
-
-    The supervisor's baseline reads every registered worktree. A fenced run's
-    boundary *check* narrows to its own worktree and the main checkout, but the
-    baseline those two are compared against must be complete: it is the record
-    of the trees before any worker write, and a baseline missing a tree cannot
-    refuse a change to it. The narrowing belongs to the comparison — promotion
-    reads the recorded fence fact and scans the two trees — and to the inline
-    baseline dispatch takes for a lane it launches itself. The supervisor takes
-    the full registry snapshot, exactly as the delegated lane and every run
-    recorded before the fence fact existed do.
-    """
+    """Write the boundary snapshot, or its failure, into the run directory."""
+    worktree_value = str(spec.get("worktree") or "").strip()
     _write_boundary_tree_snapshot(
         Path(str(spec["run_directory"])),
         Path(str(spec["repo"])),
+        worktree=Path(worktree_value) if worktree_value else None,
+        fenced=bool(spec.get("fenced")),
     )
 
 
