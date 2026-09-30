@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="41">
+<meta name="plan-version" content="42">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
-<meta name="plan-impl" content="0.65">
+<meta name="plan-impl" content="0.7">
 </head>
 <body>
   <main class="plan-doc">
@@ -206,6 +206,11 @@
     <div class="r-fu-body"><p>Make the reflex's repair of an unpromoted reviewed run a <code>crew resume</code> of that run, with the composed findings as advice. Keep a new repair node only for a promoted run. A test covers both cases: an unpromoted implement run with findings is resumed, not dispatched, with no scope-conflict refusal; a promoted one gets a new node based on its reviewed head. The section 3 comment of 10:25 has the refusal text.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §3</pre>
     </article>
+<article class="r-fu" data-id="f-arist-005" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-30T18:30:00Z" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Scope the repair reflex to repository findings</h4>
+    <div class="r-fu-body"><p>After a-repair-hold-names-its-cause merges into <code>dispatch_repair_for_run</code>:</p><ol><li>Skip a round, as decline-only, when no finding cites a repository path.</li><li>Give a repair dispatch the reviewed run's suite pair, so its review can count added failures.</li><li>Route <code>_stored_review</code> through the record-carried head.</li><li>Stop the review reflex from dispatching a review of a run whose tier is none.</li></ol><p>The section 5 comment of 18:30 has the measured cases.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §3</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260926T130044343701-review-of-a-review-is-sized-to-its-risk-readback" data-who="reckon-build" data-when="2026-09-26T14:05:54.400Z">
@@ -260,7 +265,10 @@
     <div class="r-comment-body"><p>_review_dispatch_fields and _failed_review_backend (reckon/crew/recovery.py) now resolve the reviewed head through one _run_head_for_review helper — the worktree head while readable, else the run's own manifest last commit or recorded head, never the shared main checkout — and the review-dispatch fixtures that recorded a failed attempt without a head now name the run's current head; measure: test_review_lane_follows_its_run.py 6 passed, test_review_reflex_selects_a_backend.py 4 passed, test_obligations_do_not_mislead.py 2 passed, test_rereview_keeps_its_lane.py 5 passed, negative-control red on the earlier-head lane assertion.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T105457692031-review-of-rereview-keeps-its-lane" data-who="reckon-build" data-when="2026-09-30T11:12:42.745Z">
-    <div class="r-comment-body"><p>an independent review of run r-20260930T094932424741-rereview-keeps-its-lane is stored beside reviewed head 6b4584ce, scoring goal_fidelity 19, evidence 19, scope_discipline 19, durability 18 and fit 18 (total 93, no absent dimension, complete True), with one finding: reckon/crew/recovery.py:574 _stored_review still resolves the classification head through the checkout fallback, so for a reclaimed worktree the review this change now writes at the run&#x27;s own head is invisible to dispatch_review_for_run (recovery.py:1239), classify_pointer and dispatch_repair_for_run — measured with a positive control: a complete stored record at the run&#x27;s head H returns None from _stored_review while select_review_for_head(H) finds it.</p></div>
+    <div class="r-comment-body"><p>an independent review of run r-20260930T094932424741-rereview-keeps-its-lane is stored beside reviewed head 6b4584ce, scoring goal_fidelity 19, evidence 19, scope_discipline 19, durability 18 and fit 18 (total 93, no absent dimension, complete True), with one finding: reckon/crew/recovery.py:574 _stored_review still resolves the classification head through the checkout fallback, so for a reclaimed worktree the review this change now writes at the run's own head is invisible to dispatch_review_for_run (recovery.py:1239), classify_pointer and dispatch_repair_for_run — measured with a positive control: a complete stored record at the run's head H returns None from _stored_review while select_review_for_head(H) finds it.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-20260930T183000-reflex-lane-and-scope" data-who="s25-coord" data-when="2026-09-30T18:30:00Z">
+    <div class="r-comment-body"><p>Landed for this section on 2026-09-30:</p><ul><li><strong>rereview-keeps-its-lane</strong> (7cffbbdd, review 93). A review recorded for an earlier head no longer counts as the lane dropping the run, so a repaired run's re-review keeps its lane.</li><li><strong>repair-starts-at-the-reviewed-head</strong> (7a853689, review 94). A repair is cut at the reviewed head.</li></ul><p>In flight: <strong>dropped-lane-means-a-launched-attempt</strong>. A dispatch refused, left awaiting a lane, or withdrawn before its worker launched does not count as a drop. s22 measured a withdrawn attempt re-creating the no-lane hold.</p><p>Queued behind s22's a-repair-hold-names-its-cause, which edits <code>dispatch_repair_for_run</code>:</p><ul><li>The empty-scope skip tests the composed write scope, which carries the reviewed run's fence. A round whose findings all name a manifest outside the repository still gets a repair, which invents a test (s22's r-20260930T164620132498, rejected). The skip must test the findings' own cited paths.</li><li>Repair nodes carry no suite pair, so their reviews cannot derive added failures.</li></ul><p>Also open: <code>_stored_review</code> still resolves the head through the reclaimed-worktree fallback (review of 6b4584ce). The review reflex dispatches reviews for tier-none runs that promote without one.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T195034464501-review-of-review-findings-compose-one-repair" data-who="reckon-build" data-when="2026-09-28T20:06:07.166Z">
     <div class="r-comment-body"><p>review of r-20260928T193846170874-review-findings-compose-one-repair stored at ~/.config/reckon/crew/reviews/reckon/r-20260928T193846170874-review-findings-compose-one-repair.json (and its .at-fac12a7e… companion): status parsed, all 5 dimensions scored 0..20, total 86 (goal_fidelity 18, evidence 18, scope_discipline 20, durability 14, fit 16), added_failure_count 0 over the reviewed run's own baseline_suite/after_suite gate logs, 3 findings.</p></div>
