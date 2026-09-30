@@ -273,6 +273,11 @@ def test_failed_promotion_without_a_terminal_manifest_keeps_the_writer(
             failure_classification="negative-result",
             outcome="the failed run has no terminal manifest",
             root=repository,
+            live_run_waiver=(
+                "the stub process stands in for the worker; this case asserts "
+                "the release keeps a writer whose manifest states nothing, "
+                "which the waiver is what admits"
+            ),
         )
 
         assert promoted["release"]["process_signalled"] is False

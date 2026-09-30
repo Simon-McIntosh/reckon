@@ -219,6 +219,17 @@ def _node(**overrides) -> crew.TaskNode:
     return crew.TaskNode(**fields)
 
 
+# The launcher in _dispatch records the pytest process as the run's worker, so
+# a promotion of one of these fixtures is admitted only with the live-run waiver
+# an operator would give. What each case asserts is the ledger row a promotion
+# writes. No helper wraps the calls, so the one reason is stated here and passed
+# at each promotion whose recorded pid is alive.
+_PLUMBING_WAIVER = (
+    "the pytest process stands in for the worker; this fixture exercises "
+    "promotion plumbing"
+)
+
+
 def _dispatch(repo, *, fixture: str | None = None, **kwargs) -> dict:
     node_kwargs = kwargs.pop("node_kwargs", {})
     node_id = str(node_kwargs.get("id") or "node-a")
@@ -525,7 +536,9 @@ def test_promotion_reads_terminal_time_and_usage_without_observe(home, repo) -> 
         "".join(json.dumps(event) + "\n" for event in events)
     )
 
-    stored = crew.complete(record["run_id"], gate="passed")["record"]
+    stored = crew.complete(
+        record["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER
+    )["record"]
 
     assert stored["completed_at"] == terminal_time
     assert stored["completed_at_source"] == "terminal_event"
@@ -546,7 +559,9 @@ def test_stream_duration_is_separate_from_stalled_wall_time(home, repo) -> None:
     pointer["created_at"] = "2027-01-01T00:00:00Z"
     crew._write_json(crew.pointer_path(record["run_id"]), pointer)
 
-    stored = crew.complete(record["run_id"], gate="passed")["record"]
+    stored = crew.complete(
+        record["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER
+    )["record"]
 
     assert stored["worker_seconds"] == 45 * 60
     assert stored["worker_seconds_source"] == "stream_events"
@@ -571,7 +586,9 @@ def test_session_cumulative_tokens_become_summable_run_deltas(home, repo) -> Non
         input_tokens=100,
         output_tokens=10,
     )
-    first_stored = crew.complete(first["run_id"], gate="passed")["record"]
+    first_stored = crew.complete(
+        first["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER
+    )["record"]
 
     second = _dispatch(
         repo,
@@ -586,7 +603,9 @@ def test_session_cumulative_tokens_become_summable_run_deltas(home, repo) -> Non
         input_tokens=150,
         output_tokens=15,
     )
-    second_stored = crew.complete(second["run_id"], gate="passed")["record"]
+    second_stored = crew.complete(
+        second["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER
+    )["record"]
 
     session_runs = [first_stored, second_stored]
     assert sum(run["budget"]["tokens"]["input_tokens"] for run in session_runs) == 150
@@ -670,7 +689,9 @@ def test_promotion_uses_stream_mtime_for_untimestamped_stream(
     pointer["created_at"] = "2027-02-03T04:00:06Z"
     crew._write_json(crew.pointer_path(record["run_id"]), pointer)
 
-    stored = crew.complete(record["run_id"], gate="passed")["record"]
+    stored = crew.complete(
+        record["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER
+    )["record"]
 
     assert stored["completed_at"] == "2027-02-03T04:05:06Z"
     assert stored["completed_at_source"] == "stream_mtime"
@@ -692,7 +713,9 @@ def test_stalled_untimestamped_stream_records_typed_duration_absence(
     pointer["created_at"] = "2027-02-03T03:00:00Z"
     crew._write_json(crew.pointer_path(record["run_id"]), pointer)
 
-    stored = crew.complete(record["run_id"], gate="passed")["record"]
+    stored = crew.complete(
+        record["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER
+    )["record"]
 
     assert stored["worker_seconds"] is None
     assert stored["worker_seconds_source"] == "stalled"
@@ -715,7 +738,9 @@ def test_promotion_prefers_event_time_over_stream_mtime(home, repo) -> None:
     later = datetime(2028, 1, 1, tzinfo=timezone.utc).timestamp()
     os.utime(record["log_path"], (later, later))
 
-    stored = crew.complete(record["run_id"], gate="passed")["record"]
+    stored = crew.complete(
+        record["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER
+    )["record"]
 
     assert stored["completed_at"] == "2027-01-02T03:04:05Z"
     assert stored["completed_at_source"] == "terminal_event"
@@ -731,7 +756,9 @@ def test_promotion_uses_newest_resume_stream_mtime(home, repo) -> None:
     os.utime(record["log_path"], (first, first))
     os.utime(resume, (second, second))
 
-    stored = crew.complete(record["run_id"], gate="passed")["record"]
+    stored = crew.complete(
+        record["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER
+    )["record"]
 
     assert stored["completed_at"] == "2027-01-02T00:00:00Z"
     assert stored["completed_at_source"] == "stream_mtime"
@@ -785,7 +812,9 @@ def test_promotion_uses_original_stream_when_it_has_newest_mtime(home, repo) -> 
     os.utime(resume, (earlier, earlier))
     os.utime(record["log_path"], (later, later))
 
-    stored = crew.complete(record["run_id"], gate="passed")["record"]
+    stored = crew.complete(
+        record["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER
+    )["record"]
 
     assert stored["completed_at"] == "2027-01-02T00:00:00Z"
     assert stored["completed_at_source"] == "stream_mtime"
@@ -796,7 +825,9 @@ def test_promotion_falls_back_when_no_stream_survives(home, repo, monkeypatch) -
     Path(record["log_path"]).unlink(missing_ok=True)
     monkeypatch.setattr(crew, "_utc_now", lambda: "2027-02-03T04:05:06Z")
 
-    stored = crew.complete(record["run_id"], gate="passed")["record"]
+    stored = crew.complete(
+        record["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER
+    )["record"]
 
     assert stored["completed_at"] == "2027-02-03T04:05:06Z"
     assert stored["completed_at_source"] == "promotion_time"
@@ -1293,6 +1324,8 @@ def test_complete_command_assumes_utc_for_a_naive_completion_stamp(home, repo) -
             "0",
             "--gate-log-path",
             "/durable/r-node-a/gate.log",
+            "--waive-live-run",
+            _PLUMBING_WAIVER,
         ],
     )
 
@@ -1324,6 +1357,7 @@ def test_explicit_promotion_stamp_reaches_every_duration_consumer(home, repo) ->
         record["run_id"],
         gate="passed",
         completed_at="2027-01-01T02:00:00Z",
+        live_run_waiver=_PLUMBING_WAIVER,
     )["record"]
     effort = ledger.effort_report(PROJECT, root=repo, declared={"plan-a": "M"})
     derived = capabilities.derive_capabilities({PROJECT: repo / "docs"})
@@ -1731,7 +1765,9 @@ def test_local_selection_survives_pointer_promotion(home, repo) -> None:
     )
 
     assert crew.read_pointer(record["run_id"])["local"] is True
-    promoted = crew.complete(record["run_id"], gate="passed")["record"]
+    promoted = crew.complete(
+        record["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER
+    )["record"]
     assert promoted["local"] is True
     assert promoted["agent"]["local"] is True
 
@@ -1866,13 +1902,18 @@ def test_the_scope_changed_flag_defaults_false_and_is_settable(home, repo) -> No
     )
 
     assert (
-        crew.complete(honest["run_id"], gate="passed")["record"]["scope_changed"]
+        crew.complete(
+            honest["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER
+        )["record"]["scope_changed"]
         is False
     )
     assert (
-        crew.complete(widened["run_id"], gate="passed", scope_changed=True)["record"][
-            "scope_changed"
-        ]
+        crew.complete(
+            widened["run_id"],
+            gate="passed",
+            scope_changed=True,
+            live_run_waiver=_PLUMBING_WAIVER,
+        )["record"]["scope_changed"]
         is True
     )
 
@@ -1902,6 +1943,7 @@ def test_changed_lines_are_measured_from_the_scoped_diff(home, repo) -> None:
             gate="passed",
             commits=[commit],
             changed_lines={"detail": "not a measurement"},
+            live_run_waiver=_PLUMBING_WAIVER,
         )
 
     assert ledger.runs(PROJECT, root=repo) == []
@@ -2627,7 +2669,7 @@ def test_a_promoted_row_carries_the_throughput_its_observation_measured(
     generation_seconds = result["duration_api_ms"] / 1000
     window = min(entry["contextWindow"] for entry in result["modelUsage"].values())
 
-    crew.complete(record["run_id"], gate="passed")
+    crew.complete(record["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER)
 
     row = _row_from_disk(repo, record["run_id"])
     measured = row["throughput"]
@@ -2657,7 +2699,7 @@ def test_a_run_that_measured_no_rate_omits_the_keys_it_could_not_measure(
     """
     record = _dispatch(repo, fixture="codex-turn.jsonl")
 
-    crew.complete(record["run_id"], gate="passed")
+    crew.complete(record["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER)
 
     row = _row_from_disk(repo, record["run_id"])
     measured = row["throughput"]
@@ -2684,7 +2726,7 @@ def test_a_run_with_no_terminal_observation_carries_no_throughput_at_all(
     record = _dispatch(repo)
     Path(record["log_path"]).write_text("")
 
-    crew.complete(record["run_id"], gate="passed")
+    crew.complete(record["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER)
 
     assert "throughput" not in _row_from_disk(repo, record["run_id"])
 
@@ -2750,7 +2792,7 @@ def test_a_promoted_row_carries_the_budget_fallback_its_pointer_held(
     assert record["backend"] == "beta"
     assert record["budget_fallback"]["requested_backend"] == "alpha"
 
-    crew.complete(record["run_id"], gate="passed")
+    crew.complete(record["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER)
 
     fallback = _row_from_disk(repo, record["run_id"])["budget_fallback"]
     assert fallback["requested_backend"] == "alpha"
@@ -2764,7 +2806,7 @@ def test_a_run_that_was_never_handed_over_omits_the_fallback_key(home, repo) -> 
     """Ran-on-the-lane-asked-for and was-substituted must not read alike."""
     record = _dispatch(repo, fixture="codex-turn.jsonl")
 
-    crew.complete(record["run_id"], gate="passed")
+    crew.complete(record["run_id"], gate="passed", live_run_waiver=_PLUMBING_WAIVER)
 
     assert "budget_fallback" not in _row_from_disk(repo, record["run_id"])
 
