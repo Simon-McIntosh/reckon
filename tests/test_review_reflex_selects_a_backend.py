@@ -166,13 +166,30 @@ def _scoring_pointer(
     return record
 
 
-def _failed_attempt(backend: str) -> dict:
-    """A review dispatch the run records, whose review run is no longer alive."""
+def _repo_head(repo: Path) -> str:
+    """The revision the fixture run's tree carries now."""
+    return subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+def _failed_attempt(backend: str, *, head: str) -> dict:
+    """A review dispatch the run records, whose review run is no longer alive.
+
+    The reflex demotes a lane only for the head a recorded attempt covered, so
+    the fixture names the run's current head: an attempt recorded without one
+    reads as covering no head, and no longer demotes the lane it names.
+    """
     return {
         "status": "dispatched",
         "reason": f"the review dispatched automatically as run r-{backend}-dead",
         "run_id": None,
         "backend": backend,
+        "head": head,
         "at": "2026-09-22T10:00:00Z",
         "attempt": 1,
     }
@@ -207,7 +224,10 @@ def test_a_not_already_attempted_lane_is_not_reselected(
     """A lane that already dropped this review is not composed onto again."""
     config_home, repo = isolated_project
     record = _scoring_pointer(
-        config_home, repo, "r-dropped", previous=_failed_attempt(LOCAL_BACKEND)
+        config_home,
+        repo,
+        "r-dropped",
+        previous=_failed_attempt(LOCAL_BACKEND, head=_repo_head(repo)),
     )
     try:
         report = _compose(record)
@@ -260,7 +280,10 @@ def test_no_alternative_lane_refuses_rather_than_retrying_the_dropped_one(
     """With only the dropped lane configured the reflex states the refusal."""
     config_home, repo = isolated_project
     record = _scoring_pointer(
-        config_home, repo, "r-stuck", previous=_failed_attempt(LOCAL_BACKEND)
+        config_home,
+        repo,
+        "r-stuck",
+        previous=_failed_attempt(LOCAL_BACKEND, head=_repo_head(repo)),
     )
     solo = {
         **CONFIG,

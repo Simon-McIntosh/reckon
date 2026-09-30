@@ -418,8 +418,9 @@ def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, Any]:
     named. Granting only the legacy path is what made the store's head key
     unusable from the reflex: the compose step chose the path, so a reviewer
     told to write there was refused the very path the store would read back.
-    The head is read from the run's own tree; when it cannot be resolved the
-    legacy path is granted alone rather than a guessed key.
+    The head is read from the run's own tree while it is readable, and from the
+    run's own record once that worktree has been reclaimed; when neither
+    resolves it the legacy path is granted alone rather than a guessed key.
 
     The resolved head is returned beside the paths because recognition keys on
     the pair a review stands for — the run it reviews and the head it read —
@@ -430,7 +431,7 @@ def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, Any]:
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
     source_node = str(node.get("id") or run_id)
-    head = _reviewed_run_head(record)
+    head = _run_head_for_review(record)
     write_paths = [str(review_module.review_path(project, run_id))]
     if head:
         write_paths.append(
@@ -1037,18 +1038,85 @@ def _record_review_dispatch(
     _mutate_pointer(run_id, record)
 
 
+def _object_id(text: str) -> str:
+    """``text`` when it already names a git object id, otherwise empty."""
+    return text if re.fullmatch(r"[0-9A-Fa-f]{40,64}", text) else ""
+
+
+def _record_carried_head(record: Mapping[str, Any]) -> str:
+    """The head a run's own record names, for a worktree that has been reclaimed.
+
+    A manifest's ``commits:`` field is a run's last word on the revisions it
+    landed, so its last object-id entry is the head the run reached. A citation
+    that is not already an object id cannot be resolved without a tree and is
+    skipped rather than guessed; the pointer's own recorded head is read after
+    the manifest, because a run that has not yet written one still names the
+    revision it was dispatched against.
+    """
+    manifest = Path(str(record.get("manifest_path") or ""))
+    try:
+        data = parse_manifest(manifest.read_text())
+    except (OSError, ManifestParseError):
+        data = {}
+    entries = data.get("commits") or []
+    if isinstance(entries, str):
+        entries = [entries]
+    for entry in reversed(list(entries)):
+        sha = _object_id(str(entry).strip())
+        if sha:
+            return sha
+    return _object_id(str(record.get("head") or "").strip())
+
+
+def _run_head_for_review(record: Mapping[str, Any]) -> str:
+    """The revision a review of this run is about: worktree head, or record head.
+
+    The run's worktree is the authority while it is readable. Once that worktree
+    has been reclaimed, ``_review_tree`` falls back to the run's repository —
+    the shared main checkout — whose HEAD is whatever that repository carries
+    now rather than the revision this run reached, so a composed dispatch and a
+    dropped-lane comparison would both key on the wrong commit. The run's own
+    record then supplies the head instead. A record naming no worktree at all
+    still resolves through its repository, which for such a record is the tree
+    it ran in.
+    """
+    worktree_raw = str(record.get("worktree") or "").strip()
+    if not worktree_raw or Path(worktree_raw).is_dir():
+        return _reviewed_run_head(record)
+    return _record_carried_head(record)
+
+
 def _failed_review_backend(record: Mapping[str, Any]) -> str:
-    """The lane a run's most recent recorded attempt used, or empty.
+    """The lane the run's most recent recorded attempt used for its current head.
 
     A recorded attempt that produced neither a stored nor an in-flight review
-    has failed, and the caller reaches selection only when neither exists — so
-    whatever backend the record names is one this run has already been dropped
-    by, and recomposing onto it repeats the attempt rather than advancing it.
+    has failed, and the caller reaches selection only when neither exists — so a
+    backend the record names *for this head* is one the run has already been
+    dropped by, and recomposing onto it repeats the attempt rather than
+    advancing it.
+
+    The head the attempt composed for gates that reading. A run that has since
+    moved past the recorded revision is owed a different review, so the lane
+    that dropped the earlier attempt is free to carry the new one: counting it
+    as dropped would refuse the re-review on the very lane that carried the run.
+    An attempt naming no head cannot be tied to the current head and is not
+    counted either — the conservative direction, because recomposing onto a lane
+    that did drop this exact head costs one refused dispatch, whereas wrongly
+    withholding a lane leaves a run with no review at all.
     """
     recorded = record.get(REVIEW_DISPATCH_FIELD)
     if not isinstance(recorded, Mapping):
         return ""
-    return str(recorded.get("backend") or "").strip()
+    backend = str(recorded.get("backend") or "").strip()
+    if not backend:
+        return ""
+    recorded_head = str(recorded.get("head") or "").strip()
+    if not recorded_head:
+        return ""
+    current_head = _run_head_for_review(record)
+    if not current_head or not same_revision(recorded_head, current_head):
+        return ""
+    return backend
 
 
 def _review_excluded_backends(config: Mapping[str, Any]) -> set[str]:
