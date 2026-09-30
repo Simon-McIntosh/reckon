@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="69">
+<meta name="plan-version" content="70">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -347,6 +347,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T104735293203-review-of-hooks-install-is-a-command" data-who="reckon-build" data-when="2026-09-30T11:01:04.949Z">
     <div class="r-comment-body"><p>review of r-20260930T103658421113-hooks-install-is-a-command at 34df161cb: total 86 over the five dimensions (goal_fidelity 17, evidence 16, scope_discipline 19, durability 17, fit 17), added_failure_count 0 with added_failure_ids [] from the run's base and head arms (2 failed / 84 passed against 2 failed / 89 passed, the same two pytest ids in both), five findings recorded — the head gate log's revision line naming the base rather than the head it measures, a real-settings guard resolved through getpwuid while the command resolves through HOME, the harness reference dropping the "run from the checkout root" instruction, an inert --scope, and an evidence sentence over-claiming its guard coverage.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260930T103658421113-hooks-install-is-a-command" data-who="reckon-build" data-when="2026-09-30T11:01:59.666Z">
+    <div class="r-comment-body"><p>`reckon hooks install --scope user` prints the settings fragment and merges only with --write; --scope user maps explicitly to the installer&#x27;s user_settings_path() and is passed through when --settings is absent; the command prints the checkout it names on stderr; a duplicate install is refused non-zero and an installer refusal is surfaced with its message; measure: base 2 failed/84 passed against head 2 failed/91 passed over the gate files, zero added failures by id and seven new cases green.</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-20260925-no-heartbeat" data-who="reckon-build" data-when="2026-09-25T07:55:00Z">
     <div class="r-comment-body"><p>The lead's review on 2026-09-25 made two changes.</p><ul><li><strong>No heartbeat.</strong> The planned §4, a <code>NEEDS YOU</code> line repeating every ten minutes, is retired. A line that repeats trains its reader to ignore it. Obligations reach the coordinator through the §5 hooks instead: once per turn, where they cannot be skipped. The follower keeps reporting transitions, and the needs-you line folded into <code>the-fleet-counters-count-the-fleet</code> §5 fires on change only.</li><li><strong>Home install.</strong> The hooks go in <code>~/.claude/settings.json</code>, so every project benefits.</li></ul><p>The S22 coordinator added two reuse conditions:</p><ul><li>the kinds derive from <code>reckon.crew.recovery.recover</code>'s classification and the drain view's unreconciled-runs figure</li><li>the Stop hook waits on S21's false-liveness fix</li></ul></div>
