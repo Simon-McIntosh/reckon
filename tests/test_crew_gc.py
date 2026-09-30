@@ -67,6 +67,32 @@ def create_worktree(repo: Path, session: str, worker: str) -> Path:
     return Path(json.loads(result.stdout)["path"])
 
 
+def merged_worktree(repo: Path, session: str, worker: str) -> Path:
+    """A worktree whose commit the repository's main branch already carries."""
+    worktree = create_worktree(repo, session, worker)
+    (worktree / "delivered.txt").write_text("delivered\n")
+    git(worktree, "add", "delivered.txt")
+    git(worktree, "commit", "-q", "-m", "test: delivered work")
+    git(
+        repo,
+        "merge",
+        "-q",
+        "--no-ff",
+        git(worktree, "rev-parse", "HEAD"),
+        "-m",
+        "test: merge the delivered work",
+    )
+    return worktree
+
+
+def plant_harness_scratch(worktree: Path) -> None:
+    """Write the untracked scratch a harness plants in every worktree it provisions."""
+    (worktree / "codex-home").mkdir()
+    (worktree / "codex-home" / "config.toml").write_text("model = 'x'\n")
+    (worktree / "harness").mkdir()
+    (worktree / "harness" / "CLAUDE.md").write_text("# harness\n")
+
+
 def write_pointer(home: Path, run_id: str, worktree: Path) -> None:
     live = home / "crew" / "live"
     live.mkdir(parents=True, exist_ok=True)
@@ -222,6 +248,74 @@ def test_gc_apply_removes_only_integrated_unclaimed_worktrees(
     assert payload["removed_worktrees"] == [str(integrated)]
     assert not integrated.exists()
     assert dirty.exists() and live.exists()
+
+
+def test_a_merged_worktree_holding_only_harness_scratch_reads_integrated(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Scratch the harness writes for itself is not a run's uncommitted work."""
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    worktree = merged_worktree(repo, "scratch", "merged")
+    plant_harness_scratch(worktree)
+
+    result = CliRunner().invoke(
+        cli.main, ["crew", "gc", "--repo", str(repo), "--project", "test"]
+    )
+    payload = json.loads(result.output)
+    item = next(item for item in payload["worktrees"] if item["path"] == str(worktree))
+
+    assert result.exit_code == 0, result.output
+    assert item["classification"] == "integrated"
+    assert item["reclaimable"] is True
+    assert item["dirty"] == []
+
+
+def test_an_untracked_file_beside_harness_scratch_still_reads_dirty(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Only the harness's own scratch is left out; every other path still counts."""
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    worktree = merged_worktree(repo, "scratch", "plus")
+    plant_harness_scratch(worktree)
+    (worktree / "leftover.txt").write_text("leftover\n")
+
+    result = CliRunner().invoke(
+        cli.main, ["crew", "gc", "--repo", str(repo), "--project", "test"]
+    )
+    payload = json.loads(result.output)
+    item = next(item for item in payload["worktrees"] if item["path"] == str(worktree))
+
+    assert result.exit_code == 0, result.output
+    assert item["classification"] == "dirty"
+    assert item["reclaimable"] is False
+    assert item["dirty"] == ["?? leftover.txt"]
+
+
+def test_a_nested_path_named_after_the_scratch_is_not_excluded(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The exclusion is anchored at the worktree root, not on the name alone."""
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    worktree = merged_worktree(repo, "scratch", "nested")
+    plant_harness_scratch(worktree)
+    (worktree / "notes" / "codex-home").mkdir(parents=True)
+    (worktree / "notes" / "codex-home" / "keep.md").write_text("kept\n")
+
+    result = CliRunner().invoke(
+        cli.main, ["crew", "gc", "--repo", str(repo), "--project", "test"]
+    )
+    payload = json.loads(result.output)
+    item = next(item for item in payload["worktrees"] if item["path"] == str(worktree))
+
+    assert result.exit_code == 0, result.output
+    assert item["classification"] == "dirty"
+    assert item["dirty"] == ["?? notes/codex-home/keep.md"]
 
 
 def test_gc_reports_a_completed_shadow_with_a_retained_patch_as_disposable(
