@@ -573,7 +573,7 @@ def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, st
     project = str(record.get("project") or "")
     if not run_id or not project:
         return None, ""
-    head = _reviewed_run_head(record)
+    head = _run_head_for_review(record)
     try:
         review, _stale = select_review_for_head(
             project, run_id, head, tree=_review_tree(record)
