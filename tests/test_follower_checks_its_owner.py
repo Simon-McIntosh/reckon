@@ -76,19 +76,20 @@ OWNER_ENV = "RECKON_FOLLOWER_OWNER"
 
 # Reaching an arm costs a few seconds of interpreter and import latency.
 ARM_WITHIN_SECONDS = 30.0
-# The exit a dead owner triggers is measured on this login node at 0.811, 0.839
-# and 0.905 s for a read-only follower and 0.185, 0.242 and 0.185 s for the
-# holder, from its owner's death to the process leaving. Two seconds is 2.2x the
-# slowest sample, which leaves room for the interpreter teardown and the jitter
-# of a loaded node while staying short enough to be a bound rather than a wait.
-# The follower's wait pass polls every 0.1 s (``poll_interval`` in
-# ``_follow_watch_lines``), so five seconds would allow fifty passes: a
-# regression that asked about the owner once every fifty passes would still
-# pass it. Two seconds allows about twenty, and the samples show the check
-# answering on the pass it runs. The live-owner control shows the same window is
-# long enough to mean something: a follower which never checked would still be
-# running at its end.
-EXIT_WITHIN_SECONDS = 2.0
+# The bound separates a follower that leaves its dead owner from one that never
+# will. The follower runs its owner check on every wait pass, and a pass sleeps
+# ``poll_interval`` (0.1 s) between iterations but also carries the pass's own
+# work — a registration checkpoint, and the recovery sweep when its cadence
+# fires — so the mechanism gives no bound on how long one pass takes on a loaded
+# node. Measured on this node saturated (24 busy processes beside eight pytest
+# workers): the holder's exit reached 5.325 s and the read-only follower's
+# 2.418 s, against 0.185-0.242 s and 0.811-0.905 s idle. Eight seconds sits
+# above the slowest loaded sample and matches the reload bound below, while the
+# failing direction it must catch — a follower whose check never runs — is
+# unbounded, so any finite bound still separates the two. The live-owner control
+# shows the same window is long enough to mean something: a follower which never
+# checked would still be running at its end.
+EXIT_WITHIN_SECONDS = 8.0
 POLL_SECONDS = 0.05
 RELOAD_WITHIN_SECONDS = 8.0
 # The reloader polls its source stamp at most once per
