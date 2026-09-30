@@ -1755,19 +1755,20 @@ def _reviewed_run_suite_command(
     against the reviewed run when both were measured with the same command. So
     the repair inherits the reviewed run's own recorded suite command, read from
     its pointer's ``suite_command``, and falls back to the project's standing
-    ``review.suite`` declaration when the pointer names none. An unreadable or
-    undeclared standing suite is no command rather than a refusal: the repair
-    then carries the same absence a fresh run would.
+    ``review.suite`` declaration when the pointer names none. An *undeclared*
+    standing suite is no command: the repair then carries the same absence a
+    fresh run would. A declaration that is present but malformed is not an
+    absence — ``flight.review_suite`` refuses it by name, and that refusal
+    propagates so the caller reports it rather than silently inheriting no
+    suite, which would leave the repair running a different measurement from
+    the run it answers.
     """
     recorded = str(record.get("suite_command") or "").strip()
     if recorded:
         return recorded
-    try:
-        from reckon import flight
+    from reckon import flight
 
-        declaration = flight.review_suite(config)
-    except Exception:  # noqa: BLE001 - an unreadable declaration is no suite
-        return ""
+    declaration = flight.review_suite(config)
     if declaration is None:
         return ""
     return " ".join(declaration.command)
@@ -2033,10 +2034,32 @@ def dispatch_repair_for_run(
     # measured with. dispatch stamps the command it records on a run's pointer
     # from ``config.gates.suite_command``, so the inherited command rides the
     # config handed to the launch rather than editing the resolved config the
-    # lane above already read.
-    repair_config = _config_carrying_suite(
-        resolved, _reviewed_run_suite_command(record, resolved)
-    )
+    # lane above already read. A standing ``review.suite`` block that is present
+    # but malformed is refused by name rather than read as no standing suite, so
+    # the malformed declaration reaches the coordinator as a refusal instead of
+    # a repair launched with no inherited suite.
+    from reckon import flight
+
+    try:
+        inherited_suite = _reviewed_run_suite_command(record, resolved)
+    except flight.FlightConfigError as exc:
+        reason = f"the project's standing review suite is malformed: {exc}"
+        _record_repair_dispatch(
+            run_id,
+            status="refused",
+            reason=reason,
+            round_id=round_id,
+            node_id=node_id,
+            backend=backend,
+        )
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "refused": True,
+            "backend": backend,
+            "reason": reason,
+        }
+    repair_config = _config_carrying_suite(resolved, inherited_suite)
     try:
         launched = dispatch_module.dispatch(
             node=node,
