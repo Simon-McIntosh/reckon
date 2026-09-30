@@ -18,12 +18,13 @@ reason and launches nothing, and a round mixing a record path with a repository
 source path still composes and dispatches, with only the repository path in
 scope.
 
-A second defect on the same path is a refusal read as an absence. The repair
-inherits the reviewed run's suite command so its own review can reconcile its
-added-failure count against the same suite; when the pointer names no command it
-falls back to the project's standing ``review.suite`` declaration. That
-declaration refusing by name — present but malformed — must reach the
-coordinator as a refusal, not be caught and read as no standing suite.
+A second defect on the same path is a suite requirement read from the wrong
+run. The repair inherits the reviewed run's suite command so its own review can
+reconcile its added-failure count against the same suite. That command comes
+only from the reviewed run's own recorded pointer: the project's standing
+``review.suite`` declaration is the project's gate, not a measurement the
+reviewed run was ever taken with, so a repair of an unarmed run is unarmed too,
+whether the project declares a standing suite, one malformed, or none.
 """
 
 from __future__ import annotations
@@ -37,7 +38,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import crew, flight
+from reckon import crew
 from reckon.crew import recovery, repair, resumption, runs
 from reckon.crew import review as review_module
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
@@ -366,15 +367,16 @@ def test_the_repair_carries_the_reviewed_runs_suite_command(
     assert repairs[0]["config"]["gates"]["suite_command"] == "uv run pytest -q"
 
 
-def test_the_repair_falls_back_to_the_projects_standing_suite(
+def test_a_standing_suite_is_not_inherited_by_an_unarmed_run(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """A reviewed pointer naming no suite inherits the standing declaration.
+    """A reviewed pointer naming no suite leaves the repair unarmed.
 
     A run recorded before the project declared a standing suite carries no
-    ``suite_command`` of its own, so the repair falls back to the ``review.suite``
-    command the project declares now, joining its argument vector into the same
-    string a recorded suite command carries.
+    ``suite_command`` of its own, so it was measured with no suite. The project's
+    ``review.suite`` declaration is the project's own gate, not a measurement
+    this run was ever taken with, so the repair inherits nothing and carries the
+    same absence the run it answers carried.
     """
     config_home, repo, head_sha = isolated_project
     _completed_pointer(config_home, repo)
@@ -399,44 +401,46 @@ def test_the_repair_falls_back_to_the_projects_standing_suite(
 
     repairs = _repair_calls(calls)
     assert len(repairs) == 1
-    assert repairs[0]["config"]["gates"]["suite_command"] == "uv run pytest -q"
+    assert repairs[0]["config"].get("gates", {}).get("suite_command", "") == ""
+    done_when = str(repairs[0]["node"].done_when)
+    assert "baseline_suite" not in done_when
+    assert "after_suite" not in done_when
 
 
-def test_a_malformed_standing_suite_is_refused_by_name() -> None:
-    """A present-but-malformed standing suite is not read as no standing suite.
+def test_the_suite_command_reads_only_the_reviewed_pointer() -> None:
+    """The helper reads the pointer's own command and nothing else.
 
-    ``flight.review_suite`` returns ``None`` for an undeclared suite and refuses
-    a declaration that is present but malformed by raising ``FlightConfigError``.
-    The two are different states, and reading the second as the first launches
-    the repair with no inherited suite and no signal that anything was declared.
-    The refusal must propagate from the helper, so the caller can report it.
+    The reviewed run's recorded ``suite_command`` is the only source: a pointer
+    naming one carries it, and a pointer naming none yields no command. The
+    project's standing ``review.suite`` declaration is not consulted at all, so a
+    malformed declaration cannot turn into a refusal the repair path must handle.
     """
-    malformed = {"review": {"suite": {"command": "uv run pytest -q", "budget": "10m"}}}
-    with pytest.raises(flight.FlightConfigError):
-        recovery._reviewed_run_suite_command({"suite_command": ""}, malformed)
+    assert recovery._reviewed_run_suite_command({"suite_command": ""}) == ""
+    assert (
+        recovery._reviewed_run_suite_command({"suite_command": "uv run pytest -q"})
+        == "uv run pytest -q"
+    )
 
 
 def test_an_undeclared_standing_suite_is_no_command() -> None:
     """An absent standing suite stays an absence, not a refusal.
 
-    The companion to the malformed case: a project declaring no ``review.suite``
-    at all inherits no command, exactly as a fresh run with no standing suite
-    carries none. Reading this absence as a refusal would refuse every repair in
-    a project that declares no standing suite.
+    A project declaring no ``review.suite`` at all inherits no command, exactly
+    as a fresh run with no standing suite carries none.
     """
-    assert recovery._reviewed_run_suite_command({"suite_command": ""}, {}) == ""
+    assert recovery._reviewed_run_suite_command({"suite_command": ""}) == ""
 
 
-def test_the_reflex_refuses_a_malformed_standing_suite_without_dispatching(
+def test_the_reflex_composes_an_unarmed_repair_for_a_malformed_standing_suite(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """A malformed standing suite is recorded as a refusal, not launched silently.
+    """A malformed standing suite is not read as a declaration at all.
 
     Driven through the reflex: the reviewed run names no suite command of its
-    own, so the repair falls back to the standing declaration, which is present
-    but malformed. The reflex must record the refusal against the reviewed run
-    and dispatch nothing — the swallow this repair answers converted that
-    refusal into a repair launched with no inherited suite.
+    own, so it was unarmed. The project declares a standing suite that is present
+    but malformed — the declaration is not consulted, so the reflex dispatches an
+    unarmed repair rather than refusing, and the repair's brief names neither
+    suite arm.
     """
     config_home, repo, head_sha = isolated_project
     _completed_pointer(config_home, repo)
@@ -457,7 +461,9 @@ def test_the_reflex_refuses_a_malformed_standing_suite_without_dispatching(
     with _stubbed_dispatch(monkeypatch) as calls, _armed_fleet():
         resumption.sweep(PROJECT, config=malformed)
 
-    assert _repair_calls(calls) == []
-    recorded = runs.read_pointer(RUN_ID)["repair_dispatch"]
-    assert recorded["status"] == "refused"
-    assert "malformed" in recorded["reason"]
+    repairs = _repair_calls(calls)
+    assert len(repairs) == 1
+    assert repairs[0]["config"].get("gates", {}).get("suite_command", "") == ""
+    done_when = str(repairs[0]["node"].done_when)
+    assert "baseline_suite" not in done_when
+    assert "after_suite" not in done_when
