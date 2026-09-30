@@ -292,9 +292,7 @@ class _FleetChangeWatch:
                 # A save or a merge is a burst of events; let it settle so the
                 # burst costs one invalidation rather than one per event.
                 watch.drain(_CHANGE_SETTLE_S)
-                _invalidate_discovery_signatures(watch.root)
-                _invalidate_discovery_tree(watch.root)
-                metadata_index.invalidate_tree(watch.root)
+                _invalidate_tree_views(watch.root)
 
     def close(self) -> None:
         """Signal the watch thread to stop and release its descriptors."""
@@ -1331,24 +1329,11 @@ def _row_times(
 ) -> tuple[int, str]:
     """Return (created_unix_ts, edited_iso) for one file in a project's docs tree.
 
-    ``edited`` is the file's last git commit time, replaced by its working-tree
-    mtime when the path is modified since that commit or untracked, and never
-    earlier than ``created``.
+    Delegates to the shared stamp rule so the discovery payload and the
+    persisted metadata index derive one document's timestamps the same way.
     """
 
-    stat = path.stat()
-    rel = str(path.relative_to(repo_dir))
-    created = git_times.get(rel) or int(
-        getattr(stat, "st_birthtime", None) or stat.st_ctime
-    )
-    last_commit = git_last_times.get(rel)
-    mtime = int(stat.st_mtime)
-    edited_ts = mtime if last_commit is None or mtime > last_commit else last_commit
-    edited_ts = max(edited_ts, created)
-    edited = datetime.fromtimestamp(edited_ts).isoformat(  # noqa: DTZ006
-        timespec="seconds"
-    )
-    return created, edited
+    return metadata_index.stamps_for(path, repo_dir, git_times, git_last_times)
 
 
 def _discovery_signature(
@@ -1382,51 +1367,22 @@ def _invalidate_discovery_signatures(docs_dir: Path | None = None) -> None:
             del _SIGNATURE_MEMO[key]
 
 
-_SIGNATURE_FIGURE_SUFFIXES = (".png", ".svg", ".gif")
-
-
 def _walk_discovery_signature(
     docs_dir: Path, project: str, state_root: Path | None
 ) -> tuple[int, int]:
-    # One scandir pass over the tree: every HTML file anywhere, figure images
-    # under the top-level figures directory. Directory symlinks are not
-    # followed, matching the recursive glob this replaces.
+    # The docs-tree walk is shared with the metadata index: every HTML file
+    # anywhere, figure images under the top-level figures directory, directory
+    # symlinks not followed. One implementation, so the index's covered set and
+    # discovery's counted set cannot drift apart.
     count = 0
     newest = 0
-    figures_root = os.path.join(os.fspath(docs_dir), "figures")
-    pending = [os.fspath(docs_dir)]
-    while pending:
-        directory = pending.pop()
+    for _relative, path in metadata_index._covered_files(docs_dir):
         try:
-            entries = os.scandir(directory)
+            mtime = path.stat().st_mtime_ns
         except OSError:
             continue
-        with entries:
-            for entry in entries:
-                try:
-                    if entry.is_dir(follow_symlinks=False):
-                        pending.append(entry.path)
-                        continue
-                except OSError:
-                    continue
-                name = entry.name
-                if not (
-                    name.endswith(".html")
-                    or (
-                        name.endswith(_SIGNATURE_FIGURE_SUFFIXES)
-                        and (
-                            directory == figures_root
-                            or directory.startswith(figures_root + os.sep)
-                        )
-                    )
-                ):
-                    continue
-                try:
-                    mtime = entry.stat().st_mtime_ns
-                except OSError:
-                    continue
-                count += 1
-                newest = max(newest, mtime)
+        count += 1
+        newest = max(newest, mtime)
     for path in (
         docs_dir / ".reckon" / "project-state-migration.json",
         docs_dir / "state" / project / "project.json",
@@ -1528,6 +1484,19 @@ def _invalidate_discovery_tree(docs_dir: Path) -> None:
     root = str(Path(docs_dir).resolve())
     for key in [key for key in _DISC_CACHE if key[1] == root]:
         _DISC_CACHE.pop(key, None)
+
+
+def _invalidate_tree_views(root: Path) -> None:
+    """Drop every derived view of one docs tree after a reported change.
+
+    One entry point for the change watch: the discovery reuse window, the
+    cached discoveries and the in-process metadata index all key off the same
+    tree, so a change to any one of them must drop all three together.
+    """
+
+    _invalidate_discovery_signatures(root)
+    _invalidate_discovery_tree(root)
+    metadata_index.invalidate_tree(root)
 
 
 def _discovery_lock(cache_key: tuple[str, str]) -> threading.Lock:
@@ -2781,7 +2750,15 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown project"})
                 return
             try:
-                rows = metadata_index.index_rows(index_mounts[project], project)
+                index_docs = index_mounts[project]
+                index_repo = index_docs.parent
+                rows = metadata_index.index_rows(
+                    index_docs,
+                    project,
+                    repo_dir=index_repo,
+                    git_first=_git_first_committed(index_repo, index_docs),
+                    git_last=_git_last_committed(index_repo, index_docs),
+                )
             except Exception as exc:  # noqa: BLE001
                 self._send_json(
                     HTTPStatus.INTERNAL_SERVER_ERROR,

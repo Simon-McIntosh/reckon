@@ -21,6 +21,7 @@ import json
 import logging
 import os
 import threading
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -28,6 +29,12 @@ from pathlib import Path
 from reckon import _plan_html, figures, resources
 from reckon._store import _config_home, write_json_atomically
 from reckon.file_memo import file_signature
+
+#: A row's stamp source: a file and its stat identity in, ``(created, edited)``
+#: out. The default derives both from the stat identity; a caller that can
+#: reach the repository supplies the git-aware rule so the index and the served
+#: discovery payload agree on one document's timestamps.
+StampFn = Callable[[Path, list[int]], tuple[int, str]]
 
 LOGGER = logging.getLogger("reckon.metadata_index")
 
@@ -76,7 +83,7 @@ class IndexBuild:
 
 
 _LOCK = threading.Lock()
-_CACHE: dict[tuple[str, str], IndexBuild] = {}
+_CACHE: dict[tuple[str, str, bool], IndexBuild] = {}
 
 
 def clear() -> None:
@@ -95,23 +102,45 @@ def invalidate_tree(docs_dir: Path) -> None:
             del _CACHE[key]
 
 
-def index_rows(docs_dir: Path, project: str) -> list[dict]:
-    """Return the project's rows, rebuilding only a tree the watch dropped."""
+def index_rows(
+    docs_dir: Path,
+    project: str,
+    *,
+    repo_dir: Path | None = None,
+    git_first: Mapping[str, int] | None = None,
+    git_last: Mapping[str, int] | None = None,
+) -> list[dict]:
+    """Return the project's rows, rebuilding only a tree the watch dropped.
 
-    key = _cache_key(docs_dir, project)
+    A caller that supplies ``repo_dir`` and the git commit-time maps gets rows
+    whose stamps use the same source the served discovery payload uses, so a
+    reader merging the two never sees a document's timestamps move.
+    """
+
+    key = _cache_key(docs_dir, project, repo_dir is not None)
     with _LOCK:
         build = _CACHE.get(key)
     if build is None:
-        build = build_index(docs_dir, project)
+        build = build_index(
+            docs_dir, project, repo_dir=repo_dir, git_first=git_first, git_last=git_last
+        )
         with _LOCK:
             _CACHE[key] = build
     return [dict(row) for row in build.rows]
 
 
-def build_index(docs_dir: Path, project: str) -> IndexBuild:
+def build_index(
+    docs_dir: Path,
+    project: str,
+    *,
+    repo_dir: Path | None = None,
+    git_first: Mapping[str, int] | None = None,
+    git_last: Mapping[str, int] | None = None,
+) -> IndexBuild:
     """Build one project's rows, re-parsing only what its stat identity moved."""
 
     docs_dir = Path(docs_dir)
+    stamp = _make_stamp(repo_dir, git_first, git_last)
     known = _load_persisted(docs_dir, project)
     build = IndexBuild(project=project, docs_dir=docs_dir)
     entries: list[dict] = []
@@ -136,7 +165,7 @@ def build_index(docs_dir: Path, project: str) -> IndexBuild:
             build.added += 1
         else:
             build.rebuilt.append(relative)
-        fields = _row_for(path, relative, docs_dir, project, signature)
+        fields = _row_for(path, relative, docs_dir, project, signature, stamp)
         entry = {"path": relative, "stat": signature}
         if fields is None:
             entry["skip"] = True
@@ -151,16 +180,18 @@ def build_index(docs_dir: Path, project: str) -> IndexBuild:
     return build
 
 
-def _cache_key(docs_dir: Path, project: str) -> tuple[str, str]:
-    return (project, str(Path(docs_dir).resolve()))
+def _cache_key(docs_dir: Path, project: str, with_git: bool) -> tuple[str, str, bool]:
+    return (project, str(Path(docs_dir).resolve()), with_git)
 
 
 def _covered_files(docs_dir: Path) -> list[tuple[str, Path]]:
     """Return (docs-relative posix path, path) for every file the index covers.
 
     Every HTML file anywhere in the tree, plus figure images under the
-    top-level figures directory. Directory symlinks are not followed, matching
-    the discovery walk.
+    top-level figures directory. Directory symlinks are not followed. This is
+    the single docs-tree walk: the discovery change signature sweeps the same
+    function, so the index's covered set and discovery's counted set cannot
+    drift into two implementations.
     """
 
     figures_root = os.path.join(os.fspath(docs_dir), _FIGURE_DIR)
@@ -202,16 +233,21 @@ def _row_for(
     docs_dir: Path,
     project: str,
     signature: list[int],
+    stamp: StampFn,
 ) -> dict | None:
     """Return the row for one file, or None when it is not a listed file."""
 
     if path.suffix in _FIGURE_SUFFIXES:
-        return _figure_row(path, docs_dir, project, signature)
-    return _resource_row(path, docs_dir, project, signature)
+        return _figure_row(path, docs_dir, project, signature, stamp)
+    return _resource_row(path, docs_dir, project, signature, stamp)
 
 
 def _resource_row(
-    path: Path, docs_dir: Path, project: str, signature: list[int]
+    path: Path,
+    docs_dir: Path,
+    project: str,
+    signature: list[int],
+    stamp: StampFn,
 ) -> dict | None:
     try:
         resource = resources.identify_resource(docs_dir, path, project)
@@ -227,7 +263,7 @@ def _resource_row(
             else resource.canonical_relative_path
         ).with_suffix("")
     )
-    created, edited = _stat_stamps(signature)
+    created, edited = stamp(path, signature)
     status = (rec.get("status") or "") if resource.type == "plan" else ""
     return {
         "slug": resource.slug,
@@ -245,7 +281,11 @@ def _resource_row(
 
 
 def _figure_row(
-    path: Path, docs_dir: Path, project: str, signature: list[int]
+    path: Path,
+    docs_dir: Path,
+    project: str,
+    signature: list[int],
+    stamp: StampFn,
 ) -> dict | None:
     try:
         slug = path.relative_to(docs_dir / _FIGURE_DIR).as_posix()
@@ -253,7 +293,7 @@ def _figure_row(
         return None
     dims = figures._DIMS_BY_SUFFIX[path.suffix](path)
     capture, _caption = figures._capture_metadata(path)
-    created, edited = _stat_stamps(signature)
+    created, edited = stamp(path, signature)
     return {
         "slug": slug,
         "href": f"/{project}/figures/{slug}",
@@ -271,7 +311,7 @@ def _figure_row(
     }
 
 
-def _stat_stamps(signature: list[int]) -> tuple[int, str]:
+def _stat_stamps(path: Path, signature: list[int]) -> tuple[int, str]:
     """Return (created_unix_ts, edited_iso) from the file's own stat identity."""
 
     ctime_ns, mtime_ns = signature[4], signature[3]
@@ -281,6 +321,63 @@ def _stat_stamps(signature: list[int]) -> tuple[int, str]:
         timespec="seconds"
     )
     return created, edited
+
+
+def stamps_for(
+    path: Path,
+    repo_dir: Path,
+    git_first: Mapping[str, int],
+    git_last: Mapping[str, int],
+) -> tuple[int, str]:
+    """Return (created_unix_ts, edited_iso) for one file by the discovery rule.
+
+    ``created`` is the file's first commit time when it is tracked, falling back
+    to its birth time (or ctime). ``edited`` is its last commit time, replaced by
+    its working-tree mtime when the file is modified since that commit or
+    untracked, and never earlier than ``created``. Both the served discovery
+    payload and the persisted index derive their stamps here, so the two
+    payloads cannot disagree on one document's timestamps.
+    """
+
+    stat = path.stat()
+    try:
+        rel = str(path.relative_to(repo_dir))
+    except ValueError:
+        rel = ""
+    created = git_first.get(rel) or int(
+        getattr(stat, "st_birthtime", None) or stat.st_ctime
+    )
+    last_commit = git_last.get(rel)
+    mtime = int(stat.st_mtime)
+    edited_ts = mtime if last_commit is None or mtime > last_commit else last_commit
+    edited_ts = max(edited_ts, created)
+    edited = datetime.fromtimestamp(edited_ts).isoformat(  # noqa: DTZ006
+        timespec="seconds"
+    )
+    return created, edited
+
+
+def _make_stamp(
+    repo_dir: Path | None,
+    git_first: Mapping[str, int] | None,
+    git_last: Mapping[str, int] | None,
+) -> StampFn:
+    """Return the stamp source for a build.
+
+    Without a repository the row's stamps come from its stat identity alone.
+    With one, they follow the discovery rule so the index's timestamps match
+    the ones the served payload merges over them.
+    """
+
+    if repo_dir is None:
+        return _stat_stamps
+    first = git_first or {}
+    last = git_last or {}
+
+    def stamp(path: Path, signature: list[int]) -> tuple[int, str]:
+        return stamps_for(path, repo_dir, first, last)
+
+    return stamp
 
 
 def _index_path(docs_dir: Path, project: str) -> Path:
