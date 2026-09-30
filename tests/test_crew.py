@@ -1955,7 +1955,14 @@ def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
     _assert_attach_line_shape(waiver["attach_line"], "proj", "sess")
     assert crew.read_pointer(record["run_id"])["watch_override"] == waiver
     assert (
-        crew.complete(record["run_id"], gate="passed")["record"]["watch_override"]
+        crew.complete(
+            record["run_id"],
+            gate="passed",
+            live_run_waiver=(
+                "the recorded process stands in for the worker; this case checks "
+                "that watch_override rides the promotion row"
+            ),
+        )["record"]["watch_override"]
         == waiver
     )
 
