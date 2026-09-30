@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="worker-death-is-recorded">
   <meta name="plan-title" content="A Worker&#x27;s Death Is Recorded — exit status, a phase for being killed, and a resume that can reach it">
   <meta name="plan-summary" content="A worker ended by a signal leaves a pointer reading working forever; record how it died so resume becomes reachable">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="8.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,11 +23,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="47">
+<meta name="plan-version" content="48">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="76a3ee0f,ff1c26cf,b0c8ff90,4bafc250,45eabfb6,f84945eb,b16fa8e1,729dea35,fb88efce">
-<meta name="plan-impl" content="0.95">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -411,10 +411,11 @@
     <pre class="r-fu-prompt">/reckon-build worker-death-is-recorded §5</pre>
     <p class="r-fu-outcome">Already met on main; no implementation was needed. The currency audit worker-death-currency (r-20260930T125410018592, review 92) found all three items met at 21571a7e. (1) Recovery reads exit.json and lets a recorded signal, exit code or stream_records_seen of 0 decide the state before pid inference, which falls back only when no readable record exists (test_an_unreadable_record_falls_back_to_the_pid_verdict). (2) A redispatch refreshes the live pointer it replaces; tests/test_a_pointer_names_its_launching_host.py:124 pins the host surviving that write. (3) A failed resume keeps the session id it was resuming. The §5 remaining text is stale for the redispatch half. One follow-on from the audit, not a defect against this followup: resumption.py:435-436 swallows a backend-settings rebuild failure and reports the run as having no session. That is reachable only for a pointer written before the command field existed. Report: ~/.config/reckon/crew/reports/reckon/s22-coord/worker-death-currency/report.md.</p>
     </article>
-<article class="r-fu" data-id="f-wdr-003" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-30" data-recommends-skill="/reckon-build worker-death-is-recorded §5" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-wdr-003" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-30" data-recommends-skill="/reckon-build worker-death-is-recorded §5" data-resolved-at="2026-09-30T13:53:53+00:00" data-resolved-by="">
     <h4 class="r-fu-title">An end-to-end test for a worker killed by a signal</h4>
     <div class="r-fu-body"><p>§5 step 6, not covered by f-wdr-002's audit: a dispatched run whose worker is killed by a signal reports interrupted with the signal named, is offered for resume, and completes when resumed, pinned as one end-to-end test. In flight as a-killed-worker-resumes-to-completion (r-20260930T131135159155). If an existing test already drives the whole path, that node names it and commits nothing.</p></div>
     <pre class="r-fu-prompt">/reckon-build worker-death-is-recorded §5</pre>
+    <p class="r-fu-outcome">done — no followup. a-killed-worker-resumes-to-completion merged at 55b79123d and promoted (re-review 95, no failures in either arm, control admitted on its facts). No existing test drove the whole path, so a new tests/test_a_killed_worker_resumes_to_completion.py drives it end to end with a stub worker in a temporary repository and crew home. A dispatched run whose worker is killed by a signal classifies as interrupted with the signal named, is offered for resume, and the resumed attempt completes promotion. Making recovery ignore the exit record's signal reddens it. The first review (89) found three defects, all fixed on a resume of the same run: a wait that returned its last pointer on timeout now returns None; the gate logs, kept out of the tree by *.log, now live in the run directory under absolute paths; and a second control shows the stopped assertion fails when the resumed worker never ends. With f-wdr-002 found already met on main, every item of §5 has landed.</p>
     </article>
 </section>
 
@@ -540,7 +541,7 @@
     <div class="r-comment-body"><p>the independent review of r-20260930T131135159155-a-killed-worker-resumes-to-completion at head 5d5dedfee01f33fbcfbb47ea235eab5b5824a4d6 (base 598b19f51f6d10a4479b57f28e9910ef138f1126) is stored as a parsed record at both granted paths, byte identical at 15562 bytes — goal_fidelity 19, evidence 16, scope_discipline 19, durability 17, fit 18, total 89, absent [] and absent_items [], item_aggregate 6, five production call sites, added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline_suite/after_suite logs — with three findings: the three gate logs the run's evidence rests on are untracked and matched by .gitignore (*.log) so they vanish with the worktree while the committed fragment cites them by path; tests/test_a_killed_worker_resumes_to_completion.py:321 asserts `_wait_for_phase(...) is not None` which cannot fail on the phase it names because the helper returns its last read on timeout; and the manifest's suite log_path values are worktree-relative, so reckon.crew.review._read_gate_log resolves them against the run directory and every reader sees the added-failure count as unmeasured although both logs exist and show zero failures.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T131135159155-a-killed-worker-resumes-to-completion" data-who="reckon-build" data-when="2026-09-30T13:45:25.227Z">
-    <div class="r-comment-body"><p>The dispatch-to-promotion sequence a killed worker needs now passes as one test — tests/test_a_killed_worker_resumes_to_completion.py starts a stub worker under the run&#x27;s own supervisor in a throwaway repository and crew home, lets SIGTERM end it, and asserts in order that the run reads interrupted with SIGTERM named, that the launcher `crew resume` calls builds its plan, that the resumed attempt ends and is the one the run&#x27;s pointer names, and that promotion commits the ledger row carrying the resumed attempt&#x27;s exit (exit_code 0) — gate 108 passed at the base (exit 0) and 109 passed at the head (exit 0), one test added and no failure; the declared mutation (ignore the exit record&#x27;s signal) turns the run to `abandoned` and the case red, EXIT=1, and keeping the resumed stub alive reddens the wait the resumed-attempt assertions rest on, EXIT=1.</p></div>
+    <div class="r-comment-body"><p>The dispatch-to-promotion sequence a killed worker needs now passes as one test — tests/test_a_killed_worker_resumes_to_completion.py starts a stub worker under the run's own supervisor in a throwaway repository and crew home, lets SIGTERM end it, and asserts in order that the run reads interrupted with SIGTERM named, that the launcher `crew resume` calls builds its plan, that the resumed attempt ends and is the one the run's pointer names, and that promotion commits the ledger row carrying the resumed attempt's exit (exit_code 0) — gate 108 passed at the base (exit 0) and 109 passed at the head (exit 0), one test added and no failure; the declared mutation (ignore the exit record's signal) turns the run to `abandoned` and the case red, EXIT=1, and keeping the resumed stub alive reddens the wait the resumed-attempt assertions rest on, EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260928T052249153006-s22-currency-crew-runtime" data-who="reckon-build" data-when="2026-09-28T05:54:34.454Z">
     <div class="r-comment-body"><p>read-only currency audit of 19 sections across six plans; report at the node's reports dir: 2 landed-but-undeclared (a-worker-is-charged-to-a-job s4 and s5), 8 partial, 9 not-started, no closure candidates</p></div>
