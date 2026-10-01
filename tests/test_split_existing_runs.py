@@ -3,12 +3,15 @@
 Every test here drives the entry point against a synthesised project in a
 throwaway git repository whose state is reached through a throwaway config home
 and mount registry. The split is a write operation over other repositories'
-durable state, so each test also fingerprints the workstation's own registry
-and the state files it names, before and after: a migration that resolved to a
-real project would show up as a changed file rather than as a passing run.
+durable state, so each test's teardown watches the workstation's own mounted
+projects: a migration that resolved to a real project would deposit the case's
+own run ids there, so the check asserts that none of them appear.
 
-The fingerprint asserts it sees at least one real project, because an
-instrument that sees nothing cannot support a claim that nothing changed.
+The watch is by the case's own rows rather than by a stat fingerprint of the
+live trees, because a real promotion lands into a mounted project at any moment
+and an mtime comparison reads that unrelated write as a leak. The teardown
+asserts it can see at least one real project's state, because an instrument
+that sees nothing cannot support a claim that nothing leaked.
 """
 
 from __future__ import annotations
@@ -32,27 +35,43 @@ HOLDS = [{"backend": "local", "until": "2027-01-01T00:00:00Z"}]
 # ── The workstation's own state, watched across every test ──────────────────
 
 
-def _fingerprint(mounts: dict[str, Path]) -> dict[str, tuple[int, int | None] | None]:
-    """The state of every project a mount registry names, by stat."""
-    out: dict[str, tuple[int, int | None] | None] = {}
-    for project in sorted(mounts):
-        for name in ("crew.json", "runs"):
-            entry = Path(mounts[project]) / "state" / project / name
-            try:
-                stat = entry.stat()
-            except OSError:
-                out[f"{project}/{name}"] = None
-            else:
-                out[f"{project}/{name}"] = (
-                    stat.st_mtime_ns,
-                    stat.st_size if entry.is_file() else None,
-                )
-    return out
+# The run ids the current case seeded through the fixture ledger, recorded so
+# the teardown can look for exactly these in the workstation's own trees.
+_seeded_run_ids: set[str] = set()
+
+
+def _run_id_values(node: object) -> set[str]:
+    """Every ``run_id`` string a parsed ledger structure carries, at any depth."""
+    found: set[str] = set()
+    if isinstance(node, list):
+        for item in node:
+            found |= _run_id_values(item)
+    elif isinstance(node, dict):
+        value = node.get("run_id")
+        if isinstance(value, str):
+            found.add(value)
+        for item in node.values():
+            found |= _run_id_values(item)
+    return found
+
+
+def _run_ids_under(project: str, docs: Path) -> set[str]:
+    """Every run id a mounted project's own state carries, by name or by row."""
+    state = Path(docs) / "state" / project
+    found = {path.stem for path in (state / "runs").glob("*.json")}
+    ledger_file = state / "crew.json"
+    if ledger_file.is_file():
+        try:
+            payload = json.loads(ledger_file.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return found
+        found |= _run_id_values(payload)
+    return found
 
 
 @pytest.fixture(scope="session")
 def workstation_state():
-    """The workstation's own registry and its state, read before any override.
+    """The workstation's own mounted projects, read before any override.
 
     Session-scoped because the suite replaces the configuration home for every
     test, and a wider scope is instantiated first: read at function scope this
@@ -61,25 +80,39 @@ def workstation_state():
     fails loudly rather than watching an empty set in silence.
     """
     mounts = flight.mounted_project_docs()
-    before = _fingerprint(mounts)
-    assert any(value is not None for value in before.values()), (
-        "the fingerprint sees no state under the workstation's mounts, so its "
+    assert any(
+        (Path(docs) / "state" / project).exists() for project, docs in mounts.items()
+    ), (
+        "the leak scan sees no state under the workstation's mounts, so its "
         "untouched assertion would be vacuous"
     )
-    return mounts, before
+    return mounts
 
 
 @pytest.fixture()
 def home(tmp_path, monkeypatch, workstation_state):
-    """A throwaway config home, with the real registry and its state watched."""
-    mounts, before = workstation_state
+    """A throwaway config home, with the real mounted projects watched."""
+    mounts = workstation_state
+    _seeded_run_ids.clear()
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     monkeypatch.setenv("RECKON_MOUNTS_PATH", str(config_home / "mounts.json"))
     yield config_home
-    assert _fingerprint(mounts) == before, (
-        "the split wrote into the workstation's own mounted state trees"
+    # The registry in force here is the case's; a case that re-registered a
+    # mounted project's name has pointed the split at that project's tree, so
+    # watch wherever the name resolves now, falling back to the live path.
+    registered = flight.mounted_project_docs()
+    leaked: list[str] = []
+    for project, live in sorted(mounts.items()):
+        watched = registered.get(project, live)
+        leaked.extend(
+            f"{run_id} under {project} at {watched}"
+            for run_id in sorted(_run_ids_under(project, watched) & _seeded_run_ids)
+        )
+    assert not leaked, (
+        "the split wrote the case's own rows into the workstation's own "
+        f"mounted state: {leaked}"
     )
 
 
@@ -95,6 +128,9 @@ def _write_ledger(repo: Path, project: str, data: dict) -> Path:
     path = _state_dir(repo, project) / "crew.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     _store._write_json_envelope(path, project, ledger.LEDGER_SLUG, data, 0)
+    for row in data.get("runs") or ():
+        if isinstance(row, dict) and isinstance(row.get("run_id"), str):
+            _seeded_run_ids.add(row["run_id"])
     return path
 
 
