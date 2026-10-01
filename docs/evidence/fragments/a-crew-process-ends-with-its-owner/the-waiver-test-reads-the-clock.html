@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="The boundary-waiver fixture derives its date from the clock">
+  <meta name="plan-summary" content="The waiver fixture derives created_at from the current UTC clock instead of a literal date, so the seven-day age bound no longer trips it, and a second case pins the bound from the stale side.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,boundary,waiver,test,fixture">
+  <title>The boundary-waiver fixture derives its date from the clock — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-waiver-test-reads-the-clock" data-reckon="landed" data-when="2026-10-01">
+  <h2>The boundary-waiver fixture derives its date from the clock</h2>
+  <p>The pointer fixture now stamps <code>created_at</code> one hour before the current UTC clock rather than a literal <code>2026-08-26T12:00:00Z</code>, which had aged past <code>BOUNDARY_REFERENT_MAX_AGE_SECONDS</code> and made the waived-path arm grow an unwanted <code>no_referent</code> key. A new case sets <code>created_at</code> a day past the bound and asserts the same waiver carries <code>no_referent</code>, pinning the bound from both sides. Gate: the file passes, 4 passed, EXIT=0; the declared mutation (literal restored) fails the waiver case with the <code>no_referent</code> key, EXIT=1.</p>
+</article>
+</body>
+</html>
