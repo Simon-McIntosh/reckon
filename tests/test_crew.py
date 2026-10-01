@@ -67,10 +67,16 @@ def _node_manifest_directory(tmp_path):
     dispatch-to-complete window and that run reads a foreign delivery. Each test
     therefore names its manifests under its own pytest temporary directory,
     which no other process holds.
+
+    The fixture only binds that directory; ``_node_manifest_path`` creates it on
+    demand. A module anywhere in the suite may declare ``pytest_plugins`` naming
+    this module, which registers it as a plugin and makes this autouse fixture
+    run for every test in the session. Creating the directory here rather than
+    on demand would then drop an unexpected ``node-manifests`` entry into every
+    other module's temporary tree.
     """
     previous = _NODE_MANIFEST["directory"]
     _NODE_MANIFEST["directory"] = tmp_path / "node-manifests"
-    _NODE_MANIFEST["directory"].mkdir(parents=True, exist_ok=True)
     yield
     _NODE_MANIFEST["directory"] = previous
 
@@ -80,12 +86,15 @@ def _node_manifest_path() -> str:
 
     Under pytest the path lives under the running test's temporary directory.
     Called outside a test run the helper falls back to a per-process directory,
-    so two concurrent processes never share one path either way.
+    so two concurrent processes never share one path either way. The directory
+    is created here, where a test has actually asked for a path, so a fixture
+    promoted to a session-wide plugin leaves the temporary tree of a test that
+    asks for nothing untouched.
     """
     directory = _NODE_MANIFEST["directory"]
     if directory is None:
         directory = Path(tempfile.gettempdir()) / f"reckon-node-manifests-{os.getpid()}"
-        directory.mkdir(parents=True, exist_ok=True)
+    directory.mkdir(parents=True, exist_ok=True)
     return str(directory / "node-a-manifest.md")
 
 
