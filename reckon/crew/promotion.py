@@ -552,8 +552,9 @@ def _worktree_repository_changes(record: Mapping[str, Any]) -> tuple[str, ...]:
     * the files the worktree's commits touched between the run's recorded
       ``base_sha`` and its ``HEAD``,
     * the tracked files it has modified, staged or not,
-    * the untracked repository files it holds, ignoring what the repository
-      ignores and minus the provisioned ``.venv`` symlink.
+    * the untracked repository files it holds, read through
+      ``_worktree_untracked_paths`` so the exemption and this check share one
+      enumeration rather than two git verbs that can drift.
 
     An empty result is the only condition under which a commitless role may
     promote with no commits. A run that records no base sha or no readable
@@ -571,14 +572,7 @@ def _worktree_repository_changes(record: Mapping[str, Any]) -> tuple[str, ...]:
     modified = _worktree_git_paths(tree, "diff", "--name-only")
     if modified:
         changed.update(modified)
-    untracked = _worktree_git_paths(tree, "ls-files", "--others", "--exclude-standard")
-    if untracked:
-        changed.update(
-            path
-            for path in untracked
-            if Path(path).parts
-            and Path(path).parts[0] not in _PROVISIONED_WORKTREE_ENTRIES
-        )
+    changed.update(_worktree_untracked_paths(tree))
     return tuple(sorted(changed))
 
 
@@ -612,19 +606,19 @@ def _manifest_declares_no_change(
 def _worktree_untracked_paths(tree: Path) -> tuple[str, ...]:
     """The untracked repository paths a worktree holds, minus provisioned ones.
 
-    Read from ``git status --porcelain`` so a deliverable written but never
-    staged is visible: an untracked file is exactly the repository work a
-    commitless run can leave behind while its ``HEAD`` still sits on the base.
-    The provisioned ``.venv`` symlink the dispatch rule plants in every
-    worktree is not the run's work and is dropped.
+    The single reader of a worktree's untracked paths: both the unchanged-run
+    exemption and the commitless change check take their untracked set from
+    here, so the two cannot read the same fact through two git verbs that
+    drift. Read from ``git ls-files --others --exclude-standard`` so an
+    untracked deliverable is visible at file precision — an untracked file is
+    exactly the repository work a commitless run can leave behind while its
+    ``HEAD`` still sits on the base. The provisioned ``.venv`` symlink the
+    dispatch rule plants in every worktree is not the run's work and is
+    dropped.
     """
     untracked: list[str] = []
-    for line in _worktree_git_paths(
-        tree, "status", "--porcelain", "--untracked-files=normal"
-    ):
-        if not line.startswith("?? "):
-            continue
-        path = line[3:].strip().strip('"')
+    for line in _worktree_git_paths(tree, "ls-files", "--others", "--exclude-standard"):
+        path = line.strip().strip('"')
         if not path:
             continue
         if Path(path).parts and Path(path).parts[0] in _PROVISIONED_WORKTREE_ENTRIES:
@@ -644,14 +638,16 @@ def _worktree_unchanged_since_base(record: Mapping[str, Any]) -> bool:
     equal to the recorded base, no tracked file modified against it staged or
     not, and no untracked path the run left behind beside the provisioned
     symlink — an unstaged deliverable is repository work even when ``HEAD``
-    never moved.
+    never moved. A run that records no base cannot be proved unchanged against
+    one, so an existing worktree with no base is refused the exemption rather
+    than allowed on its manifest alone.
     """
     tree = Path(str(record.get("worktree") or "")).expanduser()
     base = str(record.get("base_sha") or "").strip()
     if not tree.is_dir():
         return False
     if not base:
-        return True
+        return False
     canonical_base = _commit_canonical_id(tree, base)
     head = _worktree_git_paths(tree, "rev-parse", "HEAD")
     if canonical_base is None or not head:

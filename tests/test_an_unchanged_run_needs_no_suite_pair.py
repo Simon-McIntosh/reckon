@@ -18,6 +18,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon.cli import main as cli_main
+from reckon.crew import promotion
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
 
@@ -270,3 +271,45 @@ def test_empty_manifest_with_a_moved_worktree_is_still_refused(
     assert "baseline_suite" in result.output
     assert "after_suite" in result.output
     assert pointer_path(run_id).is_file()
+
+
+def test_empty_manifest_with_no_recorded_base_is_still_refused(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A run recording no base is proved nothing, so the pair is still required.
+
+    The exemption is a claim about a base: without one the worktree cannot be
+    shown unchanged against anything, and a commitless manifest must not exempt
+    such a run on its own.
+    """
+    run_id = "r-20260930T120500000000-node-a"
+    manifest = tmp_path / "no-base.md"
+    _write_manifest(manifest)
+    _write_pointer(run_id, repository, base_sha="", manifest_path=str(manifest))
+    _stored_review(run_id)
+
+    result = _complete(run_id, repository)
+
+    assert result.exit_code != 0
+    assert "baseline_suite" in result.output
+    assert "after_suite" in result.output
+    assert pointer_path(run_id).is_file()
+
+
+def test_untracked_paths_are_read_through_one_verb(repository: Path) -> None:
+    """The two consumers of a worktree's untracked paths read the same fact.
+
+    A nested untracked deliverable must be reported at the same path by the
+    unchanged-run exemption and by the commitless change check, which is true
+    only while both read untracked paths through one enumeration.
+    """
+    deliverable = repository / "docs" / "plans" / "deliverables" / "report.txt"
+    deliverable.parent.mkdir(parents=True)
+    deliverable.write_text("written but never staged\n")
+    record = {"worktree": str(repository)}
+
+    untracked = promotion._worktree_untracked_paths(repository)
+    changes = promotion._worktree_repository_changes(record)
+
+    assert str(deliverable.relative_to(repository)) in untracked
+    assert set(untracked).issubset(set(changes))
