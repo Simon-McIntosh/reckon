@@ -744,6 +744,24 @@ def _manifest_text(record: Mapping[str, Any]) -> str:
         return ""
 
 
+def _presented_commits_without_a_declaration(
+    record: Mapping[str, Any], commits: Iterable[str]
+) -> tuple[str, ...]:
+    """The commits a promotion presents, with a commitless declaration read as none.
+
+    A review that has no repository work to commit writes the declaration into
+    its manifest's ``commits`` field, and the list reader leaves the sentence
+    behind where a citation list would be. The declaration parser is the one
+    authority on whether that field declares an absence, so it is asked here,
+    and a word that only begins with an absence word is not a declaration, so
+    such a value is still presented as the citation attempt it looks like.
+    """
+    presented = tuple(str(sha).strip() for sha in commits if str(sha).strip())
+    if presented and _commits_field_declares_absence(_manifest_text(record), record):
+        return ()
+    return presented
+
+
 def _unresolved_citations(root: Path, entries: Iterable[str]) -> list[str]:
     """The cited identifiers that resolve to no object in the given store.
 
@@ -880,7 +898,14 @@ def _require_gate_evidence(
                 for candidate in presented
                 if _commit_canonical_id(tree, candidate) is None
             ]
-        if unresolved_presented:
+        # A commitless declaration the declaration parser recognises means the
+        # run presents no commits rather than a value that names nothing: a
+        # review writes `commits: none (review node; no repository change)`
+        # because a review has no repository work to commit, and the prose the
+        # list reader leaves behind is a declaration, not a citation. A word
+        # that only begins with an absence word is still not a declaration, so
+        # `nonesuch` is refused here as the citation attempt it looks like.
+        if unresolved_presented and not declared_absent:
             raise CrewError(
                 f"run {run_id!r} presents "
                 + ", ".join(repr(entry) for entry in unresolved_presented)
@@ -936,8 +961,8 @@ def _require_gate_evidence(
         raise CrewError(
             f"run {run_id!r} cites "
             + ", ".join(repr(entry) for entry in unresolved)
-            + " as a commit, but that identifier does not resolve to an object "
-            f"in the run repository ({tree}). A value assembled rather than "
+            + " as a commit, but that identifier does not resolve to a commit "
+            f"object in the run repository ({tree}). A value assembled rather than "
             "copied passes every shape check and names nothing, so the store is "
             "asked about the value as cited and never about its form. Cite the "
             "commit the run actually wrote — `reckon crew recover` reports it as "
@@ -3934,6 +3959,7 @@ def _require_review_waiver(
     review_tier: str = "",
     promoted_head: str = "",
     stale_head: str = "",
+    manifest_commits: Sequence[str] = (),
 ) -> dict[str, str] | None:
     """Refuse an unreviewed promotion of a run that owes a review.
 
@@ -4009,6 +4035,22 @@ def _require_review_waiver(
             # the review dispatch rather than sending the operator to watch a
             # run that has already delivered.
             review_action = _review_dispatch_action(record)
+        # The operator who cites the revisions their manifest names is refused
+        # because the stored review read a revision the list does not carry. The
+        # refusal names that reviewed head as the value to cite, so the way to a
+        # promotion is one flag rather than a search for which of two revisions
+        # the store meant.
+        cite_reviewed_head = ""
+        if stale_head and promoted_head and not any(
+            str(candidate).strip()
+            and (
+                str(candidate).strip() == stale_head
+                or stale_head.startswith(str(candidate).strip())
+                or str(candidate).strip().startswith(stale_head)
+            )
+            for candidate in manifest_commits
+        ):
+            cite_reviewed_head = stale_head
         raise CrewError(
             _unreviewed_refusal(
                 run_id,
@@ -4016,6 +4058,7 @@ def _require_review_waiver(
                 promoted_head,
                 stale_head,
                 classification=classification,
+                cite_reviewed_head=cite_reviewed_head,
             )
         )
     if reason:
@@ -4060,6 +4103,86 @@ def _require_standing_suite(
     )
 
 
+class _PromotionRefusalError(CrewError):
+    """One refusal carrying several failed preconditions.
+
+    A sweep inside a nested helper raises this so an enclosing sweep can flatten
+    the parts into its own ordered list: the message a caller reads is composed
+    once, from every failure in the order the promotion checks them.
+    """
+
+    def __init__(self, refusals: Sequence[BaseException]) -> None:
+        super().__init__(_combined_refusal_text(refusals))
+        self.refusals = list(refusals)
+
+
+def _combined_refusal_text(refusals: Sequence[BaseException]) -> str:
+    """Render every failure, keeping the first one's wording verbatim first.
+
+    A caller that matches on the leading refusal keeps matching, and the rest
+    follow in the order the promotion checks them so the operator reads them in
+    the sequence the code runs them.
+    """
+    first, *rest = refusals
+    if not rest:
+        return str(first)
+    listed = "\n".join(f"  - {refusal}" for refusal in rest)
+    return (
+        f"{first}\n\nThis promotion also fails {len(rest)} further "
+        f"precondition(s), in the order the promotion checks them:\n{listed}"
+    )
+
+
+def _require_independently(checks: Sequence[Callable[[], Any]]) -> list[Any]:
+    """Run independent preconditions together, refusing once with every failure.
+
+    Each check returns its product; every check runs even after an earlier one
+    has refused, because the facts behind them are independent, and then one
+    refusal carries all of them in the order given. A check whose inputs come
+    from an earlier check's success is not listed as independent — the caller
+    keeps it after this sweep, where it is judged only once its inputs hold.
+    """
+    refusals: list[BaseException] = []
+    products: list[Any] = []
+    for check in checks:
+        try:
+            products.append(check())
+        except (CrewError, ledger.LedgerError) as refusal:
+            products.append(None)
+            if isinstance(refusal, _PromotionRefusalError):
+                refusals.extend(refusal.refusals)
+            else:
+                refusals.append(refusal)
+    if refusals:
+        if len(refusals) == 1:
+            raise refusals[0]
+        raise _PromotionRefusalError(refusals)
+    return products
+
+
+def _require_gate_check_precondition(
+    gate_check: Mapping[str, Any] | None,
+    *,
+    gate: str,
+    require_gate_check: bool,
+) -> None:
+    """Refuse a passing gate with no check before the landing path runs.
+
+    ``ledger.build_record`` enforces the same requirement as the backstop for
+    every caller that assembles a record, so the wording is taken from that
+    check and raised here as the same error: a promotion that fails only this
+    precondition reports exactly what it reported before.
+    """
+    if not require_gate_check or str(gate).strip().lower() != "passed":
+        return
+    missing = ledger.gate_check_missing_fields(gate_check)
+    if missing:
+        raise ledger.LedgerError(
+            "a passing gate requires the check that produced it; missing "
+            + ", ".join(missing)
+        )
+
+
 def _unreviewed_refusal(
     run_id: str,
     review_action: str,
@@ -4067,6 +4190,7 @@ def _unreviewed_refusal(
     stale_head: str,
     *,
     classification: str = "scoring",
+    cite_reviewed_head: str = "",
 ) -> str:
     """State why an unreviewed promotion is refused, naming both revisions.
 
@@ -4091,8 +4215,16 @@ def _unreviewed_refusal(
         if stale_head and promoted_head
         else "no complete independent review is stored"
     )
+    citation = (
+        " The manifest's own commit list predates the revision the review read: "
+        f"pass --commit {cite_reviewed_head} to cite {cite_reviewed_head[:12]} "
+        f"as the promoted revision, or recompose the review against "
+        f"{promoted_head[:12]} and cite that"
+        if cite_reviewed_head
+        else ""
+    )
     return (
-        f"run {run_id!r} is classified {classification}; {revision}. "
+        f"run {run_id!r} is classified {classification}; {revision}.{citation} "
         f"Produce it with `{review_action}`, or promote anyway with "
         "--waive-unreviewed-promotion REASON stating why this run may land "
         "without review"
@@ -4416,10 +4548,6 @@ def complete(
         # per-run evidence so a repository defect is reported as itself rather
         # than as a missing commit further down.
         landing_project = str(record.get("project") or "")
-        if landing_project and project_mount_repository(landing_project) is not None:
-            root = resolve_project_repository(
-                landing_project, root, flag="--checkout-path"
-            )
         # Gate command, exit status, log path and commits default to what the
         # worker's manifest already states, so a passing run whose evidence is
         # on disk promotes without the coordinator retyping figures the manifest
@@ -4433,111 +4561,205 @@ def complete(
             commits=commit_list,
             no_commit_reason=no_commit,
         )
-        overridden_worktree_changes = _require_commit_for_changed_manifest(
-            run_id, record, no_commit_reason=no_commit
-        )
-        _require_recognised_manifest_status(run_id, record)
-        # A run whose own worker is still alive and not finished is refused
-        # before any store is written: deleting its live pointer now would
-        # orphan the process until it exits on its own. The waiver names the
-        # reason and rides the promoted row.
-        live_run_waived = _require_worker_stopped_before_promotion(
-            run_id, record, waiver_reason=live_run_waiver
-        )
-        if _is_shadow(record) and commit_list:
-            raise CrewError(
-                f"shadow run {run_id!r} is commitless evidence; --commit is refused"
-            )
-        commit_list_shortfall = _require_gate_evidence(
-            run_id,
-            record,
-            verdict=verdict,
-            commits=commit_list,
-            no_commit_reason=no_commit,
-        )
-        # The citations themselves must be the run's own work, judged before
-        # any store is written so a run that cannot be asserted truthfully is
-        # refused with nothing landed and nothing to unwind.
-        _require_commits_beyond_base(run_id, record, commit_list)
-        _require_gate_log_agrees(run_id, gate_check, verdict=verdict)
-        # The recorded command is what the integration re-run executes, so a
-        # text that describes the check must be refused here rather than land
-        # on a row that later reports a failure the merge did not cause.
-        _require_runnable_gate_command(run_id, gate_check)
-        from reckon.crew.recovery import classify_pointer
+        # Every precondition that can be judged on its own is judged here, in
+        # the order the promotion checks them, and reported in one refusal: a
+        # coordinator learns every way the record falls short from one call
+        # rather than one per attempt. The resolutions a gate needs are read
+        # inside that gate's own check, so a refusal never leaves a later check
+        # reading a half-built value.
+        resolved: dict[str, Any] = {}
 
-        classified = classify_pointer(record)
-        classification_name = str(classified.get("classification") or "")
-        # The revision this promotion asserts, resolved before the gate reads
-        # the store, so a review of an earlier revision is refused rather than
-        # accepted as evidence about code the repair has already moved past.
-        promoted_revision = _run_promoted_revision(record, commit_list)
-        review_tree = Path(str(record.get("worktree") or ""))
-        if not review_tree.is_dir():
-            review_tree = Path(str(record.get("repo") or ""))
-        reviewed, stale_review_head = _review_for_promotion(
-            landing_project,
-            run_id,
-            promoted_revision=promoted_revision,
-            tree=review_tree if review_tree.is_dir() else None,
-        )
-        # The tier is computed before the gate reads it, from what the run
-        # actually changed at the promoted head, so the refusal and the row it
-        # would have written agree about which review the run owes.
-        review_tier = _run_review_tier(
-            run_id, record, commit_list=commit_list, root=root
-        )
-        review_waived = _require_review_waiver(
-            run_id,
-            record,
-            verdict=verdict,
-            classification=classification_name,
-            review=reviewed,
-            review_action=str(classified.get("next_action") or ""),
-            waiver_reason=review_waiver,
-            review_tier=review_tier,
-            promoted_head=promoted_revision,
-            stale_head=stale_review_head,
-        )
-        # The project's declared suite is the gate that sees the whole tree, and
-        # the lighter promotions wait on it. The tier is the one just resolved,
-        # so a full review -- which reads the run for itself -- is never held.
-        _require_standing_suite(landing_project, review_tier, root)
-        candidate_remedy = classified.get("resume_remedy")
-        resume_remedy = (
-            dict(candidate_remedy) if isinstance(candidate_remedy, Mapping) else None
-        )
-        candidate_resolution = classified.get("session_resolution")
-        if classification_name == "blocked" and isinstance(
-            candidate_resolution, Mapping
-        ):
-            recoverable_session = (
-                {
-                    "session_id": str(candidate_resolution["session_id"]),
-                    "source": str(candidate_resolution["source"]),
+        def _repository_root() -> str | Path | None:
+            if landing_project and project_mount_repository(landing_project) is not None:
+                resolved["root"] = resolve_project_repository(
+                    landing_project, root, flag="--checkout-path"
+                )
+            else:
+                resolved["root"] = root
+            return resolved["root"]
+
+        def _review_gate() -> dict[str, str] | None:
+            from reckon.crew.recovery import classify_pointer
+
+            classified = classify_pointer(record)
+            resolved["classified"] = classified
+            resolved["classification"] = str(classified.get("classification") or "")
+            # The tier and the promoted revision read the commits the run
+            # presents, so a commitless declaration is read as none here too:
+            # the run changed nothing in the repository, and its tier is
+            # resolved from what its manifest declares rather than from a
+            # sentence nothing can resolve.
+            gate_commits = _presented_commits_without_a_declaration(record, commit_list)
+            # The revision this promotion asserts, resolved before the gate
+            # reads the store, so a review of an earlier revision is refused
+            # rather than accepted as evidence about code the repair has
+            # already moved past.
+            resolved["promoted_revision"] = _run_promoted_revision(record, gate_commits)
+            review_tree = Path(str(record.get("worktree") or ""))
+            if not review_tree.is_dir():
+                review_tree = Path(str(record.get("repo") or ""))
+            reviewed, stale_review_head = _review_for_promotion(
+                landing_project,
+                run_id,
+                promoted_revision=resolved["promoted_revision"],
+                tree=review_tree if review_tree.is_dir() else None,
+            )
+            resolved["reviewed"] = reviewed
+            # The tier is computed before the gate reads it, from what the run
+            # actually changed at the promoted head, so the refusal and the row
+            # it would have written agree about which review the run owes.
+            resolved["review_tier"] = _run_review_tier(
+                run_id,
+                record,
+                commit_list=gate_commits,
+                root=resolved.get("root", root),
+            )
+            return _require_review_waiver(
+                run_id,
+                record,
+                verdict=verdict,
+                classification=resolved["classification"],
+                review=reviewed,
+                review_action=str(classified.get("next_action") or ""),
+                waiver_reason=review_waiver,
+                review_tier=resolved["review_tier"],
+                promoted_head=resolved["promoted_revision"],
+                stale_head=stale_review_head,
+                manifest_commits=commit_list,
+            )
+
+        def _resume_gate() -> dict[str, str] | None:
+            classified = resolved.get("classified")
+            if not isinstance(classified, Mapping):
+                classified = {}
+            classification_name = str(resolved.get("classification") or "")
+            candidate_remedy = classified.get("resume_remedy")
+            resume_remedy = (
+                dict(candidate_remedy) if isinstance(candidate_remedy, Mapping) else None
+            )
+            candidate_resolution = classified.get("session_resolution")
+            if classification_name == "blocked" and isinstance(
+                candidate_resolution, Mapping
+            ):
+                recoverable_session = (
+                    {
+                        "session_id": str(candidate_resolution["session_id"]),
+                        "source": str(candidate_resolution["source"]),
+                    }
+                    if candidate_resolution.get("resolved")
+                    else None
+                )
+            elif resume_remedy is not None:
+                recoverable_session = {
+                    "session_id": str(resume_remedy["session_id"]),
+                    "source": str(resume_remedy["source"]),
                 }
-                if candidate_resolution.get("resolved")
+            else:
+                recoverable_session = _recoverable_session(record)
+            resolved["resume_remedy"] = resume_remedy
+            resolved["recoverable_session"] = recoverable_session
+            waived = _require_resume_waiver(
+                run_id,
+                verdict=verdict,
+                waiver_reason=resume_waiver,
+                classification=classification_name,
+                recoverable_session=recoverable_session,
+            )
+            if discard_resume_worktree and waived is None:
+                raise CrewError(
+                    "discard_resume_worktree requires a reasoned resume waiver "
+                    "for a recoverable non-passing run"
+                )
+            return waived
+
+        def _landing_gate() -> dict[str, Any]:
+            landing_root = resolved.get("root", root)
+            if landing_root is None:
+                landing_root = record.get("repo")
+            checkout = (
+                Path(landing_root).expanduser().resolve()
+                if landing_root is not None
                 else None
             )
-        elif resume_remedy is not None:
-            recoverable_session = {
-                "session_id": str(resume_remedy["session_id"]),
-                "source": str(resume_remedy["source"]),
-            }
-        else:
-            recoverable_session = _recoverable_session(record)
-        resume_waived = _require_resume_waiver(
-            run_id,
-            verdict=verdict,
-            waiver_reason=resume_waiver,
-            classification=classification_name,
-            recoverable_session=recoverable_session,
-        )
-        if discard_resume_worktree and resume_waived is None:
-            raise CrewError(
-                "discard_resume_worktree requires a reasoned resume waiver for "
-                "a recoverable non-passing run"
+            return _landing_preconditions(
+                run_id,
+                record,
+                checkout=checkout,
+                ledger_root=landing_root,
+                commits=commit_list,
+                gate=gate,
+                failure_classification=classification,
+                no_impl_change=no_impl_change,
+                plan_link=plan_link,
+                unplanned_reason=unplanned_reason,
+                boundary_waiver=boundary_waiver,
+                negative_control_waiver=negative_control_waiver,
+                accepted_paths=accepted_paths,
+                gate_check=gate_check,
+                require_gate_check=require_gate_check,
             )
+
+        (
+            root,
+            overridden_worktree_changes,
+            _manifest_status,
+            live_run_waived,
+            _shadow_commit,
+            commit_list_shortfall,
+            _commits_beyond_base,
+            _gate_log_agrees,
+            _runnable_gate_command,
+            review_waived,
+            _standing_suite,
+            resume_waived,
+            landing,
+        ) = _require_independently(
+            [
+                _repository_root,
+                lambda: _require_commit_for_changed_manifest(
+                    run_id, record, no_commit_reason=no_commit
+                ),
+                lambda: _require_recognised_manifest_status(run_id, record),
+                # A run whose own worker is still alive and not finished is
+                # refused before any store is written: deleting its live
+                # pointer now would orphan the process until it exits on its
+                # own. The waiver names the reason and rides the promoted row.
+                lambda: _require_worker_stopped_before_promotion(
+                    run_id, record, waiver_reason=live_run_waiver
+                ),
+                lambda: _refuse_commits_for_a_shadow(run_id, record, commit_list),
+                lambda: _require_gate_evidence(
+                    run_id,
+                    record,
+                    verdict=verdict,
+                    commits=commit_list,
+                    no_commit_reason=no_commit,
+                ),
+                # The citations themselves must be the run's own work, judged
+                # before any store is written so a run that cannot be asserted
+                # truthfully is refused with nothing landed and nothing to
+                # unwind.
+                lambda: _require_commits_beyond_base(run_id, record, commit_list),
+                lambda: _require_gate_log_agrees(run_id, gate_check, verdict=verdict),
+                # The recorded command is what the integration re-run executes,
+                # so a text that describes the check must be refused here rather
+                # than land on a row that later reports a failure the merge did
+                # not cause.
+                lambda: _require_runnable_gate_command(run_id, gate_check),
+                _review_gate,
+                # The project's declared suite is the gate that sees the whole
+                # tree, and the lighter promotions wait on it. The tier is the
+                # one just resolved, so a full review -- which reads the run for
+                # itself -- is never held.
+                lambda: _require_standing_suite(
+                    landing_project,
+                    resolved.get("review_tier") or review_tiers.FULL,
+                    resolved.get("root", root),
+                ),
+                _resume_gate,
+                _landing_gate,
+            ]
+        )
         suite_delta = _evaluate_suite_delta(
             run_id,
             record,
@@ -4561,13 +4783,13 @@ def complete(
             require_gate_check=require_gate_check,
             suite_delta=suite_delta,
             boundary_waiver=boundary_waiver,
-            resume_remedy=resume_remedy,
+            resume_remedy=resolved.get("resume_remedy"),
             resume_waived=resume_waived,
-            reviewed=reviewed,
+            reviewed=resolved.get("reviewed"),
             review_waived=review_waived,
-            review_tier=review_tier,
+            review_tier=resolved.get("review_tier") or "",
             negative_control_waiver=negative_control_waiver,
-            recoverable_session=recoverable_session,
+            recoverable_session=resolved.get("recoverable_session"),
             discard_resume_worktree=discard_resume_worktree,
             accepted_paths=accepted_paths,
             commit_list_shortfall=commit_list_shortfall,
@@ -4575,6 +4797,7 @@ def complete(
             live_run_waived=live_run_waived,
             plan_link=plan_link,
             unplanned_reason=unplanned_reason,
+            landing=landing,
         )
         if commit_list_shortfall is not None:
             result["commit_list_shortfall"] = dict(commit_list_shortfall)
@@ -6012,6 +6235,265 @@ def _require_declared_negative_control(
     return check
 
 
+def _refuse_commits_for_a_shadow(
+    run_id: str, record: Mapping[str, Any], commits: Sequence[str]
+) -> None:
+    """Refuse a shadow run presenting commits: its evidence is a patch, not code."""
+    if _is_shadow(record) and any(str(sha).strip() for sha in commits):
+        raise CrewError(
+            f"shadow run {run_id!r} is commitless evidence; --commit is refused"
+        )
+
+
+def _landing_scope_products(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    shadow: bool,
+    tree: Path,
+    node: Mapping[str, Any],
+    commits: Sequence[str],
+    accepted_paths: Mapping[str, str] | None,
+) -> dict[str, Any]:
+    """The scope facts a landing row records, refusing an out-of-role commit.
+
+    A verifier may read the repository it grades but writes only its manifest,
+    report and logs, so a cited commit that changes repository paths under a
+    non-writing role is refused here rather than recorded as the verifier's
+    work. A shadow asserts no code, so its scope is its patch. Everything the
+    row carries is returned rather than recomputed, so the refusal and the row
+    it would have written cannot disagree.
+    """
+    if shadow:
+        artifact = _write_shadow_patch(record)
+        return {
+            "shadow_patch": str(artifact),
+            "changed_lines": _shadow_patch_stat(artifact, cwd=tree),
+            "scope_acceptances": [],
+        }
+    if not commits:
+        return {"shadow_patch": "", "changed_lines": None, "scope_acceptances": []}
+    cumulative = _committed_scope(cwd=tree, commits=commits, run_id=run_id)
+    acceptances: list[dict[str, str]] = []
+    if cumulative.changed_lines.get("available", True):
+        if (
+            not role_may_write_repository_paths(str(record.get("role") or ""))
+            and cumulative.paths
+        ):
+            raise CrewError(
+                f"run {run_id!r} has role 'test', but its cited commit "
+                "changes repository paths: "
+                + ", ".join(cumulative.paths)
+                + ". A verifier may read the repository it grades, but "
+                "writes only its manifest, report, and logs outside the "
+                "repository; dispatch an implement node for source edits"
+            )
+        outside = _outside_declared_scope(
+            cumulative.paths,
+            node.get("write_paths") or (),
+            record=record,
+            tree=tree,
+        )
+        if outside:
+            acceptances = _accepted_scope_exceptions(
+                run_id,
+                outside,
+                accepted_paths,
+                record=record,
+                tree=tree,
+            )
+    return {
+        "shadow_patch": "",
+        "changed_lines": cumulative.changed_lines,
+        "scope_acceptances": acceptances,
+    }
+
+
+def _landing_preconditions(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    checkout: Path | None,
+    ledger_root: str | Path | None,
+    commits: Sequence[str],
+    gate: str,
+    failure_classification: str,
+    no_impl_change: str,
+    plan_link: str,
+    unplanned_reason: str,
+    boundary_waiver: str,
+    negative_control_waiver: str | None,
+    accepted_paths: Mapping[str, str] | None,
+    gate_check: Mapping[str, Any] | None,
+    require_gate_check: bool,
+) -> dict[str, Any]:
+    """Judge every precondition the landing checks, refusing once with all.
+
+    The checks are independent of one another — each reads the record, the
+    run's tree or its plan — so a promotion failing several reports them
+    together rather than one per call, in the order the landing path checks
+    them today. The one dependency is the citations: the changed-scope and
+    role checks diff the commits a promotion presents, so a citation that does
+    not resolve leaves them unjudged and they run only once it does. A run
+    whose row is already in the ledger re-promotes through the already-promoted
+    path, which checks none of this, so the probe below returns before any of
+    them run.
+    """
+    project = str(record.get("project") or "")
+    node = record.get("node") or {}
+    shadow = _is_shadow(record)
+    existing = next(
+        (
+            item
+            for item in ledger.load(project, root=ledger_root)[0]["runs"]
+            if str(item.get("run_id") or "") == run_id
+        ),
+        None,
+    )
+    if existing is not None:
+        return {"already_landed": True}
+
+    worktree = Path(str(record.get("worktree") or ""))
+    tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
+    refusals: list[BaseException] = []
+
+    def attempt(check: Callable[[], Any]) -> tuple[bool, Any]:
+        try:
+            return True, check()
+        except (CrewError, ledger.LedgerError) as refusal:
+            refusals.append(refusal)
+            return False, None
+
+    attempt(lambda: _require_committable_checkout(checkout, run_id))
+
+    commit_list = list(_presented_commits_without_a_declaration(record, commits))
+    shadow_ok, _ = attempt(
+        lambda: _refuse_commits_for_a_shadow(run_id, record, commit_list)
+    )
+    resolved_ok = True
+    resolved: Sequence[str] = []
+    if commit_list:
+        resolved_ok, resolved = attempt(
+            lambda: _resolve_commits(cwd=tree, revisions=commit_list, run_id=run_id)
+        )
+    if not resolved_ok:
+        # The changed-scope and role checks diff the cited commits, so an
+        # unresolvable citation leaves them unjudged: this pair stays
+        # sequential, after the citation itself is judged.
+        commit_list = []
+        resolved = []
+    elif resolved:
+        # The row records the canonical revisions the citations resolved to —
+        # an abbreviated sha or a tag is admitted as a citation, never as the
+        # value a later reader resolves again.
+        commit_list = [str(canonical) for canonical in resolved]
+
+    scope_products: dict[str, Any] = {
+        "shadow_patch": "",
+        "changed_lines": None,
+        "scope_acceptances": [],
+    }
+    if shadow_ok and resolved_ok:
+        _ok, measured = attempt(
+            lambda: _landing_scope_products(
+                run_id,
+                record,
+                shadow=shadow,
+                tree=tree,
+                node=node,
+                commits=tuple(resolved),
+                accepted_paths=accepted_paths,
+            )
+        )
+        if measured:
+            scope_products = measured
+
+    _ok, boundary_waived = attempt(
+        lambda: _require_repository_tree_boundary(
+            run_id, record, waiver_reason=boundary_waiver
+        )
+    )
+    plan_state = _plan_state_for_run(record, fallback_root=ledger_root)
+    _ok, brief_owner = attempt(
+        lambda: _require_brief_owner(
+            run_id, record, plan_link=plan_link, unplanned_reason=unplanned_reason
+        )
+    )
+    _ok, impl_move = attempt(
+        lambda: _require_impl_moved(
+            run_id,
+            record,
+            gate=gate,
+            failure_classification=failure_classification,
+            no_impl_change=no_impl_change,
+            plan_state=plan_state,
+        )
+    )
+
+    manifest_path = str(record.get("manifest_path") or "")
+    manifest_text: str | None = None
+    manifest: Mapping[str, Any] | None = None
+    if manifest_path:
+        try:
+            manifest_path_text = Path(manifest_path).read_text(encoding="utf-8")
+        except OSError:
+            manifest_text = None
+        else:
+            manifest_text = manifest_path_text
+    if manifest_text is not None:
+        try:
+            manifest = parse_manifest(manifest_text)
+        except (KeyError, ValueError, OSError):
+            manifest = None
+    waiver_reason = (
+        "" if negative_control_waiver is None else str(negative_control_waiver).strip()
+    )
+
+    def _negative_control_check() -> dict[str, Any]:
+        if negative_control_waiver is not None and not waiver_reason:
+            raise CrewError("--waive-negative-control requires a non-empty reason")
+        control = _require_declared_negative_control(
+            run_id,
+            record,
+            gate=gate,
+            manifest=manifest,
+            manifest_path=manifest_path,
+            waiver_reason=waiver_reason,
+        )
+        if negative_control_waiver is not None and control["verdict"] != "waived":
+            raise CrewError(
+                f"run {run_id!r} has no negative-control match refusal for "
+                f"--waive-negative-control {waiver_reason!r} to waive"
+            )
+        return control
+
+    _ok, negative_control = attempt(_negative_control_check)
+    attempt(
+        lambda: _require_gate_check_precondition(
+            gate_check, gate=gate, require_gate_check=require_gate_check
+        )
+    )
+
+    if refusals:
+        if len(refusals) == 1:
+            raise refusals[0]
+        raise _PromotionRefusalError(refusals)
+
+    return {
+        "already_landed": False,
+        "commits": commit_list,
+        "shadow_patch": scope_products["shadow_patch"],
+        "changed_lines": scope_products["changed_lines"],
+        "scope_acceptances": scope_products["scope_acceptances"],
+        "boundary_waived": boundary_waived,
+        "brief_owner": brief_owner,
+        "impl_move": impl_move,
+        "manifest": manifest,
+        "manifest_text": manifest_text,
+        "negative_control": negative_control,
+    }
+
+
 def _complete_locked(
     run_id: str,
     *,
@@ -6045,6 +6527,7 @@ def _complete_locked(
     live_run_waived: Mapping[str, str] | None = None,
     plan_link: str = "",
     unplanned_reason: str = "",
+    landing: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
 
@@ -6193,75 +6676,34 @@ def _complete_locked(
         discard=discard_resume_worktree,
         gate=str(gate),
     )
-    commit_list = [str(sha) for sha in commits if str(sha).strip()]
-    if shadow and commit_list:
-        raise CrewError(
-            f"shadow run {run_id!r} is commitless evidence; --commit is refused"
+    if landing is None:
+        landing = _landing_preconditions(
+            run_id,
+            record,
+            checkout=checkout,
+            ledger_root=ledger_root,
+            commits=commits,
+            gate=gate,
+            failure_classification=failure_classification,
+            no_impl_change=no_impl_change,
+            plan_link=plan_link,
+            unplanned_reason=unplanned_reason,
+            boundary_waiver=boundary_waiver,
+            negative_control_waiver=negative_control_waiver,
+            accepted_paths=accepted_paths,
+            gate_check=gate_check,
+            require_gate_check=require_gate_check,
         )
-    if commit_list:
-        commit_list = _resolve_commits(cwd=tree, revisions=commit_list, run_id=run_id)
-    shadow_patch = ""
-    scope_acceptances: list[dict[str, str]] = []
-    if shadow:
-        artifact = _write_shadow_patch(record)
-        changed_lines = _shadow_patch_stat(artifact, cwd=tree)
-        shadow_patch = str(artifact)
-    elif commit_list:
-        cumulative = _committed_scope(cwd=tree, commits=commit_list, run_id=run_id)
-        if cumulative.changed_lines.get("available", True):
-            if (
-                not role_may_write_repository_paths(str(record.get("role") or ""))
-                and cumulative.paths
-            ):
-                raise CrewError(
-                    f"run {run_id!r} has role 'test', but its cited commit "
-                    "changes repository paths: "
-                    + ", ".join(cumulative.paths)
-                    + ". A verifier may read the repository it grades, but "
-                    "writes only its manifest, report, and logs outside the "
-                    "repository; dispatch an implement node for source edits"
-                )
-            outside = _outside_declared_scope(
-                cumulative.paths,
-                node.get("write_paths") or (),
-                record=record,
-                tree=tree,
-            )
-            if outside:
-                scope_acceptances = _accepted_scope_exceptions(
-                    run_id,
-                    outside,
-                    accepted_paths,
-                    record=record,
-                    tree=tree,
-                )
-        changed_lines = cumulative.changed_lines
-    else:
-        changed_lines = None
-    boundary_waived = _require_repository_tree_boundary(
-        run_id, record, waiver_reason=boundary_waiver
-    )
-    # A passing implement or test run is refused when the plan it landed against
-    # did not move, unless the reason is recorded. The check reads the plan from
-    # its own repository, ahead of anything this promotion writes.
-    plan_state = _plan_state_for_run(record, fallback_root=ledger_root)
-    # An unplanned implement landing must name an owner before anything is
-    # written: a brief run has no plan section to join its product change to,
-    # so the check is what stops that change from landing unattributed.
-    brief_owner = _require_brief_owner(
-        run_id,
-        record,
-        plan_link=plan_link,
-        unplanned_reason=unplanned_reason,
-    )
-    impl_move = _require_impl_moved(
-        run_id,
-        record,
-        gate=gate,
-        failure_classification=failure_classification,
-        no_impl_change=no_impl_change,
-        plan_state=plan_state,
-    )
+    commit_list = list(landing["commits"])
+    shadow_patch = str(landing["shadow_patch"] or "")
+    changed_lines = landing["changed_lines"]
+    scope_acceptances = list(landing["scope_acceptances"] or [])
+    boundary_waived = landing["boundary_waived"]
+    brief_owner = landing["brief_owner"]
+    impl_move = landing["impl_move"]
+    manifest_text = landing["manifest_text"]
+    manifest = landing["manifest"]
+    negative_control = landing["negative_control"]
 
     session_id = record.get("session_id") or stream.session_id
     lane_receipt = _harvest_lane_receipt(
@@ -6297,40 +6739,6 @@ def _complete_locked(
     # unreadable manifest
     # leaves follow-on paths unmeasured (key absent) and the dispute count
     # "unknown" — a node never measured is not one that measured zero.
-    manifest_text: str | None = None
-    manifest: Mapping[str, Any] | None = None
-    manifest_path = str(record.get("manifest_path") or "")
-    if manifest_path:
-        try:
-            manifest_text = Path(manifest_path).read_text(encoding="utf-8")
-        except OSError:
-            manifest_text = None
-    if manifest_text is not None:
-        try:
-            manifest = parse_manifest(manifest_text)
-        except (KeyError, ValueError, OSError):
-            manifest = None
-    # A passing gate on a node that writes a check is refused unless the
-    # manifest names the red log the declared mutation produced. The check runs
-    # after the manifest is read, because the discharge lives there.
-    waiver_reason = (
-        "" if negative_control_waiver is None else str(negative_control_waiver).strip()
-    )
-    if negative_control_waiver is not None and not waiver_reason:
-        raise CrewError("--waive-negative-control requires a non-empty reason")
-    negative_control = _require_declared_negative_control(
-        run_id,
-        record,
-        gate=gate,
-        manifest=manifest,
-        manifest_path=manifest_path,
-        waiver_reason=waiver_reason,
-    )
-    if negative_control_waiver is not None and negative_control["verdict"] != "waived":
-        raise CrewError(
-            f"run {run_id!r} has no negative-control match refusal for "
-            f"--waive-negative-control {waiver_reason!r} to waive"
-        )
     follow_on_paths = (
         None if manifest is None else ledger.follow_on_paths(manifest.get("follow_ons"))
     )
