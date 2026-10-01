@@ -1235,6 +1235,17 @@ def _watcher_delivery_admission(
     return None
 
 
+# The phases a live claim carries while its worker is still being composed.
+# A pointer in any other phase — working, running, waiting, or anything a
+# future writer adds — describes a run that has already passed its own
+# admission, so its claim refuses newcomers however the registration times
+# compare. An absent phase is read the same way: a claim that cannot be shown
+# to be still composing is treated as established rather than quietly outranked.
+_UNLAUNCHED_CLAIM_PHASES = frozenset(
+    {"starting", "launching", "launcher", "dispatching"}
+)
+
+
 @dataclass(frozen=True)
 class _RepositoryScopeClaim:
     """One live claim resolved to the repository that contains its path.
@@ -1404,12 +1415,17 @@ def _repository_scope_claims(
                     disposition_reason=disposition.reason,
                     registered_at=str(pointer.get("created_at") or ""),
                     # A run that has written the record it launches its worker
-                    # from, or whose process has started, has already passed its
-                    # own admission: the claim is no longer forming, so it
-                    # refuses newcomers as it always has. The launch claim
-                    # published before the checks carries neither, which is how
-                    # a still-composing claim is told apart.
-                    launched=bool(pointer.get("worktree") or pointer.get("pid")),
+                    # from, whose process has started, or whose phase has moved
+                    # past the pre-spawn set has already passed its own
+                    # admission: the claim is no longer forming, so it refuses
+                    # newcomers as it always has. The launch claim published
+                    # before the checks is the only shape that is still
+                    # composing, and the phase is what names it.
+                    launched=(
+                        bool(pointer.get("worktree") or pointer.get("pid"))
+                        or str(pointer.get("phase") or "")
+                        not in _UNLAUNCHED_CLAIM_PHASES
+                    ),
                 )
             )
     return sorted(
@@ -2022,6 +2038,23 @@ def _directory_claim_acceptance_line(row: Mapping[str, Any]) -> str:
     )
 
 
+def _fractional_digits(stamp: str) -> int:
+    """Count the sub-second digits a timestamp spells, 0 when it names a whole second.
+
+    Used only to tell whether two registration stamps carry the same resolution:
+    a value truncated to the second and one carrying microseconds cannot be
+    compared across a sub-second gap, because the truncation hides which moment
+    is really the earlier.
+    """
+    dot = stamp.find(".")
+    if dot < 0:
+        return 0
+    end = dot + 1
+    while end < len(stamp) and stamp[end].isdigit():
+        end += 1
+    return end - dot - 1
+
+
 def _peer_claim_is_a_later_racing_arrival(
     claim: _RepositoryScopeClaim,
     *,
@@ -2049,6 +2082,11 @@ def _peer_claim_is_a_later_racing_arrival(
     written in: the same instant is written ``...T04:00:00Z`` by one caller and
     ``...T04:00:00.500000+00:00`` by another, and those spellings sort the
     wrong way round as strings.
+
+    A comparison that the data cannot support is inconclusive rather than
+    decided by run id: when the two stamps carry different resolutions and name
+    moments inside the coarser one's tick, which is the earlier is unknowable,
+    so the peer claim stays established and this dispatch refuses.
     """
     if claim.launched:
         return False
@@ -2057,6 +2095,15 @@ def _peer_claim_is_a_later_racing_arrival(
     peer_registered_at = parse_utc(claim.registered_at)
     own_registered = parse_utc(own_registered_at)
     if peer_registered_at is None or own_registered is None:
+        return False
+    if _fractional_digits(claim.registered_at) != _fractional_digits(
+        own_registered_at
+    ) and abs(peer_registered_at - own_registered) < timedelta(seconds=1):
+        # The two stamps carry different resolutions and name moments inside the
+        # coarser one's own tick, so which is the earlier is not decidable: a
+        # second-precision stamp truncates a moment the other spells in full.
+        # The newcomer must not be let through on a comparison the data cannot
+        # support, so the peer stays established and this dispatch refuses.
         return False
     return (peer_registered_at, claim.run_id) > (own_registered, own_run_id)
 

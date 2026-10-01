@@ -21,6 +21,7 @@ import importlib
 import json
 import os
 import subprocess
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -152,24 +153,32 @@ def _dispatch(config_home: Path, repo: Path, *, session: str = SESSION) -> dict:
     )
 
 
+def _same_second_with_fraction() -> str:
+    """A registration stamp in the current second, with sub-second precision."""
+    return dispatch_module._utc_now()[:-1] + ".500000+00:00"
+
+
 def _plant_peer_claim(
     repo: Path,
     peer_run_id: str,
     *,
     registered_at: str,
     launched: bool = False,
+    phase: str = "starting",
 ) -> None:
     """Publish a peer dispatch's launch claim as the second racer's claim.
 
     The fields are the ones the launch-claim write carries: no pid and no
     worktree while the run is still composing, and both once it has launched.
+    ``phase`` names where the run stands, so a case can plant a claim whose run
+    has already passed its own admission.
     """
     record: dict[str, Any] = {
         "run_id": peer_run_id,
         "project": PROJECT,
         "repo": str(repo),
         "node": {"id": "node-peer", "write_paths": ["src/claimed.py"]},
-        "phase": "starting",
+        "phase": phase,
         "created_at": registered_at,
     }
     if launched:
@@ -302,6 +311,77 @@ def test_a_launched_claim_refuses_a_newcomer_whatever_the_order(
     assert live_pointers_naming(NODE_ID) == []
 
 
+def test_a_running_owner_is_never_outranked_by_a_newcomer(
+    home: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A claim whose run is running is refused to a newcomer, not outranked.
+
+    The owner's pointer says its run is working and carries a registration time
+    a full minute after the newcomer's, so nothing about the times is ambiguous:
+    on the stamps alone the running owner reads as the later arrival and would
+    be disregarded, letting the newcomer through over a live run. A claim that
+    has passed its own admission is established whatever the times compare to.
+    """
+    config_home, repo = home
+    peer_run_id = "r-20261001T04000000000000-running-owner"
+    later = datetime.now(tz=UTC) + timedelta(seconds=60)
+    later_stamp = later.isoformat(timespec="seconds").replace("+00:00", "Z")
+
+    monkeypatch.setattr(
+        dispatch_module,
+        "_create_worktree",
+        _worktree_seam(
+            tmp_path,
+            lambda: _plant_peer_claim(
+                repo,
+                peer_run_id,
+                registered_at=later_stamp,
+                phase="working",
+            ),
+        ),
+    )
+
+    with pytest.raises(crew.ScopeConflict) as refusal:
+        _dispatch(config_home, repo)
+
+    assert refusal.value.run_id == peer_run_id
+    assert live_pointers_naming(NODE_ID) == []
+
+
+def test_a_running_owner_in_the_same_second_is_not_outranked(
+    home: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The owner's sub-second stamp must not let a same-second newcomer through.
+
+    The owner is running and its pointer carries a sub-second registration
+    stamp, while the newcomer registers with second precision inside the same
+    second. The two stamps cannot be ordered, so the comparison is inconclusive
+    and the newcomer refuses rather than being let through over the live run.
+    """
+    config_home, repo = home
+    peer_run_id = "r-20261001T04000000000000-same-second-owner"
+
+    monkeypatch.setattr(
+        dispatch_module,
+        "_create_worktree",
+        _worktree_seam(
+            tmp_path,
+            lambda: _plant_peer_claim(
+                repo,
+                peer_run_id,
+                registered_at=_same_second_with_fraction(),
+                phase="working",
+            ),
+        ),
+    )
+
+    with pytest.raises(crew.ScopeConflict) as refusal:
+        _dispatch(config_home, repo)
+
+    assert refusal.value.run_id == peer_run_id
+    assert live_pointers_naming(NODE_ID) == []
+
+
 # ── The ordering itself ─────────────────────────────────────────────────────
 
 
@@ -369,22 +449,31 @@ def test_mixed_spelling_registration_times_order_by_the_parsed_moment() -> None:
     ``...T04:00:00Z`` and ``...T04:00:00.500000+00:00`` name moments half a
     second apart, yet as raw text the ``Z`` one sorts after the fractional one
     (``'Z'`` is above ``'.'``). A comparison over the raw strings therefore
-    ranks the earlier arrival as the later one. Parsing each stamp first ranks
-    them by when they were actually registered.
+    ranks the earlier arrival as the later one. Once the moments are compared
+    as parsed instants the order is real, and inside the coarser stamp's own
+    second it is unknowable — so the comparison is inconclusive rather than
+    decided by run id.
     """
     order = dispatch_module._peer_claim_is_a_later_racing_arrival
 
-    # The peer's spelling sorts later as text but names the earlier moment, so
-    # it is the established arrival and this dispatch must refuse it.
+    # The two stamps carry different resolutions and name moments inside the
+    # same second, so which is the earlier is not decidable from them: the peer
+    # stays established and this dispatch refuses, whichever way they are spelt.
     assert not order(
         _claim("r-peer", "2026-10-01T04:00:00Z"),
         own_run_id="r-own",
         own_registered_at="2026-10-01T04:00:00.500000+00:00",
     )
-    # And the reverse: the fractional spelling names the later moment, so it is
-    # outranked even though it sorts earlier as text.
-    assert order(
+    assert not order(
         _claim("r-peer", "2026-10-01T04:00:00.500000+00:00"),
+        own_run_id="r-own",
+        own_registered_at="2026-10-01T04:00:00Z",
+    )
+    # Once the two moments are more than a second apart the resolution no
+    # longer hides the order, and the parsed instants rank them by real time
+    # rather than by how they are spelt.
+    assert order(
+        _claim("r-peer", "2026-10-01T04:00:02.500000+00:00"),
         own_run_id="r-own",
         own_registered_at="2026-10-01T04:00:00Z",
     )
