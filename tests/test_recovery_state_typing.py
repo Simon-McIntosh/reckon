@@ -145,7 +145,11 @@ def test_a_lane_hold_always_states_its_reset(
     assert counts["blocked"] == 0
     assert counts["waiting"] == 1
     assert "held" in line
-    assert "resume:" in line
+    # The remedy is carried as a structured event fact and never printed: the
+    # state cell carries the reading and the clause is the explanation alone, so
+    # an action word never adds a third state beside the transition.
+    assert snapshot["recovery"] == "resume"
+    assert "resume:" not in line
 
 
 def test_a_live_in_progress_manifest_is_not_a_block(
@@ -375,6 +379,15 @@ def test_every_self_lifting_type_names_what_lifts_it() -> None:
 
 
 def test_ticker_carries_the_recovery_verb_in_an_actionable_row() -> None:
+    """The row carries the remedy as event data and prints no action word.
+
+    The recovery vocabulary still owns the specific remedy, and the row keeps it
+    as a structured fact, but the renderer never prints it: an action word beside
+    the transition reads as a third state, so the destination state's colour
+    says whether the coordinator must look while the clause says what happened.
+    This actionable row therefore names its verb on the record and renders the
+    clause alone.
+    """
     line = Ticker(width=180).render(
         {
             "observed_at": "2026-09-08T08:00:00Z",
@@ -391,4 +404,8 @@ def test_ticker_carries_the_recovery_verb_in_an_actionable_row() -> None:
         }
     )
 
-    assert "decide:" in line
+    # The vocabulary still names a verb for the blocked classification; the row
+    # carries it as a fact and the printed clause is the explanation alone.
+    assert recovery.RECOVERY_VERBS["blocked"]  # the row's own remedy
+    assert "decide:" not in line
+    assert "a storage policy is required" in line
