@@ -2784,6 +2784,7 @@ class DispatchPlan:
     section_routing: dict[str, Any] | None = None
     lane_declaration: dict[str, Any] | None = None
     lane_reading: dict[str, Any] | None = None
+    lane_gate: dict[str, Any] | None = None
     lane_advisory: dict[str, Any] | None = None
     open_endedness: float | None = None
 
@@ -2809,6 +2810,9 @@ class DispatchPlan:
             ),
             "lane_reading": (
                 None if self.lane_reading is None else dict(self.lane_reading)
+            ),
+            "lane_gate": (
+                None if self.lane_gate is None else dict(self.lane_gate)
             ),
             "node": self.node.as_dict(),
             "brief": _brief_record(self.node),
@@ -3425,6 +3429,13 @@ def _dispatch_lane_reading(backend: Mapping[str, Any]) -> dict[str, Any]:
     An absent declaration, an unreadable file, or an unparsable document
     collapses the carry to ``unknown`` naming the reason rather than to a
     figure.
+
+    Two facts elsewhere do withhold a dispatch, and neither is a value the
+    reading carries: the gate file's ``paused`` field, read from the backend's
+    declared ``gate_document``, and a lane document whose published
+    ``router_generation_gate.config_path`` differs from that declared path.
+    Every other value of the lane document still withholds nothing, so the
+    carry and the plan agree.
     """
     declared = backend.get("lane_document")
     if not declared:
@@ -3447,6 +3458,266 @@ def _dispatch_lane_reading(backend: Mapping[str, Any]) -> dict[str, Any]:
             detail=f"lane document {str(path)!r} is not a JSON object"
         )
     return _lane_reading_carry(payload)
+
+
+# The states in which the lane gate withholds a dispatch rather than launching.
+# A gate that says paused and a gate that cannot be answered both wait, because
+# a gate nobody can confirm has ended is not an open one.
+_LANE_GATE_WAITING_STATES = frozenset({"paused", "unreadable"})
+
+# The gate file's own keys: a JSON boolean and an optional reason string.
+_LANE_GATE_PAUSED_KEY = "paused"
+_LANE_GATE_REASON_KEY = "reason"
+
+# The path the lane document publishes under its gate block, compared against
+# the backend's declared path so a pause written to a file the dispatch is not
+# reading cannot pass unseen.
+_LANE_GATE_CONFIG_PATH_KEY = "config_path"
+
+# Each of the two gate reads has its own deadline rather than one budget shared
+# between them, because a single stat on this filesystem has taken 8.5 s.
+LANE_GATE_READ_DEADLINE_SECONDS = 5.0
+
+
+class LanePaused(CrewError):  # noqa: N818 - named as the dispatch states it, beside BudgetHold
+    """A dispatch waits on the lane gate rather than launching.
+
+    Distinct from a refusal for the same reason a budget hold is: nothing was
+    created and nothing is wrong with the node, so a caller retries once the
+    gate opens rather than reshaping the work. The gate object the decision was
+    taken from rides the exception, so every surface reports the same state the
+    dispatch read.
+    """
+
+    def __init__(self, gate: Mapping[str, Any]) -> None:
+        self.gate = dict(gate)
+        super().__init__(
+            str(gate.get("detail") or "").strip()
+            or (f"the lane gate is {gate.get('state')!r} at {gate.get('gate_path')!r}")
+        )
+
+
+class _GateReadDeadline(Exception):  # noqa: N818 - an internal marker, not a raised API
+    """A gate or lane-document read did not answer inside its own deadline."""
+
+
+def _gate_text_reader(path: Path) -> str:
+    """Read one gate-related file as text; an indirection a test can replace."""
+    return path.read_text(encoding="utf-8")
+
+
+def _read_text_under_deadline(path: Path, *, timeout: float) -> str:
+    """Read ``path`` under its own deadline, raising on timeout or ``OSError``.
+
+    The read runs on a daemon thread so a stalled filesystem cannot hold the
+    dispatch open: the deadline passing raises rather than waiting, and the
+    abandoned thread dies with the process. The thread re-raises whatever the
+    read raised, so a clean file-not-found stays distinguishable from a
+    permission error, which the gate rule reads differently.
+    """
+    outcome: dict[str, Any] = {}
+
+    def work() -> None:
+        try:
+            outcome["text"] = _gate_text_reader(path)
+        except BaseException as exc:  # noqa: BLE001 - re-raised to the caller
+            outcome["error"] = exc
+
+    thread = threading.Thread(target=work, daemon=True)
+    thread.start()
+    thread.join(timeout)
+    if thread.is_alive():
+        raise _GateReadDeadline(f"the read of {str(path)!r} exceeded {timeout:g}s")
+    if "error" in outcome:
+        raise outcome["error"]
+    return str(outcome.get("text") or "")
+
+
+def _gate_paths_agree(declared: Path, published: Path) -> bool:
+    """Whether two gate paths name the same file once normalised."""
+    return os.path.abspath(os.path.expanduser(str(declared))) == os.path.abspath(
+        os.path.expanduser(str(published))
+    )
+
+
+def _gate_path_check(backend: Mapping[str, Any], declared: str) -> dict[str, Any]:
+    """Compare the declared gate path against the lane document's published one.
+
+    The declaration is a copy of a path the router derives, so it can drift. A
+    mismatch waits, naming both paths, because a pause written to the file the
+    dispatch is not reading would otherwise pass unseen. The lane document is
+    read only for this comparison, and a declaration with nothing to compare
+    against — no lane document, one that cannot be read inside its deadline one
+    that is not a JSON object, one publishing no gate block, or one publishing
+    no ``config_path`` — records ``skipped`` with its reason and never holds a
+    dispatch on its own.
+    """
+    lane_declared = backend.get("lane_document")
+    if not lane_declared:
+        return {
+            "state": "skipped",
+            "detail": "backend declares no lane document to publish a config_path",
+        }
+    lane_path = Path(str(lane_declared)).expanduser()
+    try:
+        text = _read_text_under_deadline(
+            lane_path, timeout=LANE_GATE_READ_DEADLINE_SECONDS
+        )
+    except _GateReadDeadline as exc:
+        return {"state": "skipped", "detail": str(exc)}
+    except OSError as exc:
+        return {
+            "state": "skipped",
+            "detail": f"lane document {str(lane_path)!r} cannot be read — {exc}",
+        }
+    try:
+        payload = json.loads(text)
+    except ValueError as exc:
+        return {
+            "state": "skipped",
+            "detail": f"lane document {str(lane_path)!r} is not valid JSON — {exc}",
+        }
+    if not isinstance(payload, Mapping):
+        return {
+            "state": "skipped",
+            "detail": f"lane document {str(lane_path)!r} is not a JSON object",
+        }
+    gate_block = payload.get(_lane_document.GATE_KEY)
+    if not isinstance(gate_block, Mapping):
+        return {
+            "state": "skipped",
+            "detail": "lane document publishes no router_generation_gate block",
+        }
+    published = gate_block.get(_LANE_GATE_CONFIG_PATH_KEY)
+    if not isinstance(published, str) or not published.strip():
+        return {
+            "state": "skipped",
+            "detail": ("lane document publishes no router_generation_gate.config_path"),
+        }
+    published_path = Path(published.strip()).expanduser()
+    if _gate_paths_agree(Path(declared), published_path):
+        return {"state": "matched", "detail": ""}
+    return {
+        "state": "mismatch",
+        "detail": (
+            f"declared gate document {declared!r} differs from the lane "
+            f"document's published config_path {str(published_path)!r}"
+        ),
+    }
+
+
+def _dispatch_lane_gate(backend: Mapping[str, Any]) -> dict[str, Any]:
+    """Read the gate file a backend declares, and say which row applied.
+
+    The gate file is the authority for whether the lane admits work: a JSON
+    object whose ``paused`` is a boolean, with an optional ``reason`` string.
+    The rule this returns one row of:
+
+    * no ``gate_document`` declared — ``not-declared``; the dispatch proceeds,
+      which is a host or backend with no router;
+    * the file reads as an object with ``paused`` true — ``paused``;
+    * the file reads with ``paused`` false or the key absent — ``open``;
+    * the read fails with a clean file-not-found and nothing else —
+      ``declared-but-missing``; a mistyped path must not read like a quiet host
+      with no router;
+    * any other failure — a read past its deadline, a permission error, a file
+      that is not a JSON object, a non-boolean ``paused``, or a declared path
+      that differs from the lane document's published ``config_path`` —
+      ``unreadable``, with the defect named.
+
+    ``paused`` and ``unreadable`` are the two rows that withhold a dispatch;
+    every other row lets it proceed. The lane document is read only for the
+    path comparison, and a comparison that cannot be made records ``skipped``
+    in ``path_check`` without holding the dispatch on its own.
+    """
+    declared = str(backend.get("gate_document") or "").strip()
+    if not declared:
+        return {
+            "state": "not-declared",
+            "gate_path": None,
+            "paused": None,
+            "reason": None,
+            "detail": "",
+            "path_check": "not-declared",
+            "path_check_detail": "",
+        }
+    path = Path(declared).expanduser()
+    try:
+        text = _read_text_under_deadline(path, timeout=LANE_GATE_READ_DEADLINE_SECONDS)
+    except FileNotFoundError:
+        base: dict[str, Any] = {
+            "state": "declared-but-missing",
+            "paused": None,
+            "reason": None,
+            "detail": "gate path declared but missing",
+        }
+    except _GateReadDeadline as exc:
+        base = {
+            "state": "unreadable",
+            "paused": None,
+            "reason": None,
+            "detail": str(exc),
+        }
+    except OSError as exc:
+        base = {
+            "state": "unreadable",
+            "paused": None,
+            "reason": None,
+            "detail": f"gate document {str(path)!r} cannot be read — {exc}",
+        }
+    else:
+        try:
+            payload = json.loads(text)
+        except ValueError as exc:
+            base = {
+                "state": "unreadable",
+                "paused": None,
+                "reason": None,
+                "detail": f"gate document {str(path)!r} is not valid JSON — {exc}",
+            }
+        else:
+            base = _gate_rows_from_payload(payload, path)
+    check = _gate_path_check(backend, declared)
+    if check["state"] == "mismatch":
+        base = {
+            "state": "unreadable",
+            "paused": None,
+            "reason": None,
+            "detail": check["detail"],
+        }
+    return {
+        "gate_path": declared,
+        **base,
+        "path_check": check["state"],
+        "path_check_detail": check["detail"],
+    }
+
+
+def _gate_rows_from_payload(payload: object, path: Path) -> dict[str, Any]:
+    """Resolve the gate row a parsed gate-file payload stands for."""
+    if not isinstance(payload, Mapping):
+        return {
+            "state": "unreadable",
+            "paused": None,
+            "reason": None,
+            "detail": f"gate document {str(path)!r} is not a JSON object",
+        }
+    paused = payload.get(_LANE_GATE_PAUSED_KEY)
+    reason = payload.get(_LANE_GATE_REASON_KEY)
+    reason_text = reason.strip() if isinstance(reason, str) and reason.strip() else None
+    if _LANE_GATE_PAUSED_KEY in payload and not isinstance(paused, bool):
+        return {
+            "state": "unreadable",
+            "paused": None,
+            "reason": None,
+            "detail": (
+                f"gate document {str(path)!r} carries a non-boolean "
+                f"'paused' ({paused!r})"
+            ),
+        }
+    if paused is True:
+        return {"state": "paused", "paused": True, "reason": reason_text, "detail": ""}
+    return {"state": "open", "paused": False, "reason": reason_text, "detail": ""}
 
 
 def _path_is_tmpfs(path: str | Path) -> bool:
@@ -4177,6 +4448,7 @@ def plan_dispatch(
             ],
         )
     lane_reading = _dispatch_lane_reading(backend)
+    lane_gate = _dispatch_lane_gate(backend)
     resolution = DispatchPlan(
         run_id=resolved_run_id,
         backend=backend_name,
@@ -4199,6 +4471,7 @@ def plan_dispatch(
         ),
         lane_declaration=lane_declaration,
         lane_reading=lane_reading,
+        lane_gate=lane_gate,
         lane_advisory=lane_advisory,
         open_endedness=open_endedness,
     )
@@ -5072,6 +5345,17 @@ def dispatch(
     launch_kind = resolution.launch
     run_id = resolution.run_id
 
+    # The lane gate is read before anything is created: a paused gate, one that
+    # cannot be answered, or a declared path that differs from the lane
+    # document's published one holds the dispatch here, so no pointer and no
+    # worktree is left behind for a worker nobody may launch. The reading was
+    # taken in plan_dispatch against the resolved backend, so ``--local`` and an
+    # explicit ``--backend`` both reach it, and a held backend that falls back
+    # to another is read on the backend it actually resolved to.
+    lane_gate = resolution.lane_gate or {}
+    if lane_gate.get("state") in _LANE_GATE_WAITING_STATES:
+        raise LanePaused(lane_gate)
+
     # A cli worker launches inside the fence, and the fence is bubblewrap over a
     # user namespace. A host with neither cannot seal a worker's writes, so the
     # dispatch is refused before any worktree, pointer or run directory exists
@@ -5459,6 +5743,7 @@ def dispatch(
                 if resolution.section_routing is None
                 else dict(resolution.section_routing)
             ),
+            "lane_gate": resolution.lane_gate,
             "local": resolution.local,
             "execution_fit": resolution.execution_fit.as_dict(),
             "launch": launch_kind,

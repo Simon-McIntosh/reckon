@@ -343,6 +343,19 @@ slots:
       over the network.
     range: string
 
+  gate_document:
+    description: >-
+      Optional absolute path to the JSON gate file that decides whether a
+      serving lane will admit work, as the router resolves it: a `paused`
+      boolean and an optional `reason` string. A dispatch whose resolved
+      backend declares this path reads it before creating a pointer or a
+      worktree, and waits rather than launching while `paused` is true or the
+      gate cannot be answered; the declared path is also checked against the
+      lane document's published `router_generation_gate.config_path`, and a
+      mismatch waits. User data naming one host's own gate; the schema supplies
+      no path, and the read never goes over the network.
+    range: string
+
   list_command:
     description: >-
       Argument vector that prints the models served by this backend. The vector
@@ -921,6 +934,7 @@ classes:
       - catalog
       - endpoints_document
       - lane_document
+      - gate_document
       - environment
       - model
       - input_modalities
