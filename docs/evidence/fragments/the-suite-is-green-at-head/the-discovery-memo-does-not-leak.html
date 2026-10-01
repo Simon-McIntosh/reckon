@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
+  <title>No served case leaves a live discovery memo behind | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="the-discovery-memo-does-not-leak">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>No served case leaves a live discovery memo behind</h2>
+        <p class="lead">A test that starts the served process assigns <code>reckon.serve._SIGNATURE_TTL_S</code> (the discovery walk-reuse window) and never restores it, so a later test sharing its process reads a memoised walk it did not arm.</p>
+      </header>
+
+      <section id="the-discovery-memo-does-not-leak-reproduction">
+        <h2>Reproduction</h2>
+        <p>The leaking file is <code>tests/test_served_code_drift.py</code>, not the two files named in this node's brief. Its two <code>serve.main</code> cases (<code>test_main_releases_the_served_process_state_when_serving_stops</code> and <code>..._when_it_cannot_bind</code>) run <code>serve.main</code>, which assigns <code>_SIGNATURE_TTL_S = 60.0</code> at <code>reckon/serve.py:3739</code> before binding or before it raises, and neither restores it. Running that file and <code>tests/test_server_listens_before_it_watches.py</code> in one process, in that order, errors the entry-point cases at setup with <q>an earlier test in this process left the discovery memo live (_SIGNATURE_TTL_S=60.0)</q>. Neither named candidate leaks: each already restores via an autouse <code>monkeypatch</code> fixture, and each leaves <code>0.0</code> at session end.</p>
+      </section>
+
+      <section id="the-discovery-memo-does-not-leak-what-changed">
+        <h2>What changed</h2>
+        <ul>
+          <li><code>tests/conftest.py</code> gains an autouse <code>restore_discovery_memo_ttl</code> fixture that snapshots <code>serve._SIGNATURE_TTL_S</code> at each test's entry and restores it on teardown, so no test leaves the window changed for the next. It is armed off by <code>RECKON_TEST_SKIP_DISCOVERY_MEMO_RESTORE=1</code> for the negative-control run.</li>
+          <li><code>tests/test_discovery_memo_does_not_leak.py</code> runs <code>tests/test_served_code_drift.py</code> and <code>tests/test_server_listens_before_it_watches.py</code> in one child pytest process, in that order, without xdist, and asserts the entry-point cases pass.</li>
+        </ul>
+      </section>
+
+      <section id="the-discovery-memo-does-not-leak-the-gate">
+        <h2>The gate</h2>
+        <table>
+          <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+          <tbody>
+            <tr><td>Head <code>6205b507</code>, new test file plus the three named files</td><td>14 passed, <code>EXIT=0</code></td><td><code>gate-head.log</code></td></tr>
+            <tr><td>Negative control: restore removed by environment</td><td>1 failed, 13 passed, <code>EXIT=1</code>; <code>FAILED tests/test_discovery_memo_does_not_leak.py::test_a_served_case_leaves_no_live_discovery_memo_for_a_later_test</code> with the <q>discovery memo live</q> message</td><td><code>gate-negative-control.log</code></td></tr>
+          </tbody>
+        </table>
+        <p>Logs live under the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T154558701626-the-discovery-memo-does-not-leak/</code>.</p>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
