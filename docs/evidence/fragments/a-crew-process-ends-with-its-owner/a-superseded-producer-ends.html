@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A superseded producer ends rather than overwrite its replacement">
+  <meta name="plan-summary" content="When a producer's seat record is unlinked and a replacement takes the path, the superseded producer ends on its next wake-up without overwriting the replacement's record, and crew unwatch still finds and stops the replacement.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s3">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,watch,producer,unwatch">
+  <title>A superseded producer ends rather than overwrite its replacement &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A superseded producer ends rather than overwrite its replacement</h1>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <p>The registration-survives-an-unlink node left one branch of
+        <code>reckon.crew.recovery._recreate_unlinked_registration</code> untested:
+        when the seat path is held by a replacement, the function returns
+        <code>False</code> so the superseded producer ends rather than overwrite a
+        seat no longer its own. This node drives that branch.</p>
+      <ul>
+        <li><code>tests/test_producer_registration_survives_unlink.py</code> gains
+          <code>test_a_superseded_producer_ends_without_overwriting_the_replacement</code>.
+          It arms a first producer at a long poll interval and waits until it has
+          completed a poll, so it is asleep and will not revisit the path; unlinks
+          the seat; starts a replacement that takes the vacated path; then shows the
+          first producer ending on its next wake-up, the record still naming the
+          replacement, and <code>crew unwatch</code> stopping the replacement.</li>
+        <li><code>reckon.crew.recovery._recreate_unlinked_registration</code>'s
+          signature is joined to one line. It was wrapped where
+          <code>ruff format</code> joins it, so the function added one format
+          deviation; the join removes it.</li>
+      </ul>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <p><strong>Gate</strong> &mdash;
+        <code>tests/test_producer_registration_survives_unlink.py</code>:
+        <strong>3 passed in 10.55 s, EXIT=0</strong> at head <code>f171024ed</code>,
+        run in the worktree with the recorded <code>RECKON_HOME</code>.</p>
+      <p><strong>Arms</strong>, one invocation each over
+        <code>tests/test_producer_registration_survives_unlink.py</code> and
+        <code>tests/test_producer_holds_a_lease.py</code>:</p>
+      <ul>
+        <li><strong>Base</strong>, revision <code>df6a40b5c</code> (<code>git archive</code>
+          extraction in a scratch tree): <strong>5 passed in 26.82 s, EXIT=0</strong>.</li>
+        <li><strong>Head</strong>, revision <code>f171024ed</code>:
+          <strong>6 passed in 35.67 s, EXIT=0</strong>.</li>
+        <li><strong>Added failures: 0.</strong> The head arm adds the superseded case
+          to the base arm's five.</li>
+      </ul>
+      <p><strong>Negative control</strong>, executed and logged: with the superseded
+        branch made to return <code>True</code>, the first producer does not end and
+        the case fails &mdash; <strong>1 failed, 2 deselected, EXIT=1</strong>, the
+        failing id being the new case, which the head arm does not fail.</p>
+      <p><strong>Lint:</strong> the repository's ruff (0.16.4),
+        <code>ruff check</code> over <code>reckon/crew/recovery.py</code> is
+        <strong>9 findings</strong>, the same count as at the prior node's base
+        <code>60b808f5f</code>; <code>ruff format --check</code> reports
+        <strong>5 hunks</strong>, no more than <code>2c49c0457</code>'s 5. The new
+        test file is clean under <code>ruff check</code> and
+        <code>ruff format --check</code>.</p>
+    </section>
+
+    <section id="landing">
+      <h2>Landing line</h2>
+      <p><code>landing: docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-superseded-producer-ends.html</code></p>
+    </section>
+  </main>
+</body>
+</html>
