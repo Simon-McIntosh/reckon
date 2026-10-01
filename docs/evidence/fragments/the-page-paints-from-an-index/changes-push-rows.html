@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="The change stream emits the index rows that changed, were added or were removed, and the loader patches them into window.STATE in place, refetching derived state once per settle window.">
   <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
   <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s5">
-  <meta name="plan-commits" content="79d925018">
+  <meta name="plan-commits" content="79d925018,267f54280">
   <meta name="plan-recorded-at" content="2026-10-01">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-tags" content="serve,changes,index,loader,spa">
@@ -22,8 +22,9 @@
 <article class="r-note" data-node="changes-push-rows" data-reckon="landed" data-when="2026-10-01">
   <h2>A change pushes its rows, and the page patches them in place</h2>
 
-  <p>Commit <code>79d925018</code> changes <code>/_changes/&lt;project&gt;</code> from a
-  bare content digest to the index rows that moved. The stream keeps the row list it
+  <p>Commits <code>79d925018</code> and <code>267f54280</code> change
+  <code>/_changes/&lt;project&gt;</code> from a bare content digest to the index rows that
+  moved. The stream keeps the row list it
   served when it opened, re-stats the tree on a reported change, and diffs the rebuild
   against that list: a rewritten file arrives in <code>rows.changed</code>, a new file in
   <code>rows.added</code>, a departed file in <code>rows.removed</code>, each carrying the
@@ -37,11 +38,13 @@
   <p><code>docs/ui/state-loader.js</code> patches a pushed event into
   <code>window.STATE</code> in place: a changed row keeps its object and its position, a
   row the page never carried is held as an arrival rather than inserted, and a removed row
-  leaves the inventory. The derived fields a discovery merge delivered are left in place —
-  the index carries no effective status, so the patch never overwrites one with a locally
-  defaulted value — and the derived refetch follows at most once per settle window, in the
-  background. An event carrying only a digest keeps the refetch the loader always made,
-  so an older server still drives the page.</p>
+  leaves the inventory — if it was still held as an arrival, it leaves the arrival count
+  with it, so the page stops offering a document that is gone. The derived fields a
+  discovery merge delivered are left in place — the index carries no effective status, so
+  the patch never overwrites one with a locally defaulted value — and the derived refetch
+  follows at most once per settle window, in the background. An event carrying only a
+  digest is patched by nothing and answered by that same shared refetch, so an older
+  server still drives the page and a burst mixing both event shapes is one revalidation.</p>
 
   <h3>Measured</h3>
   <ul>
@@ -55,16 +58,17 @@
     <code>requested</code> unchanged — no <code>/_discover</code> or <code>/_index</code>
     request applies it — the removed row leaves the inventory and the added row is held as
     an arrival (<code>pending: ["evidence:late"]</code>), a digest-only event re-runs the
-    full refetch, and four events in one settle window cost one refetch. Six cases, all
-    passing.</li>
+    full refetch, four row events in one settle window cost one refetch, a burst mixing
+    pushed rows with digest-only events costs one as well, and a row deleted before its
+    reveal leaves the arrival count. Eight cases, all passing.</li>
     <li><strong>Event latency, ten flows in one process:</strong> 0.45–0.48 s from rewrite
     to pushed row, against the 2 s bound. Emitting rows ahead of the derived digest is
     what bought that margin: the same flow measured 1.13–1.48 s while the digest was
     resolved first, and one run under a busy node reached 3.23 s. A change resolves six
     <code>git</code> forks either way, but only the row rebuild's two then sit between the
     rewrite and the event; resolving the digest first put all six there.</li>
-    <li><strong>The gate, at <code>79d925018</code>:</strong> the six files report
-    <code>31 passed, 2 skipped, 1 failed</code> (<code>EXIT=1</code>; log
+    <li><strong>The gate, at <code>267f54280</code>:</strong> the six files report
+    <code>33 passed, 2 skipped, 1 failed</code> (<code>EXIT=1</code>; log
     <code>logs/head-gate.log</code>). The five pre-existing files at the base revision
     <code>06d56ae87</code>, run in a scratch tree, report <code>25 passed, 2 skipped,
     1 failed</code> (<code>EXIT=1</code>; log <code>logs/base-gate.log</code>). The head
@@ -74,7 +78,7 @@
     already passes — out of this node's scope, recorded as a follow-on.</li>
     <li><strong>The declared negative control is executed and logged:</strong> with the
     stream mutated to emit the bare digest again, the two row assertions fail —
-    <code>2 failed, 4 passed</code>, <code>EXIT=1</code> — and the four loader cases still
+    <code>2 failed, 6 passed</code>, <code>EXIT=1</code> — and the six loader cases still
     pass. Log: <code>logs/negative-control.log</code> in the run directory
     <code>r-20261001T010414677018-changes-push-rows</code>.</li>
     <li><strong>Ruff:</strong> <code>reckon/serve.py</code> carries the identical 18
