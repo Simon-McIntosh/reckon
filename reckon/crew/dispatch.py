@@ -562,7 +562,10 @@ def _refuse_over_reservation_roster(
     placed inside it occupies the same roster whichever project dispatched it,
     and a project whose runs are not placed is unbounded by it. The count is
     taken from the recorded fact that a run was placed rather than from project
-    membership. The lane bound above this counts across projects too and should,
+    membership, and a placed run holds its seat only while its worker can still
+    hold memory — so a finished-but-unpromoted run, a blocked run awaiting
+    resume, and a run waiting on an external condition with no live process all
+    hold none. The lane bound above this counts across projects too and should,
     because a served lane is consumed by every caller that sends it a request,
     placed or not; an allocation is consumed only by the workers running inside
     it as steps.

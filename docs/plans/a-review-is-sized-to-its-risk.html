@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="104">
+<meta name="plan-version" content="103">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.94">
@@ -504,7 +504,7 @@
     <div class="r-comment-body"><p>The reflex records every repair round it opens on the reviewed run's pointer and, once one round has opened, a later review round on a new head records repair_dispatch status handed-to-coordinator naming the earlier round, its attempts and the new review's score, and resumes or dispatches nothing; the in-round retry is unchanged; gate 27 passed EXIT=0, negative control (cap removed) 1 failed EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261001T062054826104-review-of-one-automatic-repair-round-per-run" data-who="reckon-build" data-when="2026-10-01T06:40:18.467Z">
-    <div class="r-comment-body"><p>An independent review of run r-20261001T054841706917-one-automatic-repair-round-per-run is stored at both fence paths against reviewed head b24d299130831244df6f8b6255847a7f55954606 (base 5b197dc8884177012621fb28c6ed3d09a10a453f) — parsed, five dimensions scored 0..20 (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19; total 96), added_failure_count 0 with added_failure_ids [] derived through the store's own reader (reckon.crew.review.added_failures_from_gate_logs) from reviewer-run arms at the reviewed base and head (positive control returns 1 injected id), three follow-on findings and no blocking finding.</p></div>
+    <div class="r-comment-body"><p>An independent review of run r-20261001T054841706917-one-automatic-repair-round-per-run is stored at both fence paths against reviewed head b24d299130831244df6f8b6255847a7f55954606 (base 5b197dc8884177012621fb28c6ed3d09a10a453f) — parsed, five dimensions scored 0..20 (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19; total 96), added_failure_count 0 with added_failure_ids [] derived through the store&#x27;s own reader (reckon.crew.review.added_failures_from_gate_logs) from reviewer-run arms at the reviewed base and head (positive control returns 1 injected id), three follow-on findings and no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260928T233552756785-review-of-the-suite-is-declared-and-recorded" data-who="reckon-build" data-when="2026-09-29T00:21:22.662Z">
     <div class="r-comment-body"><p>review stored for r-20260928T223146627061-the-suite-is-declared-and-recorded at cd36faeb against base 348688e8 - total 77 (goal_fidelity 14, evidence 15, scope_discipline 19, durability 13, fit 16), four findings, added_failure_count 0</p></div>
@@ -526,9 +526,6 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-arist-repairs-e1d68a8c" data-who="s25-coord" data-when="2026-09-30">
     <div class="r-comment-body"><p>Two of f-arist-006's three items were closed by the reflex's own repair rounds, merged at e1d68a8c. A record naming no head now falls back to the repository head rather than accepting the newest stored review (review 92). A malformed standing review.suite now refuses the repair by name (review 94). Still open: reflex launches die with the coordinator's follower. Two review findings remain on the no-head edge: the fallback changes _review_dispatch_fields and _failed_review_backend untested, and a malformed suite re-records its refusal on every sweep.</p></div>
-</div>
-<div class="r-comment" data-section="_top" data-id="c-arist-repair-round-cap" data-who="s25-coord" data-when="2026-10-01">
-    <div class="r-comment-body"><p>s21 reported a repair loop on a-served-thread-leaves-no-memo-behind. The reflex resumed it on three reviews (82, 83, 83), each with 0 added failures. The reviewers marked no severity on any finding, my filter reads an absent severity as blocking, and the per-round resume cap restarted on every new head. one-automatic-repair-round-per-run (review 96, merged at 88848b6e) now opens at most one automatic repair round per reviewed run. A later round on a new head records handed-to-coordinator and resumes nothing. A before/after recovery population over 126 files added nothing. s22 is adding a write-time audit check that makes a reviewer restate severities when a stored finding has none. Once that lands, the filter should treat an absent severity on a new record as a defect to report, not as blocking. Follow-ons from the cap's review: the hand-back overwrites the first round's repair_dispatch record, and a round opened by a dispatch rather than a resume is untested.</p></div>
 </div>
 </section>
 </main>

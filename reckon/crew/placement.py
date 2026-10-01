@@ -625,10 +625,75 @@ def _ensure_reservation_locked(
     }
 
 
+def _live_classifier_process_alive(pid: Any) -> bool | None:
+    """The process-liveness reader the live classifier consults, by module.
+
+    Read through the owning module at call time rather than bound by an
+    import-time snapshot, so a caller that substitutes the reader on its own
+    module — which is how the classifier itself reaches liveness — is not
+    bypassed here.
+    """
+    from reckon.crew import runs as runs_module
+
+    return runs_module.process_alive(pid)
+
+
+def _still_launching(record: Mapping[str, Any], moment: float) -> bool:
+    """Whether a placed run with no recorded worker is inside its launch window.
+
+    Measured from the current attempt's start, resolved the same way the live
+    classifier resolves it — the pointer's own attempt clock, falling back to
+    the attempt record a supervisor publishes beside it, and then to the
+    dispatch moment — against the window a fresh dispatch gets. A run that has
+    named no process and whose attempt began outside that window is not still
+    arriving and holds no seat.
+
+    An attempt clock that cannot be read at all is not evidence that the run has
+    stopped launching, so it holds its seat: the roster guards against
+    oversubscription, and freeing a seat on an unreadable clock would admit work
+    on no evidence.
+    """
+    from reckon._timestamps import parse_utc
+    from reckon.crew import recovery as recovery_module
+
+    started = recovery_module._attempt_started_seconds(record)
+    if started is None:
+        dispatched = parse_utc(str(record.get("created_at") or ""))
+        started = dispatched.timestamp() if dispatched is not None else None
+    if started is None:
+        return True
+    elapsed = moment - started
+    return 0 <= elapsed < recovery_module.LAUNCH_WINDOW_SECONDS
+
+
+def _placed_worker_can_hold_memory(
+    record: Mapping[str, Any],
+    alive: Callable[[Any], bool | None],
+    moment: float,
+) -> bool:
+    """Whether a placed run's worker can still hold memory in the allocation.
+
+    A recorded pid is asked directly: a live one holds the seat and an exited
+    one frees it. A pid the probe cannot answer for at all is counted as
+    holding, for the same reason an unreadable launch clock is — an unreadable
+    probe is not evidence of an exit, and the roster may only free a seat on
+    evidence that the worker is gone. A pointer that has not recorded its worker
+    yet holds its seat only while it is still launching, so a run that never
+    names a process does not hold a seat indefinitely.
+    """
+    pid = record.get("pid")
+    if pid is not None:
+        return alive(pid) is not False
+    return _still_launching(record, moment)
+
+
 def occupying_the_reservation(
     pointers: Iterable[Mapping[str, Any]],
+    *,
+    alive: Callable[[Any], bool | None] | None = None,
+    now: float | None = None,
 ) -> list[Mapping[str, Any]]:
-    """The live pointers that occupy the shared reservation's roster.
+    """The pointers that occupy the shared reservation's roster.
 
     A run that was placed is a step inside the one allocation, so it occupies
     the roster whichever project dispatched it; a run whose record names no
@@ -639,13 +704,37 @@ def occupying_the_reservation(
     runs that were never placed at all, and counting the whole backend is the
     same error pointed the other way.
 
+    A placement is a seat only while the placed worker can still hold memory in
+    the allocation. A placed run whose worker has exited holds no seat, whatever
+    its manifest says and whether or not it has been promoted: a
+    complete-but-unpromoted run, a blocked run awaiting resume, and a run
+    waiting on an external condition with no live process all hold none, so the
+    cap counts the workers resident rather than every run ever placed. A seat is
+    held by a placed pointer whose recorded worker or supervisor pid is alive,
+    or one still launching — no worker pid recorded yet and its current attempt
+    inside the window a fresh dispatch gets — because a run that has not yet
+    named its process is still on its way in.
+
+    Liveness is the same read the live classifier takes: the process-liveness
+    reader is :func:`reckon.crew.runs.process_alive`, reached through its own
+    module so a substituted probe is honoured. ``alive`` and ``now`` are the
+    seam a caller hands its own probe and clock through, so a test reaches this
+    without a process table.
+
     This is deliberately NOT the same population as the lane's own concurrency
     bound. A served lane is consumed by every caller that sends it a request,
     placed or not, so its ceiling is rightly counted across them all; an
     allocation is consumed only by the workers running inside it as steps, so
     its roster counts those and nothing else.
     """
-    return [p for p in pointers if p.get("placement")]
+    probe = _live_classifier_process_alive if alive is None else alive
+    moment = time.time() if now is None else now
+    return [
+        pointer
+        for pointer in pointers
+        if pointer.get("placement")
+        and _placed_worker_can_hold_memory(pointer, probe, moment)
+    ]
 
 
 def reservation_roster_refusal(

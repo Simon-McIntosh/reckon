@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-shares-one-allocation">
+  <meta name="plan-title" content="The Fleet Shares One Allocation">
+  <meta name="plan-summary" content="One reservation is held for the fleet and published as a single unkeyed record every project resolves, with the roster counting the runs actually placed into it.">
+  <meta name="plan-evidence-for" content="the-fleet-shares-one-allocation">
+  <meta name="plan-verifies" content="the-fleet-shares-one-allocation#s2">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="delivered">
+  <meta name="plan-tags" content="crew,placement,reservation,roster,concurrency">
+  <title>The Fleet Shares One Allocation — the roster counts live placed workers | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-roster-counts-live-placed-workers" data-reckon="landed" data-when="2026-10-01">
+  <h2>The roster counts live placed workers</h2>
+  <p><code>occupying_the_reservation</code> now takes a seat from the recorded process rather than from the
+    placement alone: a placed pointer holds a seat when its recorded worker or supervisor pid is alive, or while
+    it is still launching — no pid recorded yet, and its current attempt inside the launch window a fresh
+    dispatch gets. A placed run whose worker has exited holds no seat, so a finished-but-unpromoted run, a
+    blocked run awaiting resume, and a run waiting on an external condition with no live process count for
+    nothing. Liveness is read through <code>reckon.crew.runs.process_alive</code>, the reader the live classifier
+    consults, reached through its own module so a substituted probe is honoured; an unreadable probe or launch
+    clock holds the seat rather than freeing it on no evidence. The cap of 25 is unchanged.</p>
+  <p>The focused suite covers: thirty placed pointers of which twenty six have exited workers and four are alive,
+    with a further dispatch admitted; twenty five live placed workers, refused naming the cap; a placed pointer
+    still launching, holding a seat; and unplaced pointers, holding none. The population arm of eight placement
+    files went from 65 passed / 3 failed at base to 71 passed / 3 failed at head — the three failures are the
+    same pre-existing ids at both arms, so the change adds no failing id. The declared negative control, which
+    restores the naive count over every placed pointer, reddens
+    <code>test_a_placed_run_whose_worker_exited_holds_no_seat</code> at the roster refusal with
+    "30 workers already occupy the placement reservation's roster, whose cap is 25".</p>
+</article>
+</body>
+</html>
