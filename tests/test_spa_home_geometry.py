@@ -9,7 +9,7 @@ from reckon.serve import discover_plans
 from tests.spa_browser_harness import (
     BrowserProbeError,
     ServedSpa,
-    installed_browser,
+    installed_browser_or_skip,
     write_file_spa_document,
 )
 
@@ -18,9 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.fixture(scope="module")
 def rendered_browser(tmp_path_factory) -> str:
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip("no supported browser binary is installed")
+    browser = installed_browser_or_skip()
     capability_root = tmp_path_factory.mktemp("home-browser-capability")
     page = capability_root / "ready.html"
     page.write_text("<!doctype html><html><body>ready</body></html>", encoding="utf-8")
