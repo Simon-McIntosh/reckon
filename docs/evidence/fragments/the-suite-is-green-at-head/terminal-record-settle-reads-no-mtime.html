@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
+  <title>Terminal-record settle test drives freshness through its patched observation | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="terminal-record-settle-reads-no-mtime">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>Terminal-record settle test drives freshness through its patched observation</h2>
+        <p class="lead">The fold test drove the settle's freshness by calling <code>os.utime</code> on the stream and reading its filesystem mtime back. That makes the test an instrument of the storage: GPFS mtime is coarse and does not read back promptly after a <code>utime</code>, so the observation could leave the settle's window and the run would return before the terminal record landed. The test now supplies freshness from the patched <code>_newest_stream_mtime</code> itself — never a stat — so the settle's initial already-quiet check and its change detection are driven by the test's own clock.</p>
+      </header>
+
+      <section id="terminal-record-settle-reads-no-mtime-what-changed">
+        <h2>What changed</h2>
+        <ul>
+          <li><code>tests/test_promotion_reads_the_terminal_record.py</code>: in <code>test_a_terminal_record_landing_after_exit_is_folded_into_the_row</code> the patched observation returns <code>time.time()</code> for its first two reads (fresh, so the already-quiet check cannot return before the tail begins; the second read appends the terminal lines) and a fixed stale value thereafter, so the settle observes the stream quit and returns. <code>os.utime</code> and the <code>real_newest</code> stat are removed from this test.</li>
+          <li>The append of the terminal record is unchanged; only the freshness signal moved from the filesystem to the patched observation.</li>
+          <li><code>reads["count"] &gt;= 3</code> is unchanged.</li>
+          <li>The three sibling tests that legitimately need a fresh filesystem mtime (the mtime fallback, the already-quiet fast path) keep their <code>os.utime</code>.</li>
+        </ul>
+      </section>
+
+      <section id="terminal-record-settle-reads-no-mtime-the-gate">
+        <h2>The gate</h2>
+        <table>
+          <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+          <tbody>
+            <tr><td>Head, whole file, basetemp on node-local <code>/tmp</code></td><td>6 passed, <code>EXIT=0</code></td><td><code>log_head_file.txt</code></td></tr>
+            <tr><td>Base <code>ddff8e4f6a726bcce8bd1bdb2da233422fc40e09</code>, whole file from a scratch archive, basetemp on node-local <code>/tmp</code></td><td>6 passed, <code>EXIT=0</code>; zero added failures</td><td><code>log_base_file.txt</code></td></tr>
+            <tr><td>Target test, 20 runs, basetemp on GPFS (<code>~/.cache/</code>)</td><td>20 passed, 0 failed, <code>EXIT=0</code></td><td><code>log_gpfs_20.txt</code></td></tr>
+            <tr><td>Target test, 20 runs, basetemp on node-local <code>/tmp</code> (<code>xfs</code>)</td><td>20 passed, 0 failed, <code>EXIT=0</code></td><td><code>log_tmp_20.txt</code></td></tr>
+          </tbody>
+        </table>
+        <p>Logs live under the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T201525441344-terminal-record-settle-reads-no-mtime/</code>. Every arm ran with the shared environment interpreter at <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code>.</p>
+      </section>
+
+      <section id="terminal-record-settle-reads-no-mtime-negative-controls">
+        <h2>Declared negative control</h2>
+        <p>Declared mutation: <em>remove the freshness signal from the patched observation; the reads count assertion fails</em>. Setting the first patched read to a stale value lets the settle's already-quiet check return immediately, so the observation runs once and <code>assert reads["count"] &gt;= 3</code> fails with <code>assert 1 &gt;= 3</code> (<code>EXIT=1</code>). Log: <code>log_negctl.txt</code>.</p>
+      </section>
+
+      <section id="terminal-record-settle-reads-no-mtime-commits">
+        <h2>Commits</h2>
+        <p>Literal shas are recorded in the manifest. The change touches <code>tests/test_promotion_reads_the_terminal_record.py</code> and this fragment.</p>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
