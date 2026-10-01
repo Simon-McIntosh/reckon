@@ -1,0 +1,67 @@
+<section id="pointer-classification-is-memoised">
+  <h2>Pointer classification is memoised</h2>
+  <p>
+    A run's classification now resolves its reads through a memo persisted in the
+    run's own directory, <code>runs/&lt;run-id&gt;/classification.json</code>, keyed by the
+    stat identity of every file the classification reads. The pointer, the manifest,
+    the stream the observation consumes, the run directory's own
+    <code>exit.json</code>, <code>worker.json</code> and <code>attempt.json</code>, and the review
+    store's candidates for the run are all in the key. So is the worktree's head,
+    read as the git directory's <code>HEAD</code> and the ref it names rather than through a
+    subprocess — a review is selected against the revision the tree carries now, and a
+    memo written before a commit would otherwise report a review of code the run no
+    longer holds. The review store's project directory is keyed on the time its entries
+    last moved, and whether the run has a record at one of its own paths is a key
+    contribution in its own right, because a record that appears where the last
+    classification found none moves the answer from a store listing to a file read.
+  </p>
+  <p>
+    A key that still matches serves the memo: the manifest text, the stored review and
+    the stream observation. A key that has moved recomputes. Liveness is never served
+    from a memo — a process table is not a file, and the row is still built from a
+    reading taken now.
+  </p>
+  <p>
+    Stream observation resumes from a byte offset persisted in the same memo. The
+    dialects' event folds take and return their state, as does the timestamp split that
+    refines throughput, so <code>observe_log</code> reads only the records written past the
+    offset and extends the previous fold rather than repeating it. One classification
+    also used to parse the same stream twice — the budget gates and the background-wait
+    signal each read it for a different question; both now share one observation.
+  </p>
+  <p>
+    The memo first sat beside the pointer, and that was wrong in a way worth recording:
+    the pointer directory is enumerated as pointers by several readers, one of which
+    asserts the list holds exactly one file per run, so a cache there was read as a run
+    that does not exist. It now lives in the run's own directory, which nothing
+    enumerates for pointers, and the key is unchanged.
+  </p>
+  <p>
+    <strong>Gate.</strong> The same 73 test files at base and at head, each arm in its
+    own archive extraction with its own private basetemp: both arms report 13 failed and
+    1068 passed, and the failing ids are the same thirteen — the head arm adds none.
+  </p>
+  <p>
+    <strong>Measurement.</strong> A worker's fence mounts the operator's crew home
+    read-only, so a memo cannot be written beside a live pointer from inside a run, and
+    a timing taken there measures the code with its cache disabled. The figures below
+    were taken against a writable copy of the same live pointers, run directories and
+    review store, so both arms read the same records.
+  </p>
+  <table>
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>cold [s]</th><th>warm [s]</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>base</td><td><code>342b88ec</code></td><td>14.051</td><td>12.028</td></tr>
+      <tr><td>head, no memos on disk</td><td><code>0a0702f0</code></td><td>9.780</td><td>6.171</td></tr>
+      <tr><td>head, memos on disk</td><td><code>0a0702f0</code></td><td>6.101</td><td>6.533</td></tr>
+    </tbody>
+  </table>
+  <p>
+    <code>obligations('reckon', 's21-1c')</code>, wall clock, cold and warm in one fresh
+    process per arm. The plan's target of under 2 s cold and under 0.3 s warm is written
+    for the whole of §4, whose ledger term is a separate node's work; the figure here
+    measures this term's contribution to the same call.
+  </p>
+</section>

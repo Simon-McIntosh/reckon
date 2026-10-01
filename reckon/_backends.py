@@ -307,6 +307,13 @@ class Observation:
     events: int = 0
     malformed_lines: int = 0
     detail: str = ""
+    # The fold's own resumable state, so a later read of the same stream can be
+    # extended from where this one stopped instead of re-read whole. It is a
+    # cache's private business rather than part of the observation a reader
+    # consumes, so it is excluded from ``as_dict`` and from equality.
+    stream_state: dict[str, Any] = field(
+        default_factory=dict, compare=False, repr=False
+    )
 
     def as_dict(self) -> dict[str, Any]:
         """Return the observation as sorted JSON-ready data."""
@@ -1017,6 +1024,7 @@ class Dialect:
         elapsed_seconds: float | None = None,
         backend_name: str | None = None,
         usable_input_window: int | None = None,
+        carry: Mapping[str, Any] | None = None,
     ) -> Observation:
         """Fold a stream into one observation.
 
@@ -1029,6 +1037,15 @@ class Dialect:
         ``usable_input_window`` is the configured lane window that enforces a
         ceiling; the claude-shaped dialect divides its utilisation by that
         authority when one is declared.
+
+        ``carry`` is a previous fold's state for the same stream, so the fold
+        can be extended with only the records written since that fold instead of
+        re-read from the first byte. A dialect opens with those values in place
+        of its own initial ones, processes the events given to it, and leaves
+        its new state on ``Observation.stream_state``. The state is taken
+        immediately before the fold's own closing step, because that step reads
+        what the loop accumulated and is applied once per call rather than
+        stored.
         """
         raise NotImplementedError
 
@@ -1218,14 +1235,23 @@ class _CodexDialect(Dialect):
         elapsed_seconds: float | None = None,
         backend_name: str | None = None,
         usable_input_window: int | None = None,
+        carry: Mapping[str, Any] | None = None,
     ) -> Observation:
         # This stream reports no context window to divide a utilisation by, so
         # the supplied configured window is accepted and unused.
         del usable_input_window
+        carried = carry if isinstance(carry, Mapping) else {}
         obs = Observation(backend=self.name, budget=unknown_budget(""))
-        message: str | None = None
-        usage: dict[str, int | float] = {}
-        completed_turn = False
+        message: str | None = carried.get("message")
+        usage: dict[str, int | float] = dict(carried.get("usage") or {})
+        completed_turn = bool(carried.get("completed_turn"))
+        obs.events = int(carried.get("events") or 0)
+        obs.session_id = carried.get("session_id")
+        obs.terminal = bool(carried.get("terminal"))
+        obs.exit_status = carried.get("exit_status")
+        obs.detail = str(carried.get("detail") or "")
+        if carried.get("budget") is not None:
+            obs.budget = dict(carried["budget"])
         for event in events:
             obs.events += 1
             kind = event.get("type")
@@ -1255,6 +1281,17 @@ class _CodexDialect(Dialect):
                 refused = refusal_budget(obs.detail)
                 if refused is not None:
                     obs.budget = refused
+        obs.stream_state["fold"] = {
+            "events": obs.events,
+            "session_id": obs.session_id,
+            "terminal": obs.terminal,
+            "exit_status": obs.exit_status,
+            "detail": obs.detail,
+            "message": message,
+            "budget": obs.budget,
+            "usage": usage,
+            "completed_turn": completed_turn,
+        }
         measured_usage = usage or None
         if completed_turn:
             measured_budget = self._budget(measured_usage)
@@ -1510,13 +1547,26 @@ class _ClaudeDialect(Dialect):
         elapsed_seconds: float | None = None,
         backend_name: str | None = None,
         usable_input_window: int | None = None,
+        carry: Mapping[str, Any] | None = None,
     ) -> Observation:
+        carried = carry if isinstance(carry, Mapping) else {}
         obs = Observation(backend=self.name, budget=unknown_budget(""))
-        message: str | None = None
-        budget = unknown_budget("no rate-limit event in the stream yet")
-        throughput = unknown_throughput("no completed result to measure yet")
-        peak_input = 0
-        rate_limit_retries = 0
+        message: str | None = carried.get("message")
+        budget = (
+            dict(carried["budget"])
+            if carried.get("budget") is not None
+            else unknown_budget("no rate-limit event in the stream yet")
+        )
+        throughput = carried.get("throughput") or unknown_throughput(
+            "no completed result to measure yet"
+        )
+        peak_input = int(carried.get("peak_input") or 0)
+        rate_limit_retries = int(carried.get("rate_limit_retries") or 0)
+        obs.events = int(carried.get("events") or 0)
+        obs.session_id = carried.get("session_id")
+        obs.terminal = bool(carried.get("terminal"))
+        obs.exit_status = carried.get("exit_status")
+        obs.detail = str(carried.get("detail") or "")
         for event in events:
             obs.events += 1
             kind = event.get("type")
@@ -1563,6 +1613,18 @@ class _ClaudeDialect(Dialect):
                 # Every event of this stream carries the session id, including
                 # the hook events a host configuration may emit before init.
                 obs.session_id = event.get("session_id") or obs.session_id
+        obs.stream_state["fold"] = {
+            "events": obs.events,
+            "session_id": obs.session_id,
+            "terminal": obs.terminal,
+            "exit_status": obs.exit_status,
+            "detail": obs.detail,
+            "message": message,
+            "budget": budget,
+            "throughput": throughput,
+            "peak_input": peak_input,
+            "rate_limit_retries": rate_limit_retries,
+        }
         if rate_limit_retries:
             # Exhaustion is the terminal shape, never the count: busy lanes
             # carry rate-limit retries and complete, so retrying alone is not
@@ -3067,29 +3129,63 @@ def _machine_seconds_from_events(
     Two usable timestamps are the minimum that measures a gap at all. With
     fewer than two, the split is unknown — never a false zero.
     """
-    marks: list[tuple[datetime, bool]] = []
+    split, _state = _timestamp_split(events, carry=None)
+    return split
+
+
+def _timestamp_split(
+    events: Iterable[Mapping[str, Any]], *, carry: Mapping[str, Any] | None
+) -> tuple[tuple[float | None, float | None], dict[str, Any]]:
+    """The span split, plus the state a later read of the same stream resumes from.
+
+    A stream is read once at a time and grows at the end, so the marks the
+    split needs are carried rather than recomputed: the first mark's moment,
+    the last mark's moment and whether it asked for a tool, and the machine
+    seconds accumulated over the gaps already measured. Feeding only the new
+    events through the same rule therefore produces the same figures the whole
+    stream would, which is what lets a reader extend an observation without
+    holding the bytes it came from.
+    """
+    state = dict(carry) if isinstance(carry, Mapping) else {}
+    first: datetime | None = parse_utc(str(state.get("first") or "")) if state else None
+    last: datetime | None = parse_utc(str(state.get("last") or "")) if state else None
+    last_waits = bool(state.get("last_waits"))
+    machine = float(state.get("machine") or 0.0)
+    marks = int(state.get("marks") or 0)
     for event in events:
         timestamp = _event_timestamp(event)
         if timestamp is None:
             continue
-        marks.append((timestamp, _requests_tool(event)))
-    if len(marks) < 2:
-        return None, None
-    machine = 0.0
-    for (start, waits_on_tool), (end, _next_waits) in zip(marks, marks[1:]):
-        gap = (end - start).total_seconds()
-        if gap <= 0:
-            continue
-        if waits_on_tool:
-            machine += gap
-    total = (marks[-1][0] - marks[0][0]).total_seconds()
+        waits = _requests_tool(event)
+        if last is not None:
+            gap = (timestamp - last).total_seconds()
+            if gap > 0 and last_waits:
+                machine += gap
+        else:
+            first = timestamp
+        last = timestamp
+        last_waits = waits
+        marks += 1
+    state = {
+        "first": first.isoformat() if first is not None else None,
+        "last": last.isoformat() if last is not None else None,
+        "last_waits": last_waits,
+        "machine": machine,
+        "marks": marks,
+    }
+    if marks < 2:
+        return (None, None), state
+    total = (last - first).total_seconds()
     generation = max(0.0, total - machine)
-    return round(generation, 3), round(machine, 3)
+    return (round(generation, 3), round(machine, 3)), state
 
 
 def _refine_throughput_from_timestamps(
-    throughput: dict[str, Any], events: Sequence[Mapping[str, Any]]
-) -> dict[str, Any]:
+    throughput: dict[str, Any],
+    events: Sequence[Mapping[str, Any]],
+    *,
+    carry: Mapping[str, Any] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any]]:
     """Prefer a timestamp-measured generation/machine split when the stream has one.
 
     The dialect's own figure (a backend-reported total, or an elapsed-minus-
@@ -3099,9 +3195,9 @@ def _refine_throughput_from_timestamps(
     machine seconds comes from them directly and generation is derived as
     elapsed minus machine, so the two always sum back to elapsed exactly.
     """
-    _generation, machine = _machine_seconds_from_events(events)
+    (_generation, machine), state = _timestamp_split(events, carry=carry)
     if machine is None:
-        return throughput
+        return throughput, state
     elapsed = throughput.get("elapsed_seconds")
     resolved_generation = (
         round(float(elapsed) - machine, 3)
@@ -3113,7 +3209,7 @@ def _refine_throughput_from_timestamps(
     throughput["tokens_per_second"] = _rate(
         throughput.get("generated_tokens"), resolved_generation
     )
-    return throughput
+    return throughput, state
 
 
 def parse_events(lines: Iterable[str]) -> tuple[list[dict[str, Any]], int]:
@@ -3186,6 +3282,7 @@ def observe_stream(
     lines: Iterable[str],
     elapsed_seconds: float | None = None,
     receipt: object | None = None,
+    state: Mapping[str, Any] | None = None,
 ) -> Observation:
     """Fold a backend's recorded event stream into one normalised observation.
 
@@ -3195,18 +3292,30 @@ def observe_stream(
     client rollout's per-session reading for a codex run; when supplied and
     measured, it replaces the stream's own generation span and cumulative input
     with the rollout's authoritative figures.
+
+    ``state`` is a previous observation of the same stream, taken from its
+    ``stream_state``, and ``lines`` then carries only the records written since
+    that observation stopped. The fold is extended rather than repeated, and the
+    new state is left on the returned observation for the next read.
     """
     dialect = dialect_for(backend)
+    carried = state if isinstance(state, Mapping) else {}
     events, malformed = parse_events(lines)
     obs = dialect.observe(
         events,
         elapsed_seconds=elapsed_seconds,
         backend_name=backend_name,
         usable_input_window=backend.get("usable_input_window"),
+        carry=carried.get("fold") if carried else None,
     )
     obs.backend = backend_name
     obs.malformed_lines = malformed
-    obs.throughput = _refine_throughput_from_timestamps(obs.throughput, events)
+    obs.throughput, timestamps = _refine_throughput_from_timestamps(
+        obs.throughput,
+        events,
+        carry=carried.get("timestamps") if carried else None,
+    )
+    obs.stream_state["timestamps"] = timestamps
     if receipt is not None and getattr(dialect, "name", "") == "codex":
         obs.throughput = _apply_receipt_to_throughput(obs.throughput, receipt)
     if obs.phase == "blocked":
@@ -3252,6 +3361,54 @@ def classify_stream_failure(
     )
 
 
+_STREAM_BOUNDARY_CHUNK = 64 * 1024
+
+
+def _last_line_boundary(path: Path) -> int:
+    """The byte after the last complete record in a stream, 0 when there is none.
+
+    An offset only means the same thing twice if it sits where a record ends, so
+    the byte a resumable read records is the one after the last newline at or
+    before the file's size. A stream whose tail holds no newline answers 0,
+    which re-reads it whole rather than resuming inside a record.
+    """
+    try:
+        size = path.stat().st_size
+        if size <= 0:
+            return 0
+        with path.open("rb") as handle:
+            start = max(0, size - _STREAM_BOUNDARY_CHUNK)
+            handle.seek(start)
+            tail = handle.read()
+    except OSError:
+        return 0
+    cut = tail.rfind(b"\n")
+    if cut < 0:
+        return 0
+    return start + cut + 1
+
+
+def _stream_lines_from(path: Path, offset: int) -> tuple[list[str], int]:
+    """The complete records a stream holds from one boundary, and the next one.
+
+    Only whole lines are returned, and the offset that comes back sits after
+    the last of them. A record still being written is therefore left for the
+    read that finds it finished, which is the difference between reading a
+    record once and reading it as a fragment followed by its remainder.
+    """
+    try:
+        with path.open("rb") as handle:
+            handle.seek(offset)
+            data = handle.read()
+    except OSError:
+        return [], offset
+    cut = data.rfind(b"\n")
+    if cut < 0:
+        return [], offset
+    text = data[: cut + 1].decode("utf-8", errors="replace")
+    return text.splitlines(keepends=True), offset + cut + 1
+
+
 def observe_log(
     *,
     backend_name: str,
@@ -3259,6 +3416,7 @@ def observe_log(
     log_path: str | Path,
     elapsed_seconds: float | None = None,
     receipt: object | None = None,
+    resume: Mapping[str, Any] | None = None,
 ) -> Observation:
     """Observe a worker from its on-disk event log, absent log included.
 
@@ -3266,6 +3424,12 @@ def observe_log(
     written anything, so it reports ``starting`` rather than failing.  A
     ``receipt`` is forwarded to the stream observer for a codex run whose
     client rollout the caller has already read.
+
+    ``resume`` is a previous observation of this stream — its ``stream_state``
+    together with the byte offset that observation reached — so a stream that
+    has only grown since is read from that offset rather than from the first
+    record. An offset past the end of the file, or one with no state to extend,
+    reads the stream whole, which is what a truncated or replaced stream needs.
     """
     path = Path(log_path)
     if not path.exists():
@@ -3276,11 +3440,36 @@ def observe_log(
             detail=f"event log not written yet: {path}",
         )
         return obs
+    carried = resume if isinstance(resume, Mapping) else {}
+    state = carried.get("state")
+    try:
+        offset = max(0, int(carried.get("offset") or 0))
+    except (TypeError, ValueError):
+        offset = 0
+    if offset > 0 and isinstance(state, Mapping):
+        try:
+            size = path.stat().st_size
+        except OSError:
+            size = 0
+        if offset <= size:
+            lines, end = _stream_lines_from(path, offset)
+            obs = observe_stream(
+                backend_name=backend_name,
+                backend=backend,
+                lines=lines,
+                elapsed_seconds=elapsed_seconds,
+                receipt=receipt,
+                state=state,
+            )
+            obs.stream_state["offset"] = end
+            return obs
     with path.open(encoding="utf-8", errors="replace") as handle:
-        return observe_stream(
+        obs = observe_stream(
             backend_name=backend_name,
             backend=backend,
             lines=handle,
             elapsed_seconds=elapsed_seconds,
             receipt=receipt,
         )
+    obs.stream_state.update({"offset": _last_line_boundary(path)})
+    return obs
