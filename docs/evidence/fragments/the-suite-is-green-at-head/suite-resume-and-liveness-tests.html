@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="Suite resume and liveness tests</meta>
+  <meta name="plan-summary" content="Three of the four recorded resume-and-liveness ids are stale tests moved onto the shipped reading (a wait ages a resume only once its end is observed, list_live derives no liveness, and a worker record is read only for a run launched here); the fourth names a product defect left carried.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s2">
+  <meta name="plan-commits" content="20fa58627">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed-with-follow-on">
+  <meta name="plan-tags" content="crew,resume,liveness,evidence">
+  <title>Suite resume and liveness tests | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="suite-resume-and-liveness-tests" data-reckon="landed" data-when="2026-10-01">
+
+  <h2>Suite resume and liveness tests &mdash; three stale tests moved, one defect carried</h2>
+
+  <p>Four node ids across three files were red at <code>ddff8e4f</code>. Each was reproduced red
+  before any repair (first error lines at <code>6a3fab27</code>:
+  <code>~/.config/reckon/crew/runs/r-20261001T185615824468-s21-currency-suite/solo-rerun.log</code>,
+  lines 53, 563, 581, 1344). Three were stale tests whose assertions had fallen behind deliberate
+  shipped changes, and the fixtures were moved onto the shipped reading with no assertion weakened.
+  The fourth names a product defect and is carried rather than repaired in place, because it lives in
+  <code>reckon/crew/recovery.py</code>, a module shared across repair nodes and outside this node's
+  write scope. The three test repairs are commit <code>20fa58627</code>.</p>
+
+  <h3>Per-id cause and what moved</h3>
+  <table>
+    <thead><tr><th>Id</th><th>Cause (shipped change it pins)</th><th>What moved</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>test_a_resume_does_not_inherit_its_baseline.py::test_a_parked_resume_stays_in_the_resume_sweep</code></td>
+        <td><code>e1e314825</code> <em>offer a resume only once the worker's process is gone</em> added a
+        <code>process_reading == "process gone"</code> precondition to the classifier's <code>ready</code>
+        arm (<code>reckon/crew/recovery.py:6420&ndash;6424</code>). The fixture's pointer carried
+        <code>process_alive: False</code> with no <code>launcher_host</code> and no <code>pid</code>, so the
+        death was never observed on this host and the met wait aged into <code>wait-aged</code>
+        (<code>recovery.py:6432</code>) instead of reading <code>ready</code>.</td>
+        <td>The fixture: the pointer now names this host (<code>launcher_host</code>) and a reaped
+        <code>pid</code>, so the end is observed. The assertion is unchanged.</td>
+      </tr>
+      <tr>
+        <td><code>test_crew_record_liveness.py::test_a_pointer_whose_process_is_gone_stops_working</code></td>
+        <td><code>b0809e30a</code> <em>a foreign pid is not a death on the reading host</em> removed
+        <code>record["process_alive"] = record_process_alive(record)</code> from
+        <code>runs.list_live</code>; <code>2eabd3415</code> then corrected the docstring to state that a
+        pointer is returned as stored and liveness is derived where it is read. The test read
+        <code>reloaded[0]["process_alive"]</code>, which <code>list_live</code> no longer writes.</td>
+        <td>The assertion: liveness is read through <code>recovery.classify_pointer</code> on the stored
+        pointer, whose launching host is this one. No product behaviour changed.</td>
+      </tr>
+      <tr>
+        <td><code>test_resume_is_aged_from_its_own_start.py::test_a_resumed_run_whose_own_log_is_quiet_still_stalls</code></td>
+        <td><code>2eabd3415</code> gated the worker-record consultation on the record's launching host
+        (<code>recovery.local_liveness</code>, <code>reckon/crew/recovery.py:5154</code>: a worker record
+        carries a pid but no host. A pointer naming a foreign <code>launcher_host</code> therefore reads
+        <code>liveness unknown</code> rather than <code>alive</code>.</td>
+        <td>The fixture: <code>launcher_host</code> names <code>socket.gethostname()</code>, matching the
+        live child the fixture already forked here. The assertion is unchanged.</td>
+      </tr>
+      <tr>
+        <td><code>test_crew_record_liveness.py::test_no_module_decides_record_liveness_with_a_bare_pid</code></td>
+        <td><strong>Product defect, carried.</strong> <code>_worker_record_liveness</code>
+        (<code>reckon/crew/recovery.py:4624&ndash;4645</code>, added by <code>50aff5033</code>) takes the
+        worker record's pid and probes it with the bare <code>runs.process_alive</code> at
+        <code>recovery.py:4638</code>, re-implementing by hand the start-time comparison and the
+        placement lookup that <code>runs.record_process_alive</code> (<code>reckon/crew/runs.py:3662</code>)
+        owns. A second flag, <code>dispatch.py:7628</code>, is a false positive of the guard's module-wide
+        name map (below).</td>
+        <td>The guard test's scan, so its one remaining failure is the genuine defect and not the false
+        positive. The <code>recovery.py</code> defect is not repaired here.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Measure</h3>
+  <p>One pytest process per file, each with its own <code>--basetemp</code>, run in the foreground in this
+  worktree at rev <code>ddff8e4f</code>. The head arm names the module it imported and the working
+  directory it resolved from on each log's header. Base arm = the same three files restored to their base text
+  (<code>git show ddff8e4f:tests/&lt;file&gt;</code>), run against the unchanged head product.</p>
+  <table>
+    <thead><tr><th>File</th><th>Base arm (ids failed)</th><th>Head arm</th></tr></thead>
+    <tbody>
+      <tr><td><code>test_a_resume_does_not_inherit_its_baseline</code></td><td>1 named id red, EXIT=1</td><td>14 passed, EXIT=0</td></tr>
+      <tr><td><code>test_crew_record_liveness</code></td><td>2 named ids red, EXIT=1</td><td>8 passed, 1 failed (the carried defect), EXIT=1</td></tr>
+      <tr><td><code>test_resume_is_aged_from_its_own_start</code></td><td>1 named id red, EXIT=1</td><td>4 passed, EXIT=0</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Zero added</strong>: of the four recorded ids, three are green at head and the fourth is red
+  for a cause that was red at base; no id in any of the three files moved from pass to fail. No test is
+  skipped, xfailed, deleted or weakened.</p>
+
+  <h3>The carried defect</h3>
+  <p><code>reckon/crew/recovery.py:4638</code>, in <code>_worker_record_liveness</code>:</p>
+  <pre><code>pid = data.get("pid")
+...
+alive = runs.process_alive(pid)          # bare primitive on a record's pid
+if alive is True:
+    expected = data.get("pid_start_time")
+    ...</code></pre>
+  <p>It duplicates <code>runs.record_process_alive</code>, whose docstring states the rule --
+  <em>\"Every liveness decision about a run is taken from the run's own record, so the pid lookup lives
+  here in one place and the call site never handles a bare pid.\"</em> -- and it is also reached without
+  the host gate: <code>classify_pointer</code> (<code>recovery.py:5539</code>) computes
+  <code>worker_alive = _worker_record_liveness(record)</code> unconditionally, and a
+  <code>worker_alive is True</code> there feeds <code>superseded_manifest</code>
+  (<code>recovery.py:5716&ndash;5723</code>) and <code>deferred_outcome</code>. A run launched on another
+  host whose worker-record pid happens to be live here can therefore have its terminal manifest deferred as
+  superseded. The repair is <code>return runs.record_process_alive(data, process_alive)</code> at that
+  site. Evidence: <code>test_no_module_decides_record_liveness_with_a_bare_pid</code> fails at head naming
+  <code>recovery.py:4638</code>.</p>
+
+  <h3>The scan false positive</h3>
+  <p>The guard's <code>_process_alive_calls</code> collected record-read names across the whole module and
+  flagged any <code>process_alive</code> call using one. <code>dispatch.py:7628</code> is
+  <code>if process_alive(pid) is False:</code> inside <code>_confirm_supervisor_survived(pid, ...)</code>,
+  where <code>pid</code> is the supervisor this dispatch has just spawned -- the case the
+  <code>list_live</code> docstring explicitly permits (\"dispatch probing the process it has just
+  spawned\"). It was flagged only because a <em>different</em> function in the module binds a local
+  <code>pid</code> from a record (<code>dispatch.py:9822</code>). The scan is now scope-aware: a record
+  read and the probe that consumes it are compared within the scope that owns both, so the guard still
+  fails on <code>_worker_record_liveness</code> (same scope) and no longer on the permitted probe.</p>
+
+  <h3>Negative control</h3>
+  <p>Declared: <em>restore each repaired assertion to its base text; every named id fails again.</em> The
+  three files were restored to their base text (<code>git show ddff8e4f:tests/&lt;file&gt;</code>) and run
+  against the unchanged head product: all four named ids failed, EXIT=1 on every file. Log, with the
+  revision, tree, imported module and working directory on its header:
+  <code>negative-control-restored-base-text.log</code>.</p>
+</article>
+</body>
+</html>
