@@ -631,7 +631,7 @@ A producer turns project pointer changes into transitions; a follower delivers t
 
 **Exactly one monitor per session.** A session arms and attaches exactly ONE monitor: one `reckon crew follow --project P --session S` follower, one per session. A second follower on the same session is a defect, not redundancy. To watch more than your own runs, name them on the one follower with `--observe-session`; **Never arm a second follower.**
 
-Read `references/orchestrator-harness/<harness>.md` before arming. The follower **produces lines, not an exit**: attach its bare, coloured command through the host's line-delivery primitive. A CLI dispatch without its follower is refused before a worktree exists; use `reckon crew watch --ensure --project P` only when the refusal names a missing producer, and use `--no-watch` only for a synchronous one-off whose waiver reaches the promoted ledger record.
+Read `references/orchestrator-harness/<harness>.md` before arming: `references/sprint-orchestration.md` §17 (follower, dispatch loop, search bounds). The follower **produces lines, not an exit**: attach its bare, coloured command through the host's line-delivery primitive. A CLI dispatch without its follower is refused before a worktree exists; use `reckon crew watch --ensure --project P` only when the refusal names a missing producer, and use `--no-watch` only for a synchronous one-off whose waiver reaches the promoted ledger record.
 
 When transitions go quiet, call `crew(project, view="live")`; zero `working` with non-zero `blocked` or `unpromoted`, or a non-terminal in-flight run with no process, is not a completed fleet. Read gate evidence before promotion, then reconcile old terminal pointers before opening more work.
 
