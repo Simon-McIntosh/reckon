@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-obligations-hook-reads-a-snapshot">
   <meta name="plan-title" content="The Obligations Hook Reads A Snapshot">
   <meta name="plan-summary" content="The per-turn obligations hook reads a snapshot the always-on producer publishes, so it answers in milliseconds instead of re-deriving the fleet.">
-  <meta name="plan-status" content="draft">
+  <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="12.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="19">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -81,32 +81,32 @@
       The per-project watch producer (<code>runs.watch</code> in <code>reckon/crew/runs.py</code>,
       started by <code>reckon crew watch --ensure</code>) runs continuously and already classifies
       every live pointer each sweep to emit transitions. Whenever one of the three triggers listed
-      below fires, it recomputes the full obligations payload of every session that has a registered
-      follower, and writes
+      below fires, it recomputes the full obligations payload of every session that has a follower
+      registration in the project's watch directory (the same registration the hook resolves its
+      session through), whether or not that follower is attached at that moment, and writes
       <code>&lt;config-home&gt;/crew/obligations/&lt;project&gt;/&lt;session&gt;.json</code> by
       writing a temporary file and renaming it over the old one, so a reader never sees a partial
-      file. A session with no registered follower gets no snapshot; the hook already treats such a
+      file. A session with no follower registration gets no snapshot; the hook already treats such a
       session as not coordinating and stays quiet for it.
     </p>
     <p>The snapshot carries the obligations payload exactly as <code>obligations()</code> returns it, plus:</p>
     <ul>
-      <li><code>computed_at</code>, and the one byte offset in the project's watch event stream that the snapshot reflects;</li>
+      <li><code>computed_at</code>, and the byte offset in the project's watch event stream (there is one per project) that the snapshot reflects;</li>
       <li>the producer's pid, its process start time, and the code stamp of the source it runs, the same stamp the watcher already reports as <code>code_stamp</code>;</li>
-      <li>for every age, the instant it is measured from rather than a number of seconds, so a reader renders the age at read time and a snapshot never shows a frozen age.</li>
+      <li>for every age, the UTC timestamp it is measured from rather than a number of seconds, so a reader computes the age as now minus that timestamp and a snapshot never shows a frozen age.</li>
     </ul>
-    <p>The three triggers are:</p>
+    <p>The three triggers, each per project, are:</p>
     <ul>
       <li>a pointer transition, which the producer already detects;</li>
-      <li>a change to the ledger or to the plan store, read from the stat identity of <code>docs/state/&lt;project&gt;/</code> and <code>docs/plans/</code>;</li>
+      <li>a change in the stat identity (size and modification time) of any file under <code>docs/state/&lt;project&gt;/</code> or <code>docs/plans/</code>, judged per file, so an in-place edit that leaves the directory's own stat unchanged still fires it;</li>
       <li>a floor tick every 60 s, so obligations that become due by the passage of time, such as a stale promotable run, appear without any other event.</li>
     </ul>
-    <p>
-      <strong>Done when</strong> a pointer transition is reflected in the session's snapshot within
-      one producer sweep; on the shared synthesised fleet described in §5, held frozen, the snapshot
-      the producer writes equals <code>obligations()</code> called over the same files (the parity
-      case); and a producer killed after writing the temporary file but before the rename leaves
-      the previous snapshot intact and readable.
-    </p>
+    <p><strong>Done when</strong> tests show:</p>
+    <ul>
+      <li>a pointer transition is in the session's snapshot by the end of the first producer sweep after it, with the test driving sweeps explicitly rather than waiting on a clock;</li>
+      <li>on the shared synthesised fleet described in §5, with no fixture file modified during the comparison, the snapshot the producer writes equals <code>obligations()</code> called over the same files (the parity case);</li>
+      <li>a producer killed after writing the temporary file but before the rename leaves the previous snapshot intact and readable.</li>
+    </ul>
 
     <h2 id="s3">§3 — The hook reads the snapshot and never derives</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -114,34 +114,40 @@
       <code>coordinator_obligations.py</code> resolves its session as it does today, then reads the
       session's snapshot: one stat and one small JSON read. The snapshot is <em>fresh</em> when a
       process with the recorded pid is alive and has the recorded start time (so a reused pid does
-      not pass), its code stamp equals the installed source's, and <code>computed_at</code> is within
-      120 s. A fresh snapshot goes through the hook's existing formatting and injection functions
-      unchanged, including the digest that suppresses an unchanged list. A snapshot that is not
-      fresh is replaced by one line naming the reason (no producer, producer running older code, or
-      the age of the snapshot) and the remedy,
-      <code>reckon crew watch --ensure --project &lt;project&gt;</code>. Both hooks exit 0 in every
-      case. The prompt path never imports the derivation modules (<code>reckon._plan_html</code>,
-      <code>reckon._backends</code>, <code>reckon.ledger</code> and anything that imports them), so a
-      slow plan or a large stream can no longer slow a turn.
+      not pass), its code stamp equals the stamp computed for the main checkout's source (the code a
+      restarted producer would run), and <code>computed_at</code> is within 120 s. A fresh snapshot
+      goes through the hook's existing formatting and injection functions unchanged, including the
+      digest that suppresses an unchanged list. For a snapshot that is not fresh, the hook emits one
+      line in place of the obligations, naming the reason (no producer, producer running older code,
+      or the age of the snapshot) and the remedy,
+      <code>reckon crew watch --ensure --project &lt;project&gt;</code>; the hook never writes the
+      snapshot file. Both hooks exit 0 in every case. The prompt path imports none of the derivation
+      modules (<code>reckon._plan_html</code>, <code>reckon._backends</code>,
+      <code>reckon.ledger</code>), directly or through any module it imports, so a slow plan or a
+      large stream can no longer slow a turn.
     </p>
     <p>
       The stop hook (<code>--hook stop</code>) reads the same snapshot. On a fresh snapshot it
       refuses the stop when the snapshot lists outstanding obligations, as today. When the snapshot
       is not fresh, for any of the three reasons, it imports the derivation lazily and derives
-      inline under a budget of about 5 s, which §4 makes feasible, then refuses the stop only if that
-      result lists outstanding obligations. If the budget runs out it allows the stop with a line
-      naming the not-fresh reason, so no producer state can trap a coordinator. The decision
+      inline under a time budget, then refuses the stop only if that result lists outstanding
+      obligations. The budget is a production constant of 5 s, which §4 makes feasible, and tests
+      override it to exercise the over-budget branch. If the budget runs out it allows the stop with
+      a line naming the not-fresh reason, so no producer state can trap a coordinator. The decision
       <code>stale-snapshot-at-stop</code> records this. The stop path lands after §4 item 1; the
       prompt path does not wait on it.
     </p>
+    <p><strong>Done when</strong> tests show:</p>
+    <ul>
+      <li>the prompt path's transitive import surface excludes the three derivation modules, and a deliberate mutation that adds an import of one of them to the prompt path fails that test (the negative control);</li>
+      <li>each not-fresh reason produces its line, and the snapshot file is unchanged afterwards;</li>
+      <li>a pid reused by another process is not fresh;</li>
+      <li>the stop path has one case per branch: fresh snapshot, inline derivation inside the budget, and inline derivation over an overridden short budget.</li>
+    </ul>
     <p>
-      <strong>Done when</strong> tests show: the prompt path's import surface excludes the three
-      derivation modules, and a deliberate mutation that makes the prompt path derive inline fails
-      that test (the negative control); each not-fresh reason produces its line; a pid reused by
-      another process is not fresh; and the stop path has one case per branch (fresh snapshot,
-      inline derivation inside the budget, inline derivation over the budget). Recorded as
-      measurement in the evidence, not asserted in the suite: 20 back-to-back invocations of the
-      prompt hook, each in a fresh process on the real fleet, have a p95 under 250 ms.
+      Recorded as measurement in the evidence, not asserted in the suite: 20 consecutive invocations
+      of the prompt hook, each in its own fresh process against the same real fleet, have a p95
+      under 250 ms (with 20 samples this is the second-slowest run).
     </p>
 
     <h2 id="s4">§4 — The derivation itself becomes incremental</h2>
@@ -149,8 +155,8 @@
     <p>
       The producer, <code>reckon crew obligations</code>, the MCP obligations view and
       <code>runs.drain</code> all still derive. Each of the three items below (plans, pointers, the
-      ledger) gets a cache keyed by the stat identity of the files it reads, so a recompute only
-      reads what changed.
+      ledger) gets a cache keyed by the stat identity of the files it reads, so a recompute still
+      stats every input but parses only the files whose stat identity moved.
     </p>
     <ol>
       <li>
@@ -159,28 +165,31 @@
         <code>read_state</code> on every plan, and the meta fields <code>parse_meta</code> extracts
         come from the same rows. Each row is revalidated by one stat of its plan file on every call,
         and only a plan whose stat identity moved is parsed again. The index rows gain each plan's
-        open-followup and implementable-section counts. Target: under 0.5 s in a fresh process for
-        160 plans, from 19.7 s for the plan reads plus 3.0 s for meta parsing.
+        open-followup and implementable-section counts. Target, recorded as evidence: under 0.5 s in
+        a fresh process for 160 plans, covering both terms this item replaces, 19.7 s of plan reads
+        and 3.0 s of meta parsing.
       </li>
       <li>
         <strong>Pointers.</strong> <code>classify_pointer</code> results are memoised in a file beside
-        each pointer, keyed by the stat identity of every file the classification reads (at least
-        the pointer, manifest, stream and review record). Stream observation resumes from a byte
-        offset persisted in the same file instead of re-parsing the whole stream, so a fresh process
+        each pointer, keyed by the stat identity of every file the classification reads. The
+        pointer, manifest, stream and review record are the files known today, and the key must
+        cover any other the classification reads. Stream observation resumes from a byte offset
+        persisted in the same file instead of re-parsing the whole stream, so a fresh process
         benefits as well as the producer.
       </li>
       <li>
-        <strong>Ledger.</strong> <code>_held_worktrees</code> reads the rows it needs rather than
-        loading <code>crew.json</code> whole. This should reuse the per-run ledger files from
-        the-ledger-is-one-file-per-run where they exist, not build a second index.
+        <strong>Ledger.</strong> <code>_held_worktrees</code> no longer loads <code>crew.json</code>
+        whole. It reads the per-run ledger file from the-ledger-is-one-file-per-run for each run that
+        has one, falls back to <code>crew.json</code> only for runs that do not, and builds no index
+        of its own.
       </li>
     </ol>
     <p>
       <strong>Done when</strong> a parity case on the shared synthesised fleet (§5) shows the cached
-      derivation returns the same obligations as the uncached one, including after one plan and one
-      pointer's stream are rewritten between calls. Recorded as measurement in the evidence: on the
-      real fleet, <code>obligations()</code> for the largest live session takes under 2 s on the
-      first call in a fresh process and under 0.3 s on a second call in the same process.
+      derivation returns the same obligations as the uncached one, including after the content of
+      one plan and of one pointer's stream changes between calls. Recorded as measurement in the
+      evidence: on the real fleet, <code>obligations()</code> for the largest live session takes under
+      2 s on the first call in a fresh process and under 0.3 s on a second call in the same process.
     </p>
 
     <h2 id="s5">§5 — Guards that keep it fast</h2>
@@ -190,8 +199,9 @@
       fail deterministically. They all run on one shared synthesised fleet, a test fixture of 40
       pointers and 200 plans under a temporary configuration home. A prompt-hook invocation reaches
       none of <code>read_state</code>, <code>parse_events</code> or <code>ledger.load</code>, directly
-      or through any callee; each is patched to raise. Between two producer sweeps with one plan
-      rewritten, <code>read_state</code> runs for that plan only. A pointer is not re-classified
+      or through any callee; each is patched to raise. Between two producer sweeps with the content
+      of one plan changed, <code>read_state</code> is called at most once, for that plan, and for no
+      other plan. A pointer is not re-classified
       unless a file its classification reads changed. Every wall-clock budget in this plan is
       recorded as a measurement in the evidence and never asserted in the suite.
     </p>
@@ -199,8 +209,9 @@
     <h2 id="s6">§6 — Order of work</h2>
     <p>
       §4 item 1 comes first. It is the largest single term, it is independent of the snapshot, and it
-      speeds every reader, including the MCP view and the CLI. §2 and the prompt path of §3 land
-      together, because a hook that reads a snapshot nothing writes reads nothing. The stop path of §3
+      speeds every reader, including the MCP view and the CLI. §2 and the prompt path of §3 land in
+      the same merge, because a hook that reads a snapshot nothing writes would leave every
+      coordinator without its obligations. The stop path of §3
       lands after §4 item 1, because its bounded derivation needs that speed. §4 items 2 and 3 follow.
       Each section carries its own §5 guards.
     </p>
@@ -216,7 +227,7 @@
       </p>
     <p class="r-dec-rat">The producer is always on, holds warm caches across sweeps, and already does the classification. A follower dies with its monitor every 25 minutes, so its snapshot would go stale exactly between re-arms.</p>
     </div>
-<div class="r-dec" data-key="stale-snapshot-at-stop" data-choice="bounded-derive" data-by="lead" data-when="2026-10-01T13:02:22+00:00">
+<div class="r-dec" data-key="stale-snapshot-at-stop" data-choice="bounded-derive" data-by="lead" data-when="2026-10-01T13:21:04+00:00">
     <p class="r-dec-q">When the stop hook finds no fresh snapshot, what does it do?</p>
     <p class="r-dec-ctx">The stop hook enforces obligations by blocking a stop. A snapshot can go stale when the producer is down or runs older code.</p>
     <p class="r-dec-opts">
@@ -224,15 +235,21 @@
       <button class="r-opt" data-value="warn-and-allow">Allow the stop with a line naming the stale snapshot</button>
       <button class="r-opt" data-value="block-until-producer">Block the stop until a producer is running</button>
       </p>
-    <p class="r-dec-rat">Enforcement keeps working when the producer is down. Once §4 brings a cold derivation under 2 s, the stop hook derives inline under a budget of about 5 s and blocks only on that result. If the budget runs out it allows the stop with a line naming the stale snapshot, so a dead producer can never trap a coordinator.</p>
+    <p class="r-dec-rat">Enforcement keeps working when the producer is down. Once §4 brings a cold derivation under 2 s, the stop hook derives inline under a 5 s production budget, which tests can override, and refuses the stop only when that result lists outstanding obligations. If the budget runs out it allows the stop with a line naming the not-fresh reason, so no producer state can ever trap a coordinator.</p>
     </div>
 </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-tohras-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-10-01" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §4" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tohras-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-10-01" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §4" data-resolved-at="2026-10-01T13:21:17+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Cut the plan-read term first, then publish the snapshot</h4>
     <div class="r-fu-body"><p>§4 item 1 first: the drain's plan reads are 19.7 s of the 31.4 s and speed every reader. Then §2 and §3 together, then §4 items 2 and 3. The stop-hook decision gates only the stop path of §3.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §4</pre>
+    <p class="r-fu-outcome">Superseded by f-tohras-002 after two read-backs revised the plan. The order is unchanged, but its wording here predates the revision: the stop path of §3 now waits on §4 item 1, and §2 lands with only the prompt path of §3.</p>
+    </article>
+<article class="r-fu" data-id="f-tohras-002" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-01" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Cut the plan-read term first, then publish the snapshot</h4>
+    <div class="r-fu-body"><p>§4 item 1 first: the drain's plan reads and meta parsing are 22.7 s of the 31.4 s, and cutting them speeds every reader. Then §2 and the prompt path of §3 in one merge, then the stop path of §3 and §4 items 2 and 3. Each section carries its own §5 guards.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §4</pre>
     </article>
 </section>
