@@ -5701,13 +5701,36 @@ def _review_input_identities(record: Mapping[str, Any]) -> dict[str, str]:
     if not project or not run_id:
         return identities
     directory = review_module.review_store_root() / project
-    identities[str(directory)] = _file_identity(directory)
+    identities[str(directory)] = _directory_identity(directory)
+    # Whether the run has a record at one of its own paths is part of the key
+    # rather than a note beside it: a run with none is answered by listing the
+    # whole store, so the appearance of its own file is what moves that answer
+    # from a listing to a read, and a key that could not see the difference
+    # would serve the listing's verdict over the record a reviewer just wrote.
+    identities[f"own-review-record:{run_id}"] = (
+        "present" if _own_review_record_exists(record) else "absent"
+    )
     candidates = [directory / f"{run_id}.json"]
     with contextlib.suppress(OSError):
         candidates.extend(sorted(directory.glob(f"{run_id}.at-*.json")))
     for path in candidates:
         identities[str(path)] = _file_identity(path)
     return identities
+
+
+def _directory_identity(path: Path) -> str:
+    """The stat identity of a directory, including when its entries last moved.
+
+    A directory's own mtime and ctime change when an entry is added, removed or
+    replaced, which is what makes an index over its entries current or stale.
+    That is a different question from a file's identity — a file rewritten in
+    place keeps its own name — so the two are read by different readers.
+    """
+    try:
+        info = path.stat()
+    except OSError:
+        return "absent"
+    return f"{info.st_dev}:{info.st_ino}:{info.st_size}:{info.st_mtime_ns}:{info.st_ctime_ns}"
 
 
 def _classification_inputs(record: Mapping[str, Any], log: Path) -> dict[str, str]:
@@ -6076,21 +6099,13 @@ def classify_pointer(
     review_error = ""
     if manifest_status == "complete" and not deferred_outcome:
         served_review = memo.get("review") if memo_fresh else None
-        # A record found by listing the store is served by nothing here: the
-        # listing is keyed on the store's own process-held index rather than on
-        # a file this memo can name, so that shape of answer is always read
-        # again rather than reused.
-        if isinstance(served_review, Mapping) and served_review.get("servable"):
+        if isinstance(served_review, Mapping):
             stored_review = served_review.get("record")
             review = dict(stored_review) if isinstance(stored_review, Mapping) else None
             review_error = str(served_review.get("error") or "")
         else:
             review, review_error = _stored_review(record)
-            memo["review"] = {
-                "record": review,
-                "error": review_error,
-                "servable": _own_review_record_exists(record),
-            }
+            memo["review"] = {"record": review, "error": review_error}
     review_complete = _review_is_complete(review)
     if manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome:
         terminal_seconds = manifest.stat().st_mtime
