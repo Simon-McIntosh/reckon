@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-impl" content="0.72">
 </head>
 <body>
@@ -284,6 +284,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261001T020745036945-review-of-changes-push-rows" data-who="reckon-build" data-when="2026-10-01T02:17:35.321Z">
     <div class="r-comment-body"><p>review of r-20261001T010414677018-changes-push-rows (plan reckon:the-page-paints-from-an-index §5) — parsed, scores goal_fidelity 20 / evidence 19 / scope_discipline 20 / durability 20 / fit 20, total 99, added_failure_count 0, added_failure_ids [], no blocking findings; record keyed at reviewed_head_sha ca4e07b8b034031f7bd0307657b64aff8bebe879</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261001T010414677018-changes-push-rows" data-who="reckon-build" data-when="2026-10-01T02:06:33.340Z">
+    <div class="r-comment-body"><p>§5 — the change stream diffs the metadata index and pushes the changed/added/removed rows ahead of the derived digest (a rewrite reaches the event in 0.45–0.48 s of the 2 s bound across ten flows, 0 added failure ids), and the loader patches them in place, holds a row the page never carried as an arrival, drops a removed row and its arrival count, leaves Python-derived fields untouched, and refetches derived state at most once per settle window across every event shape (a digest-only event shares that refetch); record at docs/evidence/fragments/the-page-paints-from-an-index/changes-push-rows.html</p></div>
 </div>
 </section>
 </main>
