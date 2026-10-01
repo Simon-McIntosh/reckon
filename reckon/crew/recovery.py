@@ -5586,6 +5586,94 @@ def _write_classification_memo(
         return
 
 
+def _git_directory(tree: Path) -> Path | None:
+    """A checkout's own git directory, following the pointer a worktree writes.
+
+    A linked worktree keeps a file where a checkout keeps a directory, and that
+    file names the git directory the worktree's refs and head live in. Both
+    shapes resolve here, so the identity below reads the same two files whether
+    the run sits in the repository or in a worktree of it.
+    """
+    marker = tree / ".git"
+    try:
+        if marker.is_dir():
+            return marker
+        text = marker.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    if not text.startswith("gitdir:"):
+        return None
+    written = Path(text.split(":", 1)[1].strip())
+    if not written.is_absolute():
+        written = tree / written
+    return written
+
+
+def _worktree_head_identity(tree: Path | None) -> str:
+    """The revision a checkout currently names, read as files rather than by git.
+
+    A stored review is selected against the head of the tree it describes, so
+    that head is an input of the classification exactly as the manifest and the
+    stream are. Reading it through a subprocess would cost a process per
+    pointer per sweep, and the answer is two small files: the git directory's
+    ``HEAD``, which either carries a revision or names a ref, and the ref it
+    names. A ref held only in ``packed-refs`` is identified by that file's stat
+    instead, which moves when a pack is rewritten.
+    """
+    if tree is None:
+        return "no-tree"
+    git_dir = _git_directory(tree)
+    if git_dir is None:
+        return "no-git"
+    try:
+        head = (git_dir / "HEAD").read_text(encoding="utf-8").strip()
+    except OSError:
+        return "no-head"
+    parts = [head]
+    ref = head.split(":", 1)[1].strip() if head.startswith("ref:") else ""
+    if ref:
+        common = git_dir
+        try:
+            pointer = (git_dir / "commondir").read_text(encoding="utf-8").strip()
+        except OSError:
+            pointer = ""
+        if pointer:
+            written = Path(pointer)
+            common = written if written.is_absolute() else git_dir / written
+        loose = None
+        for base in (git_dir, common):
+            candidate = base / ref
+            try:
+                loose = candidate.read_text(encoding="utf-8").strip()
+                break
+            except OSError:
+                continue
+        parts.append(loose if loose is not None else _file_identity(common / "packed-refs"))
+    return "|".join(parts)
+
+
+def _own_review_record_exists(record: Mapping[str, Any]) -> bool:
+    """Whether the store holds a record at one of this run's own paths.
+
+    The distinction decides what a memo may serve: a run with its own file is
+    answered from that file alone, while a run without one is answered by a
+    listing of the whole store for a record filed under another run's id. Only
+    the first of those is keyed on the run's own paths, so only the first may be
+    served from a memo without a store-wide identity behind it.
+    """
+    project = str(record.get("project") or "")
+    run_id = str(record.get("run_id") or "")
+    if not project or not run_id:
+        return False
+    directory = review_module.review_store_root() / project
+    if (directory / f"{run_id}.json").is_file():
+        return True
+    try:
+        return any(directory.glob(f"{run_id}.at-*.json"))
+    except OSError:
+        return False
+
+
 def _review_input_identities(record: Mapping[str, Any]) -> dict[str, str]:
     """The identity of every review-store file this run's review is read from.
 
@@ -5634,6 +5722,13 @@ def _classification_inputs(record: Mapping[str, Any], log: Path) -> dict[str, st
         record_path = directory / name
         identities[str(record_path)] = _file_identity(record_path)
     identities.update(_review_input_identities(record))
+    # A review is chosen against the revision the run's tree carries now, so the
+    # head is part of the key even though no reader of the review calls it a
+    # file: a tree that gained a commit between two classifications moves the
+    # record that describes it, and serving the earlier one would report a
+    # review of code the run no longer holds.
+    repository = _review_tree(record)
+    identities[f"git-head:{repository}"] = _worktree_head_identity(repository)
     return identities
 
 
@@ -5970,13 +6065,21 @@ def classify_pointer(
     review_error = ""
     if manifest_status == "complete" and not deferred_outcome:
         served_review = memo.get("review") if memo_fresh else None
-        if isinstance(served_review, Mapping):
+        # A record found by listing the store is served by nothing here: the
+        # listing is keyed on the store's own process-held index rather than on
+        # a file this memo can name, so that shape of answer is always read
+        # again rather than reused.
+        if isinstance(served_review, Mapping) and served_review.get("servable"):
             stored_review = served_review.get("record")
             review = dict(stored_review) if isinstance(stored_review, Mapping) else None
             review_error = str(served_review.get("error") or "")
         else:
             review, review_error = _stored_review(record)
-            memo["review"] = {"record": review, "error": review_error}
+            memo["review"] = {
+                "record": review,
+                "error": review_error,
+                "servable": _own_review_record_exists(record),
+            }
     review_complete = _review_is_complete(review)
     if manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome:
         terminal_seconds = manifest.stat().st_mtime
