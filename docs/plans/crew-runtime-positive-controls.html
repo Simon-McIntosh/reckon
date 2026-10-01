@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;implementable&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="166">
+<meta name="plan-version" content="167">
 </head>
 <body>
   <main class="plan-doc">
@@ -1138,6 +1138,10 @@
       failed.</figcaption>
     </figure>
 
+<h2 id="s21">§21 — An unresolvable declared commit is reported, or its silence is explained</h2>
+<section data-reckon="section" data-id="s21" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>From the review of control-gate-repairs (score 88). Promotion now refuses an unresolvable presented commit by value. An unresolvable value in the manifest's declared commits, beside presented commits that do resolve, is still dropped from the shortfall comparison without a word. Two existing tests pin that silence: <code>tests/test_a_short_commit_list_is_reported.py</code> near line 209 (a declared first commit plus a 40-character sha that resolves to nothing, with the first commit presented, asserts None) and <code>test_a_declared_revision_that_does_not_resolve_is_not_named_missing</code>. Which behaviour is right is the decision <code>unresolvable-declared-sha</code>, and this section waits on it.</p><p><strong>Done when</strong> the case is first shown to still reproduce at main. Then, under the choice made, either an unresolvable declared sha is reported the way a presented one is, and the two pinning tests change with the reason stated, or it stays silent, with the reason it differs from the presented case written beside the pinning tests. The negative control for the report branch restores the silent drop, and the new report case must then fail.</p>
+
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-crpc-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-build crew-runtime-positive-controls §1" data-resolved-at="2026-09-19T16:43:31+00:00" data-resolved-by="">
@@ -1311,10 +1315,11 @@
     <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls</pre>
     <p class="r-fu-outcome">Items (1) and (5) landed earlier: the-refusal-case-discriminates, and the prompt's facts rule. Items (2) and (3) are met. The manifest audit's _gate_log_revision_findings judges each suite arm's cited gate log against the revision that arm records, and reports a log whose first line names no revision or another arm's revision while the writer still holds a turn. The presented half of item (4) is met: the gate-evidence guard refuses an unresolvable presented commit by value instead of filtering it out of the comparison (merged a399d7744, commit 87107ce08, review 88). Gate (12 files): base 3 failed and 340 passed, exactly the three reproduced defects; head passes. The control removes the first-line check and fails the first case. The declared half of item (4), an unresolvable value declared beside a presented one, is still dropped silently. Two existing tests pin that silence on purpose, so it moves to f-crpc-a-declared-unresolvable-sha-is-not-silent.</p>
     </article>
-<article class="r-fu" data-id="f-crpc-exit-record-forms" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T13:33:00Z" data-recommends-skill="/reckon-build crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-crpc-exit-record-forms" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T13:33:00Z" data-recommends-skill="/reckon-build crew-runtime-positive-controls" data-resolved-at="2026-10-01T20:00:44+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The fact gate reads only EXIT=, and workers write other forms</h4>
     <div class="r-fu-body"><p>Within hours of the fact gate landing at a9df0e39, two sound controls from nodes dispatched before it were refused for recording no exit. One (name-the-ended-turn-in-its-reason) had FAILED ids but no exit line; it was re-run with EXIT=1. The other (a-sub-floor-dimension-is-an-obligation) recorded its exit as 'arm_exit=1', beside four FAILED ids and pytest's '4 failed, 3 passed'; its promotion waived the control with those facts stated. Either the gate reads the exit forms workers actually write (EXIT=, exit=, arm_exit=, 'gate exit: N'), or the manifest template and the dispatch prompt require the one form it reads. This extends the prompt repair already listed in f-crpc-control-gate-repairs.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls</pre>
+    <p class="r-fu-outcome">Already met on main by the remedy's second branch. e35585e5a states in the dispatch prompt's manifest template that negative_control_log is judged on a non-zero EXIT= line, which is the one form the gate reads (reckon/crew/reports.py _EXIT_RECORD). Closed by the currency check of work-is-a-section-not-a-followup §4.</p>
     </article>
 <article class="r-fu" data-id="f-crpc-a-test-first-baseline-refuses-a-sound-control" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-28" data-recommends-skill="/reckon-build crew-runtime-positive-controls" data-resolved-at="2026-09-29T05:03:38+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The control gate compares against the head arm, so a test-first baseline does not refuse a sound control</h4>
@@ -1352,10 +1357,11 @@
     <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls</pre>
     <p class="r-fu-outcome">template-states-the-exit-line merged at f6a619541 and promoted (review 94, zero added failures, control admitted on its facts). In reckon/crew/prompts.py, the negative_control_log line now says the log's last line is a bare EXIT= line with the exit code, and the baseline_suite and after_suite lines say command is the literal command that ran, with absolute paths and no angle-bracket placeholder. tests/test_brief_prompt.py asserts both. The six landing-clause failures present in both arms are tracked in a-landing-record-never-conflicts. The next node in this plan is f-crpc-a-stale-manifest-does-not-license-promotion. It waits on a measurement of one test that failed at merged main after the review-gate merge d26768553, since both edit the same promotion.py region.</p>
     </article>
-<article class="r-fu" data-id="f-crpc-a-declared-unresolvable-sha-is-not-silent" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-01" data-recommends-skill="/reckon-build crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-crpc-a-declared-unresolvable-sha-is-not-silent" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-01" data-recommends-skill="/reckon-build crew-runtime-positive-controls" data-resolved-at="2026-10-01T20:00:44+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Decide whether an unresolvable declared commit is refused or stays silent</h4>
     <div class="r-fu-body"><p>From the review of control-gate-repairs (88). Promotion now refuses an unresolvable <em>presented</em> commit by value. An unresolvable value in the manifest's <em>declared</em> commits, beside presented commits that do resolve, is still dropped from the shortfall comparison without a word. Two existing tests pin that silence: tests/test_a_short_commit_list_is_reported.py near line 209 (declared first plus a 40-character sha that resolves to nothing, presented first, asserts None) and test_a_declared_revision_that_does_not_resolve_is_not_named_missing. Before any repair, settle which is right. Either an unresolvable declared sha is reported, the way the presented one now is, and those two tests change with the reason stated; or it stays silent, with the reason it differs from the presented case written beside the pinning tests. The repair brief confirms the case still reproduces at main first.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls</pre>
+    <p class="r-fu-outcome">Moved into §21, held by the section-scoped decision unresolvable-declared-sha, because the roadmap schedules sections and decisions, never followups (work-is-a-section-not-a-followup §4). This reopens the plan once for a defect in the commit check it landed.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -1525,7 +1531,7 @@
     <div class="r-comment-body"><p>The presented-commit refusal in reckon/crew/promotion.py now words an unresolvable identifier as 'does not resolve to a commit object in the run repository', the phrase the commit resolver has always used, so both refusals speak one vocabulary; behaviour unchanged (fires by value where the presentation is read, names every unresolved entry and the tree, silent when the worktree cannot be read). Base 6c1e00cb: 1 failed 51 passed EXIT=1, tests/test_crew.py::test_promotion_refuses_a_commit_that_names_no_object red on the wording. Head 1bdd1bfb: 52 passed EXIT=0, no failure id. Negative control (old wording restored): the same case red, EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20261001T065917791299-review-of-presented-refusal-keeps-its-wording" data-who="reckon-build" data-when="2026-10-01T07:10:24.929Z">
-    <div class="r-comment-body"><p>Independent review of r-20261001T064209008996-presented-refusal-keeps-its-wording stored parsed at both assigned paths, total 94 over goal_fidelity 19 / evidence 18 / scope_discipline 20 / durability 18 / fit 19, with added_failure_count 0 and empty added_failure_ids derived from the reviewed run&#x27;s own base-arm and head-arm gate logs; base arm red and head arm green were each reproduced independently, and two follow-on findings (the guard&#x27;s refusal family still carries three spellings; the reviewed base log omits the module/cwd header the head log prints) are recorded.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261001T064209008996-presented-refusal-keeps-its-wording stored parsed at both assigned paths, total 94 over goal_fidelity 19 / evidence 18 / scope_discipline 20 / durability 18 / fit 19, with added_failure_count 0 and empty added_failure_ids derived from the reviewed run's own base-arm and head-arm gate logs; base arm red and head arm green were each reproduced independently, and two follow-on findings (the guard's refusal family still carries three spellings; the reviewed base log omits the module/cwd header the head log prints) are recorded.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
@@ -1722,6 +1728,18 @@
 <div class="r-comment" data-section="s20" data-id="c-run-r-20260928T114813176869-review-of-the-control-gate-checks-facts-not-words" data-who="reckon-build" data-when="2026-09-28T12:39:16.627Z">
     <div class="r-comment-body"><p>re-review stored at f1d9ee97: total 89, zero added failures; the prompt template still teaching the wording rule is queued as f-crpc-control-gate-repairs, and the fixture's EXIT line was accepted at promotion</p></div>
 </div>
+</section>
+<section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="unresolvable-declared-sha" data-choice="" data-by="" data-when="" data-sections="s21">
+    <p class="r-dec-q">Is an unresolvable sha in a manifest&#x27;s declared commits reported or left silent?</p>
+    <p class="r-dec-ctx">Promotion refuses an unresolvable presented commit by value. A declared commit that resolves to nothing, beside presented commits that do, is dropped from the shortfall comparison, and two tests pin that.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="report">Report it, as a presented one is, and change the two pinning tests</button>
+      <button class="r-opt" data-value="stay-silent">Keep the silence and write why it differs from the presented case beside the tests</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
 </section>
 </main>
 </body>

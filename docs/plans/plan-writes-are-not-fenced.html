@@ -23,8 +23,9 @@
   <title>Plan Writes Are Not Fenced | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="6">
+<meta name="plan-modified" content="2026-10-01">
+<meta name="plan-version" content="7">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -150,6 +151,10 @@
     so the delta is zero added and two passing. Full record:
     <a href="/reckon/evidence/archive/plan-writes-are-not-fenced-landed#s5-commutative-append-is-not-refused">&sect;5 landed</a>.</p>
 
+    <h2 id="s6">§6 — Every writer that can race the landing write commutes or refuses</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>36330a4 made a comment append survive a concurrent plan write, which is the case §1 measured, and §5's falsifier and positive control both hold for it. The landing write also races every other writer that can reach the same plan: the landing record itself, followup appends, section appends and state sets. §5's measure has been shown for one of them.</p><p><strong>Done when</strong> a two-writer test runs each of those writers against an in-flight landing write on the same plan, and asserts for each that its change is either present afterwards or its loss is refused with both versions named. The same test keeps §5's positive control: a sequential write still succeeds and still advances the version. Any writer that still loses silently is named in the manifest, with the test case that shows it. The negative control reverts 36330a4's commutative append, and the comment case must then fail.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="who-loses-a-race" data-choice="make-the-append-commutative" data-by="Simon McIntosh" data-when="2026-09-17T20:55:38+00:00">
@@ -175,10 +180,11 @@
     <pre class="r-fu-prompt">/reckon-build plan-writes-are-not-fenced</pre>
     <p class="r-fu-outcome">The decision who-loses-a-race was locked on 2026-09-17 as make-the-append-commutative, and its repair landed at 36330a44 (fix(store): make a comment append survive a concurrent plan write), which is an ancestor of main. Found stale by the S22 currency audit.</p>
     </article>
-<article class="r-fu" data-id="f-pwanf-commutative-append-covers-every-write" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T06:16:00Z" data-recommends-skill="/reckon-build plan-writes-are-not-fenced" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-pwanf-commutative-append-covers-every-write" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T06:16:00Z" data-recommends-skill="/reckon-build plan-writes-are-not-fenced" data-resolved-at="2026-10-01T19:58:50+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Show the commutative append covers every plan write that can race</h4>
     <div class="r-fu-body"><p>36330a44 made a comment append survive a concurrent plan write. The plan's §1 to §4 measured a lost update on the landing write, where the version counter advanced over the loss. Before closing, show with a two-writer test that every writer racing the landing write either commutes or refuses: the landing record, followup appends and state sets. Name any writer that still loses silently. Then declare the plan's sections and set its impl.</p></div>
     <pre class="r-fu-prompt">/reckon-build plan-writes-are-not-fenced</pre>
+    <p class="r-fu-outcome">Moved into §6 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4). §1 to §5 are declared done: §1 to §4 are the measured findings and the decision, and §5 landed as 36330a4.</p>
     </article>
 </section>
 
