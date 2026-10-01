@@ -177,6 +177,15 @@ function PlanInFlightBand({ runs, effortHours }) {
   );
 }
 
+// A request that never got an answer and an answer the reader could not use
+// point at different places: the first at the connection to the server, the
+// second at the server or the document. The status names which one happened.
+function readerFailureStatus(error) {
+  if (error?.responseStatus) return error.responseStatus;
+  if (error?.unanswered) return "no response — the request did not reach the server";
+  return `unreadable response — ${error?.name || "Error"}: ${error?.message || String(error)}`;
+}
+
 function ReaderSourceFailure({ source, status, missing, onRetry }) {
   return (
     <div className="r-reader-source-failure" role="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18, marginBottom: 12, padding: "11px 13px", border: "1px solid var(--border)", borderLeft: "3px solid var(--danger, #b42318)", background: "var(--bg)" }}>
@@ -521,6 +530,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
     // Use plan's href (may include subdir e.g. "curated/slug") if available
     const href = PG.href || slug;
     fetch(`/${project}/${href}.html`, { cache: "no-store" })
+      .catch(cause => { throw { unanswered: true, cause }; })
       .then(r => {
         if (!r.ok) throw { responseStatus: `HTTP ${r.status}` };
         return r.text();
@@ -556,7 +566,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
         setHtmlReady(true);
       })
       .catch(error => {
-        setHtmlFailure({ status: error?.responseStatus || "network error" });
+        setHtmlFailure({ status: readerFailureStatus(error) });
         setHtmlReady(true);
       });
   }, [project, slug, usesImageReader, htmlRetry]);
@@ -571,6 +581,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
     const stateRoot = { plan: "plans", research: "research", evidence: "evidence" }[kind];
     const statePath = `${stateRoot}/${PG.slug}`;
     fetch(`/plan/${project}/${statePath}`, { cache: "no-store" })
+      .catch(cause => { throw { unanswered: true, cause }; })
       .then(r => {
         if (!r.ok) throw { responseStatus: `HTTP ${r.status}` };
         return r.json();
@@ -597,7 +608,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
             : d;
         }));
       })
-      .catch(error => setStateFailure({ status: error?.responseStatus || "network error" }));
+      .catch(error => setStateFailure({ status: readerFailureStatus(error) }));
   }, [project, slug, PG.type, usesImageReader, stateRetry]);
 
   // ── Comment / prompt wiring ─────────────────────────────────────────────

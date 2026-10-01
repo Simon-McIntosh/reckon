@@ -229,10 +229,7 @@ def test_authored_html_failure_renders_status_missing_sections_and_retry():
         in PLAN_SOURCE
     )
     assert "if (!r.ok) throw { responseStatus: `HTTP ${r.status}` };" in PLAN_SOURCE
-    assert (
-        'setHtmlFailure({ status: error?.responseStatus || "network error" })'
-        in PLAN_SOURCE
-    )
+    assert "setHtmlFailure({ status: readerFailureStatus(error) })" in PLAN_SOURCE
     assert "setHtmlRetry(value => value + 1)" in PLAN_SOURCE
 
 
@@ -243,13 +240,32 @@ def test_structured_state_failure_renders_status_missing_sections_and_retry():
         'missing={["interactive decisions", "evidence gates", "structured followups", "loaded plan version"]}'
         in PLAN_SOURCE
     )
-    assert (
-        'setStateFailure({ status: error?.responseStatus || "network error" })'
-        in PLAN_SOURCE
-    )
+    assert "setStateFailure({ status: readerFailureStatus(error) })" in PLAN_SOURCE
     assert "setStateRetry(value => value + 1)" in PLAN_SOURCE
     assert "Status: {status}. Missing: {missing.join" in PLAN_SOURCE
     assert ">Retry</button>" in PLAN_SOURCE
+
+
+def test_both_reader_fetches_mark_a_request_that_got_no_answer():
+    # The mark is set on the fetch itself, before the response is read, so only
+    # a request that never received an answer is reported as one.
+    unanswered = ".catch(cause => { throw { unanswered: true, cause }; })"
+    assert PLAN_SOURCE.count(unanswered) == 2
+
+
+def test_reader_failure_status_names_where_the_load_failed():
+    statuses = _evaluate_helpers(
+        PLAN_SOURCE,
+        ["readerFailureStatus"],
+        "[readerFailureStatus({ responseStatus: 'HTTP 404' }),"
+        " readerFailureStatus({ unanswered: true, cause: new TypeError('Failed to fetch') }),"
+        " readerFailureStatus(new SyntaxError('Unexpected token < in JSON'))]",
+    )
+
+    assert statuses[0] == "HTTP 404"
+    assert statuses[1].startswith("no response")
+    assert "SyntaxError: Unexpected token < in JSON" in statuses[2]
+    assert not statuses[2].startswith("no response")
 
 
 def test_copied_handoff_carries_live_source_provenance_and_plan_version():
