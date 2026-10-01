@@ -8,7 +8,7 @@ import pytest
 from tests.spa_browser_harness import (
     BrowserProbeError,
     authored_shell_source,
-    installed_browser,
+    installed_browser_or_skip,
     run_browser_probe,
     served_spa,
 )
@@ -22,9 +22,7 @@ TOPBAR_CSS = ROOT / "docs" / "ui" / "topbar.css"
 
 @pytest.fixture(scope="module")
 def rendered_browser(tmp_path_factory) -> str:
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip("no supported browser binary is installed")
+    browser = installed_browser_or_skip()
     try:
         run_browser_probe(
             tmp_path_factory.mktemp("browser-capability"),
