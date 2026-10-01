@@ -971,6 +971,10 @@ _SIGNATURE_TTL_S = 0.0
 # The package source the served process started with, recorded by main() so
 # /_server can report when the code on disk has moved past the code running.
 _SOURCE_SNAPSHOT: served_code.SourceSnapshot | None = None
+# Which of those files the served process has run since start; the report counts
+# only changes to these, because a file the server never runs cannot change
+# what it serves.
+_EXECUTED_SOURCE: served_code.ExecutedSource | None = None
 # Document verdicts are computed out of process (see _start_check_refresh). Only
 # the served process opts in, in main(); a handler driven by a test or another
 # caller reports pending verdicts and starts nothing.
@@ -2735,7 +2739,12 @@ class Handler(BaseHTTPRequestHandler):
                 {
                     "host": socket.gethostname(),
                     "pid": os.getpid(),
-                    "code": served_code.served_report(_SOURCE_SNAPSHOT),
+                    "code": served_code.served_report(
+                        _SOURCE_SNAPSHOT,
+                        _EXECUTED_SOURCE.relative_paths()
+                        if _EXECUTED_SOURCE is not None
+                        else None,
+                    ),
                 },
             )
             return
@@ -3720,43 +3729,57 @@ def main(
     global _SIGNATURE_TTL_S  # noqa: PLW0603 — the served process opts into reuse
     global _SOURCE_SNAPSHOT  # noqa: PLW0603 — recorded once, as the code loads
     global _CHECK_REFRESH_ENABLED  # noqa: PLW0603 — the served process opts in
+    global _EXECUTED_SOURCE  # noqa: PLW0603 — recorded from here on
     _SOURCE_SNAPSHOT = served_code.take_snapshot()
+    executed = served_code.ExecutedSource(_SOURCE_SNAPSHOT.root)
+    _EXECUTED_SOURCE = executed if executed.start() else None
     _CHECK_REFRESH_ENABLED = True
-    _resolve_paths(mounts_file)
-    _SIGNATURE_TTL_S = _served_signature_ttl()
-    _host = host or os.environ.get("DOCS_SERVER_BIND", "127.0.0.1")
-    _port = port or int(os.environ.get("DOCS_SERVER_PORT", "8765"))
+    try:
+        _resolve_paths(mounts_file)
+        _SIGNATURE_TTL_S = _served_signature_ttl()
+        _host = host or os.environ.get("DOCS_SERVER_BIND", "127.0.0.1")
+        _port = port or int(os.environ.get("DOCS_SERVER_PORT", "8765"))
 
-    # Patch Handler class attributes so do_GET can use them for fallback page.
-    Handler._host = _host
-    Handler._port = _port
+        # Patch Handler class attributes so do_GET can use them for fallback page.
+        Handler._host = _host
+        Handler._port = _port
 
-    if _STATE_ROOT:
-        _STATE_ROOT.mkdir(parents=True, exist_ok=True)
-    if _MOUNTS_FILE and not _MOUNTS_FILE.exists():
-        _MOUNTS_FILE.write_text("{}\n")
+        if _STATE_ROOT:
+            _STATE_ROOT.mkdir(parents=True, exist_ok=True)
+        if _MOUNTS_FILE and not _MOUNTS_FILE.exists():
+            _MOUNTS_FILE.write_text("{}\n")
 
-    # Bind before building the change watch. Building it walks every mounted
-    # tree, which on a shared filesystem can take seconds per tree, and the
-    # port must answer throughout that walk; the watch is armed on its own
-    # thread and a tree is covered by the discovery reuse window until then.
-    server = ThreadingHTTPServer((_host, _port), Handler)
+        # Bind before building the change watch. Building it walks every mounted
+        # tree, which on a shared filesystem can take seconds per tree, and the
+        # port must answer throughout that walk; the watch is armed on its own
+        # thread and a tree is covered by the discovery reuse window until then.
+        server = ThreadingHTTPServer((_host, _port), Handler)
 
-    start_fleet_change_watch(load_mounts())
+        start_fleet_change_watch(load_mounts())
 
-    fqdn = socket.getfqdn()
-    print(f"reckon server listening on http://{_host}:{_port}/", flush=True)
-    if _host == "0.0.0.0":  # noqa: S104
-        print(f"  team URL:  http://{fqdn}:{_port}/", flush=True)
-    else:
-        print(
-            f"  reach from a laptop: ssh -L {_port}:localhost:{_port} <user>@{fqdn}",
-            flush=True,
-        )
-    print(f"  mounts:  {_MOUNTS_FILE}", flush=True)
-    print(f"  state:   {_STATE_ROOT}", flush=True)
-    print(f"  shared:  {_SHARED_ROOT}", flush=True)
-    server.serve_forever()
+        fqdn = socket.getfqdn()
+        print(f"reckon server listening on http://{_host}:{_port}/", flush=True)
+        if _host == "0.0.0.0":  # noqa: S104
+            print(f"  team URL:  http://{fqdn}:{_port}/", flush=True)
+        else:
+            print(
+                f"  reach from a laptop: ssh -L {_port}:localhost:{_port} <user>@{fqdn}",
+                flush=True,
+            )
+        print(f"  mounts:  {_MOUNTS_FILE}", flush=True)
+        print(f"  state:   {_STATE_ROOT}", flush=True)
+        print(f"  shared:  {_SHARED_ROOT}", flush=True)
+        server.serve_forever()
+    finally:
+        # Serving has stopped, or never started (a port already bound): release
+        # what this function set up for the served process, so a caller that
+        # ran it in a thread gets the library defaults back rather than a
+        # module still acting as a server.
+        if _EXECUTED_SOURCE is not None:
+            _EXECUTED_SOURCE.stop()
+        _EXECUTED_SOURCE = None
+        _CHECK_REFRESH_ENABLED = False
+        _SOURCE_SNAPSHOT = None
 
 
 if __name__ == "__main__":
