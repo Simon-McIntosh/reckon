@@ -97,6 +97,7 @@ def _write_pointer(
     *,
     base_sha: str,
     manifest_path: str,
+    worktree: str | None = None,
 ) -> None:
     _write_json(
         pointer_path(run_id),
@@ -112,7 +113,7 @@ def _write_pointer(
             "manifest_path": manifest_path,
             "base_sha": base_sha,
             "suite_command": "pytest -q",
-            "worktree": str(repository),
+            "worktree": worktree if worktree is not None else str(repository),
             "node": {
                 "id": "node-a",
                 "plan": PLAN,
@@ -193,6 +194,53 @@ def test_run_with_a_commit_past_base_is_still_refused(
     moved = _add_commit_past_base(repository)
     manifest = tmp_path / "commit-past-base.md"
     _write_manifest(manifest, commits=moved)
+    _write_pointer(run_id, repository, base_sha=base_sha, manifest_path=str(manifest))
+    _stored_review(run_id)
+
+    result = _complete(run_id, repository)
+
+    assert result.exit_code != 0
+    assert "baseline_suite" in result.output
+    assert "after_suite" in result.output
+    assert pointer_path(run_id).is_file()
+
+
+def test_empty_manifest_with_a_reclaimed_worktree_is_still_refused(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A worktree that is gone proves nothing, so the pair is still required."""
+    run_id = "r-20260930T120300000000-node-a"
+    base_sha = _head_sha(repository)
+    manifest = tmp_path / "reclaimed-worktree.md"
+    _write_manifest(manifest)
+    _write_pointer(
+        run_id,
+        repository,
+        base_sha=base_sha,
+        manifest_path=str(manifest),
+        worktree=str(tmp_path / "reclaimed-worktree"),
+    )
+    _stored_review(run_id)
+
+    result = _complete(run_id, repository)
+
+    assert result.exit_code != 0
+    assert "baseline_suite" in result.output
+    assert "after_suite" in result.output
+    assert pointer_path(run_id).is_file()
+
+
+def test_empty_manifest_with_an_untracked_deliverable_is_still_refused(
+    repository: Path, tmp_path: Path
+) -> None:
+    """An untracked deliverable beside a clean head is repository work."""
+    run_id = "r-20260930T120400000000-node-a"
+    base_sha = _head_sha(repository)
+    (repository / "docs" / "plans" / "deliverable.txt").write_text(
+        "written but never staged\n"
+    )
+    manifest = tmp_path / "untracked-deliverable.md"
+    _write_manifest(manifest)
     _write_pointer(run_id, repository, base_sha=base_sha, manifest_path=str(manifest))
     _stored_review(run_id)
 

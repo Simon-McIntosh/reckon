@@ -609,19 +609,48 @@ def _manifest_declares_no_change(
     return True
 
 
+def _worktree_untracked_paths(tree: Path) -> tuple[str, ...]:
+    """The untracked repository paths a worktree holds, minus provisioned ones.
+
+    Read from ``git status --porcelain`` so a deliverable written but never
+    staged is visible: an untracked file is exactly the repository work a
+    commitless run can leave behind while its ``HEAD`` still sits on the base.
+    The provisioned ``.venv`` symlink the dispatch rule plants in every
+    worktree is not the run's work and is dropped.
+    """
+    untracked: list[str] = []
+    for line in _worktree_git_paths(
+        tree, "status", "--porcelain", "--untracked-files=normal"
+    ):
+        if not line.startswith("?? "):
+            continue
+        path = line[3:].strip().strip('"')
+        if not path:
+            continue
+        if Path(path).parts and Path(path).parts[0] in _PROVISIONED_WORKTREE_ENTRIES:
+            continue
+        untracked.append(path)
+    return tuple(untracked)
+
+
 def _worktree_unchanged_since_base(record: Mapping[str, Any]) -> bool:
-    """Whether the run's worktree still sits on its base with no tracked change.
+    """Whether the run's worktree still sits on its base with no change.
 
     The worktree half of the unchanged-run exemption, and the only measurement
-    of it: the manifest cannot be written to or spoofed by the worktree. A
-    worktree that is gone leaves the condition vacuous — there is nothing to
-    check — so the manifest declaration stands alone there. A worktree that
-    exists must have its ``HEAD`` equal to the recorded base and no tracked
-    file modified against it, staged or not.
+    of it: the manifest cannot be written to or spoofed by the worktree. The
+    exemption is a claim about a worktree that is still there to be measured,
+    so a run whose worktree directory is gone is proved nothing and the suite
+    pair is required as before. A worktree that exists must have its ``HEAD``
+    equal to the recorded base, no tracked file modified against it staged or
+    not, and no untracked path the run left behind beside the provisioned
+    symlink — an unstaged deliverable is repository work even when ``HEAD``
+    never moved.
     """
     tree = Path(str(record.get("worktree") or "")).expanduser()
     base = str(record.get("base_sha") or "").strip()
-    if not base or not tree.is_dir():
+    if not tree.is_dir():
+        return False
+    if not base:
         return True
     canonical_base = _commit_canonical_id(tree, base)
     head = _worktree_git_paths(tree, "rev-parse", "HEAD")
@@ -629,7 +658,9 @@ def _worktree_unchanged_since_base(record: Mapping[str, Any]) -> bool:
         return False
     if _commit_canonical_id(tree, head[0]) != canonical_base:
         return False
-    return not _worktree_git_paths(tree, "diff", "--name-only", "HEAD")
+    if _worktree_git_paths(tree, "diff", "--name-only", "HEAD"):
+        return False
+    return not _worktree_untracked_paths(tree)
 
 
 def _run_changed_nothing(record: Mapping[str, Any]) -> bool:
@@ -645,14 +676,14 @@ def _run_changed_nothing(record: Mapping[str, Any]) -> bool:
     manifest_present, fresh = _manifest_freshness(record)
     if not (manifest_present and fresh):
         return False
+    if not _worktree_unchanged_since_base(record):
+        return False
     manifest_text = _manifest_text(record)
     try:
         manifest = parse_manifest(manifest_text)
     except (OSError, KeyError, ValueError):
         return False
-    if not _manifest_declares_no_change(record, manifest, manifest_text):
-        return False
-    return _worktree_unchanged_since_base(record)
+    return _manifest_declares_no_change(record, manifest, manifest_text)
 
 
 def _commitless_raw_field(
