@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -166,7 +166,10 @@
     <div class="r-comment-body">Baseline figures before §1, 2026-09-24/25 on the fleet node (clu-2058), for §2's before-and-after. Registered reckon worktrees rose from 232 (19:30Z) to 287 (23:10Z), then fell to about 270 after two coordinators removed their own landed worktrees by hand. Dispatch to worker start, which is the supervisor's pre-spawn snapshot: 1:57–3:40 at 20:05Z, 9:04 for one of six simultaneous launches, 12:07 at 22:58Z. crew complete of r-20260924T224514791530-nested-launch-is-refused (s23-coord) took 3 m 44 s wall-clock at 01:49–01:53Z, measured with `time`. Two earlier attempts under a 110 s timeout were killed before promoting, where same-day S23 promotions earlier had finished well under a minute. Gate 1 is passed. §1 still waits on gate 2, the worktree fence in a-worker-cannot-write-your-home §3, which follows §2's merge. That merge is held by agreement until the suite-green-at-head session's resumes are over.</div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261001T072815636138-the-two-tree-saving-is-measured" data-who="reckon-build" data-when="2026-10-01T07:54:39.541Z">
-    <div class="r-comment-body"><p>§2 measured on real runs — five fenced runs at heads descending from 1859c0d19 each read 2 trees against a registered count of 63-85 (NOT the falsifier&#x27;s &quot;above 100&quot;: the registry fell from 312/214 to ~65 before the window), against 66-84 for four fenced runs promoted before the merge; the intermediate window (da076a65 to 1859c0d19) already read 2 trees on all 51 runs, so the saving begins at da076a65; no unfenced run exists in the after-window (0 of 301 post-merge run snapshots, 0 of 1048 ledger rows since 2026-09-27), the unfenced control being 2026-09-26 runs reading 79-92; no run read 2 trees while its plan composed no fence; promotion&#x27;s own start-to-commit time is recorded nowhere, so only the promotion-record commit time and the worker-end latency are reported</p></div>
+    <div class="r-comment-body"><p>§2 measured on real runs — five fenced runs at heads descending from 1859c0d19 each read 2 trees against a registered count of 63-85 (NOT the falsifier's "above 100": the registry fell from 312/214 to ~65 before the window), against 66-84 for four fenced runs promoted before the merge; the intermediate window (da076a65 to 1859c0d19) already read 2 trees on all 51 runs, so the saving begins at da076a65; no unfenced run exists in the after-window (0 of 301 post-merge run snapshots, 0 of 1048 ledger rows since 2026-09-27), the unfenced control being 2026-09-26 runs reading 79-92; no run read 2 trees while its plan composed no fence; promotion's own start-to-commit time is recorded nowhere, so only the promotion-record commit time and the worker-end latency are reported</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261001T075606493794-review-of-the-two-tree-saving-is-measured" data-who="reckon-build" data-when="2026-10-01T08:05:56.130Z">
+    <div class="r-comment-body"><p>Independent review of r-20261001T072815636138-the-two-tree-saving-is-measured recorded as parsed, total 88 (goal_fidelity 17, evidence 16, scope_discipline 20, durability 17, fit 18), three follow-on findings and no blocking finding: the reviewed report&#x27;s after-arm 2-tree read and the 66–92 before/unfenced counts were independently re-read from each run&#x27;s own tree-snapshot.json, and its falsifier verdict (registered count 63–85, not above 100; no unfenced after-window run) is reported honestly and stands.</p></div>
 </div>
 </section>
 </main>
