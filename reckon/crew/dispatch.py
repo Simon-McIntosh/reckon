@@ -1076,6 +1076,12 @@ class _RepositoryScopeClaim:
     derived_from: str | None = None
     binding: bool = True
     disposition_reason: str = ""
+    # When the claim was published, so two dispatches racing for the same paths
+    # can be ordered; and whether the run has passed its own admission and
+    # written the record its worker launches from. A claim still being composed
+    # carries neither, and is what the ordering rule below arbitrates.
+    registered_at: str = ""
+    launched: bool = False
 
 
 def _scope_derivation_project(
@@ -1218,6 +1224,14 @@ def _repository_scope_claims(
                     derived_from=derived_from,
                     binding=disposition.binding,
                     disposition_reason=disposition.reason,
+                    registered_at=str(pointer.get("created_at") or ""),
+                    # A run that has written the record it launches its worker
+                    # from, or whose process has started, has already passed its
+                    # own admission: the claim is no longer forming, so it
+                    # refuses newcomers as it always has. The launch claim
+                    # published before the checks carries neither, which is how
+                    # a still-composing claim is told apart.
+                    launched=bool(pointer.get("worktree") or pointer.get("pid")),
                 )
             )
     return sorted(
@@ -1240,6 +1254,7 @@ def _publish_launch_claim(
     agent: Mapping[str, Any],
     session_id: str | None,
     brief: Mapping[str, str] | None = None,
+    registered_at: str | None = None,
 ) -> None:
     """Write this run's live pointer as a claim, before its launch is composed.
 
@@ -1275,7 +1290,7 @@ def _publish_launch_claim(
         "agent": dict(agent),
         "session_id": session_id,
         "manifest_path": node.manifest_path,
-        "created_at": _utc_now(),
+        "created_at": registered_at or _utc_now(),
         "phase": "starting",
     }
     if brief is not None:
@@ -1829,6 +1844,36 @@ def _directory_claim_acceptance_line(row: Mapping[str, Any]) -> str:
     )
 
 
+def _peer_claim_is_a_later_racing_arrival(
+    claim: _RepositoryScopeClaim,
+    *,
+    own_run_id: str | None,
+    own_registered_at: str | None,
+) -> bool:
+    """Whether this dispatch outranks a peer claim that is still being composed.
+
+    Two dispatches of overlapping paths can both publish a claim before either
+    reaches its admission check, so each reads the other as a live claim and, in
+    refusing on sight, both withdraw and the paths are left with no worker. The
+    claim registered first owns the paths: a peer claim that has not launched a
+    worker and was registered after this dispatch's own is disregarded here, so
+    only that peer refuses when it checks, naming the winner. The two that can
+    interleave are ordered the same way at both of them — by registration time,
+    then by run id when the times are equal — so exactly one proceeds.
+
+    A peer that has launched its worker keeps today's refusal: it has already
+    passed its own admission and is no longer a racing arrival. A peer whose
+    registration cannot be shown to follow this one — an absent timestamp, or
+    this dispatch holding no claim of its own — is treated as established and
+    refused rather than quietly outranked.
+    """
+    if claim.launched:
+        return False
+    if not own_run_id or not own_registered_at or not claim.registered_at:
+        return False
+    return (claim.registered_at, claim.run_id) > (own_registered_at, own_run_id)
+
+
 def _raise_repository_scope_conflict(
     node: TaskNode,
     *,
@@ -1839,6 +1884,8 @@ def _raise_repository_scope_conflict(
     disregarded: list[str] | None = None,
     accept_directory_claim: bool = False,
     accepted: list[dict[str, Any]] | None = None,
+    own_run_id: str | None = None,
+    own_registered_at: str | None = None,
 ) -> None:
     candidates = _candidate_scope_entries(
         node, project=project, repo=repo, authority=authority
@@ -1868,6 +1915,15 @@ def _raise_repository_scope_conflict(
                     and claim.disposition_reason not in disregarded
                 ):
                     disregarded.append(claim.disposition_reason)
+                continue
+            if _peer_claim_is_a_later_racing_arrival(
+                claim,
+                own_run_id=own_run_id,
+                own_registered_at=own_registered_at,
+            ):
+                # A claim this dispatch registered before, still being composed:
+                # it will meet this claim and refuse when it checks, so it does
+                # not refuse this one here. See the helper for the ordering.
                 continue
             if _directory_claim_overlaps(absolute, claim.absolute_path):
                 # A directory claim is coarser than the exact file a peer holds,
@@ -4755,6 +4811,9 @@ def dispatch(
     if resolution.local:
         agent["local"] = True
     claim_published = not shadow_lineage
+    # The moment this dispatch's claim is registered, held so the admission
+    # checks below can order it against a peer still composing its own claim.
+    claim_registered_at = _utc_now() if claim_published else ""
     if claim_published:
         _publish_launch_claim(
             run_id,
@@ -4769,6 +4828,7 @@ def dispatch(
             agent=agent,
             session_id=None,
             brief=brief,
+            registered_at=claim_registered_at,
         )
     with _claim_released_on_refusal(run_id, claim_published):
         # A backend at its declared concurrency ceiling refuses a new dispatch
@@ -4854,6 +4914,8 @@ def dispatch(
                 **_directory_claim_acceptance_kwargs(
                     accept_directory_claim, accepted_directory_claims
                 ),
+                own_run_id=run_id,
+                own_registered_at=claim_registered_at,
             )
             adjacent_peers = _adjacent_live_peers(
                 node,
@@ -5335,6 +5397,8 @@ def dispatch(
                 **_directory_claim_acceptance_kwargs(
                     accept_directory_claim, accepted_directory_claims
                 ),
+                own_run_id=run_id,
+                own_registered_at=claim_registered_at,
             )
         # Publish the pointer before probing the watcher. Otherwise a watcher
         # could drain an empty fleet between the probe and this write, leaving

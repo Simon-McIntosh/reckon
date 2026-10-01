@@ -593,6 +593,8 @@ def test_the_exclusive_claim_walk_reads_every_live_claim_at_refusal(
         authority,
         claims,
         disregarded=None,
+        own_run_id=None,
+        own_registered_at=None,
     ):
         claims_walked["count"] = len(list(claims))
         return real(
@@ -602,6 +604,8 @@ def test_the_exclusive_claim_walk_reads_every_live_claim_at_refusal(
             authority=authority,
             claims=claims,
             disregarded=disregarded,
+            own_run_id=own_run_id,
+            own_registered_at=own_registered_at,
         )
 
     monkeypatch.setattr(dispatch_module, "_raise_repository_scope_conflict", wrapped)
