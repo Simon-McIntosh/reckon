@@ -15,9 +15,9 @@
   <title>A dropping tunnel on a stale server | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-status" content="done">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
+<meta name="plan-status" content="done">
 </head>
 <body>
   <main class="plan-doc">
@@ -217,8 +217,8 @@
       <tbody>
         <tr>
           <td>The server reports when it runs older code than disk</td>
-          <td>At start the server records every module of the package (stat identity and hash). <code>GET /_server</code> compares that with disk and returns the host, the pid and a one-sentence verdict. A touch that leaves the bytes alone is not drift. The shell shows the server's sentence and the restart command in a banner under the top bar, and <code>reckon service status</code> ends with <code>code: current</code>, <code>stale — …</code> or <code>unknown — nothing answered</code>. On a scratch server, changing one module after start produced the banner on the next page load.</td>
-          <td><code>f7019d73c</code>, <code>d32d59c1c</code></td>
+          <td>At start the server records the package source. It then records, on <code>sys.monitoring</code>, which functions it actually runs. <code>GET /_server</code> counts a change only when it touches a definition the server uses: a function it has run, or a constant or class those functions read, followed across the package's imports. Line shifts, comments and docstrings don't count. The first version counted every file under <code>reckon/</code>, and that afternoon it read "44 commits, 14 files changed" over changes to <code>cli.py</code> and crew dispatch code the server never runs. Replaying the same window against the definition comparison flags only the comment-reading functions in <code>_plan_html.py</code> and the configuration classes the crew view reads. The shell shows the server's sentence and the restart command in a banner under the top bar, and <code>reckon service status</code> ends with <code>code: current</code>, <code>stale — …</code> or <code>unknown — nothing answered</code>.</td>
+          <td><code>f7019d73c</code>, <code>d32d59c1c</code>, <code>6f5659c65</code></td>
         </tr>
         <tr>
           <td>Every document carries a render-contract verdict without anyone running a check</td>
