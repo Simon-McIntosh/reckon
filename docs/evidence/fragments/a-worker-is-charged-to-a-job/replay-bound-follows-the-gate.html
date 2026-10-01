@@ -1,0 +1,94 @@
+<section id="replay-bound-follows-the-gate">
+  <h2>A gate re-run's bound follows the replayed gate's recorded duration</h2>
+
+  <p><strong>What changed.</strong> <code>reckon crew verify-gate</code> no longer runs every replay
+  under a fixed 300 s bound. When the caller names none, the bound is derived from the duration the
+  run's own gate log records — with headroom, held between the 300 s default and an 1800 s ceiling —
+  and a run whose log records no duration keeps the fixed default. An explicit
+  <code>--timeout-seconds</code> is still taken as given. The recorded report and the committed row
+  name which input applied (<code>explicit</code>, <code>derived</code> or <code>default</code>), the
+  bound's value in seconds, and the recorded duration it derived from.</p>
+
+  <h3>The defect, reproduced before the repair</h3>
+
+  <p>Measured 2026-09-29 on a promoted run whose own gate log recorded <code>213 passed in
+  378.29s</code>: every verify-gate reported the integrated revision as <code>not-run</code>, because
+  the replay stopped at the 300 s constant. A gate that legitimately outran the constant could never
+  be verified as recorded; the command had to be narrowed to a single file to get any verdict at all.</p>
+
+  <p>The reproduction is the base arm: the new cases run against revision
+  <code>33c5e761</code> in a scratch copy with only the test file added. A stubbed replay whose virtual
+  duration is 330 s — above the 300 s constant, below the bound the recorded duration derives —
+  reports <code>not-run</code> there:</p>
+
+  <p><code>'integrated_verdict': 'not-run', 'reason': 'the gate did not finish within the 300s re-run
+  bound'</code> — the exact failure the derived bound removes.</p>
+
+  <h3>The repair</h3>
+
+  <ul>
+    <li><strong>Three inputs, named in the result.</strong> An explicit <code>--timeout-seconds</code>
+    wins outright. Otherwise the recorded duration from the run's own gate log, read from the path the
+    committed row cites (the copy promotion preserves under the run directory) with a fallback to the
+    preserved name beside it, derives <code>2 × duration</code> clamped into
+    <code>[300, 1800]</code> seconds. A log that is absent or carries no runner duration leaves the
+    300 s default — an unmeasured duration is not a zero.</li>
+    <li><strong>The derivation only loosens.</strong> The lower clamp is the historical constant, so
+    the change can unblock a gate the fixed bound refused and can never tighten a bound a fast gate
+    was already passing under; the ceiling stops a mis-recorded duration from mounting a bound that
+    holds a fleet slot for an hour.</li>
+    <li><strong>The bound reaches the process, and the record.</strong> The stub observes the timeout
+    the replay was actually run with, and the report carries
+    <code>replay_bound_source</code>, <code>replay_bound_seconds</code> and
+    <code>recorded_gate_seconds</code>; the committed row carries the same fields, so a reader of the
+    durable record knows which bound applied without opening the report.</li>
+  </ul>
+
+  <h3>Measured</h3>
+
+  <p>The gate is the three new cases plus <code>tests/test_verify_gate_command_option.py</code> and
+  <code>tests/test_verify_gate_replay_is_diagnosable.py</code>, run as one arm per revision, each its
+  own <code>env -C</code>-pinned interpreter on its own <code>PYTHONPATH</code>, each with a private
+  <code>--basetemp</code> and its imported <code>reckon.crew.promotion.__file__</code> printed into
+  its log:</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>baseline</td><td><code>33c5e761</code> + the new cases, scratch copy</td>
+      <td><strong>3 failed, 6 passed</strong>, exit 1 — the three new cases, the derived-bound one
+      reading <code>not-run</code> under the fixed constant</td></tr>
+      <tr><td>after</td><td><code>218eda1f</code></td><td><strong>9 passed</strong>, exit 0</td></tr>
+    </tbody>
+  </table>
+
+  <p>The stubbed duration makes the discrimination without real waiting. A run whose gate recorded
+  378.29 s is replayed under a derived bound of 756.58 s, so a stubbed replay of 330 s finishes and
+  reports <code>passed</code>; the same stub under the default is <code>not-run</code>; and
+  <code>--timeout-seconds 120</code> against the same recorded duration reports <code>explicit</code>
+  at 120 s and <code>not-run</code>, so the explicit value — not the derivation — decided it.</p>
+
+  <h3>The negative control</h3>
+
+  <p>In a scratch copy of the committed tree, the declared mutation — replace the derived replay bound
+  with the fixed 300 s — was applied inside the bound resolver, so everything else stands. The
+  derived-bound case turns red (<code>1 failed, 2 passed</code>, <code>assert 'not-run' ==
+  'passed'</code>), exit 1: the case fails on the constant and not on anything else. The red log's
+  first line repeats the mutation verbatim, the mutated helper's text is printed under it, and the log
+  ends in <code>EXIT=1</code>; it is named in the node's manifest under
+  <code>negative_control_log</code>.</p>
+
+  <h3>What is not here</h3>
+
+  <p>No real multi-minute gate is run: the replayed command's duration is stubbed, and the stub is what
+  the verdict discriminates on. The bound is derived from the run's gate log text as the record of the
+  duration, so a runner that prints no <code>in &lt;n&gt;s</code> summary keeps the default. No
+  figure: this change's measure is a set of verdicts and field values, which reads as a table. Logs
+  live under the run directory on this workstation, so a later reader opens them by path. No real
+  fleet run is replayed and no real config home is touched: each case builds a promoted row and a
+  preserved gate log in a temporary config home and asserts the real one gained nothing under this
+  run's own id.</p>
+
+  <p><strong>Commits.</strong> Implementation and cases: <code>218eda1f</code>. The landing record is
+  the commit that carries this fragment.</p>
+</section>

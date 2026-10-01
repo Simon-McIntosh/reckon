@@ -1126,6 +1126,26 @@ _PRESERVED_GATE_LOG_NAME = "gate.log"
 # two must be able to open both.
 _REPLAY_GATE_LOG_NAME = "verify-gate.log"
 
+# The bound a gate re-run runs under before it is reported as timed out. A run
+# whose own gate log records a duration was measured running the same command
+# this replay executes, so the bound that fits it is derived from that duration
+# rather than fixed: measured 2026-09-29, a gate whose log recorded 378 s was
+# replayed under the fixed 300 s bound and reported not-run on every attempt,
+# so a gate that legitimately outran the constant could not be verified at the
+# merged head at all. Headroom covers the replay running slower than the run
+# it is compared with; the ceiling caps a mis-recorded duration from mounting
+# a bound that holds a fleet slot for an hour; the floor is the historical
+# constant, so the derivation can only loosen the bound, never tighten it.
+_REPLAY_BOUND_DEFAULT_SECONDS = 300.0
+_REPLAY_BOUND_HEADROOM = 2.0
+_REPLAY_BOUND_CEILING_SECONDS = 1800.0
+
+# A test runner's own duration record ("213 passed in 378.29s (0:06:18)"): the
+# elapsed-seconds token of a summary line. Read as text and parsed on no
+# runner's schema, like the result-count marker above; the last match wins,
+# because the final summary line is the whole gate's own duration.
+_GATE_LOG_DURATION = re.compile(r"\bin (\d+(?:\.\d+)?)s\b")
+
 
 def _replay_log_header(
     *,
@@ -1518,17 +1538,77 @@ def _rewrite_worktree_roots(
     return text, tuple(rewritten)
 
 
+def _recorded_gate_seconds(
+    run_id: str, gate_check: Mapping[str, Any] | None
+) -> float | None:
+    """The duration the promoted run's own gate log records, in seconds, or None.
+
+    The log is read from the row's cited path when that resolves, and from the
+    copy promotion preserves under the run directory beside it otherwise, so a
+    run promoted on a machine that released the worktree still carries a
+    duration. A log that is absent, unreadable, or carries no runner duration
+    reports None rather than a number, and None keeps the fixed default bound:
+    an unmeasured duration is not a zero, and a zero would derive a bound no
+    gate could meet.
+    """
+    candidates: list[Path] = []
+    if isinstance(gate_check, Mapping):
+        raw = str(gate_check.get("log_path") or "").strip()
+        if raw:
+            candidates.append(Path(raw).expanduser())
+    candidates.append(run_dir(run_id) / _PRESERVED_GATE_LOG_NAME)
+    for path in candidates:
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        matches = _GATE_LOG_DURATION.findall(text)
+        if matches:
+            try:
+                return float(matches[-1])
+            except ValueError:
+                continue
+    return None
+
+
+def _replay_bound(
+    timeout_seconds: float | None,
+    recorded_gate_seconds: float | None,
+) -> tuple[float, str]:
+    """The bound a re-run executes under, and which input set it.
+
+    An explicit timeout is taken as given: a caller who names a bound has
+    judged the gate for itself. Otherwise a recorded gate duration derives one
+    with headroom, held between the historical default and the ceiling, and a
+    run whose log records no duration keeps the default. The source is
+    returned beside the value so the recorded report can say which of the
+    three applied: a bound a reader cannot trace to an input is a number they
+    cannot act on when a replay times out.
+    """
+    if timeout_seconds is not None:
+        return float(timeout_seconds), "explicit"
+    if recorded_gate_seconds is not None and recorded_gate_seconds > 0:
+        derived = recorded_gate_seconds * _REPLAY_BOUND_HEADROOM
+        clamped = min(
+            max(derived, _REPLAY_BOUND_DEFAULT_SECONDS),
+            _REPLAY_BOUND_CEILING_SECONDS,
+        )
+        return clamped, "derived"
+    return _REPLAY_BOUND_DEFAULT_SECONDS, "default"
+
+
 def rerun_gate_at_integrated_revision(
     *,
     repository: Path,
     gate_check: Mapping[str, Any] | None,
     base_verdict: str = "passed",
     integrated_revision: str = "HEAD",
-    timeout_seconds: float = 300.0,
+    timeout_seconds: float | None = None,
     command: str | None = None,
     changed_paths: Sequence[str] | None = None,
     worktree_roots: Sequence[str | Path] = (),
     replay_log_path: str | Path | None = None,
+    recorded_gate_seconds: float | None = None,
 ) -> dict[str, Any]:
     """Re-run one gate against the tree that ships, and compare its verdict.
 
@@ -1556,6 +1636,15 @@ def rerun_gate_at_integrated_revision(
     A gate that did not run, or did not finish within the bound, is reported
     as ``not-run`` with its reason, never as passed: an unmeasured re-run must
     not read as a verified one.
+
+    The bound the re-run executes under resolves from three inputs, and the
+    report names which applied and its value: an explicit ``timeout_seconds``
+    as given (``explicit``); otherwise the duration in
+    ``recorded_gate_seconds``, the run's own gate log read by the caller, with
+    headroom and held between the historical default and a ceiling
+    (``derived``); otherwise the historical default (``default``). A run whose
+    gate legitimately took longer than the default is therefore replayed
+    under a bound that fits it rather than reported ``not-run`` forever.
 
     An explicit ``command`` is run in place of the run's stored gate command,
     so a caller can measure a wider suite — a whole-repository one — than the
@@ -1589,6 +1678,7 @@ def rerun_gate_at_integrated_revision(
             "the run already recorded, which this re-run is compared against"
         )
     stored_command = str((gate_check or {}).get("command") or "").strip()
+    bound_seconds, bound_source = _replay_bound(timeout_seconds, recorded_gate_seconds)
     supplied = str(command or "").strip()
     command = supplied or stored_command
     command_source = "option" if supplied else ("stored" if stored_command else None)
@@ -1616,6 +1706,9 @@ def rerun_gate_at_integrated_revision(
         "changed_paths_differing": list(differing) if differing is not None else None,
         "gate_command": command or None,
         "gate_command_source": command_source,
+        "replay_bound_source": bound_source,
+        "replay_bound_seconds": bound_seconds,
+        "recorded_gate_seconds": recorded_gate_seconds,
         "ran": False,
         "exit_status": None,
         "timed_out": False,
@@ -1693,7 +1786,7 @@ def rerun_gate_at_integrated_revision(
                 stderr=subprocess.STDOUT,
                 text=True,
                 check=False,
-                timeout=timeout_seconds,
+                timeout=bound_seconds,
             )
         except subprocess.TimeoutExpired as expired:
             report.update(ran=True, timed_out=True)
@@ -1722,8 +1815,14 @@ def rerun_gate_at_integrated_revision(
     if reason is not None:
         report["reason"] = reason
     elif report["timed_out"]:
+        bound_origin = {
+            "explicit": "named by the caller",
+            "derived": "derived from the run's recorded gate duration",
+            "default": "the default, as no gate duration is recorded",
+        }[bound_source]
         report["reason"] = (
-            f"the gate did not finish within the {timeout_seconds:g}s re-run bound"
+            f"the gate did not finish within the {bound_seconds:g}s re-run "
+            f"bound ({bound_origin})"
         )
     report["finding"] = _merged_gate_finding(
         report["base_verdict"],
@@ -1744,7 +1843,7 @@ def record_gate_rerun_at_integrated_revision(
     run_id: str,
     repository: Path,
     integrated_revision: str = "HEAD",
-    timeout_seconds: float = 300.0,
+    timeout_seconds: float | None = None,
     root: str | Path | None = None,
     command: str | None = None,
 ) -> dict[str, Any]:
@@ -1764,7 +1863,11 @@ def record_gate_rerun_at_integrated_revision(
     re-run, so a coordinator can measure a suite wider than the node's own
     gate — or measure a run that stored no gate command at all — against the
     merged head. The report records which command ran and whether it came from
-    the option or the stored row. A stored command that pins the worker's
+    the option or the stored row. An omitted ``timeout_seconds`` derives the
+    re-run bound from the duration the run's own gate log records, so a gate
+    that legitimately ran longer than the fixed default is replayed under a
+    bound that fits it; an explicit value is taken as given. Either way the
+    report records which bound applied and its value. A stored command that pins the worker's
     released worktree has that root rewritten to the checkout being replayed,
     so a gate that ran correctly in its worker's tree is not recorded as
     failing here because the directory it named is gone. The re-run's captured
@@ -1795,6 +1898,10 @@ def record_gate_rerun_at_integrated_revision(
             f"{run_id}` to promote it first, then rerun this"
         )
     stored_gate_check = row.get("gate_check")
+    recorded_gate_seconds = _recorded_gate_seconds(
+        run_id,
+        stored_gate_check if isinstance(stored_gate_check, Mapping) else None,
+    )
     report = rerun_gate_at_integrated_revision(
         repository=checkout,
         gate_check=stored_gate_check if isinstance(stored_gate_check, Mapping) else None,
@@ -1805,6 +1912,7 @@ def record_gate_rerun_at_integrated_revision(
         changed_paths=_cited_changed_paths(checkout, row.get("commits")),
         worktree_roots=_recorded_worktree_roots(row),
         replay_log_path=run_dir(run_id) / _REPLAY_GATE_LOG_NAME,
+        recorded_gate_seconds=recorded_gate_seconds,
     )
     record_path = ledger.run_path(project, run_id, ledger_root)
     if record_path.is_file():
