@@ -236,18 +236,18 @@ def test_a_document_naming_its_generating_count_under_the_alias_is_read(
 def test_the_document_reader_returns_the_counts_the_payload_carries(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """One owner: the carried counts are exactly what the reader resolved.
+    """One owner, and the fixture's own statement as the expectation.
 
     Every document this file's fixtures publish is dispatched and then read a
     second time, straight from the bytes on disk, through the lane-document
-    reader. The payload must carry the reader's own answer -- an omitted count
-    arriving as unknown rather than as a zero among them -- because a second
-    reading of the document's key names growing back inside the dispatch would
-    otherwise answer one question twice and disagree the first time a name
-    moved.
+    reader. Each side is compared against the counts the fixture itself
+    states rather than against the other side: a comparison of the payload
+    with a second reading of the same document resolves to itself, so a
+    regression inside the reader moves both sides and the case stays green.
+    An omitted count must arrive as unknown on both sides, never as a zero.
     """
     config_home = dispatch_repo.parent / "config"
-    for index, document in enumerate(_fixture_documents()):
+    for index, (document, expected) in enumerate(_fixture_documents()):
         lane_path = _write_lane_document(config_home, **document)
         payload, result = _invoke(
             dispatch_repo,
@@ -260,62 +260,142 @@ def test_the_document_reader_returns_the_counts_the_payload_carries(
         reading = payload["lane_reading"]
         assert reading["state"] == "fresh", document
         written = json.loads(lane_path.read_text(encoding="utf-8"))
-        assert lane_document_module.read_lane_counts(written) == {
+        assert lane_document_module.read_lane_counts(written) == expected, document
+        assert {
             "generating": reading["generating"],
             "waiting": reading["waiting"],
-        }, document
+        } == expected, document
 
 
-def _fixture_documents() -> list[dict]:
-    """The lane documents this file's fixtures write, rebuilt for a direct read.
+def test_the_dispatch_carries_what_the_document_readers_resolved(
+    dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The dispatch spells no document key: the readers' answers ride through.
+
+    Both halves of the carried reading -- the two counts and the stamped
+    figures beside them -- are composed from what the lane-document readers
+    resolved. A sentinel returned by a reader arrives in the payload
+    unchanged -- the stamp included -- which is what a dispatch holding a
+    second reading of the document's own keys could not do.
+    """
+    config_home = dispatch_repo.parent / "config"
+    lane_path = _write_lane_document(
+        config_home,
+        running=GENERATING,
+        waiting=WAITING,
+        headroom=4.0,
+        mean_context=120000.0,
+        observed_at=_stamp(5),
+    )
+    sentinel_stamp = _stamp(23)
+    sentinel_counts = {"generating": GENERATING + 100, "waiting": WAITING + 100}
+    sentinel_fields = {
+        "detail": "",
+        "observed_at": sentinel_stamp,
+        "mean_context": MEAN_TOKENS_PER_SECOND,
+        "binding_observed": "sentinel binding",
+        "shelf_life_seconds": 600.0,
+    }
+    monkeypatch.setattr(
+        lane_document_module,
+        "read_lane_counts",
+        lambda *_a, **_k: dict(sentinel_counts),
+    )
+    monkeypatch.setattr(
+        lane_document_module,
+        "read_lane_reading_fields",
+        lambda *_a, **_k: dict(sentinel_fields),
+    )
+
+    payload, result = _invoke(
+        dispatch_repo,
+        monkeypatch,
+        node="carries-what-the-readers-resolved",
+        lane_document=lane_path,
+    )
+
+    assert result.exit_code == 0
+    reading = payload["lane_reading"]
+    assert reading["generating"] == sentinel_counts["generating"]
+    assert reading["waiting"] == sentinel_counts["waiting"]
+    assert reading["observed_at"] == sentinel_stamp
+    assert reading["mean_context"] == MEAN_TOKENS_PER_SECOND
+    assert reading["binding_observed"] == "sentinel binding"
+    assert reading["suggested_shelf_life_seconds"] == 600.0
+    # The reading is dated by the stamp the reader returned, not the document's
+    # own: the document publishes a stamp 5 seconds old and the sentinel's is
+    # 23, so only the reader's answer gives the second.
+    assert 20 <= reading["age_seconds"] <= 120
+
+
+def _fixture_documents() -> list[tuple[dict, dict]]:
+    """The lane documents this file's fixtures write, with the counts each states.
+
+    The expected counts sit beside each document as literals rather than being
+    read back out of it, so both the payload and the reader's own answer are
+    held against the fixture's statement: a reader regression that moved both
+    sides would otherwise resolve to itself and could not fail.
 
     Stamped on each call: a reading's own age decides whether it is carried at
     all, so a document written once could not be dispatched twice.
     """
     return [
         # Both counts, and a rate carrying the window it was measured over.
-        {
-            "running": GENERATING,
-            "waiting": WAITING,
-            "headroom": 4.0,
-            "mean_context": 120000.0,
-            "observed_at": _stamp(10),
-            "throughput": {
-                "mean_tokens_per_second": MEAN_TOKENS_PER_SECOND,
-                "aggregate_tokens_per_second": AGGREGATE_TOKENS_PER_SECOND,
-                "runs": RUNS,
-                "observed_at": _stamp(90),
+        (
+            {
+                "running": GENERATING,
+                "waiting": WAITING,
+                "headroom": 4.0,
+                "mean_context": 120000.0,
+                "observed_at": _stamp(10),
+                "throughput": {
+                    "mean_tokens_per_second": MEAN_TOKENS_PER_SECOND,
+                    "aggregate_tokens_per_second": AGGREGATE_TOKENS_PER_SECOND,
+                    "runs": RUNS,
+                    "observed_at": _stamp(90),
+                },
             },
-        },
+            {"generating": GENERATING, "waiting": WAITING},
+        ),
         # A document publishing one count and omitting the other, and stating
-        # no rate at all.
-        {
-            "running": GENERATING,
-            "headroom": 4.0,
-            "mean_context": 120000.0,
-            "observed_at": _stamp(5),
-        },
+        # no rate at all: the absent count is unknown, never a measured zero.
+        (
+            {
+                "running": GENERATING,
+                "headroom": 4.0,
+                "mean_context": 120000.0,
+                "observed_at": _stamp(5),
+            },
+            {"generating": GENERATING, "waiting": "unknown"},
+        ),
         # A rate carrying no window of its own, dated by the reading that
         # carries it.
-        {
-            "running": GENERATING,
-            "waiting": WAITING,
-            "headroom": 4.0,
-            "mean_context": 120000.0,
-            "observed_at": _stamp(20),
-            "throughput": {
-                "mean_tokens_per_second": MEAN_TOKENS_PER_SECOND,
-                "aggregate_tokens_per_second": AGGREGATE_TOKENS_PER_SECOND,
-                "runs": RUNS,
+        (
+            {
+                "running": GENERATING,
+                "waiting": WAITING,
+                "headroom": 4.0,
+                "mean_context": 120000.0,
+                "observed_at": _stamp(20),
+                "throughput": {
+                    "mean_tokens_per_second": MEAN_TOKENS_PER_SECOND,
+                    "aggregate_tokens_per_second": AGGREGATE_TOKENS_PER_SECOND,
+                    "runs": RUNS,
+                },
             },
-        },
-        # The count under its other name, with the current name present too.
-        {
-            "generating": ALIAS_GENERATING,
-            "running": RENAMED_GENERATING,
-            "waiting": WAITING,
-            "headroom": 4.0,
-            "mean_context": 120000.0,
-            "observed_at": _stamp(5),
-        },
+            {"generating": GENERATING, "waiting": WAITING},
+        ),
+        # The count under its other name, with the current name present too:
+        # the name that states the population directly wins over the fallback.
+        (
+            {
+                "generating": ALIAS_GENERATING,
+                "running": RENAMED_GENERATING,
+                "waiting": WAITING,
+                "headroom": 4.0,
+                "mean_context": 120000.0,
+                "observed_at": _stamp(5),
+            },
+            {"generating": ALIAS_GENERATING, "waiting": WAITING},
+        ),
     ]

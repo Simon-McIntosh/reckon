@@ -47,10 +47,11 @@ to publish as its own, so it stays ``unknown`` here.
 
 The document's load and its achieved rate are read here too, so a key the
 document carries has one reader rather than one per caller: ``read_lane_counts``
-resolves the generating and waiting populations a routing decision weighs, and
-``read_lane_throughput`` reads the block describing the rate the generating
-population achieved, with the vintage and the denominator that make a derived
-figure interpretable.
+resolves the generating and waiting populations a routing decision weighs,
+``read_lane_reading_fields`` resolves the stamp a reading is dated by and the
+figures published beside it, and ``read_lane_throughput`` reads the block
+describing the rate the generating population achieved, with the vintage and
+the denominator that make a derived figure interpretable.
 """
 
 from __future__ import annotations
@@ -415,6 +416,65 @@ def read_lane_counts(document: object) -> dict[str, Any]:
     return {
         "generating": _resolved_count(document, _GENERATING_KEYS),
         "waiting": _resolved_count(document, _WAITING_KEYS),
+    }
+
+
+# The document's name for the constraint it observed binding. Read here so a
+# caller carrying the reading holds no spelling of the document's keys: the
+# stamp, the mean context and the shelf life are resolved by the reader below.
+_BINDING_KEY = "binding_observed"
+
+
+def _unresolved_reading(detail: str) -> dict[str, Any]:
+    """The reading fields when the document carries no stamp to date them by."""
+    return {
+        "detail": detail,
+        "observed_at": None,
+        "mean_context": None,
+        "binding_observed": None,
+        "shelf_life_seconds": None,
+    }
+
+
+def read_lane_reading_fields(document: object) -> dict[str, Any]:
+    """Resolve the stamp a reading carries and the figures published beside it.
+
+    A lane reading names the instant it was taken and the figures it observed:
+    the mean context it spends per request, the constraint it observed
+    binding, and the shelf life it claims for its own figures. This reads
+    those four under the document's own key names, so a caller carrying them
+    holds no spelling of them -- a caller that spelled these keys itself would
+    be the duplicate reader this module exists to remove.
+
+    The stamp is returned as the document published it. A document carrying no
+    string there resolves to ``observed_at: None`` with a non-empty
+    ``detail``, because nothing in the document can date the reading; how the
+    stamp is then read is the caller's contract, since this resolves the
+    document's names rather than deciding what a date may look like. The
+    figures degrade one at a time and each is reported as the document
+    published it: ``mean_context`` as a number, ``binding_observed`` as
+    published (null or a blank string withholds this field alone), and
+    ``suggested_shelf_life_seconds`` as a number. A document that is not an
+    object resolves as a reading carrying no stamp. The function never raises.
+    """
+    if not isinstance(document, Mapping):
+        return _unresolved_reading(
+            "lane document carries no parseable 'observed_at' timestamp"
+        )
+    stamp = document.get("observed_at")
+    if not isinstance(stamp, str):
+        return _unresolved_reading(
+            "lane document carries no parseable 'observed_at' timestamp"
+        )
+    binding = document.get(_BINDING_KEY)
+    if isinstance(binding, str) and not binding.strip():
+        binding = None
+    return {
+        "detail": "",
+        "observed_at": stamp,
+        "mean_context": _number(document.get("mean_context")),
+        "binding_observed": binding,
+        "shelf_life_seconds": _number(document.get(SHELF_LIFE_KEY)),
     }
 
 
