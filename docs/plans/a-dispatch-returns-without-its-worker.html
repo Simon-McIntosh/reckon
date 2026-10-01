@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-10-01">
-  <meta name="plan-version" content="132">
+  <meta name="plan-version" content="133">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -1158,7 +1158,10 @@
     <div class="r-comment-body"><p>the review of r-20261001T125521658166-a-stop-inside-the-spawn-window-spawns-nothing is stored at both granted paths scoring 19/18/20/19/19 (total 95); it verifies the fix's three residuals against 89 lines of source and 399 of test, reproduces the gate at head (8 passed EXIT=0) and the core guard's falsification, and records two follow-on findings</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261001T125456379093-the-supervisor-starts-without-a-runpy-warning" data-who="reckon-build" data-when="2026-10-01T13:13:19.827Z">
-    <div class="r-comment-body"><p>The per-run supervisor now launches through the new entry module reckon/crew/supervisor_main.py, which no reckon module imports, so the launch vector no longer re-executes an already-imported module and the supervisor&#x27;s stderr log is empty (212-byte runpy RuntimeWarning before, 0 bytes after); the gate&#x27;s 27 tests across the five supervisor-vector files pass at d65b8da6.</p></div>
+    <div class="r-comment-body"><p>The per-run supervisor now launches through the new entry module reckon/crew/supervisor_main.py, which no reckon module imports, so the launch vector no longer re-executes an already-imported module and the supervisor's stderr log is empty (212-byte runpy RuntimeWarning before, 0 bytes after); the gate's 27 tests across the five supervisor-vector files pass at d65b8da6.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261001T125521658166-a-stop-inside-the-spawn-window-spawns-nothing" data-who="reckon-build" data-when="2026-10-01T13:28:25.686Z">
+    <div class="r-comment-body"><p>safeguard — the supervisor blocks SIGTERM/SIGHUP with pthread_sigmask across the stop read and the fork, re-reads the stop under the mask (a blocked stop shows as pending) and clears the mask after, so a stop inside that window spawns no worker; gate 8 passed EXIT=0; removing the re-check reddens case 1, recording a plain exit reddens case 2</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260923T131048752851-refusal-leaves-no-trace" data-who="reckon-ship" data-when="2026-09-23T14:39:02.322Z">
     <div class="r-comment-body"><p>every refusal after worktree creation begins is shown to leave no pointer, worktree or watch row; two paths that did were repaired (merged 4248cbaf); review 94: the record counts the watcher-required refusal as in the tested set although it raises before worktree creation, the evidence table has three pre-pointer rows not four, and the gate log header names the base revision; correction appended to the landed record, gate re-verified at merged main</p></div>
