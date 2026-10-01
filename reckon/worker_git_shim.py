@@ -46,6 +46,22 @@ A probe that cannot resolve the run's own git dir refuses, because the safe
 direction is to leave the repository alone: the guard exists to stop a write
 that would otherwise have happened, and refusing a command that turns out
 harmless is visible and recoverable where an allowed write is not.
+
+A worker's own throwaway repository is a third case, distinct from the run's
+worktree and from a foreign checkout. A test fixture, a scratch clone, an
+imported corpus — each `git init`s under the run's own scratch directory, which
+promotion and discard remove with the run. A guard that refuses those makes
+every test-running worker switch it off, and the bypass then sits in recorded
+gate commands; a guard switched off by every worker that runs tests has stopped
+guarding. So an invocation whose repository lies entirely inside the run's
+scratch directory is admitted. "Entirely" is decided on the facts git reports:
+the absolute git dir must be inside, the common dir must be inside (a linked
+worktree keeps its refs and objects in the common dir, which can lie in another
+checkout), and the work-tree top level, when there is one, must be inside — a
+``--work-tree`` pointing elsewhere is the write the guard exists to stop. A
+verb that creates a repository (``init``, ``clone``) resolves to no repository
+yet, so it is admitted on the directory it runs in instead, and only when that
+directory and any path argument it names lie inside the scratch directory.
 """
 
 from __future__ import annotations
@@ -221,6 +237,13 @@ _VALUE_OPTIONS = frozenset(
 # left in a worker's environment would otherwise make the probe report the same
 # foreign repository the invocation names, and the comparison would agree.
 _DROPPED_PREFIX = "GIT_"
+
+# The mutating verbs that create a repository rather than change one, so they
+# resolve to no repository before and cannot be decided by where one resolves.
+# Every other verb that resolves to nothing is refused: a verb that writes
+# without naming a repository (`config --global`) is not creating one, and the
+# scratch admission must not become a route to the operator's own files.
+_CREATING_VERBS = frozenset({"init", "clone"})
 
 
 def worker_shim_directory() -> Path:
@@ -445,6 +468,124 @@ def _probe(
     return git_dir, toplevel
 
 
+def _probe_common_dir(
+    git: str, prefix: Sequence[str], *, environ: Mapping[str, str], cwd: str | None
+) -> str | None:
+    """The absolute common git dir of the repository ``prefix`` resolves to.
+
+    A linked worktree keeps its refs, objects and configuration in the common
+    dir, and reports a separate git dir beneath it; the two agree for a normal
+    repository. Asking git for the common dir under the caller's own environment
+    and working directory is what catches a repository whose git dir sits inside
+    the scratch directory while its refs live in another checkout — a
+    ``GIT_COMMON_DIR`` override, or a worktree the run did not create.
+    ``--path-format=absolute`` must precede ``--git-common-dir`` for git to
+    apply it to that query.
+    """
+    try:
+        completed = subprocess.run(
+            [git, *prefix, "rev-parse", "--path-format=absolute", "--git-common-dir"],
+            env=dict(environ),
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    for line in completed.stdout.splitlines():
+        if line.strip():
+            return line.strip()
+    return None
+
+
+def _invocation_directory(prefix: Sequence[str], cwd: str | None) -> str:
+    """The directory a ``-C``-adjusted invocation resolves from.
+
+    A ``-C`` changes the directory git discovers a repository from, and more
+    than one accumulates; every other global option this module's splitter keeps
+    in the prefix leaves the working directory alone. The resolve is what a
+    verb that names no repository yet (``init``, ``clone``) is judged on.
+    """
+    base = Path(cwd) if cwd else Path.cwd()
+    index = 0
+    while index < len(prefix):
+        if prefix[index] == "-C" and index + 1 < len(prefix):
+            value = prefix[index + 1]
+            base = Path(value) if os.path.isabs(value) else base / value
+            index += 2
+            continue
+        index += 1
+    return str(base)
+
+
+def _run_scratch_dir(run_id: str) -> Path | None:
+    """The scratch directory one run owns, or None when it cannot be resolved.
+
+    The path comes from the same helper dispatch uses to create and to remove
+    it, so the directory the shim admits writes under is the one promotion and
+    discard take away with the run; a second spelling of the root here would
+    admit a directory nothing removes.
+    """
+    from reckon.crew.dispatch import worker_scratch_dir
+
+    try:
+        return Path(worker_scratch_dir(run_id))
+    except (OSError, ValueError):
+        return None
+
+
+def _admits_scratch(
+    git: str,
+    prefix: Sequence[str],
+    verb: str,
+    tail: Sequence[str],
+    *,
+    run_id: str,
+    environ: Mapping[str, str],
+    cwd: str | None,
+    invocation_git_dir: str | None,
+    invocation_toplevel: str | None,
+) -> bool:
+    """Whether the invocation lies entirely inside the run's scratch directory.
+
+    A repository a run created for a fixture or a scratch clone is not the run's
+    worktree, so the worktree comparison refuses it; this is the separate case
+    that admits it. Every fact is git's own report. For a repository that
+    resolves: the git dir and the common dir must both be inside, and a work
+    tree, when there is one, must be inside too, because ``--git-dir`` naming a
+    scratch repository with ``--work-tree`` naming another directory writes that
+    directory. For a verb that resolves to no repository yet, the directory the
+    invocation runs from and any path it names must be inside, and only for a
+    verb that creates a repository — anything else reaching here writes without
+    a repository to bound it.
+    """
+    scratch = _run_scratch_dir(run_id)
+    if scratch is None:
+        return False
+    if invocation_git_dir is None:
+        if verb not in _CREATING_VERBS:
+            return False
+        invocation_dir = _invocation_directory(prefix, cwd)
+        if not _within(invocation_dir, scratch):
+            return False
+        for token in tail:
+            if token.startswith("-"):
+                continue
+            target = (
+                token if os.path.isabs(token) else os.path.join(invocation_dir, token)
+            )
+            if not _within(target, scratch):
+                return False
+        return True
+    if not _within(invocation_git_dir, scratch):
+        return False
+    if invocation_toplevel is not None and not _within(invocation_toplevel, scratch):
+        return False
+    common = _probe_common_dir(git, prefix, environ=environ, cwd=cwd)
+    return _within(common, scratch)
+
+
 def _run_git_dir(git: str, worktree: Path, *, environ: Mapping[str, str]) -> str | None:
     """The absolute git dir of the run's worktree, or None when unreadable.
 
@@ -654,6 +795,18 @@ def main(
 
     worktree_git_dir = _run_git_dir(found, worktree, environ=env)
     invocation_git_dir, toplevel = _probe(found, prefix, environ=env, cwd=cwd)
+    if _admits_scratch(
+        found,
+        prefix,
+        guarded,
+        tail,
+        run_id=run_id,
+        environ=env,
+        cwd=cwd,
+        invocation_git_dir=invocation_git_dir,
+        invocation_toplevel=toplevel,
+    ):
+        return _forward(found, argv, environ=env)
     if not refuses(
         run_id=run_id,
         verb=subject,
