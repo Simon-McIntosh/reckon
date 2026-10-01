@@ -37,11 +37,34 @@ import pytest
 
 from reckon import crew
 from reckon._backends import LaunchPlan
+from reckon.host import HostFacts
+from reckon.nested_launch import shim_directory
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 PROJECT = "proj"
 RESOLVED_EXECUTABLE = "/opt/backends/bin/codex"
+
+
+def _inside_allocation() -> HostFacts:
+    """The host contract a placed launch resolves its scheduler under.
+
+    Inside an allocation the launch's own search path carries the scheduler
+    shims ahead of the inherited PATH, so a declared scheduler resolves to the
+    shim rather than the real client. Pinning the fact keeps the placement
+    reading the same on a login node and on a compute node.
+    """
+    return HostFacts(
+        in_allocation=True,
+        job_id="1277272",
+        step_id="batch",
+        node="98dci4-clu-2018",
+        tmp_filesystem="xfs",
+        home_filesystem="gpfs",
+        tmp_is_node_local=True,
+        sources={},
+    )
+
 
 # A path on shared storage that certainly exists: this test module's directory.
 VISIBLE_PATH = str(Path(__file__).resolve().parent)
@@ -193,7 +216,7 @@ def answering_endpoint() -> Iterator[str]:
 
 
 def test_adding_a_backend_needs_no_placement_code(
-    config_home: Path, repository: Path
+    config_home: Path, repository: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The wrap and the refusal follow the resolved backend's own declaration.
 
@@ -203,14 +226,21 @@ def test_adding_a_backend_needs_no_placement_code(
     resolved to. Neither behaviour is keyed on which lane the backend is, which
     is what makes adding an externally served backend a configuration change.
     """
-    for name in [LOCAL_LANE, *PLACED_LANES]:
-        placement = _placement(options=[f"--partition={name}-pool"])
-        wrapped = dispatch_module.apply_backend_placement(
-            _launch_plan(), _backend(placement)
-        )
-        # The argv is carried through behind this backend's own declared prefix.
-        assert wrapped.argv[:2] == ["/usr/bin/srun", f"--partition={name}-pool"]
-        assert wrapped.argv[2:] == _launch_plan().argv
+    with monkeypatch.context() as scoped:
+        scoped.setattr(dispatch_module, "_current_host_facts", _inside_allocation)
+        for name in [LOCAL_LANE, *PLACED_LANES]:
+            placement = _placement(options=[f"--partition={name}-pool"])
+            wrapped = dispatch_module.apply_backend_placement(
+                _launch_plan(), _backend(placement)
+            )
+            # The argv is carried through behind this backend's own declared
+            # prefix, whose scheduler head is the shim the launch's search path
+            # resolves first inside an allocation.
+            assert wrapped.argv[:2] == [
+                str(shim_directory() / "srun"),
+                f"--partition={name}-pool",
+            ]
+            assert wrapped.argv[2:] == _launch_plan().argv
 
     missing = str(Path(config_home) / "absent-storage" / "worktrees")
     for name in [LOCAL_LANE, *PLACED_LANES]:

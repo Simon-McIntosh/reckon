@@ -19,10 +19,32 @@ import pytest
 
 from reckon import flight
 from reckon._backends import LaunchPlan
+from reckon.host import HostFacts
+from reckon.nested_launch import shim_directory
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 RESOLVED_EXECUTABLE = "/opt/backends/bin/codex"
+
+
+def _inside_allocation() -> HostFacts:
+    """The host contract a worker launched on compute resolves under.
+
+    Inside an allocation the launch's own search path carries the scheduler
+    shims ahead of the inherited PATH, so the declared scheduler resolves to
+    the shim rather than the real client. Pinning the fact keeps this module's
+    reading the same on a login node and on a compute node.
+    """
+    return HostFacts(
+        in_allocation=True,
+        job_id="1277272",
+        step_id="batch",
+        node="98dci4-clu-2018",
+        tmp_filesystem="xfs",
+        home_filesystem="gpfs",
+        tmp_is_node_local=True,
+        sources={},
+    )
 
 
 def _plan(argv: list[str] | None = None, environment: dict | None = None) -> LaunchPlan:
@@ -46,11 +68,18 @@ def _placed(**placement) -> dict:
     }
 
 
-def test_a_declared_placement_prefixes_the_resolved_launch() -> None:
+def test_a_declared_placement_prefixes_the_resolved_launch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(dispatch_module, "_current_host_facts", _inside_allocation)
     backend = _placed(options=["--partition=all", "--job-name=node"])
     plan = dispatch_module.apply_backend_placement(_plan(), backend)
 
-    assert plan.argv[:3] == ["/usr/bin/srun", "--partition=all", "--job-name=node"]
+    assert plan.argv[:3] == [
+        str(shim_directory() / "srun"),
+        "--partition=all",
+        "--job-name=node",
+    ]
     assert plan.argv[3:] == [RESOLVED_EXECUTABLE, "exec", "--task", "t"]
     # The resolved executable is what runs, so the launch is not downgraded to a
     # bare name that only resolves on the compute node's PATH.
@@ -80,18 +109,21 @@ def test_a_backend_declaring_no_placement_launches_as_before() -> None:
     assert unchanged == before
 
 
-def test_an_unresolvable_scheduler_is_refused_before_launch() -> None:
+def test_an_unresolvable_scheduler_is_refused_before_launch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(dispatch_module, "_current_host_facts", _inside_allocation)
     backend = {
         "launch": "cli",
         "command": "codex",
-        "placement": {"scheduler": "srun", "options": ["--partition=all"]},
+        "placement": {"scheduler": "srun-absent", "options": ["--partition=all"]},
     }
     plan = _plan(environment={"PATH": "/nonexistent-scheduler-bin"})
     with pytest.raises(dispatch_module.LaunchResolutionError) as refused:
         dispatch_module.apply_backend_placement(plan, backend)
 
     message = str(refused.value)
-    assert "srun" in message
+    assert "srun-absent" in message
     assert "/nonexistent-scheduler-bin" in message
     assert "nothing has been launched" in message
 
