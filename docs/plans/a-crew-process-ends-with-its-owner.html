@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="107">
+<meta name="plan-version" content="108">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -1292,6 +1292,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261001T062920607606-a-run-can-always-be-reconciled" data-who="reckon-build" data-when="2026-10-01T07:08:59.799Z">
     <div class="r-comment-body"><p>crew complete is an idempotent reconcile — a pointerless run rebuilds its record from the run directory and promotes, an existing row retires its pointer without a duplicate, a boundary check with no surviving worktree takes one acknowledgement, a passing run defaults its gate flags and commits to the manifest, and a stored landing comment is matched by unescaped text so an apostrophe narrative re-promotes; the new gate tests/test_a_run_can_always_be_reconciled.py covers all five cases (5 passed).</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261001T070936900606-review-of-a-run-can-always-be-reconciled" data-who="reckon-build" data-when="2026-10-01T07:19:16.634Z">
+    <div class="r-comment-body"><p>Independent review of r-20261001T062920607606-a-run-can-always-be-reconciled (head b4233a9cb, base d32d59c1c): the §10 reconcile change is sound and the four done-when cases plus the apostrophe closure are each guarded by a test that fails on regression; stored total 94 over five dimensions, added_failure_count 0, three follow-on findings.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
