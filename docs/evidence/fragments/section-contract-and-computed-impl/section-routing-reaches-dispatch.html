@@ -75,13 +75,15 @@ E       AssertionError: assert 'section-lane' == 'raised-lane'
   site in a scratch copy of the head — is <strong>3 failed, 1 passed, EXIT=1</strong>
   (<code>logs/negative-control.log</code>) with the raise case failing on
   <code>assert 'section-lane' == 'raised-lane'</code>.</p>
-  <p>Regression check beyond the gate: the crew dispatch files
-  (<code>test_crew.py</code>, <code>test_crew_dryrun.py</code>, <code>test_crew_mounted_paths.py</code>,
-  <code>test_crew_dispatch_guard.py</code>, <code>test_dry_run_reaches_admission.py</code>,
-  <code>test_plan_review_gate.py</code>, <code>test_brief_plan_exclusivity.py</code>) were still
-  running when this record was written — the class of test that would catch the wiring changing a node
-  without a raise. Its log is <code>logs/head-dispatch-regression.log</code> and its result is recorded
-  in the run manifest.</p>
+  <p>A wider crew-dispatch regression set (<code>test_crew.py</code>, <code>test_crew_dryrun.py</code>,
+  <code>test_crew_mounted_paths.py</code>, <code>test_crew_dispatch_guard.py</code>,
+  <code>test_dry_run_reaches_admission.py</code>, <code>test_plan_review_gate.py</code>,
+  <code>test_brief_plan_exclusivity.py</code>) was attempted as a second read of the wiring and is
+  <strong>unmeasured</strong>: its basetemp was deleted mid-run by the operator's own scratch
+  cleanup, so every failure and error in the log it left (1 failed, 170 passed, 84 errors,
+  <code>logs/head-dispatch-regression-invalidated.log</code>) is a
+  <code>FileNotFoundError</code> naming that deleted path rather than a code verdict. It is
+  reported here as unrun, not as passed or failed, and the set is a re-run for the coordinator.</p>
   <p>Lint delta over the changed Python paths: <code>ruff check</code> and
   <code>ruff format --check</code> report no finding the base revision did not, and the new test file
   is clean under both.</p>
