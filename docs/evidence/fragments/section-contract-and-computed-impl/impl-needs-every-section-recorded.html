@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:section-contract-and-computed-impl">
+  <meta name="plan-verifies" content="reckon:section-contract-and-computed-impl#s8">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-01">
+  <meta name="evidence-commit" content="bffbfb273">
+  <title>Derive impl only when the records cover the declared sections | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="coverage-guard">
+  <h2>Derive impl on a plan's own declarations</h2>
+  <p><code>derive_impl_from_sections</code> in <code>reckon/_plan_html.py</code> now takes the
+  plan's section declarations as well as its records, and returns <code>None</code> — keeping the
+  authored <code>plan-impl</code> — whenever a section declared <code>done</code> or
+  <code>implementable</code> carries no record. Both callers pass the declarations: the parse path
+  in <code>read_state</code> and the fast path in <code>_parse_meta_uncached</code>, so a document
+  still reports one figure on both read paths.</p>
+  <p>The defect it repairs, measured read-only over the real
+  <code>/home/ITER/mcintos/Code/reckon/docs/plans</code> (145 plans, both paths agreeing on every
+  row). At base <code>1a80ecf9c</code>, 14 plans read a figure the derivation had fabricated over
+  partial records; at head <code>bffbfb273</code> each reads its authored value, or no figure at
+  all where no authored figure exists:</p>
+  <table>
+    <thead>
+      <tr><th>plan</th><th>authored</th><th>base</th><th>head</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>crew-observability-truth</td><td>0.57</td><td>0.0</td><td>0.57</td></tr>
+      <tr><td>scoring-should-stop-a-promotion</td><td>0.98</td><td>0.0</td><td>0.98</td></tr>
+      <tr><td>dependency-edge-semantics</td><td>0.97</td><td>0.0</td><td>0.97</td></tr>
+      <tr><td>a-review-dies-where-nobody-is-looking</td><td>0.88</td><td>0.0</td><td>0.88</td></tr>
+      <tr><td>the-ledger-is-one-file-per-run</td><td>0.5</td><td>0.0</td><td>0.5</td></tr>
+      <tr><td>crew-runtime-positive-controls</td><td>1.0</td><td>0.0</td><td>1.0</td></tr>
+      <tr><td>a-crew-process-ends-with-its-owner</td><td>0.75</td><td>1.0</td><td>0.75</td></tr>
+      <tr><td>a-refusal-is-about-the-work</td><td>0.33</td><td>1.0</td><td>0.33</td></tr>
+      <tr><td>the-fleet-counters-count-the-fleet</td><td>0.7</td><td>1.0</td><td>0.7</td></tr>
+      <tr><td>reckon-reads-answer-in-seconds</td><td>1.0</td><td>0.0</td><td>1.0</td></tr>
+      <tr><td>section-contract-and-computed-impl</td><td>0.84</td><td>0.0</td><td>0.84</td></tr>
+      <tr><td>plan-writes-are-not-fenced</td><td>—</td><td>0.0</td><td>—</td></tr>
+      <tr><td>the-obligations-hook-reads-a-snapshot</td><td>—</td><td>0.0</td><td>—</td></tr>
+      <tr><td>work-is-a-section-not-a-followup</td><td>—</td><td>0.0</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <p><strong>14</strong> plans change figure. The six plans the section names all read their
+  authored figure again (0.57, 0.98, 0.97, 0.88, 0.5, 1.0), matching the values the section
+  recorded. Three plans move from a fabricated 0 to no figure at all because they carry no
+  authored <code>plan-impl</code> meta; the derivation reports unknown rather than zero for them.
+  Logs: <code>logs/plans-derivation-base.log</code>, <code>logs/plans-derivation-head.log</code>,
+  <code>logs/plans-derivation-comparison.log</code>.</p>
+  <p><strong>Negative control.</strong> The declared mutation — drop the coverage check from
+  <code>derive_impl_from_sections</code> — was applied to the head and the new test run against it:
+  <strong>1 failed, 1 passed</strong>,
+  <code>EXIT=1</code>, the failure being the partial-coverage case
+  (<code>test_a_declared_section_without_a_record_keeps_the_authored_impl</code>) reading 0 in place
+  of 0.57. Log: <code>logs/negative-control.log</code>.</p>
+  <p><strong>Gate.</strong> The new test plus every test file naming
+  <code>derive_impl_from_sections</code>, <code>section_declarations</code>,
+  <code>plan-impl</code> or computed impl — 36 files at base, 37 at head — run on both arms.
+  Base: <strong>2 failed, 2380 passed, 13 skipped</strong> (441.78 s); head:
+  <strong>2 failed, 2386 passed, 13 skipped</strong> (416.19 s). The two failures are the same
+  ids on both arms (<code>test_dispatch_launch_is_not_its_own_conflict.py</code>, the launch-claim
+  pair) — <strong>no failure id is added</strong>. Logs: <code>logs/base-suite.log</code>,
+  <code>logs/head-suite.log</code>.</p>
+</section>
+</main>
+</body>
+</html>
