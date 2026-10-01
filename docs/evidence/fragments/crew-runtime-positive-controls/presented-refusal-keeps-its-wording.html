@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="A presented commit is refused in the commit-object vocabulary">
+  <meta name="plan-summary" content="The presented-commit branch of the promotion gate-evidence guard refused an unresolvable identifier as &quot;does not resolve to an object&quot; while the commit resolver words the same complaint &quot;does not resolve to a commit object in the run repository&quot;. The refusal now uses the established phrase, behaviour unchanged. Base arm 6c1e00cb: 1 failed 51 passed EXIT=1, the promotion case red on the wording. Head arm 1bdd1bfb: 52 passed EXIT=0, no failure id. Negative control, old wording restored: the same case red, EXIT=1.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="pass">
+  <title>A presented commit is refused in the commit-object vocabulary &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A presented commit is refused in the commit-object vocabulary &mdash; evidence</h1>
+  <p>The presented-commit branch of the promotion gate-evidence guard refuses an identifier that resolves to nothing, but it worded that refusal &ldquo;does not resolve to an object&rdquo; while the commit resolver words the same complaint &ldquo;does not resolve to a commit object in the run repository&rdquo;. One defect refused in two vocabularies means a caller matching the phrase catches one refusal and silently misses the other. The presented refusal now uses the established phrase, with its behaviour unchanged: it still fires by value where the presentation is read, still names every unresolved entry beside the tree they were resolved against, and still stays silent when the worktree cannot be read, so a run whose tree is gone is not refused for a citation no store was asked about.</p>
+  <section id="measure">
+    <h2>The measure</h2>
+    <ul>
+      <li><strong>Base arm</strong> (<code>6c1e00cb</code>, before the change): <code>1 failed, 51 passed in 189.22s</code>, <code>EXIT=1</code> &mdash; <code>tests/test_crew.py::test_promotion_refuses_a_commit_that_names_no_object</code> red on <code>match="does not resolve to a commit object"</code>, its message reading &ldquo;&hellip; does not resolve to an object in the run repository (&hellip;)&rdquo;, <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T064209008996-presented-refusal-keeps-its-wording/logs/base-arm.log</code>.</li>
+      <li><strong>Head arm</strong> (<code>1bdd1bfb</code>): <code>52 passed in 195.63s</code>, <code>EXIT=0</code>, no failure id, <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T064209008996-presented-refusal-keeps-its-wording/logs/head-arm.log</code>.</li>
+      <li><strong>Negative control</strong> (the declared mutation, old wording restored in <code>reckon/crew/promotion.py</code>): <code>1 failed in 5.96s</code>, <code>EXIT=1</code>, the same case red, <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T064209008996-presented-refusal-keeps-its-wording/logs/negative-control.log</code>.</li>
+    </ul>
+  </section>
+ </main>
+</body>
+</html>
