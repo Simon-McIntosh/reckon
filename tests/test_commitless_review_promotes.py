@@ -540,7 +540,7 @@ def test_an_implement_run_whose_commits_do_not_resolve_is_refused(
         commits=COMMA_COMMITS_PROSE,
     )
 
-    with pytest.raises(crew.CrewError, match="does not resolve to an object"):
+    with pytest.raises(crew.CrewError, match="does not resolve to a commit object"):
         crew.complete(run_id, gate="passed", root=repository)
 
     assert pointer_path(run_id).is_file()
@@ -564,7 +564,7 @@ def test_a_word_that_only_begins_with_an_absence_word_is_not_a_declaration(
         commits="nonesuch, prose",
     )
 
-    with pytest.raises(crew.CrewError, match="does not resolve to an object"):
+    with pytest.raises(crew.CrewError, match="does not resolve to a commit object"):
         crew.complete(run_id, gate="passed", root=repository)
 
     assert pointer_path(run_id).is_file()

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="One refusal on current main, and a commitless declaration read as no commits">
+  <meta name="plan-summary" content="The failed attempt to report every failing promotion precondition in one refusal is re-implemented on current main, where complete() had moved under it; a review run whose commits field is a commitless declaration in prose promotes again instead of being refused as an unresolvable presented citation; and every unresolvable-commit refusal now speaks the resolver's wording, does not resolve to a commit object. Base arm 4 failed / 14 passed on tests/test_commitless_review_promotes.py; head 73 passed / 0 failed over the named selection; both declared controls reproduce their failures under mutation and only under mutation.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <title>One refusal on current main | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>One refusal on current main, and a commitless declaration read as no commits</h1>
+
+    <section id="defect">
+      <h2>The defect, reproduced at base</h2>
+      <p>Base <code>88724725f3e6acec3d3caaac3c09c56df073a3bf</code>, log
+        <code>logs/base-arm-commitless.log</code>: <code>tests/test_commitless_review_promotes.py</code>
+        runs 4 failed / 14 passed. The four are
+        <code>test_a_report_only_review_promotes_over_its_own_deliverable</code>,
+        <code>test_a_review_with_commits_prose_promotes_on_a_clean_worktree</code>,
+        <code>test_an_implement_run_whose_commits_do_not_resolve_is_refused</code> and
+        <code>test_a_word_that_only_begins_with_an_absence_word_is_not_a_declaration</code>.</p>
+      <p>The first two are the regression: <code>a399d7744</code> made the presented branch
+        refuse; a review that has no repository work writes
+        <code>commits: none (review node; no repository change; the review is the deliverable)</code>,
+        and the sentence is now refused as a citation naming nothing:</p>
+      <pre>run 'r-20260928T100000000001-review-worktree-evidence' presents 'none (review node; no repository change; the review is the deliverable)' as a commit, but that identifier does not resolve to a commit object in the run repository (…/worktrees/run).</pre>
+      <p>The other two are the wording split: the presented refusal says
+        <q>commit object</q> while the declared one said <q>an object</q>, so a case matching on
+        the declared wording failed against a refusal that was already correct.</p>
+      <p>The port is the re-implementation: <code>5bfd82b52c98bf09bedda6ea6c00922df1b082af</code>
+        and <code>e0434c29b88a58ce92e54fbc53deadb9722d1f47</code> no longer apply because current
+        main's <code>complete()</code> moved under them — the reconcile rebuild
+        (<code>ee3f37084</code>) and the manifest-evidence defaulting (<code>b4233a9cb</code>) both
+        land in the same region — so the collector is re-implemented beside them rather than
+        merged into them.</p>
+    </section>
+
+    <section id="change">
+      <h2>The change</h2>
+      <p><code>reckon/crew/promotion.py</code>. The independent preconditions of a promotion are
+        swept by <code>_require_independently</code>, which keeps every product and raises one
+        refusal carrying every failure in the order checked, the first kept verbatim so a caller
+        matching on the leading refusal still matches. The landing checks move into
+        <code>_landing_preconditions</code>, which both the promotion entry point and the locked
+        body call, so their refusals compose into the same message and the row records the
+        canonical revisions the citations resolved to. The changed-scope and role checks stay
+        sequential after the citation they diff, and the suite-delta check keeps its own exception
+        type. The unreviewed-review refusal names the reviewed head with
+        <code>--commit &lt;head&gt;</code> when the manifest's commit list predates it.</p>
+      <p>A commitless declaration the declaration parser recognises now means no commits: the
+        presented branch does not refuse it, and the places that judge the presented commits —
+        the review tier and the landing resolution — read it through the same parser
+        (<code>_presented_commits_without_a_declaration</code>), so the resolver is never asked
+        about a sentence. A word that only begins with an absence word is still a citation
+        attempt: <code>nonesuch</code> is refused.</p>
+      <p>One vocabulary for every unresolvable-commit refusal, and it is the resolver's:
+        <q>does not resolve to a commit object</q>. The resolver is the last judge of a citation
+        and the presented refusal was already worded with it, which leaves the declared branch's
+        <q>an object</q> as the outlier; the two expectations pinning it in
+        <code>tests/test_commitless_review_promotes.py</code> are updated in the same commit.</p>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <ul>
+        <li><code>logs/base-arm-commitless.log</code> — base <code>88724725f</code>,
+          <code>tests/test_commitless_review_promotes.py</code>: 4 failed / 14 passed,
+          <code>EXIT=1</code>, the four named ids.</li>
+        <li><code>logs/head-named-gate.log</code> — head <code>6664ede86</code> over the named
+          selection (the commitless file,
+          <code>test_crew.py::test_promotion_refuses_a_commit_that_names_no_object</code>,
+          <code>test_cited_identifier_resolves.py</code>, <code>test_one_refusal_on_main.py</code>,
+          <code>test_control_gate_repairs.py</code>, <code>test_a_short_commit_list_is_reported.py</code>,
+          <code>test_gate_evidence.py</code>): 73 passed, <code>EXIT=0</code>.</li>
+        <li><code>logs/head-regression.log</code> — head, five promotion-reaching files
+          (reconcile, matching review, promotion, promotion-requires-review, stale manifest):
+          69 passed, <code>EXIT=0</code>. Its header's command line carries an unsubstituted
+          <code>{TMPDIR}</code> token from the composing printf; the command recorded on the
+          named arm is the literal one.</li>
+        <li><code>logs/negative-control-aggregation.log</code> — the declared mutation
+          <em>aggregation reverted to fail-fast</em> applied in a scratch extraction of the
+          committed head: <code>test_two_independent_preconditions_are_reported_by_one_refusal</code>
+          fails, <code>EXIT=1</code>.</li>
+        <li><code>logs/negative-control-declaration.log</code> — the declared mutation
+          <em>presented-branch declaration check removed</em> applied in a scratch extraction of
+          the committed head: <code>test_a_report_only_review_promotes_over_its_own_deliverable</code>
+          fails, <code>EXIT=1</code>.</li>
+      </ul>
+      <p>Both mutations were applied only in scratch extractions under the run's scratch
+        extraction; the worktree never carried either.</p>
+      <p><code>ruff check</code> over the changed Python paths at head reports 14 findings against
+        17 at base over the same paths, none of them new; <code>ruff format --check</code> reports
+        the same two pre-existing unformatted files at both revisions and neither new test file.</p>
+    </section>
+  </main>
+</body>
+</html>
