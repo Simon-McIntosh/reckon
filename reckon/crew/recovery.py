@@ -9,6 +9,7 @@ import re
 import shlex
 import socket
 import subprocess
+import tempfile
 import time
 from contextlib import contextmanager
 from datetime import UTC, datetime, timezone
@@ -3077,7 +3078,12 @@ def _harness_command(record: Mapping[str, Any], argv: Any) -> str | None:
     return str(dialect) if dialect else None
 
 
-def _stream_budget(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
+def _stream_budget(
+    record: Mapping[str, Any],
+    *,
+    memo: dict[str, Any] | None = None,
+    memo_fresh: bool = False,
+) -> Mapping[str, Any] | None:
     """The budget block a cli run's stream records, folded in or read fresh.
 
     Shared by the refusal and retry-shape gates so the stream is parsed once
@@ -3086,6 +3092,15 @@ def _stream_budget(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
     been through observe; both paths resolve through the same backend
     translation, so they reach the same block and a ticker reading a raw
     pointer cannot disagree with observe's phase.
+
+    A ``memo`` is the classification's memo beside the pointer. When its key
+    still matches, the block the last read produced is served as it stands.
+    When it does not, the stream is read again — but from the byte offset that
+    read reached, so a stream that has only grown costs the records appended
+    since rather than the whole file. The offset is only usable while the file
+    it was taken from is the file being read now: a stream replaced by a resume
+    is read from its first record, because an offset into a predecessor's bytes
+    means nothing in a file that never held them.
     """
     budget = record.get("budget")
     if isinstance(budget, Mapping) and budget.get("refusal"):
@@ -3101,17 +3116,41 @@ def _stream_budget(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
         return None
     from reckon import _backends
 
+    stored = memo.get("stream") if memo is not None else None
+    resume: dict[str, Any] | None = None
+    if isinstance(stored, Mapping) and str(stored.get("path") or "") == str(log):
+        state = stored.get("state")
+        if isinstance(state, Mapping):
+            resume = {
+                "offset": int(stored.get("offset") or 0),
+                "state": state,
+            }
+        if (
+            memo_fresh
+            and stored.get("ident") == _file_identity(log)
+            and isinstance(stored.get("budget"), Mapping)
+        ):
+            return dict(stored["budget"]) or None
     try:
         observation = _backends.observe_log(
             backend_name=str(record.get("backend") or ""),
             backend={"command": command},
             log_path=log,
+            resume=resume,
         )
     except (_backends.BackendError, CrewError, OSError, ValueError):
         # An unreadable or untranslatable stream carries no readable budget;
         # the manifest and liveness paths still classify the run.
         return None
     observed = observation.as_dict().get("budget") or {}
+    if memo is not None:
+        memo["stream"] = {
+            "path": str(log),
+            "ident": _file_identity(log),
+            "offset": int(observation.stream_state.get("offset") or 0),
+            "state": observation.stream_state,
+            "budget": observed,
+        }
     return observed or None
 
 
@@ -5441,6 +5480,169 @@ def _absence_of_a_verdict_is_transient(
     )
 
 
+# ── The classification memo ─────────────────────────────────────────────────
+# A classification reads the pointer, the assertion a run's manifest makes, the
+# worker's own stream and the review stored against it. Over a fleet that is
+# several hundred files, and the stream is the expensive one: a worker's log is
+# megabytes by the end of a turn and every reader that re-derives a row pays to
+# parse it again. The memo below keeps what those reads produced beside the
+# pointer, keyed by the stat identity of every file the classification read, so
+# a second reader of an unchanged run answers from the memo instead of the
+# files. Nothing about the run's liveness is memoised: a process table is not a
+# file, and the row must still be built from a reading taken now.
+CLASSIFICATION_MEMO_SUFFIX = ".classification.json"
+CLASSIFICATION_MEMO_VERSION = 1
+
+# The run directory's records the classification consults, named here so the
+# memo's key covers them: each is a file whose content moves the row.
+_CLASSIFICATION_RUN_RECORDS = (
+    EXIT_RECORD_NAME,
+    WORKER_RECORD_NAME,
+    ATTEMPT_RECORD_NAME,
+)
+
+
+def _file_identity(path: str | Path) -> str:
+    """The stat identity of one input, or ``absent`` when there is no file.
+
+    Absence is an identity rather than a null: a record that appears where the
+    last classification found none changes the answer, and a key that could not
+    tell the two apart would serve the reading taken before it existed.
+    """
+    try:
+        stat = Path(path).stat()
+    except OSError:
+        return "absent"
+    return f"{stat.st_dev}:{stat.st_ino}:{stat.st_size}:{stat.st_mtime_ns}"
+
+
+def _classification_memo_path(record: Mapping[str, Any]) -> Path | None:
+    """The memo file beside one run's pointer, or None for a record without one."""
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return None
+    return runs.live_dir() / f"{run_id}{CLASSIFICATION_MEMO_SUFFIX}"
+
+
+def _read_classification_memo(record: Mapping[str, Any]) -> dict[str, Any]:
+    """The memo persisted beside a pointer, or an empty one.
+
+    Read verbatim and defensively: a file another writer caught mid-rewrite, or
+    one written by an older layout, is an empty memo rather than an error, so a
+    damaged cache costs a recomputation and never a wrong row.
+    """
+    path = _classification_memo_path(record)
+    if path is None:
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(payload, Mapping):
+        return {}
+    if payload.get("version") != CLASSIFICATION_MEMO_VERSION:
+        return {}
+    return dict(payload)
+
+
+def _write_classification_memo(
+    record: Mapping[str, Any], memo: Mapping[str, Any]
+) -> None:
+    """Persist a memo beside the pointer, atomically and best-effort.
+
+    Every reader of the live fleet shares this directory, so the write lands
+    through a rename: a reader either sees the previous memo or this one, never
+    half of either. A memo that cannot be written is not an error — it costs
+    the next reader a recomputation, which is the state the fleet was in before
+    the memo existed.
+    """
+    path = _classification_memo_path(record)
+    if path is None:
+        return
+    payload = dict(memo)
+    payload["version"] = CLASSIFICATION_MEMO_VERSION
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle = tempfile.NamedTemporaryFile(
+            "w",
+            encoding="utf-8",
+            dir=str(path.parent),
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        )
+        try:
+            json.dump(payload, handle, sort_keys=True)
+            handle.close()
+            os.replace(handle.name, path)
+        except BaseException:
+            handle.close()
+            try:
+                os.unlink(handle.name)
+            except OSError:
+                pass
+            raise
+    except (OSError, TypeError, ValueError):
+        return
+
+
+def _review_input_identities(record: Mapping[str, Any]) -> dict[str, str]:
+    """The identity of every review-store file this run's review is read from.
+
+    The store is read by run id and by revision, so the candidates are the
+    run's own path and any revision-keyed copy of it. The project directory
+    joins them because a record filed under another run id is found by listing
+    the directory, and the listing moves when an entry is added or removed.
+    """
+    project = str(record.get("project") or "")
+    run_id = str(record.get("run_id") or "")
+    identities: dict[str, str] = {}
+    if not project or not run_id:
+        return identities
+    directory = review_module.review_store_root() / project
+    identities[str(directory)] = _file_identity(directory)
+    candidates = [directory / f"{run_id}.json"]
+    try:
+        candidates.extend(sorted(directory.glob(f"{run_id}.at-*.json")))
+    except OSError:
+        pass
+    for path in candidates:
+        identities[str(path)] = _file_identity(path)
+    return identities
+
+
+def _classification_inputs(record: Mapping[str, Any], log: Path) -> dict[str, str]:
+    """Every file one classification reads, with its identity.
+
+    The set is the pointer, the manifest, the stream the observation reads, the
+    run directory's own records, and the review store's candidates for this
+    run. It is computed from the same paths the classification itself resolves,
+    so the key describes the reads that were actually made rather than a
+    separately maintained list of them.
+    """
+    identities: dict[str, str] = {}
+    run_id = str(record.get("run_id") or "")
+    if run_id:
+        pointer = runs.pointer_path(run_id)
+        identities[str(pointer)] = _file_identity(pointer)
+    manifest = str(record.get("manifest_path") or "")
+    if manifest:
+        identities[manifest] = _file_identity(manifest)
+    identities[str(log)] = _file_identity(log)
+    directory = _run_directory(record)
+    for name in _CLASSIFICATION_RUN_RECORDS:
+        record_path = directory / name
+        identities[str(record_path)] = _file_identity(record_path)
+    identities.update(_review_input_identities(record))
+    return identities
+
+
+def _classification_key(identities: Mapping[str, str]) -> str:
+    """One key from a set of input identities, order-independent and stable."""
+    rendered = "\n".join(f"{path}={identities[path]}" for path in sorted(identities))
+    return hashlib.sha256(rendered.encode("utf-8")).hexdigest()
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -5466,11 +5668,35 @@ def classify_pointer(
     moment = _utc_seconds() if now_seconds is None else float(now_seconds)
     manifest = Path(str(record.get("manifest_path") or ""))
     manifest_file_present, manifest_present = _run_chain_manifest_freshness(record)
+    # The memo is keyed on the files this classification reads, so it is
+    # resolved from the same paths the reads below use: a key taken from a
+    # differently resolved path would describe a read nobody made.
+    memo = _read_classification_memo(record)
+    memo_inputs = _classification_inputs(
+        record, Path(str(record.get("log_path") or ""))
+    )
+    memo_key = _classification_key(memo_inputs)
+    memo_fresh = memo.get("key") == memo_key
     manifest_data: dict[str, Any] = {}
     manifest_error = ""
     manifest_digest: str | None = None
     manifest_text = ""
-    if manifest_present:
+    if manifest_present and memo_fresh:
+        served_manifest = memo.get("manifest")
+        if isinstance(served_manifest, Mapping):
+            manifest_text = str(served_manifest.get("text") or "")
+            manifest_data = dict(served_manifest.get("data") or {})
+            manifest_digest = served_manifest.get("digest")
+            manifest_error = str(served_manifest.get("error") or "")
+            _remember_manifest_size(
+                _manifest_size_key(record, manifest),
+                int(served_manifest.get("size") or 0),
+                moment,
+            )
+            manifest_present = bool(served_manifest.get("present"))
+        else:
+            manifest_present = False
+    elif manifest_present:
         try:
             manifest_text = manifest.read_text()
             manifest_data = parse_manifest(manifest_text)
@@ -5496,6 +5722,14 @@ def classify_pointer(
             # rather than escaping this function and failing every ticker
             # refresh for every session.
             manifest_error = str(exc)
+        memo["manifest"] = {
+            "text": manifest_text,
+            "data": manifest_data,
+            "digest": manifest_digest,
+            "error": manifest_error,
+            "size": len(manifest_text.encode("utf-8")),
+            "present": True,
+        }
     manifest_reported_status = str(manifest_data.get("status") or "").strip().lower()
     # The orientation write is the first thing every dispatch writes: the tree,
     # the base revision and the write paths, before any status exists. A body
@@ -5606,7 +5840,7 @@ def classify_pointer(
     # is gone but the stop is triageable (a named backend, limit and reset) and
     # resumable once the limit lifts. Detected from the same stream observe
     # reads, so the two paths agree.
-    budget = _stream_budget(record)
+    budget = _stream_budget(record, memo=memo, memo_fresh=memo_fresh)
     refusal_block = (
         _refusal_block(record, budget)
         if budget is not None and budget.get("refusal")
@@ -5735,7 +5969,14 @@ def classify_pointer(
     review: dict[str, Any] | None = None
     review_error = ""
     if manifest_status == "complete" and not deferred_outcome:
-        review, review_error = _stored_review(record)
+        served_review = memo.get("review") if memo_fresh else None
+        if isinstance(served_review, Mapping):
+            stored_review = served_review.get("record")
+            review = dict(stored_review) if isinstance(stored_review, Mapping) else None
+            review_error = str(served_review.get("error") or "")
+        else:
+            review, review_error = _stored_review(record)
+            memo["review"] = {"record": review, "error": review_error}
     review_complete = _review_is_complete(review)
     if manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome:
         terminal_seconds = manifest.stat().st_mtime
@@ -6614,6 +6855,14 @@ def classify_pointer(
     classified["fleet_verdict"] = _watch_verdict(
         record, classified, moment=moment, stall_seconds=stale_after_seconds
     )
+    # The memo is written from the key the reads were made under, so a reader
+    # that finds this file again serves it only while every input still holds
+    # the identity it had here. The stream's own state travels whatever the key
+    # says: it is where the next read resumes from, and the records it has
+    # already folded are the same records whether or not anything else moved.
+    memo["key"] = memo_key
+    memo["inputs"] = memo_inputs
+    _write_classification_memo(record, memo)
     return classified
 
 
