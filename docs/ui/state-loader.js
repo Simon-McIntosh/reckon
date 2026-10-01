@@ -19,8 +19,8 @@
 // rows that moved — changed, added or removed — and is patched into the rows
 // on screen with no request of its own; the derived state that follows is
 // refetched at most once per settle window, in the background. An event that
-// carries only a digest, as a server that does not push rows sends, falls
-// back to that refetch alone.
+// carries only a digest, as a server that does not push rows sends, is
+// patched by nothing and answered by that same shared refetch.
 //
 // An index that is unavailable — a 404, or a request that fails at the
 // network — costs the page nothing: the loader falls back to the sources that
@@ -158,6 +158,20 @@ const applyIndexRowChanges = (delta) => {
         arrivalRendered.keys.delete(key);
         arrivalRendered.versions.delete(key);
       }
+    }
+    // A row removed before its arrival was revealed must leave the arrival
+    // count too: the page must not keep offering a document that is gone.
+    const pendingBefore =
+      state.arrival && Array.isArray(state.arrival.pending) ? state.arrival.pending : [];
+    const pendingKept = pendingBefore.filter(row => !removedKeys.has(arrivalKeyOf(row)));
+    if (pendingKept.length !== pendingBefore.length) {
+      state.arrival = {
+        ...(state.arrival || {}),
+        pending: pendingKept,
+        byKind: arrivalCountsOf(pendingKept),
+        total: pendingKept.length,
+        receipt: pendingKept.length ? `${pendingKept.length} new` : "live",
+      };
     }
   }
 
@@ -628,8 +642,9 @@ window.watchProjectStateChanges = function (onChange) {
                   "unknown";
   const changes = new EventSource(`/_changes/${project}`);
   // At most one derived-state refetch per settle window, so a burst of change
-  // events — a save touches several files — costs one revalidation, and the
-  // rows the reader is looking at have already been patched from the pushes.
+  // events — a save touches several files, and a page may mix pushed rows with
+  // digest-only events — costs one revalidation, and the rows the reader is
+  // looking at have already been patched from the pushes.
   let settleTimer = null;
   const refetchDerived = () => {
     if (settleTimer !== null) return;
@@ -650,13 +665,10 @@ window.watchProjectStateChanges = function (onChange) {
     } catch (cause) {
       payload = null;
     }
-    if (payload?.rows && applyIndexRowChanges(payload.rows)) {
-      refetchDerived();
-      return;
-    }
-    // Nothing to patch — a digest-only event from a server that does not push
-    // rows: the event is the refetch's cue, as it always was.
-    onChange?.();
+    // A pushed row is applied in place now; every event shape shares the one
+    // refetch that follows, as a digest-only event always asked for.
+    if (payload?.rows) applyIndexRowChanges(payload.rows);
+    refetchDerived();
   });
   return changes;
 };

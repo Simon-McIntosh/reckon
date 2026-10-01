@@ -37,7 +37,8 @@ PROJECT = "sample"
 INDEX_ENDPOINT = f"/_index/{PROJECT}"
 DISCOVERY_ENDPOINT = f"/_discover/{PROJECT}"
 
-#: The bound §5 names: the stream reports a rewrite with its row inside it.
+#: The time the change stream must answer within: a rewrite is reported with
+#: its row inside it.
 PUSH_BUDGET_S = 2.0
 
 #: The loader's own settle window, read from the source so the cases that wait
@@ -305,6 +306,11 @@ ARRIVAL_EVENT = {
     "content_digest": "digest-2",
     "rows": {"changed": [], "added": [ADDED_ROW], "removed": [GATE_ROW]},
 }
+#: The document that arrived above leaves again before the reader revealed it.
+REMOVAL_EVENT = {
+    "content_digest": "digest-3",
+    "rows": {"changed": [], "added": [], "removed": [ADDED_ROW]},
+}
 
 _HARNESS = """
 const fs = require("fs");
@@ -367,6 +373,7 @@ def _run_node(body: str) -> dict:
                     "discovery": DISCOVERY,
                     "changed_event": CHANGED_EVENT,
                     "arrival_event": ARRIVAL_EVENT,
+                    "removal_event": REMOVAL_EVENT,
                 }
             ),
         )
@@ -482,7 +489,7 @@ window.STATE_READY.then(async () => {
     await window.revalidateProjectState();
   });
   stream.emit("change", { content_digest: "legacy-digest" });
-  await new Promise(resolve => setTimeout(resolve, 400));
+  await new Promise(resolve => setTimeout(resolve, SETTLE_WAIT_MS));
   clearTimeout(watchdog);
   console.log(JSON.stringify({ resolved: true, before, after: requested.slice() }));
 });
@@ -532,3 +539,75 @@ window.STATE_READY.then(async () => {
     assert observed["refetches"] == 1, (
         f"four events in one settle window cost {observed['refetches']} refetches"
     )
+
+
+def test_a_mixed_burst_costs_one_background_refetch() -> None:
+    """Pushed rows and digest-only events share one settle window."""
+
+    body = """
+window.STATE_READY.then(async () => {
+  await window.STATE_DERIVED_READY;
+  let refetches = 0;
+  const stream = window.watchProjectStateChanges(async () => { refetches += 1; });
+  stream.emit("change", DATA.changed_event);
+  stream.emit("change", { content_digest: "legacy-digest" });
+  stream.emit("change", DATA.changed_event);
+  stream.emit("change", { content_digest: "legacy-digest-2" });
+  const immediately = refetches;
+  await new Promise(resolve => setTimeout(resolve, SETTLE_WAIT_MS));
+  clearTimeout(watchdog);
+  console.log(JSON.stringify({
+    resolved: true,
+    immediately,
+    refetches,
+    title: window.STATE.inventory.find(row => row.nav_key === "alpha").title,
+  }));
+});
+"""
+    observed = _run_node(body)
+
+    assert observed["resolved"] is True, observed
+    assert observed["title"] == "Alpha renamed"
+    assert observed["immediately"] == 0, "the refetch ran inside the event"
+    assert observed["refetches"] == 1, (
+        "a burst mixing pushed rows with digest-only events cost "
+        f"{observed['refetches']} refetches"
+    )
+
+
+def test_a_row_removed_before_its_reveal_leaves_the_arrival_count() -> None:
+    """A held arrival that is deleted is pruned from the arrival banner."""
+
+    body = """
+window.STATE_READY.then(async () => {
+  await window.STATE_DERIVED_READY;
+  const stream = window.watchProjectStateChanges(async () => {});
+  stream.emit("change", DATA.arrival_event);
+  const held = {
+    pending: (window.STATE.arrival?.pending || []).map(row => row.nav_key),
+    receipt: window.STATE.arrival?.receipt,
+  };
+  stream.emit("change", DATA.removal_event);
+  clearTimeout(watchdog);
+  console.log(JSON.stringify({
+    resolved: true,
+    held,
+    pending: (window.STATE.arrival?.pending || []).map(row => row.nav_key),
+    total: window.STATE.arrival?.total,
+    receipt: window.STATE.arrival?.receipt,
+    keys: window.STATE.inventory.map(row => row.nav_key),
+  }));
+});
+"""
+    observed = _run_node(body)
+
+    assert observed["resolved"] is True, observed
+    # Positive control: the row really was held before it was deleted.
+    assert observed["held"]["pending"] == ["evidence:late"], observed["held"]
+    assert observed["held"]["receipt"] == "1 new"
+    assert observed["pending"] == [], (
+        f"a deleted arrival stayed in the count: {observed['pending']}"
+    )
+    assert observed["total"] == 0
+    assert observed["receipt"] == "live"
+    assert observed["keys"] == ["alpha", "figure:plot.png"]
