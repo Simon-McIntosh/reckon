@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-10-01">
-  <meta name="plan-version" content="57">
+  <meta name="plan-version" content="58">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -677,6 +677,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261001T031827152052-follower-bounds-its-lifetime" data-who="reckon-build" data-when="2026-10-01T06:30:18.495Z">
     <div class="r-comment-body"><p>follower-bounds-its-lifetime: the arming's deadline now bounds a poll (the sweep runs on its own thread and is abandoned at the deadline — measured exact with an injected clock: end within 1 s of the deadline with the poll still blocked), the deadline is converted to the watch loop's clock once at arming so a replacement image spends the original grant (base fails the deterministic case at 2.300 s past the instant; head passes in 0.86 s), the reader checkpoint travels only in the re-exec mapping and the arming variable is dropped at start (base arm: a child inherited RECKON_WATCH_ARMING; head: neither variable in any probe child), a dispatch refused on follower conditions names every unmet condition in one refusal beside the one follower command (two conditions plus the delivering peer's session name in one payload, exit 8), and a launch kind that carries no session delivery is still refused for a missing producer (its guard case fails when the refusal is removed: 1 failed in 6.57 s, the in-harness dispatch admitted at exit_code 0)</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261001T063129170778-review-of-follower-bounds-its-lifetime" data-who="reckon-build" data-when="2026-10-01T06:46:58.524Z">
+    <div class="r-comment-body"><p>independent review of r-20261001T031827152052-follower-bounds-its-lifetime stored at the legacy and head-keyed review paths: status parsed, all five dimensions scored in 0..20 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19; total 97), added_failure_count 0 / added_failure_ids [] derived from the run&#x27;s own baseline_suite (33c5e761d, 6 failed) and after_suite (4536c411c, 0 failed) gate logs, one follow-on finding (a second copy of the watcher remedy sentence at reckon/crew/dispatch.py:1050 duplicating reckon/crew/node.py:441), and no blocking finding.</p></div>
 </div>
 </section>
 </main>
