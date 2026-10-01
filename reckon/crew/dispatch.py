@@ -6097,6 +6097,12 @@ WORKER_SCRATCH_ROOT_NAME = "reckon-crew-scratch"
 # in the promotion or discard that later removes it, so the removal would miss
 # and the directory would leak.
 WORKER_SCRATCH_ROOT_DEFAULT = "/tmp"  # noqa: S108 - the node's own tmp, never shared
+# The size above which a run's scratch is reported at the moment it lands, so a
+# run that wrote gigabytes is visible on its own ledger row rather than only to
+# whoever later finds the temp directory full. Node-local disk is a scarce shared
+# allocation, so the figure is a report and never a refusal: a run that legitimately
+# needs more space is not stopped, it is named.
+WORKER_SCRATCH_BUDGET_BYTES = 2 * 1024**3
 
 
 def worker_scratch_root() -> Path:
@@ -6120,6 +6126,34 @@ def worker_scratch_root() -> Path:
 def worker_scratch_dir(run_id: str) -> Path:
     """The scratch directory one run owns, named for its run id."""
     return worker_scratch_root() / str(run_id)
+
+
+def tree_size_bytes(path: Path, *, limit: int | None = None) -> int:
+    """Total bytes of the regular files beneath ``path``, symlinks excluded.
+
+    Taken while the directory still exists, because the size is recorded on the
+    run's terminal row at the moment the directory dies and there is no second
+    chance to measure it afterwards. A file that cannot be stat'd is skipped
+    rather than failing the walk: a size a few bytes short still names the tree
+    that filled the disk, while raising here would leave the directory in place.
+    ``limit`` bounds the walk, so a caller measuring a directory it does not own
+    on a shared temp root cannot be made to traverse a whole corpus; the sum is
+    then a floor rather than an exact figure, which is all a report needs.
+    """
+    total = 0
+    seen = 0
+    for root, _dirs, files in os.walk(path):
+        for name in files:
+            seen += 1
+            if limit is not None and seen > limit:
+                return total
+            candidate = Path(root) / name
+            try:
+                if not candidate.is_symlink():
+                    total += candidate.stat().st_size
+            except OSError:
+                continue
+    return total
 
 
 def ensure_worker_scratch(run_id: str) -> Path:
@@ -6170,7 +6204,10 @@ def _removable_scratch_target(
 
 
 def remove_worker_scratch(
-    run_id: str, *, recorded_path: str | os.PathLike[str] | None = None
+    run_id: str,
+    *,
+    recorded_path: str | os.PathLike[str] | None = None,
+    budget_bytes: int | None = None,
 ) -> dict[str, Any]:
     """Remove one run's scratch directory, printing what it removed.
 
@@ -6182,6 +6219,12 @@ def remove_worker_scratch(
     root that has since moved is therefore withheld and left in place, never
     removed. An absent directory is reported rather than raised: a run whose
     scratch was already reclaimed has nothing left to remove.
+
+    The directory's size is measured before it is deleted and reported as
+    ``scratch_bytes`` so the run's terminal row can carry it; a size above
+    ``budget_bytes`` adds a ``scratch_warning`` and prints it. The budget never
+    refuses the removal — it names the run that filled the disk, it does not
+    stop it.
     """
     name = str(run_id or "").strip()
     attempted = (
@@ -6194,9 +6237,21 @@ def remove_worker_scratch(
         "scratch_removed": False,
         "scratch_path": str(path or attempted) if (path or attempted) else None,
         "scratch_withheld": reason,
+        "scratch_bytes": None,
     }
     if path is None:
         return result
+    size = tree_size_bytes(path)
+    result["scratch_bytes"] = size
+    if budget_bytes is not None and size > budget_bytes:
+        result["scratch_warning"] = (
+            f"run scratch {path} is {size} bytes, above the {budget_bytes} byte budget"
+        )
+        print(
+            f"warning: run scratch {path} is {size} bytes, "
+            f"above the {budget_bytes} byte budget"
+        )
+    print(f"removing worker scratch directory {path} ({size} bytes)")
     try:
         shutil.rmtree(path)
     except OSError as exc:

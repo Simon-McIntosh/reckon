@@ -19,6 +19,7 @@ from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew import review as review_module
 from reckon.crew import rollout
 from reckon.crew.dispatch import (
+    WORKER_SCRATCH_BUDGET_BYTES,
     _backend_settings,
     _capture_member_session,
     project_mount_repository,
@@ -4623,13 +4624,16 @@ def _release_scratch_when_release_raised(record: Mapping[str, Any]) -> dict[str,
     """
     try:
         return remove_worker_scratch(
-            str(record.get("run_id") or ""), recorded_path=record.get("scratch")
+            str(record.get("run_id") or ""),
+            recorded_path=record.get("scratch"),
+            budget_bytes=WORKER_SCRATCH_BUDGET_BYTES,
         )
     except Exception as exc:  # noqa: BLE001 - the fallback must itself never raise
         return {
             "scratch_removed": False,
             "scratch_path": str(record.get("scratch") or "") or None,
             "scratch_withheld": f"scratch removal raised in the release fallback: {exc}",
+            "scratch_bytes": None,
         }
 
 
@@ -4740,7 +4744,9 @@ def _release_run_workspace(
     # would leak the very entries this step exists to reclaim.
     result.update(
         remove_worker_scratch(
-            str(record.get("run_id") or ""), recorded_path=record.get("scratch")
+            str(record.get("run_id") or ""),
+            recorded_path=record.get("scratch"),
+            budget_bytes=WORKER_SCRATCH_BUDGET_BYTES,
         )
     )
     return result
@@ -6514,6 +6520,8 @@ def _remove_discarded_worktree(record: Mapping[str, Any]) -> dict[str, Any]:
             "scratch_removed",
             "scratch_path",
             "scratch_withheld",
+            "scratch_bytes",
+            "scratch_warning",
         )
         if key in release
     }

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A run's scratch ends with the run, never with its age">
+  <meta name="plan-summary" content="crew gc --scratch removes a run's scratch directory only on the run's terminal record and never by age, and sends a worker's temporary trees under $TMPDIR where promotion already reclaims them.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s12">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,scratch,gc,cleanup">
+  <title>A run's scratch ends with the run — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-runs-scratch-ends-with-the-run" data-reckon="landed" data-when="2026-10-01">
+  <h2>A run's scratch ends with the run, never with its age</h2>
+  <p>A worker's temporary trees are sent under <code>$TMPDIR</code> by the composed contract, so promotion's existing removal covers archives and basetemps. <code>crew gc --scratch</code> lists every scratch directory with its run's state and removes one only when the run has no live pointer and a terminal record — a ledger row or a discard marker — printing each path and its size before deletion and running as a dry run unless <code>--apply</code> is given. A tree no run can be attributed to is reported with its ctime, size and holding processes and is never removed. Promotion records the scratch directory's size on the run's row under a stated budget.</p>
+  <p>Five cases pass in a temporary <code>RECKON_HOME</code> with the scratch root under the test's own tmp, adding no failing id against the base arm. The declared mutation — make gc decide by age — fails the case keeping a complete-but-unpromoted run's scratch (<code>EXIT=1</code>).</p>
+</article>
+</body>
+</html>

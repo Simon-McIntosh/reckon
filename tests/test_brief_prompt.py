@@ -384,6 +384,8 @@ WORKTREE AND PARALLEL-SAFETY RULES (binding)
   6. No AI attribution, and no plan, sprint or ticket identifiers in commit
      messages, symbol names, filenames or comments.
   7. Stop and report unexpected dirty files or unsafe scope.
+   8. A temporary tree — an extraction, a basetemp, a scratch checkout — goes
+      under $TMPDIR, never a bare /tmp path, so it dies with the run's scratch.
 
 IF YOU GET STUCK — stop and emit a report whose first line is
 `NEEDS-HELP: <one line>` followed by all four of:
