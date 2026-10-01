@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="143">
+<meta name="plan-version" content="145">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -206,11 +206,16 @@
     project's producer had lost its registration, so <code>crew unwatch</code> answered "no
     registered watcher" and it could only be stopped by pid. A producer with no consumers is
     pure cost, and one with no registration cannot be managed at all.</p>
-    <p>The fix has three parts. Each live follower renews a lease on its project's producer,
-    and a producer whose lease has not been renewed for the lease interval stated below exits
-    cleanly. The producer writes its own pid into its registration atomically
-    at start, and rewrites it if the file goes missing, so <code>crew unwatch</code> can
-    always find it. An idle producer backs off its poll interval instead of spinning. A
+    <p>The fix has three parts. Each live follower renews a lease on its project's producer
+    repeatedly, at least once per half lease interval, for as long as the follower lives. A
+    single renewal at attach is not enough. A producer whose lease has not been renewed for the
+    lease interval stated below exits cleanly. The producer writes its own pid into its
+    registration at start by writing a temporary sibling and renaming it into place, so a
+    reader never sees a partial record. When the registration file is unlinked under it, the
+    producer recreates it at the same path on its next wake-up, so <code>crew unwatch</code>
+    can always find it. A producer is idle when its project has no live run pointer, whatever
+    the state of runs it watched earlier. An idle producer backs off its poll interval instead
+    of spinning. A
     follower arming for a project whose producer has exited starts one, as it does today, so
     the lease costs nothing in availability.</p>
     <p><strong>The lease interval is ten minutes, and it can be set.</strong> The default is
@@ -226,7 +231,9 @@
     temporary <code>RECKON_HOME</code> with <code>RECKON_PRODUCER_LEASE_SECONDS</code> set to
     3. It shows a producer exiting after its lease lapses with no follower attached, and one
     staying up for three lease intervals while a follower renews. It shows <code>crew
-    unwatch</code> stopping a producer whose registration file was deleted under it. It shows
+    unwatch</code> stopping a producer whose registration file was deleted under it: the
+    producer has recreated the file by its next wake-up, and <code>crew unwatch</code> finds it
+    there. It shows
     an idle producer's recorded poll interval growing to the 30 s cap. The negative control is
     executed and logged: with lease expiry removed, the unattended producer is still running
     after three intervals and the test fails. The login-node check, that a project with no
@@ -1389,7 +1396,7 @@
     <div class="r-comment-body">The seven-day referent bound this section introduced (BOUNDARY_REFERENT_MAX_AGE_SECONDS, merge a8957c20e) turned tests/test_crew_boundary_waiver.py red once its fixture date of 2026-08-26 aged past the bound. s22-coord found this by first-parent bisect, and the shared-grant worker flagged it the same day. Fixed on main at a8f389ecd (run r-20261001T132023616487-the-waiver-test-reads-the-clock, reviewed head 10d5794d9, review total 96). The fixture's created_at is now derived from the clock. A new case one day past the bound asserts no_referent appears, so the bound is pinned from both sides with no literal date. Restoring the literal date turns the waiver case red.</div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261001T132023616487-the-waiver-test-reads-the-clock" data-who="reckon-build" data-when="2026-10-01T13:30:03.142Z">
-    <div class="r-comment-body"><p>Derived the boundary-waiver fixture&#x27;s created_at from the current UTC clock (one hour before now) so the seven-day BOUNDARY_REFERENT_MAX_AGE_SECONDS bound no longer trips it, and added a case whose created_at sits a day past the bound asserting the stored waiver carries no_referent — gate 4 passed EXIT=0, declared mutation red EXIT=1.</p></div>
+    <div class="r-comment-body"><p>Derived the boundary-waiver fixture's created_at from the current UTC clock (one hour before now) so the seven-day BOUNDARY_REFERENT_MAX_AGE_SECONDS bound no longer trips it, and added a case whose created_at sits a day past the bound asserting the stored waiver carries no_referent — gate 4 passed EXIT=0, declared mutation red EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
