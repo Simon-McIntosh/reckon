@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="41">
+<meta name="plan-version" content="42">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.86">
 <meta name="plan-commits" content="4cfc76a4,798e549d,3a06801e,394acda7,eb8db19a">
@@ -469,6 +469,9 @@ resume burn, after</a>.</p>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261001T000539031725-currency-new-work-gets-a-new-worker" data-who="reckon-build" data-when="2026-10-01T00:21:04.168Z">
     <div class="r-comment-body"><p>reports/reckon/s22-coord/currency-new-work-gets-a-new-worker/report.md — audit at main b7134f5f: §3 met, §4 met, §7 unmet (session_reuse false in both layers), §6 met as written but censored, f-nwgnw-member-friction half met (member + lane choice still refuses without --repo); gate 18 passed / 0 failed.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261001T002106519575-review-of-currency-new-work-gets-a-new-worker" data-who="reckon-build" data-when="2026-10-01T00:30:36.371Z">
+    <div class="r-comment-body"><p>reviews/reckon/r-20261001T000539031725-currency-new-work-gets-a-new-worker.at-b7134f5fdfeba023bbd6cc74ad5c8350802e5920.json — independent review of the currency audit at b7134f5f: parsed, 74/100 (goal_fidelity 18, evidence 15, scope_discipline 19, durability 5, fit 17); added_failure_count 0, added_failure_ids []; 2 follow-on findings — the reproduction&#x27;s control arm crashes on AttributeError at repro_member_repo.py:104, so neither repro log shows the with-repo call reach PLANNED (the repo=None refusal is corroborated).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260923T1045-task-keyed-landed" data-who="reckon-ship" data-when="2026-09-23T10:45:00Z">
     <div class="r-comment-body"><p><strong>§2 landed and is live</strong> (merged adbb6067, commits 4cfc76a4, 798e549d). The dispatch-time session decision is now <code>_task_session_resolution</code>, and the member-keyed <code>_member_session_resolution</code> is gone from the running module. A prior session is composed only when its run carried the same project, plan and node id. It is found from committed run records and live pointers, not the member's map, and a session whose run ended too large to continue is never composed.</p><p>Gate: 24 passed across the new file and the three updated session tests. Two adjacent test files fail, the same 2 as at base e3e51cd1. The declared mutation, restoring member-keyed selection, reddens the cross-task case (1 failed). Review: 90. Its two findings are: a latent contradiction in a test file that still asserts <code>member add --session</code> reuse, which belongs to §3; and two missing trailing newlines.</p><p>The worker delivered a manifest with empty <code>commits</code>, <code>tests</code> and <code>test_logs</code>. The coordinator filled them from the run's own <code>gate.log</code>, adjacent logs and commit list, and kept <code>manifest.md.asdelivered</code>. The stopgap config (<code>session_reuse: false</code>) stays in place until §3 lands and §7 restores same-task reuse.</p></div>
