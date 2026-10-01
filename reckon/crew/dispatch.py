@@ -8260,6 +8260,92 @@ def _record_stop_before_spawn() -> threading.Event:
     return requested
 
 
+def _record_is_this_attempt(record: Mapping[str, Any], spec: Mapping[str, Any]) -> bool:
+    """Whether a live pointer still names the attempt this supervisor runs as."""
+    try:
+        return int(record.get("attempt") or 1) == int(spec.get("attempt") or 1)
+    except (TypeError, ValueError):
+        return False
+
+
+def _started_phase(record: Mapping[str, Any]) -> str:
+    """``working`` for a pointer the launcher left at a pre-spawn label, else ""."""
+    from reckon.crew.recovery import _PRE_SPAWN_PHASES
+
+    return "working" if str(record.get("phase") or "") in _PRE_SPAWN_PHASES else ""
+
+
+def _delivered_phase(
+    record: Mapping[str, Any], exit_record: Mapping[str, Any] | None
+) -> str:
+    """The phase a finished worker's own delivery supports, or "" when none does.
+
+    A delivered manifest is the worker's own verdict, so its terminal status is
+    the phase the pointer should carry. A worker that reached no model at all —
+    the exit record says it ended during launch — is a launch failure rather
+    than a run that stopped mid-turn. Anything else, including a worker that
+    exited after only a partial report, keeps the phase the spawn wrote.
+    """
+    from reckon.crew.reports import TERMINAL_MANIFEST_STATUSES, parse_manifest
+
+    manifest = Path(str(record.get("manifest_path") or ""))
+    try:
+        status = str(
+            parse_manifest(
+                manifest.read_text(encoding="utf-8"), path=str(manifest)
+            ).get("status")
+            or ""
+        )
+    except (OSError, ValueError):
+        status = ""
+    if status in TERMINAL_MANIFEST_STATUSES:
+        return status
+    if (
+        exit_record is not None
+        and str(exit_record.get("ended_during") or "") == "launch"
+    ):
+        return LAUNCH_FAILED_PHASE
+    return ""
+
+
+def _publish_stored_phase(
+    spec: Mapping[str, Any],
+    *,
+    ended: bool,
+    exit_record: Mapping[str, Any] | None = None,
+) -> None:
+    """Rewrite the live pointer's stored phase from the run's own evidence.
+
+    The launcher writes ``starting`` and nothing else, so without this the
+    stored phase a reader sees — the follower's re-arm replay, the MCP views, a
+    peer's tooling — stays the pre-spawn label for the whole life of the run.
+    The supervisor is the only process that touches the pointer while the run is
+    alive, so the advance is written here: ``working`` once the worker is
+    spawned, and the delivered phase once the worker has exited.
+
+    A pointer that is gone — a discard took it — is left gone rather than
+    recreated, and a pointer whose attempt has moved on belongs to that attempt.
+    """
+    run_id = str(spec.get("run_id") or "")
+    if not run_id:
+        return
+
+    def mutate(record: dict[str, Any]) -> dict[str, Any]:
+        if not _record_is_this_attempt(record, spec):
+            return record
+        phase = (
+            _delivered_phase(record, exit_record) if ended else _started_phase(record)
+        )
+        if phase:
+            record["phase"] = phase
+        return record
+
+    try:
+        _mutate_pointer(run_id, mutate)
+    except CrewError:
+        return
+
+
 def _run_supervisor(spec_path: Path) -> int:
     """Take the snapshot, launch the worker, collect its exit, and stop.
 
@@ -8337,25 +8423,28 @@ def _run_supervisor(spec_path: Path) -> int:
         },
         attempt=attempt,
     )
+    _publish_stored_phase(spec, ended=False)
     try:
         _, status = os.waitpid(pid, 0)
     except ChildProcessError:
         status = None
     except OSError:
         status = None
+    exit_record = _supervisor_exit_record(
+        run_id=str(spec.get("run_id") or ""),
+        attempt=attempt,
+        worker_pid=pid,
+        launched_at=launched_at,
+        status=status,
+        run_directory=run_directory,
+    )
     _write_attempt_artifact(
         run_directory,
         EXIT_RECORD_NAME,
-        _supervisor_exit_record(
-            run_id=str(spec.get("run_id") or ""),
-            attempt=attempt,
-            worker_pid=pid,
-            launched_at=launched_at,
-            status=status,
-            run_directory=run_directory,
-        ),
+        exit_record,
         attempt=attempt,
     )
+    _publish_stored_phase(spec, ended=True, exit_record=exit_record)
     return 0
 
 
