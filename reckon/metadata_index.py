@@ -168,7 +168,7 @@ def build_index(
             # whatever replaced it.
             continue
         entry = known.get(relative)
-        if entry is not None and entry.get("stat") == signature:
+        if entry is not None and _same_file(entry.get("stat"), signature):
             build.reused += 1
             entries.append(entry)
             if "fields" in entry:
@@ -191,6 +191,25 @@ def build_index(
     if build.changed or not known:
         _store_persisted(docs_dir, project, entries)
     return build
+
+
+def _same_file(stored: object, signature: list[int]) -> bool:
+    """Return whether a persisted row was built from the file now on disk.
+
+    The device number is left out of the comparison. A shared filesystem
+    reports a different one for the same file on each host (measured 41 on a
+    compute node and 65 on a login node) while the inode, size and both
+    nanosecond timestamps agree, and the served process and the readers on
+    other hosts share one persisted index. Compared whole, every row read as
+    changed on the other host, so each reader re-parsed the whole project and
+    rewrote the index.
+    """
+
+    return (
+        isinstance(stored, list)
+        and len(stored) == len(signature)
+        and stored[1:] == signature[1:]
+    )
 
 
 def _cache_key(docs_dir: Path, project: str, with_git: bool) -> tuple[str, str, bool]:
