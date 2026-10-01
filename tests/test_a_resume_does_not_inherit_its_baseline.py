@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import os
+import socket
+import subprocess
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -24,6 +27,13 @@ TERMINAL_CLASSIFICATIONS = {
 
 def _timestamp(nanoseconds: int) -> str:
     return datetime.fromtimestamp(nanoseconds / 1_000_000_000, tz=UTC).isoformat()
+
+
+def _reaped_pid() -> int:
+    """A pid the kernel has already collected, so a probe reads it as gone."""
+    proc = subprocess.Popen([sys.executable, "-c", "pass"])
+    proc.wait()
+    return proc.pid
 
 
 def _manifest_text(status: str) -> str:
@@ -56,6 +66,12 @@ def pointer_factory(tmp_path: Path):
             "run_id": run_id,
             "project": "fixture-project",
             "process_alive": False,
+            # The pointer's own pid, issued on this host and already reaped, so
+            # the process table answers that the attempt's worker is gone. A
+            # resume is offered only once that end is observed.
+            "launcher_host": socket.gethostname(),
+            "pid": _reaped_pid(),
+            "pid_start_time": "12345",
             "phase": "working",
             "attempt": attempt,
             "attempt_kind": "resume" if resumed else "dispatch",

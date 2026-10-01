@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import ast
 import os
+import socket
 import subprocess
 import sys
 from pathlib import Path
@@ -19,7 +20,7 @@ from typing import Any
 
 import pytest
 
-from reckon.crew import runs
+from reckon.crew import recovery, runs
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CREW = REPO_ROOT / "reckon" / "crew"
@@ -71,9 +72,45 @@ def test_the_accessor_agrees_with_the_pid_primitive() -> None:
         )
 
 
-def _record_pid_names(tree: ast.AST) -> set[str]:
-    """Names bound to an expression that reads a pid out of a record."""
-    names: set[str] = set()
+def _scope_owners(tree: ast.AST) -> dict[int, ast.AST]:
+    """Map every node to the function (or module) whose names it reads.
+
+    A name bound from a record and the probe that consumes it are compared only
+    within the scope that owns both. A module-wide name map would flag a probe
+    that takes a pid which merely shares a name with a pid read elsewhere — a
+    supervisor pid this dispatch has just spawned, say — and that call may probe
+    the process the module itself started.
+    """
+    owner: dict[int, ast.AST] = {}
+
+    def walk(node: ast.AST, scope: ast.AST) -> None:
+        for child in ast.iter_child_nodes(node):
+            inner = (
+                child
+                if isinstance(
+                    child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)
+                )
+                else scope
+            )
+            owner[id(child)] = inner
+            walk(child, inner)
+
+    owner[id(tree)] = tree
+    walk(tree, tree)
+    return owner
+
+
+def _process_alive_calls(
+    source: str, filename: str = "<source>"
+) -> list[dict[str, Any]]:
+    """Every call to the pid primitive, with whether its pid came from a record.
+
+    A pid read from a record is one bound by an assignment in the same scope, so
+    a probe is judged against the names that scope itself read from a record.
+    """
+    tree = ast.parse(source, filename=filename)
+    owners = _scope_owners(tree)
+    record_pid_names: dict[int, set[str]] = {}
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
             targets, value = node.targets, node.value
@@ -81,21 +118,13 @@ def _record_pid_names(tree: ast.AST) -> set[str]:
             targets, value = [node.target], node.value
         else:
             continue
-        if value is None:
-            continue
-        source = ast.unparse(value)
-        if not any(marker in source for marker in PID_FROM_RECORD):
-            continue
-        names.update(t.id for t in targets if isinstance(t, ast.Name))
-    return names
+        if value is not None and any(
+            marker in ast.unparse(value) for marker in PID_FROM_RECORD
+        ):
+            record_pid_names.setdefault(id(owners[id(node)]), set()).update(
+                t.id for t in targets if isinstance(t, ast.Name)
+            )
 
-
-def _process_alive_calls(
-    source: str, filename: str = "<source>"
-) -> list[dict[str, Any]]:
-    """Every call to the pid primitive, with whether its pid came from a record."""
-    tree = ast.parse(source, filename=filename)
-    record_pid_names = _record_pid_names(tree)
     found: list[dict[str, Any]] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
@@ -106,8 +135,9 @@ def _process_alive_calls(
             continue
         arg = node.args[0]
         argument = ast.unparse(arg)
+        scope_names = record_pid_names.get(id(owners[id(node)]), set())
         from_record = any(marker in argument for marker in PID_FROM_RECORD) or (
-            isinstance(arg, ast.Name) and arg.id in record_pid_names
+            isinstance(arg, ast.Name) and arg.id in scope_names
         )
         found.append(
             {"line": node.lineno, "argument": argument, "from_record": from_record}
@@ -185,15 +215,29 @@ def _write_pointer(home: Path, run_id: str, **fields: Any) -> None:
 
 
 def test_a_pointer_whose_process_is_gone_stops_working(home: Path) -> None:
-    """The read model, not the accessor: a dead pid stops reading as running."""
+    """The read model, not the accessor: a dead pid stops reading as running.
+
+    ``list_live`` returns pointers as they are stored and never writes a probe
+    into ``process_alive``: a value there would be read back as this host's own
+    answer by a reader that never issued the pid. Liveness is derived where it
+    is read, through the classifier, so the dead pid is asserted there, on a
+    pointer whose launching host is this one.
+    """
     pid = _reaped_pid()
     # A positive control so the False below is a measurement: the primitive
     # reads a process known to be present, then the pointer is re-read.
     assert runs.process_alive(os.getpid()) is True
-    _write_pointer(home, "r-gone", phase="working", pid=pid, pid_start_time="12345")
+    _write_pointer(
+        home,
+        "r-gone",
+        phase="working",
+        pid=pid,
+        pid_start_time="12345",
+        launcher_host=socket.gethostname(),
+    )
     reloaded = [row for row in runs.list_live() if row["run_id"] == "r-gone"]
     assert len(reloaded) == 1
-    assert reloaded[0]["process_alive"] is False
+    assert recovery.classify_pointer(reloaded[0])["process_alive"] is False
 
 
 def test_a_reused_pid_is_not_read_as_a_survivor() -> None:
