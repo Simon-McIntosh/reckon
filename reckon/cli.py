@@ -2495,6 +2495,13 @@ def _follow_resume_plan(
             return "continue", max(0, offset), recorded
         return "baseline", 0, recorded
 
+    if session is None:
+        # A session-less follower observes the whole fleet in one pass and has
+        # no pane to restore, so it has no durable place. Reading one would find
+        # a place a concurrent session-less follower wrote, resume mid-stream,
+        # and deliver a resume event and rows the pane already showed.
+        return "baseline", 0, {}
+
     record = follow_checkpoint.read(project, session)
     if not record:
         return "baseline", 0, {}
@@ -2868,6 +2875,11 @@ def _follow_watch_lines(
         from reckon.crew import follow_checkpoint
 
         nonlocal written_place
+        if session is None:
+            # A session-less follower has no pane to restore, so it keeps no
+            # durable place: writing one would hand a concurrent session-less
+            # follower a spot to resume from, which is a place it never had.
+            return
         try:
             resolved_identity: Mapping[str, Any] | None = (
                 identity
