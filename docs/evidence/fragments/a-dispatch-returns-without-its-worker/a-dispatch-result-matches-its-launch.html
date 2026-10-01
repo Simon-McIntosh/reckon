@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>A dispatch result matches its launch | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="a-dispatch-result-matches-its-launch">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>A dispatch result matches its launch</h2>
+        <p class="lead">A refused dispatch returned its refusal after it had already launched — leaving a live pointer, a worktree or a running worker behind, which a reader takes for a run whose process died without a manifest. Three mechanisms produced such a refusal, and all three are now regression-guarded by <code>tests/test_dispatch_result_matches_launch.py</code>. Separately, the contract-validation refusal returned <code>ok: false</code> with <code>error: null</code>, carrying its reason only under <code>validation.findings</code>, so a caller keying on <code>error</code> read a failed contract as a dispatch that would proceed; every <code>ok: false</code> the dispatch command emits now carries <code>error</code> and <code>detail</code> as non-empty strings.</p>
+      </header>
+
+      <section id="a-dispatch-result-matches-its-launch-what-changed">
+        <h2>What changed</h2>
+        <ul>
+          <li><code>reckon/cli.py</code> composes the dry-run contract-validation verdict as a refusal with <code>error: "contract-validation"</code> and a <code>detail</code> that names the failed properties and their findings, rather than emitting <code>ok: false</code> with neither key. The findings stay structured under <code>validation</code>.</li>
+          <li><code>reckon/cli.py</code> adds a non-empty <code>detail</code> to the three <code>competence-refusal</code> emits on the dispatch and shadow commands, which carried <code>error</code> but no <code>detail</code>.</li>
+          <li><code>tests/test_dispatch_result_matches_launch.py</code> drives a stub-backed dispatch in a temporary crew home through each post-launch refusal, the survival check, an unresolvable <code>--member</code>, and every <code>ok: false</code> the dispatch command emits, live and dry-run alike.</li>
+        </ul>
+      </section>
+
+      <section id="a-dispatch-result-matches-its-launch-mechanisms">
+        <h2>Mechanisms, driven at the node's base</h2>
+        <p>Each mechanism is driven at the node's base revision <code>531027092cec6e94ef32f4ab83a4c84eb3f7b1c5</code>. Two of the three no longer return a refusal beside a live pointer, a worktree or a live worker at that base, so the case stands as a regression guard and the manifest names the commit that removed it.</p>
+        <table>
+          <thead><tr><th>Mechanism</th><th>At the node's base</th><th>Removed at</th></tr></thead>
+          <tbody>
+            <tr><td>Exception handler around the post-launch tree snapshot</td><td>No longer refuses beside a trace: the unwind releases the run's claim, removes its worktree and signals its worker before re-raising, so the refusal leaves nothing.</td><td><code>4248cbaf</code></td></tr>
+            <tr><td>Cleanup that refused to remove the run's own worktree</td><td>No longer refuses beside a trace: the run's claim is released before the worktree is removed, so the remover sees no claim.</td><td><code>4248cbaf</code></td></tr>
+            <tr><td>Survival check that refused a supervisor which had spawned its worker</td><td>No longer refuses: an exit record naming the spawned worker is accepted as the receipt of a launch that ran.</td><td><code>1859c0d19</code></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="a-dispatch-result-matches-its-launch-the-gate">
+        <h2>The gate</h2>
+        <p>The test file drives each mechanism. A launch either names the run it launched, or leaves no live pointer, no worktree for the node, and no worker that <code>record_process_alive</code> reports alive; a refusal that leaves any one of the three fails. A positive control shows every read the assertion depends on does see a present run, so an absence is a measurement rather than a blind read.</p>
+        <p>The new file first fails against the base source exactly where it should: driven against the base tree with a base <code>cli.py</code> it reports 3 failed, 19 passed — the contract-validation refusal and the two competence-refusal cases, each an <code>ok: false</code> that carried no <code>detail</code>. Against the head it passes 22 of 22.</p>
+        <table>
+          <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+          <tbody>
+            <tr><td>Base source <code>531027092cec6e94ef32f4ab83a4c84eb3f7b1c5</code>, the new test over base <code>cli.py</code>, from a pristine archive</td><td>3 failed, 19 passed, <code>EXIT=1</code>; ids &mdash; <code>test_a_contract_validation_refusal_carries_error_and_detail</code>, <code>test_every_live_refusal_carries_error_and_detail[competence-refusal]</code>, <code>test_every_dry_run_refusal_carries_error_and_detail[competence-refusal]</code></td><td><code>logs/new-test-at-base-source.log</code></td></tr>
+            <tr><td>Head, the new test over head <code>cli.py</code></td><td>22 passed, <code>EXIT=0</code></td><td><code>logs/head-focused.log</code></td></tr>
+            <tr><td>Base <code>531027092cec6e94ef32f4ab83a4c84eb3f7b1c5</code>, every test file importing <code>reckon.crew.dispatch</code> or <code>reckon.cli</code>, 175 files, <code>pytest -n 8</code>, basetemp <code>/tmp/bt-base</code></td><td>18 failed, 2251 passed, 7 skipped, 4 errors, <code>EXIT=1</code></td><td><code>logs/base-arm.log</code></td></tr>
+            <tr><td>Head <code>bb9bd676</code> content, same files plus the new one, 176 files, <code>pytest -n 8</code>, basetemp <code>/tmp/bt-head</code></td><td>18 failed, 2277 passed, 7 skipped, <code>EXIT=1</code>; the new file's 22 cases all pass and it adds no failing id — the 18 head failures are the base's, modulo four order-sensitive ids that pass in isolation at head</td><td><code>logs/head-arm.log</code></td></tr>
+            <tr><td>Isolation rerun at head of the four ids seen only at head in the full arm</td><td>4 passed, <code>EXIT=0</code> &mdash; the four are load-flaky, not caused by this change</td><td><code>logs/head-only-ids-isolated.log</code></td></tr>
+          </tbody>
+        </table>
+        <p>The head arm ran on the working tree that became <code>bb9bd676</code>; the final head <code>2c71dd0e</code> differs only by one <code>detail</code> string on the post-resolution competence branch, which no gate case reaches. Both used the shared environment interpreter at <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code>, each arm with its own basetemp under node-local <code>/tmp</code>. The base arm additionally reported 4 errors in <code>test_build.py</code> (wheel build), an environment failure absent at head.</p>
+      </section>
+
+      <section id="a-dispatch-result-matches-its-launch-negative-control">
+        <h2>Declared negative control</h2>
+        <p>Declared mutation: <em>in a scratch tree, restore one removed path that returns a refusal beside a live pointer; the matching case then fails</em>. The pre-fix unwind ordering was restored in <code>/tmp/nc-reckon</code> — the run's worktree removed while its own live pointer still claimed it. The dispatch then refuses with <code>refusing to remove worktree &hellip; claimed by live runs &lt;its own run&gt;</code> beside a live pointer, and the two mechanism cases in <code>tests/test_dispatch_result_matches_launch.py</code> fail: 2 failed, 20 passed, <code>EXIT=1</code>.</p>
+        <p>Log: <code>logs/negative-control-mutation.log</code>.</p>
+      </section>
+
+      <section id="a-dispatch-result-matches-its-launch-commits">
+        <h2>Commits</h2>
+        <p><code>bb9bd6769dda5c3d0ac560e09c7e5e0c7f673486</code> &mdash; fix(crew): composes the contract-validation refusal with <code>error</code> and <code>detail</code>, adds <code>detail</code> to the competence-refusal emits, and adds <code>tests/test_dispatch_result_matches_launch.py</code>.</p>
+        <p><code>2c71dd0eadf33627013a797ac94ab28040d1e114</code> &mdash; fix(crew): names the competence verdict's own reason on the post-resolution refusal rather than the contract validation's.</p>
+        <p>The fragment commit that carries this record adds no code. They change <code>reckon/cli.py</code> and the new test file.</p>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
