@@ -3471,5 +3471,5 @@ def observe_log(
             elapsed_seconds=elapsed_seconds,
             receipt=receipt,
         )
-    obs.stream_state["offset"] = _last_line_boundary(path)
+    obs.stream_state.update({"offset": _last_line_boundary(path)})
     return obs

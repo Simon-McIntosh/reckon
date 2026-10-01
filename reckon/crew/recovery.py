@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import fcntl
 import hashlib
 import importlib
@@ -3078,6 +3079,82 @@ def _harness_command(record: Mapping[str, Any], argv: Any) -> str | None:
     return str(dialect) if dialect else None
 
 
+def _observed_stream(
+    record: Mapping[str, Any],
+    *,
+    memo: dict[str, Any] | None = None,
+    memo_fresh: bool = False,
+) -> dict[str, Any] | None:
+    """One cli run's stream observation, served from a memo while it still holds.
+
+    Two readers of a classification consult the same stream — the budget gates
+    and the background-wait signal — and each would otherwise pay a full parse
+    of it. They share this read, so one classification parses the stream once
+    and the memo beside the pointer carries what it found, which is what makes a
+    second classification of an unchanged run cost no parse at all.
+
+    The memo's stream entry is served only while the file it was read from is
+    still that file by identity. When it is not, the read starts at the byte
+    offset the last one reached, so a stream that has only grown costs the
+    records appended since rather than the whole file. An offset past the end of
+    the file, or one whose stream was replaced, reads from the first record: a
+    resume writes a new stream, and an offset into a predecessor's bytes means
+    nothing in a file that never held them.
+    """
+    if record.get("launch") != "cli":
+        return None
+    log = Path(str(record.get("log_path") or ""))
+    if not log.is_file():
+        return None
+    command = _harness_command(record, record.get("argv"))
+    if not command:
+        return None
+    stored = memo.get("stream") if memo is not None else None
+    resume: dict[str, Any] | None = None
+    if isinstance(stored, Mapping) and str(stored.get("path") or "") == str(log):
+        state = stored.get("state")
+        if isinstance(state, Mapping):
+            resume = {
+                "offset": int(stored.get("offset") or 0),
+                "state": state,
+            }
+        # An entry this call wrote is current by construction, which is what
+        # lets the second reader of one classification — the background-wait
+        # signal after the budget gates — reuse the first reader's parse. The
+        # identity is re-checked either way, so a stream that moved between the
+        # two questions is still read again.
+        if (
+            (memo_fresh or stored.get("current") is True)
+            and stored.get("ident") == _file_identity(log)
+            and isinstance(stored.get("observation"), Mapping)
+        ):
+            return dict(stored.get("observation") or {})
+    from reckon import _backends
+
+    try:
+        observation = _backends.observe_log(
+            backend_name=str(record.get("backend") or ""),
+            backend={"command": command},
+            log_path=log,
+            resume=resume,
+        )
+    except (_backends.BackendError, CrewError, OSError, ValueError):
+        # An unreadable or untranslatable stream carries no readable budget and
+        # no final message; the manifest and liveness paths still classify it.
+        return None
+    seen = observation.as_dict()
+    if memo is not None:
+        memo["stream"] = {
+            "path": str(log),
+            "ident": _file_identity(log),
+            "offset": int(observation.stream_state.get("offset") or 0),
+            "state": observation.stream_state,
+            "observation": seen,
+            "current": True,
+        }
+    return seen
+
+
 def _stream_budget(
     record: Mapping[str, Any],
     *,
@@ -3091,67 +3168,16 @@ def _stream_budget(
     budget into the pointer, while the ticker reads raw pointers that have not
     been through observe; both paths resolve through the same backend
     translation, so they reach the same block and a ticker reading a raw
-    pointer cannot disagree with observe's phase.
-
-    A ``memo`` is the classification's memo beside the pointer. When its key
-    still matches, the block the last read produced is served as it stands.
-    When it does not, the stream is read again — but from the byte offset that
-    read reached, so a stream that has only grown costs the records appended
-    since rather than the whole file. The offset is only usable while the file
-    it was taken from is the file being read now: a stream replaced by a resume
-    is read from its first record, because an offset into a predecessor's bytes
-    means nothing in a file that never held them.
+    pointer cannot disagree with observe's phase. The read itself, memo
+    included, belongs to :func:`_observed_stream`.
     """
     budget = record.get("budget")
     if isinstance(budget, Mapping) and budget.get("refusal"):
         return budget
-    if record.get("launch") != "cli":
+    seen = _observed_stream(record, memo=memo, memo_fresh=memo_fresh)
+    if seen is None:
         return None
-    log = Path(str(record.get("log_path") or ""))
-    if not log.is_file():
-        return None
-    argv = record.get("argv")
-    command = _harness_command(record, argv)
-    if not command:
-        return None
-    from reckon import _backends
-
-    stored = memo.get("stream") if memo is not None else None
-    resume: dict[str, Any] | None = None
-    if isinstance(stored, Mapping) and str(stored.get("path") or "") == str(log):
-        state = stored.get("state")
-        if isinstance(state, Mapping):
-            resume = {
-                "offset": int(stored.get("offset") or 0),
-                "state": state,
-            }
-        if (
-            memo_fresh
-            and stored.get("ident") == _file_identity(log)
-            and isinstance(stored.get("budget"), Mapping)
-        ):
-            return dict(stored["budget"]) or None
-    try:
-        observation = _backends.observe_log(
-            backend_name=str(record.get("backend") or ""),
-            backend={"command": command},
-            log_path=log,
-            resume=resume,
-        )
-    except (_backends.BackendError, CrewError, OSError, ValueError):
-        # An unreadable or untranslatable stream carries no readable budget;
-        # the manifest and liveness paths still classify the run.
-        return None
-    observed = observation.as_dict().get("budget") or {}
-    if memo is not None:
-        memo["stream"] = {
-            "path": str(log),
-            "ident": _file_identity(log),
-            "offset": int(observation.stream_state.get("offset") or 0),
-            "state": observation.stream_state,
-            "budget": observed,
-        }
-    return observed or None
+    return seen.get("budget") or None
 
 
 def _stream_refusal_block(record: Mapping[str, Any]) -> dict[str, Any] | None:
@@ -3445,7 +3471,12 @@ _BACKGROUND_WAIT_FINAL_MESSAGE_RE = re.compile(
 )
 
 
-def _background_wait_signal(record: Mapping[str, Any]) -> str | None:
+def _background_wait_signal(
+    record: Mapping[str, Any],
+    *,
+    memo: dict[str, Any] | None = None,
+    memo_fresh: bool = False,
+) -> str | None:
     """The one sentence proving a vanished process was waiting on background work.
 
     A dead process with no complete manifest is indistinguishable from one
@@ -3475,26 +3506,12 @@ def _background_wait_signal(record: Mapping[str, Any]) -> str | None:
         # observe() folds the stream's final message onto the pointer, but a
         # caller reading the raw pointer — the watch producer's path — has
         # none of it cached yet. Reading the log directly keeps that path
-        # answering the same question the folded record would.
-        log = Path(str(record.get("log_path") or ""))
-        if log.is_file():
-            argv = record.get("argv")
-            command = _harness_command(record, argv)
-            if command:
-                from reckon import _backends
-
-                try:
-                    observation = _backends.observe_log(
-                        backend_name=str(record.get("backend") or ""),
-                        backend={"command": command},
-                        log_path=log,
-                    )
-                except (_backends.BackendError, CrewError, OSError, ValueError):
-                    observation = None
-                if observation is not None:
-                    final_message = str(
-                        observation.as_dict().get("final_message") or ""
-                    )
+        # answering the same question the folded record would; the shared read
+        # means a classification that already parsed this stream pays nothing
+        # for asking a second question of the same bytes.
+        seen = _observed_stream(record, memo=memo, memo_fresh=memo_fresh)
+        if seen is not None:
+            final_message = str(seen.get("final_message") or "")
 
     if final_message and _BACKGROUND_WAIT_FINAL_MESSAGE_RE.search(final_message):
         return (
@@ -5561,28 +5578,24 @@ def _write_classification_memo(
         return
     payload = dict(memo)
     payload["version"] = CLASSIFICATION_MEMO_VERSION
+    written: str | None = None
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        handle = tempfile.NamedTemporaryFile(
+        with tempfile.NamedTemporaryFile(
             "w",
             encoding="utf-8",
             dir=str(path.parent),
             prefix=f".{path.name}.",
             suffix=".tmp",
             delete=False,
-        )
-        try:
+        ) as handle:
+            written = handle.name
             json.dump(payload, handle, sort_keys=True)
-            handle.close()
-            os.replace(handle.name, path)
-        except BaseException:
-            handle.close()
-            try:
-                os.unlink(handle.name)
-            except OSError:
-                pass
-            raise
+        os.replace(written, path)
     except (OSError, TypeError, ValueError):
+        if written is not None:
+            with contextlib.suppress(OSError):
+                os.unlink(written)
         return
 
 
@@ -5690,10 +5703,8 @@ def _review_input_identities(record: Mapping[str, Any]) -> dict[str, str]:
     directory = review_module.review_store_root() / project
     identities[str(directory)] = _file_identity(directory)
     candidates = [directory / f"{run_id}.json"]
-    try:
+    with contextlib.suppress(OSError):
         candidates.extend(sorted(directory.glob(f"{run_id}.at-*.json")))
-    except OSError:
-        pass
     for path in candidates:
         identities[str(path)] = _file_identity(path)
     return identities
@@ -5969,7 +5980,7 @@ def classify_pointer(
     background_wait = (
         None
         if (refusal_block or retry_block or budget_hold)
-        else _background_wait_signal(record)
+        else _background_wait_signal(record, memo=memo, memo_fresh=memo_fresh)
     )
     # A refusal at admission is read from the stream's own marks, not from the
     # budget block: it is not a spend refusal — nothing was requested — and the
