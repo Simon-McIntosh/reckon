@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="148">
+<meta name="plan-version" content="149">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -1413,6 +1413,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261001T141249924702-review-of-the-ledger-row-names-its-crew-session" data-who="reckon-build" data-when="2026-10-01T14:22:40.637Z">
     <div class="r-comment-body"><p>Review of the-ledger-row-names-its-crew-session stored at base a4c312fbe/head 620881137f: 5 dimensions scored (goal_fidelity 19, evidence 16, scope_discipline 12, durability 18, fit 17; total 82), one blocking finding that promotion writes ledger-row key session without declaring it in RECORD_FIELDS so tests/test_record_fields_declare_every_key.py goes red on the next promotion, added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261001T142724335847-review-of-the-ledger-row-names-its-crew-session" data-who="reckon-build" data-when="2026-10-01T14:35:11.883Z">
+    <div class="r-comment-body"><p>Independent re-review of the-ledger-row-names-its-crew-session at base a4c312fbe / head b7a2a47 stored at reviews/reckon/r-20261001T140543620011-....at-b7a2a470f79b0aedba35e35a401db50dbaab05a5.json: 5 dimensions scored (goal_fidelity 19, evidence 16, scope_discipline 15, durability 16, fit 18; total 84), the prior blocking finding (undeclared session key) is now repaired by commit b7a2a47 which declares session in reckon/ledger.py RECORD_FIELDS, one follow-on finding that the schema check self-skips so the declaration is not guarded by a firing test, added_failure_count 0 (no blocking finding remains).</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
