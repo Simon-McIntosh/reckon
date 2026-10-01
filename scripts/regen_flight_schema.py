@@ -37,6 +37,39 @@ def _run(command: list[str]) -> str:
     return result.stdout
 
 
+def _without_optional(text: str) -> str:
+    """Spell the generated ``Optional[X]`` annotations as ``X | None``.
+
+    gen-pydantic writes every optional slot as ``Optional[...]`` and imports
+    the name, which is a spelling the committed module then carries into the
+    tree and a linter has to rewrite. Normalising here keeps the artefact the
+    generator writes the artefact the repository keeps.
+
+    The brackets are matched rather than pattern-replaced, because an
+    annotation nests -- ``Optional[dict[str, BackendConfig]]`` -- and a
+    regular expression over the first closing bracket rewrites that one into
+    a ``str | None`` inside the mapping -- ``dict[str, BackendConfig | None]``
+    -- which is a different type silently substituted for the declared one.
+    """
+    marker = "Optional["
+    while True:
+        start = text.find(marker)
+        if start < 0:
+            break
+        depth = 1
+        index = start + len(marker)
+        while depth:
+            character = text[index]
+            if character == "[":
+                depth += 1
+            elif character == "]":
+                depth -= 1
+            index += 1
+        inner = text[start + len(marker) : index - 1]
+        text = f"{text[:start]}{inner} | None{text[index:]}"
+    return text.replace("    Optional,\n", "")
+
+
 def generate_pydantic() -> str:
     """Return the Pydantic module text for the flight schema."""
     body = _run(
@@ -49,7 +82,7 @@ def generate_pydantic() -> str:
             str(SOURCE),
         ]
     )
-    return BANNER + body
+    return BANNER + _without_optional(body)
 
 
 def generate_json_schema() -> str:

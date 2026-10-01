@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="section-contract-and-computed-impl">
+  <meta name="plan-title" content="A live dispatch resolves the lane its section's record earns">
+  <meta name="plan-summary" content="plan_dispatch resolves a node's lane through resolve_section_routing, reading the section record from the plan its dispatch authority names, so a section at or above the raise threshold dispatches on the raised class's lane and the dispatch summary names the count that caused it; the four record-identity derivations collapse into one that normalises the dotted, hyphenated and printed spellings to the identity the plan state carries; and the flight schema generator emits optional annotations as X | None, so the regenerated pydantic module carries no UP045 finding.">
+  <meta name="plan-evidence-for" content="reckon:section-contract-and-computed-impl">
+  <meta name="plan-verifies" content="reckon:section-contract-and-computed-impl#s5">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,dispatch,section-routing,capability,flight-schema">
+  <title>A live dispatch resolves the lane its section's record earns | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="section-routing-reaches-dispatch" data-reckon="landed" data-when="2026-10-01">
+  <h2>A live dispatch resolves the lane its section's record earns</h2>
+  <p>The rule landed at <code>c23de221</code> with no production caller: a live dispatch never asked it,
+  so a section that had consumed two attempts still launched on the class its record declared.
+  <code>plan_dispatch</code> now resolves its lane through <code>resolve_section_routing</code>, reading
+  the plan the dispatch authority names, and takes the backend and settings that payload returns. The
+  raise and the count that caused it travel in the dispatch record's new <code>section_routing</code>
+  field, so a coordinator reading a dry run sees <em>attempt 3 reached the raise threshold</em> rather
+  than inferring it. A node with no readable plan, no section, or a record the parser rejects resolves
+  through role routing alone — the lookup adds no refusal the visibility gates do not already make, so
+  no dispatch that worked before stops working.</p>
+
+  <h3>One identity for one section</h3>
+  <p>Four callers derived a section's identity themselves and two of them disagreed. A section
+  authored as <code>&lt;h2 id="s5-1"&gt;</code> carries <code>s5-1</code> in its typed record, but the
+  routing lookup spelled it <code>s5.1</code>, so the record was not found; promotion spelled the
+  hyphenated anchor correctly and its section-risk lookup used it as a record id.
+  <code>reckon/crew/routing.py</code> now carries one derivation,
+  <code>section_record_id</code> (with <code>section_anchor</code> applying the comment-anchor
+  default), and all four callers resolve through it: the routing record lookup, the two HTML section
+  scanners in <code>routing.py</code> and <code>dispatch.py</code>, and promotion's comment anchor.
+  Promotion's section-risk lookup reads the record id the state carries rather than an anchor for it.
+  The parity case in the new test file shows one key for <code>s5.1</code>, <code>s5-1</code> and the
+  printed <code>§5.1</code> across the dispatch, routing and promotion callers.</p>
+  <p>Both authored-HTML scanners admit either spelling an id was authored under: a plan authored
+  with the dotted anchor <code>s5.1</code> is found when a node names the hyphenated
+  <code>s5-1</code>, and the reverse, through one candidate set
+  (<code>section_id_candidates</code>) built once in <code>routing.py</code> and drawn by both
+  lookup sites, so the two cannot drift apart. A guard case pins it with a heading whose text
+  omits the reference, so the id lookup has to answer rather than the heading-text fallback:
+  restoring the guard's old candidate set (the raw spelling and the hyphenated identity only)
+  fails that case at <code>assert False is True</code> for <code>s5-1</code> against the dotted
+  anchor (<code>logs/negative-control-guard.log</code>, EXIT=1).</p>
+
+  <h3>The generator's own spelling</h3>
+  <p><code>scripts/regen_flight_schema.py</code> post-processes the pydantic it emits, rewriting
+  <code>Optional[X]</code> to <code>X | None</code> with balanced brackets — <code>dict[str,
+  BackendConfig]</code> nests, so a first-closing-bracket substitution would have silently changed the
+  declared type — and drops the now-unused <code>Optional</code> import. A fresh generator run at the
+  head reproduces both committed artefacts byte for byte, and
+  <code>ruff check reckon/_flight_schema.py</code> reports <strong>0</strong> UP045 findings against
+  the base's 107.</p>
+
+  <h3>Base arm: the defect reproduced</h3>
+  <p>The new test file at the base revision <code>33c5e761d</code>, in a scratch tree of that
+  revision, fails on the lane assertion first:</p>
+  <pre><code># pytest tests/test_section_routing_reaches_dispatch.py tests/test_section_attempts_capability.py \
+    tests/test_section_contract_is_refused.py tests/test_flight.py     (base scratch tree)
+&gt;       assert resolution.backend == "raised-lane"
+E       AssertionError: assert 'section-lane' == 'raised-lane'
+4 failed, 143 passed, 2 skipped                                    (EXIT=1, base-gate.log)</code></pre>
+  <p>The three non-lane failures are the new evidence surface itself — the dispatch record has no
+  <code>section_routing</code> field and no single derivation is importable at that revision — and the
+  three pre-existing files pass at base and at head.</p>
+
+  <h3>Measure</h3>
+  <p>Gate: <code>tests/test_section_routing_reaches_dispatch.py</code>,
+  <code>tests/test_section_attempts_capability.py</code>, <code>tests/test_section_contract_is_refused.py</code>
+  and <code>tests/test_flight.py</code>, run at base and at head with a basetemp private to each
+  process. Base arm at <code>33c5e761d</code>: <strong>4 failed, 143 passed, 2 skipped, EXIT=1</strong>
+  (<code>logs/base-gate.log</code>). Head arm at <code>4fba21b2a</code>: <strong>147 passed, 2
+  skipped, EXIT=0</strong> (<code>logs/head-gate.log</code>), so the head arm adds no failure id. The
+  declared negative control — remove the <code>_dispatch_section_routing</code> call from the dispatch
+  site in a scratch copy of the head — is <strong>3 failed, 1 passed, EXIT=1</strong>
+  (<code>logs/negative-control.log</code>) with the raise case failing on
+  <code>assert 'section-lane' == 'raised-lane'</code>.</p>
+  <p>A wider crew-dispatch regression set (<code>test_crew.py</code>, <code>test_crew_dryrun.py</code>,
+  <code>test_crew_mounted_paths.py</code>, <code>test_crew_dispatch_guard.py</code>,
+  <code>test_dry_run_reaches_admission.py</code>, <code>test_plan_review_gate.py</code>,
+  <code>test_brief_plan_exclusivity.py</code>) was run as a second read of the wiring at two matched
+  revisions: <strong>head 15 failed, 240 passed</strong> at <code>ebd212e9a</code>
+  (<code>logs/head-dispatch-regression-repaired.log</code>) against <strong>base 17 failed, 238
+  passed</strong> at <code>33c5e761d</code> (<code>logs/base-dispatch-regression.log</code>), with
+  no failure id seen at the head that the base did not also carry. The two base-only ids are
+  watcher-arming tests that flip with the live fleet's watcher state. An earlier attempt at this
+  set was invalidated by the operator's own scratch cleanup deleting its basetemp mid-run; every
+  failure and error in the log it left (<code>logs/head-dispatch-regression-invalidated.log</code>)
+  is a <code>FileNotFoundError</code> naming that deleted path rather than a code verdict, so the
+  figures above come from the re-run.</p>
+  <p>Lint delta over the changed Python paths: <code>ruff check</code> and
+  <code>ruff format --check</code> report no finding the base revision did not, and the new test file
+  is clean under both.</p>
+
+  <h3>Records</h3>
+  <p>Commits <code>1ff67f859</code> (the wiring, the single derivation and the generator),
+  <code>4fba21b2a</code> (the parity case's lazy import, so a revision without the derivation fails on
+  its assertion rather than at collection), <code>ebd212e9a</code> (both authored anchor spellings
+  reach the section-text lookup) and <code>b534dcd47</code> (one candidate set serves both
+  authored-HTML lookups). The gate re-run at <code>b534dcd47</code> reports 149 passed, 2 skipped
+  (<code>logs/head-gate-guard.log</code>). Logs live under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T032201101995-section-routing-reaches-dispatch/logs/</code>.</p>
+</article>
+</body>
+</html>

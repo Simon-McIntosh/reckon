@@ -42,6 +42,7 @@ from reckon.crew.node import (
     repository_identity,
     NEEDS_HELP_MARKER,
     NodeValidation,
+    PlanVisibilityError,
     ScopeConflict,
     TaskNode,
     UnreconciledRuns,
@@ -86,8 +87,10 @@ from reckon.crew.routing import (
     resolve_scope_repository,
     resolve_role,
     resolve_role_override,
+    resolve_section_routing,
     resolved_time_budget,
     resolved_time_ceiling,
+    section_id_candidates,
     shadow_worktree_session,
 )
 from reckon.crew.runs import (
@@ -286,10 +289,7 @@ def _plan_section_text(html_text: str, section: str) -> str | None:
     requested = re.sub(r"\s+", " ", section.strip()).casefold()
     if not requested:
         return None
-    ids = {requested.removeprefix("#")}
-    numbered = re.fullmatch(r"§\s*([A-Za-z0-9._-]+)", requested)
-    if numbered:
-        ids.add(f"s{numbered.group(1)}".casefold())
+    ids = section_id_candidates(requested)
 
     soup = BeautifulSoup(html_text, "html.parser")
     identified = next(
@@ -364,6 +364,60 @@ def _resolved_plan_section_text(
     if blob.returncode:
         return None
     return _plan_section_text(blob.stdout, node.section)
+
+
+def _dispatch_section_routing(
+    config: Mapping[str, Any],
+    *,
+    node: TaskNode,
+    project: str,
+    repo: str | Path | None,
+    authority: Mapping[str, Any] | None,
+) -> dict[str, Any] | None:
+    """Resolve a node's routing from its plan section's own typed record.
+
+    The record is what says how much the section has already cost and at which
+    capability it declares itself, so a section attempted at or above the raise
+    threshold resolves on the raised class's lane through the same config that
+    routes every other node, and the payload's summary names the count that
+    caused it.
+
+    A node whose plan or section cannot be read here resolves through role
+    routing alone: the visibility gates downstream remain the authority for
+    refusals, so a lane lookup that cannot see the plan — no repository, no
+    mount, a record the parser rejects — must not become a new refusal point,
+    nor a reason a node that dispatches today stops dispatching.
+    """
+    from reckon.resources import ResourceCollision, resolve_resource
+
+    if not node.section.strip() or not node.plan.strip():
+        return None
+    if repo is None and authority is None:
+        return None
+    try:
+        resolved_authority = dict(
+            authority
+            or resolve_dispatch_authority(project, Path(str(repo)).resolve())
+        )
+        docs_dir = Path(str(resolved_authority["plan"]["docs"])).resolve()
+        resource = resolve_resource(
+            docs_dir, project, node.plan, "plan", include_archived=False
+        )
+        if resource is None:
+            return None
+        return resolve_section_routing(config, node=node, plan_path=resource.path)
+    except (CrewError, PlanVisibilityError, ResourceCollision, OSError, ValueError):
+        return None
+
+
+def _section_routing_evidence(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Trim a routing payload to the section facts a dispatch record carries."""
+    return {
+        "attempts": payload["attempts"],
+        "capability": payload["capability"],
+        "raise": payload["raise"],
+        "summary": payload["summary"],
+    }
 
 
 def _longest_contiguous_word_span(left: str, right: str) -> tuple[int, str]:
@@ -2478,6 +2532,7 @@ class DispatchPlan:
     sandbox_write_roots: tuple[Path, ...] | None = None
     requested_backend: str | None = None
     default_backend: str | None = None
+    section_routing: dict[str, Any] | None = None
     lane_declaration: dict[str, Any] | None = None
     lane_reading: dict[str, Any] | None = None
     lane_advisory: dict[str, Any] | None = None
@@ -2510,6 +2565,9 @@ class DispatchPlan:
             "brief": _brief_record(self.node),
             "requested_backend": self.requested_backend,
             "run_id": self.run_id,
+            "section_routing": (
+                None if self.section_routing is None else dict(self.section_routing)
+            ),
             "sandbox": {
                 "tier": self.backend_settings.get("sandbox"),
                 "write_roots": (
@@ -3605,12 +3663,28 @@ def plan_dispatch(
     # and default routing. A wrong lane that announces itself costs one
     # redispatch; a wrong lane that reports success can look merely quiet
     # indefinitely.
+    section_routing: dict[str, Any] | None = None
     if requested_backend:
         backend_name, backend = resolve_role_override(
             config, node.role, node.spec_level, requested_backend
         )
     else:
-        backend_name, backend = resolve_role(config, node.role, node.spec_level)
+        # The section's own record steers the lane, so a section that keeps
+        # costing attempts lands on the class its count earns without anyone
+        # deciding it by hand. A node with no readable record resolves exactly
+        # as role routing always resolved it.
+        section_routing = _dispatch_section_routing(
+            config,
+            node=node,
+            project=project,
+            repo=repo,
+            authority=authority,
+        )
+        if section_routing is None:
+            backend_name, backend = resolve_role(config, node.role, node.spec_level)
+        else:
+            backend_name = str(section_routing["backend"])
+            backend = dict(section_routing["backend_settings"])
     launch_kind = backend.get("launch")
     if launch_kind not in ("cli", "in-harness"):
         raise CrewError(
@@ -3867,6 +3941,11 @@ def plan_dispatch(
         authority=resolved_authority,
         requested_backend=requested_backend or None,
         default_backend=str(config.get("default_backend") or "") or None,
+        section_routing=(
+            None
+            if section_routing is None
+            else _section_routing_evidence(section_routing)
+        ),
         lane_declaration=lane_declaration,
         lane_reading=lane_reading,
         lane_advisory=lane_advisory,

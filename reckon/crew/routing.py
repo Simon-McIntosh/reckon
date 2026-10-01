@@ -192,25 +192,61 @@ def resolve_role_override(
     return str(backend_name), effective
 
 
-def _section_record_id(section: str) -> str:
-    """Return the plan record id a node's section name addresses."""
-    requested = re.sub(r"\s+", " ", str(section or "").strip()).casefold()
-    numbered = re.fullmatch(r"§\s*([A-Za-z0-9._-]+)", requested)
+_SECTION_IDENTITY = re.compile(
+    r"^(?:§|#)?\s*(?:s(?:ection)?[\s.-]*)?(\d+(?:[.-]\d+)*)$", re.IGNORECASE
+)
+
+
+def section_record_id(section: Any) -> str:
+    """Return the one identity every spelling of a plan section addresses.
+
+    One section is authored as a hyphenated anchor (``s5-1``), printed as
+    ``§5.1`` and spelled in prose as ``s5.1``. Its typed record, its element
+    ids and its comment anchors each carry one of those spellings, so a caller
+    deriving its own would address a record another caller's spelling never
+    finds. Every caller resolves the reference through this derivation instead.
+    """
+    text = re.sub(r"\s+", " ", str(section or "").strip())
+    numbered = _SECTION_IDENTITY.fullmatch(text)
     if numbered:
-        return f"s{numbered.group(1)}"
-    return requested.removeprefix("#")
+        return "s" + numbered.group(1).replace(".", "-")
+    return text.removeprefix("#").casefold()
+
+
+def section_anchor(section: Any) -> str:
+    """Return the anchor a section reference's comments and records hang from."""
+    return section_record_id(section) or "_top"
+
+
+def section_id_candidates(section: Any) -> set[str]:
+    """Return every authored id spelling one section reference may address.
+
+    A section's identity is one, but a plan is authored under whichever
+    spelling its author wrote: the hyphenated id a typed record carries
+    (``s5-1``) or the dotted one an author may have used (``s5.1``). The raw
+    reference stays a candidate of its own, because for a slug section it is
+    the whole id. Both authored-HTML lookups build their candidate set here,
+    so the two cannot drift apart.
+    """
+    text = re.sub(r"\s+", " ", str(section or "").strip())
+    identity = section_record_id(text)
+    candidates = {text.casefold().removeprefix("#"), identity}
+    numbered = re.fullmatch(r"s(\d+(?:-\d+)*)", identity)
+    if numbered:
+        candidates.add(f"s{numbered.group(1).replace('-', '.')}")
+    return {candidate for candidate in candidates if candidate}
 
 
 def _section_record(plan_path: str | Path, section: str) -> Mapping[str, Any]:
     """Return the typed record for one plan section, or an empty mapping."""
-    wanted = _section_record_id(section)
+    wanted = section_record_id(section)
     if not wanted:
         return {}
     state = _plan_html.read_state_file(Path(plan_path))
     for record in state.get("sections") or ():
         if not isinstance(record, Mapping):
             continue
-        if _section_record_id(str(record.get("id") or "")) == wanted:
+        if section_record_id(str(record.get("id") or "")) == wanted:
             return record
     return {}
 
@@ -1407,10 +1443,7 @@ def _contains_plan_section(html_text: str, section: str) -> bool:
     if not requested:
         return True
     requested_folded = requested.casefold()
-    ids = {requested_folded.removeprefix("#")}
-    numbered = re.fullmatch(r"§\s*([A-Za-z0-9._-]+)", requested)
-    if numbered:
-        ids.add(f"s{numbered.group(1)}".casefold())
+    ids = section_id_candidates(requested)
 
     soup = BeautifulSoup(html_text, "html.parser")
     if any(
