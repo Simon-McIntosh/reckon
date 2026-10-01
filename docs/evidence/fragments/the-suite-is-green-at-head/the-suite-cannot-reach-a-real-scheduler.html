@@ -28,9 +28,19 @@
   <code>tests/conftest.py</code> gained a session guard: a refusing stub for each of
   <code>salloc</code>, <code>sbatch</code>, <code>srun</code>, <code>squeue</code>,
   <code>scontrol</code>, <code>scancel</code> goes first on PATH, each records its own argv and
-  its <code>PYTEST_CURRENT_TEST</code>, and a per-test fixture fails the test that reached one,
-  naming the verb and its argv. A test's own recording scheduler, prepended later, still takes
-  precedence. No assertion was deleted.</p>
+  its <code>PYTEST_CURRENT_TEST</code>, and a per-test fixture fails the test that reached an
+  allocation verb (<code>salloc</code>, <code>sbatch</code>, <code>srun</code>), naming the verb
+  and its argv. A test's own recording scheduler, prepended later, still takes precedence. A
+  read-only probe is refused and recorded but does not fail the test that made it, so the guard
+  is not the cause of an unrelated red. No assertion was deleted.</p>
+
+  <p><strong>Repair.</strong> Commit <code>aa1ce2ba</code> narrows the failing verbs to the
+  allocation ones and adds a committed check that the guard fires:
+  <code>tests/test_dispatch_places_into_the_shared_reservation.py::test_a_test_that_reaches_an_allocation_verb_it_did_not_provide_is_failed</code>
+  copies this suite's conftest beside a synthesised test that runs <code>salloc</code> through
+  PATH, runs a child pytest over the pair, and requires the child to fail naming <code>salloc</code>
+  and its argv. The child's PATH also carries a harmless local <code>salloc</code> stub, so
+  disabling the session stub makes the check red without reaching a real scheduler.</p>
 
   <p><strong>Measure.</strong> The whole suite was run once under the refusing shim,
   <code>-n 8</code>, per-worker <code>--basetemp</code>, with a shim directory under the run
