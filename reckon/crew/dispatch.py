@@ -8478,6 +8478,24 @@ def attach(run_id: str, task: str) -> dict[str, Any]:
     return _mutate_pointer(run_id, bind)
 
 
+def _terminal_phase_survives(stored_phase: str, observed_phase: str) -> bool:
+    """Whether a fold keeps a terminal phase the supervisor already stored.
+
+    The supervisor is the one writer of a terminal stored phase: it sets the
+    delivered manifest's status once the worker exits, and a run that has
+    finished stays finished. A late observation reads the run's own stream, and
+    a stream that was rewritten or truncated, or a stream whose terminal event
+    the observer did not reach, reports a live phase for a run that has already
+    ended. Folding that over the stored terminal phase would show a finished
+    run as still running, so a terminal stored phase is kept against a
+    non-terminal observation.
+    """
+    return (
+        stored_phase in _TERMINAL_RUN_PHASES
+        and observed_phase not in _TERMINAL_RUN_PHASES
+    )
+
+
 def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str, Any]:
     from reckon.crew.query import _resumability
     from reckon.crew.recovery import _apply_budget_watchdog
@@ -8503,7 +8521,8 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
         record["manifest_present"] = manifest_fresh
         record["process_alive"] = record_process_alive(record, process_alive)
         record["observed_at"] = _utc_now()
-        stopped = record.get("phase") == "stopped"
+        stored_phase = str(record.get("phase") or "")
+        stopped = stored_phase == "stopped"
 
         if record.get("launch") == "cli":
             backend = _backend_settings(record, config)
@@ -8518,7 +8537,12 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
             record["exit_status"] = data["exit_status"]
             record["final_message"] = data["final_message"]
             record["throughput"] = data["throughput"]
-            record["phase"] = "stopped" if stopped else data["phase"]
+            observed_phase = "stopped" if stopped else data["phase"]
+            if _terminal_phase_survives(stored_phase, observed_phase):
+                # The run finished under the supervisor's terminal phase; a
+                # stream that reports it as live does not reopen it.
+                observed_phase = stored_phase
+            record["phase"] = observed_phase
             if (
                 not stopped
                 and record.get("attempt_kind") == "resume"
@@ -8549,7 +8573,9 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
             manifest_status = str(
                 parse_manifest(manifest.read_text()).get("status") or ""
             ).strip()
-            if manifest_status:
+            if manifest_status and not _terminal_phase_survives(
+                stored_phase, manifest_status
+            ):
                 record["phase"] = manifest_status
 
         _apply_budget_watchdog(record, config)

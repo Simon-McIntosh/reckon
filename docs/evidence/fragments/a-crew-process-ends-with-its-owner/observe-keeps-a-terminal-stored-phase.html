@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A late observe keeps a terminal stored phase">
+  <meta name="plan-summary" content="observe() no longer folds a non-terminal stream phase over a terminal stored phase the supervisor wrote, so a finished run is not shown as still running.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,dispatch,observe,phase">
+  <title>A late observe keeps a terminal stored phase &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A late observe keeps a terminal stored phase</h1>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <p>The supervisor is the single writer of a terminal stored phase: once
+        the worker exits it writes the delivered manifest's phase onto the live
+        phase. A later <code>observe()</code> folds the run's stream back into
+        the pointer, and a stream that was rewritten, truncated, or read before
+        its terminal event reports a live phase for a run that has already
+        ended. Folding that over the stored terminal phase showed a finished
+        run as still running.</p>
+      <ul>
+        <li><code>reckon/crew/dispatch.py</code> gains
+          <code>_terminal_phase_survives</code>, consulted at both phase-write
+          sites in <code>observe()</code>. When the stored phase is terminal
+          (<code>complete</code>, <code>failed</code>, <code>stopped</code>,
+          <code>interrupted</code>) and the observation is not, the stored phase
+          is kept. The deliberate resume override that reopens a live resumed
+          attempt is untouched.</li>
+        <li><code>tests/test_terminal_stored_phase_has_one_writer.py</code> writes
+          the terminal phase through
+          <code>_publish_stored_phase(..., ended=True)</code> as the supervisor
+          does, then observes a live stream and asserts the phase is unchanged;
+          a second case shows a non-terminal stored phase still advances.</li>
+      </ul>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <p><strong>Reproduced</strong> at base <code>c8087d0bc</code>: a pointer
+        whose stored phase is <code>complete</code> and whose stream carries one
+        live event yields <code>observe()</code> phase <code>working</code>,
+        overwriting the stored <code>complete</code>. After the guard, the same
+        run yields <code>complete</code>.</p>
+      <p><strong>Gate</strong> &mdash;
+        <code>tests/test_terminal_stored_phase_has_one_writer.py</code>:
+        <strong>2 passed, EXIT=0</strong> at head <code>c8087d0bc</code> + the
+        node change.</p>
+      <p><strong>Arms</strong>, one invocation over
+        <code>tests/test_stored_phase_advances.py</code> and
+        <code>tests/test_crew_interrupted_phase.py</code>:</p>
+      <ul>
+        <li><strong>Base</strong>, revision <code>c8087d0bc</code>
+          (<code>git archive</code> extraction in a scratch tree):
+          <strong>11 passed, EXIT=0</strong>.</li>
+        <li><strong>Head</strong>, same files, worktree at
+          <strong>11 passed, EXIT=0</strong>.</li>
+        <li><strong>Added failures: 0.</strong></li>
+      </ul>
+      <p><strong>Negative control</strong> &mdash; with
+        <code>_terminal_phase_survives</code> forced to <code>False</code> the
+        live stream overwrites the terminal phase:
+        <strong>1 failed, 1 passed, EXIT=1</strong>, failing
+        <code>test_a_late_observe_keeps_the_terminal_stored_phase</code>.</p>
+      <p>Logs: <code>logs/gate-new-test.log</code>,
+        <code>logs/base-arm.log</code>, <code>logs/head-arm.log</code>,
+        <code>logs/negative-control.log</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
