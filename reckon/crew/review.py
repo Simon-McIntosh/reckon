@@ -547,10 +547,10 @@ _MEASUREMENT_CWD_FIELD = "measurement_cwd"
 
 # The revision a gate log's first line names is what ties its recorded count to
 # the commit it measured. The conventional first line spells it ``revision
-# <sha> tree <path>``; a promotion replay spells it ``# replayed revision:
-# <sha> (integrated <sha>)``. Only the header line is read, so a revision-
-# shaped token in a test's own output cannot be mistaken for the log's.
-_LOGGED_REVISION_RE = re.compile(r"revision\s*:?\s*(?P<sha>[0-9a-fA-F]{7,40})\b")
+# <sha> tree <path>``; a promotion replay spells it ``revision: <sha>`` and an
+# arm log may spell it ``revision=<sha>``. Only the header line is read, so a
+# revision-shaped token in a test's own output cannot be mistaken for the log's.
+_LOGGED_REVISION_RE = re.compile(r"revision\s*[:=]?\s*(?P<sha>[0-9a-fA-F]{7,40})\b")
 
 # The keys the annotated review carries for the revision each arm's gate log
 # names. They sit beside the added-failure count so a reader can tell the
@@ -567,6 +567,20 @@ _ENV_CHDIR_RE = re.compile(
 )
 
 _MANIFEST_FILE_NAME = "manifest.md"
+
+# The key a record carries when it was found away from the path its own run id
+# names. The store keys a record by the run it reviews, so a record that names
+# the run it reviews while sitting at another run's path is right in content and
+# wrong in filename — the shape a hand-written review produces when its worker
+# keys the file on its own run id. It also keeps :func:`stored_record`'s writer
+# callers honest: the path returned beside the record is a path the record was
+# actually read from, not a path it should have come from.
+MISFILED_KEY = "misfiled"
+
+# The filename a record carries when the store wrote it as a partial that must
+# not enter current-review selection. The content scan skips these, because the
+# exemption is deliberate and content matching must not undo it.
+_INCOMPLETE_RECORD_MARK = ".incomplete-"
 
 # The manifest fields that carry the observation rather than prose about it.
 # They are dropped before retirement is read: the suite fields list the very
@@ -1113,7 +1127,10 @@ def annotate_added_failures(
     it and the record says the ids were retired.
 
     The count is recorded as unmeasured, never as zero, when either log is
-    absent; the total is left alone in that case. The returned record is a copy;
+    absent; the total is left alone in that case. The note naming the cap is
+    written only when the cap lowered the stored total, so a total already at or
+    below the cap is left unannotated and a record whose own total is null reads
+    as unscored with its added failures counted. The returned record is a copy;
     the caller's mapping is not mutated.
 
     ``base_directory`` and ``head_directory`` are the working directories the
@@ -1149,12 +1166,19 @@ def annotate_added_failures(
             "manifest; total not capped"
         )
         return result
-    if result.get("total") is not None:
-        result["total"] = min(int(result["total"]), ADDED_FAILURES_TOTAL_CAP)
-    result["added_failures_note"] = (
-        f"total capped at {ADDED_FAILURES_TOTAL_CAP}: the reviewed run added "
-        f"{count} failing test(s) not retired by name ({', '.join(unretired)})"
-    )
+    stored_total = result.get("total")
+    if stored_total is None:
+        # A record the reviewer left unscored has no total to lower, so the note
+        # records the added failures without naming a cap that was never applied.
+        result["added_failures_note"] = f"unscored; {count} added failures"
+        return result
+    capped = min(int(stored_total), ADDED_FAILURES_TOTAL_CAP)
+    result["total"] = capped
+    if capped < int(stored_total):
+        result["added_failures_note"] = (
+            f"total capped at {ADDED_FAILURES_TOTAL_CAP}: the reviewed run added "
+            f"{count} failing test(s) not retired by name ({', '.join(unretired)})"
+        )
     return result
 
 
@@ -1364,10 +1388,14 @@ def stored_record(
 
     The record returned is the file's own content, never the read-time
     annotation :func:`read_review` adds, so a caller that writes the record
-    back does not persist a derived view. The path returned is the file it came
-    from — the legacy path, or one keyed by a revision — and it is what a
-    writer needs to keep writing where the reader looked: a store can hold a
-    legacy copy beside a revision-keyed record of the same head, and the
+    back does not persist a derived view. One exception is a record found away
+    from the paths its own run id names: it carries :data:`MISFILED_KEY`, a fact
+    about where the file sits rather than a derivation from other data, and a
+    writer that writes the record back writes that fact where it took the
+    record from. The path returned is the file it came from — the legacy path,
+    one keyed by a revision, or a record filed under another run id — and it is
+    what a writer needs to keep writing where the reader looked: a store can
+    hold a legacy copy beside a revision-keyed record of the same head, and the
     head-first reader takes the first candidate carrying the head, so a rewrite
     that re-derived its target from the record's own fields could land beside
     the file the reader reads and leave that file unchanged.
@@ -1377,24 +1405,74 @@ def stored_record(
     if directory.is_dir():
         candidates.extend(directory.glob(f"{reviewed_run_id}.at-*.json"))
     existing = {path.resolve(): path for path in candidates if path.is_file()}
-    if not existing:
-        return None, None
+    if existing:
+        records = [
+            (path, json.loads(path.read_text(encoding="utf-8")))
+            for path in existing.values()
+        ]
+        if reviewed_head_sha is not None:
+            named = reviewed_head_sha.strip().lower()
+            for path, record in records:
+                _, _, carried_head, stored_head = carried_revision_pair(record)
+                if not carried_head or not stored_head:
+                    continue
+                actual = stored_head.lower()
+                if actual.startswith(named) or named.startswith(actual):
+                    return path, record
+        else:
+            return max(records, key=lambda item: item[0].stat().st_mtime_ns)
+    # Nothing at the expected paths carries this review, so the store's own
+    # records are scanned for one that names the run it reviews in its content —
+    # the shape a hand-written record takes when its worker keys the file on its
+    # own run id instead of the reviewed one.
+    return _record_filed_elsewhere(directory, reviewed_run_id, reviewed_head_sha)
 
-    records = [
-        (path, json.loads(path.read_text(encoding="utf-8")))
-        for path in existing.values()
-    ]
-    if reviewed_head_sha is not None:
-        named = reviewed_head_sha.strip().lower()
-        for path, record in records:
+
+def _record_filed_elsewhere(
+    directory: Path,
+    reviewed_run_id: str,
+    reviewed_head_sha: str | None,
+) -> tuple[Path | None, dict[str, Any] | None]:
+    """Return the run's review sitting at another record's path, flagged.
+
+    A review worker writes its record by hand and may key the file on its own
+    run id, so a record whose content names the run it reviews can sit where no
+    reader keyed on the reviewed run looks. The store's record files are scanned
+    and matched on what each record says about itself — its
+    ``reviewed_run_id``, and the head it read when one is named — and the newest
+    match is returned with its real path and :data:`MISFILED_KEY` set. A record
+    the store filed as an incomplete partial is skipped, because the store keeps
+    those outside current-review selection by design and a content match must
+    not undo that.
+    """
+    if not directory.is_dir():
+        return None, None
+    matches: list[tuple[Path, dict[str, Any]]] = []
+    for path in sorted(directory.glob("*.json")):
+        if not path.is_file() or _INCOMPLETE_RECORD_MARK in path.name:
+            continue
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(record, Mapping):
+            continue
+        if str(record.get("reviewed_run_id") or "") != reviewed_run_id:
+            continue
+        if reviewed_head_sha is not None:
             _, _, carried_head, stored_head = carried_revision_pair(record)
             if not carried_head or not stored_head:
                 continue
+            named = reviewed_head_sha.strip().lower()
             actual = stored_head.lower()
-            if actual.startswith(named) or named.startswith(actual):
-                return path, record
+            if not (actual.startswith(named) or named.startswith(actual)):
+                continue
+        matches.append((path, dict(record)))
+    if not matches:
         return None, None
-    return max(records, key=lambda item: item[0].stat().st_mtime_ns)
+    path, record = max(matches, key=lambda item: item[0].stat().st_mtime_ns)
+    record[MISFILED_KEY] = True
+    return path, record
 
 
 def read_review(
@@ -1412,6 +1490,8 @@ def read_review(
     newest record is returned for compatibility with callers that have not yet
     learned to state the revision they need.
 
+    A record filed under another run id is still returned when its content
+    names this run, carrying :data:`MISFILED_KEY`; see :func:`stored_record`.
     The returned record is annotated with the failures the reviewed run's own
     gate logs added, and its total is capped when those failures were not
     retired by name; see :func:`annotate_review_of_run`. The stored file is not

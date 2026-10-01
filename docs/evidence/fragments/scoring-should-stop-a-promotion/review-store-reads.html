@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="the review store finds, scores and reads records by their own content">
+  <meta name="plan-summary" content="A review record filed under the reviewer's own run id is found for the run its content names and flagged as misfiled; the added-failures cap note is written only when the cap lowered the total, with a null total reading unscored; and a gate log's revision= first line carries its sha onto the annotated review. Each repair follows a reproduction taken at the base revision, and each negative control restores the mutation and reddens the case that names it.">
+  <meta name="plan-evidence-for" content="reckon:scoring-should-stop-a-promotion">
+  <meta name="plan-verifies" content="reckon:scoring-should-stop-a-promotion#s3">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="review,store,misfiled,cap-note,revision">
+  <title>the review store finds, scores and reads records by their own content | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="review-store-reads" data-reckon="landed" data-when="2026-10-01">
+  <h2>The review store finds, scores and reads records by their own content</h2>
+  <p>Three followups of the review store's read path were repaired in
+  <code>reckon/crew/review.py</code>, each after a reproduction taken at the base revision and
+  each with the mutation restored as the negative control.</p>
+  <ul>
+    <li><strong>A misfiled record is found.</strong> <code>stored_record</code> falls back to the
+    store's records when nothing sits at the path the reviewed run keys, matches on the record's
+    own <code>reviewed_run_id</code> (and the head it read, when one is named), returns the file it
+    was read from and flags it with <code>misfiled</code>; a record the store filed as an
+    incomplete partial is skipped.</li>
+    <li><strong>The cap note names only an applied cap.</strong> <code>annotate_added_failures</code>
+    writes the cap note only when the cap lowered the stored total, so a total already at the cap
+    gains no note and a record whose total is null reads <code>unscored; N added failures</code>.</li>
+    <li><strong>A <code>revision=</code> header is read.</strong> <code>_LOGGED_REVISION_RE</code>
+    accepts <code>revision=&lt;sha&gt;</code> beside <code>revision:&lt;sha&gt;</code> and
+    <code>revision &lt;sha&gt;</code>, and the sha reaches the annotated review's
+    <code>head_log_revision</code>.</li>
+  </ul>
+</article>
+</body>
+</html>
