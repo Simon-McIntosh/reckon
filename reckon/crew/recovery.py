@@ -3921,13 +3921,33 @@ _WAIT_PROBE_NO_OP_COMMANDS = frozenset({"true", ":", "exit"})
 # between sweeps however the awaited work is doing, so both are satisfied
 # unconditionally and a wait resting on one tests nothing. What makes a probe
 # able to differ is a reference to something outside the worker, and the
-# references a wait actually rests on are an id, a pid, a port and a path —
-# a digit, a path separator, or a shell expansion that reaches outside the
-# vector. The file-test commands are read for an operand as well, because
-# ``test -f checkpoints/done`` and ``test -f DONE`` are the same kind of wait
-# and the derived probe of a ``wait_file`` condition is exactly this shape.
-_WAIT_PROBE_EXTERNAL_REFERENCE = re.compile(r"[0-9/$`]")
+# references a wait actually rests on are a job id, a pid, a port and a path.
+# That reference is resolved rather than inferred from the characters the
+# vector happens to carry: ``git rev-parse HEAD2`` carries a digit and still
+# names nothing a sweep could read, so a token counts only when its place in
+# the vector gives it a kind. A job id and a port are named by the flag they
+# follow (``squeue -j 1271081``, ``ssh -p 2222``) or, for the commands that
+# take them by position, by the operand's place (``nc -z a-host 8765``); a pid
+# is a numeric operand of a process command; and a path is a token that
+# resolves on the filesystem, the command token included when it is given as a
+# path rather than as a bare name. The file-test commands are read for an
+# operand as well, because ``test -f checkpoints/done`` and ``test -f DONE``
+# are the same kind of wait and the derived probe of a ``wait_file`` condition
+# is exactly this shape: there the operand is the path being waited for, so it
+# need not exist yet.
 _WAIT_FILE_TEST_COMMANDS = frozenset({"test", "["})
+_WAIT_PROBE_JOB_FLAGS = frozenset({"-j", "--job", "--jobid", "--job-id"})
+_WAIT_PROBE_PID_FLAGS = frozenset({"--pid"})
+_WAIT_PROBE_PORT_FLAGS = frozenset({"--port", "--local-port"})
+# ``-p`` names a pid or a port depending on the command it belongs to.
+_WAIT_PROBE_SHORT_FLAG = "-p"
+_WAIT_PROBE_PROCESS_COMMANDS = frozenset({"kill", "ps", "pgrep", "pkill"})
+_WAIT_PROBE_SHELL_COMMANDS = frozenset({"bash", "sh", "zsh", "dash", "ksh"})
+_WAIT_PROBE_PORT_COMMANDS = frozenset(
+    {"nc", "netcat", "ncat", "ss", "netstat", "curl", "lsof", "telnet", "ssh"}
+)
+_WAIT_PROBE_COUNT = re.compile(r"[0-9]+")
+_WAIT_PROBE_PORT_RANGE = (1, 65535)
 # A shell-free vector gives a printer no way to read anything: ``echo`` and
 # ``printf`` write their own arguments whatever is happening outside the
 # worker, so a probe spelled with one is a command that cannot fail even when
@@ -3937,18 +3957,115 @@ _WAIT_FILE_TEST_COMMANDS = frozenset({"test", "["})
 _WAIT_PROBE_PRINTER_COMMANDS = frozenset({"echo", "printf"})
 
 
+def _wait_probe_reference_kind(probe: Sequence[str]) -> str | None:
+    """The kind of external reference the probe names, or None.
+
+    The kinds a wait rests on are a job id, a pid, a port and a path, and one
+    is named here only when the vector places a token as that kind: a value
+    after a flag that names it (``-j 1271081``, ``-p 2222``), a numeric operand
+    of a command that takes one by position (``nc -z a-host 8765``,
+    ``kill -0 424242``), an operand of a file-test command, or a token that
+    resolves on the filesystem. Anything else names nothing a sweep can read,
+    however many digits, slashes, dollars or backticks its text carries:
+    ``git rev-parse HEAD2`` resolves to no kind, and that is the difference
+    between a reference and a character.
+
+    Two shapes are read through rather than taken at face value. A shell
+    keeps its string argument in one token, so a probe spelled
+    ``bash -lc 'q=$(squeue -h -j 1274028); …'`` reaches the job flag only
+    after the string is read as the shell vector it is. And the path kind is
+    resolved against the filesystem, so a token counts only while it exists —
+    except the operand of a file-test command, which is the path being waited
+    *for*: ``test -f DONE`` is satisfied by DONE appearing, so that operand
+    need not exist yet.
+    """
+    command = Path(str(probe[0])).name
+    words = [str(item) for item in probe[1:]]
+    if command in _WAIT_PROBE_SHELL_COMMANDS:
+        words = [word for item in words for word in _wait_probe_shell_words(item)]
+    takes_pids = command in _WAIT_PROBE_PROCESS_COMMANDS
+    takes_ports = command in _WAIT_PROBE_PORT_COMMANDS
+    tokens = [command, *words]
+    for index, token in enumerate(tokens):
+        name, separator, inline = token.partition("=")
+        value = (
+            inline
+            if separator
+            else (tokens[index + 1] if index + 1 < len(tokens) else "")
+        )
+        if name in _WAIT_PROBE_JOB_FLAGS and _wait_probe_names_a_count(value):
+            return "job"
+        if name in _WAIT_PROBE_PID_FLAGS and _wait_probe_names_a_count(value):
+            return "pid"
+        if name in _WAIT_PROBE_PORT_FLAGS and _wait_probe_names_a_port(value):
+            return "port"
+        if name == _WAIT_PROBE_SHORT_FLAG:
+            if takes_pids and _wait_probe_names_a_count(value):
+                return "pid"
+            if takes_ports and _wait_probe_names_a_port(value):
+                return "port"
+        if name in _WAIT_FILE_TEST_COMMANDS and any(
+            _wait_probe_names_an_operand(item) for item in tokens[index + 1 :]
+        ):
+            return "path"
+        if token.isdigit():
+            if takes_pids:
+                return "pid"
+            if takes_ports and _wait_probe_names_a_port(token):
+                return "port"
+        if Path(token).exists():
+            return "path"
+    return None
+
+
+def _wait_probe_shell_words(text: str) -> list[str]:
+    """The words a shell argument is spelled with, stripped of its punctuation.
+
+    A shell reaches its reference through a string rather than through a token
+    of the vector, so the string is read as the words it is: separators and
+    control punctuation split it, and quoting and expansion characters are
+    dropped from each word's edges. A job id written ``1274028);`` therefore
+    reads as the number it is, and the flag before it still names the kind.
+    """
+    words: list[str] = []
+    for word in re.split(r"[\s;|&()]+", text):
+        cleaned = word.strip("'\"`${}<>")
+        if cleaned:
+            words.append(cleaned)
+    return words
+
+
+def _wait_probe_names_an_operand(item: str) -> bool:
+    """True when a token is an operand rather than a flag."""
+    return bool(item.strip()) and not item.startswith("-")
+
+
+def _wait_probe_names_a_count(value: str) -> bool:
+    """True when a value is a plain number, as job ids and pids are written."""
+    return bool(_WAIT_PROBE_COUNT.fullmatch(value.strip()))
+
+
+def _wait_probe_names_a_port(value: str) -> bool:
+    """True when a value is a number a port could be."""
+    if not _wait_probe_names_a_count(value):
+        return False
+    low, high = _WAIT_PROBE_PORT_RANGE
+    return low <= int(value.strip()) <= high
+
+
 def _wait_probe_cannot_fail(probe: Sequence[str]) -> bool:
     """True when a present probe's result cannot differ between sweeps.
 
     The discriminator is whether anything the probe reads lives outside the
     worker: a job id, a pid, a port or a path. A printer is refused outright
     because in a shell-free vector it can only echo its own text, and any
-    other probe must name one of those references: ``["squeue", "-h", "-j",
-    "1271081"]`` names one; ``["echo", "pending"]`` and ``["git", "rev-parse",
-    "HEAD"]`` name none, run whatever is happening, and read the same on every
-    sweep. Only a probe that is actually present is read this way: an absent
-    one is the incomplete-declaration case the reader already reports, so the
-    two outcomes stay distinguishable.
+    other probe must resolve one of those references through
+    :func:`_wait_probe_reference_kind`: ``["squeue", "-h", "-j", "1271081"]``
+    resolves a job id; ``["echo", "pending"]`` and ``["git", "rev-parse",
+    "HEAD2"]`` resolve nothing, run whatever is happening, and read the same on
+    every sweep. Only a probe that is actually present is read this way: an
+    absent one is the incomplete-declaration case the reader already reports,
+    so the two outcomes stay distinguishable.
     """
     if not probe:
         return False
@@ -3957,13 +4074,7 @@ def _wait_probe_cannot_fail(probe: Sequence[str]) -> bool:
         return True
     if command in _WAIT_PROBE_PRINTER_COMMANDS:
         return True
-    if command in _WAIT_FILE_TEST_COMMANDS:
-        return not any(
-            str(item).strip() and not str(item).startswith("-") for item in probe[1:]
-        )
-    return not _WAIT_PROBE_EXTERNAL_REFERENCE.search(
-        " ".join(str(item) for item in probe)
-    )
+    return _wait_probe_reference_kind(probe) is None
 
 
 def _wait_probe_is_a_no_op(probe: Sequence[str]) -> bool:
