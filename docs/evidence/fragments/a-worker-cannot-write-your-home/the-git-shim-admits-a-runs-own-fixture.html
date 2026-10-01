@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="The git shim admits a run's own scratch repository">
+  <meta name="plan-summary" content="A mutating git verb whose repository lies entirely inside the run's scratch directory is admitted, while a foreign checkout and a linked worktree with a foreign common dir stay refused.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s2">
+  <meta name="plan-commits" content="7fd2757aa">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fence,git,shim,tests">
+  <title>The git shim admits a run's own scratch repository — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-git-shim-admits-a-runs-own-fixture" data-reckon="landed" data-when="2026-10-01">
+  <h2>The git shim admits a run's own scratch repository</h2>
+  <p>The shim refused the throwaway repositories test fixtures create under the run's scratch directory, so every test-running worker set <code>env -u RECKON_RUN_ID</code> and the bypass landed in recorded gate commands. <code>reckon/worker_git_shim.py</code> now admits a mutating verb whose repository lies entirely inside <code>worker_scratch_dir(run_id)</code> &mdash; the directory promotion and discard remove with the run. The admission rests on git's own report: the absolute git dir and the common dir must both resolve inside, and a work-tree top level, when there is one, must be inside too. A verb that creates a repository (<code>init</code>, <code>clone</code>) resolves to none yet and is admitted on the invocation directory and any path it names. <code>tests/test_git_shim_checks_the_resolved_repo.py</code> gains a scratch fixture and three cases, each in its own process group under a 60 s bound with two shim directories on <code>PATH</code>: an <code>init</code>-and-commit under the scratch directory succeeds; a commit into a foreign checkout is refused with its head unmoved; a linked worktree under scratch whose common dir lies in a foreign checkout is refused with that checkout's refs and dirty file unchanged. Gate at <code>7fd2757aa</code>: <code>176 passed</code>, <code>EXIT=0</code>. The declared negative control &mdash; <em>admitting on the toplevel alone reddens the linked-worktree case</em> &mdash; applied, fails exactly <code>test_a_linked_worktree_under_scratch_with_a_foreign_common_dir_is_refused</code> (<code>1 failed, 2 passed</code>, <code>EXIT=1</code>).</p>
+</article>
+</body>
+</html>
