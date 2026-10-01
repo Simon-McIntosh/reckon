@@ -2489,10 +2489,12 @@ def _repository_tree_boundary_violations(
     A declared path on the project's shared-write list is not one of them: the
     list is resolved through the same helper the accepted-path check reads, and
     dispatch admits a concurrent claim there, so a peer's in-flight edit says
-    nothing about this run's boundary. A tree another live run holds is not one
-    either: its uncommitted paths are that run's own work, charged at its own
-    completion, so a shared directory grant does not make each holder refuse the
-    other's file.
+    nothing about this run's boundary. A dirty path in a live peer's worktree is
+    not one either where that peer's own declaration covers it: it is the peer's
+    in-flight work, charged at the peer's own completion, so a shared directory
+    grant does not make each holder refuse the other's file. A path the peer does
+    not declare is a stray edit this check exists to catch, so it stays charged
+    here even inside a live peer's worktree.
     """
     snapshot = _run_directory_tree_snapshot(run_id)
     if snapshot is None:
@@ -2529,12 +2531,28 @@ def _repository_tree_boundary_violations(
         declared, worktree=own_tree, repository=repository
     )
     shared_files = _shared_write_paths(str(record.get("project") or ""), repository)
-    # The worktrees another live run currently holds. A dirty path is attributed
-    # to the run whose worktree holds it, so in-flight work in a peer's own
-    # worktree is charged to that peer's completion rather than to every run
-    # whose grant covers the path: two runs granted one directory would
-    # otherwise each refuse the other's uncommitted file.
-    held_by_a_peer = {tree for tree in _live_worktree_claims() if tree != own_tree}
+    # The paths each live peer holds its worktree for, resolved through the same
+    # helper this run's own declaration reads. A dirty path in a peer's worktree
+    # is that peer's own work only where the peer's declaration covers it; a path
+    # the peer does not declare is a stray edit this check exists to catch.
+    held_trees = {tree for tree in _live_worktree_claims() if tree != own_tree}
+    peer_grants: dict[Path, list[Path]] = {}
+    for pointer in list_live():
+        peer_tree = Path(str(pointer.get("worktree") or "")).resolve()
+        if peer_tree not in held_trees:
+            continue
+        if Path(str(pointer.get("repo") or ".")).resolve() != repository:
+            continue
+        peer_node = pointer.get("node")
+        if not isinstance(peer_node, Mapping):
+            continue
+        peer_grants.setdefault(peer_tree, []).extend(
+            _repository_scope_paths(
+                peer_node.get("write_paths") or (),
+                worktree=peer_tree,
+                repository=repository,
+            )
+        )
     terminal_shadows = _shadow_worktree_records(
         repository, str(record.get("project") or "") or None
     )
@@ -2548,10 +2566,7 @@ def _repository_tree_boundary_violations(
         path = Path(raw_path).resolve()
         if path == own_tree:
             continue
-        if path in held_by_a_peer:
-            # The run holding this worktree owns its uncommitted paths; this
-            # run is not charged for a path it does not hold.
-            continue
+        peer_roots = peer_grants.get(path, ())
         shadow_record = terminal_shadows.get(path)
         if (
             shadow_record is not None
@@ -2574,6 +2589,9 @@ def _repository_tree_boundary_violations(
         # An uncommitted edit on a declared path the project publishes as
         # shareable admits a concurrent editor, so it says nothing about this
         # run's boundary; only a declared path off that list can violate it.
+        # A path a live peer holds under its own declaration is the peer's work,
+        # not this run's, so it is exempt too; a path the peer does not declare
+        # stays charged here.
         changed_paths = {
             changed
             for _, changed in _snapshot_entries(after) - _snapshot_entries(before)
@@ -2581,6 +2599,10 @@ def _repository_tree_boundary_violations(
             and any(
                 Path(changed) == root or Path(changed).is_relative_to(root)
                 for root in declared_roots
+            )
+            and not any(
+                Path(changed) == root or Path(changed).is_relative_to(root)
+                for root in peer_roots
             )
         }
         label = "main checkout" if path == repository else "peer worktree"
