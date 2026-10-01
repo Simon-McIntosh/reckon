@@ -1,0 +1,70 @@
+<article class="landed-report" data-run-id="r-20261001T032824765628-a-wait-ages-on-its-stream">
+  <h3>a-wait-ages-on-its-stream &mdash; the age follows the stream, and a probe must be able to differ</h3>
+  <p>
+    The followup settled two readings and marked one dead end: a verdict handed out
+    when a declared wait merely carried a probe that <em>runs</em> with a terminal that can be
+    <em>reached</em>. The two observed blocks &mdash; <code>["echo","pending"]</code> and
+    <code>["git","rev-parse","HEAD"]</code>, both against <code>exit:0</code> &mdash; satisfy that
+    falsifier unconditionally, so the repair would have shipped fixing nothing.
+  </p>
+  <p>
+    <strong>Half one, measured at base: already carried.</strong> The age read is the newer of the
+    wait's declaration and the run's own output (commit <code>750bc474f</code>, 2026-09-18), and the
+    base arm confirms both named directions in <code>gate-base.log</code> and the base reproduction:
+    a manifest aged 1800&nbsp;s over a stream written 2&nbsp;s ago reads age 2&nbsp;s,
+    <code>wait_overdue: false</code>, state <code>waiting</code>; a run stale in both reads ages to
+    1800&nbsp;s and state <code>waiting</code> &rarr; <code>wait-aged</code>. The new test pins the
+    manifest-mtime fallback path (a declaration naming no start), which no existing test covered.
+  </p>
+  <p>
+    <strong>Half two, measured at base: reproduces.</strong>
+    <code>recovery.external_wait</code> accepted declarations whose probe was
+    <code>["git","rev-parse","HEAD"]</code> or <code>["printf","COMPLETED"]</code> with
+    <code>valid: true</code> (base reproduction, recorded under the run directory). The probe is now
+    read for whether its result can differ. A printer or null command is refused outright, because in
+    a shell-free vector it can only write its own arguments; any other probe must name something
+    outside the worker &mdash; a job id, a pid, a port or a path
+    (<code>_wait_probe_cannot_fail</code> in <code>reckon/crew/recovery.py</code>). The refusal keeps
+    the declaration, marks it invalid and names the probe:
+    <code>wait_probe ['echo', 'pending'] cannot fail: it names nothing outside the worker &mdash; no
+    job id, pid, port or path &hellip;</code>, so the shape is repairable from the row and the resume
+    sweep skips it with <code>condition-declaration-invalid</code> instead of lifting a wait nothing
+    ended.
+  </p>
+  <p>
+    <strong>Gate.</strong> The new <code>tests/test_a_wait_ages_on_its_stream.py</code> plus every
+    existing test file whose name contains <em>wait</em> (11 files), run at base and at head with one
+    private basetemp per process. Base <code>33c5e761d</code>: 8 failed, 134 passed &mdash; the
+    failures are the new file's refusal cases, i.e. the base-arm reproduction;
+    <code>gate-base.log</code>. Head <code>4506eadf7</code>: 2 failed, 140 passed;
+    <code>gate-head.log</code>.
+  </p>
+  <p>
+    <strong>Two head failures, outside this node's write scope, reported not fixed.</strong>
+    <code>tests/test_ticker_renders_wait_facts.py::test_a_declared_wait_that_was_probed_carries_no_marker</code>
+    and
+    <code>tests/test_wait_facts_reach_the_event.py::test_a_declared_wait_carries_all_five_facts_into_the_event</code>
+    both declare <code>wait_probe: ["printf", &hellip;]</code> as a stand-in for a genuine probe; under
+    the settled rule that it must reference something outside the worker, the stand-in is exactly the
+    class the rule retires. The fixtures need a probe the rule accepts &mdash; one that both names an
+    external reference and prints the token the case asserts, or a substituted condition reader &mdash;
+    which is a one-line change in each file, but both files lie outside this node's write scope, so the
+    head arm names them and the node reports blocked rather than widening its own fence.
+  </p>
+  <p>
+    <strong>Negative control.</strong> Declared string: <em>read the wait's age from the manifest mtime
+    again in <code>reckon/crew/recovery.py</code>; the fresh-stream case in
+    <code>tests/test_a_wait_ages_on_its_stream.py</code> fails</em>. Applied to
+    <code>_declared_wait_age_seconds</code> (the stream term removed): 1 failed, 9 passed, EXIT=1 &mdash;
+    the single failure is
+    <code>test_a_stale_manifest_over_a_fresh_stream_is_not_in_alarm</code>, an id the head arm does not
+    fail. Log: <code>negative-control.log</code>.
+  </p>
+  <p>
+    <strong>Landing note.</strong> Carried by <code>reckon/crew/recovery.py</code> at
+    <code>4506eadf7</code>: <code>_wait_probe_cannot_fail</code> (new), its vocabulary constants, and
+    the invalid-declaration refusal in <code>_manifest_wait</code>; the age clock itself was left
+    untouched, since the base arm shows the stream clock already in place. The
+    expiry question the followup marks unsettled was not entered.
+  </p>
+</article>
