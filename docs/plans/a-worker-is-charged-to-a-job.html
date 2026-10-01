@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="53">
-<meta name="plan-impl" content="0.9">
+<meta name="plan-version" content="54">
+<meta name="plan-impl" content="0.92">
 </head>
 <body>
   <main class="plan-doc">
@@ -939,10 +939,11 @@ placement path, not as a whole-suite run.</p>
     <pre class="r-fu-prompt">/reckon-build a-worker-is-charged-to-a-job</pre>
     <p class="r-fu-outcome">Same node, merged at a085bb2c. The replay keeps its stdout and stderr in verify-gate.log under the run directory, and the result records the path as report.log_path. Shown live on the node's own verify-gate at main.</p>
     </article>
-<article class="r-fu" data-id="f-awcj-replay-bound-follows-the-gate" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build a-worker-is-charged-to-a-job" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awcj-replay-bound-follows-the-gate" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build a-worker-is-charged-to-a-job" data-resolved-at="2026-10-01T04:12:07+00:00" data-resolved-by="">
     <h4 class="r-fu-title">verify-gate&#x27;s re-run bound follows the gate&#x27;s recorded duration, not a fixed 300 s</h4>
     <div class="r-fu-body"><p>The replay near <code>reckon/crew/promotion.py:1319</code> and <code>:1539</code> stops at <code>timeout_seconds=300.0</code> and reports the gate <code>not-run</code> on the integrated revision. Measured on 2026-09-29 with a-score-is-queryable-from-committed-state: the worker's own gate log records 213 passed in 378 s, so every verify-gate of that run reported not-run until the command was narrowed to one file (6 passed in 25 s). A gate that legitimately takes longer than the bound can never be verified as recorded. Derive the bound from the run's recorded gate duration, with headroom and a ceiling, or let <code>--timeout</code> set it. The result should say which bound applied.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-is-charged-to-a-job</pre>
+    <p class="r-fu-outcome">verify-gate's re-run bound now derives from the promoted run's recorded gate duration when no explicit timeout is passed: twice the recorded time, clamped between 300 s and 1800 s. An explicit --timeout-seconds still wins, a run with no recorded duration keeps 300 s, and the report records the bound's source, its seconds and the recorded duration (merged f9316ff46, commits 218eda1fd and 9d8bece25, review 93 with no findings). Gate: tests/test_replay_bound_follows_the_gate.py with the two verify-gate option files, 9 passed at head against 3 failed and 6 passed at base, the three new cases being the whole delta. The named control, restoring the fixed 300 s, fails the derived-bound case.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
