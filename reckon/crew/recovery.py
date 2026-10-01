@@ -5559,7 +5559,16 @@ def _read_classification_memo(record: Mapping[str, Any]) -> dict[str, Any]:
         return {}
     if payload.get("version") != CLASSIFICATION_MEMO_VERSION:
         return {}
-    return dict(payload)
+    loaded = dict(payload)
+    # The stream entry's ``current`` marker means "written by this call", and it
+    # is read from the file as well as written to it. A memo on disk carries the
+    # marker of the call that wrote it, which is not this one: leaving it in
+    # would let a later reader serve the stream without the key having matched,
+    # which is the one thing the memo may never do.
+    stream = loaded.get("stream")
+    if isinstance(stream, dict):
+        stream.pop("current", None)
+    return loaded
 
 
 def _write_classification_memo(
@@ -5661,7 +5670,9 @@ def _worktree_head_identity(tree: Path | None) -> str:
                 break
             except OSError:
                 continue
-        parts.append(loose if loose is not None else _file_identity(common / "packed-refs"))
+        parts.append(
+            loose if loose is not None else _file_identity(common / "packed-refs")
+        )
     return "|".join(parts)
 
 
@@ -5915,9 +5926,7 @@ def classify_pointer(
         worker_pid = _worker_record_pid(record) if worker_alive is True else None
         if worker_pid is None:
             worker_pid = _int_or_none(record.get("pid"))
-    descendant_alive = (
-        _live_descendant(worker_pid) if worker_pid is not None else None
-    )
+    descendant_alive = _live_descendant(worker_pid) if worker_pid is not None else None
     # The run's own supervisor records the worker's exit in the run directory,
     # and that account survives a pointer nobody updates and a pid no machine
     # but the launching one can look up. It is consulted only where the process

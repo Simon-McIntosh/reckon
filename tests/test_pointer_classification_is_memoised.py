@@ -177,6 +177,23 @@ def test_appending_to_one_stream_re_observes_only_the_appended_bytes(
     assert calls == [1], "the run whose stream did not move parses nothing at all"
 
 
+def test_a_memo_read_from_disk_carries_no_in_call_marker(fleet) -> None:
+    """The marker that lets one call reuse its own parse does not survive to disk.
+
+    A stream entry written by a call is current for that call, which is what
+    lets the second reader of one classification reuse the first reader's parse.
+    Read back from the file it means nothing — the call that wrote it has ended
+    — and a later reader that took it for a fresh key would serve a stream
+    without the key having matched, which is the one thing a memo may not do.
+    """
+    record = fleet["one"]
+    _classify(record)
+
+    reloaded = recovery._read_classification_memo(record)
+
+    assert "current" not in reloaded.get("stream", {})
+
+
 def test_a_grown_stream_reports_the_records_it_already_folded(fleet) -> None:
     """Resuming from an offset carries the folded records rather than losing them."""
     record = fleet["one"]
