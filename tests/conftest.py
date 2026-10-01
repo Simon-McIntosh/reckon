@@ -15,6 +15,7 @@ default is suppression, so arming is opted into rather than out of.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import signal
@@ -343,11 +344,111 @@ def leaked_watch_producers(base: Path) -> list[tuple[int, Path]]:
     ]
 
 
+# A session given an explicit ``--basetemp`` removes and recreates that
+# directory at startup, and this suite's reaper then signals every crew watch
+# producer whose home lies under the same root. Two sessions sharing one
+# basetemp therefore destroy each other's fixtures. The lock below admits one
+# holder at a time, so a second session is refused before pytest removes
+# anything. Sequential reuse is unaffected: an exited session releases the
+# lock, and a lock whose pid is dead is taken over.
+#
+# The lock is a file beside the basetemp directory, never inside it, because
+# the directory it guards is exactly what a session removes at startup.
+
+_BASETEMP_LOCK_SUFFIX = ".lock"
+
+
+class BasetempInUseError(Exception):
+    """A live session already holds the basetemp this one was given."""
+
+    def __init__(self, basetemp: Path, holder_pid: int) -> None:
+        self.basetemp = basetemp
+        self.holder_pid = holder_pid
+        super().__init__(
+            f"--basetemp {basetemp} is held by a live pytest session (pid "
+            f"{holder_pid}). A second session on the same basetemp removes "
+            "and recreates it at startup, destroying the running session's "
+            "fixtures; give this session its own basetemp."
+        )
+
+
+def basetemp_lock_path(basetemp: Path) -> Path:
+    """The lock guarding ``basetemp``: a sibling file, never inside it."""
+    return basetemp.parent / (basetemp.name + _BASETEMP_LOCK_SUFFIX)
+
+
+def _lock_holder_pid(lock: Path) -> int | None:
+    try:
+        value = json.loads(lock.read_text() or "{}")
+    except (OSError, ValueError):
+        return None
+    pid = value.get("pid") if isinstance(value, dict) else None
+    return pid if isinstance(pid, int) and pid > 0 else None
+
+
+def _process_is_alive(pid: int) -> bool:
+    """Whether ``pid`` names a process that has not exited.
+
+    ``os.kill(pid, 0)`` is the check: it raises ``ProcessLookupError`` for a
+    pid the kernel holds no process for, ``PermissionError`` for a live process
+    that is not ours, and returns otherwise. The last two both mean the pid is
+    live, which is what the lock cares about.
+    """
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def acquire_basetemp_lock(basetemp: Path) -> Path:
+    """Take the lock beside ``basetemp``, or refuse when a live session holds it.
+
+    ``O_CREAT | O_EXCL`` is the atomic step that decides ownership. A lock
+    already present is either live — refused — or stale, and a stale lock is
+    removed and the acquisition retried, so a session that crashed without
+    releasing is taken over rather than blocking reuse.
+    """
+    lock = basetemp_lock_path(basetemp)
+    while True:
+        try:
+            handle = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        except FileExistsError:
+            holder = _lock_holder_pid(lock)
+            if holder is not None and _process_is_alive(holder):
+                raise BasetempInUseError(basetemp, holder) from None
+            with contextlib.suppress(FileNotFoundError):
+                lock.unlink()
+            continue
+        with os.fdopen(handle, "w", encoding="utf-8") as stream:
+            json.dump({"pid": os.getpid(), "basetemp": str(basetemp)}, stream)
+        return lock
+
+
+def release_basetemp_lock(lock: Path) -> None:
+    """Drop ``lock`` if this process still holds it."""
+    if _lock_holder_pid(lock) != os.getpid():
+        return
+    with contextlib.suppress(FileNotFoundError):
+        lock.unlink()
+
+
 def pytest_configure(config: pytest.Config) -> None:
     config.addinivalue_line(
         "markers",
         f"{ARMING_MARKER}: the test owns and reaps a real watch producer",
     )
+    basetemp = getattr(config.option, "basetemp", None)
+    if not basetemp:
+        return
+    resolved = Path(os.path.abspath(basetemp))
+    try:
+        lock = acquire_basetemp_lock(resolved)
+    except BasetempInUseError as refused:
+        raise pytest.UsageError(str(refused)) from None
+    config.add_cleanup(lambda: release_basetemp_lock(lock))
 
 
 def pytest_collection_modifyitems(
