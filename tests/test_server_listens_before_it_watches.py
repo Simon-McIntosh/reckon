@@ -151,10 +151,11 @@ def served_entry_point(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(serve, "_MOUNTS_FILE", None)
     monkeypatch.setattr(serve, "_STATE_ROOT", None)
     # The served thread's ``main`` assigns ``serve._SIGNATURE_TTL_S`` and leaves
-    # it at the served walk-reuse window (reckon/serve.py:3399); teardown restores
-    # it and checks the restore there. This second check refuses a case that
-    # starts with a live memo, so a leak from any earlier case in the same process
-    # is caught at the case that would read it.
+    # it at the served walk-reuse window (reckon/serve.py:3399). A case that
+    # starts with a live memo would read a memoised walk, which a missing restore
+    # in an earlier case sharing this process would leave; refuse that here. Under
+    # -n each served case runs in its own worker process, so such a leak goes
+    # unseen.
     assert serve._SIGNATURE_TTL_S == 0.0, (
         "an earlier test in this process left the discovery memo live "
         f"(_SIGNATURE_TTL_S={serve._SIGNATURE_TTL_S!r}); a later test would read "
@@ -210,17 +211,10 @@ def served_entry_point(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         entry_point.stop()
         # ``serve.main`` assigned ``_SIGNATURE_TTL_S`` on the served thread
         # (reckon/serve.py:3399) and left it at the served walk-reuse window.
-        # ``stop()`` has joined that thread and asserted it stopped, so its last
-        # write is behind us; put the module back to the library default and
-        # fail here if that restore did not happen. This check runs in the
-        # leaking case's own process, so it fires whoever runs the case, under
-        # -p no:xdist or under -n.
+        # ``stop()`` joins that thread and fails if it is still alive; once it
+        # has stopped, this restores the module to the library default. It does
+        # not itself check the restore.
         serve._SIGNATURE_TTL_S = 0.0
-        assert serve._SIGNATURE_TTL_S == 0.0, (
-            "the discovery memo was left live after this served entry-point "
-            f"case (_SIGNATURE_TTL_S={serve._SIGNATURE_TTL_S!r}); a later case "
-            "in the same process would read a memoised walk"
-        )
 
 
 def test_mounts_answer_before_the_watch_is_armed(served_entry_point) -> None:
