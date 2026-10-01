@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A pointer's stored phase advances past starting">
+  <meta name="plan-summary" content="The per-run supervisor rewrites the live pointer's stored phase — working once the worker is spawned, and the delivered manifest's terminal status once it has exited — so the stored phase a reader sees no longer stays at the pre-spawn label for the whole life of the run.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,pointer,phase,supervisor">
+  <title>A pointer's stored phase advances past starting — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="stored-phase-advances-past-starting" data-reckon="landed" data-when="2026-10-01">
+  <h2>A pointer's stored phase advances past starting</h2>
+  <p>The launcher wrote only <code>starting</code> and nothing advanced it afterwards, so the stored phase a reader sees — the follower's re-arm replay, the MCP views, a peer's tooling — stayed at the pre-spawn label for the whole life of the run; at review time 26 of 41 live pointers read <code>starting</code>. The per-run supervisor is the only process that touches the pointer while the run is alive, so it now writes the advance: <code>working</code> once the worker is spawned, and the delivered manifest's terminal status once the worker has exited, or <code>launch-failed</code> when the worker reached no model. A pointer that is gone (a discard took it), or that names a later attempt, is left untouched. Commit <code>0fe6861</code>.</p>
+  <p>The gate drives a stub run from launch, through its first stream record, to a terminal manifest, and asserts the stored pointer phase reads <code>starting</code>, then <code>working</code>, then <code>complete</code>: <b>1 passed</b> (<code>EXIT=0</code>). The declared control replaces the supervisor's writer with a no-op and the stored phase stays <code>starting</code> (<code>EXIT=1</code>). The three sibling liveness suites were read at base and head: <b>1 failed / 23 passed</b> at both, the same pre-existing id, so <b>zero added failures</b>.</p>
+</article>
+</body>
+</html>
