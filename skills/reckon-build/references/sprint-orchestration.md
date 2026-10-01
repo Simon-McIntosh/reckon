@@ -687,11 +687,13 @@ reading the plan and authoring any implementation node:
 limitation, and technical property against the named tree before cutting nodes.
 A node authored from stale text executes its defects faithfully.
 
-**Dispatch a prior-art scout in the background.** One read-only
+**Dispatch a prior-art scout first, and never wait on it.** One read-only
 investigate-role node, dispatched through `reckon crew dispatch` exactly like
 every other node — never a harness-native background agent (that bypasses the
 run ledger, manifest contract, and calibration) and never inline; dispatch it
-on a free member, and let a busy roster hold it until one frees up. Launch it
+on a free member, and let a busy roster hold it until one frees up. The dispatch
+call itself runs in the foreground and returns once the run's supervisor is
+running; what the coordinator does not do is wait on the scout's work. Launch it
 at pre-flight so
 it runs while the coordinator finishes reading state. Its single deliverable is
 a REUSE MAP: the modules, symbols, tests and data already in reach that solve

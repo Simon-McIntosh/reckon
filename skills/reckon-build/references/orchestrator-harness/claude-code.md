@@ -16,7 +16,7 @@ config.
 
 | Capability | Present | How |
 |---|---|---|
-| Background dispatch | yes | `Bash` with `run_in_background: true` detaches a command so it survives the turn. Subagents dispatched with `Agent` run in the background by default. |
+| Background dispatch | yes | `Bash` with `run_in_background: true` detaches a command so it survives the turn; a `reckon crew dispatch` is never one of these — it runs in the foreground and returns once the run's supervisor is running. Subagents dispatched with `Agent` run in the background by default. |
 | Wake on completion | yes | The session is re-invoked when a backgrounded command exits or a dispatched agent finishes; `Monitor` with an until-loop waits on a condition without burning turns. |
 | Self-scheduling | yes, three forms | See below. Which one is available depends on how the session was started. |
 | Budget visibility to itself | no | This harness exposes the orchestrator no machine-readable account headroom for its own session. Treat the orchestrator's own budget as unknown, and never infer it from a worker backend's figures. |
@@ -31,11 +31,15 @@ decides whether a finished worker reaches the session at all:
 | `Monitor` | one chat notification per **stdout line** | anything that emits lines and keeps running — the fleet follower |
 | `Bash` with `run_in_background: true` | one notification when the command **exits** | a command with an end: a build, a test run, an until-loop |
 
-**The follower belongs in a `Monitor`, and only there.** It is a
+**The follower is the session's only monitor: it belongs in a `Monitor`, and
+only there.** It is a
 line-producing primitive, not an exit-producing one: it returns when its
 session's watch is stopped — never on a terminal manifest, a stall window, or a
-drained fleet. Backgrounding it as a shell therefore yields silence for as long
-as the session lasts, and silence reads exactly like a quiet fleet.
+drained fleet. A CLI dispatch is not a monitor: it runs in the foreground and
+returns once the run's supervisor is running, so a session reads its JSON and
+watches nothing it holds open. Backgrounding the follower as a shell therefore
+yields silence for as long as the session lasts, and silence reads exactly like
+a quiet fleet.
 
 ```
 Monitor({

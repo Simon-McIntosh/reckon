@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-title" content="The skill runs a CLI dispatch in the foreground">
+  <meta name="plan-summary" content="The launch-kind table states a CLI dispatch returns once the run's supervisor is running, without waiting for the worker's spawn and with no order claimed against it; the harness reference names the follower as the session's only monitor; the scout note and the backend reference no longer background a dispatch or yield.">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-verifies" content="reckon:a-dispatch-returns-without-its-worker#s4">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <title>The skill runs a CLI dispatch in the foreground | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-skill-runs-a-dispatch-in-the-foreground" data-reckon="landed" data-when="2026-10-01">
+  <h2>The skill runs a CLI dispatch in the foreground</h2>
+  <p>The skill text now runs a CLI dispatch in the foreground: the launch-kind table in <code>skills/reckon-build/SKILL.md</code> returns the call once the run's supervisor is running, without waiting for the worker's spawn and claiming no order between its exit and the spawn; <code>claude-code.md</code> names the follower as the session's only monitor; and the scout note and the <code>worker-backends.md</code> <code>cli</code> line no longer background a dispatch or yield. Measured: <code>grep -rn "dispatch" skills/</code> read line by line leaves no sentence instructing a backgrounded CLI dispatch, and the skill-pinning gate is 132 passed with one pre-existing unrelated failure, delta 0 against base <code>4e5f0a87</code>. This node is small, so this anchor carries the landing statement and no prose of its own.</p>
+</article>
+</body>
+</html>
