@@ -2,11 +2,18 @@
 """Pre-tool-use hook: refuse a mutating git verb a crew worker aims at a
 repository other than its own worktree.
 
-Self-contained and stdlib-only on purpose: this single file is distributed
-into every crew-managed repository's harness settings, and most of those
-repositories carry no dependency on the ``reckon`` package. It never imports
-from ``reckon`` and never reads the host's registered-project mounts file —
-only this host's own crew run pointers.
+Two layers answer whether one git invocation is a read form: this hook at the
+Bash tool boundary, and the execution-time git shim
+(:mod:`reckon.worker_git_shim`) the invocation actually runs under. Both must
+answer the same way — a read the shim forwards must not be refused here — so the
+read-form decision is not kept here at all. It is the shim's own classifier,
+imported from the shim module, which is the single table both layers read. The
+only verb knowledge this file keeps is a deny-list of mutating names, used to
+scan a command the shell parser cannot split; it keeps no read-form list of its
+own.
+
+This file otherwise reads only this host's own crew run pointers, never the
+host's registered-project mounts file.
 
 Behavior, in order:
 
@@ -19,12 +26,12 @@ Behavior, in order:
 3. Target resolution — for each segment that runs ``git``, the target
    repository is taken from ``-C``, ``--git-dir`` or ``--work-tree`` when one
    is given, and from the segment's working directory otherwise.
-4. Decision — a mutating verb (checkout, restore, reset, clean, stash, commit,
-   merge, rebase, pull, push, add, rm, mv, switch, cherry-pick, revert, am,
-   apply) whose target resolves outside the run's own worktree is refused. A
-   read-only verb, and any verb outside that set, stays allowed everywhere.
-   The refusal names the run, its worktree and the target it would have
-   touched.
+4. Decision — whether a verb changes a repository is the shim's classifier,
+   which admits an explicit read form of a multi-purpose verb (`worktree list`,
+   `branch --list`) and treats every other verb as mutating. A mutating verb
+   whose target resolves outside the run's own worktree is refused; a read form
+   stays allowed everywhere. The refusal names the run, its worktree and the
+   target it would have touched.
 """
 
 from __future__ import annotations
@@ -37,6 +44,14 @@ import sys
 from pathlib import Path
 from typing import Any
 
+# The guard runs as a bare script under whatever interpreter the harness picks,
+# so this checkout is not on ``sys.path``. Adding it lets the read-form
+# classifier be imported from the shim in this same checkout rather than
+# whichever install a caller's environment happens to resolve.
+_CHECKOUT_ROOT = Path(__file__).resolve().parents[2]
+if str(_CHECKOUT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_CHECKOUT_ROOT))
+
 # The harness tool this guard watches. Matched by the harness hook wiring too
 # (see the sync-owned hook config); checked again here so the script degrades
 # safely if it is ever wired more broadly than intended.
@@ -46,8 +61,12 @@ GUARDED_TOOL = "Bash"
 # what marks the caller as a run-scoped worker rather than a coordinator.
 RUN_ID_ENV = "RECKON_RUN_ID"
 
-# The git subcommands that change a repository's state. A read-only verb, and
-# any verb not named here, is never refused.
+# The git subcommands that change a repository's state. This is a deny-list used
+# only to scan a command the shell parser could not split: a command with a
+# mutating verb hidden in it is refused rather than allowed unread. Whether a
+# *parsed* git invocation is a read form is not decided here — that is the
+# shim's classifier (:func:`_classify`), which the shim layer reads too, so the
+# two cannot drift on the forms they must agree about.
 MUTATING_VERBS = frozenset(
     {
         "add",
@@ -86,44 +105,6 @@ ENV_GIT_WORK_TREE = "GIT_WORK_TREE"
 
 # A leading ``NAME=value`` assignment on a command segment.
 ASSIGNMENT_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
-
-# The git subcommands that only read. Their membership is deliberately narrow:
-# a verb not listed here is treated as mutating when it is aimed outside the
-# run's worktree, which is the safe direction. Subcommands whose safety depends
-# on their arguments — ``branch``, ``tag``, ``remote``, ``config`` — are
-# therefore absent, and are refused against another checkout rather than
-# assumed harmless.
-READ_ONLY_VERBS = frozenset(
-    {
-        "blame",
-        "cat-file",
-        "check-attr",
-        "check-ignore",
-        "count-objects",
-        "describe",
-        "diff",
-        "for-each-ref",
-        "fsck",
-        "grep",
-        "help",
-        "log",
-        "ls-files",
-        "ls-remote",
-        "ls-tree",
-        "merge-base",
-        "name-rev",
-        "rev-list",
-        "rev-parse",
-        "show",
-        "show-ref",
-        "shortlog",
-        "status",
-        "verify-commit",
-        "verify-tag",
-        "version",
-        "whatchanged",
-    }
-)
 
 # A config entry set with ``-c`` that defines an alias, and how many expansion
 # hops are followed before an alias cycle is called unresolvable.
@@ -281,8 +262,8 @@ def _git_index(segment: list[str]) -> int | None:
 
 def _git_target(
     segment: list[str], start: int, cwd: Path, environment: dict[str, str]
-) -> tuple[str | None, Path, dict[str, str]]:
-    """Return ``(verb, target directory, aliases)`` for one ``git`` invocation.
+) -> tuple[str | None, Path, dict[str, str], list[str]]:
+    """Return ``(verb, target directory, aliases, tail)`` for one ``git``.
 
     Global options are consumed up to the subcommand. ``-C`` moves the base the
     other options resolve against; ``--work-tree`` wins over ``--git-dir`` when
@@ -291,7 +272,9 @@ def _git_target(
     same way the option does, and a command-line option overrides it. ``-c``
     settings are collected so a verb the command aliases can be expanded. With
     no option and no assignment naming a target, the segment's working
-    directory is the target.
+    directory is the target. ``tail`` is the tokens after the verb, which the
+    read-form classifier needs to tell an explicit read form of a multi-purpose
+    verb (`worktree list`) from a bare or writing one (`worktree add`).
     """
     aliases: dict[str, str] = {}
     base = cwd
@@ -347,7 +330,8 @@ def _git_target(
         target = _resolve(base, git_dir)
     else:
         target = base
-    return verb, target, aliases
+    tail = segment[index + 1 :] if verb is not None else []
+    return verb, target, aliases, tail
 
 
 def _record_alias(entry: str, aliases: dict[str, str]) -> None:
@@ -357,27 +341,42 @@ def _record_alias(entry: str, aliases: dict[str, str]) -> None:
         aliases[name[len(ALIAS_PREFIX) :]] = expansion
 
 
-def _is_mutating(verb: str, aliases: dict[str, str]) -> bool:
-    """Return whether ``verb`` changes a repository, following its aliases.
+def _classify(verb: str, tail: list[str]) -> str | None:
+    """The shim's read-form classifier for one parsed invocation.
 
-    A verb that is neither a known mutating nor a known read-only subcommand is
-    not a git built-in this guard can classify. An alias the command itself
-    defines is expanded and its first word judged in turn; one that cannot be
-    resolved that way may expand to anything, so it counts as mutating.
+    Imported from :mod:`reckon.worker_git_shim` rather than kept here: the shim
+    runs the same invocation at execution time, and a read form the shim
+    forwards must not be refused at this layer. There is one table, the shim's,
+    so the two layers cannot drift on the forms they must agree about. The
+    import is deferred and the shim's checkout is named on ``sys.path`` above,
+    because this guard runs as a bare script outside the installed package.
+    """
+    from reckon.worker_git_shim import mutating_verb
+
+    return mutating_verb(verb, tail)
+
+
+def _is_mutating(verb: str, tail: list[str], aliases: dict[str, str]) -> bool:
+    """Return whether this invocation changes a repository.
+
+    The verdict is the shim's classifier, applied to the verb and the arguments
+    after it, so an explicit read form of a multi-purpose verb (`worktree
+    list`, `branch --list`) is read-only here exactly as the shim reads it. An
+    alias the command itself defines is expanded first, its tail prepended to
+    the alias expansion's own arguments; an alias that cannot be resolved that
+    way may expand to anything, so it counts as mutating.
     """
     name = verb
+    arguments = list(tail)
     for _ in range(MAX_ALIAS_HOPS):
-        if name in MUTATING_VERBS:
-            return True
-        if name in READ_ONLY_VERBS:
-            return False
         expansion = aliases.get(name)
         if not expansion:
-            return True
+            return _classify(name, arguments) is not None
         words = expansion.split()
         if not words or words[0] == name:
             return True
         name = words[0]
+        arguments = words[1:] + arguments
     return True
 
 
@@ -488,8 +487,8 @@ def _scan_segments(
         start = _git_index(rest)
         if start is None:
             continue
-        verb, target, aliases = _git_target(rest, start, cwd, environment)
-        if verb is None or not _is_mutating(verb, aliases):
+        verb, target, aliases, tail = _git_target(rest, start, cwd, environment)
+        if verb is None or not _is_mutating(verb, tail, aliases):
             continue
         if not _within(target, worktree):
             return _refusal_message(

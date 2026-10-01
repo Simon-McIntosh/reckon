@@ -16,8 +16,16 @@ import shlex
 from pathlib import Path
 from pwd import getpwuid
 
+import pytest
+
 from reckon.hooks import install as installer
 from reckon.hooks import worker_git_guard as guard
+from reckon.worker_git_shim import (
+    _READ_ACTIONS,
+    _READ_ONLY_VERBS,
+    _READ_OPTIONS,
+    mutating_verb,
+)
 
 RUN_ID = "r-20260925T210146231713-worker-git-stays-in-its-worktree"
 
@@ -107,6 +115,116 @@ def test_a_read_only_verb_is_allowed_anywhere(tmp_path: Path, monkeypatch) -> No
         )
         assert allowed is True, verb
         assert message is None
+
+
+# ── The guard reads every form the shim's classifier reads ──────────────────
+
+# A representative read invocation for each verb the shim's classifier can
+# admit, so a case can be built for every verb in the shim's read tables. A verb
+# present there but absent here falls back to the bare verb, which the shim
+# reads as mutating for a multi-purpose verb; the agreement assertion inside the
+# case then fails and names the missing invocation rather than passing silently.
+_READ_FORM_INVOCATIONS: dict[str, list[str]] = {
+    "branch": ["branch", "--list"],
+    "config": ["config", "--get", "user.name"],
+    "notes": ["notes", "list"],
+    "reflog": ["reflog", "show"],
+    "remote": ["remote", "-v"],
+    "stash": ["stash", "list"],
+    "tag": ["tag", "--list"],
+    "worktree": ["worktree", "list", "--porcelain"],
+}
+
+
+@pytest.mark.parametrize("verb", sorted(set(_READ_ONLY_VERBS) | set(_READ_ACTIONS)))
+def test_the_guard_allows_every_read_form_the_shim_admits(
+    tmp_path: Path, monkeypatch, verb: str
+) -> None:
+    """Every read form the shim forwards is a read form the guard allows.
+
+    The guard and the shim are two layers over one decision, and this walks the
+    shim's own read tables rather than a list kept beside them: for each verb the
+    shim can read, the invocation the shim classifies as a read is aimed at
+    another checkout with ``RECKON_RUN_ID`` set, and the guard must allow it. A
+    read form the shim admits but the guard refuses — the drift this fixes, as
+    when the guard kept a read-verb list omitting ``worktree`` — reddens here.
+    """
+    worktree, other = _fenced(tmp_path, monkeypatch)
+    argv = _READ_FORM_INVOCATIONS.get(verb, [verb])
+
+    # The case is only meaningful if the shim really does read this form.
+    assert mutating_verb(argv[0], argv[1:]) is None, (
+        f"no read invocation is known for {verb!r}; add one to "
+        "_READ_FORM_INVOCATIONS so the case exercises a real read form"
+    )
+    allowed, message = guard.decide(
+        _payload(f"git -C {other} {shlex.join(argv)}", worktree)
+    )
+    assert allowed is True, (verb, message)
+    assert message is None
+
+
+@pytest.mark.parametrize("extra", [[], ["--porcelain"], ["-z"], ["-v"], ["--expired"]])
+def test_the_guard_allows_worktree_list_at_another_checkout(
+    tmp_path: Path, monkeypatch, extra: list[str]
+) -> None:
+    """``git worktree list``, whatever it prints with, is a read everywhere.
+
+    The option this fix was raised for is ``--porcelain``; ``-z``, ``-v`` and
+    ``--expired`` are the same listing with a different print form, and the shim
+    admits them all. Each is aimed at another checkout with a run id set.
+    """
+    worktree, other = _fenced(tmp_path, monkeypatch)
+    argv = ["worktree", "list", *extra]
+    assert mutating_verb(argv[0], argv[1:]) is None
+
+    allowed, message = guard.decide(
+        _payload(f"git -C {other} {shlex.join(argv)}", worktree)
+    )
+    assert allowed is True, (extra, message)
+    assert message is None
+
+
+def test_the_shims_read_options_are_the_ones_walked(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The worktree listing options the test walks are the shim's own.
+
+    A case per option read from the shim's table, so an option added there is
+    exercised here without this file listing it again. ``list`` is the action
+    rather than an option, so it is excluded from the modifiers walked.
+    """
+    modifiers = sorted(_READ_OPTIONS["worktree"] - _READ_ACTIONS["worktree"])
+    worktree, other = _fenced(tmp_path, monkeypatch)
+    for modifier in modifiers:
+        allowed, message = guard.decide(
+            _payload(f"git -C {other} worktree list {modifier}", worktree)
+        )
+        assert allowed is True, (modifier, message)
+
+
+def test_the_mutating_forms_of_a_readable_verb_are_still_denied(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Admitting a verb's read form must not admit its writing forms.
+
+    The read tables are per-form, not per-verb: ``worktree list`` reads while
+    ``worktree add`` writes, and a fix that admitted the verb wholesale would
+    open the write. Each of these is denied at another checkout.
+    """
+    worktree, other = _fenced(tmp_path, monkeypatch)
+    for form in (
+        "worktree add ../new",
+        "worktree remove /tmp/elsewhere",
+        "branch newbranch",
+        "tag v1",
+        "stash",
+        "stash pop",
+        "config user.name someone",
+    ):
+        allowed, message = guard.decide(_payload(f"git -C {other} {form}", worktree))
+        assert allowed is False, form
+        assert str(other) in message
 
 
 # ── With no run id the guard is not in scope ───────────────────────────────
