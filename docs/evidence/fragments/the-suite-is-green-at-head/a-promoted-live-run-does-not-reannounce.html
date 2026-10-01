@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="A promoted run with a live pointer is held, not re-announced">
+  <meta name="plan-summary" content="The fleet fold dropped a promoted run from the fold's memory while its live pointer remained, so the next observation re-entered it as a fresh dispatch; a promoted run is now held in the fleet until its own pointer goes, and the promotion row is read only from the run's recorded repository.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s2">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,ticker,recovery,evidence">
+  <title>A promoted run with a live pointer is held, not re-announced | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-promoted-live-run-does-not-reannounce" data-reckon="landed" data-when="2026-10-02">
+  <h2>A promoted run with a live pointer is held, not re-announced</h2>
+  <p>Promotion writes the run's ledger row before it removes the live pointer, so for at least one
+  poll a promoted run is observed with its pointer still present. The fleet fold in
+  <code>reckon/crew/recovery.py</code> dropped a run whose transition word was
+  <code>promoted</code> from the memory it carries between observations. A run absent from that
+  memory is an arrival on the next observation, and the fold words an arrival
+  <code>dispatched</code> &mdash; so the still-live promoted run alternated <code>promoted</code>
+  and <code>dispatched</code> every tick and the follower never terminated. Reproduced standalone:
+  21 events in 5&nbsp;s, the loop re-announcing the same landing.</p>
+  <p>The run is now held in the fleet while its pointer remains: the fold drops a run only when it
+  is absent from the observation, so the next observation finds the promoted run in both its memory
+  and the fleet and emits nothing. It leaves on its own pointer's disappearance, where the ledger
+  row names a single promoted departure.</p>
+  <p><strong>Cause group, and which side moved.</strong> The behaviour moved, not the assertion: the
+  fold's arrival detector was reading a moved fleet member as a new one. A second defect in the same
+  window was closed with it &mdash; <code>_promote_record_holds</code> read the promotion row from
+  whatever root a repo-less pointer resolved to, not from the run's own repository, so a row left
+  under the default root answered a promotion the run did not record. The row is now read from the
+  run's recorded repository, and a pointer that records none keeps the word its pointer earns. This
+  is the reading <code>tests/test_crew_ticker.py</code>'s fleet stream has always described, and it
+  is what makes that file's promoted-live run read its completion until the pointer goes.</p>
+  <p><strong>Measure.</strong> New test
+  <code>tests/test_a_promoted_live_run_does_not_reannounce.py</code> drives three folds over a
+  promoted run whose pointer stays live and asserts exactly one promoted transition
+  (<code>completed_unpromoted &rarr; promoted</code>) and no <code>dispatched</code> one. The named
+  gate <code>tests/test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion</code>
+  passes and ends. Base and head arms of <code>tests/test_crew_ticker.py</code>,
+  <code>tests/test_a_live_run_never_reads_dead.py</code> and
+  <code>tests/test_fleet_counter_coverage.py</code>: the base carried one pre-existing failure
+  (<code>test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word</code>) and an unreadable,
+  hung ticker arm; the head carries the same single failure and the ticker green. Zero added.</p>
+</article>
+</body>
+</html>
