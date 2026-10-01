@@ -1,0 +1,42 @@
+<article class="landed-report" data-run-id="r-20261001T013737868326-repair-of-an-unchanged-worktree-is-proved-not-assumed-f485bbdc05b7">
+      <h3>repair-of-an-unchanged-worktree-is-proved-not-assumed-f485bbdc05b7 — the unchanged-run exemption keeps two holes closed</h3>
+      <p>
+        The review of the unchanged-run exemption carried two findings against
+        <code>reckon/crew/promotion.py</code>. Both are repaired here.
+      </p>
+      <p>
+        <strong>f10b9546abe (empty-base vacuous pass).</strong>
+        <code>_worktree_unchanged_since_base</code> returned <code>True</code>
+        for a worktree that exists while the run's record names no
+        <code>base_sha</code>, and <code>_manifest_declares_no_change</code>
+        accepts a commitless manifest against an empty base, so such a run was
+        exempted from the suite pair on its manifest alone — the same class the
+        absent-worktree fix removed, reachable through a missing base. A run
+        that records no base cannot be shown unchanged against one, so the
+        predicate now returns <code>False</code> and the pair is required.
+      </p>
+      <p>
+        <strong>fbae063e677 (duplicate untracked reader).</strong> The exemption
+        and the commitless change check enumerated a worktree's untracked paths
+        through two different git verbs (<code>status --porcelain</code> versus
+        <code>ls-files --others</code>), which can drift. Both now read through
+        <code>_worktree_untracked_paths</code>, one enumeration at file
+        precision.
+      </p>
+      <p>
+        <strong>Measure.</strong>
+        <code>tests/test_an_unchanged_run_needs_no_suite_pair.py</code> passes
+        7/7 (EXIT=0) at commit <code>b21c793</code>: the two new cases — a run
+        recording no base is refused for the missing pair, and the two
+        consumers of untracked paths agree on a nested untracked deliverable —
+        pass beside the five existing cases. Only the named file ran.
+      </p>
+      <p>
+        <strong>Negative control.</strong> Reverting each answering hunk of
+        <code>b21c793</code> in <code>reckon/crew/promotion.py</code> (empty
+        base&nbsp;→ <code>True</code>, the porcelain untracked reader, the
+        inline <code>ls-files</code> call) reddens both new checks
+        (<code>2 failed, 5 passed</code>, EXIT=1); log
+        <code>logs/negative_control.log</code> under the run directory.
+      </p>
+    </article>
