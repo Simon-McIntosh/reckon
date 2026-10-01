@@ -1521,6 +1521,13 @@ def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
     so it reads unlike an absent review and unlike a parsed review whose
     dimensions genuinely measure zero.
 
+    A record that names the revision it read carries the canonical
+    ``reviewed_base_sha``/``reviewed_head_sha`` pair onto the block, resolved
+    through :func:`carried_revision_pair` so any of the store's legacy
+    spellings reaches the row under the canonical names. A record naming none
+    keeps the bare block: the absence is a fact about the record, and a
+    defaulted pair would claim the review read a revision nobody recorded.
+
     The checklist item verdicts are deliberately not carried here. This block
     is what a promotion and a lane comparison read, and both are defined on
     the five dimensions alone; the item verdicts are recorded in the stored
@@ -1536,12 +1543,18 @@ def ledger_block(record: dict[str, Any] | None) -> dict[str, Any] | None:
             str(dimension): int(value) for dimension, value in score_values.items()
         }
     total = record.get("total")
-    return {
+    block: dict[str, Any] = {
         "status": str(record.get("status") or "unparsed"),
         "scores": scores,
         "absent": [str(dimension) for dimension in (record.get("absent") or [])],
         "total": None if total is None else int(total),
     }
+    base_carried, base_sha, head_carried, head_sha = carried_revision_pair(record)
+    if base_carried:
+        block[REVIEWED_BASE_KEY] = base_sha
+    if head_carried:
+        block[REVIEWED_HEAD_KEY] = head_sha
+    return block
 
 
 # ── Floors on the dimensions, and the dispositions that answer them ─────────
