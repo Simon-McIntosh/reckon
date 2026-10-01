@@ -179,14 +179,22 @@ class DirectoryClaimConflict(ScopeConflict):
 # defect rather than which process won the scheduler.
 WATCHER_LOAD_BOUND_SECONDS = 30.0
 
-# Workers launch inside the fence. Every launch sits behind a read-only overlay
-# of the operator's dot directories, so a worker cannot write the coordinator's
-# home, project state or plan store; the run's own write roots are re-bound
-# writable over that overlay, including a linked worktree's git directory and
-# its repository's shared object store, so a fenced worker can still commit the
-# work it was dispatched to do; each run then adopts its own harness home,
-# seeded from the operator's settings and instruction files so the hooks and
-# guidance that govern the run are still read.
+# Workers launch inside the fence. Every worker launch — a fresh dispatch, an
+# in-place resume and a lane-change redispatch alike — sits behind a read-only
+# overlay of the operator's dot directories, so a worker cannot write the
+# coordinator's home, project state or plan store; the run's own write roots are
+# re-bound writable over that overlay, including a linked worktree's git
+# directory and its repository's shared object store, so a fenced worker can
+# still commit the work it was dispatched to do; each run then adopts its own
+# harness home, seeded from the operator's settings and instruction files so the
+# run's hooks and guidance are still read.
+#
+# One launch is deliberately outside the overlay: the lane-availability probe in
+# reckon/crew/resumption.py (_request_lane_availability) composes its launch with
+# fence=False. It issues the smallest supported model request to classify whether
+# a lane serves, so it runs no worker and writes nowhere the overlay protects; it
+# exists to decide routing rather than to do a run's work, and the fence binds a
+# run's worktree and run directory, neither of which a probe has.
 FENCE_WORKERS = True
 
 
@@ -8832,7 +8840,7 @@ def resume_plan(
             writable_directories=_fence_write_roots(
                 backend=backend,
                 repository=str(record.get("repo") or "."),
-                run_directory=Path(manifest_path).parent,
+                run_directory=run_dir(run_id),
                 manifest_path=manifest_path,
                 worktree=record.get("worktree"),
                 declared_write_paths=(record.get("node") or {}).get("write_paths")
@@ -8859,6 +8867,10 @@ def resume_plan(
 
     def capture(current: dict[str, Any]) -> dict[str, Any]:
         _carry_fence_unprotected(current, plan, config)
+        # The pointer's fence flag describes the attempt that just launched, not
+        # the one before it, so a resumed run records what this composition did
+        # exactly as the primary dispatch does.
+        current["fenced"] = _plan_composed_the_fence(plan)
         current["session_resumed"] = _launched_prior_session(plan) is not None
         if fresh_reason:
             current["session_id"] = None
@@ -9220,7 +9232,7 @@ def change_lane(
                 writable_directories=_fence_write_roots(
                     backend=backend,
                     repository=str(record.get("repo") or "."),
-                    run_directory=Path(manifest_path).parent,
+                    run_directory=directory,
                     manifest_path=manifest_path,
                     worktree=record.get("worktree"),
                     declared_write_paths=(record.get("node") or {}).get("write_paths")
@@ -9364,6 +9376,11 @@ def change_lane(
             }
         )
         _carry_fence_unprotected(current, target_plan, config)
+        # The fence flag follows the attempt the lane change just launched. A
+        # CLI run moved to an in-harness backend composes no fence at all, so
+        # the flag must fall false rather than carry the prior attempt's true
+        # beside the absent removed-defaults list.
+        current["fenced"] = _plan_composed_the_fence(target_plan)
         if target_plan is not None:
             current.update(
                 {
