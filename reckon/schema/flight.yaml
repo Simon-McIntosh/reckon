@@ -224,6 +224,30 @@ slots:
     range: string
     multivalued: true
 
+  protected_paths:
+    description: >-
+      Extra filesystem paths a host or project layer adds to the set a worker's
+      fence seals read-only. The key is additive: the fence's shipped default
+      set is today's built-in list — operator state, credentials, shared
+      records and every main checkout, the worktree pool included — and a layer
+      can add to it but never replace it, so a layer that omits a default here
+      leaves that default protected rather than silently dropping it. Entries
+      are home-relative or absolute and are resolved against the operator's
+      home the same way the defaults are. The only way to remove a default is
+      to name it under `unprotected_paths`.
+    multivalued: true
+
+  unprotected_paths:
+    description: >-
+      Defaults the fence's protected set carries that a host or project layer
+      leaves writable. A layer removes a default only by naming it here, so a
+      reduction of the protected set is a deliberate, named act rather than a
+      side effect of editing `protected_paths`. Each entry names a default as
+      the fence would resolve it — home-relative or absolute — and an entry
+      that names no default is ignored. Every run whose fence leaves out a
+      named default carries the list on its run record.
+    multivalued: true
+
   backends:
     description: >-
       Available worker backends, keyed by a name chosen by whoever writes the
@@ -832,6 +856,8 @@ classes:
       - default_backend
       - local_backend
       - review_excluded_backends
+      - protected_paths
+      - unprotected_paths
       - backends
       - roles
       - gates

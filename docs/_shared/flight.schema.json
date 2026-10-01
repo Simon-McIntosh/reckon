@@ -931,6 +931,16 @@
                         "null"
                     ]
                 },
+                "protected_paths": {
+                    "description": "Extra filesystem paths a host or project layer adds to the set a worker's fence seals read-only. The key is additive: the fence's shipped default set is today's built-in list \u2014 operator state, credentials, shared records and every main checkout, the worktree pool included \u2014 and a layer can add to it but never replace it, so a layer that omits a default here leaves that default protected rather than silently dropping it. Entries are home-relative or absolute and are resolved against the operator's home the same way the defaults are. The only way to remove a default is to name it under `unprotected_paths`.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
                 "review": {
                     "anyOf": [
                         {
@@ -988,6 +998,16 @@
                         }
                     ],
                     "description": "The follower pane's own memory of what it has rendered. A reader tracking a fleet across re-arms wants the rows it just saw restored rather than an empty pane; these bounds decide how much of the view comes back."
+                },
+                "unprotected_paths": {
+                    "description": "Defaults the fence's protected set carries that a host or project layer leaves writable. A layer removes a default only by naming it here, so a reduction of the protected set is a deliberate, named act rather than a side effect of editing `protected_paths`. Each entry names a default as the fence would resolve it \u2014 home-relative or absolute \u2014 and an entry that names no default is ignored. Every run whose fence leaves out a named default carries the list on its run record.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
                 },
                 "version": {
                     "description": "Schema version of this configuration document.",
@@ -1729,6 +1749,16 @@
                 "null"
             ]
         },
+        "protected_paths": {
+            "description": "Extra filesystem paths a host or project layer adds to the set a worker's fence seals read-only. The key is additive: the fence's shipped default set is today's built-in list \u2014 operator state, credentials, shared records and every main checkout, the worktree pool included \u2014 and a layer can add to it but never replace it, so a layer that omits a default here leaves that default protected rather than silently dropping it. Entries are home-relative or absolute and are resolved against the operator's home the same way the defaults are. The only way to remove a default is to name it under `unprotected_paths`.",
+            "items": {
+                "type": "string"
+            },
+            "type": [
+                "array",
+                "null"
+            ]
+        },
         "review": {
             "anyOf": [
                 {
@@ -1786,6 +1816,16 @@
                 }
             ],
             "description": "The follower pane's own memory of what it has rendered. A reader tracking a fleet across re-arms wants the rows it just saw restored rather than an empty pane; these bounds decide how much of the view comes back."
+        },
+        "unprotected_paths": {
+            "description": "Defaults the fence's protected set carries that a host or project layer leaves writable. A layer removes a default only by naming it here, so a reduction of the protected set is a deliberate, named act rather than a side effect of editing `protected_paths`. Each entry names a default as the fence would resolve it \u2014 home-relative or absolute \u2014 and an entry that names no default is ignored. Every run whose fence leaves out a named default carries the list on its run record.",
+            "items": {
+                "type": "string"
+            },
+            "type": [
+                "array",
+                "null"
+            ]
         },
         "version": {
             "description": "Schema version of this configuration document.",

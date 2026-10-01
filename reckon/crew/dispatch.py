@@ -5464,6 +5464,13 @@ def dispatch(
         if launch_kind == "cli" and fence_waiver:
             record["fence_waiver"] = {"reason": fence_waiver}
 
+        # The defaults a layer names under ``unprotected_paths`` are left out of
+        # this run's fence, so the run carries the list it left out. Written
+        # only when the fence actually composed and only when a default was
+        # removed: a run that removes nothing records no such key rather than an
+        # empty one, which would read as a fence that was built and found whole.
+        fence_unprotected = _backends.fence_unprotected_paths(config=config)
+
         if launch_kind == "cli":
             try:
                 # Refused before composition, which seeds the run's harness
@@ -5490,6 +5497,7 @@ def dispatch(
                         final_message_path=str(final_path),
                         resume_session=reuse_session,
                         fence=compose_fence,
+                        fence_config=config,
                         fence_waiver=fence_waiver or None,
                     ),
                     facts=dispatch_host,
@@ -5515,6 +5523,15 @@ def dispatch(
                     # asked for the fence is recorded as fenced while any launch
                     # that composed none is not.
                     "fenced": _plan_composed_the_fence(plan),
+                    **(
+                        {
+                            "fence_unprotected_paths": [
+                                str(path) for path in fence_unprotected
+                            ]
+                        }
+                        if fence_unprotected and _plan_composed_the_fence(plan)
+                        else {}
+                    ),
                     # The pointer's pid is the per-run supervisor's, written
                     # once it is running, further down. Until then the run has no
                     # process identity, which is why it starts empty rather than
