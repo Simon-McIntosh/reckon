@@ -386,7 +386,11 @@ def _dispatch_section_routing(
     routing alone: the visibility gates downstream remain the authority for
     refusals, so a lane lookup that cannot see the plan — no repository, no
     mount, a record the parser rejects — must not become a new refusal point,
-    nor a reason a node that dispatches today stops dispatching.
+    nor a reason a node that dispatches today stops dispatching. A rule that
+    was read and could not be resolved is the one failure that fallback would
+    otherwise hide, so it comes back as a routing failure record rather than as
+    nothing: the node still dispatches on role routing, and the record says the
+    raise was attempted and lost.
     """
     from reckon.resources import ResourceCollision, resolve_resource
 
@@ -406,17 +410,58 @@ def _dispatch_section_routing(
         if resource is None:
             return None
         return resolve_section_routing(config, node=node, plan_path=resource.path)
-    except (CrewError, PlanVisibilityError, ResourceCollision, OSError, ValueError):
-        return None
+    except (
+        CrewError,
+        PlanVisibilityError,
+        ResourceCollision,
+        OSError,
+        ValueError,
+    ) as exc:
+        return _section_routing_failure(node.section, exc)
+
+
+def _section_routing_failure(section: str, exc: BaseException) -> dict[str, Any]:
+    """Return the record a dispatch carries when a section's raise cannot resolve.
+
+    The failure names the exception class and the section, because the two cases
+    it separates — a rule that raised and a section that carries no rule — both
+    end on role routing and would otherwise leave identical evidence. The detail
+    is the exception's own message, so a reader sees what the parser or the
+    lookup actually said rather than a paraphrase of it.
+    """
+    label = str(section or "section")
+    exception = type(exc).__name__
+    detail = str(exc).strip()
+    summary = f"{label}: the raise could not be resolved ({exception})"
+    if detail:
+        summary += f": {detail}"
+    summary += "; dispatch fell back to role routing"
+    return {
+        "failure": {
+            "section": str(section),
+            "exception": exception,
+            "detail": detail,
+        },
+        "summary": summary,
+    }
 
 
 def _section_routing_evidence(payload: Mapping[str, Any]) -> dict[str, Any]:
-    """Trim a routing payload to the section facts a dispatch record carries."""
+    """Trim a routing payload to the section facts a dispatch record carries.
+
+    The ``failure`` key is written on every outcome rather than left off when
+    the rule resolved cleanly: absent would read as a section whose rule was
+    never read, which is the state ``section_routing: None`` already names.
+    """
+    failure = payload.get("failure")
+    if failure is not None:
+        return {"failure": dict(failure), "summary": payload["summary"]}
     return {
         "attempts": payload["attempts"],
         "capability": payload["capability"],
         "raise": payload["raise"],
         "summary": payload["summary"],
+        "failure": None,
     }
 
 
@@ -3868,7 +3913,9 @@ def plan_dispatch(
         # The section's own record steers the lane, so a section that keeps
         # costing attempts lands on the class its count earns without anyone
         # deciding it by hand. A node with no readable record resolves exactly
-        # as role routing always resolved it.
+        # as role routing always resolved it, and so does one whose rule raised
+        # while being read: the failure is recorded instead of the lane, since a
+        # rule that cannot be resolved must not stop a node dispatching.
         section_routing = _dispatch_section_routing(
             config,
             node=node,
@@ -3876,7 +3923,7 @@ def plan_dispatch(
             repo=repo,
             authority=authority,
         )
-        if section_routing is None:
+        if section_routing is None or section_routing.get("failure") is not None:
             backend_name, backend = resolve_role(config, node.role, node.spec_level)
         else:
             backend_name = str(section_routing["backend"])
@@ -5394,6 +5441,16 @@ def dispatch(
             "requested_backend": resolution.requested_backend,
             "lane_declaration": resolution.lane_declaration,
             "lane_reading": resolution.lane_reading,
+            # What the section's own record contributed to the lane this run
+            # took: the raise it earned, or the failure that left it on role
+            # routing. The pointer is the record a later reader reaches without
+            # the dispatching process, so a raise that could not be resolved
+            # has to be visible here and not only in the dispatch payload.
+            "section_routing": (
+                None
+                if resolution.section_routing is None
+                else dict(resolution.section_routing)
+            ),
             "local": resolution.local,
             "execution_fit": resolution.execution_fit.as_dict(),
             "launch": launch_kind,
