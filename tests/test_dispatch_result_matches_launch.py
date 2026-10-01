@@ -473,7 +473,18 @@ def test_a_contract_validation_refusal_carries_error_and_detail(
     assert result.exit_code == 2, result.output
     _assert_refusal_is_legible(payload)
     assert payload["error"] == "contract-validation"
-    assert "fully-specified" in payload["detail"]
+    # The failed property is read from the structured findings, so the case
+    # holds on the property that failed rather than on the sentence the refusal
+    # happens to render today.
+    failed = [
+        finding
+        for finding in payload["validation"]["findings"]
+        if finding.get("property") == "fully-specified"
+    ]
+    assert failed, "the refusal names no failed property"
+    assert all(str(finding.get("detail", "")).strip() for finding in failed), (
+        "the failed property carries no detail"
+    )
 
 
 # Every refusal class the live dispatch path can raise, built with the minimum
