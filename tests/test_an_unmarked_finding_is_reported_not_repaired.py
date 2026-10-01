@@ -1,19 +1,21 @@
-"""A finding with no severity on a post-audit record is reported, not repaired.
+"""A finding with no severity is reported as unmarked and still repaired.
 
-The store began refusing a finding that declares no severity when the write-time
-severity audit landed. From that moment a finding that reached the store without
-a severity is there by omission, so the repair composer reports it as unmarked
-rather than repairing it as blocking. A record stamped before the audit is left
-as before: the field did not yet exist, and its unmarked findings stay blocking.
+The store accepts a finding that declares no severity: the write-time severity
+audit flags such a finding to the reviewer but does not refuse the write, so a
+record stamped after the audit may still carry one. The repair composer
+therefore always repairs an unmarked finding as blocking and, on a record
+written after the audit began flagging them, additionally lists it by file and
+line so the coordinator can see the record left the severity unstated.
 
-The boundary is the record's own ``timestamp`` against the module constant that
-names the audit moment. Each case sets a stamp on one side of it, so a composer
-that ignored the timestamp would pass one case and fail the other rather than
-passing both.
+The cases below pin both halves: an unmarked finding on a post-audit record is
+repaired and flagged; on a pre-audit record it is repaired and not flagged; and
+a stored three-finding record with no severities at all still composes one
+repair node naming all three, which is the shape a drop would have broken.
 """
 
 from __future__ import annotations
 
+import hashlib
 import importlib
 import os
 import subprocess
@@ -22,20 +24,21 @@ from pathlib import Path
 import pytest
 
 from reckon import crew
-from reckon.crew import recovery, repair, runs
+from reckon.crew import recovery, repair, resumption, runs
 from reckon.crew import review as review_module
 
 RUN_ID = "r-20260101T000000000000-unmarked-reviewed-run"
 BASE_SHA = "1" * 40
 HEAD_SHA = "2" * 40
 
-# One stamp either side of the audit moment the module names, so a decision read
-# from the wrong side reddens the case it does not belong to.
+# One stamp either side of the audit moment the module names.
 BEFORE_AUDIT = "2026-10-01T06:00:00+00:00"
 AFTER_AUDIT = "2026-10-01T08:00:00+00:00"
 
 BLOCKING_PATH = "reckon/crew/thing.py"
 UNMARKED_PATH = "reckon/crew/unmarked.py"
+SECOND_UNMARKED_PATH = "reckon/crew/another.py"
+THIRD_UNMARKED_PATH = "reckon/crew/third.py"
 
 BLOCKING = {
     "file": BLOCKING_PATH,
@@ -48,11 +51,14 @@ UNMARKED = {
     "line": "42",
     "text": "a finding the store admitted without a severity",
 }
-OLD_UNMARKED = {
-    "file": "reckon/crew/legacy.py",
-    "line": "7",
-    "text": "an older record written before the severity field existed",
-}
+
+
+def _expected_id(finding: dict[str, str]) -> str:
+    """The id the documented rule yields, re-derived here as the oracle."""
+    material = "\x00".join(
+        (finding["file"].strip(), finding["line"].strip(), finding["text"].strip())
+    )
+    return "f" + hashlib.sha256(material.encode("utf-8")).hexdigest()[:10]
 
 
 def _review(findings: list[dict[str, str]], *, timestamp: str) -> dict[str, object]:
@@ -67,52 +73,70 @@ def _review(findings: list[dict[str, str]], *, timestamp: str) -> dict[str, obje
     }
 
 
-def test_an_old_unmarked_record_is_repaired() -> None:
-    """A record before the audit keeps repairing its unmarked finding."""
-    node = repair.compose_repair_node(_review([OLD_UNMARKED], timestamp=BEFORE_AUDIT))
+def test_an_unmarked_finding_is_repaired_and_flagged_on_a_post_audit_record() -> None:
+    """The finding reaches the repair and is also listed as unmarked."""
+    node = repair.compose_repair_node(_review([UNMARKED], timestamp=AFTER_AUDIT))
 
     assert node is not None
-    assert OLD_UNMARKED["file"] in node["write_paths"]
-    assert node["unmarked_findings"] == []
-
-
-def test_a_new_unmarked_only_record_composes_no_repair_and_names_the_count() -> None:
-    """A post-audit unmarked-only round composes nothing and names the count."""
-    review = _review([UNMARKED], timestamp=AFTER_AUDIT)
-
-    assert repair.compose_repair_node(review) is None
-    assert repair.unmarked_findings(review)
-    assert repair.blocking_findings(review) == []
-
-
-def test_a_new_mixed_record_repairs_only_the_blocking_finding() -> None:
-    """The blocking finding is repaired; the unmarked one is listed, not scoped."""
-    review = _review([BLOCKING, UNMARKED], timestamp=AFTER_AUDIT)
-    node = repair.compose_repair_node(review)
-
-    assert node is not None
-    assert [finding["file"] for finding in repair.blocking_findings(review)] == [
-        BLOCKING_PATH
-    ]
-
-    # The blocking finding is work; the unmarked finding is not.
-    assert BLOCKING_PATH in node["write_paths"]
-    assert UNMARKED_PATH not in node["write_paths"]
-
-    # The unmarked finding is listed by file and line, so a reader sees what was
-    # reported rather than repaired.
-    listed = node["unmarked_findings"]
-    assert [(entry["file"], entry["line"]) for entry in listed] == [
+    unmarked_id = _expected_id(UNMARKED)
+    assert unmarked_id in node["brief"]
+    assert UNMARKED_PATH in node["write_paths"]
+    assert [(entry["file"], entry["line"]) for entry in node["unmarked_findings"]] == [
         (UNMARKED_PATH, UNMARKED["line"])
     ]
 
 
-# ── The reflex records the unmarked count beside the follow-on count ─────────
-# The composer's own refusal is not enough: the reflex records a reason on the
-# reviewed run, and a round whose findings are all follow-ons and one whose
-# findings are all unmarked are different causes. The reason must name both
-# counts, and the unmarked findings must be listed by file and line, so a reader
-# can tell a declined follow-on from a finding the store admitted unmarked.
+def test_an_unmarked_finding_on_a_pre_audit_record_is_repaired_without_a_flag() -> None:
+    """A record before the audit repairs the finding and flags nothing."""
+    node = repair.compose_repair_node(_review([UNMARKED], timestamp=BEFORE_AUDIT))
+
+    assert node is not None
+    assert _expected_id(UNMARKED) in node["brief"]
+    assert node["unmarked_findings"] == []
+
+
+def test_a_mixed_record_repairs_both_and_flags_only_the_unmarked_one() -> None:
+    """Both findings become work; only the unmarked one is flagged."""
+    node = repair.compose_repair_node(
+        _review([BLOCKING, UNMARKED], timestamp=AFTER_AUDIT)
+    )
+
+    assert node is not None
+    assert _expected_id(BLOCKING) in node["brief"]
+    assert _expected_id(UNMARKED) in node["brief"]
+    assert BLOCKING_PATH in node["write_paths"]
+    assert UNMARKED_PATH in node["write_paths"]
+    assert [entry["file"] for entry in node["unmarked_findings"]] == [UNMARKED_PATH]
+
+
+def test_a_three_finding_unmarked_record_composes_one_node() -> None:
+    """No finding is dropped: a three-finding record composes one node.
+
+    This is the shape the refusal-by-timestamp change broke — a stored review
+    whose findings all lack a severity must still compose one repair naming all
+    three, not compose nothing.
+    """
+    findings = [
+        {**UNMARKED, "file": UNMARKED_PATH},
+        {**UNMARKED, "file": SECOND_UNMARKED_PATH, "line": "7", "text": "second"},
+        {**UNMARKED, "file": THIRD_UNMARKED_PATH, "line": "9", "text": "third"},
+    ]
+    review = _review(findings, timestamp=AFTER_AUDIT)
+
+    node = repair.compose_repair_node(review)
+
+    assert node is not None
+    for finding in findings:
+        assert _expected_id(finding) in node["brief"]
+        assert finding["file"] in node["write_paths"]
+    assert len(node["unmarked_findings"]) == 3
+
+
+# ── The reflex repairs the round rather than declining it ────────────────────
+# A stored round whose findings carry no severity is finding-bearing work, so
+# the reflex composes a repair for it rather than recording a decline-only
+# outcome. The fixture stores through the real store, which stamps the current
+# moment — after the audit — so this is the post-audit case by construction.
 
 PROJECT = "sample"
 NODE_ID = "an-unmarked-reviewed-node"
@@ -205,7 +229,7 @@ def _store_review(head_sha: str, findings: list[dict[str, str]]) -> None:
     """Write the reviewed run's review record into the isolated store root.
 
     No timestamp is supplied, so the store stamps the current moment — at or
-    after the audit, which is the post-audit case this fixture exists to drive.
+    after the audit, which is the post-audit case this fixture drives.
     """
     review_module.store_review(
         {
@@ -219,6 +243,18 @@ def _store_review(head_sha: str, findings: list[dict[str, str]]) -> None:
             "findings": findings,
         }
     )
+
+
+def _stub_resume(monkeypatch) -> list[dict]:
+    """Replace the resume entry point an unpromoted run's repair uses."""
+    calls: list[dict] = []
+
+    def fake_resume(run_id, record, *, config=None, launcher=None, advice=""):
+        calls.append({"run_id": run_id, "advice": advice})
+        return {"pid": os.getpid(), "turn": 1, "log_path": "resume-1.jsonl"}
+
+    monkeypatch.setattr(resumption, "_resume", fake_resume)
+    return calls
 
 
 def _dispatch_repair(record: dict, monkeypatch) -> tuple[dict, list[dict]]:
@@ -239,30 +275,21 @@ def _dispatch_repair(record: dict, monkeypatch) -> tuple[dict, list[dict]]:
 
 
 @pytest.mark.arms_watch_producer
-def test_an_unmarked_only_round_records_the_unmarked_count(
+def test_an_unmarked_only_round_is_repaired_not_declined(
     dispatch_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """A stored unmarked-only round dispatches nothing and names the count.
-
-    The reason names both counts, so an all-follow-on round and an all-unmarked
-    round are not reported with one string. The unmarked finding is listed by
-    file and line, and the same record is retrievable on the reviewed run.
-    """
+    """A stored unmarked round reaches the repair, not a decline-only outcome."""
     config_home, repo, head_sha = dispatch_project
     record = _reviewed_pointer(config_home, repo)
     _store_review(head_sha, [UNMARKED])
+    resumed = _stub_resume(monkeypatch)
 
     report, calls = _dispatch_repair(record, monkeypatch)
 
-    assert report["dispatched"] is False
+    assert report.get("resumed") is True
+    assert len(resumed) == 1
+    assert _expected_id(UNMARKED) in resumed[0]["advice"]
     assert calls == []
-    assert "no blocking finding" in report["reason"]
-    assert "0 follow-on" in report["reason"]
-    assert "1 unmarked" in report["reason"]
-    assert report["unmarked_findings"] == [
-        {"file": UNMARKED_PATH, "line": UNMARKED["line"]}
-    ]
 
     recorded = runs.read_pointer(RUN_ID)["repair_dispatch"]
-    assert recorded["status"] == "decline-only"
-    assert recorded["reason"] == report["reason"]
+    assert recorded["status"] != "decline-only"

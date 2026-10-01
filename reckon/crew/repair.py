@@ -41,15 +41,16 @@ from reckon.crew.plan_review import RESPONSE_ACTIONS
 # review would otherwise be indistinguishable from a review of a review.
 REPAIR_NODE_PREFIX = "repair-of-"
 
-# The moment stored reviews began to be refused for an unmarked finding. The
-# write-time severity audit landed here: from this instant the store refuses a
-# review carrying a finding with no severity, so a finding that reached the
-# store without one on a record stamped at or after this moment is there by
-# omission rather than because the field did not yet exist. Such a finding is
-# reported as unmarked rather than repaired as blocking. A record stamped
-# before this moment is treated as written by the older path, where an absent
-# severity was ordinary, so its unmarked findings stay blocking as before.
-UNMARKED_SEVERITY_REFUSED_FROM = "2026-10-01T07:14:36+00:00"
+# The moment the write-time audit of a review run began reporting a stored
+# finding that declares no severity. The audit reports; it does not refuse the
+# write, so a finding that reached the store unmarked after this moment is
+# still a finding a reviewer raised, and it is repaired as blocking either way.
+# The moment only decides whether the record is flagged: a record stamped at or
+# after it is one whose reviewer was told to restate the severity and did not,
+# so the composed repair names the unmarked findings for the coordinator; a
+# record stamped before it predates the instruction, where an absent severity
+# was ordinary and carries no such flag.
+UNMARKED_SEVERITY_AUDIT_STARTED_AT = "2026-10-01T07:14:36+00:00"
 
 # The finding-id prefix. The id itself is derived from the finding's own file,
 # line and text, so a constant cannot identify a record's findings and two
@@ -135,12 +136,11 @@ def review_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
     return composed
 
 
-# The three states a finding sits in, decided once so the brief, the scope, the
-# refusal reason and the unmarked report can never disagree about which list a
-# finding belongs to.
+# The two states a finding sits in for repair, decided once so the brief, the
+# scope and the refusal reason can never disagree about which list a finding
+# belongs to.
 _BLOCKING = "blocking"
 _FOLLOW_ON = "follow-on"
-_UNMARKED = "unmarked"
 
 
 def _parsed_moment(value: str) -> datetime | None:
@@ -165,35 +165,35 @@ def _parsed_moment(value: str) -> datetime | None:
     return moment
 
 
-def _record_predates_unmarked_refusal(review: Mapping[str, Any]) -> bool:
-    """Whether a record was written before absent severities began to be refused.
+def _record_predates_unmarked_audit(review: Mapping[str, Any]) -> bool:
+    """Whether a record was written before unmarked findings began to be flagged.
 
     The review's own ``timestamp`` is compared against the moment the write-time
     severity audit landed. A record stamped before it, or one carrying no
-    readable stamp at all, is treated as written by the older path, so its
-    unmarked findings stay blocking — an undateable record is never newly
-    dropped.
+    readable stamp at all, is treated as written before the instruction, so its
+    absent severities carry no flag. This decides the flag alone: a finding that
+    declares no severity is repaired either way.
     """
     recorded = _parsed_moment(str(review.get("timestamp") or ""))
-    threshold = _parsed_moment(UNMARKED_SEVERITY_REFUSED_FROM)
+    threshold = _parsed_moment(UNMARKED_SEVERITY_AUDIT_STARTED_AT)
     if recorded is None or threshold is None:
         return True
     return recorded < threshold
 
 
-def _finding_kind(finding: Mapping[str, Any], *, predates_refusal: bool) -> str:
-    """Classify one finding as blocking, a follow-on, or unmarked.
+def _finding_kind(finding: Mapping[str, Any]) -> str:
+    """Classify one finding as blocking or a follow-on.
 
     A declared blocking severity blocks; any other declared severity is a
     follow-on, recorded on the review rather than repaired. A finding that
-    declares nothing depends on the record's age: on a record written before
-    the severity audit it blocks, because the field did not yet exist and
-    dropping it would discard a finding a reviewer did raise; on a record
-    written after, it is unmarked and reported rather than repaired.
+    declares nothing blocks too: the store admits such a finding rather than
+    refusing it, so an absent severity is a judgement the reviewer left
+    unstated, not a follow-on, and repairing it is what keeps a finding a
+    reviewer raised from being discarded.
     """
     severity = finding.get("severity")
     if severity is None:
-        return _BLOCKING if predates_refusal else _UNMARKED
+        return _BLOCKING
     if str(severity).strip() == review_module.BLOCKING_FINDING_SEVERITY:
         return _BLOCKING
     return _FOLLOW_ON
@@ -201,11 +201,8 @@ def _finding_kind(finding: Mapping[str, Any], *, predates_refusal: bool) -> str:
 
 def _findings_of_kind(review: Mapping[str, Any], kind: str) -> list[dict[str, Any]]:
     """The record's findings of one kind, in the record's order."""
-    predates_refusal = _record_predates_unmarked_refusal(review)
     return [
-        finding
-        for finding in review_findings(review)
-        if _finding_kind(finding, predates_refusal=predates_refusal) == kind
+        finding for finding in review_findings(review) if _finding_kind(finding) == kind
     ]
 
 
@@ -214,9 +211,11 @@ def blocking_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
 
     This is the one filtered list both the brief and the write scope are built
     from, so the goals, the ids the done-when names and the paths the scope
-    grants can never disagree about which findings became work. A review whose
-    findings are all follow-ons or all unmarked yields an empty list, which is
-    what composes no repair rather than a node with an empty brief.
+    grants can never disagree about which findings became work. A finding that
+    declares no severity blocks, because the store admits it rather than
+    refusing it and it is a finding a reviewer raised. A review whose findings
+    are all follow-ons yields an empty list, which is what composes no repair
+    rather than a node with an empty brief.
     """
     return _findings_of_kind(review, _BLOCKING)
 
@@ -224,12 +223,20 @@ def blocking_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
 def unmarked_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
     """Return the findings that declare no severity on a post-audit record.
 
-    These are reported rather than repaired: the write path refuses an unmarked
-    finding from the moment the severity audit landed, so one that reached the
-    store without a severity is there by omission, and repairing it as blocking
-    would direct work at a finding the record never classified.
+    These are reported, not dropped: the write-time severity audit flags such a
+    finding to the reviewer but does not refuse the write, so a record stamped
+    after the audit that still carries one is a record whose reviewer left the
+    severity unstated. The finding is repaired as blocking anyway; listing it
+    here lets the composed node name it for the coordinator. A record stamped
+    before the audit predates the instruction, so it carries no such flag.
     """
-    return _findings_of_kind(review, _UNMARKED)
+    if _record_predates_unmarked_audit(review):
+        return []
+    return [
+        finding
+        for finding in review_findings(review)
+        if finding.get("severity") is None
+    ]
 
 
 def follow_on_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -376,8 +383,9 @@ def compose_repair_brief(
     declined is unanswered work, which is the state this node exists to prevent.
 
     A finding that declares no severity on a record written after the audit is
-    listed separately by file and line: it is reported rather than repaired, so
-    the repair is told of it without being directed to answer it.
+    repaired like any blocking finding and also listed separately by file and
+    line, so the repair is told the record left its severity unstated without
+    that finding being dropped from the work.
     """
     run_id = str(review.get("reviewed_run_id") or reviewed_run_id or "").strip()
     lines = [
@@ -399,8 +407,9 @@ def compose_repair_brief(
     if unmarked:
         lines += [
             "",
-            "These findings declare no severity on a record written after severity",
-            "became required, so they are reported rather than repaired:",
+            "These findings declare no severity on a record written after the",
+            "severity audit began flagging them; they are repaired above and",
+            "flagged here:",
             *(f"- {_finding_location(finding)}" for finding in unmarked),
         ]
     return "\n".join(lines)
@@ -424,10 +433,10 @@ def compose_repair_node(
 
     Returns ``None`` when the review carries no blocking finding: a clean review
     is not work, and neither is a round whose findings are all follow-ons or all
-    unmarked — composing an empty node for either would dispatch a repair with
+    follow-ons — composing an empty node for either would dispatch a repair with
     nothing to do. When it carries blocking findings, the returned mapping names
-    the node, its brief, its write scope, the unmarked findings it reports
-    rather than repairs, and the round it belongs to, so a caller can
+    the node, its brief, its write scope, the findings the record left unmarked
+    and the round it belongs to, so a caller can
     dispatch it or print it without re-deriving any of them. The reviewed
     run's node id names the node when the record carries one, so the repair
     reads as work on the run rather than on the review.
