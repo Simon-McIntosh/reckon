@@ -1,0 +1,29 @@
+<section id="s5-one-of-two-racing-reviews-survives">
+    <h2>§5 — One of two racing dispatches survives the claim check</h2>
+    <p>Two dispatches of overlapping write paths can each publish a claim before either reaches its admission
+      check, because the claim is registered at the run id's own moment and the live claims are read earlier still.
+      Each then reads the other as a live claim and, refusing on sight, both withdraw — measured on
+      <code>r-20261001T024141507018-figure-thumbnails</code>, whose two review compositions (dispatched 04:59:26 and
+      04:59:31) both withdrew at 04:59:37, leaving the run with no review until a later sweep.</p>
+    <p>The claim registered first owns the paths. <code>_peer_claim_is_a_later_racing_arrival</code>
+      (<code>reckon/crew/dispatch.py</code>) makes a dispatch disregard a peer claim that has not launched a worker
+      and was registered after this dispatch's own, ordered by registration time and then by run id when the times
+      are equal, so exactly one of the two proceeds and the other refuses when it checks, naming the winner. A peer
+      that has launched its worker — its record carries a worktree or a pid — is no longer a racing arrival and
+      refuses every newcomer exactly as before. A peer whose registration cannot be shown to follow this one (an
+      absent timestamp, or this dispatch holding no claim of its own) is treated as established and refused. The
+      ordering is applied at both admission checks by passing this dispatch's own run id and registration timestamp
+      into <code>_raise_repository_scope_conflict</code>.</p>
+    <p>Measure: <code>tests/test_one_of_two_racing_reviews_survives.py</code> — 4 passed. The race case (a peer claim
+      registered moments later, still composing) leaves the earlier dispatch to launch and the later claim to stand;
+      the mirror case (a peer registered earlier) refuses, naming it; a launched peer refuses whatever the order; and
+      the ordering itself is asserted against its worst inputs (equal times fall to the run id, launched and
+      unorderable claims are refused). Head gate over the new file and the existing claim/scope tests:
+      <code>2 failed, 29 passed</code>. The two failures are pre-existing at the base revision and reproduce with the
+      unmodified <code>dispatch.py</code> (<code>base-existing-conflicts.log</code>): both name a derived landing
+      fragment where the test expects the declared path, and neither is this node's to repair.</p>
+    <p>Negative control: making the claim check refuse on any overlapping binding claim regardless of order
+      reddens the race case and the ordering case (<code>2 failed, 2 passed</code>, exit 1) — the earlier dispatch no
+      longer survives because it withdraws with the later one. Log: the run's
+      <code>negative-control.log</code>.</p>
+  </section>
