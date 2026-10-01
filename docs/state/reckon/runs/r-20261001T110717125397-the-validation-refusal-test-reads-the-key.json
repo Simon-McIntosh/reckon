@@ -1,0 +1,385 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 480000,
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "a0d770a61d284beb150f3582993075299157affe",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 3340777,
+      "input_tokens_cumulative": 3340777,
+      "output_tokens": 24266,
+      "output_tokens_cumulative": 24266,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 12,
+    "files": 1,
+    "removed": 1
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 561,
+        "name": "test_every_dry_run_refusal_carries_error_and_detail",
+        "path": "tests/test_dispatch_result_matches_launch.py"
+      },
+      "run_function": {
+        "line": 532,
+        "name": "test_every_live_refusal_carries_error_and_detail",
+        "path": "tests/test_dispatch_result_matches_launch.py"
+      },
+      "window_line": 533
+    },
+    {
+      "existing_function": {
+        "line": 532,
+        "name": "test_every_live_refusal_carries_error_and_detail",
+        "path": "tests/test_dispatch_result_matches_launch.py"
+      },
+      "run_function": {
+        "line": 561,
+        "name": "test_every_dry_run_refusal_carries_error_and_detail",
+        "path": "tests/test_dispatch_result_matches_launch.py"
+      },
+      "window_line": 562
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "aee0b35d6c211b82526a4e3b626daeb67881a055"
+  ],
+  "completed_at": "2026-10-01T11:18:54.124Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-01T11:07:40Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/reckon-gate-validation-key tests/test_dispatch_result_matches_launch.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T110717125397-the-validation-refusal-test-reads-the-key/gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.88,
+    "at_dispatch": 0.86,
+    "plan": "a-dispatch-returns-without-its-worker",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-01T11:27:17.713826+00:00",
+    "horizon_seconds": 1200,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-01T11:07:17Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 20,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 2,
+    "headroom": 13,
+    "mean_context": 120000,
+    "observed_at": "2026-10-01T11:06:57Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-01T11:18:54.124Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T110717125397-the-validation-refusal-test-reads-the-key/manifest.md",
+  "member": "disposable-r-20261001T110717125397-the-validation-refusal-test-reads-the-key",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_dispatch_result_matches_launch.py::test_a_contract_validation_refusal_carries_error_and_detail"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "baseline_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_dispatch_result_matches_launch.py::test_a_contract_validation_refusal_carries_error_and_detail"
+    ],
+    "declaration": "changing the emitted error key reddens the case; rewording the message leaves it green",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T110717125397-the-validation-refusal-test-reads-the-key/nc-error-key.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T110717125397-the-validation-refusal-test-reads-the-key/nc-error-key.log",
+    "test_paths": [
+      "tests/test_dispatch_result_matches_launch.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "the-validation-refusal-test-reads-the-key",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1667,
+          "cached_input_tokens": 501594,
+          "input_tokens": 503263,
+          "output_tokens": 1135,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 504398,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "caa2d324-580b-4245-9533-3aec9e945566",
+      "session_id": "s21-1c"
+    },
+    "done_when": "The a-dispatch-returns-without-its-worker followup f-adrwiw-validation-assertion-reads-the-key holds. In tests/test_dispatch_result_matches_launch.py, the contract-validation refusal case asserts error == \"contract-validation\" and a non-empty detail naming the failed property, and it no longer contains a literal substring of the validation message's wording. A declared negative control is executed and logged under pytest: changing the error key the CLI emits for that refusal turns the case red, and rewording the message leaves it green. The node gate is that test file at head, ending EXIT=0. Every log sits under the run directory, headed with revision, tree and literal command, and ends EXIT=. Only tests/test_dispatch_result_matches_launch.py changes.",
+    "estimated_hours": null,
+    "goal": "assert the contract-validation refusal by its error key rather than its wording",
+    "id": "the-validation-refusal-test-reads-the-key",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-01T11:07:17Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 20,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 2,
+      "headroom": 13,
+      "mean_context": 120000,
+      "observed_at": "2026-10-01T11:06:57Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T110717125397-the-validation-refusal-test-reads-the-key/manifest.md",
+    "negative_control": "changing the emitted error key reddens the case; rewording the message leaves it green",
+    "plan": "a-dispatch-returns-without-its-worker",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§6",
+    "spec_level": "exact",
+    "time_budget": "20m",
+    "token_budget": null,
+    "write_paths": [
+      "tests/test_dispatch_result_matches_launch.py",
+      "docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-validation-refusal-test-reads-the-key.html",
+      "docs/figures/a-dispatch-returns-without-its-worker/the-validation-refusal-test-reads-the-key"
+    ]
+  },
+  "orientation_input_tokens": 1744683.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "the-validation-refusal-test-reads-the-key",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-01T11:07:30.680777+00:00",
+    "score": 0.56875,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-dispatch-returns-without-its-worker",
+  "plan_impl_at_dispatch": 0.86,
+  "plan_link": null,
+  "promoted_revision": "aee0b35d6c211b82526a4e3b626daeb67881a055",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "a0d770a61d284beb150f3582993075299157affe",
+    "reviewed_head_sha": "aee0b35d6c211b82526a4e3b626daeb67881a055",
+    "scores": {
+      "durability": 19,
+      "evidence": 19,
+      "fit": 20,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 98
+  },
+  "review_tier": "none",
+  "role": "implement",
+  "run_id": "r-20261001T110717125397-the-validation-refusal-test-reads-the-key",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§6",
+  "session_harness": "claude",
+  "session_id": "1dbb4f9d-6a73-4125-affa-a5a8e451e5fb",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 3340777,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 665.017,
+    "generated_tokens": 24266,
+    "generation_seconds": 428.184,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 23.7,
+    "machine_seconds": 236.833,
+    "peak_input_tokens": 113888,
+    "tokens_per_second": 56.67,
+    "wall_tokens_per_second": 36.49
+  },
+  "time_budget": "20m",
+  "tool_steps": 38.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 674,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-01T11:18:55Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-01T11:07:44Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261001T110717125397-the-validation-refusal-test-reads-the-key",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 5430,
+    "worker_pid": 3669973
+  },
+  "worker_seconds": 654,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}

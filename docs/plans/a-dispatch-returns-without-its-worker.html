@@ -18,14 +18,14 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-10-01">
-  <meta name="plan-version" content="125">
+  <meta name="plan-version" content="127">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
-<meta name="plan-impl" content="0.86">
+<meta name="plan-impl" content="0.88">
 </head>
 <body>
   <main class="plan-doc">
@@ -1050,10 +1050,11 @@
     <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker §8</pre>
     <p class="r-fu-outcome">Landed at merge da4900f42 (run r-20261001T103321510301-the-retired-cap-reads-retired, reviewed head a744478b7, review total 87). The max_concurrent_runs description in reckon/schema/flight.yaml now says the key is retired and ignored, and reckon/_flight_schema.py and docs/_shared/flight.schema.json were regenerated to match. roster_bound takes no unread argument. Gate: 106 passed across test_backend_carries_no_worker_cap, test_crew_binding_bound, test_flight and test_concurrency_bound_refuses_by_name. Restoring the enforcement sentence brings it back in all three schema copies. Coordinator population: the 49 test files that read the flight schema or summary show 1027 passed and 3 skipped at both main d65d02c69 and the merge. The review noted two follow-ons. The LinkML round-trip tests skip without the dev dependency group. No test turns red if the enforcement sentence comes back.</p>
     </article>
-<article class="r-fu" data-id="f-adrwiw-validation-assertion-reads-the-key" data-status="open" data-written-by="s21-1c" data-written-at="2026-10-01T09:50:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-adrwiw-validation-assertion-reads-the-key" data-status="resolved" data-written-by="s21-1c" data-written-at="2026-10-01T09:50:00Z" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-01T12:42:33+00:00" data-resolved-by="s21-1c">
     <h4 class="r-fu-title">The contract-validation refusal test asserts the error key, not the message wording</h4>
     <div class="r-fu-body"><p>The review of a-dispatch-result-matches-its-launch found that <code>tests/test_dispatch_result_matches_launch.py</code> (near line 476) checks a literal substring of the validation message. A wording change would turn red a durability test that is not about wording. Assert <code>error == "contract-validation"</code> and a non-empty <code>detail</code> naming the failed property instead. The same review found that the evidence fragment omits the section's member-reading clause. The section's comment now records the reading: the run's prompt carries no --member, so the substitution is refuted. Done when the test asserts the key and property name and no longer contains the literal message substring, and passes at head.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-dispatch-returns-without-its-worker §6</pre>
+    <p class="r-fu-outcome">Landed on main at 83a352de6 (run r-20261001T110717125397-the-validation-refusal-test-reads-the-key, reviewed head aee0b35d6, review total 98). The contract-validation refusal case in tests/test_dispatch_result_matches_launch.py asserts error == contract-validation and a detail naming the failed property, and carries no literal substring of the message: 22 passed. Changing the emitted error key turns it red. Rewording the message in node.py leaves it green.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -1268,7 +1269,10 @@
     <div class="r-comment-body"><p>Independent review of r-20261001T081548169030-a-dispatch-result-matches-its-launch is stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261001T081548169030-a-dispatch-result-matches-its-launch.at-634d7d3cdc636a229183954711c3d4b8a63d631f.json — a parsed record scoring all five dimensions (goal_fidelity 17, evidence 19, scope_discipline 20, durability 18, fit 19; raw sum 93), with added_failure_count 4 and its ids derived from the reviewed run's own base/head gate logs, two follow-on findings, and the module-capped total of 5.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261001T112036488433-review-of-the-validation-refusal-test-reads-the-key" data-who="reckon-build" data-when="2026-10-01T11:33:46.607Z">
-    <div class="r-comment-body"><p>review of r-20261001T110717125397-the-validation-refusal-test-reads-the-key stored as a parsed five-dimension record (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20; total 98) under reviews/reckon/ at both the plain and .at-aee0b35 paths, carrying added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own base log (baseline-head.log at a0d770a61) and head log (gate.log at aee0b35).</p></div>
+    <div class="r-comment-body"><p>review of r-20261001T110717125397-the-validation-refusal-test-reads-the-key stored as a parsed five-dimension record (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20; total 98) under reviews/reckon/ at both the plain and .at-aee0b35 paths, carrying added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own base log (baseline-head.log at a0d770a61) and head log (gate.log at aee0b35).</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261001T110717125397-the-validation-refusal-test-reads-the-key" data-who="reckon-build" data-when="2026-10-01T11:18:54.124Z">
+    <div class="r-comment-body"><p>tests/test_dispatch_result_matches_launch.py — the contract-validation case now asserts error == &quot;contract-validation&quot; and reads the failed property (&quot;fully-specified&quot;) plus a non-empty detail from payload[&quot;validation&quot;][&quot;findings&quot;], with no literal substring of the rendered message; gate 22 passed, EXIT=0 at aee0b35.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-adrwiw-s8-landed" data-who="s21-1c" data-when="2026-10-01T09:50:00Z">
     <div class="r-comment-body">Landed at merge df1e01574 (run r-20261001T081309497681-a-backend-carries-no-worker-cap, reviewed head 11a32aa4f, review total 96). Dispatch no longer refuses on max_concurrent_runs. summary.roster_bound reports the key as retired and never binding, and the roster refusal sentence is gone. tests/test_backend_carries_no_worker_cap.py admits a fourth dispatch past a declared cap of 2. It still refuses a spent 2-core reservation with '2 of 2 cores admitted (1 per worker)'. Negative control: with roster enforcement restored, 3 cases fail. Coordinator measures: the 143 files importing dispatch or summary, at main f1e3315c7 and at the merge, show 14 failed and 1 error each, with identical ids. The whole suite at main ea69eb30f and at the stacked head 7ec337b28 shows 73 failed and 1 error each, with identical ids and no added failure.</div>
