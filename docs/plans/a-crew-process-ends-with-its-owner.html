@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="155">
+<meta name="plan-version" content="156">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -1336,6 +1336,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-acpewio-s3-coordination-with-s22" data-who="s21-1c" data-when="2026-10-01T16:46:00Z">
     <div class="r-comment-body">Two coordination points for the coordinator who dispatches this section. First, the runs.py claim that refused it at 16:10 was released when s22-coord promoted drain-reads-the-index (merge 7b71bda64), so §3 is dispatchable now. Second, s22-coord holds its next node, the-obligations-hook-reads-a-snapshot §2, until §3 merges. That node publishes each session's obligations snapshot from the same producer loop in reckon/crew/runs.py, and it records the producer's pid, start time and code stamp. When §3 lands, tell s22-coord which functions it touched and where the lease records the producer's identity, so that snapshot can read it rather than duplicate it.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20261001T192000Z-s3-three-nodes" data-who="s21-fin" data-when="2026-10-01T19:20:00Z">
+    <div class="r-comment-body">Dispatch reading (s21-fin, 2026-10-01). The whole of §3 does not fit the 60-minute node fence, so it runs as three nodes. (1) producer-holds-a-lease: the lease, the follower's renewal through lease_renewed_at, exit on lapse, and the registration's read-modify-write under its lock with temp-file rename, in tests/test_producer_holds_a_lease.py. (2) A producer recreates a registration unlinked under it, and crew unwatch then finds and stops it, in tests/test_producer_registration_survives_unlink.py. (3) An idle producer backs off to the 30 s cap and records poll_interval_seconds, in tests/test_idle_producer_backs_off.py. Nodes (2) and (3) dispatch after (1) lands, because they extend its registration writer. Together the three test files cover §3's four cases and its negative control. reckon/crew/recovery.py and reckon/crew/dispatch.py are shared-write paths, so (1) runs beside s22-coord's pointer-classification-is-memoised, which edits other regions of recovery.py.</div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260924T123648020169-consumers-reach-into-reckon-internals" data-who="reckon-ship" data-when="2026-09-24T13:14:17.145Z">
     <div class="r-comment-body"><p>inventory of consumers reaching into reckon internals across five repositories: 1,537 config-home path lines, 151 crew CLI lines, 91 lane.json lines; recorded as consumers-read-reckon-through-verbs</p></div>
