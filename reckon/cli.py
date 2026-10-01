@@ -1555,7 +1555,10 @@ def crew_dispatch(
                     "ok": False,
                     "dry_run": True,
                     "error": "competence-refusal",
-                    "detail": _validation_detail(resolution.validation),
+                    "detail": str(
+                        resolution.competence.get("reason")
+                        or "the node exceeds the competence horizon"
+                    ),
                     "competence": resolution.competence,
                 },
                 pretty,
