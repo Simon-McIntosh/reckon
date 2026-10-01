@@ -1,11 +1,12 @@
 """The binding bound: which resource limits concurrency, and the refusal it makes.
 
 Concurrency is bounded by whichever resource runs out first, and a surface that
-reports one number cannot say which. Three candidates are read: the roster
-ceiling a backend declares, the cores a placement's reservation admits, and the
-login memory slice the coordinator still lives inside. The admission check
-refuses a dispatch that would exceed the bound that is actually binding, naming
-it and its measured value.
+reports one number cannot say which. Two candidates are enforced: the cores a
+placement's reservation admits and the login memory slice the coordinator still
+lives inside. A third entry, the retired roster key, is still reported so a
+reader can find it, but it never binds. The admission check refuses a dispatch
+that would exceed the bound that is actually binding, naming it and its
+measured value.
 
 The memory slice is read as ``memory.current`` against ``memory.max`` with the
 allocation-stall counter beside them, because those move before a kill.
@@ -249,24 +250,30 @@ def _unreadable_slice(tmp_path: Path, monkeypatch) -> None:
 # ── Each bound being the binding one in turn ────────────────────────────────
 
 
-def test_the_roster_ceiling_refuses_when_it_is_the_binding_bound(
+def test_the_roster_key_never_binds_and_is_reported_retired(
     home, tmp_path, monkeypatch
 ):
-    """At its declared ceiling, the roster refuses and keeps its known sentence."""
+    """A declared ceiling is ignored: the roster entry reports retired and admits.
+
+    Two live runs claim a backend declaring ``max_concurrent_runs: 2``, and the
+    admission check does not refuse: the key is retired. The summary still
+    emits the entry so a reader can find it, and it never binds.
+    """
     _fake_slice(tmp_path, monkeypatch, current=8 * GIB, maximum=64 * GIB)
     config = _config(max_concurrent_runs=2)
 
-    first = _seed_run("alpha", "working", "occupying-a")
-    second = _seed_run("alpha", "working", "occupying-b")
-    with pytest.raises(crew.CrewError) as excinfo:
-        _refuse_over_concurrency_ceiling("alpha", config["backends"]["alpha"])
+    _seed_run("alpha", "working", "occupying-a")
+    _seed_run("alpha", "working", "occupying-b")
 
-    message = str(excinfo.value)
-    assert message.startswith("node is not dispatchable")
-    assert "alpha" in message
-    assert "2 live runs of 2 max" in message
-    assert first in message
-    assert second in message
+    # The admission check admits rather than refusing on the retired key.
+    _refuse_over_concurrency_ceiling("alpha", config["backends"]["alpha"])
+
+    report = summary_module.fleet_bound_report(config["backends"]["alpha"], occupancy=2)
+    roster = next(row for row in report["bounds"] if row["name"] == "roster")
+    assert roster["value"] == "retired"
+    assert roster["admits_one_more"] is True
+    assert roster["binding"] is False
+    assert report["binding"] != "roster"
 
 
 def test_the_partition_admitted_cores_refuse_when_they_are_the_binding_bound(
@@ -376,16 +383,9 @@ def test_an_undeclared_reservation_leaves_the_core_bound_unknown(
 
 
 def test_the_surface_names_the_binding_bound_with_its_value(home):
-    """Each bound in turn is reported as binding, with the figure beside the label."""
+    """Each enforced bound in turn is reported as binding, with its figure."""
     _publish_reservation(cores=3)
     cases = [
-        (
-            {"max_concurrent_runs": 2},
-            2,
-            None,
-            "roster",
-            "2 live runs of 2 max",
-        ),
         (
             {"placement": _placement("--cpus-per-task=1")},
             3,

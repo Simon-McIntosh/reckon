@@ -59,12 +59,13 @@ def validate_summary(text: str, *, occasion: str) -> dict[str, Any]:
 # ── The concurrency bound reflex ────────────────────────────────────────────
 #
 # Concurrency is bounded by whichever resource runs out first, and a fleet that
-# reports a single number cannot say which. Three candidates are read here: the
-# roster ceiling a backend declares, the cores a placement's reservation admits,
-# and the login memory slice the coordinator still lives inside. Each answers
-# "may one more worker start" and the tightest readable one is the binding
-# bound, so a refusal can name the resource that actually ran out rather than
-# the one a reader happened to be watching.
+# reports a single number cannot say which. Two candidates are enforced here:
+# the cores a placement's reservation admits, and the login memory slice the
+# coordinator still lives inside. Each answers "may one more worker start" and
+# the tightest readable one is the binding bound, so a refusal can name the
+# resource that actually ran out rather than the one a reader happened to be
+# watching. A third entry is an empty ruler: the retired roster key is still
+# reported so a reader can find it, but it never binds.
 #
 # The memory slice is read as ``memory.current`` against ``memory.max`` with the
 # allocation-stall counter beside them, because those are the numbers that move
@@ -275,34 +276,29 @@ def _gib(count: int | None) -> str:
 
 
 def roster_bound(backend: Mapping[str, Any], *, occupancy: int) -> Bound:
-    """The backend's declared roster ceiling, or an unbounded lane.
+    """The retired roster key, reported as retired rather than enforced.
 
-    ``max_concurrent_runs`` is the roster the plan makes the concurrency
-    authority. A backend that declares none is unlimited: an undeclared
-    ceiling cannot justify refusing work, so the bound is reported as
-    unbounded rather than as a zero that would refuse the first worker.
+    ``max_concurrent_runs`` no longer caps concurrency: a session holds its
+    runs for as long as it needs them, and engine load is bounded by the
+    router's admission gate rather than by a count of live pointers. The key
+    stays readable in flight config so an existing host file keeps loading,
+    and it is reported here as retired — an entry a reader can still find, so
+    the key's removal from the admission check is visible rather than silent.
+
+    The entry never binds: its utilisation is unknown, so it is never the
+    binding bound, and it always admits one more. The partition-cores and
+    login-memory bounds are the only ones left that can refuse.
     """
-    ceiling = backend.get("max_concurrent_runs")
-    if (
-        ceiling is None
-        or isinstance(ceiling, bool)
-        or not isinstance(ceiling, int)
-        or ceiling <= 0
-    ):
-        return Bound(
-            name="roster",
-            capacity=None,
-            utilisation=None,
-            admits_one_more=True,
-            value="unbounded",
-            detail="no max_concurrent_runs declared",
-        )
     return Bound(
         name="roster",
-        capacity=float(ceiling),
-        utilisation=occupancy / ceiling,
-        admits_one_more=occupancy < ceiling,
-        value=f"{occupancy} live runs of {ceiling} max",
+        capacity=None,
+        utilisation=None,
+        admits_one_more=True,
+        value="retired",
+        detail=(
+            "max_concurrent_runs is retired and ignored; a run is held until "
+            "its session releases it"
+        ),
     )
 
 
@@ -513,20 +509,13 @@ def fleet_bound_report(
 def bound_refusal_text(bound: Bound, *, backend_name: str, occupying: list[str]) -> str:
     """One sentence naming the bound that refused and the figure that refused it.
 
-    The roster keeps the wording it has always had, because that sentence is
-    what a reader has learned to act on and the remedy it carries — finish a
-    run or raise the declared ceiling — is specific to a declared ceiling. The
-    two resource bounds get their own sentence naming the resource and its
-    measured value, since neither remedy is the roster's.
+    Only the partition-cores and login-memory bounds can refuse, since the
+    roster key is retired and never binds. Each resource bound gets its own
+    sentence naming the resource and its measured value, because the remedy for
+    each is its own: raise the cores the placement declares, or reduce the
+    memory a worker reserves.
     """
     listed = ", ".join(sorted(occupying)) or "none"
-    if bound.name == "roster":
-        return (
-            f"node is not dispatchable — backend {backend_name!r} is at its "
-            f"concurrency ceiling ({bound.value}); the runs occupying its "
-            f"slots: {listed}. Wait for one to finish, or raise "
-            f"max_concurrent_runs for this backend."
-        )
     if bound.name == "partition-cores":
         return (
             f"node is not dispatchable — backend {backend_name!r} is at its "
