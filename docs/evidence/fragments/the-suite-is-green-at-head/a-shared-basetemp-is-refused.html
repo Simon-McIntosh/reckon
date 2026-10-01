@@ -41,7 +41,7 @@
 
   <p><strong>Measured (base vs head), both arms <code>-n 8</code>, each with its own
   <code>--basetemp</code> under <code>$TMPDIR</code>.</strong> Head
-  (<code>531027092</code>, lock present): <strong>3 passed, EXIT=0</strong>. Base
+  (<code>2225ab398</code>, lock present): <strong>3 passed, EXIT=0</strong>. Base
   (<code>531027092</code>, lock absent; new test file against the unmodified conftest):
   <strong>2 failed, 1 passed, EXIT=1</strong> — the head arm adds no failing id. Logs in the run
   record: <code>logs/head-arm-xdist.log</code>, <code>logs/base-arm-xdist.log</code>.</p>
@@ -61,6 +61,18 @@
   the same two ids failing in both arms — the head arm adds the three new passing ids and no
   failing id. The two failures are pre-existing and outside this node's scope (see
   <code>follow_ons</code>).</p>
+
+  <p><strong>Follow-up — the lock made exact.</strong> The lock above identifies its holder by
+  pid alone, so a session whose pid an unrelated process later reuses is refused forever, and it
+  creates the lock with <code>O_EXCL</code> before writing the holder, so a second session reading
+  the still-empty file takes it. <code>tests/conftest.py</code> now records the holder's process
+  start time (field 22 of <code>/proc/&lt;pid&gt;/stat</code>) beside its pid, treats a live pid
+  whose start time no longer matches as stale, writes the holder to a temporary sibling and
+  <code>os.link</code>s it into place so the lock never exists unread, and refuses an empty or
+  unparseable lock younger than five seconds rather than unlinking it.
+  <code>tests/test_a_shared_basetemp_is_refused.py</code> gains the reused-pid and partial-write
+  cases; the head gate is <strong>5 passed, EXIT=0</strong>. See
+  <code>the-basetemp-lock-is-exact.html</code>.</p>
 
   <p><strong>Scope.</strong> Only <code>tests/conftest.py</code> and the new test file change;
   no product source is touched, no test is skipped, xfailed, deleted or weakened.</p>

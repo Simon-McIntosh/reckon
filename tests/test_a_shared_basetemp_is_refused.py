@@ -133,6 +133,22 @@ def _lock_pid(basetemp: Path) -> int | None:
     return pid if isinstance(pid, int) else None
 
 
+def _process_start_time(pid: int) -> int | None:
+    """Field 22 of ``/proc/<pid>/stat``: the process's start time in clock ticks."""
+    try:
+        stat = Path("/proc", str(pid), "stat").read_text(encoding="utf-8")
+    except OSError:
+        return None
+    try:
+        fields = stat[stat.rindex(")") + 2 :].split()
+    except ValueError:
+        return None
+    try:
+        return int(fields[22 - 3])
+    except (IndexError, ValueError):
+        return None
+
+
 def _reap(session: subprocess.Popen) -> str:
     if session.poll() is None:
         session.terminate()
@@ -250,3 +266,61 @@ def test_a_lock_left_by_a_dead_pid_is_taken_over(tmp_path):
         assert "1 passed" in revived.stdout
     finally:
         _reap(crashed)
+
+
+def test_a_lock_naming_a_reused_pid_is_taken_over(tmp_path):
+    root = tmp_path / "case4"
+    root.mkdir()
+    basetemp = root / "shared-basetemp"
+    driver = _driver(root)
+
+    # A lock left by a session that has since exited, whose number an unrelated
+    # live process now carries: the pid is alive, but the start time recorded
+    # beside it is not that process's own, so the lock is stale and must be
+    # taken over. This process supplies the live pid, and its own start time
+    # shifted by one clock tick stands in for the earlier session's.
+    live_start = _process_start_time(os.getpid())
+    assert live_start is not None, "could not read this process's start time"
+    _lock_path(basetemp).write_text(
+        json.dumps(
+            {"pid": os.getpid(), "start": live_start + 1, "basetemp": str(basetemp)}
+        ),
+        encoding="utf-8",
+    )
+
+    session = _run_session(root, driver, basetemp)
+    assert session.returncode == 0, (
+        "a session refused a lock whose pid an unrelated process had reused:\n"
+        + session.stdout
+    )
+    assert "1 passed" in session.stdout
+
+
+def test_a_session_meeting_a_partial_lock_write_is_refused(tmp_path):
+    root = tmp_path / "case5"
+    root.mkdir()
+    basetemp = root / "shared-basetemp"
+    driver = _driver(root)
+
+    # The state a first session's acquisition passes through when its lock is
+    # created before its holder's record is written: the file exists and is
+    # empty. It is held in that state rather than raced for, so the case is
+    # deterministic. A second session must be refused, not unlink the
+    # unreadable lock and take it. The mtime is refreshed while the second
+    # session starts, so a lock that is genuinely mid-write stays younger than
+    # the guard's grace whatever the host's load.
+    lock = _lock_path(basetemp)
+    handle = lock.open("w", encoding="utf-8")
+    session = _start_session(root, driver, basetemp)
+    try:
+        deadline = time.monotonic() + _HOLD_TIMEOUT * 2
+        while session.poll() is None and time.monotonic() < deadline:
+            os.utime(handle.name, None)
+            time.sleep(0.05)
+        out, _ = session.communicate(timeout=_HOLD_TIMEOUT)
+    finally:
+        handle.close()
+        _reap(session)
+    assert session.returncode != 0, (
+        "a session met a partial lock write and was not refused:\n" + out
+    )

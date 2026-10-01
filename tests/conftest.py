@@ -357,16 +357,30 @@ def leaked_watch_producers(base: Path) -> list[tuple[int, Path]]:
 
 _BASETEMP_LOCK_SUFFIX = ".lock"
 
+# A lock present but not yet readable is a session mid-acquisition, not a
+# stale lock to be taken over. The writer links a fully written file into
+# place, so at rest the lock is always readable; the window still to guard is
+# a lock another process created but has not finished writing, or one left by
+# an interrupted write. Such a lock is refused while it is younger than this,
+# and unlinked as stale once it is older.
+_LOCK_PARTIAL_GRACE_SECONDS = 5.0
+
 
 class BasetempInUseError(Exception):
     """A live session already holds the basetemp this one was given."""
 
-    def __init__(self, basetemp: Path, holder_pid: int) -> None:
+    def __init__(self, basetemp: Path, holder_pid: int | None) -> None:
         self.basetemp = basetemp
         self.holder_pid = holder_pid
+        if holder_pid is None:
+            detail = (
+                "--basetemp: a lock is being written by a session that has not "
+                "yet named itself"
+            )
+        else:
+            detail = f"--basetemp {basetemp} is held by a live pytest session (pid {holder_pid})"
         super().__init__(
-            f"--basetemp {basetemp} is held by a live pytest session (pid "
-            f"{holder_pid}). A second session on the same basetemp removes "
+            f"{detail}. A second session on the same basetemp removes "
             "and recreates it at startup, destroying the running session's "
             "fixtures; give this session its own basetemp."
         )
@@ -377,13 +391,60 @@ def basetemp_lock_path(basetemp: Path) -> Path:
     return basetemp.parent / (basetemp.name + _BASETEMP_LOCK_SUFFIX)
 
 
-def _lock_holder_pid(lock: Path) -> int | None:
+def _lock_record(lock: Path) -> dict | None:
+    """The lock's decoded holder record, or ``None`` if it is not readable yet."""
     try:
         value = json.loads(lock.read_text() or "{}")
     except (OSError, ValueError):
         return None
-    pid = value.get("pid") if isinstance(value, dict) else None
+    return value if isinstance(value, dict) else None
+
+
+def _lock_holder_pid(lock: Path) -> int | None:
+    record = _lock_record(lock)
+    if record is None:
+        return None
+    pid = record.get("pid")
     return pid if isinstance(pid, int) and pid > 0 else None
+
+
+def _lock_holder(lock: Path) -> tuple[int, int | None] | None:
+    """The holder's pid and recorded start time, or ``None`` when unreadable."""
+    record = _lock_record(lock)
+    if record is None:
+        return None
+    pid = record.get("pid")
+    if not (isinstance(pid, int) and pid > 0):
+        return None
+    start = record.get("start")
+    return (pid, start if isinstance(start, int) else None)
+
+
+def _process_start_time(pid: int) -> int | None:
+    """Field 22 of ``/proc/<pid>/stat``: the process's start time in clock ticks.
+
+    The executable name (field 2) may contain spaces and parentheses, so the
+    fields after it are read from after the last ``)``. The returned value is
+    fixed for the life of the process, so it distinguishes a live holder from
+    an unrelated process that has since reused its pid. ``None`` when the file
+    cannot be read (the process is gone, or is not ours).
+    """
+    try:
+        stat = Path("/proc", str(pid), "stat").read_text(encoding="utf-8")
+    except OSError:
+        return None
+    try:
+        tail = stat[stat.rindex(")") + 2 :]
+    except ValueError:
+        return None
+    fields = tail.split()
+    index = 22 - 3  # ``tail`` begins at field 3 (state); starttime is field 22.
+    if len(fields) <= index:
+        return None
+    try:
+        return int(fields[index])
+    except ValueError:
+        return None
 
 
 def _process_is_alive(pid: int) -> bool:
@@ -403,28 +464,87 @@ def _process_is_alive(pid: int) -> bool:
     return True
 
 
+def _holder_is_live(holder: tuple[int, int | None]) -> bool:
+    """Whether the lock's holder is the same still-running process that took it.
+
+    A pid alone is not the identity: the kernel reuses pids, so a lock left by
+    a killed session whose number an unrelated process now carries would refuse
+    its basetemp forever. The holder records its start time beside its pid, and
+    a live pid whose start time no longer matches is a different process — the
+    lock is stale and is taken over. When either side has no start time to
+    compare (a lock written before this field existed, or a ``/proc`` read that
+    is not permitted), the pid being alive is the only evidence there is.
+    """
+    pid, recorded = holder
+    if not _process_is_alive(pid):
+        return False
+    if recorded is None:
+        return True
+    current = _process_start_time(pid)
+    if current is None:
+        return True
+    return recorded == current
+
+
+def _lock_is_young(lock: Path) -> bool:
+    """Whether ``lock`` was written less than ``_LOCK_PARTIAL_GRACE_SECONDS`` ago."""
+    try:
+        age = time.time() - lock.stat().st_mtime
+    except OSError:
+        return False
+    return age < _LOCK_PARTIAL_GRACE_SECONDS
+
+
+def _link_lock(lock: Path, basetemp: Path) -> None:
+    """Create ``lock`` atomically, fully written, or fail if it already exists.
+
+    The holder's record is written to a temporary sibling and linked into place
+    with ``os.link``, which is atomic and refuses an existing target. The lock
+    path therefore never exists without the holder's pid and start time: a
+    reader that opens it mid-acquisition cannot see a half-written record and
+    mistake it for a lock it may take.
+    """
+    payload = json.dumps(
+        {
+            "pid": os.getpid(),
+            "start": _process_start_time(os.getpid()),
+            "basetemp": str(basetemp),
+        }
+    )
+    staging = lock.with_name(f"{lock.name}.{os.getpid()}.tmp")
+    try:
+        with open(staging, "w", encoding="utf-8") as stream:
+            stream.write(payload)
+        os.link(staging, lock)
+    finally:
+        with contextlib.suppress(FileNotFoundError):
+            staging.unlink()
+
+
 def acquire_basetemp_lock(basetemp: Path) -> Path:
     """Take the lock beside ``basetemp``, or refuse when a live session holds it.
 
-    ``O_CREAT | O_EXCL`` is the atomic step that decides ownership. A lock
-    already present is either live — refused — or stale, and a stale lock is
+    ``os.link`` of a fully written sibling is the atomic step that decides
+    ownership. A lock already present is refused when its holder is still the
+    process that took it, or when it is too young to read and may be mid-write;
+    a stale lock — its pid dead, or its pid reused by a different process — is
     removed and the acquisition retried, so a session that crashed without
     releasing is taken over rather than blocking reuse.
     """
     lock = basetemp_lock_path(basetemp)
     while True:
         try:
-            handle = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+            _link_lock(lock, basetemp)
+            return lock
         except FileExistsError:
-            holder = _lock_holder_pid(lock)
-            if holder is not None and _process_is_alive(holder):
-                raise BasetempInUseError(basetemp, holder) from None
+            holder = _lock_holder(lock)
+            if holder is not None and _holder_is_live(holder):
+                raise BasetempInUseError(basetemp, holder[0]) from None
+            if holder is None and _lock_is_young(lock):
+                raise BasetempInUseError(basetemp, None) from None
             with contextlib.suppress(FileNotFoundError):
                 lock.unlink()
             continue
-        with os.fdopen(handle, "w", encoding="utf-8") as stream:
-            json.dump({"pid": os.getpid(), "basetemp": str(basetemp)}, stream)
-        return lock
 
 
 def release_basetemp_lock(lock: Path) -> None:

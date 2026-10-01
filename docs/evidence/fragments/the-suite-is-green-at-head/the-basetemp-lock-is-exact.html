@@ -1,0 +1,63 @@
+<section id="the-basetemp-lock-is-exact">
+  <h2>the-basetemp-lock-is-exact — the basetemp lock refuses only a live holder of the same process</h2>
+
+  <p><strong>Defect.</strong> The session lock that guards an explicit
+  <code>--basetemp</code> (<code>tests/conftest.py</code>) had three faults.
+  (1) <code>_process_is_alive</code> treated any live pid as the holder, so a lock
+  left by a killed session was never taken over once an unrelated process reused
+  that pid — the basetemp was refused until someone removed the lock by hand.
+  (2) <code>acquire_basetemp_lock</code> created the lock with
+  <code>O_CREAT | O_EXCL</code> and wrote the holder afterwards; a second session
+  that read the still-empty file in that window got no pid, unlinked the lock and
+  took it, so both sessions ran. (3) The evidence fragment recorded the earlier
+  arm's head revision as <code>531027092</code>, not its actual head
+  <code>2225ab398</code>.</p>
+
+  <p><strong>Fix.</strong> <code>tests/conftest.py</code> now records the holder's
+  process start time — field 22 of <code>/proc/&lt;pid&gt;/stat</code> — beside its
+  pid, and <code>_holder_is_live</code> treats a pid that is alive but whose
+  recorded start time no longer matches that pid's current start time as stale, so
+  a reused pid is taken over. <code>_link_lock</code> writes the holder's record to
+  a temporary sibling and <code>os.link</code>s it into place, so the lock path
+  never exists without its holder's pid and start time. A lock read as empty or
+  unparseable is refused while it is younger than five seconds
+  (<code>_LOCK_PARTIAL_GRACE_SECONDS</code>) rather than unlinked, because it is a
+  session mid-acquisition, not a stale lock.</p>
+
+  <p><strong>Two new cases</strong> in <code>tests/test_a_shared_basetemp_is_refused.py</code>,
+  each driving a real child pytest session connected to the repository's conftest:</p>
+  <ul>
+    <li><strong>A reused pid is taken over.</strong> A lock naming a live pid (this
+    process's own) with a different recorded start time is stale: a session acquires
+    the same basetemp and passes.</li>
+    <li><strong>A partial lock write is refused.</strong> A lock file created but not
+    yet written — the state a first session's acquisition passes through — is refused
+    rather than unlinked and taken over.</li>
+  </ul>
+
+  <p><strong>Measured (head).</strong> <code>tests/test_a_shared_basetemp_is_refused.py</code>
+  at head <code>d242c8ae8</code>, under <code>pytest -n 8</code> with its own
+  <code>--basetemp</code> under <code>$TMPDIR</code>: <strong>5 passed, EXIT=0</strong>.
+  Log <code>logs/head-arm-xdist.log</code> (headed with revision, tree and the literal
+  command).</p>
+
+  <p><strong>Declared negative control, executed and logged.</strong> Comparing the
+  pid alone (dropping the start-time comparison) reddens the reused-pid case: a live
+  pid whose recorded start time differs is refused rather than taken over. Creating
+  the lock with <code>O_EXCL</code> then writing it (the pre-fix acquisition, which
+  also unlinks an unreadable lock) reddens the partial-write case: the second session
+  takes the lock and runs. Log <code>logs/negative-control.log</code>:
+  <strong>2 failed, EXIT=1</strong>, failing ids
+  <code>test_a_lock_naming_a_reused_pid_is_taken_over</code> and
+  <code>test_a_session_meeting_a_partial_lock_write_is_refused</code> — neither id
+  fails in the head arm. Per-mutation logs
+  <code>logs/negative-control-m1.log</code> (<strong>1 failed, EXIT=1</strong>, the
+  reused-pid id) and <code>logs/negative-control-m2.log</code>
+  (<strong>2 failed, EXIT=1</strong>).</p>
+
+  <p><strong>Scope.</strong> Only <code>tests/conftest.py</code>,
+  <code>tests/test_a_shared_basetemp_is_refused.py</code> and the earlier evidence
+  fragment change; no product source is touched, no test is skipped, xfailed,
+  deleted or weakened. The gate measures this node's own change; verifying the
+  merged result belongs to a separately dispatched test node.</p>
+</section>
