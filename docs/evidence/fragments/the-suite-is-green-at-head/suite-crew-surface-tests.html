@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="Five crew surface assertions follow the shipped behaviour">
+  <meta name="plan-summary" content="The five owned node ids failed because their assertions predated a shipped change; each assertion is moved onto the shipped behaviour, no test is skipped or weakened, and no product code moves.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s2">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,surface,tests,evidence">
+  <title>Five crew surface assertions follow the shipped behaviour | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="suite-crew-surface-tests" data-reckon="landed" data-when="2026-10-01">
+  <h2>Five crew surface assertions follow the shipped behaviour</h2>
+  <p><strong>Cause group repaired:</strong> a guard shipped without the tests that had been passing
+  only while it was open (&sect;1's stale-assertion cluster). Five owned node ids failed at the base
+  revision <code>ddff8e4f6a726bcce8bd1bdb2da233422fc40e09</code>. Every one is an
+  <em>assertion</em> repair: the test named a form the shipped source no longer carries, and the
+  product is correct as shipped. No product file moved.</p>
+  <ul>
+    <li><code>tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition</code>
+    &mdash; the reachable-verb census named 29 leaves while <code>reckon/cli.py</code> registers 34.
+    The CLI gained <code>ack</code> (<code>a5ec0cbb9</code>), <code>dispose</code>
+    (<code>857e514c7</code>), <code>velocity</code> (<code>e5f575eab</code>) and the
+    <code>suite run</code>/<code>suite waive</code> group (<code>9eab4fe56</code>) without the census
+    being updated. Each new verb's help line already names the state it acts on, so the census gains a
+    row per verb and the count moves to 34.</li>
+    <li><code>tests/test_crew_live_honours_fields.py::test_runs_view_passes_through_the_coordinator_fields</code>
+    &mdash; <code>classify_pointer</code>'s <code>commits_beyond_base</code> is taken only from a
+    liveness reading this host can stand behind (<code>reckon/crew/recovery.py:5315</code>,
+    <code>if not liveness_proven: return None, 0</code>, <code>b0809e30a</code>). The fixture recorded
+    no pid and no launching host, so the run's count was zero and the assertion
+    <code>== 1</code> failed. The fixture now names this host and a reaped pid, so the retained-work
+    arm truly fires. This is an <em>isolation</em> repair: the assertion was right, the fixture read
+    as an unproven observer. The clock is frozen for the comparison, because
+    <code>log_age_seconds</code> is measured against the moment of each read and two reads a second
+    apart differ in that field without either surface failing to pass its value through.</li>
+    <li><code>tests/test_crew_negative_control_interface.py::test_the_emitted_manifest_template_names_the_negative_control_log</code>
+    &mdash; the emitted manifest gloss was rewritten (<code>reckon/crew/prompts.py:583</code>,
+    <code>3137d2961</code>) to state the facts admission is judged on rather than a nickname for the
+    artifact, so the retired phrase &ldquo;declared mutation&nbsp;/ failed for any other reason&rdquo;
+    is no longer there. The assertion now pins the shipped discrimination: admission rests on the
+    facts the run recorded, a failing test id the head arm does not fail, and never on the log's
+    wording.</li>
+    <li><code>tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching</code>
+    &mdash; a plan read now populates the persisted metadata index
+    (<code>reckon/metadata_index.py:266</code>, <code>_store_persisted</code>, <code>1d48ac7d3</code>),
+    a cache under the config home written through by design and keyed by stat identity. The
+    pure-read snapshot previously forbade any file change and read that by-design cache write as a
+    mutation; it now ignores that one cache while still requiring every fleet-evidence file (pointers,
+    ledger, run records, docs) to be untouched.</li>
+    <li><code>tests/test_typed_resources.py::test_spa_graph_uses_typed_navigation_identity</code>
+    &mdash; <code>docs/ui/state-loader.js:89&ndash;98</code> was refactored (<code>f83e38014</code>) to
+    hoist <code>const archived = isArchivedArtifact(inv)</code> once and fold the archive marker into
+    the typed nav key, so the inline <code>isArchivedArtifact(inv) ? "archive:" : ""</code> the
+    assertion named is gone. The assertion now pins the shipped form, which keeps the same property:
+    an archived plan's key differs from a live plan's and two artifacts sharing a slug never
+    collapse.</li>
+  </ul>
+  <p><strong>Arms.</strong> Base and head measured per file with the fleet node's own interpreter, one
+  pytest process and one <code>--basetemp</code> per file, in the foreground. Base
+  <code>ddff8e4f6</code>: exactly the five named ids fail, one per file (4,&nbsp;4,&nbsp;5,&nbsp;9,&nbsp;39
+  collected). Head: zero failures, 61 passed. No id moved from pass to fail &mdash; zero added. Logs:
+  <code>logs/base_gate.log</code>, <code>logs/head_gate.log</code> under this run directory, each
+  header naming the revision, the tree, the imported <code>reckon.__file__</code> and the resolved
+  working directory the run resolved from.</p>
+  <p><strong>Negative control.</strong> Declared mutation: restore each repaired assertion to its
+  base text; every named id fails again. Applied in the head tree and logged at
+  <code>logs/negative_control.log</code>: all five named ids fail with <code>EXIT=1</code> and no
+  other id moves. The tree was restored to the landed revision afterward.</p>
+  <p><strong>Landed</strong> at commit <code>b290d5dfb</code> (plan revision untouched).</p>
+</article>
+</body>
+</html>
