@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="The Bash-tool git guard reads its read forms from the shim">
+  <meta name="plan-summary" content="The pre-tool-use git guard decides read forms through the shim's own classifier instead of a private read-verb list.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s2">
+  <meta name="plan-commits" content="d9f13890a">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fence,git,guard,shim,tests">
+  <title>The Bash-tool git guard reads its read forms from the shim — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-git-guard-shares-the-shim-read-forms" data-reckon="landed" data-when="2026-10-01">
+  <h2>The Bash-tool git guard reads its read forms from the shim</h2>
+  <p><code>reckon/hooks/worker_git_guard.py</code> classified git verbs with a private <code>READ_ONLY_VERBS</code> set whose membership omitted <code>worktree</code>, so a worker that typed <code>git worktree list --porcelain</code> against another checkout was refused at the PreToolUse layer even though the execution-time git shim forwards it. The two classifiers had drifted on this verb once before.</p>
+  <p>The guard no longer keeps a read-verb list. It imports <code>mutating_verb</code> from <code>reckon.worker_git_shim</code> — the single table both layers read — and classifies each parsed invocation through it, passing the tokens after the verb so an explicit read form of a multi-purpose verb (<code>worktree list</code>, <code>branch --list</code>) is read-only here exactly as the shim reads it. The guard keeps only a mutating-name deny-list, used to scan a command the shell parser cannot split.</p>
+  <p><code>tests/test_worker_git_guard.py</code> gains a case per verb in the shim's own read tables that asserts the guard allows the shim-classified read form at another checkout with <code>RECKON_RUN_ID</code> set, a per-modifier case for <code>worktree list --porcelain</code>, <code>-z</code>, <code>-v</code> and <code>--expired</code>, and a denial case for the mutating forms of a readable verb. Gate at <code>d9f13890a</code>: <code>242 passed</code>, <code>EXIT=0</code>. The declared negative control — <em>restoring a private read-verb list that omits <code>worktree</code> reddens the new case</em> — applied, fails <code>test_the_guard_allows_every_read_form_the_shim_admits[worktree]</code> and the worktree-listing cases (<code>17 failed, 40 passed</code>, <code>EXIT=1</code>).</p>
+</article>
+</body>
+</html>
