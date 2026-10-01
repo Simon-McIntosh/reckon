@@ -34,22 +34,25 @@
   <p>
     <strong>Gate.</strong> The new <code>tests/test_a_wait_ages_on_its_stream.py</code> plus every
     existing test file whose name contains <em>wait</em> (11 files), run at base and at head with one
-    private basetemp per process. Base <code>33c5e761d</code>: 8 failed, 134 passed &mdash; the
-    failures are the new file's refusal cases, i.e. the base-arm reproduction;
-    <code>gate-base.log</code>. Head <code>4506eadf7</code>: 2 failed, 140 passed;
-    <code>gate-head.log</code>.
+    private basetemp per process and the head versions of the touched test files copied into the base
+    tree, so both arms run identical test bytes. Base <code>33c5e761d</code>: 8 failed, 134 passed
+    &mdash; the failures are the new file's refusal cases, i.e. the base-arm reproduction;
+    <code>gate-base.log</code>. Head <code>490ba52aa</code>: 142 passed, 0 failed &mdash; the head adds
+    no failure id; <code>gate-head.log</code>.
   </p>
   <p>
-    <strong>Two head failures, outside this node's write scope, reported not fixed.</strong>
+    <strong>The two head failures, repaired once the coordinator widened the fence.</strong>
     <code>tests/test_ticker_renders_wait_facts.py::test_a_declared_wait_that_was_probed_carries_no_marker</code>
     and
     <code>tests/test_wait_facts_reach_the_event.py::test_a_declared_wait_carries_all_five_facts_into_the_event</code>
-    both declare <code>wait_probe: ["printf", &hellip;]</code> as a stand-in for a genuine probe; under
-    the settled rule that it must reference something outside the worker, the stand-in is exactly the
-    class the rule retires. The fixtures need a probe the rule accepts &mdash; one that both names an
-    external reference and prints the token the case asserts, or a substituted condition reader &mdash;
-    which is a one-line change in each file, but both files lie outside this node's write scope, so the
-    head arm names them and the node reports blocked rather than widening its own fence.
+    both declared <code>wait_probe: ["printf", &hellip;]</code> as a stand-in for a genuine probe
+    &mdash; exactly the class the settled rule retires. With those two files granted, each fixture now
+    writes the file its probe reads under the test's own temporary directory and reads it back
+    (<code>["cat", "&lt;tmp&gt;/scheduler-answer.txt"]</code>), so the probe names something outside the
+    worker, its result can differ between sweeps, and the case still reads the token it asserts
+    (<code>COMPLETED</code> for the five-facts case, <code>PENDING</code> for the ticker case). No
+    assertion changed; commit <code>490ba52aa</code>. The node did not widen its own fence: the first
+    head arm named the two ids and reported blocked, and the grant is what moved them into scope.
   </p>
   <p>
     <strong>Negative control.</strong> Declared string: <em>read the wait's age from the manifest mtime
@@ -63,8 +66,8 @@
   <p>
     <strong>Landing note.</strong> Carried by <code>reckon/crew/recovery.py</code> at
     <code>4506eadf7</code>: <code>_wait_probe_cannot_fail</code> (new), its vocabulary constants, and
-    the invalid-declaration refusal in <code>_manifest_wait</code>; the age clock itself was left
-    untouched, since the base arm shows the stream clock already in place. The
-    expiry question the followup marks unsettled was not entered.
+    the invalid-declaration refusal in <code>_manifest_wait</code>; the fixture repair is
+    <code>490ba52aa</code>. The age clock itself was left untouched, since the base arm shows the stream
+    clock already in place, and the expiry question the followup marks unsettled was not entered.
   </p>
 </article>
