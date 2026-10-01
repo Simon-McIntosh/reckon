@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon._plan_html import parse_plan
+from reckon._plan_html import parse_plan, write_state
 from reckon.followup_pointers import classify_followup
 from reckon.roadmap import build_roadmap
 
@@ -234,3 +234,66 @@ def test_the_roadmap_reads_declarations_and_followups_from_the_inventoried_tree(
         ("f-no-section", "no-section"),
         ("f-shipped", "host-complete"),
     ]
+
+
+def test_the_mcp_roadmap_summary_counts_a_followup_that_hides_work(
+    tmp_path, monkeypatch
+):
+    """The path a coordinator reads: the MCP tool's summary carries the finding."""
+
+    import importlib
+
+    import reckon._store as store_module
+    import reckon.mcp as mcp_module
+
+    project = "temp-followup-mcp-project"
+    docs = tmp_path / "docs"
+    plan = docs / "plans" / "host.html"
+    plan.parent.mkdir(parents=True, exist_ok=True)
+    bare = (
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        f'<meta name="docs-project" content="{project}">'
+        "<title>host</title></head>"
+        '<body><main class="plan-doc"></main></body></html>'
+    )
+    plan.write_text(
+        write_state(
+            bare,
+            {
+                "slug": "host",
+                "title": "Host",
+                "status": "active",
+                "section_declarations": {"s1": "implementable"},
+                "gates": [{"id": "evidence", "verdict": "passed"}],
+                "followups": [
+                    {"id": "f-hiding", "status": "open", "prompt": "/reckon-build host"}
+                ],
+                "version": 0,
+            },
+        ),
+        encoding="utf-8",
+    )
+    mounts = tmp_path / "mounts.json"
+    mounts.write_text(json.dumps({project: str(docs)}), encoding="utf-8")
+    state_root = tmp_path / "state"
+    state_root.mkdir()
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts))
+    monkeypatch.setenv("RECKON_STATE_ROOT", str(state_root))
+
+    import reckon.serve as serve_module
+
+    serve_module._MOUNTS_FILE = mounts
+    serve_module._STATE_ROOT = state_root
+    serve_module._DISC_CACHE.clear()
+    importlib.reload(store_module)
+    importlib.reload(mcp_module)
+
+    summary = mcp_module._roadmap(project, view="summary")
+
+    assert summary["finding_counts"]["by_severity"]["warn"] == 1
+    raw = mcp_module._roadmap(project)
+    assert [
+        (finding["extra"]["followup"], finding["extra"]["reason"])
+        for finding in raw["wiring_findings"]
+        if finding["code"] == "followup-hides-work"
+    ] == [("f-hiding", "no-section")]
