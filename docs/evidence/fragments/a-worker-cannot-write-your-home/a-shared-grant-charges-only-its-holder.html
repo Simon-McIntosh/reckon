@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="A shared grant charges only the run whose worktree holds the file">
+  <meta name="plan-summary" content="Completion attributes an uncommitted file to the run whose worktree holds it only where that run's own declaration covers it, so a shared directory grant does not refuse a peer's file while a stray path in a peer's worktree stays charged.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s4">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,promotion,boundary,worktree">
+  <title>A shared grant charges only the run whose worktree holds the file — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-shared-grant-charges-only-its-holder" data-reckon="landed" data-when="2026-10-01">
+  <h2>A shared grant charges only the run whose worktree holds the file</h2>
+  <p>Two live runs granted the same figures directory each refused the other's
+  uncommitted file. The boundary walk at promotion iterated every dispatch-visible
+  tree and charged any changed path under the completing run's declared roots,
+  without asking which run held that tree: a file another run left in-flight in
+  its own worktree matched the shared grant and was reported as
+  <code>docs/figures/fixture/sketch.svg in peer worktree …/first-tree</code>.</p>
+  <p>The exemption is narrowed to the paths a live peer's own declaration covers,
+  resolved through the same <code>_repository_scope_paths</code> helper the
+  completing run's declaration reads. A dirty path a peer holds under its own
+  grant is that peer's work, charged at the peer's own completion; any other
+  dirty path in a peer's worktree is a stray edit the check exists to catch and
+  stays charged here.</p>
+  <p>Two cases in <code>tests/test_promotion_scope_counts_only_the_runs_commits.py</code>
+  pin both directions. The shared-grant case synthesises two unfenced runs both
+  granted <code>docs/figures/fixture</code>, leaves <code>sketch.svg</code>
+  uncommitted in the first worktree, and asserts the second run's completion
+  succeeds — red at the base revision (a0d770a6): <code>1 failed, 10
+  deselected … EXIT=1</code>, the refusal above. The stray-edit case grants the
+  figures directory to the completing run only, leaves a file there uncommitted
+  in a live peer's worktree that the peer never declared, and asserts the
+  completing run is refused naming that path and the peer worktree. At head the
+  file is green: <code>12 passed … EXIT=0</code>. The run's own path outside its
+  fence, a declaration off the shared list, and a bare peer worktree with no
+  live run also still refuse.</p>
+  <p>The declared negative control — restoring the exempt-every-peer-path skip —
+  reddens exactly the stray-edit case (<code>1 failed, 11 deselected …
+  EXIT=1</code>, the refusal no longer raised) while the head arm does not fail
+  it.</p>
+</article>
+</body>
+</html>

@@ -21,6 +21,8 @@ from __future__ import annotations
 import json
 import os
 import shlex
+import shutil
+import signal
 import subprocess
 import sys
 from pathlib import Path
@@ -40,6 +42,17 @@ from reckon.worker_git_shim import (
 SHIM = worker_shim_directory() / "git"
 RUN_ID = "r-git-shim-resolved-repo"
 REFUSAL_STATUS = 97
+
+# This file's own checkout. A shim launched from a copied shim directory derives
+# its package root from where the copy sits, and the environment's editable
+# install of reckon points elsewhere, so the checkout under test is named on
+# ``PYTHONPATH`` explicitly: the module the shim actually imports is then the
+# one this file is testing.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+# The bound every group-run git command is given. A command that hangs here is a
+# recursion or a deadlock, and the group is killed rather than left on the host.
+GROUP_TIMEOUT_SECONDS = 60
 
 # The shortest a written option name may be and still be read as a spelling of a
 # banned one. Three characters is the floor the shim applies; the unit test
@@ -85,6 +98,7 @@ def _env(
         "HOME": str(home),
         "RECKON_HOME": str(home),
         "RECKON_SHIM_PYTHON": sys.executable,
+        "PYTHONPATH": str(REPO_ROOT),
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CONFIG_GLOBAL": os.devnull,
         "LC_ALL": "C",
@@ -922,3 +936,217 @@ def test_a_banned_option_is_matched_in_every_prefix_git_resolves_to_it() -> None
     assert "(abbreviating `--output`)" in refusal
     assert mutating_verb("diff-index", []) == "diff-index"
     assert mutating_verb("diff-files", []) == "diff-files"
+
+
+# --- the run's own scratch directory ----------------------------------------
+#
+# A worker's test fixtures and scratch clones `git init` under the run's scratch
+# directory, which promotion and discard remove with the run. A guard that
+# refuses those makes every test-running worker switch it off, and the bypass
+# then sits in recorded gate commands. The cases below exercise the separate
+# admission for a repository lying entirely inside that directory, and pair it
+# with the refusals that must survive: a foreign checkout, and a linked worktree
+# whose refs live in a checkout the scratch directory does not contain.
+#
+# The scratch path itself is the one dispatch creates and removes
+# (`worker_scratch_dir`), so the directory the shim admits writes under is the
+# one the run's own lifetime owns. The run id is made unique per process so
+# concurrent suite runs do not share a scratch directory, and the two shim
+# directories on ``PATH`` reproduce the shape a worker actually carries (its own
+# checkout plus a peer's), which a lookup that dropped only one would chase.
+
+
+def _copied_shim_directory(root: Path) -> Path:
+    """A second checkout's git shim directory, laid out as a copy carries it."""
+    directory = root / "other-checkout" / "reckon" / "worker_shims"
+    directory.mkdir(parents=True)
+    shutil.copy2(SHIM, directory / "git")
+    return directory
+
+
+def _two_shim_path(copied: Path) -> str:
+    """``PATH`` carrying two reckon shim directories ahead of the real git."""
+    return os.pathsep.join(
+        [
+            str(copied),
+            str(SHIM.parent),
+            os.path.dirname(REAL_GIT),
+            "/usr/bin",
+            "/bin",
+        ]
+    )
+
+
+def _shell_group(
+    script: str,
+    *,
+    cwd: Path,
+    home: Path,
+    run_id: str,
+    extra: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    """Run a shell command in its own process group under a hard time bound.
+
+    Its own session means a command that hangs is killed as a group rather than
+    left running on the host, which is the failure a shim recursion would
+    produce. The scratch-root override is passed through when the harness sets
+    one, so the shim computes the same directory the fixture created.
+    """
+    overrides = dict(extra or {})
+    override = os.environ.get("RECKON_WORKER_SCRATCH_ROOT")
+    if override:
+        overrides.setdefault("RECKON_WORKER_SCRATCH_ROOT", override)
+    process = subprocess.Popen(
+        ["bash", "-c", script],
+        cwd=str(cwd),
+        env=_env(home, run_id=run_id, extra=overrides),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
+    try:
+        stdout, stderr = process.communicate(timeout=GROUP_TIMEOUT_SECONDS)
+    except subprocess.TimeoutExpired:
+        os.killpg(process.pid, signal.SIGKILL)
+        process.wait()
+        raise
+    return subprocess.CompletedProcess(process.args, process.returncode, stdout, stderr)
+
+
+@pytest.fixture()
+def scratch(tmp_path: Path) -> Any:
+    """A live run whose own worktree is a repository and whose scratch is real.
+
+    The scratch directory is the one dispatch computes for the run id, created
+    here and removed on teardown, so the test neither invents the path nor
+    leaves it behind.
+    """
+    from reckon.crew.dispatch import worker_scratch_dir
+
+    home = tmp_path / "home"
+    home.mkdir()
+    worktree = tmp_path / "worktree"
+    _repo(worktree, home)
+    run_id = f"r-git-shim-scratch-{os.getpid()}-{tmp_path.name}"
+    directory = worker_scratch_dir(run_id)
+    if directory.exists():
+        shutil.rmtree(directory)
+    directory.mkdir(parents=True)
+    pointer = home / "crew" / "live" / f"{run_id}.json"
+    pointer.parent.mkdir(parents=True)
+    pointer.write_text(json.dumps({"worktree": str(worktree)}), encoding="utf-8")
+    yield {
+        "home": home,
+        "worktree": worktree,
+        "run_id": run_id,
+        "scratch": directory,
+    }
+    shutil.rmtree(directory, ignore_errors=True)
+
+
+def test_a_repository_under_the_runs_scratch_admits_a_commit(
+    scratch: Any, tmp_path: Path
+) -> None:
+    """A fixture repository initialised in the run's scratch admits a commit.
+
+    The directory is the run's own, so the mutating verbs a test fixture needs —
+    ``init``, ``config``, ``add``, ``commit`` — all run through the shim with
+    ``RECKON_RUN_ID`` set. The recorded head proves the commit landed rather than
+    the command being forwarded to nothing.
+    """
+    home, directory, run_id = scratch["home"], scratch["scratch"], scratch["run_id"]
+    copied = _copied_shim_directory(tmp_path)
+
+    result = _shell_group(
+        "git init -q"
+        " && git config user.email shim@example.invalid"
+        " && git config user.name Shim"
+        " && printf 'one\\n' > a.txt"
+        " && git add a.txt"
+        " && git commit -qm first"
+        " && git rev-parse HEAD",
+        cwd=directory,
+        home=home,
+        run_id=run_id,
+        extra={"PATH": _two_shim_path(copied)},
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert _head(directory, home) == result.stdout.strip()
+
+
+def test_a_commit_into_a_foreign_checkout_is_still_refused(
+    scratch: Any, tmp_path: Path
+) -> None:
+    """The scratch admission does not widen to a checkout outside it.
+
+    The foreign checkout is a repository the run did not create, so its resolved
+    git dir is outside the scratch directory and the existing refusal applies:
+    the shim exits with its refusal status and the checkout's head is unmoved.
+    """
+    home, run_id = scratch["home"], scratch["run_id"]
+    other = tmp_path / "other"
+    first_other = _repo(other, home)
+    before = _head(other, home)
+    assert before != first_other
+    copied = _copied_shim_directory(tmp_path)
+
+    result = _shell_group(
+        f"git -C {other} reset --hard {first_other}",
+        cwd=home,
+        home=home,
+        run_id=run_id,
+        extra={"PATH": _two_shim_path(copied)},
+    )
+
+    assert result.returncode == REFUSAL_STATUS, result.stderr
+    assert "refusing" in result.stderr
+    assert _head(other, home) == before
+
+
+def test_a_linked_worktree_under_scratch_with_a_foreign_common_dir_is_refused(
+    scratch: Any, tmp_path: Path
+) -> None:
+    """A worktree of a foreign checkout stays refused even when it sits in scratch.
+
+    The linked worktree's directory is under the scratch directory, but its refs
+    and objects live in the common dir of the checkout that created it, which is
+    outside scratch. Resolving only the work-tree top level would admit it and
+    let the mutating verb move the foreign checkout's refs, so the resolved git
+    dir and the common dir are what the refusal rests on. The branch is asserted
+    unmoved and the dirty file untouched, because a forwarded ``reset --hard``
+    would have done both.
+    """
+    home, directory, run_id = (
+        scratch["home"],
+        scratch["scratch"],
+        scratch["run_id"],
+    )
+    foreign = tmp_path / "foreign"
+    first_foreign = _repo(foreign, home)
+    linked = directory / "linked"
+    assert linked.parent == directory
+    added = _git_run(
+        ["worktree", "add", "-q", str(linked), "-b", "probe"], cwd=foreign, home=home
+    )
+    assert added.returncode == 0, added.stderr
+    assert (linked / _TRACKED).read_text(encoding="utf-8") == "two\n"
+    (linked / _TRACKED).write_text("dirty\n", encoding="utf-8")
+    before = _git_run(["rev-parse", "probe"], cwd=foreign, home=home)
+    assert before.returncode == 0, before.stderr
+    copied = _copied_shim_directory(tmp_path)
+
+    result = _shell_group(
+        f"git -C {linked} reset --hard {first_foreign}",
+        cwd=home,
+        home=home,
+        run_id=run_id,
+        extra={"PATH": _two_shim_path(copied)},
+    )
+
+    assert result.returncode == REFUSAL_STATUS, result.stderr
+    assert "refusing" in result.stderr
+    after = _git_run(["rev-parse", "probe"], cwd=foreign, home=home)
+    assert after.stdout.strip() == before.stdout.strip()
+    assert (linked / _TRACKED).read_text(encoding="utf-8") == "dirty\n"

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="Resume and lane change record the fence of the attempt they launch">
+  <meta name="plan-summary" content="resume_plan and change_lane now pass run_dir(run_id) to the fence, as the primary dispatch does, and set the pointer's fenced field from the attempt they compose.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s3">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fence,dispatch,resume,lane-change,harness-home">
+  <title>Resume and lane change record the fence of the attempt they launch — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="resume-and-lane-change-follow-their-attempt" data-reckon="landed" data-when="2026-10-01">
+  <h2>Resume and lane change record the fence of the attempt they launch</h2>
+  <p>Primary dispatch hands the fence <code>run_dir(run_id)</code> as the run directory and writes the pointer's <code>fenced</code> field from the argv it composed. <code>resume_plan</code> and <code>change_lane</code> instead passed the recorded manifest's parent, so a run whose manifest lies outside its run directory lost the run directory on resume and lane change; neither set <code>fenced</code>, so a CLI run lane-changed to an in-harness backend kept <code>fenced: true</code> beside an absent removed-defaults list. Both launch paths now pass <code>run_dir(run_id)</code> and set <code>fenced</code> from <code>_plan_composed_the_fence</code> of the attempt's own composed plan. The <code>FENCE_WORKERS</code> comment now says every <em>worker</em> launch sits behind the overlay and names the lane-availability probe (<code>_request_lane_availability</code> in <code>reckon/crew/resumption.py</code>) as deliberately unfenced, with the reason.</p>
+  <p>Measure: <code>tests/test_resume_and_lane_change_follow_their_own_attempt.py</code> 3 passed, EXIT=0. Cases — a resumed fenced run whose manifest lies outside its run directory composes an argv binding both the run directory and the manifest's directory; the same run lane-changed composes the same two binds; a fenced CLI run lane-changed to an in-harness backend reads <code>fenced</code> false on its pointer. Two declared negative controls, each on its own scratch copy at <code>negative-control.log</code>: passing the manifest parent reddens cases 1 and 2 (2 failed), and dropping the <code>fenced</code> assignments reddens case 3 (1 failed); each run ends EXIT=1.</p>
+</article>
+</body>
+</html>

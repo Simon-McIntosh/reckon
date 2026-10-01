@@ -1621,7 +1621,7 @@ def dispatch_review_for_run(
         return {"run_id": run_id, "dispatched": False, "reason": reason}
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    from reckon.crew.dispatch import BudgetHold
+    from reckon.crew.dispatch import BudgetHold, LanePaused
     from reckon.crew.node import TaskNode
 
     resolved = _resolved_review_config(project, config)
@@ -1718,6 +1718,33 @@ def dispatch_review_for_run(
             "awaiting_lane": True,
             "backend": backend,
             "lane": getattr(exc, "verdict", None),
+            "reason": reason,
+        }
+    except LanePaused as exc:
+        # The lane's own gate says paused, or cannot be answered: the reflex
+        # launches nothing and reports the gate it read. It is not a refusal —
+        # the run is still owed a review, and the reflex re-fires once the gate
+        # opens — so the report carries the lane-paused error and the reason
+        # rather than reading as a run that no longer owes one.
+        gate = dict(exc.gate)
+        reason = (
+            str(gate.get("detail") or "").strip()
+            or str(gate.get("reason") or "").strip()
+            or f"the {backend} lane gate is {gate.get('state')!r}"
+        )
+        _record_review_dispatch(
+            run_id,
+            status="lane-paused",
+            reason=reason,
+            backend=backend,
+            reviewed_head=fields["head"],
+        )
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "error": "lane-paused",
+            "backend": backend,
+            "lane_gate": gate,
             "reason": reason,
         }
     except CrewError as exc:
@@ -2471,7 +2498,7 @@ def dispatch_repair_for_run(
         }
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    from reckon.crew.dispatch import BudgetHold
+    from reckon.crew.dispatch import BudgetHold, LanePaused
     from reckon.crew.node import TaskNode
 
     node = TaskNode(
@@ -2548,6 +2575,32 @@ def dispatch_repair_for_run(
             "awaiting_lane": True,
             "backend": backend,
             "lane": getattr(exc, "verdict", None),
+            "reason": reason,
+        }
+    except LanePaused as exc:
+        # The lane gate holds the repair exactly as it holds any other dispatch.
+        # The round has not opened, so a later sweep composes the same repair
+        # once the gate opens rather than reading this as a refusal of it.
+        gate = dict(exc.gate)
+        reason = (
+            str(gate.get("detail") or "").strip()
+            or str(gate.get("reason") or "").strip()
+            or f"the {backend} lane gate is {gate.get('state')!r}"
+        )
+        _record_repair_dispatch(
+            run_id,
+            status="lane-paused",
+            reason=reason,
+            round_id=round_id,
+            node_id=node_id,
+            backend=backend,
+        )
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "error": "lane-paused",
+            "backend": backend,
+            "lane_gate": gate,
             "reason": reason,
         }
     except CrewError as exc:
@@ -2671,6 +2724,7 @@ def dispatch_awaiting_reviews(
     dispatched: list[str] = []
     refused: list[dict[str, Any]] = []
     awaiting_lane: list[str] = []
+    lane_paused: list[str] = []
     repaired: list[str] = []
     sweeping = session if session is not None else _sweeping_session(project)
     for pointer in list_live(project=project):
@@ -2727,6 +2781,8 @@ def dispatch_awaiting_reviews(
                     dispatched.append(str(report.get("review_run_id") or ""))
                 elif report.get("awaiting_lane"):
                     awaiting_lane.append(str(report.get("run_id") or ""))
+                elif report.get("error") == "lane-paused":
+                    lane_paused.append(str(report.get("run_id") or ""))
                 elif report.get("refused"):
                     # The report itself, not a generator over it: a refusal list
                     # is read and serialized by whoever consumes the sweep, and a
@@ -2752,6 +2808,7 @@ def dispatch_awaiting_reviews(
         "dispatched": dispatched,
         "refused": refused,
         "awaiting_lane": awaiting_lane,
+        "lane_paused": lane_paused,
         "repaired": repaired,
     }
 

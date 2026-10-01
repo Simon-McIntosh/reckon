@@ -934,6 +934,22 @@ def _validation_detail(validation) -> str:
     return "; ".join(findings) or "the node failed contract validation"
 
 
+def _lane_paused_detail(gate) -> str:
+    """Render the sentence a lane-paused result carries as its detail.
+
+    The defect or the gate's own reason, and a placeholder only when neither is
+    present: a paused gate with no reason is valid, and the result still has to
+    say what held the dispatch rather than carry an empty detail.
+    """
+    detail = str(gate.get("detail") or "").strip()
+    if detail:
+        return detail
+    reason = str(gate.get("reason") or "").strip()
+    if reason:
+        return reason
+    return f"the lane gate is {gate.get('state')!r}"
+
+
 def _resolved_flight(flight_module, project, checkout_path, overrides):
     """Resolve flight config for a dispatch, prompt overrides winning."""
     try:
@@ -1405,6 +1421,7 @@ def crew_dispatch(
     ``launch`` kind.
     """
     crew_module, flight_module = _crew_modules()
+    from reckon.crew.dispatch import LanePaused
     from reckon.crew.node import PlanReviewMissingError
 
     if brief_path and plan_slug:
@@ -1582,6 +1599,24 @@ def crew_dispatch(
                 pretty,
             )
             raise click.exceptions.Exit(2)
+        lane_gate = resolution.lane_gate or {}
+        if lane_gate.get("state") in {"paused", "unreadable"}:
+            # The dry run is the same decision as the launch, so a gate that
+            # would hold the launch holds the preview: the caller reaches the
+            # temporary failure a real dispatch would exit on rather than a
+            # validation that reads as a go-ahead.
+            _emit(
+                {
+                    "ok": False,
+                    "dry_run": True,
+                    "error": "lane-paused",
+                    "detail": _lane_paused_detail(lane_gate),
+                    "reason": lane_gate.get("reason"),
+                    "lane_gate": lane_gate,
+                },
+                pretty,
+            )
+            raise click.exceptions.Exit(75)
         _emit(
             {"ok": True, "dry_run": True, **resolution.as_dict()},
             pretty,
@@ -1642,6 +1677,23 @@ def crew_dispatch(
             pretty,
         )
         raise click.exceptions.Exit(3) from exc
+    except LanePaused as exc:
+        # Neither a launch nor a refusal: the lane's own gate says paused, or
+        # cannot be answered, so the dispatch waits. Nothing was created and the
+        # node is still ready, so it exits on the conventional temporary-failure
+        # code a caller retries after, and the gate the decision was read from
+        # rides the result.
+        _emit(
+            {
+                "ok": False,
+                "error": "lane-paused",
+                "detail": _lane_paused_detail(exc.gate),
+                "reason": exc.gate.get("reason"),
+                "lane_gate": exc.gate,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(75) from exc
     except crew_module.CompetenceLimit as exc:
         _emit(
             {

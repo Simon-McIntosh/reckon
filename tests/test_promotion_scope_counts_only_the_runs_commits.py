@@ -19,7 +19,10 @@ brought — is refused rather than recorded as a run that changed nothing. Each
 case's expectation is derived from the fixture repository rather than echoed
 from the citation list it passed in. The boundary guard for stray peer edits at
 declared paths exempts the paths the project publishes as shareable, leaving
-the refusal for every path off that list.
+the refusal for every path off that list — and attributes a dirty path to the
+run whose worktree holds it only where that run's own declaration covers it, so
+two runs granted one directory do not each refuse the other's uncommitted file
+while a stray path in a peer's worktree stays charged.
 """
 
 from __future__ import annotations
@@ -570,3 +573,103 @@ def test_an_unshared_claim_is_charged_even_beside_a_shared_one(
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(run_id).is_file()
     _assert_real_home_carries_no_pointer(run_id)
+
+
+def test_a_shared_directory_grant_charges_only_the_run_whose_worktree_keeps_it(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A dirty file under a shared directory grant belongs to the tree that holds it.
+
+    Two live runs are granted the same figures directory. The first leaves an
+    uncommitted file there in its own worktree; the second's completion must not
+    be refused for it, because a dirty path is attributed to the run whose
+    worktree holds it rather than to every run whose grant covers its path. The
+    file stays in the first worktree throughout, so the case fails whenever the
+    walk charges another run's worktree changes to the completing run.
+    """
+    grant = "docs/figures/fixture"
+    (repository / grant).mkdir(parents=True)
+    (repository / grant / "seed.txt").write_text("seed\n", encoding="utf-8")
+    _git(repository, "add", f"{grant}/seed.txt")
+    _git(repository, "commit", "-q", "-m", "chore: seed the figures directory")
+    base = _git(repository, "rev-parse", "HEAD")
+    first_tree = tmp_path / "first-tree"
+    second_tree = tmp_path / "second-tree"
+    _git(repository, "worktree", "add", "-q", "--detach", str(first_tree), "HEAD")
+    _git(repository, "worktree", "add", "-q", "--detach", str(second_tree), "HEAD")
+    first_id = "r-first-holder"
+    second_id = "r-second-holder"
+    _pointer(repository, first_tree, first_id, base, write_paths=(grant,), guard=True)
+    _pointer(repository, second_tree, second_id, base, write_paths=(grant,), guard=True)
+    _assert_real_home_carries_no_pointer(first_id)
+    _assert_real_home_carries_no_pointer(second_id)
+
+    # The first run's in-flight work, uncommitted in its own worktree.
+    (first_tree / grant / "sketch.svg").write_text("<svg/>\n", encoding="utf-8")
+
+    # The second run lands its own change in its own fence and completes.
+    (second_tree / grant / "figure.txt").write_text("second\n", encoding="utf-8")
+    _git(second_tree, "add", f"{grant}/figure.txt")
+    _git(second_tree, "commit", "-q", "-m", "feat: the second run's own figure")
+    commit = _git(second_tree, "rev-parse", "HEAD")
+    assert "sketch.svg" not in _git(second_tree, "status", "--porcelain")
+
+    stored = crew.complete(second_id, gate="passed", commits=[commit], root=repository)[
+        "record"
+    ]
+
+    assert stored["commits"] == [commit]
+    assert [row["run_id"] for row in ledger.runs(PROJECT, root=repository)] == [
+        second_id
+    ]
+    assert not pointer_path(second_id).exists()
+    _assert_real_home_carries_no_pointer(second_id)
+
+
+def test_a_dirty_path_outside_the_holding_peer_grant_is_still_charged(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A peer's worktree exempts only the paths that peer declares.
+
+    The completing run grants the figures directory; the live peer does not. The
+    peer leaves a file there uncommitted, so the path sits inside a live peer's
+    worktree yet outside the peer's own declaration — the stray-edit case the
+    boundary check exists to catch. The refusal names the path and the peer
+    worktree, leaves no row and keeps the pointer.
+    """
+    grant = "docs/figures/fixture"
+    (repository / grant).mkdir(parents=True)
+    (repository / grant / "seed.txt").write_text("seed\n", encoding="utf-8")
+    _git(repository, "add", f"{grant}/seed.txt")
+    _git(repository, "commit", "-q", "-m", "chore: seed the figures directory")
+    base = _git(repository, "rev-parse", "HEAD")
+    peer_tree = tmp_path / "peer-tree"
+    second_tree = tmp_path / "second-tree"
+    _git(repository, "worktree", "add", "-q", "--detach", str(peer_tree), "HEAD")
+    _git(repository, "worktree", "add", "-q", "--detach", str(second_tree), "HEAD")
+    peer_id = "r-peer-holder"
+    second_id = "r-outside-declarer"
+    _pointer(
+        repository, peer_tree, peer_id, base, write_paths=("in_scope.txt",), guard=True
+    )
+    _pointer(repository, second_tree, second_id, base, write_paths=(grant,), guard=True)
+    _assert_real_home_carries_no_pointer(peer_id)
+    _assert_real_home_carries_no_pointer(second_id)
+
+    # The peer's in-flight file lies at a path the peer never declared.
+    (peer_tree / grant / "stray.svg").write_text("<svg/>\n", encoding="utf-8")
+
+    (second_tree / grant / "figure.txt").write_text("second\n", encoding="utf-8")
+    _git(second_tree, "add", f"{grant}/figure.txt")
+    _git(second_tree, "commit", "-q", "-m", "feat: the completing run's own figure")
+    commit = _git(second_tree, "rev-parse", "HEAD")
+
+    with pytest.raises(crew.CrewError) as refusal:
+        crew.complete(second_id, gate="passed", commits=[commit], root=repository)
+
+    message = str(refusal.value)
+    assert "stray.svg" in message
+    assert f"peer worktree {peer_tree}" in message
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(second_id).is_file()
+    _assert_real_home_carries_no_pointer(second_id)
