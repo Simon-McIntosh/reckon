@@ -77,8 +77,9 @@ def _record(
     *,
     worktree: Path | None = None,
     retained_at: datetime | None = None,
+    completed_at: datetime | None = None,
 ) -> dict[str, Any]:
-    completed = (retained_at or OBSERVED_AT) - timedelta(seconds=600)
+    completed = completed_at or (retained_at or OBSERVED_AT) - timedelta(seconds=600)
     record: dict[str, Any] = {
         "run_id": run_id,
         "plan": "fixture-plan",
@@ -182,12 +183,10 @@ def test_the_held_set_equals_the_whole_ledger_derivation(fleet: Path) -> None:
         fleet,
         _record("r-20261001T090000000000-alpha-holds", "alpha-holds", worktree=alpha),
     )
-    # A node run twice: the newer dispatch is the run the tree is held for.
-    for stamp in ("20261001T090100000000", "20261001T093000000000"):
-        _write_run_file(
-            fleet,
-            _record(f"r-{stamp}-beta-holds", "beta-holds", worktree=beta),
-        )
+    _write_run_file(
+        fleet,
+        _record("r-20261001T090100000000-beta-holds", "beta-holds", worktree=beta),
+    )
     # Recorded before the ledger was split: no file of its own.
     _write_aggregate(
         fleet,
@@ -205,17 +204,53 @@ def test_the_held_set_equals_the_whole_ledger_derivation(fleet: Path) -> None:
     assert set(held) == _whole_ledger_held(fleet, SESSION)
     assert set(held) == {
         "r-20261001T090000000000-alpha-holds",
-        "r-20261001T093000000000-beta-holds",
+        "r-20261001T090100000000-beta-holds",
         "r-20261001T090200000000-gamma-aggregate-only",
     }
     assert held["r-20261001T090000000000-alpha-holds"]["kind"] == "worktree-held"
     assert held["r-20261001T090000000000-alpha-holds"]["age_seconds"] == 0
 
 
+def test_a_tree_named_by_two_runs_follows_the_held_ledger_order(fleet: Path) -> None:
+    """A node run twice is held for the run the whole ledger lists last.
+
+    The ledger orders the runs it merges by completion, not by dispatch, so a
+    node whose later dispatch finished first is held for the run that
+    dispatched first — an order the per-run files are not listed in and cannot
+    decide between them.
+    """
+    tree = _worktree(fleet, "alpha-holds")
+    dispatched_first = "r-20261001T090000000000-alpha-holds"
+    dispatched_later = "r-20261001T100000000000-alpha-holds"
+    _write_run_file(
+        fleet,
+        _record(
+            dispatched_first,
+            "alpha-holds",
+            worktree=tree,
+            completed_at=datetime(2026, 10, 1, 11, 50, tzinfo=UTC),
+        ),
+    )
+    _write_run_file(
+        fleet,
+        _record(
+            dispatched_later,
+            "alpha-holds",
+            worktree=tree,
+            completed_at=datetime(2026, 10, 1, 11, 0, tzinfo=UTC),
+        ),
+    )
+
+    held = _held(fleet)
+
+    assert set(held) == _whole_ledger_held(fleet, SESSION)
+    assert set(held) == {dispatched_first}
+
+
 def test_inspected_runs_are_read_from_their_own_files(
     fleet: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """With every inspected run carrying a file, the whole ledger is not read."""
+    """With each inspected tree named by one run's file, the ledger is not read."""
     expected = set()
     for index, node in enumerate(("alpha-holds", "beta-holds", "gamma-held")):
         path = _worktree(fleet, node)

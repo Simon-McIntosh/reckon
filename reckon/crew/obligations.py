@@ -294,10 +294,12 @@ def _held_worktrees(
 
     Each inspected tree is resolved from the ledger file of the run that named
     it, so the derivation pays for the runs it inspects rather than for the
-    project's whole recorded history. A tree that no per-run file names falls
-    back to the whole ledger, where a run recorded before the ledger was split
-    into one file per run still lives, and that read happens once for the
-    session however many trees need it.
+    project's whole recorded history. Two kinds of tree fall back to the whole
+    ledger, and the read happens at most once for the session however many
+    trees need it: a tree no per-run file names, because a run recorded before
+    the ledger was split into one file per run still lives there, and a tree
+    more than one per-run file names, because which of those runs holds it
+    turns on the order the whole-ledger reader lists them in.
     """
     docs_dir = _store._docs_dir_for_project(project)
     if docs_dir is None:
@@ -328,16 +330,21 @@ def _held_worktrees(
     unresolved: list[Path] = []
     for worktree in inspected:
         chosen: Mapping[str, Any] | None = None
+        naming = 0
         for source in sources:
             if not _run_id_names_node(source.stem, worktree.name):
                 continue
             record = _run_file_record(source)
             if record is not None and _names_worktree(record, worktree):
-                # Files are listed by dispatch stamp, so the last match is the
-                # tree's newest run, which is the record the whole-ledger scan
-                # reaches last for a node that ran more than once.
                 chosen = record
-        if chosen is None:
+                naming += 1
+        if chosen is None or naming > 1:
+            # Either no file names the tree, or several do and the file list
+            # cannot order them: the whole ledger orders its runs by completion
+            # rather than by the dispatch stamp the files are named with, so a
+            # node whose later dispatch finished first is attributed to its
+            # earlier run there and to its later one here. Which run a tree
+            # belongs to is that reader's answer to give.
             unresolved.append(worktree)
         else:
             matched[worktree] = chosen
