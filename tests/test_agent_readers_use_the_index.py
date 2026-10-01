@@ -22,6 +22,7 @@ fired. The negative control routes the MCP views back through
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -52,28 +53,37 @@ _STATE = {
 }
 
 
-def _plan_doc(slug: str, title: str | None = None) -> str:
+def _plan_doc(slug: str, title: str | None = None, status: str = "active") -> str:
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="docs-project" content="{_PROJECT}">
 <meta name="reckon-type" content="plan">
 <meta name="plan-slug" content="{slug}">
 <meta name="plan-title" content="{title or slug}">
-<meta name="plan-status" content="active">
+<meta name="plan-status" content="{status}">
 <meta name="plan-sprint" content="{_SPRINT}">
 <title>{title or slug}</title></head><body><main class="plan-doc"></main></body></html>
 """
 
 
-def _evidence_doc(slug: str) -> str:
+def _rewrite(path: Path, text: str) -> None:
+    """Rewrite one file with a moved stat identity, so a re-stat sees it."""
+
+    previous = path.stat().st_mtime_ns
+    path.write_text(text)
+    stat = path.stat()
+    os.utime(path, ns=(stat.st_atime_ns, max(stat.st_mtime_ns, previous + 1)))
+
+
+def _evidence_doc(slug: str, title: str | None = None) -> str:
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="docs-project" content="{_PROJECT}">
 <meta name="reckon-type" content="evidence">
 <meta name="plan-status" content="">
 <meta name="plan-slug" content="{slug}">
-<meta name="plan-title" content="{slug}">
-<title>{slug}</title></head><body><main class="plan-doc"></main></body></html>
+<meta name="plan-title" content="{title or slug}">
+<title>{title or slug}</title></head><body><main class="plan-doc"></main></body></html>
 """
 
 
@@ -222,3 +232,43 @@ def test_a_sprint_summary_answers_from_the_index(project_tree, counters):
     assert summary["title"] == "The index serves the readers"
     assert summary["state"]["items"] == 2
     assert summary["state"]["status"] == "active"
+
+
+def test_a_rewritten_document_reaches_the_next_project_summary(project_tree, counters):
+    """One process, two calls: the second read sees a file rewritten between."""
+
+    first = mcp._read_plan(_PROJECT, view="summary")
+    assert first["state"]["plans"] == _PLAN_COUNT
+    target = project_tree / "evidence" / "note-000.html"
+    _rewrite(target, _evidence_doc("note-000", "A rewritten title"))
+
+    counters["clear"]()
+    second = mcp._read_plan(_PROJECT, view="summary")
+
+    titles = {row.get("slug"): row.get("title") for row in second["resources"]}
+    assert titles.get("note-000") == "A rewritten title"
+    assert counters["meta"] == [target]
+    assert counters["walks"] == []
+
+
+def test_a_rewritten_document_reaches_the_next_sprint_summary(project_tree, counters):
+    """A sprint read re-stats its rows too, so an item's new status lands."""
+
+    def read_sprint():
+        return mcp._read_plan(
+            project=_PROJECT,
+            resource={"project": _PROJECT, "type": "sprint", "id": _SPRINT},
+            view="summary",
+        )
+
+    first = read_sprint()
+    assert first["state"]["completed"] == 0
+    target = project_tree / "plans" / "plan-000.html"
+    _rewrite(target, _plan_doc("plan-000", status="shipped"))
+
+    counters["clear"]()
+    second = read_sprint()
+
+    assert second["state"]["completed"] == 1
+    assert counters["meta"] == [target]
+    assert counters["walks"] == []

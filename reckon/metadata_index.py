@@ -11,7 +11,10 @@ directory, together with the stat identity of the file the row came from. A
 rebuild walks the tree, stats each file and re-parses only the ones whose
 identity moved, so a restart costs stat calls rather than reads. The change
 watch drops a tree's in-process rows when the kernel reports a change to it,
-and the next read re-stats that tree and rebuilds the rows that moved.
+and the next read re-stats that tree and rebuilds the rows that moved. A
+reader with no watch revalidates by stat on every call instead — see
+``index_rows(..., revalidate=True)`` — so a long-lived process still sees a
+later edit.
 """
 
 from __future__ import annotations
@@ -109,23 +112,33 @@ def index_rows(
     repo_dir: Path | None = None,
     git_first: Mapping[str, int] | None = None,
     git_last: Mapping[str, int] | None = None,
+    revalidate: bool = False,
 ) -> list[dict]:
     """Return the project's rows, rebuilding only a tree the watch dropped.
 
     A caller that supplies ``repo_dir`` and the git commit-time maps gets rows
     whose stamps use the same source the served discovery payload uses, so a
     reader merging the two never sees a document's timestamps move.
+
+    ``revalidate`` re-stats every covered file before answering and re-parses
+    only the ones whose identity moved — the cost a restart already pays. A
+    caller the change watch serves gets that for free through
+    :func:`invalidate_tree` and leaves the flag alone; a caller without a watch
+    (the MCP and CLI processes) would otherwise answer from the first build it
+    made for the life of its process and never see a later edit.
     """
 
     key = _cache_key(docs_dir, project, repo_dir is not None)
-    with _LOCK:
-        build = _CACHE.get(key)
-    if build is None:
-        build = build_index(
-            docs_dir, project, repo_dir=repo_dir, git_first=git_first, git_last=git_last
-        )
+    if not revalidate:
         with _LOCK:
-            _CACHE[key] = build
+            build = _CACHE.get(key)
+        if build is not None:
+            return [dict(row) for row in build.rows]
+    build = build_index(
+        docs_dir, project, repo_dir=repo_dir, git_first=git_first, git_last=git_last
+    )
+    with _LOCK:
+        _CACHE[key] = build
     return [dict(row) for row in build.rows]
 
 

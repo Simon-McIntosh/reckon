@@ -1148,7 +1148,10 @@ def index_discovery(
 
     from reckon import metadata_index
 
-    rows = metadata_index.index_rows(docs_dir, project)
+    # This process runs no change watch, so the rows are revalidated by stat on
+    # every call: a long-lived reader must see a later edit, and the re-stat
+    # re-parses only the files whose identity moved.
+    rows = metadata_index.index_rows(docs_dir, project, revalidate=True)
     inventory = [
         _indexed_item(row)
         for row in rows
