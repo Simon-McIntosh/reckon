@@ -423,6 +423,7 @@ function App() {
           onToggleProject={toggleProject}
           onRefresh={refreshProjectState}
         />}
+      {window.ReckonShell.topbar.ServerDriftBanner && <window.ReckonShell.topbar.ServerDriftBanner />}
       {artifactKind ? (
         <ArtifactSurface
           kind={artifactKind}

@@ -188,8 +188,44 @@ function TopBar({ route, onNav, navProject, onOpenCmdK, filtersHidden, onToggleF
   );
 }
 
+// ─── Server code drift ──────────────────────────────────────────────────
+// The client is compiled from the working tree on every page load, but the
+// server's Python is imported once, at start. /_server reports whether the code
+// on disk has moved past the code the server runs, with a sentence composed by
+// the server; the banner renders that sentence and the command that closes it.
+const SERVER_DRIFT_POLL_MS = 5 * 60 * 1000;
+
+function serverDriftNotice(report) {
+  const code = report && report.code;
+  return code && code.stale && code.summary
+    ? { summary: code.summary, command: code.restart_command || "" }
+    : null;
+}
+
+function ServerDriftBanner() {
+  const [report, setReport] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    const check = () => fetch("/_server", { cache: "no-store" })
+      .then(response => (response.ok ? response.json() : null))
+      .then(body => { if (!cancelled) setReport(body); })
+      .catch(() => {});
+    check();
+    const timer = window.setInterval(check, SERVER_DRIFT_POLL_MS);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, []);
+  const notice = serverDriftNotice(report);
+  if (!notice) return null;
+  return (
+    <div className="r-server-drift" role="status" style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: "4px 12px", padding: "7px 16px", borderBottom: "1px solid var(--border)", borderLeft: "3px solid var(--warn, #9a6700)", background: "var(--warn-2, #fff8e1)", color: "var(--ink, #1f2328)", fontSize: 12.5 }}>
+      <span>{notice.summary}</span>
+      {notice.command && <span>Restart with <code>{notice.command}</code></span>}
+    </div>
+  );
+}
+
 // ─── Plan-list filters ──────────────────────────────────────────────────
 
 
 window.ReckonShell = window.ReckonShell || {};
-window.ReckonShell.topbar = { PROJECT_VISIBILITY_STORAGE, mountedProjectRows, manageableProjectRows, effectiveHiddenProjects, visibleProjectRows, projectVisibilityChange, snapshotTime, snapshotReceipt, TopBar };
+window.ReckonShell.topbar = { PROJECT_VISIBILITY_STORAGE, mountedProjectRows, manageableProjectRows, effectiveHiddenProjects, visibleProjectRows, projectVisibilityChange, snapshotTime, snapshotReceipt, serverDriftNotice, ServerDriftBanner, TopBar };

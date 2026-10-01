@@ -71,6 +71,7 @@ from reckon import (
     fleet_index,
     ledger,
     metadata_index,
+    served_code,
 )
 from reckon._store import (
     _config_home,
@@ -964,6 +965,9 @@ _DISC_LOCKS_GUARD = threading.Lock()
 # notably a write from another login node on the shared filesystem. Zero, the
 # library default, walks on every call.
 _SIGNATURE_TTL_S = 0.0
+# The package source the served process started with, recorded by main() so
+# /_server can report when the code on disk has moved past the code running.
+_SOURCE_SNAPSHOT: served_code.SourceSnapshot | None = None
 _SIGNATURE_MEMO: dict[tuple[str, str, str], tuple[float, tuple[int, int]]] = {}
 _SIGNATURE_MEMO_LOCK = threading.Lock()
 # The served process opts into the longer window; the library default stays 0
@@ -2680,6 +2684,19 @@ class Handler(BaseHTTPRequestHandler):
             self._send_file(target, ctype)
             return
 
+        if path == "/_server":
+            # Which process answers, and whether it still runs the code on
+            # disk: the client renders the verdict, the server computes it.
+            self._send_json(
+                HTTPStatus.OK,
+                {
+                    "host": socket.gethostname(),
+                    "pid": os.getpid(),
+                    "code": served_code.served_report(_SOURCE_SNAPSHOT),
+                },
+            )
+            return
+
         if path == "/_projects/index.json":
             self._send_json(HTTPStatus.OK, collect_projects(load_mounts()))
             return
@@ -3602,6 +3619,8 @@ def main(
     port: int = 8765, host: str | None = None, mounts_file: Path | None = None
 ) -> None:
     global _SIGNATURE_TTL_S  # noqa: PLW0603 — the served process opts into reuse
+    global _SOURCE_SNAPSHOT  # noqa: PLW0603 — recorded once, as the code loads
+    _SOURCE_SNAPSHOT = served_code.take_snapshot()
     _resolve_paths(mounts_file)
     _SIGNATURE_TTL_S = _served_signature_ttl()
     _host = host or os.environ.get("DOCS_SERVER_BIND", "127.0.0.1")
