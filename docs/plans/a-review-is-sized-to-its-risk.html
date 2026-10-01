@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="97">
+<meta name="plan-version" content="98">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.92">
@@ -482,7 +482,10 @@
     <div class="r-comment-body"><p>tests/test_reflex_dispatches_one_repair.py's dead-worker control case now stubs the resume entry point through the file's existing _stub_resume helper and asserts the reflex delivers the composed round as one resume of the reviewed run whose advice names all three finding ids, and that no node was dispatched; its live-worker sibling is unchanged. Measure: 22 passed / 0 failed over tests/test_reflex_dispatches_one_repair.py and tests/test_the_reflex_resumes_an_unpromoted_run.py at the committed head.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261001T020803820138-the-reflex-resumes-an-unpromoted-run" data-who="reckon-build" data-when="2026-10-01T03:57:17.462Z">
-    <div class="r-comment-body"><p>dispatch_repair_for_run resumes an unpromoted reviewed run with the composed repair as advice, bounded at REPAIR_RESUME_LIMIT=2 resumes per round read from the pointer&#x27;s durable repair record; a round resumed twice without its head moving is recorded exhausted with the reason &quot;the round was resumed twice without answering its findings&quot; and resumed no more, and _record_repair_dispatch returns the recorded attempt so the report carries it — measure: tests/test_the_reflex_resumes_an_unpromoted_run.py 6/6 and tests/test_repair_answers_only_blocking_findings.py 6/6 (12 passed combined) at 6f43630d7.</p></div>
+    <div class="r-comment-body"><p>dispatch_repair_for_run resumes an unpromoted reviewed run with the composed repair as advice, bounded at REPAIR_RESUME_LIMIT=2 resumes per round read from the pointer's durable repair record; a round resumed twice without its head moving is recorded exhausted with the reason "the round was resumed twice without answering its findings" and resumed no more, and _record_repair_dispatch returns the recorded attempt so the report carries it — measure: tests/test_the_reflex_resumes_an_unpromoted_run.py 6/6 and tests/test_repair_answers_only_blocking_findings.py 6/6 (12 passed combined) at 6f43630d7.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261001T040114942083-review-of-the-reflex-resumes-an-unpromoted-run" data-who="reckon-build" data-when="2026-10-01T04:28:30.375Z">
+    <div class="r-comment-body"><p>an independent review of run r-20261001T020803820138-the-reflex-resumes-an-unpromoted-run is stored against reviewed head 29e4f30e4785c92381b55b4e5924867a25ea1da6 (base 3c4f5cd72081bed2cb7d4d55c605d6fcc7a4f556), scoring goal_fidelity 18, evidence 16, scope_discipline 13, durability 13, fit 18 (total 78, no absent dimension, status parsed), with three follow-on findings and no blocking finding; the review node edits no plan state and no repository path.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260928T233552756785-review-of-the-suite-is-declared-and-recorded" data-who="reckon-build" data-when="2026-09-29T00:21:22.662Z">
     <div class="r-comment-body"><p>review stored for r-20260928T223146627061-the-suite-is-declared-and-recorded at cd36faeb against base 348688e8 - total 77 (goal_fidelity 14, evidence 15, scope_discipline 19, durability 13, fit 16), four findings, added_failure_count 0</p></div>
