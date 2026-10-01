@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="183">
+<meta name="plan-version" content="184">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -1340,6 +1340,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261001T232822197811-review-of-a-superseded-producer-ends" data-who="reckon-build" data-when="2026-10-01T23:48:17.083Z">
     <div class="r-comment-body"><p>stored a parsed five-dimension review of run r-20261001T225558094476-a-superseded-producer-ends at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261001T225558094476-a-superseded-producer-ends.json and its revision-keyed twin .at-0b109d9fbeb54b0e6001d07a1531c19103c51b97.json; reviewed_base_sha df6a40b5c8e077c9f74517ff52f1858bac2c6011, reviewed_head_sha 0b109d9fbeb54b0e6001d07a1531c19103c51b97, scores {goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 19}, total 98, added_failure_count 0</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261001T225527233219-idle-producer-backs-off" data-who="reckon-build" data-when="2026-10-01T23:34:08.904Z">
+    <div class="r-comment-body"><p>An idle producer doubles its recorded poll_interval_seconds from the armed base to a 30 s cap on each wake that sees no live run pointer, returns to the base on the first wake that sees one, and never sleeps past the lease remainder; in a temporary RECKON_HOME the recorded interval runs 1, 2, 4, 8, 16, 30 then back to 1.0, and with RECKON_PRODUCER_LEASE_SECONDS=3 a backed-off producer still exits within a second of the lapse.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260924T123648020169-consumers-reach-into-reckon-internals" data-who="reckon-ship" data-when="2026-09-24T13:14:17.145Z">
     <div class="r-comment-body"><p>inventory of consumers reaching into reckon internals across five repositories: 1,537 config-home path lines, 151 crew CLI lines, 91 lane.json lines; recorded as consumers-read-reckon-through-verbs</p></div>

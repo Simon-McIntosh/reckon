@@ -1,0 +1,488 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 480000,
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "df6a40b5c8e077c9f74517ff52f1858bac2c6011",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 9665296,
+      "input_tokens_cumulative": 9665296,
+      "output_tokens": 56086,
+      "output_tokens_cumulative": 56086,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 297,
+    "files": 3,
+    "removed": 2
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 8300,
+        "name": "_scoped_watch_event",
+        "path": "reckon/crew/recovery.py"
+      },
+      "run_function": {
+        "line": 8437,
+        "name": "watch_ticker",
+        "path": "reckon/crew/recovery.py"
+      },
+      "window_line": 8524
+    },
+    {
+      "existing_function": {
+        "line": 8595,
+        "name": "watch_follow",
+        "path": "reckon/crew/recovery.py"
+      },
+      "run_function": {
+        "line": 8437,
+        "name": "watch_ticker",
+        "path": "reckon/crew/recovery.py"
+      },
+      "window_line": 8486
+    },
+    {
+      "existing_function": {
+        "line": 3487,
+        "name": "watch",
+        "path": "reckon/crew/runs.py"
+      },
+      "run_function": {
+        "line": 8437,
+        "name": "watch_ticker",
+        "path": "reckon/crew/recovery.py"
+      },
+      "window_line": 8489
+    },
+    {
+      "existing_function": {
+        "line": 8437,
+        "name": "watch_ticker",
+        "path": "reckon/crew/recovery.py"
+      },
+      "run_function": {
+        "line": 8595,
+        "name": "watch_follow",
+        "path": "reckon/crew/recovery.py"
+      },
+      "window_line": 8623
+    },
+    {
+      "existing_function": {
+        "line": 3487,
+        "name": "watch",
+        "path": "reckon/crew/runs.py"
+      },
+      "run_function": {
+        "line": 8595,
+        "name": "watch_follow",
+        "path": "reckon/crew/recovery.py"
+      },
+      "window_line": 8626
+    },
+    {
+      "existing_function": {
+        "line": 26,
+        "name": "home",
+        "path": "tests/test_producer_holds_a_lease.py"
+      },
+      "run_function": {
+        "line": 31,
+        "name": "home",
+        "path": "tests/test_idle_producer_backs_off.py"
+      },
+      "window_line": 31
+    },
+    {
+      "existing_function": {
+        "line": 75,
+        "name": "_await",
+        "path": "tests/test_producer_registration_survives_unlink.py"
+      },
+      "run_function": {
+        "line": 48,
+        "name": "_await",
+        "path": "tests/test_idle_producer_backs_off.py"
+      },
+      "window_line": 48
+    },
+    {
+      "existing_function": {
+        "line": 248,
+        "name": "_await",
+        "path": "tests/test_producer_takes_new_code.py"
+      },
+      "run_function": {
+        "line": 48,
+        "name": "_await",
+        "path": "tests/test_idle_producer_backs_off.py"
+      },
+      "window_line": 50
+    },
+    {
+      "existing_function": {
+        "line": 75,
+        "name": "test_unattended_producer_exits_after_its_lease_lapses",
+        "path": "tests/test_producer_holds_a_lease.py"
+      },
+      "run_function": {
+        "line": 132,
+        "name": "test_a_backed_off_producer_still_exits_at_its_lease",
+        "path": "tests/test_idle_producer_backs_off.py"
+      },
+      "window_line": 163
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "06873739f803f7860cedbbcbf7ea509269545fe8"
+  ],
+  "completed_at": "2026-10-01T23:34:08.904Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-01T22:55:49Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "tests/test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_idle_producer_backs_off.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T225527233219-idle-producer-backs-off/logs/head-arm-new-test.log"
+  },
+  "impl_move": {
+    "at_complete": 0.75,
+    "at_dispatch": 0.75,
+    "plan": "a-crew-process-ends-with-its-owner",
+    "reason": "plan impl already reads 1.0 while s3, s10 and s11 are declared implementable; it reads true again when those sections close",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-01T23:45:27.829366+00:00",
+    "horizon_seconds": 3000,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-01T22:55:27Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 21,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 7,
+    "headroom": 9,
+    "mean_context": 186667,
+    "observed_at": "2026-10-01T22:55:06Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-01T23:34:08.904Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T225527233219-idle-producer-backs-off/manifest.md",
+  "member": "disposable-r-20261001T225527233219-idle-producer-backs-off",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_idle_producer_backs_off.py::test_a_backed_off_producer_still_exits_at_its_lease",
+      "tests/test_idle_producer_backs_off.py::test_idle_producer_backs_off_to_the_cap_and_returns_to_base"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_idle_producer_backs_off.py::test_a_backed_off_producer_still_exits_at_its_lease",
+      "tests/test_idle_producer_backs_off.py::test_idle_producer_backs_off_to_the_cap_and_returns_to_base"
+    ],
+    "declaration": "remove the interval doubling; the recorded interval stays at base and the test fails",
+    "head_failure_ids": [
+      "tests/test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers"
+    ],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T225527233219-idle-producer-backs-off/logs/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T225527233219-idle-producer-backs-off/logs/negative-control.log",
+    "test_paths": [
+      "tests/test_idle_producer_backs_off.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "idle-producer-backs-off",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 351,
+          "cached_input_tokens": 646153,
+          "input_tokens": 646506,
+          "output_tokens": 1016,
+          "reasoning_output_tokens": 634,
+          "total_tokens": 647522,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "dea7b557-cbf3-46c1-bbfe-33166244c4a3",
+      "session_id": "s21-fin"
+    },
+    "done_when": "tests/test_idle_producer_backs_off.py, in a temporary RECKON_HOME with no live run pointer, shows the producer's recorded poll_interval_seconds doubling on each idle poll from its base interval to the 30 s cap, and returning to the base on the first poll that sees a live run (a pointer for the project whose run is not terminal). It also shows that no sleep outlasts the lease's remaining time, so with RECKON_PRODUCER_LEASE_SECONDS=3 the backed-off producer still exits within one second of the lapse. The interval is written through the existing update_watch_registration (reckon/crew/runs.py is held by another session and is not edited); the lease is in watch_ticker since merge 320061aff and the unlinked-seat recreation since merge 149783489. The declared negative control is executed and logged: with the doubling removed, the interval stays at base and the test fails. Base and head arms of tests/test_producer_holds_a_lease.py, tests/test_producer_registration_survives_unlink.py and tests/test_producer_*.py show zero added failures.",
+    "estimated_hours": 0.8,
+    "goal": "An idle producer doubles its poll interval up to a 30 s cap and records it as poll_interval_seconds",
+    "id": "idle-producer-backs-off",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-01T22:55:27Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 21,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 7,
+      "headroom": 9,
+      "mean_context": 186667,
+      "observed_at": "2026-10-01T22:55:06Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T225527233219-idle-producer-backs-off/manifest.md",
+    "negative_control": "remove the interval doubling; the recorded interval stays at base and the test fails",
+    "plan": "a-crew-process-ends-with-its-owner",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§3",
+    "spec_level": "exact",
+    "time_budget": "50m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/recovery.py",
+      "tests/test_idle_producer_backs_off.py",
+      "docs/evidence/fragments/a-crew-process-ends-with-its-owner/idle-producer-backs-off.html",
+      "docs/figures/a-crew-process-ends-with-its-owner/idle-producer-backs-off"
+    ]
+  },
+  "orientation_input_tokens": 2307823.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "idle-producer-backs-off",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-01T22:55:37.702043+00:00",
+    "score": 0.56875,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-crew-process-ends-with-its-owner",
+  "plan_impl_at_dispatch": 0.75,
+  "plan_link": null,
+  "promoted_revision": "06873739f803f7860cedbbcbf7ea509269545fe8",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "df6a40b5c8e077c9f74517ff52f1858bac2c6011",
+    "reviewed_head_sha": "06873739f803f7860cedbbcbf7ea509269545fe8",
+    "scores": {
+      "durability": 18,
+      "evidence": 17,
+      "fit": 19,
+      "goal_fidelity": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 93
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20261001T225527233219-idle-producer-backs-off",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§3",
+  "session": "s21-fin",
+  "session_harness": "claude",
+  "session_id": "44a85b83-ca77-45c2-b8bf-6dfb04da15eb",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 2,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 9665296,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2288.334,
+    "generated_tokens": 56086,
+    "generation_seconds": 1871.353,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 31.9,
+    "machine_seconds": 416.981,
+    "peak_input_tokens": 153012,
+    "tokens_per_second": 29.97,
+    "wall_tokens_per_second": 24.51
+  },
+  "time_budget": "50m",
+  "tool_steps": 90.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 2299,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-01T23:34:09Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-01T22:55:54Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261001T225527233219-idle-producer-backs-off",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 11793,
+    "worker_pid": 178411
+  },
+  "worker_seconds": 2275,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
