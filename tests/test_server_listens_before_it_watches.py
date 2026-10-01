@@ -33,6 +33,12 @@ _POLL_S = 0.05
 # well past the arming bound so it never masks a genuine arming failure.
 _RELEASE_WAIT_S = 30.0
 
+# The served thread's ``main`` assigns ``serve._SIGNATURE_TTL_S`` (the discovery
+# walk-reuse window) on that thread. Teardown must not return until that thread
+# has stopped, or the assignment can outlive the fixture and let a later test in
+# the served process read a memoised walk. This bounds that join.
+_THREAD_STOP_S = 30.0
+
 
 def _free_port() -> int:
     with socket.socket() as sock:
@@ -106,6 +112,17 @@ class _ServedEntryPoint:
         watch = serve._FLEET_WATCH
         if watch is not None:
             watch.close()
+        # Do not return until the served thread has stopped: its ``main`` assigns
+        # ``serve._SIGNATURE_TTL_S`` on that thread, and a thread still running
+        # could make that assignment after this fixture's teardown, leaving a
+        # live discovery memo for a later test in the same process to read.
+        if self.thread.ident is not None:
+            self.thread.join(_THREAD_STOP_S)
+        assert not self.thread.is_alive(), (
+            "the served thread did not stop within "
+            f"{_THREAD_STOP_S} s of teardown, so its configuration may still "
+            "be written after this test and leak into a sibling test"
+        )
 
 
 @pytest.fixture()
@@ -133,7 +150,17 @@ def served_entry_point(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     # letting a served thread's configuration leak into sibling tests.
     monkeypatch.setattr(serve, "_MOUNTS_FILE", None)
     monkeypatch.setattr(serve, "_STATE_ROOT", None)
-    monkeypatch.setattr(serve, "_SIGNATURE_TTL_S", 0.0)
+    # The served thread's ``main`` assigns ``serve._SIGNATURE_TTL_S`` and leaves
+    # it at the served walk-reuse window (reckon/serve.py:3399); teardown puts it
+    # back. Every later case must start from the library default, so assert it
+    # here, before the thread starts, rather than only restoring it at teardown:
+    # a teardown restore that goes missing leaves the knock-on visible only to a
+    # later observer, which is this check.
+    assert serve._SIGNATURE_TTL_S == 0.0, (
+        "an earlier test in this process left the discovery memo live "
+        f"(_SIGNATURE_TTL_S={serve._SIGNATURE_TTL_S!r}); a later test would read "
+        "a memoised walk"
+    )
     monkeypatch.setattr(serve, "_FLEET_WATCH", None)
     monkeypatch.setattr(serve.Handler, "_host", getattr(serve.Handler, "_host", None))
     monkeypatch.setattr(serve.Handler, "_port", getattr(serve.Handler, "_port", 0))
@@ -182,6 +209,13 @@ def served_entry_point(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         yield entry_point
     finally:
         entry_point.stop()
+        # ``serve.main`` assigned ``_SIGNATURE_TTL_S`` on the served thread
+        # (reckon/serve.py:3399) and left it at the served walk-reuse window.
+        # ``stop()`` has joined that thread and asserted it stopped, so its last
+        # write is behind us; put the module back to the library default, and
+        # fail here if that restore did not happen, so no later test in the same
+        # process reads a live discovery memo.
+        serve._SIGNATURE_TTL_S = 0.0
 
 
 def test_mounts_answer_before_the_watch_is_armed(served_entry_point) -> None:
