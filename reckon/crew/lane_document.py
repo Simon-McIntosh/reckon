@@ -455,11 +455,14 @@ def read_lane_reading_fields(document: object) -> dict[str, Any]:
     published it: ``mean_context`` as a number, ``binding_observed`` as
     published (null or a blank string withholds this field alone), and
     ``suggested_shelf_life_seconds`` as a number. A document that is not an
-    object resolves as a reading carrying no stamp. The function never raises.
+    object resolves as a reading carrying no stamp, its ``detail`` naming the
+    shape it was handed: the shape is the fault there, and a message about a
+    missing stamp would send the caller looking for a key in something that is
+    not a document. The function never raises.
     """
     if not isinstance(document, Mapping):
         return _unresolved_reading(
-            "lane document carries no parseable 'observed_at' timestamp"
+            f"lane document is {type(document).__name__}, not a JSON object"
         )
     stamp = document.get("observed_at")
     if not isinstance(stamp, str):
