@@ -72,21 +72,28 @@ def test_read_only_codex_uses_a_filesystem_sandbox(backend, expected) -> None:
     assert plan.argv[plan.argv.index(expected[0]) + 1] == expected[1]
 
 
-def test_read_only_claude_grant_does_not_withhold_writes() -> None:
+def test_read_only_claude_grant_does_not_withhold_writes(tmp_path: Path) -> None:
     """The Claude read-only tier draws its boundary as a grant, not a mode.
 
     A permission mode (plan) withheld every write so a node could not deliver
     its declared files yet reported a completed turn. The read-only tier must
     resolve to an approvals skip plus the argv's --add-dir grant, and fail if
-    it ever regresses to the write-withholding mode.
+    it ever regresses to the write-withholding mode. The write roots are real
+    directories under the test's temp tree: a fenced launch creates every root
+    it is handed, so handing it a machine-root path would create directories
+    outside the repository under test.
     """
     plan = _backends.launch_plan(
         backend_name="b",
         backend=dict(CLAUDE, sandbox="read-only"),
         prompt="p",
         worktree="/wt",
-        manifest_path="/delivery/manifest.md",
-        writable_directories=["/run", "/reports", "/delivery"],
+        manifest_path=str(tmp_path / "delivery" / "manifest.md"),
+        writable_directories=[
+            str(tmp_path / "run"),
+            str(tmp_path / "reports"),
+            str(tmp_path / "delivery"),
+        ],
     )
     assert "--dangerously-skip-permissions" in plan.argv
     assert "--permission-mode" not in plan.argv
