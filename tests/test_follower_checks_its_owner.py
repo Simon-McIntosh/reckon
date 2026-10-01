@@ -97,11 +97,12 @@ POLL_SECONDS = 0.05
 # bound on the exit measures how slow the node is, not whether the follower
 # checked. The number of passes the follower ran before it left does not: a
 # starved pass still counts as one, and the samples above show the check
-# answering on the very first pass after its owner dies. The tolerance below is
-# the twenty passes the two-second bound allows at this cadence, so a regression
-# that asks about the owner once every fifty passes still fails it.
+# answering on the very first pass after its owner dies. The tolerance is the
+# count the two-second bound allows at this cadence, derived from both so a
+# change to either moves it, and a regression that asks about the owner once
+# every fifty passes still fails it.
 OWNER_CHECK_SECONDS = 0.1
-OWNER_CHECK_PASSES = 20
+OWNER_CHECK_PASSES = int(EXIT_WITHIN_SECONDS / OWNER_CHECK_SECONDS)
 RELOAD_WITHIN_SECONDS = 8.0
 # The reloader polls its source stamp at most once per
 # ``runs.FOLLOWER_FRESHNESS_SECONDS``. A stopped follower must be held still for
