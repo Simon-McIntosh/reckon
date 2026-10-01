@@ -111,9 +111,13 @@ def server_executable() -> Path:
     interpreter's own bin directory is preferred because it pins the unit to
     the environment the command was invoked from; PATH is only a fallback.
     """
-    sibling = Path(sys.executable).resolve().parent / "reckon"
-    if sibling.is_file():
-        return sibling
+    # A virtualenv's python is often a symlink to a shared interpreter, and the
+    # console script sits beside the symlink, so look there before following it.
+    interpreter = Path(sys.executable)
+    for bin_dir in (interpreter.parent, interpreter.resolve().parent):
+        sibling = bin_dir / "reckon"
+        if sibling.is_file():
+            return sibling
     discovered = shutil.which("reckon")
     if discovered:
         return Path(discovered).resolve()

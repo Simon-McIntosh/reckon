@@ -49,6 +49,24 @@ def test_unit_runs_only_on_the_host_that_installed_it(
     assert re.search(r"^ConditionHost=login-a\.example$", unit_section, re.MULTILINE)
 
 
+def test_console_script_is_found_beside_a_symlinked_venv_interpreter(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    # A uv virtualenv's python is a symlink to a shared interpreter; the console
+    # script sits beside the symlink, not beside the interpreter it points to.
+    shared = tmp_path / "shared" / "bin" / "python3"
+    shared.parent.mkdir(parents=True)
+    shared.write_text("")
+    venv_bin = tmp_path / "venv" / "bin"
+    venv_bin.mkdir(parents=True)
+    (venv_bin / "python3").symlink_to(shared)
+    (venv_bin / "reckon").write_text("#!/bin/sh\n")
+    monkeypatch.setattr(service.sys, "executable", str(venv_bin / "python3"))
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+
+    assert service.server_executable() == venv_bin / "reckon"
+
+
 def test_optional_arguments_are_omitted_when_unset(executable: Path):
     unit = service.render_unit(executable=executable)
     assert "--host" not in unit
