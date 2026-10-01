@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="An unmarked finding is refused at the write">
+  <meta name="plan-summary" content="The write-time audit of a review run now reads the record its dispatch granted and reports every stored finding that carries no declared severity, naming the finding's file and line so the reviewer restates it in the same turn. Reproduced at base: a stored record with two unmarked findings yields no audit finding about either. At head both are named; the parser's never-default rule is unchanged, and the negative control (check removed) reddens the unmarked case with EXIT=1.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <title>An unmarked finding is refused at the write | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>An unmarked finding is refused at the write</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>A finding in a stored review record that opens with neither declared
+        severity is recorded without a <code>severity</code> key &mdash; the parser never
+        defaults one, which is right, because a defaulted severity is a judgement
+        nobody made. What was missing is the write-time refusal: <code>audit_manifest</code>
+        judged the review worker's own manifest and never read the record that run
+        stored, so the one missing judgement &mdash; does this finding block the landing
+        or is it a follow-on &mdash; stayed invisible until promotion, hours after the
+        reviewer's turn had ended.</p>
+      <p>Reproduced at the base revision <code>84fd7ff4f</code> in a scratch export of
+        that tree (<code>gate/base-gate.log</code>): a record written through the
+        production store (<code>review.store_review</code>) carrying two findings that
+        declare no severity yields no audit finding about either, so the new falsifier
+        fails on <code>assert len(findings) == 2</code>. The same arm's other three cases
+        pass, so the empty result is a check that is absent, not a run that read
+        nothing.</p>
+    </section>
+
+    <section id="change">
+      <h2>The change</h2>
+      <p><code>reckon/crew/reports.py</code> adds a write-time check to
+        <code>audit_manifest</code>. When the node's role is the review role, the
+        declarations the dispatch granted it are scanned for review-store record paths;
+        the project is the directory beneath the store root and the reviewed run is the
+        id the record's own name keys (legacy <code>&lt;run&gt;.json</code> and head-keyed
+        <code>&lt;run&gt;.at-&lt;head&gt;.json</code> spellings both resolve, and one record is
+        judged once). The record is read through the review store's own reader
+        (<code>reckon/crew/review.py</code>, unchanged), and every finding whose
+        <code>severity</code> is absent or outside <code>FINDING_SEVERITIES</code>
+        (<code>blocking</code>, <code>follow-on</code>) is reported, naming the finding's
+        file and line so the reviewer can restate it and store the record again in the
+        same turn.</p>
+      <p>The check reports and never rewrites: the fix belongs in the record's next
+        write by the party that authored it. A node that is not a review is not judged
+        even when the same store paths are declared on it, because its deliverable is
+        repository work and the record belongs to another run. The parser's rule that a
+        finding emitted without a severity is recorded absent rather than defaulted is
+        untouched.</p>
+    </section>
+
+    <section id="gate">
+      <h2>The gate</h2>
+      <p>The new falsifier plus every existing test file under <code>tests/</code> that
+        calls <code>audit_manifest</code> (nine files), run in a scratch export of the
+        base revision and in the worktree at head, each arm with its own
+        <code>--basetemp</code> and <code>PYTHONPATH</code> pointing at its own tree.
+        Each log's header names the revision, the tree, the imported
+        <code>reckon/crew/reports.py</code> and the working directory the run resolved
+        from:</p>
+      <table>
+        <thead>
+          <tr><th>arm</th><th>revision</th><th>result</th><th>failed ids</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>base</td>
+            <td><code>84fd7ff4f</code></td>
+            <td><code>2 failed, 489 passed</code> in 915.31s</td>
+            <td>the new unmarked case (expected &mdash; the check is absent at base), and
+              <code>test_crew.py::test_promotion_refuses_a_commit_that_names_no_object</code>
+              (pre-existing at base, unrelated)</td>
+          </tr>
+          <tr>
+            <td>head</td>
+            <td><code>a8b598af1</code></td>
+            <td><code>1 failed, 490 passed</code> in 936.68s</td>
+            <td><code>test_crew.py::test_promotion_refuses_a_commit_that_names_no_object</code>
+              only (pre-existing; the head arm adds no failure id)</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The new falsifiers cover four cases: two unmarked findings are each named by
+        file and line; a record whose findings all state a declared severity yields
+        none; a record with no findings yields none; an implement-role node declaring
+        the same store paths is untouched. <code>ruff check</code> and
+        <code>ruff format --check</code> over the changed Python paths report no finding
+        at head that the base did not (two pre-existing findings in
+        <code>reports.py</code> at both revisions, zero in the new test file).</p>
+    </section>
+
+    <section id="negative-control">
+      <h2>The negative control</h2>
+      <p>The declared mutation removes the unmarked-finding check from
+        <code>audit_manifest</code> in <code>reckon/crew/reports.py</code>; the unmarked
+        case then passes clean. Run against a scratch export of the head revision whose
+        only change is that call removed (<code>gate/negative-control.log</code>):
+        <code>1 failed, 3 passed</code>, exit 1, the failure being
+        <code>test_a_record_with_an_unmarked_finding_is_refused_at_the_write</code>.</p>
+    </section>
+
+    <section id="limits">
+      <h2>What this node does not do</h2>
+      <p>The check reads and reports; it changes no stored record and no promotion
+        decision. A gate that refuses a promotion on blocking findings alone is a
+        separate piece of work, as is the prompt/parser pairing that gives new reviews
+        their severities. One pre-existing failure in <code>tests/test_crew.py</code>
+        (<code>test_promotion_refuses_a_commit_that_names_no_object</code>, a refusal
+        message that no longer matches its expected regex) is red at both arms and is
+        outside this node's write scope; it is reported, not triaged here.</p>
+    </section>
+  </main>
+</body>
+</html>
