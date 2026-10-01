@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="102">
+<meta name="plan-version" content="103">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.99">
@@ -1760,6 +1760,9 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261001T115049718092-review-of-a-shared-grant-charges-only-its-holder" data-who="reckon-build" data-when="2026-10-01T11:57:56.556Z">
     <div class="r-comment-body"><p>Reviewed run r-20261001T110746880717-a-shared-grant-charges-only-its-holder at base a0d770a6 and head 182a115a: the boundary walk now resolves each live peer's own declared write paths through _repository_scope_paths and exempts a dirty path only where that peer's declaration covers it, pinning the shared-grant green case and the stray-edit refusal case; scored goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 18, total 91.</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261001T110648189056-the-git-shim-admits-a-runs-own-fixture" data-who="reckon-build" data-when="2026-10-01T11:31:30.735Z">
+    <div class="r-comment-body"><p>reckon/worker_git_shim.py admits a mutating git verb whose resolved git dir, common dir and work-tree top level all lie inside worker_scratch_dir(run_id), and admits init/clone on the invocation directory when no repository resolves yet; tests/test_git_shim_checks_the_resolved_repo.py 176 passed EXIT=0, negative control reddens the linked-worktree case.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260924T122925465818-s19-internals-consumers-survey" data-who="reckon-ship" data-when="2026-09-24T12:38:14.943Z">
     <div class="r-comment-body"><p>eight consumer rows that read reckon internals directly; ranked top five: worktree_fleet re-implements pointer classification, reckon-sync fallback writes mounts.json, lane.json read by hand with no crew verb, inline pointer read in the recovery recipe, hand manifest repair</p></div>
 </div>
@@ -1854,7 +1857,7 @@
     <div class="r-comment-body"><p>Reviewed run r-20261001T110534672466 scored 94/100 (goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 19); its change is sound, with all five selected items scoring in the range 0..20</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261001T110534672466-resume-and-lane-change-follow-their-attempt" data-who="reckon-build" data-when="2026-10-01T11:19:13.532Z">
-    <div class="r-comment-body"><p>resume_plan and change_lane now pass run_dir(run_id) to the fence as the primary dispatch does and set the pointer&#x27;s fenced field from the attempt&#x27;s own composed plan; FENCE_WORKERS names every worker launch and the deliberately-unfenced lane-availability probe. Measure: tests/test_resume_and_lane_change_follow_their_own_attempt.py 3 passed, EXIT=0; two declared negative controls redden cases 1-2 and case 3 respectively, each EXIT=1.</p></div>
+    <div class="r-comment-body"><p>resume_plan and change_lane now pass run_dir(run_id) to the fence as the primary dispatch does and set the pointer's fenced field from the attempt's own composed plan; FENCE_WORKERS names every worker launch and the deliberately-unfenced lane-availability probe. Measure: tests/test_resume_and_lane_change_follow_their_own_attempt.py 3 passed, EXIT=0; two declared negative controls redden cases 1-2 and case 3 respectively, each EXIT=1.</p></div>
 </div>
 </section>
 </main>
