@@ -20,7 +20,7 @@
 <body>
 <article class="r-note" data-node="the-ledger-row-names-its-crew-session" data-reckon="landed" data-when="2026-10-01">
   <h2>A promoted ledger row names its crew session</h2>
-  <p>Promotion now copies the live pointer's <code>session</code> onto the committed ledger row as <code>session</code>, so a reader asking which coordinator session dispatched a run finds it at the top level instead of only under <code>node_definition.coordinator.session_id</code>. The row's <code>session_id</code> is left as the worker's own harness session. A pointer that names no session records no <code>session</code> key rather than an empty one. Gate: the new file passes, 2 passed, EXIT=0; the declared mutation (session copy dropped) fails the naming case, 1 failed 1 passed, EXIT=1.</p>
+  <p>Promotion now copies the live pointer's <code>session</code> onto the committed ledger row as <code>session</code>, so a reader asking which coordinator session dispatched a run finds it at the top level instead of only under <code>node_definition.coordinator.session_id</code>. The row's <code>session_id</code> is left as the worker's own harness session. A pointer that names no session records no <code>session</code> key rather than an empty one. The new top-level key is declared in <code>reckon/ledger.py</code>'s <code>RECORD_FIELDS</code>, so a promoted row carrying it no longer trips the schema-completeness check; the undeclared-key union reproduces <code>['session']</code> before the declaration and <code>[]</code> after. Gate: the schema-completeness test and the naming test together pass, 2 passed 1 skipped, EXIT=0; the declared mutation (session copy dropped) fails the naming case, 1 failed 1 passed, EXIT=1.</p>
 </article>
 </body>
 </html>

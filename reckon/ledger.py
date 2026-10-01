@@ -133,6 +133,9 @@ RECORD_FIELDS = (
     "manifest_path",
     "scope_changed",
     "scope_acceptances",
+    # The crew session that dispatched the run, distinct from ``session_id``
+    # (the worker's own harness session).
+    "session",
     "session_id",
     "session_harness",
     "session_model",
