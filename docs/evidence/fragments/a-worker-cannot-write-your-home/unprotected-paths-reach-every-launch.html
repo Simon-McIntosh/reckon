@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="The removed protected defaults reach every launch and the durable record">
+  <meta name="plan-summary" content="A resume and a lane change now compose their fence from the same resolved flight config the primary dispatch passes, so a removed default stays writable; the removed list rides the pointer and the committed ledger row.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s3">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,flight,fence,dispatch,promotion">
+  <title>The removed protected defaults reach every launch — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="unprotected-paths-reach-every-launch" data-reckon="landed" data-when="2026-10-01">
+  <h2>The removed protected defaults reach every launch — evidence</h2>
+  <p>The fence's protected set is a flight key whose shipped default is the built-in list, and a layer removes a default only by naming it under <code>unprotected_paths</code>. Primary dispatch already threaded the resolved config into fence composition and recorded the removed defaults on the run's pointer. Two other launch paths compose a fence through the same plan builder — an in-place resume (<code>resume_plan</code>) and a lane-change redispatch (<code>change_lane</code>) — and both called it without that config, so a run resumed or lane-changed under a layer declaring <code>unprotected_paths</code> re-sealed a default the layer left writable. Promotion copied <code>fence_waiver</code> onto the ledger row but not the removed list, so the pointer held it only until promotion deleted it. Both launch paths now pass <code>fence_config=config</code>, and a shared helper records <code>fence_unprotected_paths</code> on the pointer exactly when the composed fence leaves a default out, popping it otherwise; promotion copies the list onto the committed row beside <code>fence_waiver</code>. A run that removes nothing carries the key on neither surface.</p>
+  <p>Measure: <code>tests/test_unprotected_paths_reach_every_launch.py</code> passes its three cases — a resumed run's fence leaves the named default writable and keeps the ones not named, a lane-changed run's fence does the same, and promoting a run whose pointer carries the list writes it onto the ledger row. The declared negative control drops the fence config from the resume launch path in a scratch tree; the resumed fence then re-seals the default and case 1 fails.</p>
+</article>
+</body>
+</html>
