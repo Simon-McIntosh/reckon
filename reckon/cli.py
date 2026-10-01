@@ -919,6 +919,21 @@ def _emit(payload, pretty: bool) -> None:
     click.echo(json.dumps(payload, indent=2 if pretty else None, sort_keys=True))
 
 
+def _validation_detail(validation) -> str:
+    """Render a node validation's findings as the detail of a refusal.
+
+    Every refusal answers with error and detail, so the contract-validation
+    refusal must name what failed in a sentence rather than only under the
+    structured ``validation`` key — a caller that keys on ``error`` and stops
+    there would otherwise read a failed contract as success.
+    """
+    findings = [
+        f"{finding.get('property')}: {finding.get('detail')}"
+        for finding in validation.findings
+    ]
+    return "; ".join(findings) or "the node failed contract validation"
+
+
 def _resolved_flight(flight_module, project, checkout_path, overrides):
     """Resolve flight config for a dispatch, prompt overrides winning."""
     try:
@@ -1498,7 +1513,12 @@ def crew_dispatch(
             raise click.exceptions.Exit(4) from exc
         except crew_module.CompetenceLimit as exc:
             _emit(
-                {"ok": False, "error": "competence-refusal", "competence": exc.verdict},
+                {
+                    "ok": False,
+                    "error": "competence-refusal",
+                    "detail": str(exc),
+                    "competence": exc.verdict,
+                },
                 pretty,
             )
             raise click.exceptions.Exit(5) from exc
@@ -1535,16 +1555,35 @@ def crew_dispatch(
                     "ok": False,
                     "dry_run": True,
                     "error": "competence-refusal",
+                    "detail": _validation_detail(resolution.validation),
                     "competence": resolution.competence,
                 },
                 pretty,
             )
             raise click.exceptions.Exit(5)
+        if not resolution.validation.ok:
+            # A refused contract still answers on the channel every other
+            # refusal uses: a caller keying on ``error`` otherwise reads a
+            # failed validation as a dispatch that would proceed, which is the
+            # reading the skill's "every refusal carries error and detail"
+            # promise exists to prevent. The findings stay under ``validation``
+            # for a caller that wants them structured.
+            _emit(
+                {
+                    "ok": False,
+                    "dry_run": True,
+                    "error": "contract-validation",
+                    "detail": _validation_detail(resolution.validation),
+                    **resolution.as_dict(),
+                },
+                pretty,
+            )
+            raise click.exceptions.Exit(2)
         _emit(
-            {"ok": resolution.validation.ok, "dry_run": True, **resolution.as_dict()},
+            {"ok": True, "dry_run": True, **resolution.as_dict()},
             pretty,
         )
-        raise click.exceptions.Exit(0 if resolution.validation.ok else 2)
+        raise click.exceptions.Exit(0)
 
     try:
         record = crew_module.dispatch(
@@ -1602,7 +1641,12 @@ def crew_dispatch(
         raise click.exceptions.Exit(3) from exc
     except crew_module.CompetenceLimit as exc:
         _emit(
-            {"ok": False, "error": "competence-refusal", "competence": exc.verdict},
+            {
+                "ok": False,
+                "error": "competence-refusal",
+                "detail": str(exc),
+                "competence": exc.verdict,
+            },
             pretty,
         )
         raise click.exceptions.Exit(5) from exc
@@ -1786,7 +1830,12 @@ def crew_shadow(run_id, session, wave, backend, overrides, member, dry_run, pret
         raise click.exceptions.Exit(3) from exc
     except crew_module.CompetenceLimit as exc:
         _emit(
-            {"ok": False, "error": "competence-refusal", "competence": exc.verdict},
+            {
+                "ok": False,
+                "error": "competence-refusal",
+                "detail": str(exc),
+                "competence": exc.verdict,
+            },
             pretty,
         )
         raise click.exceptions.Exit(5) from exc
