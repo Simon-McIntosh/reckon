@@ -22,9 +22,9 @@
   <title>The Suite Is Green At Head | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-01">
+<meta name="plan-modified" content="2026-10-02">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="179">
+<meta name="plan-version" content="180">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1619,6 +1619,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261001T201234836367-suite-dispatch-claim-and-placement-tests" data-who="reckon-build" data-when="2026-10-01T21:25:04.638Z">
     <div class="r-comment-body"><p>Five claimed ids met by moving the assertion to the shipped guards: base arm 5 failed / 14 passed, head arm 19 passed, zero added failures; all five are stale expectations, no product source touched.</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261001T210819379565-a-promoted-live-run-does-not-reannounce" data-who="reckon-build" data-when="2026-10-01T22:32:52.357Z">
+    <div class="r-comment-body"><p>The fleet fold holds a promoted run whose live pointer remains instead of re-announcing it as dispatched every tick; the named gate passes and ends (27 passed, EXIT=0) and the new test asserts exactly one promoted transition and no dispatched one across three folds of a live promoted run.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
 </div>
@@ -1734,7 +1737,7 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
     <div class="r-comment-body"><p>Independent review of run r-20261001T093325066910-the-basetemp-lock-is-exact stored: parsed record at the run-keyed and head-sha-keyed review paths, total 91 (goal_fidelity 19, evidence 17, scope_discipline 19, durability 17, fit 19), added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own base/head gate logs and re-confirmed by the reviewer's own arm re-runs; two follow-on findings (the per-mutation negative-control logs name the base revision for head-derived trees; a legacy lock carrying no start time is still refused on pid reuse).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261001T201455315742-node-manifests-stay-in-their-own-module" data-who="reckon-build" data-when="2026-10-01T21:40:30.541Z">
-    <div class="r-comment-body"><p>node-manifests-stay-in-their-own-module — the stray empty node-manifests/ directory no longer appears in other modules&#x27; tmp_path under -n 8; base arm 15 failed / 386 passed shows it, head arm 401 passed shows none.</p></div>
+    <div class="r-comment-body"><p>node-manifests-stay-in-their-own-module — the stray empty node-manifests/ directory no longer appears in other modules' tmp_path under -n 8; base arm 15 failed / 386 passed shows it, head arm 401 passed shows none.</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260928T142353317590-s21-audit-placement" data-who="reckon-build" data-when="2026-09-28T15:23:36.908Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-suite-is-green-at-head/s21-audit-placement.html</p></div>
