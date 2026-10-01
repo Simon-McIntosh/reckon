@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="115">
+<meta name="plan-version" content="116">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.95">
@@ -565,6 +565,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-arist-out-of-vocabulary-severity-correction" data-who="s25-coord" data-when="2026-10-01">
     <div class="r-comment-body"><p><strong>Correction to c-arist-out-of-vocabulary-severity.</strong> That comment said the repair reflex treats <code>severity: "minor"</code> as blocking. It does not. <code>_finding_kind</code> in <code>reckon/crew/repair.py</code> classifies any declared severity other than <code>blocking</code> as a follow-on, so <code>minor</code> is recorded on the review and never repaired. It is also absent from the unmarked count, which covers only an absent severity. The defect is therefore a silent downgrade: a reviewer's word outside the vocabulary decides that nothing is repaired, and nothing reports it. The fixture and the two remedies stand as written.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-arist-severity-predicate-has-three-readers" data-who="s25-coord" data-when="2026-10-01">
+    <div class="r-comment-body"><p><strong>Extends f-arist-011: one severity predicate, three implementations.</strong> Found by s22-coord and verified here at <code>e1391d3f6</code>. Three places decide whether a stored finding states a severity, and they disagree:</p><table><thead><tr><th>reader</th><th>missing key</th><th><code>''</code></th><th><code>'minor'</code></th></tr></thead><tbody><tr><td>parser: <code>reckon/crew/review.py:309</code></td><td>None</td><td>None</td><td>None (normalised at parse)</td></tr><tr><td>promotion audit: <code>reckon/crew/reports.py:1166</code> <code>_severity_stated</code></td><td>unmarked</td><td>unmarked</td><td>unmarked</td></tr><tr><td>repair reflex: <code>reckon/crew/repair.py:184</code> <code>_finding_kind</code> and <code>:223</code> <code>unmarked_findings</code></td><td>unmarked, blocks</td><td>follow-on, never repaired</td><td>follow-on, never repaired</td></tr></tbody></table><p>So a record written directly rather than parsed, with <code>'minor'</code> or <code>''</code>, is reported as unmarked by the audit. The reflex files it as a follow-on, and its own rule that an absent severity blocks never fires for it.</p><p><strong>Remedy.</strong> Put one shared function in <code>reckon/crew/review.py</code>, beside <code>FINDING_SEVERITIES</code>, returning the declared severity or <code>None</code>. All three readers call it. Add a parity test that runs the same three inputs (<code>'minor'</code>, <code>''</code>, a missing key) through the audit and the reflex and asserts they agree. The parity test compares the readers to each other rather than asserting a literal about either, so the copies cannot drift in step. Whether an out-of-vocabulary value then blocks or is refused at write time is the open half of f-arist-011; the shared predicate makes that one decision in one place.</p></div>
 </div>
 </section>
 </main>
