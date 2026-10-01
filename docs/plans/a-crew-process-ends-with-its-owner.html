@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="119">
+<meta name="plan-version" content="127">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -511,7 +511,7 @@
     a refusal and retry after the pause. No pointer and no worktree are created. The result names
     the gate file and its <code>paused</code> field, and carries the file's <code>reason</code>
     when one is present. A paused gate with no reason is valid, and the result then carries
-    none. The sweep shows the run as <code>waiting on the lane pause</code>, a state with no
+    none. The follower's watch row shows the run as <code>waiting on the lane pause</code>, a state with no
     pointer. It is deliberately not called held, because <em>held</em> already names a live run
     that has a pointer.</p>
     <p><strong>The contract, from imas-ambix <code>local-lane-admission-control</code> &sect;11</strong>
@@ -528,7 +528,8 @@
     resolved file through the same resolver.
     <code>lane.json</code> mirrors that fact as <code>router_generation_gate.paused</code> and
     <code>.reason</code>, and publishes the resolved path as
-    <code>router_generation_gate.config_path</code>, but only when refreshed. It can be stale when
+    <code>router_generation_gate.config_path</code>. All three keys are only as current as the lane
+    document's last refresh. It can be stale when
     the router is down, and a <code>lane.json</code> written by a router older than the pause code
     carries no <code>paused</code> key. So dispatch reads the pause from the gate file, never from
     <code>lane.json</code>. <strong>The declared path is checked against the published one.</strong>
@@ -537,10 +538,14 @@
     <code>router_generation_gate.config_path</code> and it differs from the declared
     <code>gate_document</code>, the dispatch waits (<code>state: unreadable</code>) and the result
     names both paths: a pause written to a file the dispatch is not reading would otherwise pass
-    unseen. A lane document that publishes no <code>config_path</code>, or cannot be read within
-    the same 5 s deadline, leaves the declared path in force. The read has a deadline of 5 s:
-    a single stat on this filesystem took 8.5 s on 2026-09-23. Each result carries a
-    <code>lane_gate</code> object stating the row that applied. The rule is:</p>
+    unseen. The lane document is read only for this comparison. When it publishes no
+    <code>config_path</code>, or cannot be read within its deadline, the comparison is skipped: the
+    declared path stays in force, the five-state rule below decides the dispatch, and
+    <code>lane_gate.path_check</code> records <code>skipped</code> with the reason. A skipped
+    comparison never holds a dispatch on its own. Each of the two reads, the gate file and the lane
+    document, has its own deadline of 5 s, because a single stat on this filesystem took 8.5 s on
+    2026-09-23. Each result carries a <code>lane_gate</code> object stating the row that applied.
+    The rule is:</p>
     <ul>
       <li>no gate path declared in flight config: the dispatch proceeds, and
       <code>lane_gate.state</code> is <code>not-declared</code>. This is a host or backend with no
@@ -553,12 +558,12 @@
       the dispatch proceeds, <code>state</code> is <code>declared-but-missing</code>, and the
       dispatch's printed output says <code>gate path declared but missing</code>. A mistyped
       path must not read like a quiet host with no router;</li>
-      <li>any other read failure (the 5 s deadline passing, a permission error, any error other
+      <li>any other failure reading the gate file (its 5 s deadline passing, a permission error, any error other
       than file-not-found), a file that is not a JSON object or has a non-boolean
       <code>paused</code>, or a declared <code>gate_document</code> that differs from the lane
       document's published <code>config_path</code>: the dispatch waits
-      (<code>state: unreadable</code>), and the result
-      names the file and the defect. A gate that exists but cannot be answered is a pause
+      (<code>state: unreadable</code>), and the result names the defect and the gate file it read,
+      and for a mismatch both the declared and the published path. A gate that exists but cannot be answered is a pause
       nobody can confirm has ended.</li>
     </ul>
     <p><strong>Which dispatches read the gate.</strong> Every dispatch whose resolved backend
@@ -575,8 +580,10 @@
     <p><strong>Two review paths, both covered.</strong> The follower's review reflex executes
     a dispatch through <code>dispatch_review_for_run</code> in
     <code>reckon/crew/recovery.py</code>, which launches a worker whenever the gate is open. While
-    the gate says paused, or cannot be answered, that path launches nothing, and the watch row
-    shows the run as <code>waiting on the lane pause</code>. Separately,
+    the gate says paused, or cannot be answered, that path launches nothing. Two surfaces show it.
+    The sweep's report row for the run carries <code>error: "lane-paused"</code> and the reason, and
+    the follower's watch row renders that report row as <code>waiting on the lane pause</code>.
+    Separately,
     <code>_review_dispatch_argv</code> in the same module composes a printed review command for
     a coordinator to run. It names its lane with <code>--local</code> (the local lane's usual
     spelling) or <code>--backend</code>, so when it is run it
@@ -613,6 +620,10 @@
       dispatch waits, with <code>state: unreadable</code>, and names the defect.</li>
       <li>a metered backend with no <code>gate_document</code> proceeds while the stub gate says
       paused.</li>
+      <li>a stub lane document that publishes no <code>config_path</code>, and a lane-document read
+      stubbed to exceed its deadline, each with an open gate file: the dispatch proceeds with
+      <code>state: open</code>, and <code>lane_gate.path_check</code> reads <code>skipped</code>
+      with its reason.</li>
     </ul>
     <p>The negative control is executed and logged: with the gate check removed, the paused
     dispatch creates a pointer and the test fails. The write paths are
@@ -628,7 +639,8 @@
     <code>ea69eb30f</code> (review 88), returned <em>hold</em>. The gate path this section named was
     not the file the router reads or <code>agent pause</code> writes. The printed review command's
     lane spelling, the <code>lane.json</code> paused-key clause and the sweep's exit status were
-    stated wrongly. The done-when drove three of the unreadable row's four triggers. Those
+    stated wrongly. Before that revision, the done-when drove neither the permission-error
+    trigger nor the not-an-object trigger of the unreadable row. Those
     sentences were revised on 2026-10-01, and the revision adds the declared-against-published
     path check. That revision is material, so it needs its own read-back before dispatch.</p>
 
