@@ -1,0 +1,30 @@
+<section id="pointer-classification-is-memoised">
+  <h2>Pointer classification is memoised</h2>
+  <p>
+    <strong>Status: partial.</strong> The mechanism is implemented and committed; the
+    node's gate was not completed inside its time fence, so the figures below are
+    the base arm only.
+  </p>
+  <p>
+    <code>recovery.classify_pointer</code> now resolves its expensive reads through a
+    memo persisted beside the pointer, <code>live/&lt;run-id&gt;.classification.json</code>,
+    keyed by the stat identity of every file the classification reads: the pointer,
+    the manifest, the stream the observation consumes, the run directory's own
+    <code>exit.json</code>, <code>worker.json</code> and <code>attempt.json</code>, and the
+    review store's candidates for the run. A key that still matches serves the memo —
+    the manifest text, the stored review and the stream's budget block. A key that has
+    moved recomputes, and a stale reading is never served.
+  </p>
+  <p>
+    Stream observation resumes from a byte offset persisted in the same memo.
+    <code>_backends.observe_log</code> accepts a resume state and reads only the records
+    written past its offset, and both dialects' event folds now take and return their
+    state, as does the timestamp split that refines throughput. A fold resumed from
+    state produces the observation the whole stream would.
+  </p>
+  <p>
+    <strong>Base arm</strong> (revision <code>342b88ec5fa27c749d3b0ee2501de05cc4d6f4ec</code>,
+    scratch extraction, 73 test files, <code>-n 8 --timeout=300</code>):
+    1068 passed, 13 failed, 231 s, <code>EXIT=1</code>. The head arm was not run.
+  </p>
+</section>
