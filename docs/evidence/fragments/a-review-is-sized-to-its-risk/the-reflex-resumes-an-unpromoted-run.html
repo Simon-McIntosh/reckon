@@ -23,58 +23,45 @@
         the dispatch path and is settled by its existing guards.
       </p>
       <p>
-        <strong>Retry.</strong> A resumed round counts as in flight only while
-        the reviewed run's worker is live — the busy guard above the branch
-        returns for a live worker — so a resumed turn that ends without
-        answering is resumed once more on the next sweep rather than leaving the
-        round stuck as resumed. The attempt count recorded on the run makes each
-        retry visible. The branch sits after lane resolution, so a round with no
-        lane is still held with its cause named rather than resumed.
+        <strong>In flight only while the turn runs.</strong> A resumed round
+        counts as in flight only while the reviewed run's worker is live, and
+        <code>_reviewed_run_is_busy</code> now reads a resumed turn as in
+        progress only while it has not ended: the newest resume stream must hold
+        an assistant record <em>and</em> not end on the result line a finished
+        turn writes. A finished resume — the shape every resume that actually
+        ran leaves — therefore no longer marks the run busy forever, so a
+        resumed turn that ended without answering is resumed once more on the
+        next sweep rather than stranding the round. The attempt count recorded
+        on the run makes the retry visible. The branch sits after lane
+        resolution, so a round with no lane is still held with its cause named
+        rather than resumed.
       </p>
       <p>
-        <strong>Measure.</strong> Four test files, each run to its own log
-        ending <code>EXIT=0</code> at commit <code>58d5e62</code> (31 passed in
+        <strong>Measure.</strong> Each file run to its own log ending
+        <code>EXIT=0</code> at commit <code>1edf118d0</code> (9 passed in
         the combined run), with the resume entry point and the dispatch both
         stubbed so no worker is launched and no call reaches a scheduler:
       </p>
       <ul>
-        <li><code>tests/test_the_reflex_resumes_an_unpromoted_run.py</code> 4/4 —
-          an unpromoted exited run with one blocking finding is resumed once
+        <li><code>tests/test_the_reflex_resumes_an_unpromoted_run.py</code> 5/5
+          — an unpromoted exited run with one blocking finding is resumed once
           with advice naming the finding's id and the dispatch is never called;
-          a live resumed worker is left alone; an exited resumed worker is
-          resumed once more with attempt count 2; a promoted run is not
-          resumed.</li>
-        <li><code>tests/test_reflex_dispatches_one_repair.py</code> 16/16 — the
-          dispatch-asserting cases now read the composed brief, scope and suite
-          arms off the resume advice, and the idempotence cases model a live
-          worker or a promoted run.</li>
-        <li><code>tests/test_repair_skips_out_of_repo_findings.py</code> 7/7 —
-          the mixed-round scope, suite inheritance and unarmed-suite cases read
-          the advice.</li>
+          a live resumed worker is left alone; a <em>finished</em> resumed turn
+          (assistant then result) leaves the worker gone and the head unmoved,
+          so the round is retried once with attempt count 2; an
+          <em>unfinished</em> resumed turn (assistant with no result) reads busy
+          and resumes nothing; a promoted run is not resumed. The resume stub
+          writes the stream a real resume leaves, so the finished case measures
+          the shape production actually produces.</li>
         <li><code>tests/test_a_repair_hold_names_its_cause.py</code> 4/4 — the
-          two holds are unchanged (lane resolution precedes the branch); the
-          control asserts the reflex resumes rather than holds when a lane is
-          left.</li>
+          holds and their control, unaffected by the busy-check change.</li>
       </ul>
       <p>
-        <strong>Negative controls.</strong> (1) Routing the unpromoted case back
-        to <code>dispatch_module.dispatch</code> reddens the three
-        resumed-not-dispatched cases (<code>3 failed</code>, EXIT=1);
-        (2) blocking a resumed round from being resumed again reddens the retry
-        case (<code>1 failed</code>, EXIT=1). Logs
-        <code>negative-control-routes-back-to-dispatch.log</code> and
-        <code>negative-control-resumed-round-blocked.log</code> under the run
-        directory.
-      </p>
-      <p>
-        <strong>Files outside the node's original fence, edited for the new
-        branch.</strong> <code>tests/test_reflex_dispatches_one_repair.py</code>,
-        <code>tests/test_repair_skips_out_of_repo_findings.py</code> and
-        <code>tests/test_a_repair_hold_names_its_cause.py</code> each asserted a
-        dispatched repair node for an unpromoted reviewed run, the behaviour this
-        change replaces. Each edit re-anchors the case on the resume advice or on
-        a promoted/live-worker run so its own subject (scope, suite arms, lane
-        holds, idempotence) is still measured, and every case still fails when
-        its guard is removed.
+        <strong>Negative control.</strong> Restoring the any-assistant-record
+        busy check (dropping the result-line test) reddens the finished-turn
+        retry case (<code>1 failed</code>, EXIT=1); log
+        <code>negative-control-any-assistant-record-busy.log</code> under the run
+        directory. An earlier control, routing the unpromoted case back to
+        dispatch, reddens the three resumed-not-dispatched cases.
       </p>
     </article>
