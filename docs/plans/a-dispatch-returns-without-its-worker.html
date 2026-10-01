@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-10-01">
-  <meta name="plan-version" content="116">
+  <meta name="plan-version" content="117">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -1251,11 +1251,14 @@
 <div class="r-comment" data-section="s6" data-id="c-adrwiw-s6-landed" data-who="s21-1c" data-when="2026-10-01T09:50:00Z">
     <div class="r-comment-body">Landed at merge b5e86a772 (run r-20261001T081548169030-a-dispatch-result-matches-its-launch, reviewed head 634d7d3cd). Every ok:false the dispatch command emits now carries error and detail. The dry-run contract-validation verdict answers error: contract-validation, exit 2, with its findings as detail. Each competence refusal names its reason. Live and dry-run, each mechanism the section names no longer refuses beside a pointer, worktree or live worker at base 531027092. The post-launch snapshot handler and the cleanup that refused to remove the run's own worktree were removed by 4248cbaf. The survival check was removed by 1859c0d19. tests/test_dispatch_result_matches_launch.py holds all three as regression guards: 22 passed at head, 3 red against the base cli.py. Negative control: restoring the pre-fix unwind order turns 2 cases red. Member reading: the review read run r-20260923T025720725298's prompt, which carries no --member, so the substitution is refuted. The review total was capped at 5 by four ids that failed only in the worker's 8-process head arm. Those ids passed 3 of 3 at main and at a trial merge, and pass in the whole-suite head arm at 7ec337b28. They are load-sensitive and not added failures (logs coord-stability-{main,merge}-{1,2,3}.log under the run's logs directory). That whole suite shows 73 failed and 1 error at both main ea69eb30f and 7ec337b28, with identical ids.</div>
 </div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261001T081548169030-a-dispatch-result-matches-its-launch" data-who="reckon-build" data-when="2026-10-01T09:00:41.631Z">
+    <div class="r-comment-body"><p>Every ok:false the dispatch command emits now carries error and detail — the dry-run contract-validation verdict and the competence-refusals were silent — and tests/test_dispatch_result_matches_launch.py drives the post-launch snapshot handler, the unwind that once refused to remove the run&#x27;s own worktree, and the survival check, asserting a launch either names its run or leaves no pointer, no worktree and no live worker (22/22 at head, 3/22 red at base source, negative control 2 red).</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-adrwiw-s8-landed" data-who="s21-1c" data-when="2026-10-01T09:50:00Z">
     <div class="r-comment-body">Landed at merge df1e01574 (run r-20261001T081309497681-a-backend-carries-no-worker-cap, reviewed head 11a32aa4f, review total 96). Dispatch no longer refuses on max_concurrent_runs. summary.roster_bound reports the key as retired and never binding, and the roster refusal sentence is gone. tests/test_backend_carries_no_worker_cap.py admits a fourth dispatch past a declared cap of 2. It still refuses a spent 2-core reservation with '2 of 2 cores admitted (1 per worker)'. Negative control: with roster enforcement restored, 3 cases fail. Coordinator measures: the 143 files importing dispatch or summary, at main f1e3315c7 and at the merge, show 14 failed and 1 error each, with identical ids. The whole suite at main ea69eb30f and at the stacked head 7ec337b28 shows 73 failed and 1 error each, with identical ids and no added failure.</div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261001T081309497681-a-backend-carries-no-worker-cap" data-who="reckon-build" data-when="2026-10-01T09:01:25.951Z">
-    <div class="r-comment-body"><p>retires the per-backend max_concurrent_runs roster cap: dispatch stops enforcing it, summary.roster_bound returns a retired entry (value &quot;retired&quot;, never binding) and its now-unreachable roster refusal sentence is removed, while the partition-cores and login-memory bounds stay enforced — a new test shows a spent 2-core reservation still refuses with &quot;2 of 2 cores admitted (1 per worker)&quot;</p></div>
+    <div class="r-comment-body"><p>retires the per-backend max_concurrent_runs roster cap: dispatch stops enforcing it, summary.roster_bound returns a retired entry (value "retired", never binding) and its now-unreachable roster refusal sentence is removed, while the partition-cores and login-memory bounds stay enforced — a new test shows a spent 2-core reservation still refuses with "2 of 2 cores admitted (1 per worker)"</p></div>
 </div>
 </section>
 </main>
