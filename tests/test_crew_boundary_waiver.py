@@ -4,15 +4,23 @@ from __future__ import annotations
 
 import json
 import subprocess
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
 from reckon import crew, ledger
 from reckon.crew import routing
+from reckon.crew.promotion import BOUNDARY_REFERENT_MAX_AGE_SECONDS
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "sample"
+
+
+def _stamp(*, before_now: timedelta) -> str:
+    """Return a UTC stamp the given interval before the current clock."""
+    moment = datetime.now(tz=UTC) - before_now
+    return moment.isoformat(timespec="seconds").replace("+00:00", "Z")
 
 
 def _git(repository: Path, *arguments: str) -> str:
@@ -48,7 +56,9 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return root
 
 
-def _pointer(repository: Path, run_id: str, base: str) -> None:
+def _pointer(
+    repository: Path, run_id: str, base: str, *, created_at: str = ""
+) -> None:
     _write_json(
         pointer_path(run_id),
         {
@@ -60,7 +70,7 @@ def _pointer(repository: Path, run_id: str, base: str) -> None:
             "launch": "in-harness",
             "role": "implement",
             "backend": "native",
-            "created_at": "2026-08-26T12:00:00Z",
+            "created_at": created_at or _stamp(before_now=timedelta(hours=1)),
             "node": {
                 "id": "boundary-check",
                 "plan": "fixture",
@@ -72,8 +82,10 @@ def _pointer(repository: Path, run_id: str, base: str) -> None:
     )
 
 
-def _guarded_pointer(repository: Path, run_tree: Path, run_id: str, base: str) -> None:
-    _pointer(repository, run_id, base)
+def _guarded_pointer(
+    repository: Path, run_tree: Path, run_id: str, base: str, *, created_at: str = ""
+) -> None:
+    _pointer(repository, run_id, base, created_at=created_at)
     pointer = json.loads(pointer_path(run_id).read_text(encoding="utf-8"))
     pointer["worktree"] = str(run_tree)
     pointer["repository_tree_snapshot"] = routing._repository_tree_snapshot(repository)
@@ -116,11 +128,41 @@ def test_boundary_refusal_promotes_under_waiver_with_reason_and_paths(
         "reason": "known-wrong verdict, fix incoming",
         "waived_paths": [expected_violation],
     }
+    assert "no_referent" not in stored["boundary_waiver"]
     assert not pointer_path(run_id).exists()
     assert ledger.runs(PROJECT, root=repository)[0]["boundary_waiver"] == {
         "reason": "known-wrong verdict, fix incoming",
         "waived_paths": [expected_violation],
     }
+
+
+def test_boundary_waiver_past_the_age_bound_names_no_referent(
+    repository: Path, tmp_path: Path
+) -> None:
+    base = _git(repository, "rev-parse", "HEAD")
+    run_tree = _detached_tree(repository, tmp_path / "run-tree")
+    run_id = "r-main-tree-stale"
+    stale = _stamp(
+        before_now=timedelta(seconds=BOUNDARY_REFERENT_MAX_AGE_SECONDS + 24 * 3600)
+    )
+    _guarded_pointer(repository, run_tree, run_id, base, created_at=stale)
+    commit = _commit_allowed(run_tree)
+    (repository / "allowed.txt").write_text("stray\n", encoding="utf-8")
+    expected_violation = f"allowed.txt in main checkout {repository}"
+
+    stored = crew.complete(
+        run_id,
+        gate="passed",
+        commits=[commit],
+        root=repository,
+        boundary_waiver="accepting the boundary could not be checked",
+    )["record"]
+
+    waiver = stored["boundary_waiver"]
+    assert waiver["reason"] == "accepting the boundary could not be checked"
+    assert waiver["waived_paths"] == [expected_violation]
+    assert "no_referent" in waiver
+    assert "older than the" in waiver["no_referent"]
 
 
 def test_boundary_refusal_without_waiver_is_still_refused(
