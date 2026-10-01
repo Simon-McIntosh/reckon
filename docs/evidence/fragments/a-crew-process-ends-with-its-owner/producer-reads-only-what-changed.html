@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>producer-reads-only-what-changed</title>
+<meta name="reckon-type" content="fragment">
+</head>
+<body>
+<section id="producer-reads-only-what-changed">
+<h3>§11 — a live producer reads only what changed since its last poll</h3>
+<p>
+The producer's tick now carries each run's stream cursor forward instead of
+re-parsing every record. The classification memo already recorded the byte
+offset an observation reached, so this keeps one cache rather than adding a
+second: the read resumes at that offset, the whole file is read only when the
+inode moves or the size drops below the offset, and the commits-beyond-base
+count is cached against the worktree head read from <code>.git</code>.
+</p>
+<table>
+<tr><th>measure</th><th>figure</th></tr>
+<tr><td>gate</td><td><code>tests/test_producer_reads_only_what_changed.py</code> — 3 passed</td></tr>
+<tr><td>nine-run growth</td><td>each stream grown by 2&#160;MB across the case</td></tr>
+<tr><td>unchanged poll</td><td><code>bytes_parsed_last_poll</code> = 0, no git spawn</td></tr>
+<tr><td>negative control</td><td>whole-file parse → <code>recorded[1]</code> 18002610 vs appended 18001269; the bytes-parsing assertion is red (EXIT=1)</td></tr>
+<tr><td>base / head arms</td><td>25 / 25 passing, zero added failures</td></tr>
+<tr><td>commit</td><td><code>c7b105a3d</code></td></tr>
+</table>
+<p>
+The fleet-node <code>pidstat</code> before/after is a separate node and is not
+claimed here.
+</p>
+</section>
+</body>
+</html>
