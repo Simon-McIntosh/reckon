@@ -1892,7 +1892,11 @@ def _record_repair_dispatch(
     The attempt count is read from the pointer at the moment of the write and
     returned, so a caller can record the value the run now carries rather than
     deriving its own. It counts every outcome written for the round, so a caller
-    that caps how many times a round may be resumed reads it as that count.
+    that caps how many times a round may be resumed reads it as that count. The
+    count is keyed to ``round_id``: an outcome written for a round other than the
+    one the pointer last carried starts the new round's count afresh, so a round
+    the reflex has not yet written reads attempt 1 whatever an earlier round of
+    the same run recorded, rather than continuing that round's count.
 
     A write under an opening status also advances the run-wide opened-round
     record, so a reader can tell a round that opened from one that was only ever
@@ -1906,9 +1910,13 @@ def _record_repair_dispatch(
     written: dict[str, int] = {}
 
     def record(pointer: dict[str, Any]) -> dict[str, Any]:
-        attempt = (
-            int((pointer.get(REPAIR_DISPATCH_FIELD) or {}).get("attempt") or 0) + 1
-        )
+        prior = pointer.get(REPAIR_DISPATCH_FIELD)
+        prior = prior if isinstance(prior, Mapping) else {}
+        # The count belongs to the round, not to the run: a write for a round the
+        # pointer did not last carry starts at one, so a run whose earlier round
+        # recorded attempts does not make its next round begin part-way exhausted.
+        same_round = str(prior.get("round_id") or "") == str(round_id or "")
+        attempt = int(prior.get("attempt") or 0) + 1 if same_round else 1
         written["attempt"] = attempt
         if status in REPAIR_ROUND_OPENING_STATUSES and round_id:
             existing = pointer.get(REPAIR_ROUNDS_FIELD)

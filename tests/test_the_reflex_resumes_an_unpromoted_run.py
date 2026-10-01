@@ -386,6 +386,50 @@ def test_a_round_resumed_twice_is_exhausted_not_resumed_again(
     )
 
 
+def test_a_new_round_starts_its_attempt_count_at_one(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """A round's attempt count is its own, not the run's.
+
+    A run whose earlier round was resumed twice must not open its next round
+    part-way toward the retry cap: the round in hand has not been resumed, so
+    its first resume records attempt 1 whatever the earlier round recorded. A
+    count read without the round id would carry the earlier round's two across
+    and record 3. The run-wide cap that otherwise hands a second round back to
+    its coordinator is stubbed open here, so the new round reaches its resume
+    and the attempt count is what the case measures.
+    """
+    config_home, repo, head_sha = isolated_project
+    _completed_pointer(config_home, repo)
+    # An earlier round of this same run already spent two attempts.
+    record = runs.read_pointer(RUN_ID)
+    record["repair_dispatch"] = {
+        "status": "resumed",
+        "round_id": "earlier-round",
+        "attempt": 2,
+    }
+    record["repair_rounds"] = {
+        "count": 1,
+        "round_id": "earlier-round",
+        "attempts": 2,
+    }
+    crew._write_json(crew.pointer_path(RUN_ID), record)
+    _store_review(head_sha, [FINDING])
+    resumed = _stub_resume(monkeypatch)
+    _stub_dispatch(monkeypatch)
+    # The run-wide one-round cap would hand this round back; stub it open so
+    # the round in hand is reached and its own attempt count is measured.
+    monkeypatch.setattr(recovery, "_opened_repair_rounds", lambda _record: {})
+
+    _sweep()
+
+    assert len(resumed) == 1
+    recorded = runs.read_pointer(RUN_ID)["repair_dispatch"]
+    assert recorded["status"] == "resumed"
+    assert recorded["round_id"] != "earlier-round"
+    assert recorded["attempt"] == 1
+
+
 def test_a_promoted_reviewed_run_is_not_resumed(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
