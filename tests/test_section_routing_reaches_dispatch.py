@@ -295,3 +295,25 @@ def test_one_derivation_serves_every_spelling_across_the_callers(
         assert (
             promotion_module._run_capability_risk(record, root=repository) == "elevated"
         )
+
+
+def test_a_dotted_anchor_is_reachable_from_every_spelling() -> None:
+    """A plan authored under the dotted anchor stays reachable by direct id.
+
+    The reference is one section either way, but an authoring plan might have
+    written the anchor as ``s5.1`` rather than the ``s5-1`` the state records,
+    so the section-text lookup matches both spellings of the id whichever one
+    the node names. The heading deliberately does not repeat the reference, so
+    the id lookup is what has to answer rather than the heading-text fallback.
+    """
+    from reckon.crew.dispatch import _plan_section_text
+
+    body = "The retry bound the record owns body"
+    authored = (
+        '<h2 id="s5.1">The retry bound the record owns</h2><p>body</p>',
+        '<h2 id="s5-1">The retry bound the record owns</h2><p>body</p>',
+    )
+
+    for html in authored:
+        for spelling in SPELLINGS:
+            assert _plan_section_text(html, spelling) == body
