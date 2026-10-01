@@ -13,6 +13,7 @@ same files.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import subprocess
@@ -146,7 +147,7 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     return {"tree": tree, "base": base, "records": records}
 
 
-class _StopTicking(Exception):
+class _StopTickingError(Exception):
     """Ends the producer after the case's steps have all run."""
 
 
@@ -172,15 +173,12 @@ def _drive(
         )
         spawn_marks.append(len(spawns))
         if index >= len(steps):
-            raise _StopTicking
+            raise _StopTickingError
         steps[index]()
 
     generator = recovery.watch_ticker(project, poll_interval=0.0, sleeper=sleeper)
-    try:
-        for event in generator:
-            events.append(event)
-    except _StopTicking:
-        pass
+    with contextlib.suppress(_StopTickingError):
+        events.extend(generator)
     return events, recorded, spawn_marks
 
 

@@ -3367,21 +3367,20 @@ _STREAM_BOUNDARY_CHUNK = 64 * 1024
 # taken. A producer takes it once a poll to report how much of the fleet's
 # stream traffic that poll actually parsed; no other reader consults it, and a
 # poll that resumes from every cursor and finds nothing appended leaves it at
-# nothing.
-_PARSED_STREAM_BYTES = 0
+# nothing. It is a one-element cell so the two readers below mutate it without a
+# module-level global statement.
+_PARSED_STREAM_BYTES = [0]
 
 
 def _count_parsed_bytes(count: int) -> None:
-    global _PARSED_STREAM_BYTES
     if count > 0:
-        _PARSED_STREAM_BYTES += count
+        _PARSED_STREAM_BYTES[0] += count
 
 
 def take_parsed_stream_bytes() -> int:
     """Bytes of stream records read since this was last taken, then reset."""
-    global _PARSED_STREAM_BYTES
-    value = _PARSED_STREAM_BYTES
-    _PARSED_STREAM_BYTES = 0
+    value = _PARSED_STREAM_BYTES[0]
+    _PARSED_STREAM_BYTES[0] = 0
     return value
 
 
