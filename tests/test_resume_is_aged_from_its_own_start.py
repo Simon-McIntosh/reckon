@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -103,7 +104,7 @@ def _stub_resumed_run(
         "process_alive": None,
         "pid": liveness._absent_pid(),
         "pid_start_time": None,
-        "launcher_host": "fixture-host",
+        "launcher_host": socket.gethostname(),
         "worktree": str(tmp_path / "tree"),
         "base_sha": "",
         "attempt": 2,
