@@ -536,7 +536,7 @@ live claim registry.
 
 | `launch` | What reckon did | What you do |
 |---|---|---|
-| `cli` | created the worktree, spawned the worker, wrote the run record | background the call, yield, then `reckon crew observe --run <id>` |
+| `cli` | created the worktree, started the supervisor, wrote the run record | run it in the foreground; it returns once the supervisor is running, not waiting for the worker's spawn and claiming no order between its exit and the spawn; then `reckon crew observe` |
 | `in-harness` | prepared the worktree, manifest path and fences, returned a directive | dispatch your own delegation primitive against the directive, then `reckon crew attach --run <id> --task <task-id>` |
 
 A CLI process can be resumed or stopped with `reckon crew resume` and `reckon
@@ -1280,9 +1280,9 @@ Product source and tests, including test fixtures, are never edited inline, and 
 - `references/worker-protocol.md` — the task contract, fences, manifest, escape hatch.
 - `references/worker-backends.md` — maintainer notes on launch translation (not agent-facing).
 - `references/orchestrator-harness/<harness>.md` — what the HOST harness lets the
-  orchestrator do: background dispatch, wake on completion, self-scheduling a
-  held wave's resumption, and whether it can see its own budget. One file per
-  host; read the one you are running inside.
+  orchestrator do: watch the fleet, wake on completion, self-schedule a held
+  wave's resumption, and whether it can see its own budget. One file per host;
+  read the one you are running inside.
 - `reckon-edit/SKILL.md` — how the evergreen gets its landed subsection; edit_plan op reference.
 - `reckon-create/SKILL.md` — first-time plan scaffolding and §05 invocation.
 - `reckon-status/SKILL.md` — read-only inspection before deciding what to ship.

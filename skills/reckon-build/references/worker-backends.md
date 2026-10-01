@@ -26,8 +26,10 @@ Callers branch once, on `launch` kind, and adding a harness never adds a third
 case:
 
 - **`cli`** — an external process reckon can spawn. `dispatch` creates the
-  worktree, launches it, writes the live pointer and returns a run id; the caller
-  backgrounds that and yields.
+  worktree, starts the run's supervisor, writes the live pointer naming it and
+  returns a run id; it returns once the supervisor is running and waits for
+  neither the worker's spawn nor the supervisor's tree snapshot. The caller runs
+  it in the foreground and reads the returned JSON.
 - **`in-harness`** — the calling harness's own delegation primitive, which reckon
   cannot spawn on its behalf. So reckon prepares the worktree, manifest path and
   resolved fences, returns a dispatch directive, and the caller binds its own
