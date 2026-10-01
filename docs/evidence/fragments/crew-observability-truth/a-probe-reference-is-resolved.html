@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-probe-reference-is-resolved">
+  <meta name="plan-title" content="A wait probe's reference is resolved, not inferred from its characters">
+  <meta name="plan-summary" content="The rule that refuses a probe which cannot fail read the vector's text for a digit, a slash, a dollar sign or a backtick, so the constant probe git rev-parse HEAD2 was accepted as a reference outside the worker. The rule now resolves the vector to a kind — job id, pid, port or path — and answers with the kind it found. Gate: base 14 failed (all in the new file), 142 passed; head 156 passed, 0 failed; the declared mutation restores the proxy and the gate fails 6 ids at EXIT=1.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-tags" content="crew,recovery,wait-probe,validation">
+  <title>A wait probe's reference is resolved, not inferred from its characters | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-probe-reference-is-resolved" data-reckon="landed" data-when="2026-10-01">
+  <h2>A wait probe's reference is resolved, not inferred from its characters</h2>
+  <p><strong>At base the proxy accepted the constant.</strong> <code>_WAIT_PROBE_EXTERNAL_REFERENCE</code> is the pattern <code>[0-9/$`]</code>, and at the base revision the measured facts are: it matches <code>git rev-parse HEAD2</code>, and <code>_wait_probe_cannot_fail(["git","rev-parse","HEAD2"])</code> returns <code>False</code> — that is, a constant whose only claim to a reference is the digit in its name reads as able to differ (<code>logs/base-proxy-check.log</code>). <code>git rev-parse HEAD</code> was refused by the same reading and <code>HEAD2</code> was not, so the reading was distinguishing a character and not a reference.</p>
+  <p><strong>The rule now resolves the reference and names the kind it found.</strong> A token counts only when its place in the vector names it as one of the four kinds a wait rests on: a job id or a port from the flag that names it (<code>-j 1271081</code>, <code>-p 2222</code>) or from the operand's place in a command that takes one by position (<code>nc -z a-host 8765</code>); a pid from a numeric operand of a process command (<code>kill -0 &lt;pid&gt;</code>); a path from a token that resolves on the filesystem. Two shapes are read through rather than taken at face value. A shell keeps its program in one token, so <code>bash -lc 'q=$(squeue -h -j 1274028); …'</code> — the spelling the fleet actually declares — is read as the shell vector it is; and a file-test operand is the path being waited <em>for</em>, so <code>test -f DONE</code> stays declarable while the file does not exist yet, which is the whole point of that wait.</p>
+  <p><strong>The gate, at the base revision and at head.</strong> The twelve files are the new test, <code>tests/test_a_wait_ages_on_its_stream.py</code>, and the ten other <code>tests/test_*wait*</code> files. Base revision <code>c091e7c9c</code>, the new test file copied into a scratch extraction: <strong>14 failed, 142 passed</strong> (<code>EXIT=1</code>), every failing id in the new file and none in the ten existing wait files. Head <code>4041280b3</code> in the worktree: <strong>156 passed, 0 failed</strong> (<code>EXIT=0</code>), so the head arm adds no failing id. Each pytest process ran with its own <code>--basetemp</code>, and the head log's header names the module it imported (<code>reckon/crew/recovery.py</code> under the worktree, not the shared editable install).</p>
+  <p><strong>The control, executed.</strong> The declared mutation restores the character-class proxy in <code>_wait_probe_cannot_fail</code>, and the gate then fails six ids at <code>EXIT=1</code>: the four <code>HEAD2</code> cases in the new file, the reader-level case, and <code>tests/test_external_wait.py::test_the_sweep_resumes_only_after_the_condition_terminates</code> — an existing wait file, so the control is caught by the suite and not only by this node's own test. The mutation was then reverted and the same gate re-run at <code>156 passed, 0 failed</code> with <code>git diff</code> empty, so the green head arm is the tree as committed and not a tree still carrying the control.</p>
+  <p><strong>What the resolution does not decide.</strong> A token that resolves on the filesystem counts as a path reference whichever operand it is, the command token included, so an interpreter named by absolute path resolves the probe through its own path — measured on the probe shape the follower tests declare, <code>[sys.executable, "-c", …]</code>, which has to stay declarable. A relative path is resolved from the reader's working directory rather than from the declaring worker's worktree, so a path a wait is <em>for</em> belongs in the file-test form, and the refusal message names that form.</p>
+</article>
+</body>
+</html>
