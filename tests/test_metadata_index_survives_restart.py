@@ -323,11 +323,13 @@ def test_the_change_watch_invalidates_the_tree(project_tree, monkeypatch):
     assert metadata_index.index_rows(docs_dir, _PROJECT)
 
     invalidated: list[Path] = []
+    stamps: list[float | None] = []
     real = serve._invalidate_tree_views
 
-    def spy(root):
+    def spy(root, changed_at: float | None = None):
         invalidated.append(Path(root))
-        real(root)
+        stamps.append(changed_at)
+        real(root, changed_at=changed_at)
 
     monkeypatch.setattr(serve, "_invalidate_tree_views", spy)
     watch = serve._FleetChangeWatch([docs_dir])
@@ -342,6 +344,10 @@ def test_the_change_watch_invalidates_the_tree(project_tree, monkeypatch):
 
     assert invalidated, "the change watch never invalidated the tree's views"
     assert invalidated[0] == docs_dir.resolve()
+    # The watch stamps the moment it observed the change, and the invalidation
+    # uses the stamp to keep a discovery computed after it: a watch that dropped
+    # the stamp would retire newer derived state.
+    assert stamps[0] is not None
     # The invalidation dropped the rows, so the next read rebuilds them.
     assert _title(metadata_index.index_rows(docs_dir, _PROJECT), "plan-001") == (
         "a watched change"
