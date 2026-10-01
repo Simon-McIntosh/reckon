@@ -15,6 +15,13 @@
 // The derived values are computed in Python on the server; the loader merges
 // them and never derives them itself.
 //
+// A change the server reports over /_changes/<project> arrives as the index
+// rows that moved — changed, added or removed — and is patched into the rows
+// on screen with no request of its own; the derived state that follows is
+// refetched at most once per settle window, in the background. An event that
+// carries only a digest, as a server that does not push rows sends, falls
+// back to that refetch alone.
+//
 // An index that is unavailable — a 404, or a request that fails at the
 // network — costs the page nothing: the loader falls back to the sources that
 // stood in for it before, in this order:
@@ -100,6 +107,83 @@ const attachmentRelationsOf = (mergedInventory) => mergedInventory.flatMap(sourc
     }))
   )
 );
+
+// ── Pushed rows ──────────────────────────────────────────────────────────
+// A change event may carry the index rows that moved — changed, added or
+// removed — and the state on screen is patched from them: a changed row
+// keeps its object and its place, a row the page never carried is held as an
+// arrival, and a removed row leaves the inventory. Applying the push costs
+// no request; the derived state that follows it is fetched once per settle
+// window, in the background.
+const CHANGE_SETTLE_MS = 500;
+
+const applyIndexRowChanges = (delta) => {
+  const state = window.STATE;
+  if (!state || !Array.isArray(state.inventory)) return false;
+  const list = (value) => (Array.isArray(value) ? value : []);
+  const changed = list(delta?.changed);
+  const added = list(delta?.added);
+  const removed = list(delta?.removed);
+  if (!changed.length && !added.length && !removed.length) return false;
+
+  const onScreen = new Map(state.inventory.map(row => [arrivalKeyOf(row), row]));
+  const pending = [];
+  for (const row of [...changed, ...added]) {
+    const mapped = mapInventoryRow(row);
+    const key = arrivalKeyOf(mapped);
+    if (!key) continue;
+    const existing = onScreen.get(key);
+    if (!existing) {
+      // A row the page never carried is held as an arrival, like any other
+      // row that appears after the list opened.
+      pending.push(mapped);
+      continue;
+    }
+    // The index carries no derived effective status, so a pushed row that
+    // does not speak about it keeps the one a discovery merge delivered
+    // rather than a locally defaulted one.
+    if (!("effective_status" in row)) {
+      mapped.effective_status = existing.effective_status || mapped.effective_status;
+    }
+    Object.assign(existing, mapped);
+  }
+
+  const removedKeys = new Set(
+    removed.map(row => arrivalKeyOf(mapInventoryRow(row))).filter(Boolean)
+  );
+  if (removedKeys.size) {
+    state.inventory = state.inventory.filter(row => !removedKeys.has(arrivalKeyOf(row)));
+    if (arrivalRendered) {
+      for (const key of removedKeys) {
+        arrivalRendered.keys.delete(key);
+        arrivalRendered.versions.delete(key);
+      }
+    }
+  }
+
+  state.plans = Object.fromEntries(state.inventory.map(row => [arrivalKeyOf(row), row]));
+  state.attachment_relations = attachmentRelationsOf(state.inventory);
+
+  const heldKeys = new Set(
+    (state.arrival && Array.isArray(state.arrival.pending) ? state.arrival.pending : [])
+      .map(arrivalKeyOf)
+  );
+  const arrivals = pending.filter(row => !heldKeys.has(arrivalKeyOf(row)));
+  if (arrivals.length) {
+    const held = [
+      ...((state.arrival && Array.isArray(state.arrival.pending)) ? state.arrival.pending : []),
+      ...arrivals,
+    ];
+    state.arrival = {
+      ...(state.arrival || {}),
+      pending: held,
+      byKind: arrivalCountsOf(held),
+      total: held.length,
+      receipt: `${held.length} new`,
+    };
+  }
+  return true;
+};
 
 window.revalidateProjectState = async function () {
   const PROJECT = (document.querySelector('meta[name="docs-project"]')?.content) ||
@@ -543,7 +627,37 @@ window.watchProjectStateChanges = function (onChange) {
                   window.location.pathname.replace(/^\/+/, "").split("/")[0] ||
                   "unknown";
   const changes = new EventSource(`/_changes/${project}`);
-  changes.addEventListener("change", () => onChange());
+  // At most one derived-state refetch per settle window, so a burst of change
+  // events — a save touches several files — costs one revalidation, and the
+  // rows the reader is looking at have already been patched from the pushes.
+  let settleTimer = null;
+  const refetchDerived = () => {
+    if (settleTimer !== null) return;
+    settleTimer = setTimeout(async () => {
+      settleTimer = null;
+      try {
+        await onChange?.();
+      } catch (cause) {
+        // The rows are already patched; a failed background refetch leaves
+        // them on screen, and the next change event tries again.
+      }
+    }, CHANGE_SETTLE_MS);
+  };
+  changes.addEventListener("change", (event) => {
+    let payload = null;
+    try {
+      payload = JSON.parse(event?.data ?? "null");
+    } catch (cause) {
+      payload = null;
+    }
+    if (payload?.rows && applyIndexRowChanges(payload.rows)) {
+      refetchDerived();
+      return;
+    }
+    // Nothing to patch — a digest-only event from a server that does not push
+    // rows: the event is the refetch's cue, as it always was.
+    onChange?.();
+  });
   return changes;
 };
 
