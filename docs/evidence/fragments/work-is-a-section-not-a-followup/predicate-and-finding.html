@@ -31,16 +31,16 @@
 
     <section id="predicate-and-finding-the-gate">
       <h2>The gate</h2>
-      <p><code>tests/test_a_followup_that_hides_work_is_found.py</code> writes five plans into a temporary docs directory in the store's own layout and reads them back through <code>parse_plan</code>. The predicate's answer and reason are asserted for the five cases; the roadmap's findings are asserted as exactly the three that hide work. Two further cases cover the recommended-skill fallback and a sprint target.</p>
+      <p><code>tests/test_a_followup_that_hides_work_is_found.py</code> writes five plans into a temporary docs directory in the store's own layout and reads them back through <code>parse_plan</code>. The predicate's answer and reason are asserted for the five cases; the roadmap's findings are asserted as exactly the three that hide work. Two further cases cover the recommended-skill fallback and a sprint target. A sixth drives the MCP roadmap tool, the function behind <code>roadmap(project, view='summary')</code>, over a mounted temporary docs directory and asserts the summary's finding counts carry the warn.</p>
       <table>
         <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
         <tbody>
-          <tr><td>Base at <code>73a6cdc48</code>, the 36 existing test files that import or call the roadmap</td><td>438 passed, 2 skipped, <code>EXIT=0</code>; base failing ids &mdash; none</td><td><code>r-20261001T194951171857-a-followup-that-hides-work-is-found/gate-base.log</code></td></tr>
-          <tr><td>Head at <code>0545d849</code> (working tree), the same 36 files plus the new file</td><td>4 failed, 444 passed, 2 skipped, <code>EXIT=1</code>; zero added failures in this node's own file, four added ids in files outside its write fence</td><td><code>r-20261001T194951171857-a-followup-that-hides-work-is-found/gate-head.log</code></td></tr>
-          <tr><td>Negative control at <code>0545d849</code>+dirty</td><td>3 failed, 7 passed, <code>EXIT=1</code>; the no-section case fails as declared</td><td><code>r-20261001T194951171857-a-followup-that-hides-work-is-found/negative-control.log</code></td></tr>
+          <tr><td>Base at <code>73a6cdc48</code>, the 36 existing test files that import or call the roadmap</td><td>438 passed, 2 skipped, <code>EXIT=0</code>; base failing ids &mdash; none. Its own log was later overwritten by two re-run attempts, see the manifest's baseline_suite</td><td><code>gate-base.log</code></td></tr>
+          <tr><td>Head at <code>4a4013a9</code>, the 36 files plus the new file</td><td>449 passed, 2 skipped, <code>EXIT=0</code>; no failing id</td><td><code>gate-head.log</code></td></tr>
+          <tr><td>Negative control at <code>4a4013a9</code>+dirty</td><td>4 failed, 7 passed, <code>EXIT=1</code>; the no-section and MCP cases fail as declared</td><td><code>negative-control.log</code></td></tr>
         </tbody>
       </table>
-      <p>The four added ids are <code>tests/test_roadmap.py::test_terminal_plan_wiring_does_not_pollute_immediate_roadmap</code>, <code>::test_archived_plan_is_excluded_from_live_roadmap</code>, <code>::test_closed_sprint_history_does_not_duplicate_live_membership</code> and <code>tests/test_sprint_summary_lists_pending.py::test_summary_without_sprint_is_unchanged</code>. Their fixtures write <code>{"id": "next", "status": "open"}</code> into every plan row <code>tests/test_roadmap.py</code> builds and then assert <code>wiring_findings == []</code>, and the sprint-summary fixture freezes <code>finding_counts</code> at three warnings. A followup with no invocation parses to <code>unparseable</code> and hides work, so these fixtures encode the pre-change result. Both files lie outside this node's write fence, so the ids are reported rather than repaired.</p>
+      <p>Four ids first appeared at the head arm and were repaired under a widened fence. <code>tests/test_roadmap.py</code>'s <code>_plan()</code> helper now gives its fixture plans a followup that points at another plan, so the three tests keep their subject and their assertions stand; <code>tests/test_sprint_summary_lists_pending.py</code> keeps its prompt-less followups and its frozen snapshot was regenerated from a run of that same fixture, where the finding counts rose from three warnings to six.</p>
       <p>Ruff: with the repository configuration, <code>reckon/roadmap.py</code> carries the same three findings at base and at head (<code>I001</code>, <code>RUF005</code>, <code>PERF401</code>, all pre-existing; line numbers move), and the two new files are clean and formatted. Log: <code>ruff.log</code>.</p>
     </section>
 
@@ -72,6 +72,7 @@
     <section id="predicate-and-finding-commits">
       <h2>Commits</h2>
       <p><code>0545d84952bc6a3680d3c922d001a75b6e9951fe</code> &mdash; feat(roadmap): report followups whose invocation hides work. Changes <code>reckon/followup_pointers.py</code> (new), <code>reckon/roadmap.py</code> and <code>tests/test_a_followup_that_hides_work_is_found.py</code>.</p>
+      <p><code>4a4013a9dde13c91eafca7ad0d2e85a14852d483</code> &mdash; test(roadmap): point the fixture followups, regenerate the sprint summary snapshot from a run, and drive the MCP roadmap tool's summary over a mounted temporary docs tree.</p>
     </section>
   </main>
 </body>
