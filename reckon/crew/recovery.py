@@ -5507,7 +5507,7 @@ def _absence_of_a_verdict_is_transient(
 # a second reader of an unchanged run answers from the memo instead of the
 # files. Nothing about the run's liveness is memoised: a process table is not a
 # file, and the row must still be built from a reading taken now.
-CLASSIFICATION_MEMO_SUFFIX = ".classification.json"
+CLASSIFICATION_MEMO_NAME = "classification.json"
 CLASSIFICATION_MEMO_VERSION = 1
 
 # The run directory's records the classification consults, named here so the
@@ -5534,15 +5534,24 @@ def _file_identity(path: str | Path) -> str:
 
 
 def _classification_memo_path(record: Mapping[str, Any]) -> Path | None:
-    """The memo file beside one run's pointer, or None for a record without one."""
+    """One run's classification memo, or None for a record without a run id.
+
+    The memo lives in the run's own directory rather than beside its pointer.
+    The pointer directory is enumerated as pointers — several readers list it
+    and take every ``*.json`` in it for a run, and one of them asserts the list
+    holds nothing else — so a cache written there would be read as a run that
+    does not exist. Nothing enumerates a run directory for pointers, and the
+    memo is the run's own business besides: what it caches is what the run's
+    manifest, stream and review said.
+    """
     run_id = str(record.get("run_id") or "")
     if not run_id:
         return None
-    return runs.live_dir() / f"{run_id}{CLASSIFICATION_MEMO_SUFFIX}"
+    return runs.run_dir(run_id) / CLASSIFICATION_MEMO_NAME
 
 
 def _read_classification_memo(record: Mapping[str, Any]) -> dict[str, Any]:
-    """The memo persisted beside a pointer, or an empty one.
+    """The memo persisted for one run, or an empty one.
 
     Read verbatim and defensively: a file another writer caught mid-rewrite, or
     one written by an older layout, is an empty memo rather than an error, so a
