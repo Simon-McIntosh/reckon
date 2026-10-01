@@ -7,9 +7,9 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="the-page-paints-from-an-index">
   <meta name="plan-title" content="Agent readers answer from the same index">
-  <meta name="plan-summary" content="A project summary and a sprint summary take their list-level facts from reckon.metadata_index and read the project's own state document, parsing no plan file and walking no docs tree.">
+  <meta name="plan-summary" content="A project summary and a sprint summary take their list-level facts from reckon.metadata_index, revalidating the rows by stat on every call and reading the project's own state document, parsing no plan file and walking no docs tree.">
   <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
-  <meta name="plan-commits" content="ac9beac9">
+  <meta name="plan-commits" content="ac9beac9, 3881bbd7c">
   <meta name="plan-recorded-at" content="2026-10-01">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-tags" content="mcp,metadata,index,readers">
@@ -43,6 +43,15 @@
   zero, and <code>discovery_view</code> states the followup clause only when its
   payload carries the count.</p>
 
+  <p>A reader in its own process runs no change watch, so an in-process build
+  would be the only one it ever sees: <code>index_rows</code> answered from the
+  cached build and compared stat identity only on a miss, and a title rewritten
+  on disk stayed invisible for the life of the process. The agent path now
+  revalidates on every call — <code>index_rows(..., revalidate=True)</code>
+  stats each covered file and re-parses only the ones whose identity moved, the
+  cost a restart already pays — while the served path keeps its cached read,
+  because the change watch invalidates the tree it watches.</p>
+
   <h3>Measured</h3>
   <ul>
     <li><strong>The declared measure.</strong>
@@ -56,6 +65,15 @@
     called: <code>walks, meta parses, full parses = 0, 0, 0</code>. The same
      counters also cover <code>_parse_plan_uncached</code>, so a reader that
     reached the followup scanner would trip them.</li>
+    <li><strong>The stale-read defect, reproduced before it was repaired, and
+     its fix:</strong> two further cases call a view twice in one process with a
+     file rewritten between the calls. Before the fix the second read returned
+     the original value (<code>assert 'note-000' == 'A rewritten title'</code>,
+     and a sprint read still reporting <code>completed == 0</code> after its
+     item shipped; log <code>logs/defect-reproduction.log</code>); after it the second call
+     returns the new title and the status of <code>1</code> completed item, and
+     re-parses exactly the file that moved, in both cases with zero docs-tree
+     walks.</li>
     <li><strong>The declared negative control is executed and logged:</strong>
      with the MCP read views in <code>reckon/mcp_views.py</code> routed through
      <code>discover_plans</code> again, the counters read
@@ -63,22 +81,22 @@
      both cases fail; the log's last line reads <code>EXIT=1</code>. Log:
      <code>logs/negative-control.log</code> in the run directory
      <code>r-20260930T233955857938-agent-readers-use-the-index</code>.</li>
-    <li><strong>The gate, at <code>ac9beac9</code> (working tree):</strong>
-     <code>112 passed</code> across
+    <li><strong>The gate at head (working tree over <code>2cc4f81a</code>):</strong>
+     <code>114 passed</code> across
      <code>tests/test_agent_readers_use_the_index.py</code>,
      <code>tests/test_mcp_views.py</code>, <code>tests/test_mcp_tools.py</code>,
      <code>tests/test_mcp_roadmap.py</code>,
      <code>tests/test_read_plan_section_view.py</code>,
      <code>tests/test_metadata_index_survives_restart.py</code> and
-     <code>tests/test_impl_is_computed.py</code>. The same gate at base revision
+     <code>tests/test_impl_is_computed.py</code> (the five new cases included). The same gate at base revision
      <code>4bdf93dde</code> reports <code>109 passed</code> (the six pre-existing
      files, the new test absent): the head arm adds no failure id. Logs:
      <code>logs/head-gate.log</code> and the base arm in the run directory.</li>
-    <li><strong>Ruff:</strong> the changed paths are format-stable and the test
-     file is clean; <code>reckon/mcp.py</code> and
-     <code>reckon/mcp_views.py</code> carry the same finding codes at base and
-     head (23 vs 21 lines with one, the delta being two <code>EXE002</code> hits
-     on the scratch copies), so the change adds no finding.</li>
+    <li><strong>Ruff:</strong> the four changed paths are format-stable and the
+     test file adds no finding; <code>reckon/mcp.py</code>,
+     <code>reckon/mcp_views.py</code> and <code>reckon/metadata_index.py</code>
+     carry identical finding codes at base and head, so the change adds no
+     finding.</li>
   </ul>
 
   <p><strong>Not done here, by scope.</strong> Discovery mode
