@@ -1,0 +1,29 @@
+<article class="landed-report" data-run-id="r-20261001T054841706917-one-automatic-repair-round-per-run" data-node="one-automatic-repair-round-per-run">
+      <h3>one-automatic-repair-round-per-run — the reflex opens at most one automatic repair round per run</h3>
+      <p>
+        A finding-bearing review composes one repair for its round, keyed on the
+        head it read, so a run reviewed again at a later head composed a second
+        round and fired its own repair: one field run was resumed on three
+        successive reviews scoring 82, 83 and 83 for exactly that reason.
+        <code>reckon/crew/recovery.py</code> now records on the reviewed run's
+        pointer every round the reflex has <em>opened</em> — a resume or a
+        dispatch that actually started — and once one round has opened, a later
+        round hands the run back to its coordinator instead. The hand-back
+        records <code>repair_dispatch</code> <code>status:
+        handed-to-coordinator</code>, naming the earlier round, its attempts and
+        the new review's score, and resumes or dispatches nothing. The record
+        advances once per distinct round, so the in-round retry of a resumed turn
+        that ended unanswered is unchanged.
+      </p>
+      <p>
+        <strong>Measure.</strong>
+        <code>tests/test_one_automatic_repair_round_per_run.py</code> (resume and
+        dispatch stubbed) covers the first round resuming, a second round on a
+        new head handing back and resuming nothing, and the in-round retry still
+        working in round one. Gate: 27 passed, EXIT=0, over that file plus
+        <code>tests/test_the_reflex_resumes_an_unpromoted_run.py</code> and
+        <code>tests/test_reflex_dispatches_one_repair.py</code>. Negative control
+        (cap removed) fails the second-round case because it resumes: 1 failed,
+        EXIT=1.
+      </p>
+    </article>
