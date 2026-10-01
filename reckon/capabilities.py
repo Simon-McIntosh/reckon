@@ -698,7 +698,7 @@ def derive_routing(
     measurements remain unknown rather than becoming zero-cost work.
     """
 
-    source_versions: dict[str, int] = {}
+    source_versions: dict[str, str] = {}
     records: list[dict[str, Any]] = []
     excluded: dict[str, int] = defaultdict(int)
     for project, raw_docs in sorted(mounted_docs.items()):
@@ -937,7 +937,7 @@ def derive_capabilities(
             "invalid": 0,
         }
     )
-    source_versions: dict[str, int] = {}
+    source_versions: dict[str, str] = {}
     for project, raw_docs in sorted(mounted_docs.items()):
         docs_dir = Path(raw_docs).expanduser().resolve()
         estimates = _plan_estimates(docs_dir)
