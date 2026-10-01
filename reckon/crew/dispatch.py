@@ -3494,10 +3494,13 @@ def plan_dispatch(
     if member and (
         local or backend_override is not None or default_backend_override is not None
     ):
+        # A caller that named a lane and no repository reaches this function
+        # with ``None``, while the launching path resolves the project's
+        # registered mount before it ever gets here. Resolving the same mount
+        # here keeps the validating and launching answers one decision, and a
+        # project with no registered mount still refuses with the flag named.
         if repo is None:
-            raise CrewError(
-                f"crew member {member!r} cannot be resolved without a repository"
-            )
+            repo = resolve_project_repository(project, None)
         member_authority = dict(
             authority or resolve_dispatch_authority(project, Path(repo).resolve())
         )

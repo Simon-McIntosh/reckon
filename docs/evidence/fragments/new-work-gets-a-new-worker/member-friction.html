@@ -1,0 +1,45 @@
+<article class="landed-report" data-run-id="r-20261001T032349337614-member-friction" data-node="member-friction">
+      <h3>member-friction — a named member resolves from the registered checkout; a live review worker no longer holds a session</h3>
+      <p>
+        <strong>Friction 1 reproduced and repaired.</strong> A lane-naming
+        dispatch that named a roster member without <code>--repo</code> was
+        refused on the validating path with <q>crew member 'fixture-member'
+        cannot be resolved without a repository</q>
+        (<code>reckon/crew/dispatch.py</code>, the member-resolution block),
+        while the launching path resolves the project's registered mount before
+        it reaches the same function. <code>plan_dispatch</code> now resolves
+        that mount when no repository was named, so the validating and launching
+        answers are one decision; a project with no registered mount still
+        refuses, and its message names <code>--repo</code>.
+      </p>
+      <p>
+        <strong>Friction 2 no longer reproduces.</strong> At base, a no-member
+        dispatch from a session whose earlier review run's worker process is
+        still alive is admitted: the earlier run carries
+        <code>disposable-&lt;run id&gt;</code>, and its pointer still blocks that
+        identity through the liveness predicate, while the later dispatch mints
+        its own identity and never consults the earlier run's member. The base
+        arm passed this case; it is kept as a regression guard rather than
+        repaired.
+      </p>
+      <p>
+        <strong>Measure.</strong>
+        <code>tests/test_member_friction.py</code> (three cases, synthesised
+        temporary checkout and temporary configuration home; the real pointer
+        directory and every real roster are asserted byte-identical afterwards)
+        plus <code>tests/test_crew_dispatch_arming.py</code> and the seven
+        existing member-named test files. Base arm at revision
+        <code>33c5e761d89f0b824441d24c5a980ba2725631f7</code>: 2 failed, 44 passed,
+        EXIT=1 — both failures the friction-1 cases. Head arm: 46 passed, EXIT=0.
+        Logs <code>base-arm.log</code> and <code>head-arm.log</code> under the
+        run directory.
+      </p>
+      <p>
+        <strong>Negative control.</strong> Removing the checkout-derived
+        repository from member resolution in <code>reckon/crew/dispatch.py</code>
+        reddens the registered-checkout case: 2 failed, 1 passed, EXIT=1, the
+        head arm failing neither. Log <code>negative-control.log</code> under
+        the run directory. Lint over the changed paths adds no finding the base
+        did not; the new test file is clean and formatted.
+      </p>
+    </article>
