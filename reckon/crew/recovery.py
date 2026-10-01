@@ -925,6 +925,23 @@ REPAIR_DISPATCH_FIELD = "repair_dispatch"
 # from the pointer's durable repair record, not from the entry-time mapping.
 REPAIR_RESUME_LIMIT = 2
 
+# The pointer field recording every repair round the reflex has *opened* for a
+# run. A round opens only when a repair actually starts — a resume or a
+# dispatch — so a refusal, an awaiting-lane hold, a decline-only round and an
+# exhausted retry each leave it unchanged and the round in hand free to be
+# attempted again. The record is run-wide and durable: a new head reviewed after
+# the first repair is a second round, and once one round has opened the run is
+# handed back to its coordinator rather than repaired again. Held beside the
+# per-round field because the two answer different questions: the dispatch field
+# says what happened to the head in hand, this says whether any round ever
+# opened and how far it got.
+REPAIR_ROUNDS_FIELD = "repair_rounds"
+
+# The statuses under which a repair round opens. Only these advance the opened-
+# round record; every other outcome is a refusal or a hold on the round already
+# in hand.
+REPAIR_ROUND_OPENING_STATUSES = frozenset({"resumed", "dispatched"})
+
 # The dispatch role whose findings a repair acts on, and the node-id prefix a
 # composed repair carries. A review of a review, an investigate run and a test
 # run each carry findings a repair is not meant to act on, and a repair of a
@@ -1876,6 +1893,13 @@ def _record_repair_dispatch(
     returned, so a caller can record the value the run now carries rather than
     deriving its own. It counts every outcome written for the round, so a caller
     that caps how many times a round may be resumed reads it as that count.
+
+    A write under an opening status also advances the run-wide opened-round
+    record, so a reader can tell a round that opened from one that was only ever
+    refused. The count advances once per distinct round rather than once per
+    attempt: the retry of a resumed turn writes the same round's id, so it moves
+    the round's attempt figure and leaves the count where it was. A refusal does
+    not touch the record at all, so the round in hand stays free to open.
     """
     if not run_id:
         return 0
@@ -1886,6 +1910,14 @@ def _record_repair_dispatch(
             int((pointer.get(REPAIR_DISPATCH_FIELD) or {}).get("attempt") or 0) + 1
         )
         written["attempt"] = attempt
+        if status in REPAIR_ROUND_OPENING_STATUSES and round_id:
+            existing = pointer.get(REPAIR_ROUNDS_FIELD)
+            opened = dict(existing) if isinstance(existing, Mapping) else {}
+            if str(opened.get("round_id") or "") != round_id:
+                opened["count"] = int(opened.get("count") or 0) + 1
+                opened["round_id"] = round_id
+            opened["attempts"] = attempt
+            pointer[REPAIR_ROUNDS_FIELD] = opened
         pointer[REPAIR_DISPATCH_FIELD] = {
             "status": status,
             "reason": reason,
@@ -1941,6 +1973,20 @@ def _promoted_run_ids(project: str) -> set[str]:
         return ledger_module.run_ids(project)
     except Exception:  # noqa: BLE001 - an unreadable ledger is not a promotion
         return set()
+
+
+def _opened_repair_rounds(record: Mapping[str, Any]) -> Mapping[str, Any]:
+    """The run-wide record of repair rounds the reflex has opened, or empty.
+
+    Read from the pointer afresh rather than from the entry-time mapping, because
+    the sweep holds a pointer read before the round ran and a round opened on an
+    earlier cadence must still be visible here. A pointer that has gone, or one
+    that carries no record yet, answers empty, which leaves the round free to
+    open — the same direction the other repair guards degrade in.
+    """
+    durable = read_pointer(str(record.get("run_id") or "")) or record
+    opened = durable.get(REPAIR_ROUNDS_FIELD)
+    return opened if isinstance(opened, Mapping) else {}
 
 
 def _repair_in_flight(record: Mapping[str, Any], *, node_id: str, project: str) -> str:
@@ -2120,6 +2166,41 @@ def dispatch_repair_for_run(
         }
     fields = _review_dispatch_fields(record)
     round_id = repair_module.repair_round_id(review, reviewed_run_id=run_id)
+    # The reflex opens at most one automatic repair round per run. A round that
+    # has already opened — a resume or a dispatch that actually started — settles
+    # the run's automatic repair for good: a *later* head composes a different
+    # round, and opening that one too is what a field run measured as the same
+    # node resumed on reviews scoring 82, 83 and 83, each a new head drawing a
+    # new review and a new round. The run is handed back to its coordinator
+    # instead, recorded with the earlier round, its attempts and the new review's
+    # score so a reader sees why no repair fired. A round already recorded as
+    # opened is the round in hand, so its own retry (below) is untouched, and a
+    # round that was only ever refused never entered the record at all, leaving
+    # it free to open.
+    opened_rounds = _opened_repair_rounds(record)
+    opened_count = int(opened_rounds.get("count") or 0)
+    opened_round_id = str(opened_rounds.get("round_id") or "")
+    if opened_count and opened_round_id and opened_round_id != round_id:
+        earlier_attempts = int(opened_rounds.get("attempts") or 0)
+        score = review.get("total")
+        reason = (
+            f"a repair round was already opened for this run (round "
+            f"{opened_round_id}, {earlier_attempts} attempt(s)); this review "
+            f"scores {score}, so the run is handed back to its coordinator"
+        )
+        _record_repair_dispatch(
+            run_id,
+            status="handed-to-coordinator",
+            reason=reason,
+            round_id=round_id,
+        )
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "handed_to_coordinator": True,
+            "round_id": round_id,
+            "reason": reason,
+        }
     repo = str(record.get("repo") or "")
     if not repo:
         reason = "the run records no repository to dispatch a repair against"
