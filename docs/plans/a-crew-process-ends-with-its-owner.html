@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="171">
+<meta name="plan-version" content="172">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -1341,7 +1341,10 @@
     <div class="r-comment-body">Dispatch reading (s21-fin, 2026-10-01). The whole of §3 does not fit the 60-minute node fence, so it runs as three nodes. (1) producer-holds-a-lease: the lease, the follower's renewal through lease_renewed_at, exit on lapse, and the registration's read-modify-write under its lock with temp-file rename, in tests/test_producer_holds_a_lease.py. (2) A producer recreates a registration unlinked under it, and crew unwatch then finds and stops it, in tests/test_producer_registration_survives_unlink.py. (3) An idle producer backs off to the 30 s cap and records poll_interval_seconds, in tests/test_idle_producer_backs_off.py. Nodes (2) and (3) dispatch after (1) lands, because they extend its registration writer. Together the three test files cover §3's four cases and its negative control. reckon/crew/recovery.py and reckon/crew/dispatch.py are shared-write paths, so (1) runs beside s22-coord's pointer-classification-is-memoised, which edits other regions of recovery.py.</div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261001T191601352899-producer-holds-a-lease" data-who="reckon-build" data-when="2026-10-01T20:15:19.306Z">
-    <div class="r-comment-body"><p>producer lease landed: registration written by rename under its own lock, the producer ends within a second of a lapsed lease and a follower&#x27;s renewal holds it up; test_producer_holds_a_lease.py 3 passed, arms base 2 failed/91 passed vs head 2 failed/94 passed with zero added; fragment docs/evidence/fragments/a-crew-process-ends-with-its-owner/producer-holds-a-lease.html</p></div>
+    <div class="r-comment-body"><p>producer lease landed: registration written by rename under its own lock, the producer ends within a second of a lapsed lease and a follower's renewal holds it up; test_producer_holds_a_lease.py 3 passed, arms base 2 failed/91 passed vs head 2 failed/94 passed with zero added; fragment docs/evidence/fragments/a-crew-process-ends-with-its-owner/producer-holds-a-lease.html</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261001T201628120600-review-of-producer-holds-a-lease" data-who="reckon-build" data-when="2026-10-01T20:42:28.978Z">
+    <div class="r-comment-body"><p>review of r-20261001T191601352899-producer-holds-a-lease stored at the review store: total 81 over 5 dimensions (goal_fidelity 18, evidence 15, scope_discipline 17, durability 14, fit 17), added_failure_count 0 at head d39b7e8be over base 2c49c0457, three follow-on findings and no blocker</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260924T123648020169-consumers-reach-into-reckon-internals" data-who="reckon-ship" data-when="2026-09-24T13:14:17.145Z">
     <div class="r-comment-body"><p>inventory of consumers reaching into reckon internals across five repositories: 1,537 config-home path lines, 151 crew CLI lines, 91 lane.json lines; recorded as consumers-read-reckon-through-verbs</p></div>
