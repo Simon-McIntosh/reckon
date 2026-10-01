@@ -2379,8 +2379,16 @@ def _harness_credential_binds(
     return [] if auth is None else [(auth, harness / CODEX_AUTH_FILENAME)]
 
 
-def protected_paths(home: str | Path | None = None) -> list[Path]:
-    """Return the existing paths the fence makes read-only, home-relative.
+# The flight keys that tune the fence's protected set. ``protected_paths``
+# names paths a layer adds; ``unprotected_paths`` names defaults a layer leaves
+# writable. Declared here beside the built-in default so a reader sees the
+# composer and its two inputs together.
+PROTECTED_PATHS_KEY = "protected_paths"
+UNPROTECTED_PATHS_KEY = "unprotected_paths"
+
+
+def _default_protected_paths(home: str | Path | None = None) -> list[Path]:
+    """Return the fence's shipped default protected set, home-relative.
 
     The set is derived from the home directory rather than stored absolute, so
     the same declaration fences a test's temp home and the operator's real one.
@@ -2390,6 +2398,10 @@ def protected_paths(home: str | Path | None = None) -> list[Path]:
     (``Code/.reckon-worktrees``) is named in its own right, so every worktree in
     it is sealed — a fenced worker may write only its *own* worktree, which
     :func:`fence_argv` re-binds writable after the pool's read-only overlay.
+
+    This is the default a host or project layer augments or trims through the
+    flight keys; it is never replaced by a layer, so a layer that omits one of
+    these from ``protected_paths`` leaves it protected.
     """
     root = Path(home) if home is not None else Path.home()
     named = [
@@ -2421,7 +2433,94 @@ def protected_paths(home: str | Path | None = None) -> list[Path]:
     return list(dict.fromkeys(path for path in named if path.exists()))
 
 
-def protected_checkouts(home: str | Path | None = None) -> list[Path]:
+def _resolve_declared_path(
+    entry: object, home: str | Path | None = None
+) -> Path | None:
+    """Resolve one flight-key path entry against the operator's home.
+
+    An entry may be absolute, ``~``-relative or relative to the home the fence
+    itself resolves against, so a layer writes a path the same way the shipped
+    default is written and the fence reads both through one rule.
+    """
+    text = str(entry).strip()
+    if not text:
+        return None
+    path = Path(text).expanduser()
+    if not path.is_absolute():
+        root = Path(home) if home is not None else Path.home()
+        path = root / path
+    return path
+
+
+def _declared_paths(
+    config: Mapping[str, Any] | None, key: str, home: str | Path | None = None
+) -> list[Path]:
+    """Return one flight key's declared paths, resolved against ``home``."""
+    if not isinstance(config, Mapping):
+        return []
+    declared = config.get(key) or ()
+    if isinstance(declared, (str, bytes)):
+        declared = [declared]
+    resolved: list[Path] = []
+    for entry in declared:
+        path = _resolve_declared_path(entry, home)
+        if path is not None:
+            resolved.append(path)
+    return resolved
+
+
+def protected_paths(
+    home: str | Path | None = None, config: Mapping[str, Any] | None = None
+) -> list[Path]:
+    """Return the existing paths the fence makes read-only, home-relative.
+
+    The set composes three things: the shipped default
+    (:func:`_default_protected_paths`), the extra paths a host or project layer
+    names under ``protected_paths``, and the defaults a layer names under
+    ``unprotected_paths``. The default is always present, so a layer augments
+    it but can never replace it, and the only way to drop a default is to name
+    it under ``unprotected_paths`` — a reduction is then a deliberate, named
+    act rather than a side effect of an edited ``protected_paths`` list.
+    """
+    defaults = _default_protected_paths(home)
+    additions = _declared_paths(config, PROTECTED_PATHS_KEY, home)
+    composed = list(dict.fromkeys([*defaults, *additions]))
+    removals = _declared_paths(config, UNPROTECTED_PATHS_KEY, home)
+    if removals:
+        removal_targets = {str(resolved_destination(path)) for path in removals}
+        composed = [
+            path
+            for path in composed
+            if str(resolved_destination(path)) not in removal_targets
+        ]
+    return [path for path in composed if path.exists()]
+
+
+def fence_unprotected_paths(
+    home: str | Path | None = None, config: Mapping[str, Any] | None = None
+) -> list[Path]:
+    """Return the defaults the fence leaves out of its protected set.
+
+    Only a default counts: ``unprotected_paths`` names a default to remove, and
+    an entry naming something the fence never protected changes nothing. The
+    result is the list a run whose fence leaves out a default carries on its
+    record, and it is empty — so nothing is recorded — for a fence that removes
+    nothing.
+    """
+    removals = _declared_paths(config, UNPROTECTED_PATHS_KEY, home)
+    if not removals:
+        return []
+    removal_targets = {str(resolved_destination(path)) for path in removals}
+    return [
+        path
+        for path in _default_protected_paths(home)
+        if str(resolved_destination(path)) in removal_targets
+    ]
+
+
+def protected_checkouts(
+    home: str | Path | None = None, config: Mapping[str, Any] | None = None
+) -> list[Path]:
     """Return the protected paths that are themselves git checkouts.
 
     A main checkout under ``Code`` carries a ``.git`` entry; the other protected
@@ -2429,7 +2528,7 @@ def protected_checkouts(home: str | Path | None = None) -> list[Path]:
     fence must never grant writable, because a re-bind of one re-opens the very
     git metadata the fence exists to keep closed.
     """
-    return [path for path in protected_paths(home) if (path / ".git").exists()]
+    return [path for path in protected_paths(home, config) if (path / ".git").exists()]
 
 
 def _fenced_worktree_refusal(worktree: Path, checkouts: Sequence[Path]) -> Path | None:
@@ -2571,6 +2670,7 @@ def fence_argv(
     home: str | Path | None = None,
     read_only_binds: Iterable[tuple[str | Path, str | Path]] = (),
     read_write_binds: Iterable[tuple[str | Path, str | Path]] = (),
+    config: Mapping[str, Any] | None = None,
 ) -> list[str]:
     """Wrap a launch argv so protected paths are read-only to the worker.
 
@@ -2613,7 +2713,7 @@ def fence_argv(
     invent nothing. Each handed root is a directory by construction, so
     declaring a file can never create a directory of that name.
     """
-    protected = protected_paths(home)
+    protected = protected_paths(home, config)
     roots: list[Path] = [Path(path) for path in writable_directories]
     if worktree is not None:
         roots.append(Path(worktree))
@@ -2624,7 +2724,9 @@ def fence_argv(
     binds = protected_read_only_binds(protected)
     sealed = [destination for _source, destination in binds]
     if worktree is not None:
-        checkout = _fenced_worktree_refusal(Path(worktree), protected_checkouts(home))
+        checkout = _fenced_worktree_refusal(
+            Path(worktree), protected_checkouts(home, config)
+        )
         if checkout is not None:
             raise BackendError(
                 f"refusing to fence worktree {resolved_destination(worktree)}: it "
@@ -2668,6 +2770,7 @@ def launch_plan(
     images: Iterable[str | Path] = (),
     fence: bool = True,
     fence_home: str | Path | None = None,
+    fence_config: Mapping[str, Any] | None = None,
     fence_waiver: str | None = None,
 ) -> LaunchPlan:
     """Translate one backend plus one node's prompt into a runnable invocation.
@@ -2779,6 +2882,7 @@ def launch_plan(
             read_write_binds=_harness_credential_binds(
                 dialect.name, harness, fence_home
             ),
+            config=fence_config,
         )
     return LaunchPlan(
         backend=backend_name,
