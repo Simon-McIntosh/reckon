@@ -27,7 +27,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew
-from reckon.crew import recovery, repair, runs
+from reckon.crew import recovery, repair, resumption, runs
 from reckon.crew import review as review_module
 
 RUN_ID = "r-20260101T000000000000-reviewed-run"
@@ -262,6 +262,18 @@ def _dispatch_repair(record: dict, monkeypatch) -> tuple[dict, list[dict]]:
     return report, calls
 
 
+def _stub_resume(monkeypatch) -> list[dict]:
+    """Replace the resume entry point an unpromoted run's repair now uses."""
+    calls: list[dict] = []
+
+    def fake_resume(run_id, record, *, config=None, launcher=None, advice=""):
+        calls.append({"run_id": run_id, "advice": advice})
+        return {"pid": os.getpid(), "turn": 1, "log_path": "resume-1.jsonl"}
+
+    monkeypatch.setattr(resumption, "_resume", fake_resume)
+    return calls
+
+
 @pytest.mark.arms_watch_producer
 def test_an_all_follow_on_round_names_its_cause_and_the_follow_on_count(
     dispatch_project: tuple[Path, Path, str], monkeypatch
@@ -291,20 +303,25 @@ def test_an_all_follow_on_round_names_its_cause_and_the_follow_on_count(
 
 
 @pytest.mark.arms_watch_producer
-def test_a_blocking_finding_still_reaches_the_dispatch(
+def test_a_blocking_finding_still_reaches_the_resume(
     dispatch_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """Control: the same fixture dispatches when a finding blocks.
+    """Control: the same fixture is acted on when a finding blocks.
 
     Without this arm the all-follow-on reason could pass on a fixture that never
     composed a repair at all, which is the false pass the reason exists to avoid.
+    An unpromoted run's repair is a resume of the run itself rather than a new
+    node, so the blocking finding reaches the resume advice and nothing is
+    dispatched.
     """
     config_home, repo, head_sha = dispatch_project
     record = _reviewed_pointer(config_home, repo)
     _store_review(head_sha, [BLOCKING])
+    resumed = _stub_resume(monkeypatch)
 
     report, calls = _dispatch_repair(record, monkeypatch)
 
-    assert report["dispatched"] is True
-    assert len(calls) == 1
-    assert str(calls[0]["node"].id).startswith(repair.REPAIR_NODE_PREFIX)
+    assert report.get("resumed") is True
+    assert len(resumed) == 1
+    assert _expected_id(BLOCKING) in resumed[0]["advice"]
+    assert calls == []
