@@ -24,10 +24,10 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="87">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="89">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
-<meta name="plan-impl" content="0.98">
+<meta name="plan-impl" content="0.99">
 </head>
 <body>
   <main class="plan-doc">
@@ -1578,6 +1578,11 @@
     <div class="r-fu-body"><p>Observed in two S22 runs on 2026-09-29. With <code>RECKON_RUN_ID</code> set, <code>reckon/worker_shims/git</code> refused pytest fixtures' <code>git init</code> in throwaway repositories under <code>/tmp</code> with exit 97. Both workers then ran their suites under <code>env -u RECKON_RUN_ID</code>, which the shim treats as a coordinator session and passes through. The instances: r-20260929T175443103315 (session-resume-cases-fail-at-main, disclosed in its report's harness notes) and r-20260929T183405930875 (session-fixture-declares-no-commit, whose recorded gate command begins <code>env -u RECKON_RUN_ID</code>). Each was disclosed and each was reasonable. But a guard that every test-running worker must switch off stops guarding, and the bypass is now in recorded gate commands that verify-gate replays. Let the shim admit a mutating verb in a repository the run itself created under its scratch or <code>TMPDIR</code>, while still refusing the operator's checkouts. Test: a fixture <code>git init</code> under <code>/tmp</code> succeeds with <code>RECKON_RUN_ID</code> set, and a commit into a foreign checkout is still refused.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home</pre>
     </article>
+<article class="r-fu" data-id="f-awcwyh-fenced-field-follows-the-attempt" data-status="open" data-written-by="s21-1c" data-written-at="2026-10-01T09:56:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A run&#x27;s fenced field describes the attempt that launched it, as its removed-defaults list now does</h4>
+    <div class="r-fu-body"><p>The review of unprotected-paths-reach-every-launch (total 96) found that <code>_carry_fence_unprotected</code> recomposes <code>fence_unprotected_paths</code> from each attempt's own fence. The sibling field <code>fenced</code> is written only by the primary dispatch (<code>reckon/crew/dispatch.py</code>, near line 5540). A CLI run lane-changed to an in-harness backend therefore keeps <code>fenced: true</code> on its pointer and its committed ledger row, beside an absent removed list. The two fields then describe different attempts. The staleness predates this change, because neither <code>resume_plan</code> nor <code>change_lane</code> ever set <code>fenced</code>. Done when <code>resume_plan</code> and <code>change_lane</code> set <code>fenced</code> from the attempt's own composed plan. A test lane-changes a synthesised fenced CLI run to an in-harness stub backend and asserts <code>fenced</code> is false on the pointer. A negative control, leaving <code>fenced</code> untouched on lane change, turns that assertion red.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §3</pre>
+    </article>
 </section>
 
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -1799,6 +1804,12 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20261001T082740172289" data-who="" data-when="">
     <div class="r-comment-body">The declared-set half of §3 landed at merge 95249adbc (run r-20261001T072944602396, reviewed at 85, verify-gate passed at main ffda985af). The protected set is the flight key protected_paths. Its shipped default is the built-in list, including the worktree root, declared in reckon/schema/flight.yaml with the generated schema files regenerated. A layer may add paths. It removes a default only by naming it under unprotected_paths, and a layer that merely drops a default keeps it protected. reckon flight reports the resolved set and its layer. tests/test_the_protected_set_is_declared.py passes its five cases, and its negative control fails the dropped-default case. The review's one added id, tests/conftest.py::test_temp_config_home, is a collection error from the head arm alone naming conftest as a target, not the change. Still open, and dispatched as unprotected-paths-reach-every-launch: the resume and lane-change launch paths do not yet pass the resolved fence config, so they would re-seal a default a layer left writable; and the ledger row does not yet carry fence_unprotected_paths, which only the live pointer records. With fence-fails-closed (314dfa18b) already landed, §3 closes when that node lands. §4's AGENTS.md paragraph follows.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-awcwyh-s3-unprotected-reach-every-launch" data-who="s21-1c" data-when="2026-10-01T09:56:00Z">
+    <div class="r-comment-body">The rest of §3 landed at merge 7ec337b28 (run r-20261001T082649945254-unprotected-paths-reach-every-launch, reviewed head 2b435cb65, review total 96). resume_plan and change_lane now pass the resolved fence_config to launch_plan, as the primary dispatch does, so a resumed or lane-changed run no longer re-seals a default a layer named under unprotected_paths. _carry_fence_unprotected records fence_unprotected_paths on the pointer exactly when the composed fence leaves a default out. Promotion copies the list onto the ledger row beside fence_waiver. tests/test_unprotected_paths_reach_every_launch.py: 3 passed. Negative control: dropping fence_config from the resume launch turns case 1 red. Coordinator whole-suite measure: 73 failed and 1 error at both main ea69eb30f and 7ec337b28, with identical ids, so nothing was added. With the declared set (95249adbc) and the fail-closed refusal (314dfa18b), §3 is complete. One follow-on remains open as f-awcwyh-fenced-field-follows-the-attempt.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261001T082649945254-unprotected-paths-reach-every-launch" data-who="reckon-build" data-when="2026-10-01T09:15:06.886Z">
+    <div class="r-comment-body"><p>unprotected-paths-reach-every-launch: resume_plan and change_lane now pass fence_config=config to _backends.launch_plan like the primary dispatch, a shared helper records fence_unprotected_paths on the run pointer exactly when the composed fence leaves a default out (popping it otherwise), and promotion copies the list onto the committed ledger row beside fence_waiver; node gate tests/test_unprotected_paths_reach_every_launch.py 3 passed, and the base/head importer arms each report 14 failed / 1309 passed / 1 error with no added failing id.</p></div>
 </div>
 </section>
 </main>
