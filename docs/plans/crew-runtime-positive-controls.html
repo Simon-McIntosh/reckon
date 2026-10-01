@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="164">
+<meta name="plan-version" content="165">
 </head>
 <body>
   <main class="plan-doc">
@@ -1519,7 +1519,10 @@
     <div class="r-comment-body"><p>f-crpc-control-gate-repairs items (2), (3) and (4): the write-time manifest audit now judges each suite arm's cited gate log against the revision that arm records (reckon/crew/reports.py `_gate_log_revision_findings`, called from `audit_manifest`), reporting a log whose first line names no revision, or names another arm's, while the writer still holds a turn; and the presented branch of the gate-evidence guard in reckon/crew/promotion.py refuses an unresolvable presented identifier by value instead of filtering it out of its comparison. Base arm 33c5e761 with the new cases copied in: 3 failed, 340 passed, EXIT=1, the three reproduced items red. Declared mutation (first-line check removed from the audit): 2 failed, 3 passed, EXIT=1, the first case red. Head arm recorded in after_suite when its run completes.</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20261001T042800900953-review-of-control-gate-repairs" data-who="reckon-build" data-when="2026-10-01T05:10:31.053Z">
-    <div class="r-comment-body"><p>review of r-20261001T032531315571-control-gate-repairs stored parsed at both assigned paths, total 88 over goal_fidelity 15 / evidence 18 / scope_discipline 19 / durability 18 / fit 18, added_failure_count 0 with empty added_failure_ids derived from the reviewed run&#x27;s own baseline_suite and after_suite logs; two findings, both follow-on: the promotion presented-side refusal covers an unresolvable presented identifier while the coordinator&#x27;s item (4) records the declared-beside-presented silence, which stays silent at head, and the reviewed manifest&#x27;s commits line names one of its three commits.</p></div>
+    <div class="r-comment-body"><p>review of r-20261001T032531315571-control-gate-repairs stored parsed at both assigned paths, total 88 over goal_fidelity 15 / evidence 18 / scope_discipline 19 / durability 18 / fit 18, added_failure_count 0 with empty added_failure_ids derived from the reviewed run's own baseline_suite and after_suite logs; two findings, both follow-on: the promotion presented-side refusal covers an unresolvable presented identifier while the coordinator's item (4) records the declared-beside-presented silence, which stays silent at head, and the reviewed manifest's commits line names one of its three commits.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20261001T064209008996-presented-refusal-keeps-its-wording" data-who="reckon-build" data-when="2026-10-01T06:59:06.186Z">
+    <div class="r-comment-body"><p>The presented-commit refusal in reckon/crew/promotion.py now words an unresolvable identifier as &#x27;does not resolve to a commit object in the run repository&#x27;, the phrase the commit resolver has always used, so both refusals speak one vocabulary; behaviour unchanged (fires by value where the presentation is read, names every unresolved entry and the tree, silent when the worktree cannot be read). Base 6c1e00cb: 1 failed 51 passed EXIT=1, tests/test_crew.py::test_promotion_refuses_a_commit_that_names_no_object red on the wording. Head 1bdd1bfb: 52 passed EXIT=0, no failure id. Negative control (old wording restored): the same case red, EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
