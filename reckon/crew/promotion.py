@@ -2489,7 +2489,10 @@ def _repository_tree_boundary_violations(
     A declared path on the project's shared-write list is not one of them: the
     list is resolved through the same helper the accepted-path check reads, and
     dispatch admits a concurrent claim there, so a peer's in-flight edit says
-    nothing about this run's boundary.
+    nothing about this run's boundary. A tree another live run holds is not one
+    either: its uncommitted paths are that run's own work, charged at its own
+    completion, so a shared directory grant does not make each holder refuse the
+    other's file.
     """
     snapshot = _run_directory_tree_snapshot(run_id)
     if snapshot is None:
@@ -2526,6 +2529,12 @@ def _repository_tree_boundary_violations(
         declared, worktree=own_tree, repository=repository
     )
     shared_files = _shared_write_paths(str(record.get("project") or ""), repository)
+    # The worktrees another live run currently holds. A dirty path is attributed
+    # to the run whose worktree holds it, so in-flight work in a peer's own
+    # worktree is charged to that peer's completion rather than to every run
+    # whose grant covers the path: two runs granted one directory would
+    # otherwise each refuse the other's uncommitted file.
+    held_by_a_peer = {tree for tree in _live_worktree_claims() if tree != own_tree}
     terminal_shadows = _shadow_worktree_records(
         repository, str(record.get("project") or "") or None
     )
@@ -2538,6 +2547,10 @@ def _repository_tree_boundary_violations(
             continue
         path = Path(raw_path).resolve()
         if path == own_tree:
+            continue
+        if path in held_by_a_peer:
+            # The run holding this worktree owns its uncommitted paths; this
+            # run is not charged for a path it does not hold.
             continue
         shadow_record = terminal_shadows.get(path)
         if (
