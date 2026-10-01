@@ -63,17 +63,20 @@
     <h2 id="moved">&sect;2 &mdash; What moved</h2>
     <p>
       <code>reckon/crew/lane_document.py</code> gained
-      <code>read_lane_reading_fields(document, *, now=None)</code>, which resolves the
-      stamp the reading is dated by and the figures published beside it:
-      <code>observed_at</code> as published, <code>age</code> at <code>now</code>,
-      <code>mean_context</code>, <code>binding_observed</code> (blank or null withholds
-      the field alone) and <code>suggested_shelf_life_seconds</code>. The stamp keeps the
-      carry's existing strictness: an absent or non-string stamp, one the ISO-8601
-      parser refuses &mdash; quoting the parser's own text &mdash; and one in the future
-      each resolve to a non-empty <code>detail</code> that withholds the reading. The
-      parser is not the module's <code>parse_utc</code> path used for other fields on
-      purpose: that one swallows a malformed value to <code>None</code>, while a reading
-      whose own stamp is unreadable must say why.
+      <code>read_lane_reading_fields(document)</code>, which resolves the stamp
+      the reading carries and the figures published beside it: <code>observed_at</code>
+      as published, <code>mean_context</code>, <code>binding_observed</code> (blank or
+      null withholds the field alone) and <code>suggested_shelf_life_seconds</code>; a
+      document carrying no string there resolves to <code>None</code> with a non-empty
+      <code>detail</code>. The reader resolves the document's <em>names</em> and returns
+      the stamp as published: what a date may look like is the carry's contract, and its
+      strict parse stays in <code>_lane_reading_carry</code>. That retention is pinned by
+      <code>tests/test_dispatch_timestamps_reuse_the_parser.py</code>, which records that
+      the lane reading is the one place in <code>dispatch.py</code> that keeps
+      <code>datetime.fromisoformat</code> rather than the shared parser, because the
+      shared parser swallows the refusal the reading must quote. A first pass at this
+      change moved that parse into the module and reddened the pin; the parse returned to
+      the carry.
     </p>
     <p>
       <code>_lane_reading_carry</code> &mdash; the region that composes the carried reading
@@ -142,10 +145,11 @@
     <p>
       A new case,
       <code>test_the_dispatch_carries_what_the_document_readers_resolved</code>, patches
-      both readers to sentinel answers (counts, stamp, age, mean context, binding and
-      shelf life) and requires the payload to carry them &mdash; the age included, which
-      only the reader's answer can supply. A dispatch that kept its own reads of the
-      document would carry the document's figures instead.
+      both readers to sentinel answers &mdash; counts, and a stamp with the three figures
+      &mdash; and requires the payload to carry them. The sentinel stamp is 23 seconds
+      old where the document's own is 5, so the carried age proves the reading was dated
+      from the payload's stamp rather than the document's; a dispatch holding its own
+      reads of the document would carry the document's figures instead.
     </p>
 
     <h2 id="evidence">&sect;4 &mdash; What the arms measured</h2>
@@ -170,9 +174,15 @@
         </tr>
         <tr>
           <td>head gate</td>
-          <td><code>68ca6c59</code>, worktree</td>
+          <td><code>23b732f33</code>, worktree</td>
           <td><code>30 passed</code>, EXIT=0 &mdash; zero added failures</td>
           <td><code>gate-head.log</code></td>
+        </tr>
+        <tr>
+          <td>supporting arm: the timestamp pin</td>
+          <td><code>23b732f33</code>, worktree</td>
+          <td><code>29 passed</code>, EXIT=0</td>
+          <td><code>gate-support-head.log</code></td>
         </tr>
         <tr>
           <td>negative control, base arm</td>
@@ -194,6 +204,15 @@
       reader's counts rather than its agreement with itself. Each arm's log ends in a
       bare <code>EXIT=</code> line, and the head arm's failing id is the parity case,
       which the head gate passes.
+    </p>
+    <p>
+      One supporting arm is on the record because the first pass at this change moved the
+      stamp parse into the module and the wider lane-named set caught it: 28 lane-named
+      files plus the timestamp cases gave <code>5 failed, 245 passed</code>
+      (<code>gate-support.log</code>, at the intermediate revision), of which four ids are
+      the ones the predecessor fragment records as failing identically against a base
+      tree, and the fifth was the timestamp pin the rework cleared. The head gate and the
+      supporting arm at this node's head add no failure id of their own.
     </p>
     <p>
       <code>ruff check</code> over the three changed paths returns the same finding set at
@@ -227,11 +246,12 @@
 
     <h2 id="outcome">&sect;6 &mdash; Outcome</h2>
     <p>
-      <code>68ca6c590857f7d614475c784fdbeb385e545885</code> carries the change. The parity
-      the file's name states is now between two independent statements &mdash; the
+      <code>23b732f339c8085d9e132063b1c23023ab45991b</code> is this change's head;
+      <code>68ca6c59</code> landed the parity case and the routing, and the rework
+      returned the stamp parse back to the carry where the timestamp cases pin it. The
+      parity the file's name states is now between two independent statements &mdash; the
       fixture's and the payload's &mdash; with the reader held to the fixture as well,
-      and the lane reading's stamp and figures are read by the module that owns the
-      document's keys.
+      and the lane reading's names are read by the module that owns the document.
     </p>
   </main>
 </body>
