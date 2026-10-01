@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>A stop inside the spawn window spawns nothing | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A stop inside the spawn window spawns nothing</h1>
+      <p class="lead">A per-run supervisor reads its stop flag once before it forks the worker.
+      Between that read and the fork a stop delivered to the run's process group could run its
+      handler, set the flag, and still be followed by the fork &mdash; so the stop was recorded
+      and a worker spawned anyway. The supervisor now blocks SIGTERM and SIGHUP across the read
+      and the spawn, reads the stop again under the mask immediately before the fork, and clears
+      the mask afterwards. A blocked stop is not delivered, so the second read observes it as a
+      pending signal rather than a set flag; a stop delivered inside that window means no worker
+      is ever spawned.</p>
+    </header>
+
+    <section id="spawn-window-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/dispatch.py</code>, <code>_run_supervisor</code>: after the
+        pre-spawn tree snapshot the stop signals are blocked with
+        <code>signal.pthread_sigmask</code>, the stop is read under the mask immediately before
+        <code>_supervisor_spawn_worker</code>, and the previous mask is restored in a
+        <code>finally</code>. A set flag or a pending stop writes the one launch-failure
+        <code>exit.json</code> (<code>worker_pid: null</code>, <code>ended_during: launch</code>)
+        and abandons the launch. The stop read and the abandon record are factored into
+        <code>_stop_is_requested</code> and <code>_record_launch_abandoned_before_spawn</code>.</li>
+        <li><code>reckon/crew/dispatch.py</code>, <code>_worker_default_signals</code>: the fork
+        inherits the blocked mask, so the spawn hook clears SIGTERM and SIGHUP in the child as
+        well as restoring their default dispositions &mdash; otherwise the worker would never see
+        the group stop that ends it.</li>
+        <li><code>tests/test_stop_before_spawn_spawns_nothing.py</code>: two cases added. One holds
+        the supervisor at the blocked read through a <code>sitecustomize</code> that pauses the
+        moment <code>pthread_sigmask</code> blocks the stop signals, delivers a group stop, and
+        requires no <code>worker.json</code>, no stub marker, a dead supervisor and a launch-failure
+        record. The other delivers a group stop to a live supervisor after its stub worker has
+        spawned and requires the exit record to name <code>SIGTERM</code>. The module docstring
+        states the invariant in place of the earlier changelog sentence.</li>
+        <li>The test instrument carries three repairs needed to run it under a fenced worker: the
+        git shim's scan root names <code>&lt;base&gt;/.reckon-worktrees</code> (where dispatch
+        actually creates the run's worktree), the real git is resolved past the worker shim with
+        <code>reckon.shim_lookup.real_executable</code>, and the real live-pointer guard now
+        intersects appeared entries with the pointers the case itself wrote, so a peer session's
+        concurrent pointer is not read as this case's leak.</li>
+      </ul>
+    </section>
+
+    <section id="spawn-window-the-gate">
+      <h2>The gate</h2>
+      <p><code>PYTHONPATH=&lt;worktree&gt; .venv/bin/python -m pytest -p no:cacheprovider -q
+      tests/test_stop_before_spawn_spawns_nothing.py tests/test_every_attempt_is_supervised.py</code>
+      at revision <code>4e5f0a870</code>: <strong>8 passed in 28.15 s</strong>,
+      <code>EXIT=0</code>. Log <code>head-gate.log</code>.</p>
+      <p>The two declared negative controls were executed on full copies of the package and test
+      tree in <code>$TMPDIR</code>:</p>
+      <table>
+        <thead><tr><th>Control</th><th>Mutation</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>case 1</td><td>the re-check under the mask is removed</td>
+          <td><code>test_a_stop_between_the_check_and_the_spawn_spawns_no_worker</code> fails on
+          <code>worker.json</code> existing after the stop &mdash; a worker was spawned;
+          <code>EXIT=1</code></td></tr>
+          <tr><td>case 2</td><td>the exit record is written as a plain exit
+          (<code>exit_code: 0, signal: None, signal_name: None</code>) instead of the stop's</td>
+          <td><code>test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit</code> fails
+          on <code>signal_name</code> not being <code>SIGTERM</code>; <code>EXIT=1</code></td></tr>
+        </tbody>
+      </table>
+      <p>Both failing logs are in <code>negative-control.log</code>; each control's last line is
+      <code>EXIT=1</code>, and neither failing test id appears in the head arm, which is green.</p>
+    </section>
+  </main>
+</body>
+</html>
