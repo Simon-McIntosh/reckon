@@ -355,6 +355,37 @@ def test_an_unfinished_resumed_turn_resumes_nothing(
     assert len(resumed) == 1
 
 
+def test_a_round_resumed_twice_is_exhausted_not_resumed_again(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """The retry is bounded: a third resume is refused and the round exhausted.
+
+    A resumed turn that ends without answering is retried once — two resumes in
+    all. A round already resumed twice, each turn finished, whose head has not
+    moved, is exhausted, so the sweep stops spending lane capacity on it rather
+    than resuming it on every cadence forever.
+    """
+    config_home, repo, head_sha = isolated_project
+    _completed_pointer(config_home, repo)
+    _store_review(head_sha, [FINDING])
+    resumed = _stub_resume(monkeypatch)  # a finished stream on every turn
+    _stub_dispatch(monkeypatch)
+
+    _sweep()
+    _sweep()
+    assert len(resumed) == 2
+
+    _sweep()
+
+    assert len(resumed) == 2  # the third sweep resumes nothing
+    recorded = runs.read_pointer(RUN_ID)["repair_dispatch"]
+    assert recorded["status"] == "exhausted"
+    assert (
+        recorded["reason"]
+        == "the round was resumed twice without answering its findings"
+    )
+
+
 def test_a_promoted_reviewed_run_is_not_resumed(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
@@ -373,4 +404,5 @@ def test_a_promoted_reviewed_run_is_not_resumed(
     assert resumed == []
     assert dispatched == []
     recorded = runs.read_pointer(RUN_ID).get("repair_dispatch") or {}
-    assert recorded.get("status") != "resumed"
+    assert recorded.get("status") == "refused"
+    assert recorded.get("reason") == "the reviewed run is promoted"

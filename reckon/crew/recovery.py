@@ -918,6 +918,13 @@ REVIEW_DISPATCH_FIELD = "review_dispatch"
 # yet repaired should find the answer on the reviewed run's own pointer.
 REPAIR_DISPATCH_FIELD = "repair_dispatch"
 
+# How many times one round may be resumed before the reflex stops. A resumed
+# turn that ends without answering is retried once; a round that has been
+# resumed this many times without its head moving is exhausted, so the sweep
+# cannot spend lane capacity on it on every cadence forever. The count is read
+# from the pointer's durable repair record, not from the entry-time mapping.
+REPAIR_RESUME_LIMIT = 2
+
 # The dispatch role whose findings a repair acts on, and the node-id prefix a
 # composed repair carries. A review of a review, an investigate run and a test
 # run each carry findings a repair is not meant to act on, and a repair of a
@@ -1856,7 +1863,7 @@ def _record_repair_dispatch(
     repair_run_id: str = "",
     backend: str = "",
     node_id: str = "",
-) -> None:
+) -> int:
     """Write the reflex's repair outcome onto the reviewed run it acted for.
 
     A skip is recorded as loudly as a dispatch, for the same reason the review
@@ -1864,11 +1871,21 @@ def _record_repair_dispatch(
     from one the reflex never considered. The round and the node it composed are
     recorded with the outcome, so the next sweep tells an attempt of this round
     from a later round the run has since moved to.
+
+    The attempt count is read from the pointer at the moment of the write and
+    returned, so a caller can record the value the run now carries rather than
+    deriving its own. It counts every outcome written for the round, so a caller
+    that caps how many times a round may be resumed reads it as that count.
     """
     if not run_id:
-        return
+        return 0
+    written: dict[str, int] = {}
 
     def record(pointer: dict[str, Any]) -> dict[str, Any]:
+        attempt = (
+            int((pointer.get(REPAIR_DISPATCH_FIELD) or {}).get("attempt") or 0) + 1
+        )
+        written["attempt"] = attempt
         pointer[REPAIR_DISPATCH_FIELD] = {
             "status": status,
             "reason": reason,
@@ -1877,14 +1894,12 @@ def _record_repair_dispatch(
             "round_id": round_id or None,
             "backend": backend or None,
             "at": _utc_now(),
-            "attempt": int(
-                (pointer.get(REPAIR_DISPATCH_FIELD) or {}).get("attempt") or 0
-            )
-            + 1,
+            "attempt": attempt,
         }
         return pointer
 
     _mutate_pointer(run_id, record)
+    return written.get("attempt", 0)
 
 
 def _repair_resume_advice(composed: Mapping[str, Any], scope: Sequence[str]) -> str:
@@ -2053,9 +2068,12 @@ def dispatch_repair_for_run(
     holds the worktree and the commit claim a new node could only be refused
     for. A promoted run, or one whose worker is live or whose live pointer has
     gone, takes the dispatch path and is settled by its own guards there. The
-    resume is offered once per sweep while the run's worker is not live, so a
-    resumed turn that ends without answering is retried rather than leaving the
-    round stuck, and the attempt count records each retry.
+    resume is offered while the run's worker is not live, so a resumed turn that
+    ends without answering is retried rather than leaving the round stuck, and
+    the attempt count records each retry. The retry is bounded at
+    REPAIR_RESUME_LIMIT resumes per round; a round resumed that many times
+    without its head moving is recorded exhausted, so no sweep spends lane
+    capacity on it again.
     """
     run_id = str(record.get("run_id") or "")
     refusal = _repair_source_refusal(record)
@@ -2266,10 +2284,49 @@ def dispatch_repair_for_run(
     # ended. If it ended without answering — the reviewed run's head has not moved
     # past the reviewed head, since a moved head no longer matches the stored
     # review — the round is resumed once more, and the attempt count recorded on
-    # the run makes the retry visible.
+    # the run makes the retry visible. The retry is bounded: a round is resumed
+    # at most REPAIR_RESUME_LIMIT times, the first plus the one retry, so a turn
+    # that keeps ending without answering is exhausted rather than spending lane
+    # capacity on every sweep forever. The count is read from the pointer's
+    # durable record, so an entry-time mapping cannot stale-hold it.
     if not _repair_launch_refusal(run_id, project):
         from reckon.crew import resumption as resumption_module
         from reckon.crew.dispatch import BudgetHold
+
+        durable = read_pointer(run_id) or {}
+        recorded = durable.get(REPAIR_DISPATCH_FIELD)
+        same_round = isinstance(recorded, Mapping) and str(
+            recorded.get("round_id") or ""
+        ) == str(round_id or "")
+        prior = int((recorded or {}).get("attempt") or 0) if same_round else 0
+        if prior >= REPAIR_RESUME_LIMIT:
+            reason = "the round was resumed twice without answering its findings"
+            if same_round and str(recorded.get("status") or "") == "exhausted":
+                return {
+                    "run_id": run_id,
+                    "dispatched": False,
+                    "exhausted": True,
+                    "node_id": node_id,
+                    "round_id": round_id,
+                    "attempt": prior,
+                    "reason": reason,
+                }
+            attempt = _record_repair_dispatch(
+                run_id,
+                status="exhausted",
+                reason=reason,
+                round_id=round_id,
+                node_id=node_id,
+            )
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "exhausted": True,
+                "node_id": node_id,
+                "round_id": round_id,
+                "attempt": attempt,
+                "reason": reason,
+            }
 
         advice = _repair_resume_advice(composed, scope)
         try:
@@ -2291,10 +2348,7 @@ def dispatch_repair_for_run(
                 "refused": True,
                 "reason": reason,
             }
-        attempt = (
-            int((record.get(REPAIR_DISPATCH_FIELD) or {}).get("attempt") or 0) + 1
-        )
-        _record_repair_dispatch(
+        attempt = _record_repair_dispatch(
             run_id,
             status="resumed",
             reason="the reviewed run was resumed with the composed findings as advice",
