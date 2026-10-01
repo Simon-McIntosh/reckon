@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import contextlib
 import fcntl
+import importlib
 import json
 import os
 import subprocess
@@ -47,7 +48,6 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli, crew
-import importlib
 from reckon.crew import runs
 
 # ``reckon.crew`` re-exports a function named ``dispatch``, so the module a test
@@ -134,7 +134,7 @@ def test_a_poll_that_outlives_the_deadline_is_abandoned() -> None:
     poll_started = threading.Event()
     poll_release = threading.Event()
     poll_returned = threading.Event()
-    events: list[dict] = []
+    driven: list[list[dict]] = []
     failures: list[BaseException] = []
 
     def _blocking_poll(_project: str) -> dict:
@@ -145,18 +145,21 @@ def test_a_poll_that_outlives_the_deadline_is_abandoned() -> None:
 
     def _drive() -> None:
         try:
-            for event in cli._follow_watch_lines(
-                PROJECT,
-                session=SESSION,
-                poll_interval=0.01,
-                sleeper=lambda _seconds: None,
-                stop=stop,
-                sweep=_blocking_poll,
-                clock=clock,
-                lifetime=30.0,
-                lifetime_deadline=deadline,
-            ):
-                events.append(event)
+            driven.append(
+                list(
+                    cli._follow_watch_lines(
+                        PROJECT,
+                        session=SESSION,
+                        poll_interval=0.01,
+                        sleeper=lambda _seconds: None,
+                        stop=stop,
+                        sweep=_blocking_poll,
+                        clock=clock,
+                        lifetime=30.0,
+                        lifetime_deadline=deadline,
+                    )
+                )
+            )
         except BaseException as exc:  # noqa: BLE001 - reported through this test's own failure
             failures.append(exc)
 
@@ -185,8 +188,8 @@ def test_a_poll_that_outlives_the_deadline_is_abandoned() -> None:
         "the poll returned before the follower ended, so this case measured a "
         "poll that finished rather than one that was abandoned"
     )
-    assert any(event.get("event") == cli.FOLLOWER_END_EVENT for event in events), (
-        f"the arming must end with its own final line; events={events!r}"
+    assert any(event.get("event") == cli.FOLLOWER_END_EVENT for event in driven[0]), (
+        f"the arming must end with its own final line; events={driven!r}"
     )
     overshoot = ended - started - remaining
     assert overshoot <= ONE_POLL_INTERVAL_SLACK, (
@@ -566,8 +569,10 @@ def test_no_child_of_an_armed_follower_carries_the_hand_off_variables(home) -> N
             # The replacement image sweeps too, so its own child is covered:
             # read the dump again after the reload and require no image to have
             # leaked either variable across the checkpoint hand-over.
-            deadline = arm_at + float(crew.parse_duration(LIFETIME)) + (
-                ONE_POLL_INTERVAL_SLACK
+            deadline = (
+                arm_at
+                + float(crew.parse_duration(LIFETIME))
+                + (ONE_POLL_INTERVAL_SLACK)
             )
             while time.monotonic() < deadline and process.poll() is None:
                 time.sleep(POLL_SECONDS)
@@ -621,9 +626,7 @@ def repo(tmp_path: Path, home: Path) -> Path:
     scripts.mkdir(parents=True)
     plans = root / "docs" / "plans"
     plans.mkdir(parents=True)
-    source = (
-        REPO_ROOT / "skills" / "reckon-build" / "scripts" / "worktree_fleet.py"
-    )
+    source = REPO_ROOT / "skills" / "reckon-build" / "scripts" / "worktree_fleet.py"
     (scripts / "worktree_fleet.py").write_text(
         source.read_text(encoding="utf-8"), encoding="utf-8"
     )

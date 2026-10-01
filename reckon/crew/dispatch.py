@@ -24,7 +24,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
+from typing import Any, Callable, Iterable, Iterator, Mapping
 
 from reckon import _backends, _store, capability, flight, ledger
 from reckon._timestamps import parse_iso, parse_utc
@@ -1107,7 +1107,7 @@ class _FollowerAdmissionUnmet(WatcherRequired):
         watch: Mapping[str, Any],
         *,
         session: str | None,
-        conditions: Sequence[str],
+        conditions: list[str],
     ) -> None:
         self.project = project
         self.watch = dict(watch)
