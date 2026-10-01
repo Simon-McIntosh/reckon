@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="86">
+<meta name="plan-version" content="87">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.98">
@@ -1795,7 +1795,10 @@
     <div class="r-comment-body"><p>Declared the fence's protected set as the flight key `protected_paths` with the built-in list as its shipped default and `unprotected_paths` as the only way to leave a default writable; `_backends.protected_paths` composes default + additions − named removals and dispatch records the removals on the run pointer. Gate: tests/test_the_protected_set_is_declared.py 5 passed at head; base 19 failed / 2090 passed, head 17 failed / 2097 passed over the 177 importer files, head adds no failing id.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261001T080820440206-review-of-the-protected-set-is-declared" data-who="reckon-build" data-when="2026-10-01T08:19:11.574Z">
-    <div class="r-comment-body"><p>Reviewed the-protected-set-is-declared at head 42394e86 against base f171e702 — parsed, total 85/100 (goal_fidelity 18, evidence 15, scope_discipline 18, durability 16, fit 18); added_failure_count 1 (the head arm&#x27;s conftest collection ERROR, an arm-composition artifact); three follow-ons — resume/lane-change fence paths omit fence_config, the ledger row does not carry fence_unprotected_paths, and the two gate arms are not selection-comparable.</p></div>
+    <div class="r-comment-body"><p>Reviewed the-protected-set-is-declared at head 42394e86 against base f171e702 — parsed, total 85/100 (goal_fidelity 18, evidence 15, scope_discipline 18, durability 16, fit 18); added_failure_count 1 (the head arm's conftest collection ERROR, an arm-composition artifact); three follow-ons — resume/lane-change fence paths omit fence_config, the ledger row does not carry fence_unprotected_paths, and the two gate arms are not selection-comparable.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20261001T082740172289" data-who="" data-when="">
+    <div class="r-comment-body">The declared-set half of §3 landed at merge 95249adbc (run r-20261001T072944602396, reviewed at 85, verify-gate passed at main ffda985af). The protected set is the flight key protected_paths. Its shipped default is the built-in list, including the worktree root, declared in reckon/schema/flight.yaml with the generated schema files regenerated. A layer may add paths. It removes a default only by naming it under unprotected_paths, and a layer that merely drops a default keeps it protected. reckon flight reports the resolved set and its layer. tests/test_the_protected_set_is_declared.py passes its five cases, and its negative control fails the dropped-default case. The review's one added id, tests/conftest.py::test_temp_config_home, is a collection error from the head arm alone naming conftest as a target, not the change. Still open, and dispatched as unprotected-paths-reach-every-launch: the resume and lane-change launch paths do not yet pass the resolved fence config, so they would re-seal a default a layer left writable; and the ledger row does not yet carry fence_unprotected_paths, which only the live pointer records. With fence-fails-closed (314dfa18b) already landed, §3 closes when that node lands. §4's AGENTS.md paragraph follows.</div>
 </div>
 </section>
 </main>
