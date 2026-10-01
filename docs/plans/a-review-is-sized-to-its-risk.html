@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="105">
+<meta name="plan-version" content="106">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.94">
@@ -507,7 +507,10 @@
     <div class="r-comment-body"><p>An independent review of run r-20261001T054841706917-one-automatic-repair-round-per-run is stored at both fence paths against reviewed head b24d299130831244df6f8b6255847a7f55954606 (base 5b197dc8884177012621fb28c6ed3d09a10a453f) — parsed, five dimensions scored 0..20 (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19; total 96), added_failure_count 0 with added_failure_ids [] derived through the store's own reader (reckon.crew.review.added_failures_from_gate_logs) from reviewer-run arms at the reviewed base and head (positive control returns 1 injected id), three follow-on findings and no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261001T070535631632-resume-attempts-count-per-round" data-who="reckon-build" data-when="2026-10-01T07:14:13.807Z">
-    <div class="r-comment-body"><p>_record_repair_dispatch now keys the attempt figure to the round_id being written, so a repair round the pointer did not last carry starts at attempt 1 rather than inheriting an earlier round&#x27;s count; the within-round REPAIR_RESUME_LIMIT cap already compared the round id, so it now reads a figure belonging to the round it bounds and the run-wide one-round-per-run cap is untouched. Measure: tests/test_the_reflex_resumes_an_unpromoted_run.py 7 passed EXIT=0 (one new case: a run whose earlier round recorded two attempts opens a stubbed-open new round and its first resume records attempt 1).</p></div>
+    <div class="r-comment-body"><p>_record_repair_dispatch now keys the attempt figure to the round_id being written, so a repair round the pointer did not last carry starts at attempt 1 rather than inheriting an earlier round's count; the within-round REPAIR_RESUME_LIMIT cap already compared the round id, so it now reads a figure belonging to the round it bounds and the run-wide one-round-per-run cap is untouched. Measure: tests/test_the_reflex_resumes_an_unpromoted_run.py 7 passed EXIT=0 (one new case: a run whose earlier round recorded two attempts opens a stubbed-open new round and its first resume records attempt 1).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261001T071455448553-review-of-resume-attempts-count-per-round" data-who="reckon-build" data-when="2026-10-01T07:26:54.758Z">
+    <div class="r-comment-body"><p>review r-20261001T071455448553-review-of-resume-attempts-count-per-round of run r-20261001T070535631632-resume-attempts-count-per-round stores a parsed record (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, total 96) with no blocking finding; the diff keys _record_repair_dispatch&#x27;s attempt figure to the round_id being written so a new round starts at attempt 1, the focused gate reproduces (7 passed EXIT=0 at head 1f1bac86) and the declared negative control reproduces (assert 3 == 1, 1 failed EXIT=1); added_failure_count is unmeasured because the reviewed manifest records no baseline_suite/after_suite arm.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260928T233552756785-review-of-the-suite-is-declared-and-recorded" data-who="reckon-build" data-when="2026-09-29T00:21:22.662Z">
     <div class="r-comment-body"><p>review stored for r-20260928T223146627061-the-suite-is-declared-and-recorded at cd36faeb against base 348688e8 - total 77 (goal_fidelity 14, evidence 15, scope_discipline 19, durability 13, fit 16), four findings, added_failure_count 0</p></div>
