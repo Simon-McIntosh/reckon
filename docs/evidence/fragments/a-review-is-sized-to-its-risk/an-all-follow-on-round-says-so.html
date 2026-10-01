@@ -1,0 +1,37 @@
+<article class="landed-report" data-run-id="r-20261001T005545699455-an-all-follow-on-round-says-so" data-node="an-all-follow-on-round-says-so">
+      <h3>an-all-follow-on-round-says-so — a round with only follow-ons records why it composes no repair</h3>
+      <p>
+        <code>compose_repair_for_run</code> returns <code>None</code> for a
+        finding-bearing record in two cases: every finding is a follow-on, so
+        nothing blocks and there is no work to answer, or the record the
+        composer re-read differs from the one selected, a race the round leaves
+        for a coordinator. <code>dispatch_repair_for_run</code> reported one
+        string for both, so an all-follow-on round was misattributed to the
+        re-read race.
+      </p>
+      <p>
+        <code>reckon/crew/recovery.py</code> now tells them apart from the
+        findings it already holds: when none of the round's findings blocks, the
+        reflex returns and records the reason
+        <code>the review round carried no blocking finding (N follow-on
+        finding(s))</code>, naming the follow-on count, and the re-read-differs
+        case keeps <code>no repair composes for this review round</code>.
+      </p>
+      <p>
+        <strong>Measure.</strong>
+        <code>tests/test_repair_answers_only_blocking_findings.py</code> gained a
+        dispatch-level case driven through the reflex with the launch stubbed: an
+        all-follow-on round records <code>status: decline-only</code> and a
+        reason naming <code>1 follow-on</code>, and a control arm with one
+        blocking finding still reaches the dispatch. The gate ran only that file:
+        6 passed, EXIT=0.
+      </p>
+      <p>
+        <strong>Negative control.</strong> Restoring the single reason string
+        makes the all-follow-on assertion fail
+        (<code>assert 'the review round carried no blocking finding' in 'no
+        repair composes for this review round'</code>) while the control arm
+        passes: 1 failed, 5 passed, EXIT=1. The log is
+        <code>logs/negative-control.log</code> under the run directory.
+      </p>
+    </article>
