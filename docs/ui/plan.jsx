@@ -198,12 +198,16 @@ function ReaderComplianceFailure({ check }) {
   const errors = readerComplianceErrors(check);
   return (
     <div className="r-reader-compliance" role="alert" style={{ display: "grid", gap: 5, marginBottom: 12, padding: "11px 13px", border: "1px solid var(--border)", borderLeft: "3px solid var(--danger, #b42318)", background: "var(--bg)" }}>
-      <strong>This document fails the render contract — {check.errors} error{check.errors === 1 ? "" : "s"}</strong>
-      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5 }}>
-        {errors.map((finding, index) => (
-          <li key={`${finding.code}-${index}`}><code>{finding.code}</code> {finding.message}</li>
-        ))}
-      </ul>
+      <details>
+        <summary style={{ cursor: "pointer" }}>
+          <strong>This document fails the render contract — {check.errors} error{check.errors === 1 ? "" : "s"}</strong>
+        </summary>
+        <ul style={{ margin: "6px 0 0", paddingLeft: 18, fontSize: 12.5 }}>
+          {errors.map((finding, index) => (
+            <li key={`${finding.code}-${index}`}><code>{finding.code}</code> {finding.message}</li>
+          ))}
+        </ul>
+      </details>
       {check.path && <span style={{ color: "var(--muted)", fontSize: 12 }}>Every finding, warnings included: <code>reckon audit-doc {check.path}</code></span>}
     </div>
   );

@@ -218,6 +218,7 @@ def test_reader_shows_the_render_contract_errors(tmp_path: Path, browser: str):
       return {
         text: banner ? banner.innerText : '',
         items: banner ? banner.querySelectorAll('li').length : 0,
+        open: banner ? banner.querySelector('details').open : null,
       };
     })()"""
     with file_spa(tmp_path, browser, _state(), route="#plan/work") as spa:
@@ -229,6 +230,8 @@ def test_reader_shows_the_render_contract_errors(tmp_path: Path, browser: str):
     assert "fails the render contract — 2 errors" in measured["text"]
     assert "reckon audit-doc docs/plans/work.html" in measured["text"]
     assert measured["items"] == 2
+    # The findings start collapsed, so the document stays in view.
+    assert measured["open"] is False
 
 
 def test_list_row_shows_its_contract_errors(tmp_path: Path, browser: str):
