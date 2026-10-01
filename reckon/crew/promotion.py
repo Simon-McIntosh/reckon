@@ -811,6 +811,16 @@ def _require_gate_evidence(
     counted nor named as missing — it is not authoritative. The report is a
     returned value, never an exception: a shortfall must not turn a passing
     promotion into a failed one.
+
+    A presented citation is the other half of that split and is refused rather
+    than reported: the presented list is what the boundary check and the ledger
+    resolve, so an entry that resolves to no object is a defective citation
+    naming nothing, not a count short of the manifest's. Refusing it by value
+    where the presentation is read keeps it from being filtered out of the
+    comparison, which would leave the report resting on a set nothing can be
+    found for. The refusal stays silent when the tree cannot be read, so a run
+    whose worktree is already gone is not refused for a citation no store was
+    asked about.
     """
     if verdict != "passed" or str(no_commit_reason).strip():
         return None
@@ -844,6 +854,33 @@ def _require_gate_evidence(
         # cannot see: its condition returns on any non-empty list, so a
         # presentation naming one commit of the manifest's declared eight
         # passes through untouched and the boundary check runs against the one.
+        #
+        # A presented identifier must resolve in the run repository like any
+        # other citation: the presented list is the one the out-of-scope
+        # boundary check and the ledger resolve, so a value that names nothing
+        # is refused by value here rather than filtered out of the comparison
+        # below, where a count would rest on an entry nothing can be found for.
+        # The measurement is taken only in a tree this guard can read, so a run
+        # whose worktree is already gone stays as silent as the commitless
+        # guard keeps when it cannot measure.
+        unresolved_presented: list[str] = []
+        if tree.is_dir() and str(record.get("worktree") or "").strip():
+            unresolved_presented = [
+                candidate
+                for candidate in presented
+                if _commit_canonical_id(tree, candidate) is None
+            ]
+        if unresolved_presented:
+            raise CrewError(
+                f"run {run_id!r} presents "
+                + ", ".join(repr(entry) for entry in unresolved_presented)
+                + " as a commit, but that identifier does not resolve to an "
+                f"object in the run repository ({tree}). The presented list is "
+                "what the boundary check and the ledger resolve, so a value "
+                "that names nothing is not evidence and is reported rather "
+                "than dropped from the comparison. Cite the commit the run "
+                "actually wrote, or leave the value out of the presentation"
+            )
         resolving_declared = {
             canonical
             for candidate in declared
