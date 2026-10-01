@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import __version__
-from reckon._store import _config_home, write_json_atomically
+from reckon._store import _config_home, _docs_dir_for_project, write_json_atomically
 from reckon._timestamps import parse_utc
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
@@ -1441,7 +1441,11 @@ def _stream_transition(
     )
 
 
-def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) -> None:
+def _publish_watch_transitions(
+    project: str,
+    producer: _WatchStreamProducer,
+    records: Iterable[Mapping[str, Any]],
+) -> bool:
     """Append each fleet state transition once for the active producer.
 
     The tick's own read is fallible: composing a transition prices the run
@@ -1451,17 +1455,16 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
     file resolved a moment later costs one fleet observation, not the producer.
     Nothing is committed until the whole tick succeeds, so a deferred tick
     neither advances the fold's memory nor drops the transitions it owes.
-    """
-    producer = _WATCH_STREAM_PRODUCERS.get(project)
-    if producer is None:
-        return
 
+    Reports whether this sweep appended a transition, which is the event the
+    session snapshots republish on.
+    """
     from reckon.crew.recovery import _fleet_counts, fleet_transitions
     from reckon.flight import FlightConfigError
 
     current = _watch_stream_snapshots(records, stall_window=producer.stall_window)
     if not current and not producer.fleet_seen:
-        return
+        return False
 
     try:
         if not producer.fleet_seen:
@@ -1483,7 +1486,7 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
             producer.fleet_seen = True
             producer.known = baseline
             producer.tick_deferred = False
-            return
+            return True
 
         # The same fold the seat's own ticker uses, so a follower reading the
         # stream and a reader watching the seat's stdout cannot disagree about
@@ -1502,11 +1505,75 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
         _append_watch_lines(producer.path, lines)
         producer.known = next_known
         producer.tick_deferred = False
+        return bool(lines)
     except FlightConfigError as exc:
         if producer.tick_deferred:
-            return
+            return False
         producer.tick_deferred = True
         _announce_watch_tick_deferral(exc)
+        return False
+
+
+def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) -> None:
+    """Fold this sweep's fleet state, then republish the sessions' snapshots."""
+    producer = _WATCH_STREAM_PRODUCERS.get(project)
+    if producer is None:
+        return
+    transition_fired = _publish_watch_transitions(project, producer, records)
+    _publish_obligation_snapshots(project, transition_fired=transition_fired)
+
+
+def _producer_snapshot_identity(project: str) -> dict[str, Any]:
+    """The producer's pid, start time and code stamp, read from its registration.
+
+    The lease registration is the only place a producer's identity is kept: it
+    is written when the seat is taken, so a reader of a session's snapshot can
+    say which process published it and which source that process runs. A
+    registration written before the stamp existed, or one left by a producer
+    superseded by this one, carries a stamp other than the one this process
+    runs, so the stamp is recorded from the running source rather than assumed.
+    """
+    registration = read_watch_registration(project)
+    stamp = follower_code_stamp()
+    if registration.get("code_stamp") != stamp:
+        registration = update_watch_registration(project, code_stamp=stamp)
+    return {
+        "pid": registration.get("pid"),
+        "pid_start_time": registration.get("pid_start_time"),
+        "started_at": registration.get("started_at"),
+        "code_stamp": registration.get("code_stamp"),
+    }
+
+
+def _publish_obligation_snapshots(project: str, *, transition_fired: bool) -> list[str]:
+    """Republish every registered session's obligations snapshot for one sweep.
+
+    The sessions are the ones holding a follower registration in the project's
+    watch directory — the same registration the hook resolves its own session
+    through — whether or not their follower is attached at that moment, since
+    the snapshot is what a later turn reads. A session that never registered a
+    follower is not coordinating and gets no snapshot.
+
+    The triggers live with the snapshot module; this is the per-project sweep
+    the producer already runs, so its clock and its stat reads are the ones the
+    floor tick and the file-identity trigger are judged against.
+    """
+    from reckon.crew import obligation_snapshot
+
+    sessions = [
+        str(row.get("session") or "")
+        for row in list_followers(project)
+    ]
+    docs = _docs_dir_for_project(project)
+    written = obligation_snapshot.sweep(
+        project,
+        sessions=[session for session in sessions if session],
+        producer=_producer_snapshot_identity(project),
+        stream_offset=line_boundary(watch_stream_path(project)),
+        transition_fired=transition_fired,
+        state_dirs=[docs / "state" / project, docs / "plans"] if docs else [],
+    )
+    return [str(path) for path in written]
 
 
 def _announce_watch_tick_deferral(exc: Exception) -> None:
