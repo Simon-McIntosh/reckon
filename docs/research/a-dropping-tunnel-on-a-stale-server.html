@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="a-dropping-tunnel-on-a-stale-server">
+  <meta name="plan-title" content="A dropping tunnel on a stale server">
+  <meta name="plan-summary" content="RCA: the plan reader's 'network error' on 1 Oct was requests that never reached a server running code two days old; the edited mctb document was valid">
+  <meta name="plan-status" content="done">
+  <meta name="plan-source" content="shared server log, systemd unit state on both hosts, last -F on the login node, the mctb history, and headless Chromium through an SSH tunnel">
+  <meta name="plan-source-quality" content="primary">
+  <meta name="plan-reviewed-at" content="2026-10-01">
+  <meta name="plan-tags" content="reckon-tooling,documentation">
+  <title>A dropping tunnel on a stale server | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — What happened</h2>
+    <p>
+      On the morning of 1 October the plan reader showed two banners on a research document in
+      mctb: <em>authored plan HTML failed — network error</em> and <em>structured plan state failed —
+      network error</em>. Project pages for other repositories also stopped loading. The document,
+      <code>mctb-htscl-loop-configuration</code>, had just been edited, so it was suspected of
+      carrying an HTML error that broke the site.
+    </p>
+    <p>
+      <strong>It did not.</strong> Neither failing request reached the server. Two things were
+      wrong at once. The SSH tunnel from the user's machine was dropping and reconnecting, and a
+      fetch made while it was down fails before any server sees it. The server behind the tunnel
+      was also running code from 29 September, 190 commits to <code>reckon/</code> behind the
+      client it was serving. So every project page fell back to the slow discovery path, taking
+      6 to 14 seconds, long enough for a dropped tunnel to kill the request in flight.
+    </p>
+    <p>
+      Not a cause: the document (valid in every committed version, §3.3), a server crash (the unit
+      never restarted and served no 5xx response all morning), or the parser (20&nbsp;ms on every
+      version, with both the old and the current code).
+    </p>
+
+    <h2 id="s2">§2 — Timeline</h2>
+    <figure>
+      <img src="/reckon/figures/a-dropping-tunnel-on-a-stale-server/timeline.svg"
+           alt="Timeline from 05:25 to 06:40 of SSH sessions, page loads, abandoned responses and the two server processes, with the two document commits marked">
+      <figcaption>
+        Page loads reach the server only in the minutes after an SSH login, and the login lines end
+        (red ticks) at 06:09 and 06:14. The two commits to the document (05:41, 06:07) fall in
+        stretches where loads were already succeeding or failing for other reasons. The login-node
+        server ran 29&nbsp;September code until it was restarted at 06:34:36. A second server ran on
+        the compute node from 05:36 to 06:35, writing to the same log.
+      </figcaption>
+    </figure>
+    <table>
+      <thead><tr><th>Time</th><th>Event</th><th>Source</th></tr></thead>
+      <tbody>
+        <tr><td>29 Sep 17:57:48</td><td>Login-node <code>reckon.service</code> starts at revision <code>1e9342ad4</code>; it runs unrestarted for 36&nbsp;h</td><td><code>systemctl --user show</code></td></tr>
+        <tr><td>30 Sep 22:40:51</td><td>Last plan load in the log before the incident (<code>mctb-htscl-dual-loop</code>, all 200)</td><td>server log</td></tr>
+        <tr><td>30 Sep 23:08</td><td>All of the user's SSH sessions end</td><td><code>last -F</code></td></tr>
+        <tr><td>01:53–04:53</td><td>Client and server commits add the <code>/_index</code> fast path, change push and figure thumbnails; the JSX goes live on the next page load, the Python does not</td><td><code>git log</code></td></tr>
+        <tr><td>05:31:19</td><td>User's SSH login; in the same second an open tab's change stream reconnects</td><td><code>last</code>, server log</td></tr>
+        <tr><td>05:31:25</td><td>First <code>/_index/mctb</code> → 404; the page falls back to <code>/_discover</code></td><td>server log</td></tr>
+        <tr><td>05:36:28</td><td>A user systemd manager starts on compute node <code>98dci4-clu-2018</code> and starts a second <code>reckon serve --port 8765</code> there</td><td><code>ps</code>, <code>systemctl --user show</code></td></tr>
+        <tr><td>05:41, 06:07</td><td>Commits <code>580d055</code>, <code>64d8eac</code> to the mctb document</td><td>mctb <code>git log</code></td></tr>
+        <tr><td>06:09:05, 06:14:15</td><td>Three SSH sessions end; new logins at 06:09:07, 06:12:43, 06:16:22, 06:17:17</td><td><code>last -F</code></td></tr>
+        <tr><td>06:12:21 → 06:12:35</td><td><code>/_index/imas-ambix</code> 404, then <code>/_discover/imas-ambix</code> takes 14&nbsp;s and the client is gone before it is sent (broken pipe)</td><td>server log</td></tr>
+        <tr><td>06:21</td><td>Headless Chromium through a fresh SSH tunnel loads the same plan on the same stale server without a banner</td><td>reproduction</td></tr>
+        <tr><td>06:23:58</td><td>User's plan load completes: redirect, plan state, raw HTML and five figures, all answered</td><td>server log</td></tr>
+        <tr><td>06:34:36</td><td>Login-node service reinstalled and restarted onto current code</td><td><code>reckon service install</code></td></tr>
+        <tr><td>06:35:02</td><td>Compute-node duplicate stopped; the unit's host condition now fails there</td><td><code>systemctl --user show</code></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s3">§3 — Root cause</h2>
+    <h3 id="s3-1">§3.1 — The failing requests never reached the server</h3>
+    <p>
+      The server logs every request the moment it sends a status line. Between 22:40:51 and
+      06:23:58 no request for the document's HTML (<code>/mctb/research/&lt;slug&gt;.html</code>) or its state
+      (<code>/plan/mctb/research/…</code>) from the user's browser appears in the log, though page
+      shells, discovery and figure requests from the same browser do. A fetch that is answered
+      with any status, even an error, leaves a log line, and so does one whose client leaves mid-response
+      (a broken-pipe traceback, five of them this morning). These two left nothing. They failed
+      before reaching the server.
+    </p>
+    <p>
+      The user's SSH connection from the same address logged in seven times between 05:31 and
+      06:17 and lost three sessions at 06:09:05 and 06:14:15. The tunnel to port 8765 runs inside
+      one of those connections. While it is down, the local end of the forward refuses or drops
+      the browser's connection, and the browser reports exactly a fetch with no response. The
+      laptop side was not observable from here, so this is the explanation that fits every server-side
+      observation, not a direct capture. Two controls support it. At 06:21, while the stale
+      server was still running, a fresh browser through a fresh tunnel loaded the same plan
+      cleanly. At 06:23:58 the user's own load succeeded in full once the connection settled,
+      before anything had been changed.
+    </p>
+
+    <h3 id="s3-2">§3.2 — Every page took the slow path, so drops landed on requests in flight</h3>
+    <p>
+      The login-node service had run since 29 September 17:57:48. In that time 190 commits
+      touched <code>reckon/</code>. Client JSX and CSS are compiled per request from the working
+      tree, but the Python server is not reloaded. So the browser was running the current client
+      against a server two days older. The current client asks <code>/_index/&lt;project&gt;</code>
+      for its first paint, and the old server has no such route: all 16 <code>/_index</code>
+      requests this morning returned 404, and 112 figure thumbnail requests did the same. The
+      client handles the 404 by falling back to full discovery, so nothing errored. But every
+      project page waited on <code>/_discover</code>, which took 14&nbsp;s for imas-ambix. A
+      request that takes 14&nbsp;s across a tunnel that drops every few minutes is one the user
+      sees fail. After the restart the same index answers in 7&nbsp;ms for mctb and 2.0&nbsp;s for
+      imas-ambix on a cold build.
+    </p>
+    <p>
+      This is the second time. <a href="/reckon/research/spa-project-render-fault">SPA project render fault</a>
+      (2 September) found Nova's empty surface to be the same split: an unrestarted server
+      emitting an old entry point beside current shell modules. That RCA named the mechanism
+      ("server and parse code are not hot-reloaded") but nothing changed what deploys the server,
+      so the condition came back with a different symptom.
+    </p>
+
+    <h3 id="s3-3">§3.3 — The document was valid</h3>
+    <table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Tag balance of every committed version (<code>14733b3</code>, <code>580d055</code>, <code>64d8eac</code>) and of the edited <code>mctb-htscl-dual-loop</code></td><td>0 unclosed, 0 stray in all six</td></tr>
+        <tr><td><code>parse_plan</code> with the live server's revision <code>1e9342ad4</code></td><td>all six parse in 0.02&nbsp;s</td></tr>
+        <tr><td><code>parse_plan</code> with current code</td><td>parse in 0.02&nbsp;s</td></tr>
+        <tr><td><code>reckon audit-doc</code> on the working copy</td><td>OK, exit 0</td></tr>
+        <tr><td><code>GET /plan/mctb/research/mctb-htscl-loop-configuration</code> on the stale server</td><td>200 in 13&nbsp;ms</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s4">§4 — Contributing defects and what changed</h2>
+    <table>
+      <thead><tr><th>Defect</th><th>Evidence</th><th>Change</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>The served server ran code two days older than the client it served.</td>
+          <td>190 <code>reckon/</code> commits since start; 16 <code>/_index</code> and 112 <code>/_thumb</code> 404s; 14&nbsp;s discovery fallback.</td>
+          <td>Reinstalled and restarted at 06:34:36. Nothing yet stops it recurring (§7).</td>
+        </tr>
+        <tr>
+          <td>The service unit started on every host that mounts the home directory.</td>
+          <td>A second server ran on the compute node from 05:36:28, started by that host's user manager from the same enabled unit file and appending to the same log. Its lines were indistinguishable from the real server's and misdirected this investigation for a time.</td>
+          <td><code>ecdfd6227</code>: the rendered unit carries <code>ConditionHost=</code> the installing host. On the compute node a start now reports <code>ConditionResult=no</code>; the duplicate was stopped.</td>
+        </tr>
+        <tr>
+          <td>The reader called every failure without an HTTP status a "network error".</td>
+          <td>The same label covered a fetch that got no answer and an exception thrown while reading an answer, so it could not say whether to look at the connection or at the document.</td>
+          <td><code>4235e01b7</code>: the banner now reads the HTTP status, <em>no response — the request did not reach the server</em>, or <em>unreadable response — &lt;error&gt;</em>. Verified in Chromium with the HTML fetch refused and the state fetch answered with non-JSON.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 id="s5">§5 — Verification after the change</h2>
+    <table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Login-node endpoints after restart</td><td><code>/_index/mctb</code> 200 (7&nbsp;ms), <code>/_index/imas-ambix</code> 200 (2.0&nbsp;s cold), <code>/_thumb/…</code> 200, plan state and raw HTML 200</td></tr>
+        <tr><td>Headless Chromium through an SSH tunnel, plan and fleet home</td><td>Both on the <code>/_index</code> fast path, no failed request, no console error. The fleet's plan count (629) matches the index's 629 live plans across 14 mounts.</td></tr>
+        <tr><td>Unit host condition</td><td>Login node <code>ConditionResult=yes</code>, active; compute node <code>ConditionResult=no</code>, inactive</td></tr>
+        <tr><td>Tests</td><td>The 7 files importing the service module: 45 passed. The 8 files reading <code>plan.jsx</code>: 75 passed, 17 browser cases skipped (no browser on the harness path).</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s6">§6 — Can reckon check a document's compliance by itself?</h2>
+    <p>
+      Yes, and the checker already exists. <code>reckon audit-doc</code> (also
+      <code>python -m reckon.doccheck</code>) checks the render contract: required meta, sections
+      that are never closed, relative image paths, literal markdown in rendered bodies. It exits 1
+      on any error. Measured here it passed the real mctb document and failed all four broken
+      specimens: an empty file, a binary file, a file truncated mid-section, and one with
+      mismatched closing tags.
+    </p>
+    <p>
+      What is missing is the trigger. Today only the <code>reckon-create</code> skill's text asks
+      an agent to run it, which depends on an agent remembering to. That is the kind of check that
+      fails. The server, meanwhile, never lets a malformed document take a project down: discovery
+      kept listing the good document beside all four broken ones. But it is silent about them.
+      The empty and binary files disappeared from the listing without a word, the truncated one
+      listed as if whole, and <code>plan-impl="abc"</code> read as 0.
+    </p>
+    <p>The recommended pattern ties the existing checker to moments that always happen:</p>
+    <table>
+      <thead><tr><th>Moment</th><th>Mechanism</th><th>What it catches</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Commit (blocking)</td>
+          <td>A check-only git pre-commit hook in each mounted repository, installed by <code>reckon sync</code>. It runs <code>reckon audit-doc</code> on the staged blobs of <code>docs/**/*.html</code> only (read with <code>git show :&lt;path&gt;</code>, so it checks what is committed rather than the working file) and never edits anything.</td>
+          <td>Every author — human, agent, any harness — at the one step all of them take.</td>
+        </tr>
+        <tr>
+          <td>Edit (advisory)</td>
+          <td>A post-write harness hook on <code>docs/**/*.html</code>, added to the fragment <code>reckon hooks install</code> already manages.</td>
+          <td>The agent sees the error in the turn it wrote it, before it reaches a commit.</td>
+        </tr>
+        <tr>
+          <td>Read (visible)</td>
+          <td>Discovery computes each document's check verdict in Python and carries it in the index row. The reader badges a non-compliant document, and <code>reckon audit</code> lists them across every mount.</td>
+          <td>Documents written before the hooks existed, committed with the hook bypassed, or edited outside git; and the silent drops above.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      With the commit and read bindings in place, no agent needs to remember anything. The edit
+      binding only makes the feedback earlier. One caveat about this incident: none of the three
+      would have prevented it, because the document was valid. They prevent the failure that was
+      suspected, not the one that occurred.
+    </p>
+
+    <h2 id="s7">§7 — Remaining work</h2>
+    <p>
+      <strong>Keep the served server current.</strong> This is the recurring defect, and today's
+      fix was a manual restart. Two shapes would close it. In the first, the server records a
+      digest of the source it loaded and reports it beside the digest on disk, and the reader
+      shows a banner naming the gap when they differ. That is cheap, cannot break the site, and
+      would have made this morning's condition visible at 01:53. In the second, the server exits
+      once its package changes on disk and the new code imports cleanly in a subprocess, and
+      <code>Restart=always</code> brings it back on the new code. That removes the manual step,
+      at the cost of a restart and cold caches on every landed change. The first is recommended
+      now; the second is a decision for the lead.
+    </p>
+    <p>
+      <strong>Bind document compliance</strong> as set out in §6, starting with the read-time
+      verdict, because it needs no installation in each repository and catches the existing
+      backlog.
+    </p>
+  </main>
+</body>
+</html>
