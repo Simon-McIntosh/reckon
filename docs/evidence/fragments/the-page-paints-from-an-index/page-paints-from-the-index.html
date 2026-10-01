@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="The loader resolves the first paint from /_index/<project> and merges the discovery payload's derived fields into the same rows afterwards, in place and in order; an index that is unavailable falls back to the discovery path.">
   <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
   <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s4">
-  <meta name="plan-commits" content="f83e38014,ad6971e0d,83207a0e0,39d09daab">
+  <meta name="plan-commits" content="f83e38014,ad6971e0d,83207a0e0,39d09daab,07e4597e2">
   <meta name="plan-recorded-at" content="2026-10-01">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-tags" content="spa,state-loader,index,discovery,first-paint">
@@ -66,8 +66,8 @@
     merged ready set: <code>2 failed, 1 passed, EXIT=1</code>
     (<code>negative-control-readiness-gated-on-discovery.log</code>). Mutation reverted.</li>
     <li><strong>The gate.</strong> Base <code>4bdf93dde</code>: <code>75 passed, 2 skipped,
-    EXIT=0</code>. Head <code>39d09daab</code>: <code>79 passed, 2 skipped, EXIT=0</code>
-    across the new test and the four pre-existing files. No added failure id. <code>ruff check</code> and <code>ruff format --check</code> over
+    EXIT=0</code>. Head <code>07e4597e2</code>: <code>83 passed, 2 skipped, EXIT=0</code>
+    across the new test's eight cases and the four pre-existing files. No added failure id. <code>ruff check</code> and <code>ruff format --check</code> over
     the changed Python paths report no finding the base did not.</li>
   </ul>
 
@@ -96,8 +96,32 @@
   <p>The case that pins it lives in <code>tests/test_page_paints_from_the_index.py</code>,
   against a real server: the served index is read, one plan is rewritten, the change
   event is awaited, and the endpoint is read again — the row carries the new title.
-  Against the old route the case fails (<code>1 failed, 3 deselected, EXIT=1</code>);
-  with this one the file is <code>4 passed</code>.</p>
+  Commit <code>07e4597e2</code> restores inside that one entry point the guard the
+  per-stream stamp used to provide: the index rows and the reuse window go on every
+  report, while a cached discovery computed after the reporting watcher's own
+  observation survives, so two open pages cost one rebuild per change. The stamp is
+  taken as the change is observed, before the settle wait, at both watch call sites.</p>
+
+  <p>Two cases cover it. <code>test_two_change_streams_recompute_discovery_once</code>
+  opens two real streams, rewrites one plan and counts rebuilds: one. It is honest about
+  its limit — it passes at the pre-guard revision too, because the second stream's pop
+  lands before the first stream's rebuild in that interleaving — so
+  <code>test_a_report_keeps_a_discovery_newer_than_the_report</code> pins the guard
+  itself, deterministically: a change is reported, the next read rebuilds, a second
+  report of the same change leaves that rebuild in place while the index rows are
+  rebuilt again. Against the pre-guard revision the file reports
+  <code>1 failed, 1 passed, EXIT=1</code>.</p>
+
+  <p>Two defects the review found in the loader are fixed in the same commit.
+  <code>window.STATE_DERIVED_READY</code> was created only on the index path, so a
+  consumer awaiting it after the fallback — the path a live server takes until it
+  restarts — got <code>undefined</code>; every path now settles it, after the merge on
+  the index path and with the assembled state on the fallback. And
+  <code>mergeDerived</code> pushed a row the index had not carried into the inventory
+  while also recording it as pending; it is now held as an arrival only, so a row that
+  arrives with the derived payload does not insert itself into the list the reader is
+  looking at. Both cases fail against the pre-fix loader
+  (<code>2 failed, EXIT=1</code>).</p>
 </article>
 </body>
 </html>
