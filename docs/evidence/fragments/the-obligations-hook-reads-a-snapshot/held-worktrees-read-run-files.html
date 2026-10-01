@@ -44,15 +44,15 @@
         <td><code>4f53cda18c2baa0c</code></td><td><code>held-base-s21-1c.log</code></td>
       </tr>
       <tr>
-        <td>head <code>40d66ddc</code></td><td>0.675</td><td>0</td>
-        <td><code>4f53cda18c2baa0c</code></td><td><code>held-head-s21-1c.log</code></td>
+        <td>head <code>cd1dffd6</code>, first call</td><td>1.198</td><td>0</td>
+        <td><code>4f53cda18c2baa0c</code></td><td><code>held-head-mixed-s21-1c.log</code></td>
       </tr>
     </tbody>
   </table>
-  <p>Both arms answer the same empty held set over the same session, so the removed read changed the
+  <p>Both arms answer the same empty held set over the same session, so the changed read changed the
   cost and not the answer. The session's worktree directory is empty, which is what isolates the
   read: the base arm spends its 3.324 s on the ledger before finding nothing to inspect, and the head
-  arm reaches the same answer in 0.675 s without entering the whole-ledger path at all.</p>
+  arm reaches the same answer having parsed crew.json once for the process (1.198 s) and answered the calls after it from the rows cached against that file's stat identity (0.644 and 0.796 s).</p>
 
   <h3>Parity and the fallback on the real fleet</h3>
   <p>The head derivation was compared with the whole-ledger scan it replaced for every session that
