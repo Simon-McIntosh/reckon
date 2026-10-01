@@ -289,10 +289,14 @@ class _FleetChangeWatch:
                 if watch is None:
                     continue
                 watch.consume()
+                # The stamp is taken as the change is observed, before the
+                # settle wait, so a discovery another watcher recomputed for
+                # the same event is reused rather than recomputed again.
+                changed_at = time.monotonic()
                 # A save or a merge is a burst of events; let it settle so the
                 # burst costs one invalidation rather than one per event.
                 watch.drain(_CHANGE_SETTLE_S)
-                _invalidate_tree_views(watch.root)
+                _invalidate_tree_views(watch.root, changed_at=changed_at)
 
     def close(self) -> None:
         """Signal the watch thread to stop and release its descriptors."""
@@ -1460,42 +1464,39 @@ def _cache_discovery_result(
     return result
 
 
-def _invalidate_discovery(cache_key: tuple[str, str], changed_at: float) -> None:
-    """Drop a cached discovery computed before ``changed_at``.
-
-    Every open change stream observes the same filesystem event; the stamp
-    lets the first stream's recomputation serve the others instead of each
-    stream discarding the result the previous one just built.
-    """
-
-    cached = _DISC_CACHE.get(cache_key)
-    if cached is not None and cached.computed_at < changed_at:
-        _DISC_CACHE.pop(cache_key, None)
-
-
-def _invalidate_discovery_tree(docs_dir: Path) -> None:
+def _invalidate_discovery_tree(docs_dir: Path, changed_at: float | None = None) -> None:
     """Forget cached discoveries for one docs tree, whatever the project.
 
     A tree's change notification names the tree, not the project whose page a
     reader happened to be looking at, so every project mounted on that tree is
-    dropped together.
+    dropped together. A caller that names the moment it observed the change
+    keeps a discovery computed after it: every watch reports the same
+    filesystem event, and the recomputation the first one paid for is the
+    answer the others want rather than one each repeats.
     """
 
     root = str(Path(docs_dir).resolve())
     for key in [key for key in _DISC_CACHE if key[1] == root]:
+        entry = _DISC_CACHE[key]
+        if changed_at is not None and entry.computed_at >= changed_at:
+            continue
         _DISC_CACHE.pop(key, None)
 
 
-def _invalidate_tree_views(root: Path) -> None:
+def _invalidate_tree_views(root: Path, changed_at: float | None = None) -> None:
     """Drop every derived view of one docs tree after a reported change.
 
-    One entry point for the change watch: the discovery reuse window, the
-    cached discoveries and the in-process metadata index all key off the same
-    tree, so a change to any one of them must drop all three together.
+    One entry point for every watch: the discovery reuse window, the cached
+    discoveries and the in-process metadata index all key off the same tree, so
+    a change to any one of them drops all three together. The reuse window and
+    the index rows go on every reported change — a reader must never be handed
+    a row list that predates it — while the cached discoveries are dropped only
+    when they predate the reporting watch's own observation, so N open pages
+    pay for one recomputation per change.
     """
 
     _invalidate_discovery_signatures(root)
-    _invalidate_discovery_tree(root)
+    _invalidate_discovery_tree(root, changed_at=changed_at)
     metadata_index.invalidate_tree(root)
 
 
@@ -2317,14 +2318,19 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("X-Accel-Buffering", "no")
             self.end_headers()
             self._write_project_event("ready", digest)
-            cache_key = (project, str(docs_dir.resolve()))
             while watch.wait(self.connection):
+                # The stamp is taken as the change is observed, before the
+                # settle wait: every open stream observes one filesystem event,
+                # and the recomputation the first of them pays for is what the
+                # rest read instead of repeating.
+                changed_at = time.monotonic()
                 # A save or a merge is a burst of events; let it settle so the
                 # burst costs one rediscovery rather than one per event.
                 watch.drain(_CHANGE_SETTLE_S)
-                changed_at = time.monotonic()
-                _invalidate_discovery_signatures(docs_dir)
-                _invalidate_discovery(cache_key, changed_at)
+                # Every watch that reports a tree drops the same views of it,
+                # so a page that paints from the index is never handed rows
+                # that predate the change its own stream just reported.
+                _invalidate_tree_views(docs_dir, changed_at=changed_at)
                 current = discover_plans(docs_dir, project, _STATE_ROOT)
                 next_digest = current.get("provenance", {}).get("content_digest", "")
                 if next_digest == digest:

@@ -1,13 +1,14 @@
-"""The served loader assembles window.STATE from discovery alone.
+"""The served loader reads an aggregate file only when no served endpoint answers.
 
-The served path has a live ``/_discover/<project>`` endpoint that already
-carries the inventory, sprints, milestones, blockers, timeline, active sprint,
-north stars, source format and resource versions. The aggregate file the fleet
-migration superseded is not read for such a page: transferring it beside the
-discovery payload moved the inventory twice and put a stale ``projects[]``
-block into ``window.STATE``. ``state/<project>/projection.json`` stands in only
-for the static build, and ``state/<project>/index.json`` only when projection is
-also unavailable.
+The served path has live ``/_index/<project>`` and ``/_discover/<project>``
+endpoints: the loader paints from the index and merges the discovery payload in
+afterwards, and a request that fails at the network or answers 404 takes the
+discovery path instead. The cases here exercise that discovery path, so they
+also cover the static build. ``state/<project>/projection.json`` stands in only
+when discovery is unreachable, and ``state/<project>/index.json`` only when
+projection is also unavailable. The aggregate file the fleet migration
+superseded is never read beside a payload that answered: transferring it moved
+the inventory twice and put a stale ``projects[]`` block into ``window.STATE``.
 
 Each case runs the real loader under ``node`` with a recording ``fetch``, so
 the assertions are about the requests the loader actually made and the state

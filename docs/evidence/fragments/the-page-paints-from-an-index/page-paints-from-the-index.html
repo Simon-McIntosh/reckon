@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-page-paints-from-an-index">
+  <meta name="plan-title" content="A page paints from the index, and derived state arrives when ready">
+  <meta name="plan-summary" content="The loader resolves the first paint from /_index/<project> and merges the discovery payload's derived fields into the same rows afterwards, in place and in order; an index that is unavailable falls back to the discovery path.">
+  <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
+  <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s4">
+  <meta name="plan-commits" content="f83e38014,ad6971e0d,83207a0e0,39d09daab,07e4597e2">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="spa,state-loader,index,discovery,first-paint">
+  <title>A page paints from the index — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="page-paints-from-the-index" data-reckon="landed" data-when="2026-10-01">
+  <h2>A page paints from the index, and derived state arrives when ready</h2>
+
+  <p>Commit <code>f83e38014</code> changes <code>docs/ui/state-loader.js</code> so the
+  served page asks <code>/_index/&lt;project&gt;</code> first — one row per document and
+  figure and nothing derived — and resolves <code>window.STATE_READY</code> on those rows.
+  The discovery payload is fetched on its own task afterwards and its derived fields and
+  ready set are merged into the rows already on screen: each row keeps its object and its
+  place in the list, a row the index did not carry is held as an arrival rather than
+  inserted, and the payload-level blocks (ready set, sprints, counts) are refreshed around
+  them. <code>window.STATE_DERIVED_READY</code> resolves when that merge has happened.</p>
+
+  <p>An index request that answers 404, or fails at the network, selects the path that
+  stood in for it before — the discovery payload, then
+  <code>state/&lt;project&gt;/projection.json</code>, then
+  <code>state/&lt;project&gt;/index.json</code> — so a static build still paints. The
+  derived values stay computed in Python; the loader only merges them.</p>
+
+  <h3>Measured</h3>
+  <ul>
+    <li><strong>The declared measure, at <code>ad6971e0d</code>:</strong>
+    <code>tests/test_page_paints_from_the_index.py</code> runs the real loader under
+    <code>node</code> with a recording <code>fetch</code>.
+    <ul>
+      <li>With <code>/_discover</code> never resolving, readiness resolves with all four
+      index rows present and the only request made before readiness is
+      <code>/_index/sample</code>; the discovery request is observed afterwards, which is
+      the positive control for that assertion.</li>
+      <li>With <code>/_discover</code> answering later, the derived fields land on the same
+      row objects (<code>same_rows</code> true over four rows), the order is unchanged
+      (<code>alpha, beta, evidence:gate, figure:plot.png</code>), and
+      <code>effective_status</code> moves from the index's own statuses to the derived
+      <code>blocked, ready, recorded, draft</code> with the ready set arriving whole. The
+      figure row survives the merge although discovery does not list it.</li>
+      <li>With the index answering 404 and, separately, with the index request refused,
+      readiness still resolves from discovery with the three discovery rows and its
+      effective statuses.</li>
+    </ul>
+    All three cases fail against the base loader in a scratch tree
+    (<code>/tmp/r-20260930T233807728765/base-tree</code>): <code>3 failed, EXIT=1</code>.</li>
+    <li><strong>The declared negative control is executed and logged:</strong> with the
+    index path awaiting <code>window.STATE_DERIVED_READY</code> before returning —
+    readiness gated on the discovery response again — the first case never resolves and
+    fails on its timeout, and the second fails because the first paint already carries the
+    merged ready set: <code>2 failed, 1 passed, EXIT=1</code>
+    (<code>negative-control-readiness-gated-on-discovery.log</code>). Mutation reverted.</li>
+    <li><strong>The gate.</strong> Base <code>4bdf93dde</code>: <code>75 passed, 2 skipped,
+    EXIT=0</code>. Head <code>07e4597e2</code>: <code>83 passed, 2 skipped, EXIT=0</code>
+    across the new test's eight cases and the four pre-existing files. No added failure id. <code>ruff check</code> and <code>ruff format --check</code> over
+    the changed Python paths report no finding the base did not.</li>
+  </ul>
+
+  <h3>The stale index the first paint exposed</h3>
+
+  <p>Painting from the index first made a second defect visible. The watch that serves
+  <code>/_changes/&lt;project&gt;</code> dropped the cached discovery but not the cached
+  metadata index, so a page revalidating after its own change event was handed rows that
+  predated it. Measured at <code>ad6971e0d</code> with
+  <code>tests/test_spa_state_boundary.py::test_open_page_receives_new_plan_without_navigation_or_polling</code>,
+  left unchanged: after the change event and <code>await window.revalidateProjectState()</code>
+  the loader's requests are <code>/_index/sample</code>, <code>/_discover/sample</code>,
+  <code>/_index/sample</code> and the inventory is <code>["present"]</code> — the plan
+  written before the event is missing. Only the fleet watch that <code>main()</code> arms
+  reached <code>_invalidate_tree_views</code>, which is the call that drops all three views
+  of a tree together.</p>
+
+  <p>Commit <code>83207a0e0</code> routes the per-connection watch through that same call,
+  so every watch that reports a tree drops the discovery reuse window, the cached
+  discoveries and the in-process index in one rule; the per-stream stamp helper
+  <code>_invalidate_discovery</code>, whose only caller it was, goes with it. The watch-side
+  rule was chosen over revalidating rows by stat identity on every request, which would
+  re-stat the whole tree per request and undo the restart cost the index exists to remove.
+  The boundary case above now passes unchanged.</p>
+
+  <p>The case that pins it lives in <code>tests/test_page_paints_from_the_index.py</code>,
+  against a real server: the served index is read, one plan is rewritten, the change
+  event is awaited, and the endpoint is read again — the row carries the new title.
+  Commit <code>07e4597e2</code> restores inside that one entry point the guard the
+  per-stream stamp used to provide: the index rows and the reuse window go on every
+  report, while a cached discovery computed after the reporting watcher's own
+  observation survives, so two open pages cost one rebuild per change. The stamp is
+  taken as the change is observed, before the settle wait, at both watch call sites.</p>
+
+  <p>Two cases cover it. <code>test_two_change_streams_recompute_discovery_once</code>
+  opens two real streams, rewrites one plan and counts rebuilds: one. It is honest about
+  its limit — it passes at the pre-guard revision too, because the second stream's pop
+  lands before the first stream's rebuild in that interleaving — so
+  <code>test_a_report_keeps_a_discovery_newer_than_the_report</code> pins the guard
+  itself, deterministically: a change is reported, the next read rebuilds, a second
+  report of the same change leaves that rebuild in place while the index rows are
+  rebuilt again. Against the pre-guard revision the file reports
+  <code>1 failed, 1 passed, EXIT=1</code>.</p>
+
+  <p>Two defects the review found in the loader are fixed in the same commit.
+  <code>window.STATE_DERIVED_READY</code> was created only on the index path, so a
+  consumer awaiting it after the fallback — the path a live server takes until it
+  restarts — got <code>undefined</code>; every path now settles it, after the merge on
+  the index path and with the assembled state on the fallback. And
+  <code>mergeDerived</code> pushed a row the index had not carried into the inventory
+  while also recording it as pending; it is now held as an arrival only, so a row that
+  arrives with the derived payload does not insert itself into the list the reader is
+  looking at. Both cases fail against the pre-fix loader
+  (<code>2 failed, EXIT=1</code>).</p>
+</article>
+</body>
+</html>
