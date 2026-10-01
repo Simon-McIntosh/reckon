@@ -2099,9 +2099,31 @@ def dispatch_repair_for_run(
         suite_command=inherited_suite,
     )
     if composed is None:
-        # The composer returns None for a finding-bearing record only when the
-        # record it re-read differs from the one selected here; the round is
-        # left for a coordinator rather than dispatched from a stale parse.
+        # The composer returns None for a finding-bearing record in two cases,
+        # told apart from the findings already read here so the recorded reason
+        # names the cause rather than one string standing for both. A round
+        # whose findings are all follow-ons has nothing that blocks to answer,
+        # so it composes no repair and the count names how many were left that
+        # way; the record is left on the reviewed run as the round's outcome.
+        # Otherwise the record the composer re-read differs from the one
+        # selected here, and the round is left for a coordinator rather than
+        # dispatched from a stale parse.
+        if not repair_module.blocking_findings(review):
+            reason = (
+                "the review round carried no blocking finding "
+                f"({len(findings)} follow-on finding(s))"
+            )
+            _record_repair_dispatch(
+                run_id,
+                status="decline-only",
+                reason=reason,
+                round_id=round_id,
+            )
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "reason": reason,
+            }
         return {
             "run_id": run_id,
             "dispatched": False,
