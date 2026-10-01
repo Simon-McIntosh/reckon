@@ -5295,8 +5295,13 @@ def crew_complete(
     "--timeout-seconds",
     "timeout_seconds",
     type=float,
-    default=300.0,
-    help="Bound on the gate re-run before it is reported as timed out.",
+    default=None,
+    help=(
+        "Bound on the gate re-run before it is reported as timed out. "
+        "Omitted, the bound is derived from the duration the run's recorded "
+        "gate log carries, with headroom between a 300 s floor and a 1800 s "
+        "ceiling; a run whose log records no duration keeps the 300 s default."
+    ),
 )
 @click.option(
     "--command",
@@ -5325,6 +5330,10 @@ def crew_verify_gate(
     node's own gate, and can do so on a run that stored no gate command. The
     recorded report names the command that actually ran and whether it came
     from the option or the stored row.
+
+    The re-run's bound is derived from the duration the run's recorded gate
+    log carries unless --timeout-seconds names one explicitly; the report
+    records which bound applied and its value either way.
     """
     crew_module, _ = _crew_modules()
     try:
