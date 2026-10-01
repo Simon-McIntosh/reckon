@@ -672,7 +672,8 @@ def paste_command(no_fleet):
 
     An image is written to /tmp here and, when a fleet allocation is running,
     at the same path on its node, so the printed path is valid in a fleet
-    session too. `pi` is this command.
+    session too. Inside a SLURM job, such as a fleet pane, the clipboard is
+    reached through the job's login node. `pi` is this command.
     """
     from reckon.paste import paste
 

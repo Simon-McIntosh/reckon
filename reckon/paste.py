@@ -8,6 +8,19 @@ a login node reaches it: ``GET /health`` answers when the bridge is up,
 reverse forward binds only on the node its ssh session reached, so a shell on a
 login node the tunnel did not reach has no bridge at all.
 
+A compute node never has one, and a fleet pane is a shell on a compute node.
+Inside a SLURM job with no forward bound here, the bridge is reached through
+the job's submit host instead: ``curl`` runs there over ssh against that login
+node's forward, the same instrument the tunnel's own health probe uses.
+
+When the bridge does not answer, the diagnosis says which side is broken by
+asking the tunnel's second reverse forward, the client's sshd on the ssh-back
+port. A banner through it proves the tunnel reaches the node, so the bridge
+behind it is down. Silence through both means the ports are held by a tunnel
+session that dropped with the client's network, which the server keeps for
+minutes and which no restart on the client can displace; ``imas-codex tunnel
+reclaim`` on the login node ends it.
+
 An image is written to ``/tmp`` on this host and its path printed, so it can be
 handed to an agent by path. ``/tmp`` is node-local, and agent sessions run
 inside the fleet allocation on a compute node, where the login node's ``/tmp``
@@ -27,8 +40,10 @@ copy to the fleet node is reported without failing it.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
+import shlex
 import socket
 import subprocess
 import sys
@@ -44,10 +59,26 @@ from reckon.crew.fleet_supervisor import RECORD_NAME, state_directory
 PORT_ENV = "WSL_CLIP_PORT"
 DEFAULT_PORT = 2490
 
+# The tunnel's ssh-back forward: the client's sshd, reverse-forwarded beside the
+# bridge. Its banner is the witness that tells a down bridge from a dead tunnel.
+SSH_PORT_ENV = "WSL_SSH_PORT"
+DEFAULT_SSH_PORT = 2222
+
 HEALTH_TIMEOUT_SECONDS = 2.0
 PASTE_TIMEOUT_SECONDS = 12.0
 SCHEDULER_TIMEOUT_SECONDS = 10.0
 COPY_TIMEOUT_SECONDS = 60.0
+BANNER_TIMEOUT_SECONDS = 4
+# What ssh itself may add to a relayed request: connecting to the login node.
+RELAY_OVERHEAD_SECONDS = 8.0
+
+# curl -f exits with this when the server answered with an HTTP error status.
+_CURL_HTTP_ERROR = 22
+
+_SSH = ("ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5", "-o", "LogLevel=ERROR")
+
+# The client-side tunnel is managed by this CLI; every remedy names it.
+_TUNNEL_CLI = "uv run --project ~/Code/imas-codex imas-codex tunnel"
 
 PASTE_DIRECTORY = Path("/tmp")  # noqa: S108 - the path an agent is handed
 PASTE_PREFIX = "paste-"
@@ -76,6 +107,84 @@ def bridge_port(environ: Mapping[str, str] | None = None) -> int:
     environ = os.environ if environ is None else environ
     value = str(environ.get(PORT_ENV, "")).strip()
     return int(value) if value.isdigit() else DEFAULT_PORT
+
+
+def ssh_back_port(environ: Mapping[str, str] | None = None) -> int:
+    """The port the tunnel forwards the client's sshd to on the login nodes."""
+    environ = os.environ if environ is None else environ
+    value = str(environ.get(SSH_PORT_ENV, "")).strip()
+    return int(value) if value.isdigit() else DEFAULT_SSH_PORT
+
+
+def relay_host(environ: Mapping[str, str] | None = None) -> str | None:
+    """The login node to reach the bridge through from inside a SLURM job.
+
+    The job's submit host is a login node, and the tunnel binds its reverse
+    forwards on the login nodes. None outside a job, or when this host is the
+    submit host itself.
+    """
+    environ = os.environ if environ is None else environ
+    host = str(environ.get("SLURM_SUBMIT_HOST", "")).strip()
+    if not host or host.split(".")[0] == _short_hostname():
+        return None
+    return host
+
+
+def _on_host(host: str, run: Runner) -> Runner:
+    """A runner that runs each command on ``host`` over ssh instead of here."""
+
+    def remote(argv, **kwargs):
+        return run([*_SSH, host, shlex.join(argv)], **kwargs)
+
+    return remote
+
+
+class RelayError(Exception):
+    """The bridge did not answer through the login node relayed through.
+
+    ``reached`` is False when ssh never reached the login node, so nothing is
+    known about the bridge; ``answered`` is True when the bridge replied with an
+    HTTP error, so it is up and the request itself failed.
+    """
+
+    def __init__(self, detail: str, *, reached: bool, answered: bool = False):
+        super().__init__(detail)
+        self.reached = reached
+        self.answered = answered
+
+
+def _relay(
+    host: str,
+    port: int,
+    route: str,
+    run: Runner,
+    *,
+    timeout: float,
+    data: bytes | None = None,
+) -> bytes:
+    """One bridge request made by ``curl`` on ``host``, against its forward."""
+    command = ["curl", "-fsS", "--noproxy", "*", "--max-time", str(int(timeout))]
+    if data is not None:
+        command += ["--data-binary", "@-"]
+    command.append(f"http://127.0.0.1:{port}/{route}")
+    try:
+        reply = run(
+            [*_SSH, host, shlex.join(command)],
+            input=data,
+            capture_output=True,
+            timeout=timeout + RELAY_OVERHEAD_SECONDS,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise RelayError(str(exc), reached=False) from exc
+    if reply.returncode != 0:
+        detail = (reply.stderr or b"").decode("utf-8", errors="replace").strip()
+        lines = detail.splitlines()
+        raise RelayError(
+            lines[-1] if lines else f"exit {reply.returncode}",
+            reached=reply.returncode != 255,
+            answered=reply.returncode == _CURL_HTTP_ERROR,
+        )
+    return reply.stdout
 
 
 def _opener() -> urllib.request.OpenerDirector:
@@ -150,33 +259,108 @@ def _forward_bound_here(port: int, run: Runner) -> bool:
     return bool(listing.stdout.strip())
 
 
-def bridge_diagnosis(port: int, run: Runner = subprocess.run) -> list[str]:
-    """Say why the bridge is unreachable here, and what restores it."""
-    node = _short_hostname()
-    lines = [f"clipboard bridge unreachable on {node}:{port}"]
-    if _forward_bound_here(port, run):
-        # Bound here but nothing answers: the forward reaches this node and the
-        # bridge behind it is down, or the forward itself is stale.
-        lines += [
-            f"  The reverse forward is bound on {node}, but nothing answers through it.",
-            "  Fix, on WSL: systemctl --user restart wsl-clip-server.service",
+def _ssh_back_answers(port: int, run: Runner) -> bool | None:
+    """Whether the client's sshd answers through the ssh-back forward.
+
+    None when that forward is not bound, so it can witness nothing. A banner is
+    read rather than a login attempted, so the verdict describes the tunnel and
+    not which keys the client authorises.
+    """
+    if not _forward_bound_here(port, run):
+        return None
+    try:
+        reply = run(
+            [
+                "timeout",
+                str(BANNER_TIMEOUT_SECONDS),
+                "bash",
+                "-c",
+                'exec 3<>"/dev/tcp/127.0.0.1/$0"; head -c 4 <&3',
+                str(port),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=SCHEDULER_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return reply.stdout.startswith("SSH-")
+
+
+def bridge_diagnosis(
+    port: int,
+    run: Runner = subprocess.run,
+    *,
+    ssh_port: int = DEFAULT_SSH_PORT,
+    node: str | None = None,
+) -> list[str]:
+    """Say why the bridge is unreachable on ``node``, and what restores it.
+
+    ``run`` executes on ``node``: this host by default, or a login node relayed
+    through. A remedy to run on the node is spelled for wherever the reader is.
+    """
+    here = _short_hostname()
+    node = node or here
+    on_node = "" if node == here else f"ssh {node} "
+    reclaim = f"{on_node}{_TUNNEL_CLI} reclaim"
+    restart_bridge = "systemctl --user restart wsl-clip-server.service"
+    headline = f"clipboard bridge unreachable on {node}:{port}"
+    if not _forward_bound_here(port, run):
+        return [
+            headline,
             (
-                "  Still failing (stale forward): "
-                "systemctl --user restart imas-codex-tunnel-iter.service"
+                f"  No reverse forward is bound on {node}: the tunnel from WSL is "
+                "down or reconnecting, or does not reach this node."
+            ),
+            "  Check it, on WSL:",
+            f"    {_TUNNEL_CLI} service status iter",
+            "  Not yet installed to bind on every login node? On WSL:",
+            f"    {_TUNNEL_CLI} service install iter --reverse-node all",
+        ]
+    witness = _ssh_back_answers(ssh_port, run)
+    if witness:
+        return [
+            headline,
+            f"  The tunnel reaches {node}: WSL's sshd answers through :{ssh_port}.",
+            f"  So the bridge behind :{port} is down. Fix, on WSL:",
+            f"    {restart_bridge}",
+            (
+                f"  WSL is reachable from {node} through the same tunnel: "
+                f"ssh -p {ssh_port} localhost"
             ),
         ]
-    else:
-        lines += [
-            f"  No reverse forward is bound on {node}: the WSL tunnel does not reach this node.",
-            "  Fix, on WSL (binds on every login node, restarts the tunnel):",
+    if witness is False:
+        return [
+            headline,
             (
-                "    uv run --project ~/Code/imas-codex imas-codex tunnel service install "
-                "iter --reverse-node all"
+                f"  Both reverse forwards on {node} (:{port}, :{ssh_port}) are "
+                "bound, and nothing answers through either."
             ),
-            "  Already installed that way? The unit is down or restarting:",
-            "    systemctl --user status imas-codex-tunnel-iter.service",
+            (
+                "  A tunnel session that dropped with WSL's network still holds "
+                "them, so the reconnected tunnel cannot bind here."
+            ),
+            (
+                "  The tunnel service frees them itself within a minute or two. "
+                f"To free them now, on {node}:"
+            ),
+            f"    {reclaim}",
         ]
-    return lines
+    return [
+        headline,
+        (
+            f"  The reverse forward on {node} is bound, but nothing answers through "
+            f"it, and with no ssh-back forward on :{ssh_port}"
+        ),
+        "  there is no telling a dropped tunnel session from a down bridge.",
+        (
+            "  A dropped session (it ends only one whose forwards all go "
+            f"unanswered), on {node}:"
+        ),
+        f"    {reclaim}",
+        "  A down bridge, on WSL:",
+        f"    {restart_bridge}",
+    ]
 
 
 @dataclass(frozen=True)
@@ -280,18 +464,54 @@ def paste(
     out = sys.stdout if out is None else out
     err = sys.stderr if err is None else err
     port = bridge_port(environ)
+    ssh_port = ssh_back_port(environ)
 
+    # The login node the bridge is reached through, when this host has no
+    # forward of its own; None reads this host's forward directly.
+    via: str | None = None
     if not bridge_healthy(port):
-        headline, *remedy = bridge_diagnosis(port, run)
-        print(f"reckon paste: {headline}", file=err)
-        for line in remedy:
-            print(line, file=err)
-        return 1
-    try:
-        data = fetch_clipboard(port)
-    except (OSError, urllib.error.URLError, ValueError) as exc:
-        print(f"reckon paste: the bridge did not return the clipboard: {exc}", file=err)
-        return 1
+        via = relay_host(environ)
+        if via is None or _forward_bound_here(port, run):
+            _report(bridge_diagnosis(port, run, ssh_port=ssh_port), err)
+            return 1
+
+    if via is None:
+        try:
+            data = fetch_clipboard(port)
+        except (OSError, urllib.error.URLError, ValueError) as exc:
+            print(
+                f"reckon paste: the bridge did not return the clipboard: {exc}",
+                file=err,
+            )
+            return 1
+    else:
+        try:
+            data = _relay(via, port, "paste", run, timeout=PASTE_TIMEOUT_SECONDS)
+        except RelayError as exc:
+            node = via.split(".")[0]
+            here = _short_hostname()
+            if exc.answered:
+                print(
+                    f"reckon paste: the bridge did not return the clipboard: {exc}",
+                    file=err,
+                )
+                return 1
+            if not exc.reached:
+                print(
+                    f"reckon paste: {here} has no clipboard forward of its own, and "
+                    f"{node} could not be reached to relay through: {exc}",
+                    file=err,
+                )
+                return 1
+            context = (
+                f"  {here} has no clipboard forward of its own (a compute node never "
+                f"does), so the bridge was asked for through {node}."
+            )
+            diagnosis = bridge_diagnosis(
+                port, _on_host(via, run), ssh_port=ssh_port, node=node
+            )
+            _report(diagnosis, err, context=context)
+            return 1
 
     extension = image_extension(data)
     if extension is None:
@@ -322,5 +542,26 @@ def paste(
 
     # Put the path back on the client's clipboard so it can be pasted into an
     # agent's prompt directly.
-    copy_to_clipboard(port, str(image))
+    if via is None:
+        copy_to_clipboard(port, str(image))
+    else:
+        # Best effort, as copy_to_clipboard is: the path is already printed.
+        with contextlib.suppress(RelayError):
+            _relay(
+                via,
+                port,
+                "copy",
+                run,
+                timeout=HEALTH_TIMEOUT_SECONDS,
+                data=str(image).encode("utf-8"),
+            )
     return 0
+
+
+def _report(lines: list[str], err, *, context: str | None = None) -> None:
+    headline, *remedy = lines
+    print(f"reckon paste: {headline}", file=err)
+    if context:
+        print(context, file=err)
+    for line in remedy:
+        print(line, file=err)
