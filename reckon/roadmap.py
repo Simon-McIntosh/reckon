@@ -14,7 +14,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from reckon._plan_html import read_state
+from reckon._plan_html import read_state, read_state_file
 from reckon._timestamps import parse_utc
 from reckon._schema import (
     GATE_TRANSITIONS,
@@ -37,6 +37,7 @@ from reckon.doccheck import (
     derived_plan_age,
     unwired_plan_finding,
 )
+from reckon.followup_pointers import classify_followup
 from reckon.file_memo import memoized
 from reckon.lifecycle import (
     COMPLETED_STATUSES,
@@ -837,6 +838,92 @@ def _unwired_plan_findings(
                     finding.severity,
                     finding.message,
                     slug=slug,
+                )
+            )
+    return out
+
+
+def _plan_followups(
+    plan: Mapping[str, Any],
+    docs_dir: Path | None,
+    project: str,
+    slug: str,
+) -> list[Any]:
+    """Read a plan's followups from its own file when the row carries none.
+
+    A composed inventory row carries ``followups`` already; a discovery row
+    built for another surface does not. The file fallback is the same one the
+    section classification takes, so a roadmap composed from either kind of row
+    reports the same followups.
+    """
+
+    rows = plan.get("followups")
+    if isinstance(rows, list):
+        return rows
+    if docs_dir is None:
+        return []
+    try:
+        resource = resolve_resource(
+            docs_dir, project, slug, "plan", include_archived=False
+        )
+    except Exception:  # noqa: BLE001 — a resolution error is "no followups"
+        return []
+    path = getattr(resource, "path", None)
+    if path is None:
+        return []
+    try:
+        return list(read_state_file(path).get("followups") or [])
+    except Exception:  # noqa: BLE001 — an unreadable plan holds no readable row
+        return []
+
+
+def _followup_work_findings(
+    project: str,
+    plans: Mapping[str, dict[str, Any]],
+    docs_dir: Path | None = None,
+    sprint_ids: Iterable[str] = (),
+) -> list[dict[str, Any]]:
+    """Report open followups whose invocation hides work rather than pointing.
+
+    Every plan the roadmap inventories is judged, completed plans included: a
+    followup on a completed plan names work no surface can dispatch, and the
+    finding is how the roadmap says so. The classification is
+    :func:`reckon.followup_pointers.classify_followup`'s and nothing here
+    re-derives it.
+
+    ``docs_dir`` is the checkout the plan rows were inventoried from, so a row
+    carrying no ``section_declarations`` is judged against the same tree's
+    declarations rather than the registered mount's.
+    """
+
+    out: list[dict[str, Any]] = []
+    sprint_set = {str(identity) for identity in sprint_ids}
+    for slug, plan in sorted(plans.items()):
+        if str(plan.get("type") or "plan") != "plan":
+            continue
+        declarations = _plan_declarations(plan, docs_dir, project, slug)
+        for followup in _plan_followups(plan, docs_dir, project, slug):
+            if not isinstance(followup, Mapping):
+                continue
+            if str(followup.get("status") or "open") != "open":
+                continue
+            verdict = classify_followup(
+                plan,
+                followup,
+                project=project,
+                declarations=declarations,
+                sprint_ids=sprint_set,
+            )
+            if verdict.pointer:
+                continue
+            followup_id = str(followup.get("id") or "")
+            out.append(
+                _finding(
+                    "followup-hides-work",
+                    "warn",
+                    f"{slug}: followup {followup_id} hides work ({verdict.reason})",
+                    slug=slug,
+                    extra={"followup": followup_id, "reason": verdict.reason},
                 )
             )
     return out
@@ -2821,10 +2908,16 @@ def _build_roadmap(
     else:
         review_block = None
     review_findings = _review_health(project, review_block, local_graph)
+    inventory_docs_dir = Path(docs_dir) if docs_dir is not None else None
+    findings.extend(_unwired_plan_findings(project, plans, inventory_docs_dir))
+    sprint_ids = {
+        identity
+        for sprint in sprints
+        for identity in (str(sprint.get("id") or ""), str(sprint.get("_ref") or ""))
+        if identity
+    }
     findings.extend(
-        _unwired_plan_findings(
-            project, plans, Path(docs_dir) if docs_dir is not None else None
-        )
+        _followup_work_findings(project, all_plans, inventory_docs_dir, sprint_ids)
     )
     if review_block is not None:
         review_block = dict(review_block)
