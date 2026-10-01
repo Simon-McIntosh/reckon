@@ -5,6 +5,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import threading
 import time
 from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
@@ -2126,10 +2127,6 @@ class _FollowerReloader:
             _echo_follow_line(line, stream=self.stream)
             return
 
-        if not self.seat:
-            os.environ[_FOLLOWER_CHECKPOINT_ENV] = json.dumps(
-                {"project": self.project, "checkpoint": dict(checkpoint)}
-            )
         # The launched-worker registry does not survive an image replacement,
         # though the process (and therefore the parent-child relationships)
         # does. Hand the outstanding pids over beside the checkpoint so the
@@ -2151,6 +2148,15 @@ class _FollowerReloader:
         # bounds nothing it runs. Building the mapping here keeps the arming's
         # identity separate from every process but the replacement itself.
         exec_environment = dict(os.environ)
+        if not self.seat:
+            # The reader's place reaches the replacement image through the
+            # mapping this exec passes and never through ``os.environ``: every
+            # child this image starts inherits the process environment, and a
+            # checkpoint describes one reader's place in one stream rather than
+            # anything a child could use.
+            exec_environment[_FOLLOWER_CHECKPOINT_ENV] = json.dumps(
+                {"project": self.project, "checkpoint": dict(checkpoint)}
+            )
         if self.deadline is not None:
             exec_environment[_FOLLOWER_LIFETIME_ENV] = repr(self.deadline)
         if self.owner is not None:
@@ -2183,7 +2189,6 @@ class _FollowerReloader:
                 exec_environment,
             )
         except OSError as exc:
-            os.environ.pop(_FOLLOWER_CHECKPOINT_ENV, None)
             if self.seat:
                 runs.cancel_watch_seat_reexec(self.project)
             if self.registration is not None:
@@ -2585,6 +2590,7 @@ def _follow_watch_lines(
     clock=time.monotonic,
     resume: Mapping[str, Any] | None = None,
     lifetime: float | None = None,
+    lifetime_deadline: float | None = None,
     registration=None,
 ):
     """Yield this follower's transitions for as long as its session lives.
@@ -2652,9 +2658,12 @@ def _follow_watch_lines(
     )
 
     started_at = clock()
-    lifetime_deadline = (
-        None if lifetime is None else started_at + max(0.0, float(lifetime))
-    )
+    if lifetime_deadline is None and lifetime is not None:
+        # A caller that hands only a duration is granted it from this arming's
+        # own start; a caller that hands the absolute instant in keeps the
+        # deadline the arming was granted, which a replacement image must not
+        # re-anchor.
+        lifetime_deadline = started_at + max(0.0, float(lifetime))
     lifetime_elapsed = False
     consumer_gone = False
 
@@ -2800,6 +2809,12 @@ def _follow_watch_lines(
     cadence = DEFAULT_SWEEP_SECONDS if sweep_interval is None else float(sweep_interval)
     swept_at: float | None = None
 
+    def _sweep_quietly() -> None:
+        try:
+            sweep(project)
+        except Exception:  # noqa: BLE001 - a failed recovery must not end the pane
+            return
+
     def _sweep_on_cadence() -> None:
         """Run the recovery sweep at most once per cadence.
 
@@ -2807,18 +2822,36 @@ def _follow_watch_lines(
         cheap sweep from becoming a hot path. It is time since the last sweep
         rather than a count of iterations, because the loop's own rate depends
         on whether a producer is up.
+
+        An arming's deadline bounds the poll itself, not only the gap between
+        two of them. A sweep walks every registered worktree and can run for
+        hours, and while it ran the check that ends an arming waited for it to
+        return — a 29 m arming held open for 3 h 36 m. A sweep on its own
+        thread is waited for only as long as the arming has left; one still
+        walking at the deadline is abandoned and the follower ends.
         """
-        nonlocal swept_at
+        nonlocal swept_at, lifetime_elapsed
         if sweep is None:
             return
         moment = clock()
         if swept_at is not None and moment - swept_at < cadence:
             return
         swept_at = moment
-        try:
-            sweep(project)
-        except Exception:  # noqa: BLE001 - a failed recovery must not end the pane
+        if lifetime_deadline is None:
+            _sweep_quietly()
             return
+        remaining = lifetime_deadline - clock()
+        if remaining <= 0:
+            # A poll begun now would outlive the arming before it did any
+            # work: the arming is over and the passes that follow take the
+            # end path.
+            lifetime_elapsed = True
+            return
+        poll = threading.Thread(target=_sweep_quietly, daemon=True)
+        poll.start()
+        poll.join(remaining)
+        if poll.is_alive():
+            lifetime_elapsed = True
 
     # A resume handed in the environment is an image replacing itself, which
     # already has the pane's rows on screen and needs only the format switch
@@ -3454,10 +3487,29 @@ def crew_follow(
     elif lifetime_seconds is not None:
         deadline_epoch = time.time() + lifetime_seconds
 
+    # The same instant on the clock the watch loop reads, taken once, here. The
+    # replacement image imports, resolves its delivery and replays the fleet
+    # before its first wait pass, so a deadline re-anchored at that pass
+    # charges the arming for all of it — measured at up to 2.6 s past a
+    # six-second grant, and more when the first sweep is slow.
+    lifetime_deadline: float | None = None
+    if deadline_epoch is not None:
+        lifetime_deadline = time.monotonic() + max(0.0, deadline_epoch - time.time())
+
     delivery = runs_module.delivery_mode()
     grid = _ticker_grid(width, theme, no_color)
     resume = _take_follower_checkpoint(project)
-    from reckon.crew.dispatch import _adopt_launched_workers_from_reexec
+    from reckon.crew.dispatch import (
+        WATCH_ARMING_ENV,
+        _adopt_launched_workers_from_reexec,
+    )
+
+    # The variable that lets a child under a throwaway home arm a producer is
+    # an instruction to the process doing the arming, and this follower is not
+    # that process: a child of an armed follower — the recovery sweep's probes
+    # among them — would inherit the instruction and act on it, exactly as the
+    # lifetime deadline did before it was carried to the replacement alone.
+    os.environ.pop(WATCH_ARMING_ENV, None)
 
     # The follower may have just replaced its own process image; the launched
     # workers it spawned before the replacement are still its children, so it
@@ -3508,6 +3560,7 @@ def crew_follow(
             on_poll=poll,
             resume=resume,
             lifetime=lifetime_seconds,
+            lifetime_deadline=lifetime_deadline,
             registration=registration,
         ):
             # An attach event carries the states the pane already showed, so the
