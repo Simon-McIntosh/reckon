@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="103">
+<meta name="plan-version" content="104">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.99">
@@ -1762,6 +1762,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261001T110648189056-the-git-shim-admits-a-runs-own-fixture" data-who="reckon-build" data-when="2026-10-01T11:31:30.735Z">
     <div class="r-comment-body"><p>reckon/worker_git_shim.py admits a mutating git verb whose resolved git dir, common dir and work-tree top level all lie inside worker_scratch_dir(run_id), and admits init/clone on the invocation directory when no repository resolves yet; tests/test_git_shim_checks_the_resolved_repo.py 176 passed EXIT=0, negative control reddens the linked-worktree case.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261001T110746880717-a-shared-grant-charges-only-its-holder" data-who="reckon-build" data-when="2026-10-01T11:49:16.990Z">
+    <div class="r-comment-body"><p>The boundary walk exempts a dirty path in a live peer&#x27;s worktree only where the peer&#x27;s own declaration covers it (resolved through _repository_scope_paths), so a shared directory grant no longer refuses a peer&#x27;s file while a stray path in a peer&#x27;s worktree stays charged; tests/test_promotion_scope_counts_only_the_runs_commits.py pins both directions (shared-grant green, stray-edit refused), head gate 12 passed EXIT=0.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260924T122925465818-s19-internals-consumers-survey" data-who="reckon-ship" data-when="2026-09-24T12:38:14.943Z">
     <div class="r-comment-body"><p>eight consumer rows that read reckon internals directly; ranked top five: worktree_fleet re-implements pointer classification, reckon-sync fallback writes mounts.json, lane.json read by hand with no crew verb, inline pointer read in the recovery recipe, hand manifest repair</p></div>
