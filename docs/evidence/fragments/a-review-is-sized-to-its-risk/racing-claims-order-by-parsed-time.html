@@ -1,0 +1,53 @@
+<article class="landed-report" data-run-id="r-20261001T070609066219-racing-claims-order-by-parsed-time" data-node="racing-claims-order-by-parsed-time">
+      <h3>racing-claims-order-by-parsed-time — the racing-claim order reads parsed moments, and never outranks a running run</h3>
+      <p>
+        <code>_peer_claim_is_a_later_racing_arrival</code>
+        (<code>reckon/crew/dispatch.py</code>) decides which of two overlapping
+        dispatch claims owns the paths. It decided that on two facts a claim's
+        raw timestamp text and whether the pointer named a worktree or a pid,
+        and the second was too narrow: a running run whose pointer carries
+        neither — as the running-pointer fixtures write, and as a resumed or
+        placed run can — read as a still-composing arrival. The rule then
+        ordered it against the newcomer by <code>(time, run id)</code>, and a
+        sub-second stamp against a second-precision one sorted the wrong way,
+        so a live owner was disregarded and the newcomer launched over it.
+        Three tests in <code>tests/test_crew.py</code> intermittently failed
+        with <code>a conflicting node must not launch</code> as a result.
+      </p>
+      <p>
+        Each registration time is now read through
+        <code>reckon._timestamps.parse_utc</code> and the claims are ordered by
+        the parsed instant, falling back to the run id only when two stamps of
+        the same resolution name the same moment. A stamp the parser cannot read
+        leaves the comparison inconclusive, so the peer stays binding exactly as
+        an absent timestamp does. And a claim whose pointer's phase has moved
+        past the pre-spawn set (<code>starting</code>, <code>launching</code>,
+        <code>launcher</code>, <code>dispatching</code>) counts as launched, so a
+        running owner refuses a newcomer however the two times compare. When the
+        two stamps carry different resolutions and name moments inside the
+        coarser one's tick, the comparison is inconclusive rather than decided by
+        run id, because the truncation hides which moment is really the earlier.
+      </p>
+      <p>
+        <strong>Measure.</strong>
+        <code>tests/test_one_of_two_racing_reviews_survives.py</code> gained a
+        running owner registered a minute after the newcomer (which isolates the
+        phase guard) and a running owner whose sub-second stamp shares the
+        newcomer's second (the fixture's shape). The gate ran that file and
+        <code>tests/test_crew_dispatch_guard.py</code> together: 22 passed
+        (8 in the racing file, 14 in the guard file), EXIT=0.
+        <code>tests/test_crew.py</code> was run three times at this head, each
+        to a summary line, with no failure in the three containment cases.
+      </p>
+      <p>
+        <strong>Negative controls.</strong> Restoring the raw-string comparison
+        (the declared mutation) makes the mixed-spelling case and the
+        unparseable-stamp case fail: 2 failed, 6 passed, EXIT=1
+        (<code>negative-control.log</code>). Dropping the phase term reddens the
+        running-owner case alone: 1 failed, 7 passed, EXIT=1
+        (<code>negative-control-phase-term.log</code>). Dropping the resolution
+        guard reddens the mixed-spelling case alone: 1 failed, 7 passed, EXIT=1
+        (<code>negative-control-resolution.log</code>). All three logs are under
+        the run directory.
+      </p>
+    </article>
