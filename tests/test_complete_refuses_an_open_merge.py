@@ -1,7 +1,7 @@
 """crew complete refuses while the checkout carries an open git operation.
 
 Promotion commits the stores it writes into the checkout's index. When a peer
-session has a merge, rebase or cherry-pick open in that checkout, a landing
+session has a merge, rebase, cherry-pick or revert open in that checkout, a landing
 commit moves the operation's first parent under it and a whole-index commit
 could take the peer's staged work. Promotion must therefore refuse before
 either store is written, and name the state it found.
@@ -32,6 +32,7 @@ OPEN_STATES = (
     ("rebase-merge", "rebase", "dir"),
     ("rebase-apply", "rebase", "dir"),
     ("CHERRY_PICK_HEAD", "cherry-pick", "file"),
+    ("REVERT_HEAD", "revert", "file"),
 )
 
 
