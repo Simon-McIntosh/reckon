@@ -49,6 +49,7 @@ from bs4 import BeautifulSoup
 from reckon import _plan_html
 from reckon._schema import (
     parse_plan_ref,
+    section_depends_on,
     standalone_reason,
     unwired_plan_message,
     unwired_plan_severity,
@@ -127,6 +128,7 @@ _LANDED_SECTION_CLASS = "section-landed"
 _SECTION_WITHOUT_CONTRACT = "section-without-contract"
 _FOLLOWUP_DESCRIBES_SECTION_WORK = "followup-describes-section-work"
 _SECTION_RECORD_INVALID = "section-record-invalid"
+_PLAN_REF_COULD_BE_SECTION_REF = "plan-ref-could-be-section-ref"
 
 # Section identities are numbered from one: s0 states why the plan exists and
 # carries no work.
@@ -138,10 +140,10 @@ _FOLLOWUP_WORK_ITEM = re.compile(r"\(\s*\d+\s*\)\s*\S")
 
 # Number of separately-stated deliverables at which a followup body describes
 # section-sized work rather than a remainder. A followup states no effort of
-# its own — the record has no such field, and an explicit hour figure appears
-# in 1 of 468 open followups over the mounted projects (measured 2026-09-25) —
-# so the work a body describes is sized by the deliverables it enumerates: one
-# item is a remainder, two or more is work the plan's own unit must carry.
+# its own — its record carries no such field, and an hour figure written into
+# the body is read by nothing — so the work a body describes is sized by the
+# deliverables it enumerates: one item is a remainder, two or more is work the
+# plan's own unit must carry.
 FOLLOWUP_WORK_ITEMS_THRESHOLD = 2
 
 SEVERITIES = ("error", "warn", "info")
@@ -887,6 +889,121 @@ def unwired_plan_finding(
     )
 
 
+def _ref_identity(ref: Any, project: str) -> tuple[str, str] | None:
+    """``(project, slug)`` for a plan ref, or ``None`` when it does not parse.
+
+    A ref qualified with the owning project's own name names the same plan as
+    the bare form, so both normalise to the owning project; a foreign-qualified
+    ref keeps its project and is compared against the qualified form alone.
+    """
+
+    parsed = parse_plan_ref(str(ref or ""))
+    if parsed is None:
+        return None
+    return (parsed.project if parsed.is_external(project) else project, parsed.slug)
+
+
+def _section_level_refs(
+    state: Mapping[str, Any], html_text: str, project: str
+) -> dict[tuple[str, str], list[str]]:
+    """Map each target a section declares to the sections that declare it.
+
+    A section declares what it waits on in two places, both carrying the plan
+    ref grammar: the typed section record's ``links``, and the section-scoped
+    ``plan-section-depends-on`` mapping the roadmap resolves into per-section
+    edges. Both are read, because either one is the plan saying the wait
+    belongs to a section rather than to the whole document.
+    """
+
+    declared: dict[tuple[str, str], list[str]] = {}
+
+    def add(ref: Any, section: str) -> None:
+        identity = _ref_identity(ref, project)
+        if identity is None or not section:
+            return
+        declared.setdefault(identity, []).append(section)
+
+    for record in state.get("sections") or []:
+        if not isinstance(record, Mapping):
+            continue
+        links = record.get("links") or []
+        if not isinstance(links, list):
+            continue
+        section = str(record.get("id") or "").strip()
+        for ref in links:
+            add(ref, section)
+    mapping = section_depends_on(html_text) or {}
+    if isinstance(mapping, Mapping):
+        for raw_section, raw_refs in mapping.items():
+            section = str(raw_section or "").strip()
+            refs = [raw_refs] if isinstance(raw_refs, str) else raw_refs
+            if not isinstance(refs, list):
+                continue
+            for ref in refs:
+                add(ref, section)
+    return {identity: sorted(set(sections)) for identity, sections in declared.items()}
+
+
+def _section_ref_findings(
+    doc_type: str,
+    state: Mapping[str, Any],
+    soup: BeautifulSoup,
+    html_text: str,
+    slug: str,
+    project: str,
+) -> list[Finding]:
+    """Report a plan-level ref that is a section's wait, not the plan's.
+
+    A plan-level ``depends_on`` holds its carrier from the first implementable
+    section onward, because nothing in the entry says otherwise. When the plan
+    itself declares the same target as one of its sections' refs — in the
+    typed section record's ``links`` or in the section-scoped mapping — the
+    wait is section-shaped, and the plan-level entry re-holds every section
+    the section ref deliberately left dispatchable. The entry could have been
+    (and is already spelled as) a section ref, so it is reported rather than
+    left to mislead the ready set.
+
+    The dependency stays plan-level, and this stays silent, when the plan's
+    FIRST implementable section is one of the sections declaring it: a wait
+    that begins at the first section is a whole-plan prerequisite, which is
+    what the plan-level field is for. A plan with no implementable section
+    holds no section either, so it is not reported.
+    """
+
+    if doc_type != "plan" or str(state.get("status") or "").strip().lower() in (
+        TERMINAL_STATUSES
+    ):
+        return []
+    heading_ids = [str(h.get("id") or "") for h in soup.find_all("h2", id=True)]
+    implementable = _implementable_section_ids(state, heading_ids)
+    if not implementable:
+        return []
+    first = implementable[0]
+    declared = _section_level_refs(state, html_text, project)
+    out: list[Finding] = []
+    for ref in state.get("depends_on") or []:
+        identity = _ref_identity(ref, project)
+        if identity is None:
+            continue
+        sections = declared.get(identity)
+        if not sections or first in sections:
+            continue
+        named = ", ".join(repr(section) for section in sections)
+        out.append(
+            Finding(
+                "warn",
+                _PLAN_REF_COULD_BE_SECTION_REF,
+                f"plan {slug!r}: plan-level dependency {str(ref)!r} could have "
+                f"been a section ref — section{'s' if len(sections) > 1 else ''} "
+                f"{named} already declare it, so the entry holds the plan from "
+                f"its first implementable section {first!r} onward, which does "
+                f"not wait on it; keep the section ref and drop the plan-level "
+                f"entry, or make the wait whole-plan on purpose",
+            )
+        )
+    return out
+
+
 def _implementable_section_ids(
     state: Mapping[str, Any], heading_ids: list[str]
 ) -> list[str]:
@@ -1079,14 +1196,19 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
         )
     )
 
+    # Project for the ref-identity and image-path checks — meta, then fallback arg.
+    dp = soup.find("meta", attrs={"name": "docs-project"})
+    proj = ((dp.get("content") if dp else "") or project or "").strip()
+
     # Section contract — the unit that carries effort, capability and a route.
     declared_type = ((rt.get("content") if rt else "") or "").strip().lower()
     out.extend(_section_contract_findings(declared_type, state, soup))
     out.extend(_followup_section_findings(declared_type, state))
 
-    # Project for image-path checks — meta, then fallback arg.
-    dp = soup.find("meta", attrs={"name": "docs-project"})
-    proj = ((dp.get("content") if dp else "") or project or "").strip()
+    # A plan-level ref that one of the plan's own sections already declares is
+    # a section-shaped wait wired whole-plan: it holds sections the section ref
+    # leaves dispatchable, so the ready set reads the plan stale.
+    out.extend(_section_ref_findings(declared_type, state, soup, html_text, slug, proj))
 
     # (a) Image src that won't resolve --------------------------------------
     for img in soup.find_all("img"):

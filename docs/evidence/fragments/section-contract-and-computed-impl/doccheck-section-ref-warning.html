@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="section-contract-and-computed-impl">
+  <meta name="plan-title" content="A plan-level ref a section already declares is reported">
+  <meta name="plan-summary" content="The document audit now reports plan-ref-could-be-section-ref at warn when a plan's plan-level depends_on names a target one of the plan's own sections already declares, naming the plan, the dependency and the declaring sections; the frozen followup-census figure in the comment beside the followup work-item threshold is replaced by the mechanism it was evidence for.">
+  <meta name="plan-evidence-for" content="reckon:section-contract-and-computed-impl">
+  <meta name="plan-verifies" content="reckon:section-contract-and-computed-impl#s6">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="doccheck,audit,dependencies,sections,evidence">
+  <title>A plan-level ref a section already declares is reported | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="doccheck-section-ref-warning" data-reckon="landed" data-when="2026-10-01">
+  <h2>A plan-level ref a section already declares is reported</h2>
+  <p><code>reckon/doccheck.py</code> gains one finding beside the wiring check it already carried.
+  <code>plan-ref-could-be-section-ref</code> fires at <strong>warn</strong> for an implementable plan
+  whose plan-level <code>depends_on</code> names a target that one of the plan's own sections already
+  declares at section level, naming the plan, the dependency and each declaring section. The entry is
+  read from both places a section can declare a wait — the typed section record's
+  <code>data-links</code>, and the section-scoped <code>plan-section-depends-on</code> mapping the
+  roadmap resolves into per-section edges. A plan-level <code>depends_on</code> holds its carrier from
+  the first implementable section onward, because the entry itself names no section; when the plan's
+  own section refs already carry the wait, the plan-level entry re-holds every sibling the section ref
+  deliberately left dispatchable, and the ready set reads the plan stale. The check stays silent when
+  the first implementable section is one of the declaring sections, because a wait the first section
+  begins is a whole-plan prerequisite and the plan-level field is what it is for; it also stays silent
+  on a plan with no implementable section, on a terminal plan, and on a document that does not declare
+  itself a plan.</p>
+
+  <h3>How §6's clause was read</h3>
+  <p>§6 asks the audit to warn "when a plan-level <code>depends_on</code> could have been a section ref
+  (the consumer's first implementable section does not need the whole target)". The parenthetical is
+  the criterion, and it is load-bearing only where the check compares the declaring section against
+  the plan's first implementable section, which is what this implementation does. The same rule is
+  what the create and edit skills state in the worked example: a plan-level <code>depends_on</code>
+  for a need one section has "reports this plan blocked from its first section onward, which is false
+  and misleads the fleet". No other reader of the document can tell that a bare plan-level ref is
+  section-shaped; a section declaring the same target is the plan saying so, which is why the check
+  keys on it and stays silent when nothing declares it. The reading is stated here rather than left to
+  the diff, because a second reading exists — an <code>#section</code>-anchored ref sitting in the
+  plan-level list — and the two differ in which fixture fires.</p>
+
+  <h3>Both defects reproduced at the base revision</h3>
+  <p>Read from the committed blob at <code>39fff0435</code>, the two defects the section names are
+  present:</p>
+  <pre><code># grep -n "468" reckon/doccheck.py
+142:# in 1 of 468 open followups over the mounted projects (measured 2026-09-25) —   (EXIT=0)
+# grep -rn "could have\|first section" reckon/doccheck.py reckon/roadmap.py
+                                                                                  (EXIT=1, no match)</code></pre>
+  <p>The comment beside <code>FOLLOWUP_WORK_ITEMS_THRESHOLD</code> now states the mechanism it was
+  evidence for — a followup's record carries no effort field, and an hour figure written into the body
+  is read by nothing — so the source keeps no corpus count that goes stale, which is the followup
+  <code>f-scci-doccheck-comment-figure</code>'s own requirement.</p>
+
+  <h3>Measure</h3>
+  <p>Gate population: the new test file, <code>tests/test_doccheck_unwired_plan.py</code>, and every
+  other test file that imports <code>reckon.doccheck</code> — 24 files. Base arm at
+  <code>39fff0435</code>: <strong>6 failed, 320 passed, EXIT=1</strong>
+  (<code>gate-base.log</code>); all six are the new positive cases, which cannot pass where the
+  finding does not exist. Head arm at <code>b7a67a3c4</code>: <strong>326 passed, EXIT=0</strong>
+  (<code>gate-head.log</code>), so the head arm adds no failure id. The declared negative control —
+  remove the audit call to <code>_section_ref_findings</code> in a scratch copy of the head — reddens
+  the five positive cases with <code>EXIT=1</code> (<code>negative-control.log</code>), and those ids
+  appear in no head-arm failure list. Both arms ran with the scratch tree named in the log header, the
+  imported module proven by <code>module.__file__</code>, and a per-process <code>--basetemp</code>
+  outside every checkout.</p>
+  <p>A basetemp inside a git tree was found to change another file's measurement, not this one's: a
+  fixture whose <code>tmp_path</code> sits under the worktree makes the provenance reader resolve the
+  worktree's detached HEAD, and <code>tests/test_mcp_views.py</code> asserts <code>unknown</code>
+  there. Moving the basetemp outside the tree removes it, and the head arm is green with it.</p>
+
+  <h3>The new finding's population today</h3>
+  <p>Auditing every plan under the mounted projects at the head revision — <strong>335 plans</strong>,
+  <code>corpus-check.log</code> — reports <strong>0</strong> <code>plan-ref-could-be-section-ref</code>
+  findings, against 1059 <code>section-without-contract</code> and 4 <code>unwired-plan</code>
+  findings on the same pass, so the audit loop is demonstrably alive on that corpus. The zero is real
+  and it has a cause worth recording: no plan in the mounted corpus declares a section-level ref at
+  all — no <code>plan-section-depends-on</code> mapping, no section record carrying
+  <code>data-links</code>, and no <code>#section</code>-anchored <code>depends_on</code>. The check is
+  written for the shape as it is authored, and its positive control is the synthetic pair of plans in
+  <code>tests/test_doccheck_section_ref_warning.py</code>, not the current corpus.</p>
+
+  <h3>Ruff</h3>
+  <p><code>ruff 0.16.4</code>: <code>reckon/doccheck.py</code> reports 12 findings at the base revision
+  and 12 at the head, the new test file reports none, and <code>ruff format --check</code> is clean on
+  all three paths (<code>ruff.log</code>). One pre-existing union annotation the autofixer touched in
+  passing was restored, so no finding outside the change is cleared by it.</p>
+</article>
+</body>
+</html>
