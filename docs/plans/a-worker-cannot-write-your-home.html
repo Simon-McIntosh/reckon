@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="108">
+<meta name="plan-version" content="109">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.99">
@@ -1779,7 +1779,10 @@
     <div class="r-comment-body"><p>independent review of r-20261001T125111640916 attached; the parsed record scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19 (total 96) over 4e5f0a870c..0fcfa249b2, and the reviewed fix admits `git worktree list` under --porcelain/-z/-v/--expired while the mutating worktree actions stay refused, with the refusal independently reproduced (8 failed, EXIT=1) when the admission is reverted.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261001T125111640916-the-shim-reads-worktree-list-as-a-read" data-who="reckon-build" data-when="2026-10-01T13:07:11.790Z">
-    <div class="r-comment-body"><p>The git shim now admits `git worktree list` as a read form with `--porcelain`, `-z`, `-v`/`--verbose` and `--expired` as modifiers, alone or together, while the verb&#x27;s mutating actions (add, remove, prune, lock, unlock, repair) stay refused; gate at 518f5ef83 is 185 passed, EXIT=0, and the negative control restoring the list-only read option reddens the porcelain and registered-worktrees cases (8 failed, 177 passed, EXIT=1).</p></div>
+    <div class="r-comment-body"><p>The git shim now admits `git worktree list` as a read form with `--porcelain`, `-z`, `-v`/`--verbose` and `--expired` as modifiers, alone or together, while the verb's mutating actions (add, remove, prune, lock, unlock, repair) stay refused; gate at 518f5ef83 is 185 passed, EXIT=0, and the negative control restoring the list-only read option reddens the porcelain and registered-worktrees cases (8 failed, 177 passed, EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261001T141822211490-review-of-the-git-guard-shares-the-shim-read-forms" data-who="reckon-build" data-when="2026-10-01T14:30:26.267Z">
+    <div class="r-comment-body"><p>Independent scored review of run r-20261001T140516037424 (the-git-guard-shares-the-shim-read-forms) at base a4c312fbe / head 4cdb960c0: 91/100 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 16); the guard&#x27;s read-form decision now comes from reckon.worker_git_shim.mutating_verb, worktree list at another checkout is allowed while mutating forms stay denied, and restoring a private read-verb list reddens the new case (17 failed, EXIT=1) — reproduced independently; no added failures (head 242 passed, base 198 passed, both EXIT=0); two follow-on findings on comment drift the change introduced (reckon/hooks/install.py:222, reckon/hooks/__init__.py:3).</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260924T122925465818-s19-internals-consumers-survey" data-who="reckon-ship" data-when="2026-09-24T12:38:14.943Z">
     <div class="r-comment-body"><p>eight consumer rows that read reckon internals directly; ranked top five: worktree_fleet re-implements pointer classification, reckon-sync fallback writes mounts.json, lane.json read by hand with no crew verb, inline pointer read in the recovery recipe, hand manifest repair</p></div>
