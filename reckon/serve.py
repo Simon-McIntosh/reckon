@@ -1460,19 +1460,6 @@ def _cache_discovery_result(
     return result
 
 
-def _invalidate_discovery(cache_key: tuple[str, str], changed_at: float) -> None:
-    """Drop a cached discovery computed before ``changed_at``.
-
-    Every open change stream observes the same filesystem event; the stamp
-    lets the first stream's recomputation serve the others instead of each
-    stream discarding the result the previous one just built.
-    """
-
-    cached = _DISC_CACHE.get(cache_key)
-    if cached is not None and cached.computed_at < changed_at:
-        _DISC_CACHE.pop(cache_key, None)
-
-
 def _invalidate_discovery_tree(docs_dir: Path) -> None:
     """Forget cached discoveries for one docs tree, whatever the project.
 
@@ -2317,14 +2304,14 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("X-Accel-Buffering", "no")
             self.end_headers()
             self._write_project_event("ready", digest)
-            cache_key = (project, str(docs_dir.resolve()))
             while watch.wait(self.connection):
                 # A save or a merge is a burst of events; let it settle so the
                 # burst costs one rediscovery rather than one per event.
                 watch.drain(_CHANGE_SETTLE_S)
-                changed_at = time.monotonic()
-                _invalidate_discovery_signatures(docs_dir)
-                _invalidate_discovery(cache_key, changed_at)
+                # Every watch that reports a tree drops the same three views of
+                # it, so a page that paints from the index is never handed rows
+                # that predate the change its own stream just reported.
+                _invalidate_tree_views(docs_dir)
                 current = discover_plans(docs_dir, project, _STATE_ROOT)
                 next_digest = current.get("provenance", {}).get("content_digest", "")
                 if next_digest == digest:

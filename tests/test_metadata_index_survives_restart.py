@@ -174,6 +174,39 @@ def _get(port: int, path: str) -> tuple[int, object]:
         connection.close()
 
 
+class _ChangeStream:
+    """Read ``/_changes/<project>`` frames, one event at a time."""
+
+    def __init__(self, port: int, project: str) -> None:
+        self._connection = http.client.HTTPConnection("127.0.0.1", port, timeout=30)
+        self._connection.request("GET", f"/_changes/{project}")
+        self._response = self._connection.getresponse()
+
+    def next_event(self) -> str:
+        event = ""
+        while True:
+            line = self._response.readline().decode("utf-8")
+            if not line:
+                raise AssertionError("the change stream closed before an event")
+            line = line.rstrip("\r\n")
+            if line.startswith("event: "):
+                event = line[len("event: ") :]
+            elif not line and event:
+                return event
+
+    def close(self) -> None:
+        self._connection.close()
+
+
+@contextmanager
+def _change_stream(port: int, project: str):
+    stream = _ChangeStream(port, project)
+    try:
+        yield stream
+    finally:
+        stream.close()
+
+
 def test_rebuild_after_a_restart_parses_nothing(project_tree, parse_counter):
     docs_dir = project_tree
 
@@ -232,6 +265,35 @@ def test_a_reported_change_updates_the_rows(project_tree, parse_counter):
     refreshed = metadata_index.index_rows(docs_dir, _PROJECT)
 
     assert _title(refreshed, "plan-011") == "A later title"
+
+
+def test_a_reported_change_refreshes_the_served_index(project_tree):
+    """The stream that reports a tree change also drops its index rows.
+
+    The page paints from ``/_index/<project>``, so a row list that outlives a
+    change the reader's own stream reported hands them the document as it was
+    before that change. The watch that serves ``/_changes/<project>`` therefore
+    drops the same views of the tree the fleet watch drops.
+    """
+
+    docs_dir = project_tree
+    target = docs_dir / "plans" / "plan-011.html"
+
+    with _served_index() as port, _change_stream(port, _PROJECT) as events:
+        assert events.next_event() == "ready"
+        # Read the endpoint first, so the assertion below is about the
+        # invalidation rather than about a first, cold read.
+        status, rows = _get(port, f"/_index/{_PROJECT}")
+        assert status == 200
+        assert _title(rows, "plan-011") == "plan-011"
+
+        _rewrite(target, "plan-011", "A later title")
+        assert events.next_event() == "change"
+
+        status, rows = _get(port, f"/_index/{_PROJECT}")
+
+    assert status == 200
+    assert _title(rows, "plan-011") == "A later title"
 
 
 def test_the_index_endpoint_serves_only_row_fields(project_tree, parse_counter):
