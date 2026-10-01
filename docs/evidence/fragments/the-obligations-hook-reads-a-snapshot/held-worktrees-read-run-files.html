@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-verifies" content="reckon:the-obligations-hook-reads-a-snapshot#s4">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-01">
+  <meta name="evidence-commit" content="40d66ddc">
+  <title>The held-worktree obligation reads one ledger file per run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="held-worktrees-read-run-files">
+  <h2>The held-worktree obligation reads one ledger file per run</h2>
+  <p><code>obligations._held_worktrees</code> called <code>ledger.runs(project, root=repository)</code>
+  before it looked at a single tree, so the derivation paid for every recorded run of the project
+  whatever it went on to inspect. Each tree it inspects is now resolved from the per-run ledger file
+  (<code>docs/state/reckon/runs/&lt;run_id&gt;.json</code>) of the run that named it, selected by the
+  node id a run id carries — <code>runs.new_run_id</code> mints <code>r-&lt;stamp&gt;-&lt;node
+  id&gt;</code> — and the record read from that file is matched under the same two rules as before,
+  the retained path and the node id. A tree no per-run file names falls back to the whole ledger,
+  which is where a run recorded before the ledger was split into one file per run lives, and that
+  read happens at most once per session. The derivation builds no index and persists nothing.</p>
+
+  <h3>Measurement — project <code>reckon</code>, session <code>s21-1c</code>, one fresh process per arm</h3>
+  <table>
+    <thead>
+      <tr><th>arm</th><th>seconds</th><th>held rows</th><th>result digest</th><th>log</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base <code>64a56280f</code></td><td>3.324</td><td>0</td>
+        <td><code>4f53cda18c2baa0c</code></td><td><code>held-base-s21-1c.log</code></td>
+      </tr>
+      <tr>
+        <td>head <code>40d66ddc</code></td><td>0.675</td><td>0</td>
+        <td><code>4f53cda18c2baa0c</code></td><td><code>held-head-s21-1c.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Both arms answer the same empty held set over the same session, so the removed read changed the
+  cost and not the answer. The session's worktree directory is empty, which is what isolates the
+  read: the base arm spends its 3.324 s on the ledger before finding nothing to inspect, and the head
+  arm reaches the same answer in 0.675 s without entering the whole-ledger path at all.</p>
+
+  <h3>Parity and the fallback on the real fleet</h3>
+  <p>The head derivation was compared with the whole-ledger scan it replaced for every session that
+  holds a registered worktree: <strong>25</strong> sessions compared, <strong>0</strong> mismatching
+  run ids (<code>parity-real-fleet.log</code>). All <strong>52</strong> inspected trees across the
+  <strong>24</strong> sessions with work resolve through the fallback today, because every one of
+  them is held by a run recorded before the ledger was split into per-run files
+  (<code>fallback-share.log</code>): no per-run file carries those node ids, so the fallback is the
+  path, and the fast path takes over as post-split runs accumulate retained trees.</p>
+
+  <h3>Gate and negative control</h3>
+  <p>The gate runs the new <code>tests/test_held_worktrees_read_run_files.py</code> and every test
+  file calling <code>_held_worktrees</code> or <code>obligations(</code>, at the base revision in an
+  extracted tree (<code>gate-base.log</code>: 50 passed, 2 failed) and at the head revision in the
+  worktree (<code>gate-head.log</code>: 51 passed, 1 failed). The head arm adds no failure id. The
+  one failure in both arms,
+  <code>test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching</code>,
+  reproduces alone on the untouched base tree
+  (<code>gate-base-unrelated-failure.log</code>) and is a metadata-index cache write inside
+  <code>obligations()</code>, outside this node's change. The declared negative control restores the
+  whole-ledger load in <code>_held_worktrees</code>; its run
+  (<code>gate-negative-control.log</code>, <code>EXIT=1</code>) fails the never-called case and the
+  fallback case, which is the behaviour it declares.</p>
+</section>
+</main>
+</body>
+</html>
