@@ -52,6 +52,7 @@ describes the whole run and can legitimately exceed that window many times over.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import queue
@@ -3363,6 +3364,68 @@ def classify_stream_failure(
 
 _STREAM_BOUNDARY_CHUNK = 64 * 1024
 
+# How much of a stream's opening a cursor records, so a later read can tell an
+# append from a rewrite. The inode and the size together catch a stream replaced
+# or truncated, but a stream rewritten in place at the same inode to a size at or
+# above the recorded offset — which is what a producer's stream does between
+# in-place rewrites — is otherwise indistinguishable from an append by stat
+# alone. The digest covers a bounded opening rather than the whole consumed
+# prefix, so the check costs a fixed small read rather than re-reading the bytes
+# the cursor exists to skip.
+_STREAM_HEAD_SAMPLE = 8 * 1024
+
+
+def _stream_head_size(offset: int) -> int:
+    """How many opening bytes a cursor at ``offset`` records for the rewrite check."""
+    return max(0, min(int(offset), _STREAM_HEAD_SAMPLE))
+
+
+def stream_head_fingerprint(path: str | Path, *, offset: int) -> dict[str, Any]:
+    """Digest a stream's opening bytes, for a later read to confirm they hold.
+
+    ``offset`` is the cursor the digest is recorded for: the sample is bounded by
+    both the sample size and that offset, so a file shorter than the sample is
+    identified by its whole prefix exactly. The digest is returned with the byte
+    count it covered, and a later read compares against that same count rather
+    than the sample size, so an appended stream that has since grown past the
+    sample is not mistaken for one whose opening moved.
+    """
+    limit = _stream_head_size(offset)
+    try:
+        with Path(path).open("rb") as handle:
+            head = handle.read(limit) if limit else b""
+    except OSError:
+        return {"bytes": 0, "digest": ""}
+    return {"bytes": len(head), "digest": hashlib.sha256(head).hexdigest()}
+
+
+def _stream_head_intact(path: str | Path, recorded: object) -> bool:
+    """Whether a stream's opening is the one the cursor recorded.
+
+    A resume is valid only while the bytes the cursor already consumed are the
+    ones it consumed. A stream whose opening is not what the cursor recorded was
+    rewritten under it, so the offset means nothing and the read starts at the
+    first record; an absent or empty fingerprint is unverifiable and equally
+    refuses the resume rather than resuming blind.
+    """
+    if not isinstance(recorded, Mapping):
+        return False
+    try:
+        count = int(recorded.get("bytes") or 0)
+    except (TypeError, ValueError):
+        return False
+    digest = str(recorded.get("digest") or "")
+    if count <= 0 or not digest:
+        return False
+    try:
+        with Path(path).open("rb") as handle:
+            head = handle.read(count)
+    except OSError:
+        return False
+    if len(head) != count:
+        return False
+    return hashlib.sha256(head).hexdigest() == digest
+
 # Bytes of stream records the readers have consumed since the count was last
 # taken. A producer takes it once a poll to report how much of the fleet's
 # stream traffic that poll actually parsed; no other reader consults it, and a
@@ -3447,10 +3510,12 @@ def observe_log(
     client rollout the caller has already read.
 
     ``resume`` is a previous observation of this stream — its ``stream_state``
-    together with the byte offset that observation reached — so a stream that
-    has only grown since is read from that offset rather than from the first
-    record. An offset past the end of the file, or one with no state to extend,
-    reads the stream whole, which is what a truncated or replaced stream needs.
+    together with the byte offset that observation reached and the fingerprint of
+    the stream's opening it read — so a stream that has only grown since is read
+    from that offset rather than from the first record. An offset past the end of
+    the file, one with no state to extend, or one whose stream's opening is no
+    longer the recorded one reads the stream whole, which is what a truncated,
+    replaced or in-place-rewritten stream needs.
     """
     path = Path(log_path)
     if not path.exists():
@@ -3472,7 +3537,7 @@ def observe_log(
             size = path.stat().st_size
         except OSError:
             size = 0
-        if offset <= size:
+        if offset <= size and _stream_head_intact(path, carried.get("head")):
             lines, end = _stream_lines_from(path, offset)
             obs = observe_stream(
                 backend_name=backend_name,

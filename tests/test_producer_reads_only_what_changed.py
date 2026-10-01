@@ -16,6 +16,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -169,7 +170,9 @@ def _drive(
         index = clock["i"]
         clock["i"] += 1
         recorded.append(
-            int(runs.read_watch_registration(project).get("bytes_parsed_last_poll") or 0)
+            int(
+                runs.read_watch_registration(project).get("bytes_parsed_last_poll") or 0
+            )
         )
         spawn_marks.append(len(spawns))
         if index >= len(steps):
@@ -268,9 +271,7 @@ def test_incremental_transitions_match_the_whole_file_path(
             _append(record, chars=PARITY_CHARS, tag=index + 1)
 
     def transitions() -> list[tuple]:
-        events, _recorded, _marks = _drive(
-            PROJECT, steps=[step, step, step], spawns=[]
-        )
+        events, _recorded, _marks = _drive(PROJECT, steps=[step, step, step], spawns=[])
         return [
             (event.get("run_id"), event.get("to_state"))
             for event in events
@@ -299,3 +300,124 @@ def test_incremental_transitions_match_the_whole_file_path(
 
     assert incremental, "the case must produce transitions to compare"
     assert incremental == whole_file
+
+
+def _terminal_record(run_id: str, *, pad: int) -> str:
+    """A stream record that ends the turn, padded so it outgrows a cursor."""
+    return (
+        json.dumps(
+            {
+                "type": "result",
+                "session_id": run_id,
+                "is_error": False,
+                "result": "done-this-turn-" + "y" * pad,
+            }
+        )
+        + "\n"
+    )
+
+
+def _cursor_offset(memo: dict) -> int:
+    """The byte offset the cursor in ``memo`` recorded for the stream."""
+    return int((memo.get("stream") or {}).get("offset") or 0)
+
+
+def test_a_stream_replaced_beyond_the_cursor_is_read_from_zero(fleet) -> None:
+    """A replacement at a new inode, at least as long as the cursor, re-reads whole.
+
+    The replacement is longer than the inode cursor reached, so the pre-existing
+    ``offset <= size`` guard cannot force the whole read: only the inode
+    comparison can, and without it the read resumes mid-record and misses the
+    terminal event the new first record carries.
+    """
+    record = fleet["records"][0]
+    memo: dict = {}
+    before = recovery._observed_stream(record, memo=memo)
+    assert before is not None and before["terminal"] is False
+
+    replacement = Path(record["log_path"]).with_suffix(".new")
+    replacement.write_text(_terminal_record(record["run_id"], pad=400))
+    assert replacement.stat().st_size >= _cursor_offset(memo), (
+        "the replacement must outgrow the cursor, or the size guard alone saves it"
+    )
+    os.replace(replacement, record["log_path"])
+
+    observed = recovery._observed_stream(record, memo=memo)
+
+    assert observed == recovery._observed_stream(record, memo=None)
+    assert observed is not None and observed["terminal"] is True
+
+
+def test_a_stream_rewritten_in_place_is_read_from_zero(fleet) -> None:
+    """A rewrite at the same inode, opened with new bytes, re-reads from zero.
+
+    The inode is unchanged and the new file is longer than the cursor, so
+    neither the inode comparison nor the size guard can catch it: only the
+    fingerprint of the stream's opening distinguishes a rewrite from an append,
+    and without it the read resumes from the stale offset and misses the
+    terminal event in the new first record.
+    """
+    record = fleet["records"][1]
+    memo: dict = {}
+    before = recovery._observed_stream(record, memo=memo)
+    assert before is not None and before["terminal"] is False
+
+    path = Path(record["log_path"])
+    inode = os.stat(path).st_ino
+    path.write_text(_terminal_record(record["run_id"], pad=400))
+    assert os.stat(path).st_ino == inode, "the rewrite must keep the inode"
+    assert path.stat().st_size >= _cursor_offset(memo)
+
+    observed = recovery._observed_stream(record, memo=memo)
+
+    assert observed == recovery._observed_stream(record, memo=None)
+    assert observed is not None and observed["terminal"] is True
+
+
+def _fake_worktree(root: Path, index: int) -> Path:
+    """A checkout whose head identity reads as a revision without a git process."""
+    tree = root / f"wt-{index}"
+    git_dir = tree / ".git"
+    git_dir.mkdir(parents=True)
+    (git_dir / "HEAD").write_text("f" * 40 + "\n", encoding="utf-8")
+    return tree
+
+
+def test_the_commits_cache_evicts_gone_worktrees_and_stays_bounded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A reclaimed worktree's count is dropped and the cache stays bounded."""
+    limit = 8
+    monkeypatch.setattr(recovery, "_COMMITS_BEYOND_BASE_CACHE_LIMIT", limit)
+    cache = recovery._COMMITS_BEYOND_BASE_CACHE
+    cache.clear()
+    completed = subprocess.CompletedProcess(
+        args=["git"], returncode=0, stdout=b"2\n", stderr=b""
+    )
+    monkeypatch.setattr(recovery.subprocess, "run", lambda *a, **k: completed)
+
+    def count(tree: Path) -> int:
+        return recovery._commits_beyond_base(
+            {"worktree": str(tree), "base_sha": "base"}
+        )
+
+    try:
+        trees = [_fake_worktree(tmp_path, index) for index in range(limit)]
+        assert [count(tree) for tree in trees] == [2] * limit
+        assert len(cache) == limit, sorted(cache)
+
+        # Reclaim half the trees; the next classification must drop their entries.
+        gone = trees[: limit // 2]
+        for tree in gone:
+            shutil.rmtree(tree)
+        assert not gone[0].is_dir()
+        count(_fake_worktree(tmp_path, limit))
+        for tree in gone:
+            assert (str(tree), "base") not in cache, sorted(cache)
+
+        # Many more classified runs: the cache never grows past its ceiling.
+        for index in range(limit + 1, limit * 6):
+            count(_fake_worktree(tmp_path, index))
+        assert len(cache) <= limit, sorted(cache)
+    finally:
+        cache.clear()
