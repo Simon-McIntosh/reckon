@@ -1150,3 +1150,157 @@ def test_a_linked_worktree_under_scratch_with_a_foreign_common_dir_is_refused(
     after = _git_run(["rev-parse", "probe"], cwd=foreign, home=home)
     assert after.stdout.strip() == before.stdout.strip()
     assert (linked / _TRACKED).read_text(encoding="utf-8") == "dirty\n"
+
+
+# --- ``worktree list`` is a read, however its output is spelled -------------
+#
+# ``worktree`` is a multi-purpose verb, and it is the listing form that is read:
+# ``worktree list --porcelain`` changes no ref and writes no file, but a read
+# form that allowed only the bare ``list`` refused it, so a caller asking git for
+# a machine-readable inventory of worktrees was refused a verb that only reads.
+# The output modifiers — ``--porcelain``, ``-z``, ``-v`` and ``--expired`` — are
+# flags that consume no value and name no file, so each is admitted alone and in
+# combination with the others. The mutating actions of the same verb (``prune``,
+# ``add``, ``remove``) stay refused, which the prune case below pins.
+
+
+def test_worktree_list_porcelain_against_another_checkout_answers(
+    repos: dict[str, Any], tmp_path: Path
+) -> None:
+    """``worktree list --porcelain`` is forwarded to another checkout.
+
+    The listing writes nothing, so it is a read whatever output option it
+    carries: the shim forwards it and the answer it gives is the real git's own
+    porcelain listing of the foreign checkout, not a refusal.
+    """
+    home, other = repos["home"], repos["other"]
+    copied = _copied_shim_directory(tmp_path)
+    expected = _git_run(["worktree", "list", "--porcelain"], cwd=other, home=home)
+    assert expected.returncode == 0, expected.stderr
+
+    result = _shell_group(
+        f"git -C {other} worktree list --porcelain",
+        cwd=home,
+        home=home,
+        run_id=RUN_ID,
+        extra={"PATH": _two_shim_path(copied)},
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == expected.stdout
+    assert f"worktree {other}" in result.stdout
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        "--porcelain",
+        "-z",
+        "-v",
+        "--expired",
+        "--porcelain -z",
+        "--porcelain -v --expired",
+    ],
+)
+def test_every_worktree_list_output_option_is_admitted(
+    repos: dict[str, Any], tmp_path: Path, options: str
+) -> None:
+    """Each listed output modifier, alone and together, is admitted for a read.
+
+    Admission is the shim's classification, not git's option grammar: the shim
+    forwards the listing whatever modifiers it carries, and git decides whether
+    a given modifier is valid in this version (``-z`` alone and ``--expired``
+    are not, so those forms exit with git's own status). What the shim must
+    never return is its refusal status, which is what would mean the read form
+    had not covered the option.
+    """
+    home, other = repos["home"], repos["other"]
+    copied = _copied_shim_directory(tmp_path)
+
+    result = _shell_group(
+        f"git -C {other} worktree list {options}",
+        cwd=home,
+        home=home,
+        run_id=RUN_ID,
+        extra={"PATH": _two_shim_path(copied)},
+    )
+
+    assert result.returncode != REFUSAL_STATUS, result.stderr
+    assert "refusing" not in result.stderr
+
+
+def test_worktree_prune_against_another_checkout_is_still_refused(
+    repos: dict[str, Any], tmp_path: Path
+) -> None:
+    """The mutating worktree action stays refused, and its metadata is unmoved.
+
+    ``prune`` removes the administrative directory of a worktree whose working
+    directory is gone — a write into the foreign checkout's git dir. It is not
+    the listing action, so the read form does not cover it, and the refusal is
+    proved against a real prunable worktree: the metadata directory the prune
+    would have removed is still present afterwards.
+    """
+    home, other = repos["home"], repos["other"]
+    linked = tmp_path / "prunable"
+    added = _git_run(
+        ["worktree", "add", "-q", str(linked), "-b", "probe"], cwd=other, home=home
+    )
+    assert added.returncode == 0, added.stderr
+    shutil.rmtree(linked)
+    metadata = other / ".git" / "worktrees"
+    before = sorted(entry.name for entry in metadata.iterdir())
+    assert before, "the linked worktree registered no metadata to prune"
+    copied = _copied_shim_directory(tmp_path)
+
+    result = _shell_group(
+        f"git -C {other} worktree prune",
+        cwd=home,
+        home=home,
+        run_id=RUN_ID,
+        extra={"PATH": _two_shim_path(copied)},
+    )
+
+    assert result.returncode == REFUSAL_STATUS, result.stderr
+    assert "refusing" in result.stderr
+    after = sorted(entry.name for entry in metadata.iterdir())
+    assert after == before
+
+
+def test_registered_worktrees_reads_through_the_shim_rather_than_raising(
+    repos: dict[str, Any], tmp_path: Path
+) -> None:
+    """The routing helper lists another checkout's worktrees under a run id.
+
+    ``_registered_worktrees`` runs ``git worktree list --porcelain`` through
+    ``PATH``, so under a run id it goes through the shim. The listing is a read,
+    so the helper answers with the checkout's worktrees rather than raising the
+    refusal a mutating form would produce.
+    """
+    home, other = repos["home"], repos["other"]
+    copied = _copied_shim_directory(tmp_path)
+    program = (
+        "import sys\n"
+        "from pathlib import Path\n"
+        "from reckon.crew.routing import _registered_worktrees\n"
+        "for found in _registered_worktrees(Path(sys.argv[1])):\n"
+        "    print(found)\n"
+    )
+    script = " ".join(
+        [
+            shlex.quote(sys.executable),
+            "-c",
+            shlex.quote(program),
+            shlex.quote(str(other)),
+        ]
+    )
+
+    result = _shell_group(
+        script,
+        cwd=home,
+        home=home,
+        run_id=RUN_ID,
+        extra={"PATH": _two_shim_path(copied)},
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert str(other.resolve()) in result.stdout.splitlines()

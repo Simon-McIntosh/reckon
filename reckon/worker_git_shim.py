@@ -214,7 +214,12 @@ _READ_OPTIONS: dict[str, frozenset[str]] = {
     "remote": _READ_ACTIONS["remote"],
     "stash": _READ_ACTIONS["stash"],
     "tag": _READ_ACTIONS["tag"] | frozenset({"-n", "-v", "--format"}),
-    "worktree": _READ_ACTIONS["worktree"],
+    # The listing modifiers: `worktree list` writes nothing whatever they carry,
+    # and `--porcelain`, `-z`, `-v` and `--expired` only change how it prints or
+    # which registered worktrees it prints. `-v` is `--verbose`; every one is a
+    # flag that consumes no value, so no option here can name a write target.
+    "worktree": _READ_ACTIONS["worktree"]
+    | frozenset({"-v", "--verbose", "-z", "--porcelain", "--expired"}),
 }
 
 # Git's global options that consume the token after them. Everything before the

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="The git shim reads worktree list as a read form">
+  <meta name="plan-summary" content="git worktree list is forwarded whatever output option it carries, while the verb's mutating actions stay refused.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s2">
+  <meta name="plan-commits" content="518f5ef83">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fence,git,shim,tests">
+  <title>The git shim reads worktree list as a read form — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-shim-reads-worktree-list-as-a-read" data-reckon="landed" data-when="2026-10-01">
+  <h2>The git shim reads <code>worktree list</code> as a read form</h2>
+  <p><code>worktree</code> is a multi-purpose verb, and the shim admitted only the bare <code>list</code> action: any output modifier on the listing made the invocation mutating, so <code>git worktree list --porcelain</code> &mdash; a read that changes no ref and writes no file &mdash; was refused against a repository that is not the run's own. <code>reckon/worker_git_shim.py</code> now admits <code>--porcelain</code>, <code>-z</code>, <code>-v</code>/<code>--verbose</code> and <code>--expired</code> as read modifiers on <code>worktree list</code>, alone or together. Each is a flag that consumes no value and names no file, so none can be pointed at a write target; the verb's mutating actions (<code>add</code>, <code>remove</code>, <code>prune</code>, <code>lock</code>, <code>unlock</code>, <code>repair</code>) are unchanged and stay refused.</p>
+  <p><code>tests/test_git_shim_checks_the_resolved_repo.py</code> gains four cases, each in its own process group under a 60 s bound with two shim directories on <code>PATH</code>: <code>worktree list --porcelain</code> with <code>-C</code> at a foreign checkout succeeds and its output equals the real git's porcelain listing of that checkout; the listed modifier alone and together is admitted (the shim never returns its refusal status &mdash; git 2.39.3 itself rejects <code>-z</code> alone and does not know <code>--expired</code>); <code>worktree prune</code> at the same checkout is refused and the metadata directory it would have removed is still present; and <code>reckon.crew.routing._registered_worktrees</code>, which runs the listing through <code>PATH</code>, returns the checkout's worktrees rather than raising. Gate at <code>518f5ef83</code>: <code>185 passed</code>, <code>EXIT=0</code>. The declared negative control &mdash; <em>restoring the list-only read option reddens the porcelain and registered-worktrees cases</em> &mdash; applied, fails <code>test_worktree_list_porcelain_against_another_checkout_answers</code> and <code>test_registered_worktrees_reads_through_the_shim_rather_than_raising</code> alongside the admission cases (<code>8 failed, 177 passed</code>, <code>EXIT=1</code>).</p>
+  <p>A separate guard, <code>reckon/hooks/worker_git_guard.py</code>, keeps its own narrow <code>READ_ONLY_VERBS</code> set with no <code>worktree</code> entry, so the pre-tool-use layer still refuses <code>git worktree list</code> aimed at another checkout even where the shim now forwards it. That file is outside this node's write scope and is recorded as a follow-on.</p>
+</article>
+</body>
+</html>
