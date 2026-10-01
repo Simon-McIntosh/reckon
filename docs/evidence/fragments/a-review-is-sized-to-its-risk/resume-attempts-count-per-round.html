@@ -1,0 +1,31 @@
+<article class="landed-report" data-run-id="r-20261001T070535631632-resume-attempts-count-per-round" data-node="resume-attempts-count-per-round">
+      <h3>resume-attempts-count-per-round — a repair round's attempt count is keyed to its own round</h3>
+      <p>
+        <code>reckon/crew/recovery.py</code> read a round's resume attempt
+        figure straight off the reviewed run's pointer, so a round the reflex
+        had not yet written inherited the count of whichever round the pointer
+        last carried. A run whose earlier round spent two resumes would open its
+        next round part-way to <code>REPAIR_RESUME_LIMIT</code>, and that
+        round's first resume recorded attempt 3 rather than 1. The count is now
+        keyed to the <code>round_id</code> being written: a write for a round
+        the pointer did not last carry starts at one, while repeated writes for
+        the same round still advance it. The within-round retry cap already
+        compared the round id before reading the count, so it now reads a figure
+        belonging to the round it bounds; the run-wide one-round-per-run cap is
+        unchanged.
+      </p>
+      <p>
+        <strong>Measure.</strong>
+        <code>tests/test_the_reflex_resumes_an_unpromoted_run.py</code> gained a
+        case that seeds an earlier round's two attempts on the pointer, stubs
+        the run-wide cap open, and asserts the new round's first resume records
+        attempt 1 against a fresh round id. The gate ran only that file: 7
+        passed, EXIT=0.
+      </p>
+      <p>
+        <strong>Negative control.</strong> Reading the attempt count without the
+        round id (the prior formula) reddens the new case with
+        <code>assert 3 == 1</code>: 1 failed, EXIT=1. The log is
+        <code>negative-control.log</code> under the run directory.
+      </p>
+    </article>
