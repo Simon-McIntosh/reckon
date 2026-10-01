@@ -25,9 +25,9 @@
   <title>A Review Dies Where Nobody Is Looking | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="82">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+<meta name="plan-modified" content="2026-10-01">
+<meta name="plan-version" content="83">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192,06a008fb,3263f5a1">
 <meta name="plan-impl" content="0.88">
 </head>
@@ -478,6 +478,10 @@
       after.</p>
     </section>
 
+    <h2 id="s10">§10 — The review death rate after reviews moved to effort high</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>Local-lane reviews moved from effort xhigh to high at dotfiles f3f653a, about 18:36Z on 2026-09-30, with 29.4% of xhigh reviews dying as the before-rate. This section runs §2's experiment as an after-window and gives §9 its first after-rate. Once at least 60 local-lane reviews have run at effort high since that commit, re-run <code>docs/research/scripts/scan_local_lane_deaths.py</code> over them and write its after block beside the before block.</p><p><strong>Done when</strong> the after block states the number of reviews in the window, the death count and rate with its interval, and the before-rate it is compared against. A window holding fewer than 60 reviews is recorded as not yet measurable, with its count, rather than as a rate. Lowering clive's effective window below 480000 stays a lead decision and is not part of this section.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-ardwnil-001" data-status="resolved" data-written-by="reckon-ee" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-review-dies-where-nobody-is-looking §1" data-resolved-at="2026-09-24T12:53:23+00:00" data-resolved-by="reckon-e5">
@@ -498,10 +502,11 @@
     <pre class="r-fu-prompt">/reckon-build a-review-dies-where-nobody-is-looking §5</pre>
     <p class="r-fu-outcome">§5 landed at fcbc80e81 (review 93): a dispatch rollback surfaces the error that started it, and a capture-only roster no longer blocks a registration. A repair of its one finding, that raising from the rollback failure overwrites a cause the original already carried, is in flight. §8 is closed by measurement: after session reuse was keyed to the run's own task, 0 of 1,439 local dispatches and 0 of 75 codex dispatches inherited another task's session, against 270 of 1,828 local before (778333b1d, review 91). §2: the census already held both cells. Reviews at high died 1 of 46 against 392 of 1,333 at xhigh, and the gap held on every recorded confounder (report review-effort-confounders, review 87). The lead switched review effort to high in flight configuration (dotfiles f3f653a) instead of running the re-dispatch experiment. §9: the effective_input_window slot landed at dd916e58e (review 94), and the lead set clive to its declared 480000 (dotfiles cb070f4).</p>
     </article>
-<article class="r-fu" data-id="f-ardwnil-004" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-30" data-recommends-skill="/reckon-build a-review-dies-where-nobody-is-looking §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ardwnil-004" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-30" data-recommends-skill="/reckon-build a-review-dies-where-nobody-is-looking §2" data-resolved-at="2026-10-01T19:57:09+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Measure the review death rate after the switch to high, and land the rollback-chain repair</h4>
     <div class="r-fu-body"><p>Once at least 60 local-lane reviews have run at effort high since dotfiles f3f653a (2026-09-30 about 18:36Z), re-run <code>docs/research/scripts/scan_local_lane_deaths.py</code> and write its after block, comparing the review death rate against the 29.4% xhigh before-rate. That is §2's experiment run as an after-window and §9's first after-rate. Land the repair of the §5 finding (keep the original exception's own cause when attaching the rollback failure). The whole-suite comparison of §5's merge against main (rollback-population) reports as the integration check. §1 is met and can be collapsed. Lowering clive's effective window below 480000 stays a lead decision.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-dies-where-nobody-is-looking §2</pre>
+    <p class="r-fu-outcome">Split by currency against main. The §5 rollback-chain repair already landed as 0bdd53a17, which keeps a launch refusal's cause when its unwind fails. The after-window death-rate measurement moved into §10 as an implementable section, because §2 is done and the roadmap schedules sections, never followups (work-is-a-section-not-a-followup §4). §1 being met remains for this plan's next landing to collapse.</p>
     </article>
 </section>
 
@@ -736,7 +741,7 @@
     <div class="r-comment-body"><p>whole-suite comparison, base deab5e16 vs candidate merge b2d19be: base 75 failed + 4 setup errors, candidate 76 failed + 5 setup errors, 74 failed and 4 error ids shared; the three ids failing only at the candidate are all non-attributable (two pass alone 3/3 at both revisions, one is a real-home artifact race that fails alone at base too), so 0 added failures are attributed to b2d19be; lists in report.md beside the arm logs</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T210355696537-review-of-rollback-population" data-who="reckon-build" data-when="2026-09-30T21:11:56.498Z">
-    <div class="r-comment-body"><p>review stored for r-20260930T185746215809-rollback-population: parsed record, 5 dimensions scored goal_fidelity 19, evidence 17, scope_discipline 18, durability 18, fit 17 (total 89); added_failure_count 2 (test_follow_observes_other_sessions.py::test_the_real_configuration_home_gains_no_file, test_producer_takes_new_code.py::test_a_producer_reexecutes_onto_changed_code) derived from the reviewed run&#x27;s own baseline_suite/after_suite gate logs, both rerun non-attributable, 0 attributable to merge b2d19be; one finding (manifest.md:22 failure_attribution is empty while the gate-log delta is 2)</p></div>
+    <div class="r-comment-body"><p>review stored for r-20260930T185746215809-rollback-population: parsed record, 5 dimensions scored goal_fidelity 19, evidence 17, scope_discipline 18, durability 18, fit 17 (total 89); added_failure_count 2 (test_follow_observes_other_sessions.py::test_the_real_configuration_home_gains_no_file, test_producer_takes_new_code.py::test_a_producer_reexecutes_onto_changed_code) derived from the reviewed run's own baseline_suite/after_suite gate logs, both rerun non-attributable, 0 attributable to merge b2d19be; one finding (manifest.md:22 failure_attribution is empty while the gate-log delta is 2)</p></div>
 </div>
 </section>
 </main>

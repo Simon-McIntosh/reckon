@@ -24,11 +24,11 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="560">
+<meta name="plan-version" content="561">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.57">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;deferred&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;deferred&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;deferred&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;deferred&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s24&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -1752,6 +1752,10 @@
       with the key comparison at
       <a href="/reckon/figures/crew-observability-truth/review-recognition-key.svg">the recognition key figure</a>.</p>
 
+    <h2 id="s24">§24 — A worker&#x27;s time fence names when it started</h2>
+<section data-reckon="section" data-id="s24" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>The dispatch prompt's FENCE — TIME line (the <code>{time_budget}</code> slot in <code>reckon/crew/prompts.py</code>) gives a duration and nothing to measure it against. A worker has no clock except the one it asks for, so it estimates elapsed time from the amount of work it has done. On 2026-10-01 <code>r-20261001T183138776104-pointer-classification-is-memoised</code> launched at 18:32:03Z under a 60-minute fence. After 14,714 stream records it wrote "Time fence reached", committed a half-finished node and ended its turn at 18:46:23Z, 14 minutes in. It had not written its test file, negative control or head arm, and its blocker read "the node's 60-minute fence expired". A coordinator that took that blocker at its word would have redispatched the work or dropped it.</p><p>The time fence states the attempt's launch instant and deadline in UTC, and gives the command that checks them (<code>date -u</code>). A resume restates both for the resumed attempt, with its own launch instant and the time it grants.</p><p><strong>Done when</strong> a test renders a dispatch prompt and a resume advice for a fixed launch instant and budget, and asserts that both carry the same deadline string, which is the launch instant plus the budget. The negative control restores the bare duration, and that assertion must then fail. A manifest whose blocker cites an expired time fence before its deadline is reported as a defect rather than a blocker. If the manifest audit belongs to another plan, record the report as a pointer to that plan.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="liveness-source" data-choice="reconcile-on-read" data-by="lead" data-when="2026-09-03T07:38:29+00:00">
@@ -2011,10 +2015,11 @@ Model time is extractable and its scarcity is plumbing, not measurement: one dia
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth</pre>
     <p class="r-fu-outcome">A declared wait probe counts as able to differ only when it names a reference that resolves to a kind: a live pid, an existing path, a flagged port, or a flagged scheduler job id. The result names the kind found, and constant tokens such as HEAD2 are refused (merged 614ce3bf1, review 99). The control restores the character-class proxy, and HEAD2 is accepted again.</p>
     </article>
-<article class="r-fu" data-id="f-cot-a-time-fence-names-its-clock" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-01" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cot-a-time-fence-names-its-clock" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-01" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="2026-10-01T19:53:58+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A worker&#x27;s time fence names when it started</h4>
     <div class="r-fu-body"><p>The dispatch prompt's FENCE — TIME line (reckon/crew/prompts.py, the <code>{time_budget}</code> slot) states a duration and nothing to measure it against. A worker has no clock but the one it asks for, so it estimates elapsed time from how much work it has done. On 2026-10-01 r-20261001T183138776104-pointer-classification-is-memoised launched at 18:32:03Z with a 60-minute fence. After 14,714 stream records it wrote "Time fence reached", committed a half-finished node and ended its turn at 18:46:23Z, 14 minutes in, without writing its test file, negative control or head arm. Its manifest blocker read "the node's 60-minute fence expired". The coordinator recovered it with a resume, but a coordinator that took the blocker at its word would have redispatched the work or dropped it.</p><p>Done when the time fence states the attempt's launch instant and its deadline in UTC, gives the command that checks it (<code>date -u</code>), and a resume restates both for the resumed attempt. A test renders a dispatch prompt and a resume advice for a fixed launch instant and asserts that both carry the same deadline string. The negative control restores the bare duration, under which that assertion fails. A manifest whose blocker cites an expired time fence before its deadline should also read as a defect, not a blocker. Name that check here, or file it on the plan that owns manifest audit if that plan is a better owner.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth</pre>
+    <p class="r-fu-outcome">Moved into §24 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">

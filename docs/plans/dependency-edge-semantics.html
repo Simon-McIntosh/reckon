@@ -22,10 +22,10 @@
   <title>Edges That Mean What They Say | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-28">
+<meta name="plan-modified" content="2026-10-01">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="38">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
+<meta name="plan-version" content="39">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="fd0b1d4,bea76f1,ec8fb56d">
 </head>
 <body>
@@ -614,6 +614,14 @@
       and is recorded as a finding against that resource instead of a section here.
     </p>
 
+    <h2 id="s9">§9 — A section edge stays out of the summary&#x27;s plan-level blocking, and a malformed mapping is named</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>The review of f129b456 found two defects. First, the section rows that <code>read_plan</code> appends to <code>deps</code> (<code>reckon/mcp.py</code> lines 942 to 952) fold into the typed summary view's blocking list, through <code>mcp.py</code> line 1360, <code>mcp_views._blocking</code> and <code>lifecycle.unresolved_dependencies</code> (<code>mcp_views.py</code> line 1916). So a summary reports the whole plan blocked when only one section waits. Second, a wholly malformed <code>plan-section-depends-on</code> value (invalid JSON, or JSON that is not an object) returns None at <code>_schema.py</code> line 389 with no finding, and every declared wait disappears silently. The plan also asks the skills to say that the gate op covers the evidence-shaped case and this edge covers the plan-shaped case, and that sentence is not yet written.</p><p><strong>Done when</strong> a summary of a plan with one waiting section reports that section held and the plan not blocked, a malformed mapping produces a named finding, and the skills carry the sentence. Each repair has a test that fails before it.</p>
+
+    <h2 id="s10">§10 — A decision carries a recommendation the lead accepts, and a section-scoped decision is checked</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>Carried from f-des-section-scoped-decisions after the sections list landed at f300cd33. First, a decision gains an optional recommended value with <code>recommended_by</code>, which the lead accepts in one action. A recommendation never becomes the choice by default: an unanswered one stays open and blocking. Second, at <code>roadmap.py</code> line 2371 a decision scoped to a section the plan never declares (a typo, or a later rename) enters <code>decision_section_blockers</code> unchecked; it should be refused or reported. Third, <code>is_blocked</code> (<code>roadmap.py</code> line 2287) no longer counts a scoped open decision, while the persisted-blocked fallback at line 2259 still tests the unfiltered list. So a plan persisted as blocked by only a scoped decision reads inconsistently.</p><p><strong>Done when</strong> accepting a recommendation sets the choice and leaving it unanswered keeps the decision open, a decision scoped to an undeclared section is refused or reported, and both blocked readings agree for a plan held only by a scoped decision. Each item has a test that fails before it.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="staged-ref-semantics" data-choice="honour-the-anchor" data-by="reckon-3a" data-when="2026-08-26">
@@ -696,15 +704,17 @@
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics §7</pre>
     <p class="r-fu-outcome">done — the soft after edge landed and reaches every reader: roadmap ordering and came-after hints (4ce2d39b, 4a87503f), the published schema field (4a1d7a15, 29df6835), and both inventory row builders through one shared edge_row helper (5bdf633b, 5aa30835); merged at acdfa75b; reviews 86, 98, 94. The two open followups on source-section dependencies and section-scoped decisions remain as new scope.</p>
     </article>
-<article class="r-fu" data-id="f-des-section-edge-reaches-summary" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T10:05:00Z" data-recommends-skill="/reckon-build dependency-edge-semantics" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-des-section-edge-reaches-summary" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T10:05:00Z" data-recommends-skill="/reckon-build dependency-edge-semantics" data-resolved-at="2026-10-01T19:55:21+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Keep section edges out of the summary&#x27;s plan-level blocking, and name a malformed mapping</h4>
     <div class="r-fu-body"><p>The review of f129b456 found two defects. First, the section rows that read_plan appends to deps (reckon/mcp.py:942-952) fold into the typed summary view's blocking list through mcp.py:1360, mcp_views._blocking and lifecycle.unresolved_dependencies (mcp_views.py:1916). So a summary reports the whole plan blocked when only one section waits. Second, a wholly malformed plan-section-depends-on value (invalid JSON, or JSON that is not an object) returns None at _schema.py:389 with no finding, and every declared wait disappears silently. Also: the plan asks the skills to say that the gate op covers the evidence-shaped case while this edge covers the plan-shaped case, and that is not yet written. Each fix needs a test that fails before it.</p></div>
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics</pre>
+    <p class="r-fu-outcome">Moved into §9 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
-<article class="r-fu" data-id="f-des-decision-recommendation-and-edges" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T15:02:00Z" data-recommends-skill="/reckon-build dependency-edge-semantics" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-des-decision-recommendation-and-edges" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T15:02:00Z" data-recommends-skill="/reckon-build dependency-edge-semantics" data-resolved-at="2026-10-01T19:55:21+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A decision&#x27;s recommendation the lead accepts, and two edges of section-scoped decisions</h4>
     <div class="r-fu-body"><p>Carried from f-des-section-scoped-decisions after the sections list landed at f300cd33. (1) An optional recommended value with recommended_by, which the lead accepts in one action and which never becomes the choice by default: an unanswered recommendation stays open and blocking. (2) Review finding: at roadmap.py:2371 a decision scoped to a section the plan never declares (a typo, or a later rename) enters decision_section_blockers unchecked. Refuse it or report it. (3) Review finding: is_blocked (roadmap.py:2287) no longer counts a scoped open decision, while the persisted-blocked fallback at :2259 still tests the unfiltered list, so a plan persisted blocked by only a scoped decision reads inconsistently. Each needs a test that fails before it.</p></div>
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics</pre>
+    <p class="r-fu-outcome">Moved into §10 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
