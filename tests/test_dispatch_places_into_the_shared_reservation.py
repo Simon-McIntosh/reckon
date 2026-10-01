@@ -24,6 +24,8 @@ from __future__ import annotations
 import importlib
 import json
 import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -237,3 +239,60 @@ def test_a_legacy_per_project_record_is_placed_into_without_a_hold(
 
     assert _step_job_id(wrapped.argv) == "99000001"
     assert _asked("salloc") == []
+
+
+def test_a_test_that_reaches_an_allocation_verb_it_did_not_provide_is_failed(
+    tmp_path: Path,
+) -> None:
+    """The session guard fails a test that reaches an allocation verb with no stub.
+
+    The guard lives in this suite's ``conftest``, so the check loads that same
+    conftest: it is copied beside a synthesised test that runs ``salloc``
+    through the ambient PATH, and a child pytest runs over the pair. The child
+    must fail and name the verb and its argv — the assertion that goes red if
+    the session stub is removed or stopped. The child's PATH also carries a
+    harmless refusing ``salloc`` of this test's own, so a child run with the
+    guard removed reaches that stub rather than the host's real scheduler.
+    """
+    tests_dir = Path(__file__).resolve().parent
+    repo_root = tests_dir.parent
+    (tmp_path / "conftest.py").write_text(
+        (tests_dir / "conftest.py").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    safety = tmp_path / "safety-bin"
+    safety.mkdir()
+    harmless = safety / "salloc"
+    harmless.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    harmless.chmod(0o755)
+    (tmp_path / "test_reaches_a_scheduler.py").write_text(
+        "import subprocess\n\n\n"
+        "def test_probe():\n"
+        "    subprocess.run(\n"
+        "        ['salloc', '--no-shell', '--job-name=probe'],\n"
+        "        check=False, capture_output=True, text=True,\n"
+        "    )\n",
+        encoding="utf-8",
+    )
+    env = dict(os.environ)
+    env["PATH"] = os.pathsep.join([str(safety), env.get("PATH", "")])
+    env["PYTHONPATH"] = str(repo_root)
+    child = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-p",
+            "no:cacheprovider",
+            "-q",
+            str(tmp_path / "test_reaches_a_scheduler.py"),
+        ],
+        check=False,
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    output = child.stdout + child.stderr
+    assert child.returncode != 0, output
+    assert "reached a scheduler verb it did not provide" in output
+    assert "salloc --no-shell --job-name=probe" in output

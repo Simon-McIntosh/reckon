@@ -82,6 +82,39 @@ def without_dispatch_identity(monkeypatch):
         monkeypatch.delenv(name, raising=False)
 
 
+# Scheduler verbs a test must never reach unless it put a working one on PATH
+# itself. A test asserting on placement or dispatch that forgets to provide one
+# reaches the host's real scheduler: measured 2026-09-30, an admitted-dispatch
+# case minted a real allocation on every whole-suite run, because the ensure's
+# ``salloc`` resolved through the ambient PATH. The guard below refuses that
+# reach instead of letting the allocation happen, so the suite cannot hold the
+# fleet's shared reservation as a side effect of being run.
+_SCHEDULER_VERBS = ("salloc", "sbatch", "srun", "squeue", "scontrol", "scancel")
+
+# Of those verbs, the ones whose reach fails the test: the verbs that mint an
+# allocation or place a step inside one. A read-only probe (``squeue``,
+# ``scontrol``) and a cancel are still refused by the stub and recorded, but no
+# test is failed for reaching one: a test whose subject is a liveness probe may
+# legitimately ask the host's scheduler whether a job is alive, and failing it
+# would make this guard the cause of an unrelated red rather than a refusal of
+# an allocation. The allocation verbs are the ones whose reach can hold a real
+# reservation. ``srun`` is included because a bare step client with no job id
+# mints an allocation of its own.
+_ALLOCATION_VERBS = ("salloc", "sbatch", "srun")
+
+# Where a reached verb is recorded. The guard stub appends its own argv and the
+# test that reached it, so the failing message names both. An evidence run may
+# point this at its own log to correlate conftest's refusal with the run's shim.
+_SCHEDULER_REACH_LOG_ENV = "RECKON_SCHEDULER_REACH_LOG"
+
+_REFUSING_SCHEDULER_STUB = """#!/bin/sh
+name=${0##*/}
+printf '%s\\t%s\\n' "${PYTEST_CURRENT_TEST:-<no-test>}" "$name $*" \\
+  >> "$RECKON_SCHEDULER_REACH_LOG"
+exit 1
+"""
+
+
 def watch_record_dirs(root: Path) -> list[Path]:
     """Watcher-record directories belonging to configuration homes under ``root``.
 
@@ -337,3 +370,75 @@ def isolated_reckon_home(request, tmp_path_factory, monkeypatch):
         "on" if request.node.get_closest_marker(ARMING_MARKER) else "off",
     )
     return home
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _refuse_real_scheduler(tmp_path_factory):
+    """Put a refusing stub for every scheduler verb first on PATH for the session.
+
+    A test that provides its own recording scheduler prepends its own directory
+    later, so its stub takes precedence and this one is never reached; a test
+    that reaches a scheduler verb without providing one hits this stub instead,
+    which records the reach and exits non-zero rather than letting the real
+    client run.
+    """
+    directory = tmp_path_factory.mktemp("scheduler-shim")
+    for verb in _SCHEDULER_VERBS:
+        stub = directory / verb
+        stub.write_text(_REFUSING_SCHEDULER_STUB, encoding="utf-8")
+        stub.chmod(0o755)
+    log = os.environ.get(_SCHEDULER_REACH_LOG_ENV)
+    if not log:
+        log = str(directory / "reached.tsv")
+    os.environ[_SCHEDULER_REACH_LOG_ENV] = log
+    previous = os.environ.get("PATH", "")
+    os.environ["PATH"] = os.pathsep.join([str(directory), previous])
+    try:
+        yield Path(log)
+    finally:
+        os.environ["PATH"] = previous
+
+
+def reached_allocation_verbs(nodeid: str, log_text: str) -> list[str]:
+    """The refused allocation verbs a test reached, each rendered as 'verb argv'.
+
+    The guard stub appends one ``<test id>\\t<verb argv>`` line per refusal.
+    Only the allocation verbs are returned: a read-only probe is recorded but
+    does not fail the test that made it, so the guard refuses an allocation
+    reach without turning an unrelated liveness probe red.
+    """
+    prefix = f"{nodeid} "
+    reached: list[str] = []
+    for line in log_text.split("\n"):
+        if not line.startswith(prefix):
+            continue
+        verb_argv = line.split("\t", 1)[-1]
+        if verb_argv.split(" ", 1)[0] in _ALLOCATION_VERBS:
+            reached.append(verb_argv)
+    return reached
+
+
+@pytest.fixture(autouse=True)
+def _fails_on_a_reached_scheduler(request, _refuse_real_scheduler):
+    """Fail the test that reached an allocation verb it did not provide.
+
+    The guard stub records every reach as it refuses; this reads back the
+    allocation reaches attributed to this test and names the verb and its argv,
+    so a forgotten recording scheduler surfaces as the assertion that names it
+    rather than as a downstream failure. A read-only probe the test made is
+    recorded but does not fail it.
+    """
+    yield
+    log = _refuse_real_scheduler
+    if not log.exists():
+        return
+    reached = reached_allocation_verbs(
+        request.node.nodeid, log.read_text(encoding="utf-8")
+    )
+    if reached:
+        raise AssertionError(
+            "this test reached a scheduler verb it did not provide: "
+            + "; ".join(reached)
+            + " — provide a recording scheduler on PATH, or place into a held "
+            "reservation, so no real scheduler client is run."
+        )
