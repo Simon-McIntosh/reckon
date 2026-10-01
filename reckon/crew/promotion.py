@@ -6848,6 +6848,13 @@ def _complete_locked(
         if brief_run
         else None
     )
+    # The crew session that dispatched this run rides the committed row beside
+    # the run it belongs to, because this promotion deletes the live pointer
+    # that carried it while ``session_id`` names the worker's own harness
+    # session rather than the coordinator's. It is null rather than absent when
+    # no pointer named one, because every key in ``RECORD_FIELDS`` is present on
+    # every promoted row.
+    pointer_session = str(record.get("session") or "").strip() or None
     run = ledger.build_record(
         run_id=run_id,
         plan=str(node.get("plan") or ""),
@@ -6881,6 +6888,7 @@ def _complete_locked(
         outcome=outcome,
         manifest_path=str(record.get("manifest_path") or ""),
         scope_changed=scope_changed,
+        session=pointer_session,
         session_id=session_id,
         session_harness=(record.get("session_harness") or record.get("dialect"))
         if session_id

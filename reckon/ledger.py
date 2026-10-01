@@ -133,6 +133,9 @@ RECORD_FIELDS = (
     "manifest_path",
     "scope_changed",
     "scope_acceptances",
+    # The crew session that dispatched the run, distinct from ``session_id``
+    # (the worker's own harness session).
+    "session",
     "session_id",
     "session_harness",
     "session_model",
@@ -1605,6 +1608,7 @@ def build_record(
     outcome: str = "",
     manifest_path: str = "",
     scope_changed: bool = False,
+    session: str | None = None,
     session_id: str | None = None,
     session_harness: str | None = None,
     session_model: str | None = None,
@@ -1727,6 +1731,10 @@ def build_record(
         "outcome": str(outcome),
         "manifest_path": str(manifest_path),
         "scope_changed": bool(scope_changed),
+        # The crew session that dispatched the run, distinct from ``session_id``
+        # (the worker's own harness session). Present as ``None`` when no
+        # pointer named one, like the row's other declared-but-unset fields.
+        "session": session,
         "session_id": session_id,
         "session_harness": session_harness,
         "session_model": session_model,
