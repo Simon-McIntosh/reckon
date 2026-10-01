@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="166">
+<meta name="plan-version" content="167">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -1455,7 +1455,10 @@
     <div class="r-comment-body"><p>independent review of run r-20261001T191722772125-complete-refuses-an-open-merge stored at reviews/reckon/&lt;run&gt;.at-9dc9476934d5717abb726b7de8c7d5bc2043f9be.json; read base 2c49c045748cd9b00bfd5217ff371410eb8a78e5..head 9dc9476934d5717abb726b7de8c7d5bc2043f9be, all five dimensions parsed (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19, total 97), added_failure_count 0 over the run's own base/head gate arms, one follow-on finding (REVERT_HEAD not among the covered open states).</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261001T191656122403-stored-phase-advances-past-starting" data-who="reckon-build" data-when="2026-10-01T19:58:11.799Z">
-    <div class="r-comment-body"><p>The per-run supervisor now rewrites a live pointer&#x27;s stored phase — `working` once the worker is spawned and the delivered manifest&#x27;s terminal status (or `launch-failed`) once it has exited — so the stored phase a reader sees no longer stays at the pre-spawn label; the gate passes 1/1 and the declared no-op mutation leaves the phase at `starting`.</p></div>
+    <div class="r-comment-body"><p>The per-run supervisor now rewrites a live pointer's stored phase — `working` once the worker is spawned and the delivered manifest's terminal status (or `launch-failed`) once it has exited — so the stored phase a reader sees no longer stays at the pre-spawn label; the gate passes 1/1 and the declared no-op mutation leaves the phase at `starting`.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261001T195934376349-review-of-stored-phase-advances-past-starting" data-who="reckon-build" data-when="2026-10-01T20:10:17.760Z">
+    <div class="r-comment-body"><p>Reviewed r-20261001T191656122403-stored-phase-advances-past-starting at base 2c49c0457..head ba88018d7: scores goal_fidelity 17, evidence 18, scope_discipline 20, durability 15, fit 18 (total 88), zero added failures; three follow-on findings, no blocking finding. The supervisor&#x27;s stored-phase writer (reckon/crew/dispatch.py _publish_stored_phase) lands the goal on the run&#x27;s normal life and the gate and its negative control both reproduce under independent execution.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
