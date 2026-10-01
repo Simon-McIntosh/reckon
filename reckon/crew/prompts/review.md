@@ -81,6 +81,17 @@ one another; never rank, weigh or compare them.
 - **fit** — the change matches the idiom of the code around it and introduces
   no name the repository naming rules forbid.
 
+## The revision you record
+
+The record you store must name the revision you read, not only what you found
+there. Carry the canonical pair — `reviewed_base_sha` for the commit the diff
+was taken from and `reviewed_head_sha` for the commit it landed at — beside the
+scores and findings. A record that names no revision cannot be told apart from
+one about other code, and the row it lands on carries that pair, so a reader
+can compare the revision a review read against the commits being promoted.
+Record the shas you actually read, never one reconstructed from a filename or a
+timestamp.
+
 ## What to emit
 
 For each of the first five checklist items, emit one VERDICT line. The sixth
