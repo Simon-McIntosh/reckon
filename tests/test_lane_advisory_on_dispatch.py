@@ -13,7 +13,7 @@ from typing import Any
 import pytest
 from click.testing import CliRunner
 
-from reckon import _plan_html, crew
+from reckon import _plan_html, crew, ledger
 from reckon import cli as cli_module
 from reckon.crew.runs import _write_json, pointer_path
 from tests import test_dispatch_names_its_backend as existing_backend_tests
@@ -561,10 +561,14 @@ def _promote(
 
 
 def _committed_row(repository: Path, run_id: str) -> dict[str, Any]:
-    """Read the row off disk, never the pointer the promotion consumed."""
-    ledger_path = repository / "docs" / "state" / PROMOTION_PROJECT / "crew.json"
-    data = json.loads(ledger_path.read_text(encoding="utf-8"))
-    rows = [row for row in data["data"]["runs"] if row["run_id"] == run_id]
+    """Read the committed row, never the pointer the promotion consumed.
+
+    A promotion writes the run's own record beside the project's aggregate
+    ledger, and ``ledger.load`` is the reader that unions the two; the raw
+    aggregate alone no longer carries the row.
+    """
+    data, _version = ledger.load(PROMOTION_PROJECT, root=repository)
+    rows = [row for row in data["runs"] if row["run_id"] == run_id]
     assert len(rows) == 1
     return rows[0]
 
