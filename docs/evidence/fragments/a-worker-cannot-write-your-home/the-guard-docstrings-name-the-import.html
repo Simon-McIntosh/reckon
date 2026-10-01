@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="The guard docstrings name the checkout it imports from">
+  <meta name="plan-summary" content="The git guard's docstrings state it runs from a reckon checkout because it imports reckon.worker_git_shim, and two cases prove the composed guard denies a cross-checkout commit.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s2">
+  <meta name="plan-commits" content="5ee19a727">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fence,git,guard,hooks,docs">
+  <title>The guard docstrings name the checkout it imports from — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-guard-docstrings-name-the-import" data-reckon="landed" data-when="2026-10-01">
+  <h2>The guard docstrings name the checkout it imports from</h2>
+  <p>The <code>_git_guard_group</code> docstring in <code>reckon/hooks/install.py</code> and the <code>reckon/hooks/__init__.py</code> package docstring still described the worker git guard as standard-library-only and copyable standalone. The guard imports <code>reckon.worker_git_shim</code> from the checkout it is launched beside, so both now state it must run from a reckon checkout and that a standalone copy would raise on that import and fail open. <code>tests/test_worker_git_guard.py</code> gains two cases: one asserts the guard command the installer composes resolves inside a reckon checkout carrying the shim it imports, and one launches that guard under the current interpreter with <code>-I</code> and a live synthesised run pointer and asserts a commit into another synthesised checkout is denied with exit 2. Gate <code>tests/test_worker_git_guard.py</code> at <code>5ee19a727</code>: <code>59 passed</code>, <code>EXIT=0</code>. Declared negative control — <em>making the guard shim import fail reddens the deny case</em> — applied in a scratch checkout of HEAD by renaming the shim import to a missing module: <code>1 failed</code>, <code>EXIT=1</code>, the failing id being the isolated-run deny case.</p>
+</article>
+</body>
+</html>

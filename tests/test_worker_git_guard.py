@@ -13,6 +13,8 @@ import io
 import json
 import os
 import shlex
+import subprocess
+import sys
 from pathlib import Path
 from pwd import getpwuid
 
@@ -466,6 +468,69 @@ def test_the_fragment_is_unchanged_when_the_guard_is_not_requested() -> None:
         "Stop",
         "PreToolUse",
     }
+
+
+# ── The guard the installer binds runs from a reckon checkout ───────────────
+
+
+def test_the_composed_guard_command_points_into_a_reckon_checkout() -> None:
+    """The guard entry the installer emits resolves inside a reckon checkout.
+
+    The guard imports ``reckon.worker_git_shim`` from the checkout it is
+    launched beside, so a command naming a standalone copy would run a script
+    whose import fails open. The composed command is asserted to name a path
+    whose checkout carries both the guard and the shim module it imports.
+    """
+    commands = _pre_tool_use_bash_commands(
+        installer.build_hook_snippet(include_git_guard=True)
+    )
+    assert len(commands) == 1
+
+    script = Path(commands[0]).resolve()
+    assert script.name == "worker_git_guard.py"
+    assert script.is_file()
+
+    checkout = script.parents[2]
+    assert (checkout / "reckon" / "__init__.py").is_file()
+    # The very module the guard imports from its checkout is present there.
+    assert (checkout / "reckon" / "worker_git_shim.py").is_file()
+
+
+def test_the_guard_denies_a_cross_checkout_commit_when_run_isolated(
+    tmp_path: Path,
+) -> None:
+    """The composed guard denies a cross-checkout commit as a real subprocess.
+
+    The installer's command is exercised as the harness runs it: the guard
+    script launched under the current interpreter with ``-I`` — isolated, so
+    neither ``PYTHONPATH`` nor the user site supplies ``reckon`` — against a
+    live pointer in a synthetic config home. The guard reaches its read-form
+    classifier only by importing ``reckon.worker_git_shim`` from its own
+    checkout, so a commit denied here is evidence the import resolved and the
+    decision came from the shim's table rather than a fail-open.
+    """
+    worktree = _repo(tmp_path, "worktree")
+    other = _repo(tmp_path, "other-checkout")
+    home = tmp_path / "config"
+    _write_pointer(home, worktree)
+
+    payload = _payload(f"git -C {other} commit -m wip", worktree)
+    env = {**os.environ, "RECKON_HOME": str(home), "RECKON_RUN_ID": RUN_ID}
+    env.pop("PYTHONPATH", None)
+    completed = subprocess.run(
+        [sys.executable, "-I", str(installer.worker_git_guard_script_path())],
+        input=json.dumps(payload),
+        text=True,
+        capture_output=True,
+        cwd=str(worktree),
+        env=env,
+        check=False,
+    )
+
+    assert completed.returncode == 2, completed.stderr
+    emitted = json.loads(completed.stderr)
+    assert emitted["hookSpecificOutput"]["permissionDecision"] == "deny"
+    assert RUN_ID in emitted["systemMessage"]
 
 
 # ── The hook entry point refuses through its exit code ─────────────────────

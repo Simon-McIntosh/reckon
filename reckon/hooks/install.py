@@ -219,8 +219,12 @@ def _git_guard_group(script_path: Path | str | None = None) -> dict[str, Any]:
 
     The matcher is ``Bash``: the guard reads a Bash command's text, so it has
     nothing to say about any other tool and is not asked about one. The
-    command is the guard script alone — the guard is standard-library only, so
-    it needs no interpreter of this package, unlike the obligations hook.
+    command is the guard script alone, resolved from this checkout, because
+    the guard must run from a reckon checkout: it imports
+    ``reckon.worker_git_shim`` from the checkout it is launched beside, putting
+    that checkout on ``sys.path`` itself. A standalone copy would raise on that
+    import and fail open, admitting every command it exists to refuse, so the
+    command names the script of a reckon checkout rather than a copied one.
     """
     script = (
         worker_git_guard_script_path() if script_path is None else Path(script_path)
