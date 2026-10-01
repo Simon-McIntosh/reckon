@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-fleet-supervisor-runs-declared-services">
+  <meta name="plan-title" content="The Fleet Supervisor Runs Declared Services">
+  <meta name="plan-summary" content="The fleet allocation's supervisor starts, keeps alive and reloads standing services a user config declares, generalising the health sampler.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="2.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S22">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-standalone" content="A new capability of the fleet supervisor that a consuming project's telemetry ingest will run under; no reckon plan's sections wait on it and it consumes no plan&#x27;s pending evidence.">
+  <title>The Fleet Supervisor Runs Declared Services | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="lead">
+        The fleet allocation holds one node for every orchestrator and its workers, and its batch
+        step runs <code>reckon/crew/fleet_supervisor.py</code>. That supervisor already starts one
+        standing child, the health sampler, through <code>start_health_sampler</code>. On
+        2026-10-01 the lead decided that a project's telemetry ingest runs as a standing 60-second
+        loop under this supervisor, rather than as a SLURM job on the GPU reservation. One ingest tick
+        measures 0.29 s, about 0.5% of a core. This plan generalises the health sampler's pattern
+        into services that a user config declares, so the supervisor runs any such loop without
+        reckon naming the project that owns it.
+      </p>
+    </header>
+
+    <h2 id="s1">§1 — Declared services start once, restart with backoff, and reload</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      A user config file, <code>~/.config/fleet/services.json</code>, maps each service name to an
+      argv list. The supervisor starts each declared service as its own-session child of the batch
+      step. Each service holds a lock in the fleet runtime directory, so a reload or a second
+      supervisor never starts a second copy. A service that exits is restarted with exponential
+      backoff, and the backoff resets once the service has run steadily for a stated interval. On
+      <code>reload</code>, a newly declared service starts, and a service removed from the file is
+      stopped by the pid the supervisor recorded for it, never by a pattern. The supervisor never
+      names a project. The first entry a consuming project will declare is
+      <code>ambix-ingest</code>, whose argv runs that project's ingest every 60 s; that entry lives
+      in the user's config, not in reckon.
+    </p>
+    <p>
+      <strong>Done when</strong> tests, run against a temporary runtime directory and a temporary
+      config home, show five things. A declared service starts as its own session, with a lock held.
+      A second start, or a reload, while it runs starts no second copy. A service that exits is
+      restarted after the backoff and not before. A reload starts a newly declared service and stops
+      a removed one by its recorded pid. The health sampler still starts as before. The negative
+      control removes the lock check; the no-second-copy case must then fail.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tfsrds-001" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-01" data-recommends-skill="/reckon-build the-fleet-supervisor-runs-declared-services §1" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the declared services</h4>
+    <div class="r-fu-body"><p>One node for §1, dispatched once the local lane has worker slots.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-supervisor-runs-declared-services §1</pre>
+</article>
+    </section>
+  </main>
+</body>
+</html>
