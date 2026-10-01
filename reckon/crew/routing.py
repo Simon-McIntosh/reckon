@@ -10,7 +10,7 @@ import signal
 import subprocess
 import sys
 import tempfile
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
@@ -1058,6 +1058,186 @@ def garbage_collect(
         "run_directories_reaped_with_explicitly_absent_figures": (
             run_directories_reaped_with_explicitly_absent_figures
         ),
+    }
+
+
+# ── Scratch directories ─────────────────────────────────────────────────────
+#
+# The disk that fills is not the worktree pool but the node-local temp tree: a
+# run's own scratch directory sits beneath a reckon-owned root, but a run before
+# this rule made trees at explicit `/tmp/<name>` paths its brief named, which
+# nothing that knows the run could find. Two facts settle what may be removed.
+# The run's terminal record — a ledger row written by promotion, or a discard
+# marker — licenses removal. A live pointer forbids it whatever the directory's
+# age, because a complete-but-unpromoted run is revisited hours after its worker
+# exits and an age-keyed reaper would delete the scratch a resume needs. A tree
+# the node owns but no run can be attributed to is reported and left alone: it
+# may hold evidence no record points at, so a machine that cannot name its owner
+# must not delete it. This is the same rule promotion's release step already
+# applies to a run's own scratch, exposed as a survey over the whole root.
+
+SCRATCH_LIVE = "live"
+SCRATCH_TERMINAL = "terminal"
+SCRATCH_UNATTRIBUTED = "unattributed"
+
+# A stray tree beside the scratch root is measured with a bound, because the
+# node's temp tree is shared and a single unattributed directory there can hold
+# a whole corpus; the figure names a tree that filled the disk, it is not an
+# accounting figure a caller reconciles against.
+_UNATTRIBUTED_SIZE_LIMIT = 200_000
+
+
+def _scratch_disposition(
+    path: Path,
+    *,
+    live_ids: set[str],
+    ledgered: set[str],
+    discard_recorded: set[str],
+) -> str:
+    """Classify one scratch directory by the run's own records, never by age.
+
+    The single decision point for removal, kept as its own function so a test
+    can replace it: the declared mutation for this survey makes the disposition
+    depend on the directory's age instead, under which a complete-but-unpromoted
+    run's scratch is deleted and the case keeping it fails.
+    """
+    run_id = path.name
+    if run_id in live_ids:
+        return SCRATCH_LIVE
+    if run_id in ledgered or run_id in discard_recorded:
+        return SCRATCH_TERMINAL
+    return SCRATCH_UNATTRIBUTED
+
+
+def _iso_ctime(path: Path) -> str | None:
+    """The directory's ctime as an ISO timestamp, or ``None`` if unreadable."""
+    try:
+        return datetime.fromtimestamp(path.stat().st_ctime, tz=UTC).isoformat()
+    except OSError:
+        return None
+
+
+def _processes_holding(path: Path) -> list[dict[str, Any]]:
+    """Name the processes holding ``path`` as their cwd or as an open file.
+
+    Read-only and best-effort: ``/proc`` may be absent or a process may exit
+    mid-scan, and a scan that raised would turn a report into a refusal. A
+    holder is only ever reported, never killed — the survey's whole point is to
+    let a human decide what a tree nobody owns is doing.
+    """
+    holders: list[dict[str, Any]] = []
+    proc = Path("/proc")
+    if not proc.is_dir():
+        return holders
+    target = path.resolve()
+    for entry in proc.iterdir():
+        if not entry.name.isdigit():
+            continue
+        pid = int(entry.name)
+        for link in (entry / "cwd", *sorted((entry / "fd").glob("*"))):
+            try:
+                resolved = link.resolve()
+            except OSError:
+                continue
+            if resolved == target or resolved.is_relative_to(target):
+                holders.append({"pid": pid, "via": link.name})
+                break
+    return holders
+
+
+def garbage_collect_scratch(
+    *,
+    repo: str | Path,
+    project: str | None = None,
+    apply: bool = False,
+    scratch_root: str | Path | None = None,
+    tmp_root: str | Path | None = None,
+) -> dict[str, Any]:
+    """Survey the node-local scratch directories and remove the terminal ones.
+
+    A run's scratch directory is removed only when the run has no live pointer
+    and its terminal record exists — a ledger row or a discard marker — and the
+    decision is never made by age. Every path and its size are printed before
+    anything is deleted, and the whole survey is a dry run unless ``apply`` is
+    given. A directory no run can be attributed to, whether beneath the scratch
+    root or a stray tree beside it, is reported with its ctime, its size and any
+    process holding it, and is never removed.
+    """
+    from reckon.crew.dispatch import tree_size_bytes, worker_scratch_root
+    from reckon.crew.promotion import discard_record_path
+
+    root = Path(scratch_root) if scratch_root is not None else worker_scratch_root()
+    root = root.resolve()
+    tmp = Path(tmp_root).resolve() if tmp_root is not None else root.parent
+    ledgered = _ledgered_run_ids(repo, project)
+    live_ids = {str(record.get("run_id") or "") for record in list_live()}
+
+    children: list[Path] = []
+    if root.is_dir():
+        children = sorted(
+            path for path in root.iterdir() if path.is_dir() and not path.is_symlink()
+        )
+    discard_recorded = {
+        path.name for path in children if discard_record_path(path.name).is_file()
+    }
+
+    directories: list[dict[str, Any]] = []
+    removed: list[str] = []
+    for child in children:
+        state = _scratch_disposition(
+            child,
+            live_ids=live_ids,
+            ledgered=ledgered,
+            discard_recorded=discard_recorded,
+        )
+        size = tree_size_bytes(child)
+        report: dict[str, Any] = {
+            "run_id": child.name,
+            "path": str(child),
+            "bytes": size,
+            "state": state,
+            "removed": False,
+        }
+        if state == SCRATCH_UNATTRIBUTED:
+            report["ctime"] = _iso_ctime(child)
+            report["held_by"] = _processes_holding(child)
+        if state == SCRATCH_TERMINAL:
+            if apply:
+                print(f"removing worker scratch directory {child} ({size} bytes)")
+                shutil.rmtree(child)
+                report["removed"] = True
+                removed.append(str(child))
+            else:
+                print(f"would remove worker scratch directory {child} ({size} bytes)")
+        directories.append(report)
+
+    unattributed: list[dict[str, Any]] = []
+    if tmp.is_dir() and tmp != root:
+        for child in sorted(
+            path for path in tmp.iterdir() if path.is_dir() and not path.is_symlink()
+        ):
+            if child.resolve() == root:
+                continue
+            try:
+                if child.stat().st_uid != os.getuid():
+                    continue
+            except OSError:
+                continue
+            unattributed.append(
+                {
+                    "path": str(child),
+                    "bytes": tree_size_bytes(child, limit=_UNATTRIBUTED_SIZE_LIMIT),
+                    "ctime": _iso_ctime(child),
+                    "held_by": _processes_holding(child),
+                }
+            )
+
+    return {
+        "dry_run": not apply,
+        "scratch_root": str(root),
+        "directories": directories,
+        "removed": removed,
+        "unattributed": unattributed,
     }
 
 

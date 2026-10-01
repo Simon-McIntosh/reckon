@@ -4782,9 +4782,25 @@ def crew_suite_waive(project, reason, who, checkout_path, pretty):
         "stating the cross-pairing deliberately."
     ),
 )
+@click.option(
+    "--scratch",
+    is_flag=True,
+    help=(
+        "Survey the node-local scratch directories runs own, and the stray "
+        "trees no run can be attributed to. A directory is removed only when "
+        "its run has no live pointer and a terminal record; never by age."
+    ),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_gc(
-    repo, project, integrated_into, retention_days, apply, confirm_cross_repo, pretty
+    repo,
+    project,
+    integrated_into,
+    retention_days,
+    apply,
+    confirm_cross_repo,
+    scratch,
+    pretty,
 ):
     """Report workspaces whose integrated state makes them disposable; remove on request."""
     crew_module, flight_module = _crew_modules()
@@ -4792,13 +4808,20 @@ def crew_gc(
         repo_root = _resolved_gc_repo(
             crew_module, flight_module, repo, project, confirm_cross_repo
         )
-        report = crew_module.garbage_collect(
-            repo=repo_root,
-            project=project,
-            integrated_into=integrated_into,
-            retention_days=retention_days,
-            apply=apply,
-        )
+        if scratch:
+            from reckon.crew.routing import garbage_collect_scratch
+
+            report = garbage_collect_scratch(
+                repo=repo_root, project=project, apply=apply
+            )
+        else:
+            report = crew_module.garbage_collect(
+                repo=repo_root,
+                project=project,
+                integrated_into=integrated_into,
+                retention_days=retention_days,
+                apply=apply,
+            )
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     _emit({"ok": True, **report}, pretty)
