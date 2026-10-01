@@ -1,30 +1,55 @@
 <section id="pointer-classification-is-memoised">
   <h2>Pointer classification is memoised</h2>
   <p>
-    <strong>Status: partial.</strong> The mechanism is implemented and committed; the
-    node's gate was not completed inside its time fence, so the figures below are
-    the base arm only.
+    A pointer's classification now resolves its reads through a memo persisted
+    beside the pointer, <code>live/&lt;run-id&gt;.classification.json</code>, keyed by the
+    stat identity of every file the classification reads. The pointer, the manifest,
+    the stream the observation consumes, the run directory's own
+    <code>exit.json</code>, <code>worker.json</code> and <code>attempt.json</code>, and the review
+    store's candidates for the run are all in the key. So is the worktree's head,
+    read as the git directory's <code>HEAD</code> and the ref it names rather than through a
+    subprocess — a review is selected against the revision the tree carries now, and a
+    memo written before a commit would otherwise report a review of code the run no
+    longer holds. The review store's project directory is keyed on the time its entries
+    last moved, and whether the run has a record at one of its own paths is a key
+    contribution in its own right, because a record that appears where the last
+    classification found none moves the answer from a store listing to a file read.
   </p>
   <p>
-    <code>recovery.classify_pointer</code> now resolves its expensive reads through a
-    memo persisted beside the pointer, <code>live/&lt;run-id&gt;.classification.json</code>,
-    keyed by the stat identity of every file the classification reads: the pointer,
-    the manifest, the stream the observation consumes, the run directory's own
-    <code>exit.json</code>, <code>worker.json</code> and <code>attempt.json</code>, and the
-    review store's candidates for the run. A key that still matches serves the memo —
-    the manifest text, the stored review and the stream's budget block. A key that has
-    moved recomputes, and a stale reading is never served.
+    A key that still matches serves the memo: the manifest text, the stored review and
+    the stream observation. A key that has moved recomputes. Liveness is never served
+    from a memo — a process table is not a file, and the row is still built from a
+    reading taken now.
   </p>
   <p>
-    Stream observation resumes from a byte offset persisted in the same memo.
-    <code>_backends.observe_log</code> accepts a resume state and reads only the records
-    written past its offset, and both dialects' event folds now take and return their
-    state, as does the timestamp split that refines throughput. A fold resumed from
-    state produces the observation the whole stream would.
+    Stream observation resumes from a byte offset persisted in the same memo. The
+    dialects' event folds take and return their state, as does the timestamp split that
+    refines throughput, so <code>observe_log</code> reads only the records written past the
+    offset and extends the previous fold rather than repeating it. One classification
+    also used to parse the same stream twice — the budget gates and the background-wait
+    signal each read it for a different question; both now share one observation.
   </p>
   <p>
-    <strong>Base arm</strong> (revision <code>342b88ec5fa27c749d3b0ee2501de05cc4d6f4ec</code>,
-    scratch extraction, 73 test files, <code>-n 8 --timeout=300</code>):
-    1068 passed, 13 failed, 231 s, <code>EXIT=1</code>. The head arm was not run.
+    <strong>Measurement.</strong> A worker's fence mounts the operator's crew home
+    read-only, so a memo cannot be written beside a live pointer from inside a run, and
+    a timing taken there measures the code with its cache disabled. The figures below
+    were taken against a writable copy of the same live pointers, run directories and
+    review store, so both arms read the same records.
+  </p>
+  <table>
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>cold [s]</th><th>warm [s]</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>base</td><td><code>342b88ec</code></td><td>7.562</td><td>8.023</td></tr>
+      <tr><td>head, no memos on disk</td><td><code>a72081a5</code></td><td>5.494</td><td>3.612</td></tr>
+      <tr><td>head, memos on disk</td><td><code>a72081a5</code></td><td>6.341</td><td>3.560</td></tr>
+    </tbody>
+  </table>
+  <p>
+    <code>obligations('reckon', 's21-1c')</code>, wall clock, cold and warm in one fresh
+    process per arm. The plan's target of under 2 s cold and under 0.3 s warm is written
+    for the whole of §4, whose ledger term is a separate node's work; the figure here
+    measures this term's contribution to the same call.
   </p>
 </section>
