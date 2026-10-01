@@ -8211,20 +8211,21 @@ def _record_launch_abandoned_before_spawn(
     the pointer a discard removes and a reader needs to tell this launch from a
     worker that started and died.
     """
+    exit_record = _supervisor_exit_record(
+        run_id=str(spec.get("run_id") or ""),
+        attempt=attempt,
+        worker_pid=None,
+        launched_at=launched_at,
+        status=None,
+        run_directory=run_directory,
+    ) | {"detail": "crew stop arrived before the worker was spawned"}
     _write_attempt_artifact(
         run_directory,
         EXIT_RECORD_NAME,
-        _supervisor_exit_record(
-            run_id=str(spec.get("run_id") or ""),
-            attempt=attempt,
-            worker_pid=None,
-            launched_at=launched_at,
-            status=None,
-            run_directory=run_directory,
-        )
-        | {"detail": "crew stop arrived before the worker was spawned"},
+        exit_record,
         attempt=attempt,
     )
+    _publish_stored_phase(spec, ended=True, exit_record=exit_record)
 
 
 def _stop_is_requested(flag: threading.Event, blocked: set[int]) -> bool:
@@ -8392,20 +8393,21 @@ def _run_supervisor(spec_path: Path) -> int:
         try:
             pid = _supervisor_spawn_worker(spec)
         except (OSError, ValueError, KeyError, CrewError) as exc:
+            failure_record = _supervisor_exit_record(
+                run_id=str(spec.get("run_id") or ""),
+                attempt=attempt,
+                worker_pid=None,
+                launched_at=launched_at,
+                status=None,
+                run_directory=run_directory,
+            ) | {"detail": f"worker did not spawn: {type(exc).__name__}: {exc}"}
             _write_attempt_artifact(
                 run_directory,
                 EXIT_RECORD_NAME,
-                _supervisor_exit_record(
-                    run_id=str(spec.get("run_id") or ""),
-                    attempt=attempt,
-                    worker_pid=None,
-                    launched_at=launched_at,
-                    status=None,
-                    run_directory=run_directory,
-                )
-                | {"detail": f"worker did not spawn: {type(exc).__name__}: {exc}"},
+                failure_record,
                 attempt=attempt,
             )
+            _publish_stored_phase(spec, ended=True, exit_record=failure_record)
             return 0
     finally:
         signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
