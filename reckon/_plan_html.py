@@ -26,6 +26,7 @@ from __future__ import annotations
 import html as _htmlmod
 import json
 import re
+from collections import Counter
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -411,6 +412,60 @@ def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]
     ).canonical_dump()["sections"]
 
 
+_COMMENT_IDENTITY_FIELDS = ("id", "who", "when", "quote", "body")
+
+
+def _comment_record(element) -> dict:
+    """One comment's parsed fields.
+
+    The reader and the write-side residence match share this extraction, so the
+    record the reader returns and the element the writer recognises cannot
+    disagree about identity.
+    """
+    return {
+        "id": element.get("data-id", ""),
+        "who": element.get("data-who", ""),
+        "when": element.get("data-when", ""),
+        "quote": element.get("data-quote", "") or None,
+        "body": _inner_html(element.select_one(".r-comment-body")) or _txt(element),
+    }
+
+
+def _comment_identity(record) -> tuple:
+    return tuple(str(record.get(field) or "") for field in _COMMENT_IDENTITY_FIELDS)
+
+
+def _comment_elements(soup) -> list:
+    """Every comment record in the document, in document order.
+
+    A landing record written into a section's own body is a comment element
+    like any other: the section it belongs to is named by its own
+    ``data-section``, not by the section element that happens to hold it.
+    Markup quoted inside a ``pre`` or ``code`` sample is text, not a record.
+    """
+    return [
+        element
+        for element in soup.select(".r-comment")
+        if element.find_parent("pre") is None and element.find_parent("code") is None
+    ]
+
+
+def _in_comments_section(element) -> bool:
+    """Whether this comment element sits inside the comments section itself."""
+    return element.find_parent("section", attrs={"data-reckon": "comments"}) is not None
+
+
+def _body_resident_comment_counts(html_text: str) -> Counter:
+    """Identity counts of the comment records a document holds outside its
+    comments section — the records a write leaves exactly where they are."""
+    soup = BeautifulSoup(html_text or "", "html.parser")
+    counts: Counter = Counter()
+    for element in _comment_elements(soup):
+        if not _in_comments_section(element):
+            counts[_comment_identity(_comment_record(element))] += 1
+    return counts
+
+
 def read_state(html_text: str) -> dict:
     """Parse a plan's semantic HTML into the canonical state dict."""
     soup = BeautifulSoup(html_text or "", "html.parser")
@@ -662,19 +717,16 @@ def read_state(html_text: str) -> dict:
         )
     st["research"] = research
 
-    # Comments (section-anchored)
+    # Comments (section-anchored). A record's anchor is its own data-section,
+    # wherever the element sits: a landing record written into a section's body
+    # belongs to that section as much as one the comments section holds.
+    # Records the comments section holds come first, in the order that section
+    # reads them, and body-resident records follow — write_state renders only
+    # the former, so that order is what keeps the section byte-stable.
     comments: dict[str, list] = {}
-    for c in soup.select('section[data-reckon="comments"] .r-comment'):
+    for c in sorted(_comment_elements(soup), key=_in_comments_section, reverse=True):
         sid = c.get("data-section", "_top")
-        comments.setdefault(sid, []).append(
-            {
-                "id": c.get("data-id", ""),
-                "who": c.get("data-who", ""),
-                "when": c.get("data-when", ""),
-                "quote": c.get("data-quote", "") or None,
-                "body": _inner_html(c.select_one(".r-comment-body")) or _txt(c),
-            }
-        )
+        comments.setdefault(sid, []).append(_comment_record(c))
     st["comments"] = comments
     if warnings:
         st["compatibility_warnings"] = warnings
@@ -994,6 +1046,32 @@ def merge_comment_collections(current: object, incoming: object) -> dict[str, li
     return merged
 
 
+def _comments_in_section(comments: object, body_resident: Counter) -> dict:
+    """The comment records a write renders into the comments section.
+
+    A record the document already holds in a section's own body stays where it
+    is: rendering it here as well would be the second copy the read widening
+    must not create. Matching is by the record's own fields, counted, so a
+    document holding one record in both places keeps both.
+    """
+    if not isinstance(comments, dict):
+        return {}
+    remaining = Counter(body_resident)
+    kept: dict[str, list] = {}
+    for sid, items in comments.items():
+        bucket = []
+        for raw in items or []:
+            item = raw or {}
+            identity = _comment_identity(item)
+            if remaining[identity]:
+                remaining[identity] -= 1
+                continue
+            bucket.append(item)
+        if bucket:
+            kept[sid] = bucket
+    return kept
+
+
 def _render_comments(comments: dict) -> str:
     if not comments or not isinstance(comments, dict):
         return ""
@@ -1215,10 +1293,18 @@ def write_state(html_text: str, state: dict) -> str:
             }
         ).canonical_dump()["sections"]
         out = _splice_section_records(out, sections)
+    # Records the source holds in a section's own body are not rendered into
+    # the comments section: the write would otherwise copy them there, and they
+    # are already where they belong. Judged against the source rather than the
+    # state so a writer that never carried them still cannot duplicate them.
+    body_resident_comments = _body_resident_comment_counts(html_text)
     for sid in SECTION_IDS:
         if sid in state:
-            _reject_emptying_unparsed_section(out, sid, state[sid])
-            out = _splice_section(out, sid, _RENDERERS[sid](state[sid]))
+            collection = state[sid]
+            if sid == "comments":
+                collection = _comments_in_section(collection, body_resident_comments)
+            _reject_emptying_unparsed_section(out, sid, collection)
+            out = _splice_section(out, sid, _RENDERERS[sid](collection))
     return out
 
 

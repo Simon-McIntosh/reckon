@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A landing record in a section body is read, under the section that holds it">
+  <meta name="plan-summary" content="read_state collected .r-comment only inside the comments section, so 19 of the scoring plan's 111 landing records were invisible to every agent read, including both section 2d records. The reader now returns a comment element wherever it sits, keyed by the record's own data-section, and the writer renders only the records the comments section holds — so widening the read cannot put a second copy of a body record into that section. Gate: 0 added failures; the three new cases fail at base.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>A landing record in a section body is read | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A landing record in a section body is read, under the section that holds it</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p><code>read_state</code> in <code>reckon/_plan_html.py</code> selected
+        <code>section[data-reckon="comments"] .r-comment</code>, so a landing record an agent
+        wrote into a section's own body was invisible to every agent read while reading
+        correctly to a human in a browser: <code>parse_plan()['comments']</code> omitted
+        19 of the scoring plan's 111 comment elements, including both §2d landing records
+        (<code>c-run-r-20260921T195859674086-a-promotion-never-creates-a-ledger</code>,
+        <code>c-run-r-20260921T204619583360-the-refusal-asks-git-whether-the-ledger-existed</code>).
+        Reproduced at base <code>84fd7ff4f</code> in
+        <code>logs/base_read_counts.log</code>: 111 elements, 92 read, both named records
+        absent. Corpus-wide, 45 records across five plans were unread
+        (<code>a-review-can-see-the-figure</code> 4/6 read,
+        <code>a-worker-cannot-write-your-home</code> 70/88,
+        <code>burn-is-visible-before-it-bites</code> 42/47,
+        <code>scoring-should-stop-a-promotion</code> 92/111,
+        <code>the-monitor-under-measurement</code> 9/10).</p>
+    </section>
+
+    <section id="change">
+      <h2>The change</h2>
+      <p>A comment element belongs to the section its own <code>data-section</code> holds,
+        wherever the element sits; markup quoted inside a <code>pre</code> or <code>code</code>
+        sample is text, not a record. <code>read_state</code> reads every comment element in
+        document order, comments-section records first, body-resident records after, and keys
+        each by its own anchor. The writer is the other half: rendering from a state that now
+        carries body records would copy them into the comments section on the very next write,
+        so <code>write_state</code> renders only the records the comments section holds,
+        matched against the source by the record's own fields and counted, and judges the
+        unparsed-section refusal against that same filtered collection. A document holding one
+        record in both places keeps both. Judged against the source text rather than the state,
+        so a writer that never carried the body records still cannot duplicate them.</p>
+      <p>Verified in <code>logs/head_edited_write.log</code> and
+        <code>logs/head_strip_compare.log</code>: an edited write (one appended comment)
+        through the store on the five body-record plans and three controls leaves everything
+        outside the comments sections and the version/modified metas byte-identical, every
+        body record's source block byte-identical and present exactly once, no duplicate ids,
+        and exactly one element added.</p>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <p><strong>Gate.</strong> The new file plus the 35 existing test files under
+        <code>tests/</code> that call <code>read_state</code> or <code>parse_plan</code>, at
+        <code>-n 8 --timeout=300</code>: base 7 failed / 2301 passed
+        (<code>logs/base_gate.log</code>), head 3 failed / 2305 passed
+        (<code>logs/head_gate.log</code>) — <strong>0 added failure ids</strong>. The three
+        head failures (<code>test_store_concurrency</code> ×2,
+        <code>test_typed_resources</code> ×1) are in the base failure set under a node
+        carrying a peer's gate runs. The three new body-record cases fail at base and pass at
+        head.</p>
+      <p><strong>Negative control.</strong> <code>logs/negative_control.log</code>: the reader restricted
+        to the comments section again → 3 failed, 3 passed, EXIT=1, the body-record cases among
+        them.</p>
+      <p><strong>Round trip.</strong> In a temporary copy of <code>docs/plans</code>, an
+        unchanged-state store write per plan (<code>logs/base_roundtrip.log</code>,
+        <code>logs/head_roundtrip.log</code>): 143 plans, 141 byte-identical, and
+        <strong>base and head identical</strong> — the same two plans differ for causes
+        present at base: <code>scoring-should-stop-a-promotion</code> is rewritten by
+        BeautifulSoup normalisation of figure markup inside a comments-section record body,
+        and <code>work-scheduling-surface</code> carries two comments sections, so a write
+        splices the first and leaves the second (58 → 63 elements at base and at head alike).
+        Neither is this change's; both are recorded under follow-ons. The real
+        <code>docs/plans</code> directory was never written — the measurement and the tests
+        operate on copies.</p>
+      <p><strong>Lint.</strong> <code>ruff check</code> on <code>reckon/_plan_html.py</code>:
+        base 15 findings, head 13, none added; <code>ruff format --check</code> clean on both
+        changed paths (the base file was clean too).</p>
+      <p><strong>Numbers.</strong> Records read, base → head: 3857 → 3902 corpus-wide (+45,
+        the five plans above). Gate logs and measurements are under
+        <code>runs/r-20261001T060045230313-section-body-records-are-read/logs/</code>.</p>
+    </section>
+
+    <section id="follow-ons">
+      <h2>Found and not fixed here</h2>
+      <p><code>docs/plans/work-scheduling-surface.html</code> holds two
+        <code>section[data-reckon="comments"]</code> elements; every write renders the union
+        into the first and leaves the second, so the file grows on each write (58 → 63
+        elements on one unchanged-state write, plus nine copies of one record inside the
+        first section already). Repairing it means either collapsing multiple comments
+        sections on write or repairing the plan file — both outside this node's scope.</p>
+      <p>An unchanged-state write of <code>scoring-should-stop-a-promotion</code> is not a
+        no-op: comment bodies carrying <code>&lt;figure&gt;</code> markup are re-serialised by
+        BeautifulSoup, which adds <code>&lt;/img&gt;</code> closes and reorders attributes.
+        Pre-existing at base, unrelated to comment residence.</p>
+    </section>
+  </main>
+</body>
+</html>
