@@ -1,0 +1,39 @@
+<section id="s5-supervisor-outlives-its-launcher">
+    <h2>§5 — The per-run supervisor survives the process that launched it</h2>
+    <p>Off the fleet, <code>_start_supervisor</code> (reckon/crew/dispatch.py) no longer makes the supervisor a child of
+      the process that launched it. A single <code>Popen</code> did, so the launcher's own end — a coordinator turn
+      finishing, a shell returning — reaped the supervisor and orphaned the run it carried. The spawn now runs through
+      a short-lived intermediate: <code>_spawn_detached_supervisor</code> starts a fresh interpreter —
+      <code>subprocess.Popen([sys.executable, "-c", …], stdin=PIPE, stdout=PIPE, close_fds=True)</code> — hands it the
+      supervisor argv and stderr path as JSON on stdin, and reads back the one-line pid the intermediate prints before
+      exiting at once. The intermediate starts the supervisor with <code>start_new_session=True</code> and
+      <code>close_fds=True</code>, so the supervisor is reparented away from the launcher before it does any work and
+      leads its own session and process group — the group <code>crew stop</code> signals, with the worker spawned
+      inside it. The fresh interpreter is the point: a bare <code>os.fork</code> would run Python in a forked copy of a
+      launcher that may be threaded, and the MCP server is one such launcher. <code>_start_supervisor</code> still
+      returns the supervisor's own pid and still runs <code>_confirm_supervisor_survived</code> on it; the manual
+      closerange and the <code>os.execv</code> S606 suppression are gone, because <code>close_fds=True</code> covers
+      the descriptor leak. An intermediate that exits without a pid raises <code>CrewError</code> carrying its exit
+      status and the tail of its stderr, so the cause of a silent launch is not lost. The fleet batch-step path is
+      unchanged.</p>
+    <p>Two test instruments moved with the mechanism. The parking shim in
+      <code>tests/test_dispatch_returns_without_worker.py</code> and the fork recorder in
+      <code>tests/test_dispatch_spawns_through_the_fleet.py</code> both used to intercept the launcher's own
+      <code>subprocess.Popen</code>; they now wrap <code>reckon.crew.dispatch._spawn_detached_supervisor</code> — the
+      seam that starts the supervisor — so their holds and recordings survive a change to how the spawn is built.
+      Both files are outside this node's write fence and were edited at coordinator direction.</p>
+    <p>Measure: <code>tests/test_supervisor_outlives_its_launcher.py</code> 5 passed exit 0,
+      <code>tests/test_dispatch_returns_without_worker.py</code> 7 passed exit 0, and
+      <code>tests/test_dispatch_spawns_through_the_fleet.py</code> 6 passed exit 0. The supervisor cases start a
+      supervisor from a long-lived child launcher whose argv is a sleep stub and read the kernel's
+      <code>/proc/&lt;pid&gt;/stat</code>: the supervisor's parent pid differs from the launcher's, its pgrp and session
+      both equal its own pid, it survives a <code>SIGKILL</code> of the launcher's whole process tree, it inherits none
+      of the launcher's descriptors (a live pipe in the launcher is absent from its <code>/proc/&lt;pid&gt;/fd</code>),
+      and an intermediate that writes to stderr and exits without a pid has that text in the refusal. Negative control:
+      restoring the single <code>Popen</code> with <code>start_new_session=True</code> fails the parent-pid assertion on
+      exactly the launcher's pid (<code>assert 1411282 != 1411282</code>) and the tree-kill assertion, 2 failed / 3
+      passed, exit 1. A second control sets <code>close_fds=False</code> on both <code>Popen</code> calls and fails the
+      descriptor case naming the inherited pipe, exit 1.</p>
+    <p>No figure is produced: this is a process-lifecycle property carried entirely by the tests above, and a drawing
+      of forks and sessions would add no reading the assertions do not already make explicit.</p>
+</section>

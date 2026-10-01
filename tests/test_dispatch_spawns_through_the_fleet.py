@@ -39,7 +39,6 @@ import sys
 import threading
 import time
 from pathlib import Path
-from types import SimpleNamespace
 
 import pytest
 
@@ -226,23 +225,20 @@ def _publish_fleet_record(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Pa
 
 
 class _ForkRecorder:
-    """A stand-in for ``subprocess`` that records only the ``Popen`` calls.
+    """Records the supervisor argv handed to the detached-spawn seam.
 
-    Patching the real module's ``Popen`` would patch every subprocess call in
-    the process, including the ``git`` invocations the repository work needs.
-    Replacing only dispatch's own name for the module keeps the interception on
-    the fork under measurement.
+    Patching the seam that starts the supervisor keeps the interception on the
+    launch under measurement: the seam is handed the supervisor argv and its
+    return value becomes the pointer's pid, so a recorded call is what proves
+    the forking launch ran and what lets dispatch publish without a real child.
     """
 
     def __init__(self) -> None:
         self.forked: list[list[str]] = []
 
-    def Popen(self, argv, *arguments, **keywords):  # noqa: N802 - mirrors stdlib
+    def __call__(self, argv, stderr_path) -> int:
         self.forked.append(list(argv))
-        return SimpleNamespace(pid=os.getpid(), poll=lambda: None)
-
-    def __getattr__(self, name: str):
-        return getattr(subprocess, name)
+        return os.getpid()
 
 
 def _opt_in(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -317,7 +313,7 @@ def test_a_dispatch_with_no_fleet_record_forks_as_before(
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
     recorder = _ForkRecorder()
-    monkeypatch.setattr(dispatch_module, "subprocess", recorder)
+    monkeypatch.setattr(dispatch_module, "_spawn_detached_supervisor", recorder)
     record = _dispatch(config_home, repo, "forked")
 
     assert recorder.forked, "no process was started at all"
@@ -341,7 +337,7 @@ def test_the_fleet_lane_stays_off_until_the_batch_step_opts_in(
     stub.start()
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     recorder = _ForkRecorder()
-    monkeypatch.setattr(dispatch_module, "subprocess", recorder)
+    monkeypatch.setattr(dispatch_module, "_spawn_detached_supervisor", recorder)
     try:
         _dispatch(config_home, repo, "optin")
         assert stub.lines == [], "the lane ran without the opt-in"
