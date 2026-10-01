@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="work-scheduling-surface">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>Section contract and computed impl | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="55">
+<meta name="plan-version" content="56">
 <meta name="plan-impl" content="0.84">
 </head>
 <body>
@@ -465,6 +465,10 @@
     Gate <code>173 passed</code>, zero added
     failures against base <code>0bf94fd5</code> (the three <code>test_edit_plan.py</code>
     failures are pre-existing at that base and are not this node's).</p>
+
+    <h2 id="s8">§8 — impl is derived only when the records cover every declared section</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<p><code>derive_impl_from_sections</code> in <code>reckon/_plan_html.py</code> divides done effort by done plus implementable effort over the section records alone. A plan whose earlier sections were declared before records existed carries declarations without records, so adding one record to it derives impl over that single section. On 2026-10-01 s22-coord appended one implementable record each to six plans whose done sections have none. Each plan's derived impl fell to 0, though its stored <code>plan-impl</code> meta was unchanged: crew-observability-truth from 0.57, scoring-should-stop-a-promotion from 0.98, dependency-edge-semantics from 0.97, a-review-dies-where-nobody-is-looking from 0.88, the-ledger-is-one-file-per-run from 0.5, and crew-runtime-positive-controls from 1.0. The S22 roadmap's implementation figure fell from 67.7% to 58.8%, and its critical path moved to crew-runtime-positive-controls at 20 hours. The function's own docstring promises to keep the authored figure rather than report a fabricated zero, and partial coverage is exactly that case.</p><p>The derivation takes the plan's section declarations too. It returns None, so the authored figure stands, whenever a section declared done or implementable has no record. Once every declared non-deferred section carries one, it derives as today.</p><p><strong>Done when</strong> a test builds a plan with three sections declared done and no records, plus one implementable record, and asserts that the read impl is the authored meta value. It also asserts that the same plan with records on all four derives done over done plus implementable. Both callers in <code>_plan_html.py</code> pass the declarations. Run over reckon's own <code>docs/plans</code>, the six plans above read their authored impl again, and the count of plans whose derived impl changes is recorded. The negative control drops the coverage check, and the partial-coverage case must then read 0.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
