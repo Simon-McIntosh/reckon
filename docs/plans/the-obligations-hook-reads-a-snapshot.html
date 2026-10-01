@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -273,7 +273,10 @@
     <div class="r-comment-body"><p>reviewed r-20261001T183044423847-held-worktrees-read-run-files read at base 64a56280f / head 44139f82e; stored a parsed 5-dimension review (total 79 — goal_fidelity 13, evidence 15, scope_discipline 19, durability 14, fit 18) with one blocking finding (a held tree named by one per-run file and by an aggregate-only record resolves to a different run than the whole-ledger scan) and added_failure_count 0</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261001T183138776104-pointer-classification-is-memoised" data-who="reckon-build" data-when="2026-10-01T20:19:31.603Z">
-    <div class="r-comment-body"><p>Memoised a run&#x27;s pointer classification in runs/&lt;run-id&gt;/classification.json, keyed by the stat identity of every file it reads (pointer, manifest, stream, run-record files, review store entries and the worktree head), with stream observation resuming from a persisted byte offset; obligations(&#x27;reckon&#x27;,&#x27;s21-1c&#x27;) warm falls from 12.03 s at base to 6.17 s at head, and the 73-file gate&#x27;s head arm adds no failure id.</p></div>
+    <div class="r-comment-body"><p>Memoised a run's pointer classification in runs/&lt;run-id&gt;/classification.json, keyed by the stat identity of every file it reads (pointer, manifest, stream, run-record files, review store entries and the worktree head), with stream observation resuming from a persisted byte offset; obligations('reckon','s21-1c') warm falls from 12.03 s at base to 6.17 s at head, and the 73-file gate's head arm adds no failure id.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261001T202019711185-review-of-pointer-classification-is-memoised" data-who="reckon-build" data-when="2026-10-01T20:44:46.126Z">
+    <div class="r-comment-body"><p>Independent review of r-20261001T183138776104-pointer-classification-is-memoised stored beside the run: base 342b88ec..head 1986b59f1, all five dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 19, durability 18, fit 19 -&gt; total 90), added_failure_count 0, two follow-on findings (an uncovered misfiled-review-record key gap and a latent malformed_lines divergence on resumed reads)</p></div>
 </div>
 </section>
 </main>
