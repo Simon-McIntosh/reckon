@@ -275,7 +275,7 @@ def test_the_dispatch_carries_what_the_document_readers_resolved(
     Both halves of the carried reading -- the two counts and the stamped
     figures beside them -- are composed from what the lane-document readers
     resolved. A sentinel returned by a reader arrives in the payload
-    unchanged, stamp and age included, which is what a dispatch holding a
+    unchanged -- the stamp included -- which is what a dispatch holding a
     second reading of the document's own keys could not do.
     """
     config_home = dispatch_repo.parent / "config"
@@ -287,11 +287,11 @@ def test_the_dispatch_carries_what_the_document_readers_resolved(
         mean_context=120000.0,
         observed_at=_stamp(5),
     )
+    sentinel_stamp = _stamp(23)
     sentinel_counts = {"generating": GENERATING + 100, "waiting": WAITING + 100}
     sentinel_fields = {
         "detail": "",
-        "observed_at": "sentinel-observed-at",
-        "age": timedelta(seconds=17),
+        "observed_at": sentinel_stamp,
         "mean_context": MEAN_TOKENS_PER_SECOND,
         "binding_observed": "sentinel binding",
         "shelf_life_seconds": 600.0,
@@ -318,13 +318,14 @@ def test_the_dispatch_carries_what_the_document_readers_resolved(
     reading = payload["lane_reading"]
     assert reading["generating"] == sentinel_counts["generating"]
     assert reading["waiting"] == sentinel_counts["waiting"]
-    assert reading["observed_at"] == "sentinel-observed-at"
+    assert reading["observed_at"] == sentinel_stamp
     assert reading["mean_context"] == MEAN_TOKENS_PER_SECOND
     assert reading["binding_observed"] == "sentinel binding"
     assert reading["suggested_shelf_life_seconds"] == 600.0
-    # The age is the sentinel's, not the one the document's own stamp would
-    # give: the dispatch dated this reading from the reader's answer.
-    assert reading["age_seconds"] == 17
+    # The reading is dated by the stamp the reader returned, not the document's
+    # own: the document publishes a stamp 5 seconds old and the sentinel's is
+    # 23, so only the reader's answer gives the second.
+    assert 20 <= reading["age_seconds"] <= 120
 
 
 def _fixture_documents() -> list[tuple[dict, dict]]:

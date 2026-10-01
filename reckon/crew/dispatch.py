@@ -2970,15 +2970,31 @@ def _lane_reading_carry(
         now = datetime.now(UTC)
     elif now.tzinfo is None:
         now = now.replace(tzinfo=UTC)
-    # The document's own keys -- the stamp it is dated by, the mean context,
-    # the constraint observed binding and its shelf life -- are resolved by
-    # the lane-document reader, so the dispatch holds no spelling of them and
+    # The document's own keys -- the stamp it carries, the mean context, the
+    # constraint observed binding and its shelf life -- are resolved by the
+    # lane-document reader, so the dispatch holds no spelling of them and
     # cannot drift from the one reader that owns them.
-    fields = _lane_document.read_lane_reading_fields(document, now=now)
-    if fields["detail"]:
-        return _lane_reading_unknown(detail=fields["detail"])
+    fields = _lane_document.read_lane_reading_fields(document)
     stamp = fields["observed_at"]
-    age = fields["age"]
+    if stamp is None:
+        return _lane_reading_unknown(detail=fields["detail"])
+    # Retained rather than routed through ``reckon._timestamps.parse_iso``: the
+    # refusal quotes the parser's own exception text, which the shared parser
+    # swallows to return ``None``, and the reading is strict enough to report
+    # why a stamp was rejected.
+    try:
+        observed = datetime.fromisoformat(stamp)
+    except ValueError as exc:
+        return _lane_reading_unknown(
+            detail=f"'observed_at' {stamp!r} is not an ISO-8601 timestamp: {exc}"
+        )
+    if observed.tzinfo is None:
+        observed = observed.replace(tzinfo=UTC)
+    age = now - observed
+    if age.total_seconds() < 0:
+        return _lane_reading_unknown(
+            detail=f"'observed_at' {stamp!r} lies in the future"
+        )
     # Each figure is withheld on its own. A document that omits one still
     # measured the others, and the timestamp beside them is what makes any of
     # them usable, so collapsing the reading over a single absent field
