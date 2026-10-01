@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-10-01">
-  <meta name="plan-version" content="118">
+  <meta name="plan-version" content="119">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -1254,6 +1254,9 @@
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261001T081548169030-a-dispatch-result-matches-its-launch" data-who="reckon-build" data-when="2026-10-01T09:00:41.631Z">
     <div class="r-comment-body"><p>Every ok:false the dispatch command emits now carries error and detail — the dry-run contract-validation verdict and the competence-refusals were silent — and tests/test_dispatch_result_matches_launch.py drives the post-launch snapshot handler, the unwind that once refused to remove the run's own worktree, and the survival check, asserting a launch either names its run or leaves no pointer, no worktree and no live worker (22/22 at head, 3/22 red at base source, negative control 2 red).</p></div>
 </div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261001T090238701710-review-of-a-dispatch-result-matches-its-launch" data-who="reckon-build" data-when="2026-10-01T09:11:19.642Z">
+    <div class="r-comment-body"><p>Independent review of r-20261001T081548169030-a-dispatch-result-matches-its-launch is stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261001T081548169030-a-dispatch-result-matches-its-launch.at-634d7d3cdc636a229183954711c3d4b8a63d631f.json — a parsed record scoring all five dimensions (goal_fidelity 17, evidence 19, scope_discipline 20, durability 18, fit 19; raw sum 93), with added_failure_count 4 and its ids derived from the reviewed run&#x27;s own base/head gate logs, two follow-on findings, and the module-capped total of 5.</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-adrwiw-s8-landed" data-who="s21-1c" data-when="2026-10-01T09:50:00Z">
     <div class="r-comment-body">Landed at merge df1e01574 (run r-20261001T081309497681-a-backend-carries-no-worker-cap, reviewed head 11a32aa4f, review total 96). Dispatch no longer refuses on max_concurrent_runs. summary.roster_bound reports the key as retired and never binding, and the roster refusal sentence is gone. tests/test_backend_carries_no_worker_cap.py admits a fourth dispatch past a declared cap of 2. It still refuses a spent 2-core reservation with '2 of 2 cores admitted (1 per worker)'. Negative control: with roster enforcement restored, 3 cases fail. Coordinator measures: the 143 files importing dispatch or summary, at main f1e3315c7 and at the merge, show 14 failed and 1 error each, with identical ids. The whole suite at main ea69eb30f and at the stacked head 7ec337b28 shows 73 failed and 1 error each, with identical ids and no added failure.</div>
 </div>
@@ -1261,7 +1264,7 @@
     <div class="r-comment-body"><p>retires the per-backend max_concurrent_runs roster cap: dispatch stops enforcing it, summary.roster_bound returns a retired entry (value "retired", never binding) and its now-unreachable roster refusal sentence is removed, while the partition-cores and login-memory bounds stay enforced — a new test shows a spent 2-core reservation still refuses with "2 of 2 cores admitted (1 per worker)"</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261001T090156081166-review-of-a-backend-carries-no-worker-cap" data-who="reckon-build" data-when="2026-10-01T09:09:15.073Z">
-    <div class="r-comment-body"><p>independent review of r-20261001T081309497681-a-backend-carries-no-worker-cap stored a parsed record scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 18 (total 96), added_failure_count 0 against the reviewed run&#x27;s own base and head gate logs, with three follow-on findings and no blocking finding.</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261001T081309497681-a-backend-carries-no-worker-cap stored a parsed record scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 18 (total 96), added_failure_count 0 against the reviewed run's own base and head gate logs, with three follow-on findings and no blocking finding.</p></div>
 </div>
 </section>
 </main>
