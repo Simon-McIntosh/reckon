@@ -4302,6 +4302,7 @@ def _default_gate_evidence_from_manifest(
     verdict: str,
     gate_check: Mapping[str, Any] | None,
     commits: Sequence[str],
+    no_commit_reason: str = "",
 ) -> tuple[dict[str, Any], tuple[str, ...]]:
     """Fill a passing promotion's gate flags from the worker's own manifest.
 
@@ -4349,7 +4350,7 @@ def _default_gate_evidence_from_manifest(
             recorded = _recorded_exit_status(log_text)
         if recorded is not None:
             resolved_gate["exit_status"] = recorded
-    if not resolved_commits:
+    if not resolved_commits and not str(no_commit_reason).strip():
         declared = [
             str(sha).strip()
             for sha in (manifest.get("commits") or [])
@@ -4436,6 +4437,7 @@ def complete(
             verdict=verdict,
             gate_check=gate_check,
             commits=commit_list,
+            no_commit_reason=no_commit,
         )
         overridden_worktree_changes = _require_commit_for_changed_manifest(
             run_id, record, no_commit_reason=no_commit
@@ -6014,7 +6016,7 @@ def _require_declared_negative_control(
 def _complete_locked(
     run_id: str,
     *,
-    record: Mapping[str, Any],
+    record: Mapping[str, Any] | None = None,
     gate: str,
     failure_classification: str = "",
     commits: Iterable[str] = (),
@@ -6061,7 +6063,14 @@ def _complete_locked(
     timestamp-less stream falls back to wall duration with an explicit source;
     a stalled run keeps that duration absent. Promotion time remains an
     explicit completion fallback when no stream survives.
+
+    ``record`` is the run's own record, passed by :func:`complete` so a run
+    rebuilt from its directory and one read from its live pointer reach the
+    same body. A caller that omits it has the pointer read here, which keeps
+    the direct callers that predate the reconcile path working unchanged.
     """
+    if record is None:
+        record = read_pointer(run_id)
     project = str(record.get("project") or "")
     node = record.get("node") or {}
     shadow = _is_shadow(record)
