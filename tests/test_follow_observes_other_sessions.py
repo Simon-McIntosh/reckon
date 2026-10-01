@@ -372,8 +372,12 @@ def test_the_real_configuration_home_gains_no_file(home) -> None:
     its own state elsewhere in the shared home cannot race the check.
     """
     artifacts = _real_home_artifacts()
-    for artifact in artifacts:
-        assert not artifact.exists(), f"a real-home artifact pre-exists: {artifact}"
+    # The real home is shared with live sessions and with earlier runs, so an
+    # artifact may already sit there when this test starts; what this test must
+    # prove is that its own writes reached none of them. Compare the set that
+    # exists before with the set that exists afterwards, so a peer's file or a
+    # stale one does not read as a write this test made.
+    existed = {artifact for artifact in artifacts if artifact.exists()}
 
     _write_pointer(home, "r-mine", "my-node", session="mine", phase="working")
     _write_pointer(home, "r-old", "old-node", session="old-a", phase="working")
@@ -385,5 +389,9 @@ def test_the_real_configuration_home_gains_no_file(home) -> None:
 
     assert {event["node"] for event in events} == {"my-node", "old-node"}
 
-    for artifact in artifacts:
-        assert not artifact.exists(), f"the real home gained a file: {artifact}"
+    after = {artifact for artifact in artifacts if artifact.exists()}
+    assert after == existed, (
+        "the real home's artifact set changed, so a write escaped the "
+        f"temporary home: added {sorted(map(str, after - existed))!r}, "
+        f"removed {sorted(map(str, existed - after))!r}"
+    )

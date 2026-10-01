@@ -536,7 +536,12 @@ def _write_parked_run(home: Path, dump: Path) -> None:
     worktree.mkdir(parents=True, exist_ok=True)
     manifest = home / "manifests" / f"{RUN_ID}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
-    probe = [sys.executable, "-c", _probe_code(dump)]
+    # The declared probe must name something outside the worker — a path — or
+    # the wait reader refuses it as a probe that cannot fail. The dump is the
+    # file the probe writes, so it is created up front and named as the
+    # reference the declaration reads.
+    dump.touch()
+    probe = [sys.executable, "-c", _probe_code(dump), str(dump)]
     manifest.write_text(
         "status: waiting\n"
         "wait_condition: a child's environment has been recorded\n"

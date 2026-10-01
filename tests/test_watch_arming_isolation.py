@@ -212,20 +212,36 @@ def test_the_suppressed_dispatch_records_the_same_waiver_as_an_explicit_one(
     )
 
 
+def _throwaway_home(tmp_path: Path, monkeypatch) -> Path:
+    """A configuration home the arming guard treats as a throwaway test root.
+
+    The guard recognises a throwaway home by the name of a directory above it,
+    so the home is placed under one this test creates rather than under the
+    session's own base temp. The rule is about a directory named as pytest's
+    temporary root, and naming it here keeps the case measuring the refusal
+    whatever base temp the session was given.
+    """
+    home = tmp_path / "pytest-of-suite-follow" / "config"
+    home.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    return home
+
+
 def test_arming_refuses_a_configuration_home_under_a_test_directory(
-    isolated_reckon_home: Path, monkeypatch
+    tmp_path: Path, monkeypatch
 ) -> None:
     """A caller that bypasses the fixture still cannot spawn a producer."""
+    home = _throwaway_home(tmp_path, monkeypatch)
     monkeypatch.delenv(WATCH_ARMING_ENV, raising=False)
 
     with pytest.raises(crew.CrewError) as refusal:
         dispatch_module._ensure_watch_producer("sample", session="bypassing")
 
     message = str(refusal.value)
-    assert str(isolated_reckon_home) in message
+    assert str(home) in message
     assert "outlive" in message
     assert WATCH_ARMING_ENV in message
-    assert _producers_naming(isolated_reckon_home) == []
+    assert _producers_naming(home) == []
 
 
 def test_arming_proceeds_for_an_ordinary_configuration_home(monkeypatch) -> None:
@@ -258,9 +274,10 @@ def test_arming_proceeds_for_an_ordinary_configuration_home(monkeypatch) -> None
 
 
 def test_an_opted_in_caller_is_not_refused(
-    isolated_reckon_home: Path, monkeypatch
+    tmp_path: Path, monkeypatch
 ) -> None:
     """A test that reaps its own producer opts in and the guard stands down."""
+    _throwaway_home(tmp_path, monkeypatch)
     monkeypatch.setenv(WATCH_ARMING_ENV, "on")
     dispatch_module._refuse_arming_under_a_throwaway_home("sample")
 
