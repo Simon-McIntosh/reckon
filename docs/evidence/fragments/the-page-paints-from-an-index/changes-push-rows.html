@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-page-paints-from-an-index">
+  <meta name="plan-title" content="A change pushes its rows, and the page patches them in place">
+  <meta name="plan-summary" content="The change stream emits the index rows that changed, were added or were removed, and the loader patches them into window.STATE in place, refetching derived state once per settle window.">
+  <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
+  <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s5">
+  <meta name="plan-commits" content="79d925018">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="serve,changes,index,loader,spa">
+  <title>A change pushes its rows, and the page patches them in place — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="changes-push-rows" data-reckon="landed" data-when="2026-10-01">
+  <h2>A change pushes its rows, and the page patches them in place</h2>
+
+  <p>Commit <code>79d925018</code> changes <code>/_changes/&lt;project&gt;</code> from a
+  bare content digest to the index rows that moved. The stream keeps the row list it
+  served when it opened, re-stats the tree on a reported change, and diffs the rebuild
+  against that list: a rewritten file arrives in <code>rows.changed</code>, a new file in
+  <code>rows.added</code>, a departed file in <code>rows.removed</code>, each carrying the
+  full row the <code>/_index</code> endpoint serves. The rows go out before the derived
+  payload's digest is recomputed, so a reader waits on a stat-and-diff pass rather than on
+  a full rediscovery; a change the index does not see — project state without a row move —
+  still reports its digest alone, which is the event shape the loader answered before.
+  <code>_served_index_rows</code> is now the one call shape behind both the endpoint and
+  the stream, so the pushed row and the served row cannot disagree on stamps.</p>
+
+  <p><code>docs/ui/state-loader.js</code> patches a pushed event into
+  <code>window.STATE</code> in place: a changed row keeps its object and its position, a
+  row the page never carried is held as an arrival rather than inserted, and a removed row
+  leaves the inventory. The derived fields a discovery merge delivered are left in place —
+  the index carries no effective status, so the patch never overwrites one with a locally
+  defaulted value — and the derived refetch follows at most once per settle window, in the
+  background. An event carrying only a digest keeps the refetch the loader always made,
+  so an older server still drives the page.</p>
+
+  <h3>Measured</h3>
+  <ul>
+    <li><strong>The declared measure, at <code>79d925018</code>.</strong>
+    <code>tests/test_changes_push_rows.py</code> opens a change stream against a temporary
+    project, rewrites one plan's title, and asserts the next event's
+    <code>rows.changed</code> is exactly that row, equal to the row
+    <code>/_index</code> then serves, inside the 2 s bound. The loader cases run the real
+    <code>docs/ui/state-loader.js</code> under <code>node</code> with a recording
+    <code>fetch</code>: the pushed title lands on the same row object with
+    <code>requested</code> unchanged — no <code>/_discover</code> or <code>/_index</code>
+    request applies it — the removed row leaves the inventory and the added row is held as
+    an arrival (<code>pending: ["evidence:late"]</code>), a digest-only event re-runs the
+    full refetch, and four events in one settle window cost one refetch. Six cases, all
+    passing.</li>
+    <li><strong>Event latency, ten flows in one process:</strong> 0.45–0.48 s from rewrite
+    to pushed row, against the 2 s bound. Emitting rows ahead of the derived digest is
+    what bought that margin: the same flow measured 1.13–1.48 s while the digest was
+    resolved first, and one run under a busy node reached 3.23 s. A change resolves six
+    <code>git</code> forks either way, but only the row rebuild's two then sit between the
+    rewrite and the event; resolving the digest first put all six there.</li>
+    <li><strong>The gate, at <code>79d925018</code>:</strong> the six files report
+    <code>31 passed, 2 skipped, 1 failed</code> (<code>EXIT=1</code>; log
+    <code>logs/head-gate.log</code>). The five pre-existing files at the base revision
+    <code>06d56ae87</code>, run in a scratch tree, report <code>25 passed, 2 skipped,
+    1 failed</code> (<code>EXIT=1</code>; log <code>logs/base-gate.log</code>). The head
+    arm adds no failure id; both arms fail the same pre-existing
+    <code>test_metadata_index_survives_restart.py::test_the_change_watch_invalidates_the_tree</code>,
+    whose spy does not accept the <code>changed_at</code> keyword the landed fleet watch
+    already passes — out of this node's scope, recorded as a follow-on.</li>
+    <li><strong>The declared negative control is executed and logged:</strong> with the
+    stream mutated to emit the bare digest again, the two row assertions fail —
+    <code>2 failed, 4 passed</code>, <code>EXIT=1</code> — and the four loader cases still
+    pass. Log: <code>logs/negative-control.log</code> in the run directory
+    <code>r-20261001T010414677018-changes-push-rows</code>.</li>
+    <li><strong>Ruff:</strong> <code>reckon/serve.py</code> carries the identical 18
+    findings at base and at head, and the new test file is clean under
+    <code>ruff check</code> and <code>ruff format --check</code>, so the change adds
+    none.</li>
+  </ul>
+
+  <p><strong>Not done here, by scope.</strong> The stream still pays the same one
+  rediscovery per change it paid before — the rows are resolved ahead of it, not instead
+  of it — and the derived payload remains the only source of
+  <code>effective_status</code> and the ready set. The pre-existing failure above is
+  reported, not repaired, because its file sits outside this node's write paths.</p>
+</article>
+</body>
+</html>
