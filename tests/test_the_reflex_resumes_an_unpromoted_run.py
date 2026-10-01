@@ -196,13 +196,33 @@ def _armed_fleet():
                 _wait_for_stopped_producer()
 
 
-def _stub_resume(monkeypatch, *, turn: int = 1) -> list[dict]:
-    """Replace the resume entry point so the call and its advice can be read."""
+def _write_resume_stream(*, finished: bool) -> None:
+    """Write the resume stream a real first resume leaves behind.
+
+    A worker writes an assistant record the moment its turn is under way and the
+    result line when the turn ends. ``finished=False`` leaves the stream without
+    the result line, the shape of a turn that is still in progress; the default
+    leaves the finished shape, which is what every resume that actually ran
+    writes and what a busy check must not read as work forever.
+    """
+    directory = Path(runs.run_dir(RUN_ID))
+    directory.mkdir(parents=True, exist_ok=True)
+    records = [{"type": "assistant", "message": {"content": "working"}}]
+    if finished:
+        records.append({"type": "result", "subtype": "success"})
+    (directory / "resume-1.jsonl").write_text(
+        "".join(json.dumps(record) + "\n" for record in records), encoding="utf-8"
+    )
+
+
+def _stub_resume(monkeypatch, *, finished: bool = True) -> list[dict]:
+    """Replace the resume entry point, writing the stream a real resume leaves."""
     calls: list[dict] = []
 
     def fake_resume(run_id, record, *, config=None, launcher=None, advice=""):
         calls.append({"run_id": run_id, "advice": advice, "launcher": launcher})
-        return {"pid": os.getpid(), "turn": turn, "log_path": f"resume-{turn}.jsonl"}
+        _write_resume_stream(finished=finished)
+        return {"pid": os.getpid(), "turn": 1, "log_path": "resume-1.jsonl"}
 
     monkeypatch.setattr(resumption, "_resume", fake_resume)
     return calls
@@ -282,20 +302,21 @@ def test_a_second_sweep_while_the_resumed_worker_is_live_resumes_nothing(
     assert dispatched == []
 
 
-def test_an_exited_resumed_worker_gets_one_more_resume(
+def test_a_finished_resumed_turn_is_retried_once(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """A resumed turn that ends without answering does not strand the round.
+    """A resumed turn that ended without answering does not strand the round.
 
-    The round is in flight only while the worker is live, so once that worker
-    has exited and the run's head has not moved past the reviewed head, the
-    reflex resumes the round once more rather than leaving it recorded as
-    resumed forever; the attempt count records the retry.
+    The resume leaves the stream every finished turn leaves — an assistant
+    record and a result line — and that shape must not read as work in progress,
+    or the round would stay recorded as resumed forever. With the worker gone
+    and the head unmoved, the reflex resumes once more; the attempt count
+    records the retry.
     """
     config_home, repo, head_sha = isolated_project
     _completed_pointer(config_home, repo)
     _store_review(head_sha, [FINDING])
-    resumed = _stub_resume(monkeypatch)
+    resumed = _stub_resume(monkeypatch)  # writes the finished resume stream
     _stub_dispatch(monkeypatch)
 
     _sweep()
@@ -303,14 +324,35 @@ def test_an_exited_resumed_worker_gets_one_more_resume(
     assert first["status"] == "resumed"
     assert first["attempt"] == 1
 
-    # The resumed worker ended without writing a live record: the round is free
-    # again, so the next sweep resumes once more.
+    # The finished stream leaves the turn's end on disk, but no live worker: the
+    # round is free again, so the next sweep resumes once more.
     _sweep()
 
     assert len(resumed) == 2
     second = runs.read_pointer(RUN_ID)["repair_dispatch"]
     assert second["status"] == "resumed"
     assert second["attempt"] == 2
+
+
+def test_an_unfinished_resumed_turn_resumes_nothing(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """A resumed turn still in progress is left alone: it has not ended.
+
+    The resume stream carries an assistant record with no result line, so the
+    turn is under way. The run reads busy and the next sweep resumes nothing,
+    which is what stops the reflex starting a second worker onto a live turn.
+    """
+    config_home, repo, head_sha = isolated_project
+    _completed_pointer(config_home, repo)
+    _store_review(head_sha, [FINDING])
+    resumed = _stub_resume(monkeypatch, finished=False)
+    _stub_dispatch(monkeypatch)
+
+    _sweep()
+    _sweep()
+
+    assert len(resumed) == 1
 
 
 def test_a_promoted_reviewed_run_is_not_resumed(
