@@ -41,13 +41,19 @@ from reckon.crew.recovery import unwatch
 LEASE_SECONDS = 60
 PROJECT = "registration-unlink-sample"
 
+# A producer armed with this poll interval sleeps long enough for a replacement
+# to take the vacated seat before the superseded producer's next wake-up, so the
+# superseded case measures the takeover rather than which process wins a race.
+SUPERSEDED_POLL_SECONDS = 8.0
+
 DRIVER = textwrap.dedent(
     """
     import sys
 
     from reckon.crew.recovery import watch_ticker
 
-    for _ in watch_ticker(sys.argv[1], poll_interval=0.1):
+    interval = float(sys.argv[2]) if len(sys.argv) > 2 else 0.1
+    for _ in watch_ticker(sys.argv[1], poll_interval=interval):
         pass
     """
 )
@@ -90,24 +96,50 @@ def _write_driver(tmp_path: Path) -> Path:
     return script
 
 
-@pytest.fixture()
-def producer(tmp_path: Path, home: Path):
-    """A live ``crew watch`` producer in its own session, stopped afterwards."""
-    del home  # requested for its environment, not its path
-    root = Path(__file__).resolve().parents[1]
-    script = _write_driver(tmp_path)
+def _spawn_producer(root: Path, script: Path, poll_interval: float) -> subprocess.Popen:
+    """Start a ``crew watch`` producer in its own session.
+
+    The producer is a real process rather than a thread: unwatch signals the
+    recorded pid's process group and refuses to signal its own, so only a child
+    in a separate session exercises the stop as well as the re-linking.
+    """
     environment = dict(os.environ)
     environment["PYTHONPATH"] = os.pathsep.join(
         [str(root), environment.get("PYTHONPATH", "")]
     )
-    child = subprocess.Popen(
-        [sys.executable, str(script), PROJECT],
+    return subprocess.Popen(
+        [sys.executable, str(script), PROJECT, str(poll_interval)],
         env=environment,
         cwd=str(root),
         start_new_session=True,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
+
+
+def _await_completed_a_poll(project: str) -> None:
+    """Wait until the armed producer has finished a poll and reached its sleep.
+
+    The lease registration gains ``bytes_parsed_last_poll`` only once the loop
+    has run past its first wake-up, so its presence proves the producer is at or
+    past the sleep and will not revisit the seat path until that sleep ends.
+    This is what lets the superseded case take the path without racing the
+    producer's own recreate.
+    """
+
+    def polled() -> bool:
+        return "bytes_parsed_last_poll" in runs.read_watch_registration(project)
+
+    _await(polled, message="the producer never completed its first poll pass")
+
+
+@pytest.fixture()
+def producer(tmp_path: Path, home: Path):
+    """A live ``crew watch`` producer in its own session, stopped afterwards."""
+    del home  # requested for its environment, not its path
+    root = Path(__file__).resolve().parents[1]
+    script = _write_driver(tmp_path)
+    child = _spawn_producer(root, script, 0.1)
     try:
         _await(
             lambda: _seat_record(PROJECT).get("pid") == child.pid,
@@ -161,3 +193,61 @@ def test_unwatch_finds_and_stops_a_producer_after_an_unlink(producer) -> None:
         timeout=10.0,
         message="the producer outlived the unwatch that stopped it",
     )
+
+
+def test_a_superseded_producer_ends_without_overwriting_the_replacement(
+    tmp_path: Path, home: Path
+) -> None:
+    """A producer whose vacated seat a replacement took ends rather than overwrite it.
+
+    The seat file is unlinked, so a later arming opens a fresh inode and the
+    superseded producer's held handle now names a file no path reaches. A
+    replacement producer takes the path first. On its next wake-up the
+    superseded producer must end without writing over the replacement's record,
+    and the replacement must stay the seat unwatch finds and stops.
+    """
+    del home  # requested for its environment, not its path
+    root = Path(__file__).resolve().parents[1]
+    script = _write_driver(tmp_path)
+    superseded = _spawn_producer(root, script, SUPERSEDED_POLL_SECONDS)
+    replacement = None
+    try:
+        _await(
+            lambda: _seat_record(PROJECT).get("pid") == superseded.pid,
+            message="the superseded producer never took its seat",
+        )
+        _await_completed_a_poll(PROJECT)
+
+        seat = runs.watch_lock_path(PROJECT)
+        seat.unlink()
+        assert not seat.exists()
+
+        replacement = _spawn_producer(root, script, 0.1)
+        _await(
+            lambda: _seat_record(PROJECT).get("pid") == replacement.pid,
+            message="the replacement producer never took the vacated seat",
+        )
+
+        # The superseded producer wakes to find the path held by a replacement's record.
+        _await(
+            lambda: superseded.poll() is not None,
+            message="the superseded producer outlived the replacement that took its seat",
+        )
+
+        # And it ended without overwriting the record it no longer owns.
+        record = _seat_record(PROJECT)
+        assert record.get("pid") == replacement.pid, record
+
+        result = unwatch(PROJECT)
+        assert result["stopped"] is True, result
+        assert result["reason"] == "stopped", result
+        _await(
+            lambda: replacement.poll() is not None,
+            timeout=10.0,
+            message="the replacement producer outlived the unwatch that stopped it",
+        )
+    finally:
+        for child in (superseded, replacement):
+            if child is not None and child.poll() is None:
+                child.kill()
+                child.wait(timeout=10)
