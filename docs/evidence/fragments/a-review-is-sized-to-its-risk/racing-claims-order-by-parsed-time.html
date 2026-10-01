@@ -1,0 +1,38 @@
+<article class="landed-report" data-run-id="r-20261001T070609066219-racing-claims-order-by-parsed-time" data-node="racing-claims-order-by-parsed-time">
+      <h3>racing-claims-order-by-parsed-time — the racing-claim order reads parsed moments, not raw strings</h3>
+      <p>
+        <code>_peer_claim_is_a_later_racing_arrival</code>
+        (<code>reckon/crew/dispatch.py</code>) decided which of two overlapping
+        dispatch claims owns the paths by comparing each claim's registration
+        timestamp as raw text. One caller writes
+        <code>...T04:00:00Z</code> and another writes
+        <code>...T04:00:00.500000+00:00</code>; those spellings name moments
+        half a second apart but sort the wrong way round, because
+        <code>'Z'</code> is above <code>'.'</code>. A later arrival could
+        therefore rank as the earlier one, so the pair could both proceed or
+        both withdraw instead of exactly one surviving.
+      </p>
+      <p>
+        Each registration time is now read through
+        <code>reckon._timestamps.parse_utc</code> and the claims are ordered by
+        the parsed instant, falling back to the run id when the instants are
+        equal. A stamp the parser cannot read leaves the comparison
+        inconclusive, so the peer claim stays binding exactly as an absent
+        timestamp does today.
+      </p>
+      <p>
+        <strong>Measure.</strong>
+        <code>tests/test_one_of_two_racing_reviews_survives.py</code> gained a
+        mixed-spelling case that both directions of the old ordering got wrong,
+        and an unparseable-stamp case asserting the peer is still refused. The
+        gate ran only that file: 6 passed, EXIT=0.
+      </p>
+      <p>
+        <strong>Negative control.</strong> Restoring the raw-string comparison
+        makes the mixed-spelling case fail
+        (<code>test_mixed_spelling_registration_times_order_by_the_parsed_moment</code>)
+        and the unparseable-stamp case fail, while the four pre-existing cases
+        pass: 2 failed, 4 passed, EXIT=1. The log is
+        <code>negative-control.log</code> under the run directory.
+      </p>
+    </article>
