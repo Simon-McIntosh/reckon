@@ -83,6 +83,32 @@ def without_dispatch_identity(monkeypatch):
         monkeypatch.delenv(name, raising=False)
 
 
+# The served process's discovery walk-reuse window. ``serve.main`` assigns
+# ``reckon.serve._SIGNATURE_TTL_S`` on whichever thread runs the server and does
+# not restore it, so a test that starts the served process leaves a live
+# discovery memo behind for every later test sharing its process to read. A
+# clearer refusal lives in ``tests/test_server_listens_before_it_watches.py``,
+# which refuses at setup when it finds a memo it did not arm; this restores each
+# test's entry value so that refusal is never triggered by a sibling.
+#
+# Armed only by the negative-control run: with it set, the restore is skipped
+# and a served case's assignment survives into the next test in the process.
+_SKIP_DISCOVERY_MEMO_RESTORE_ENV = "RECKON_TEST_SKIP_DISCOVERY_MEMO_RESTORE"
+
+
+@pytest.fixture(autouse=True)
+def restore_discovery_memo_ttl():
+    """No test leaves the discovery walk-reuse window changed for the next."""
+    if os.environ.get(_SKIP_DISCOVERY_MEMO_RESTORE_ENV) == "1":
+        yield
+        return
+    from reckon import serve
+
+    original = serve._SIGNATURE_TTL_S
+    yield
+    serve._SIGNATURE_TTL_S = original
+
+
 # Scheduler verbs a test must never reach unless it put a working one on PATH
 # itself. A test asserting on placement or dispatch that forgets to provide one
 # reaches the host's real scheduler: measured 2026-09-30, an admitted-dispatch
