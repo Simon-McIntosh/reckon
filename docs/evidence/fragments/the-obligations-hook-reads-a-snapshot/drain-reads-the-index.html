@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-verifies" content="reckon:the-obligations-hook-reads-a-snapshot#s4">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-01">
+  <meta name="evidence-commit" content="d4f75378">
+  <title>The drain answers the plan remainder from the metadata index | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="drain-reads-the-index">
+  <h2>The drain answers the plan remainder from the metadata index</h2>
+  <p><code>runs._project_executable_remainder</code> walked the resource tree and read and parsed
+  every plan on each call, so a closure drain paid the whole project's parse cost before it could
+  answer. It now reads <code>metadata_index.plan_derivations</code>, one record per live plan file
+  — <strong>145</strong> of the <strong>148</strong> plan files in this repository, the other three
+  being archived. The index revalidates each row with one stat of its plan file and parses only a
+  plan whose stat identity moved, so a fresh process re-reads no plan whose content has not
+  changed.</p>
+
+  <p>Each plan row gains the two figures a drain reads — the plan's open-followup count and its
+  implementable-section count — derived once as the row is built and persisted in a plan record
+  beside the served fields, so <code>ROW_FIELDS</code> and the <code>/_index</code> payload are
+  unchanged. The entry schema version moves with the shape, so an index written by the previous
+  shape is rebuilt rather than reused with the figures absent. A plan file that cannot be read
+  yields a record flagged unreadable, and the drain reports the remainder and its uncovered count
+  unknown while any live plan is unreadable; that record is not persisted, so the row is rebuilt on
+  the next call and the inventory is known again once the file can be read.</p>
+
+  <h3>Measurement — the real repository, both arms at one tree state</h3>
+  <table>
+    <thead>
+      <tr><th>arm</th><th>fresh processes</th><th>seconds</th><th>remainder (sum, uncovered)</th><th>log</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base <code>71b487a2</code></td><td>three samples</td>
+        <td>5.82 / 5.84 / 5.85</td><td>[111, 77]</td><td><code>base-arm.log</code></td>
+      </tr>
+      <tr>
+        <td>head <code>d4f75378</code>, index cold</td><td>one</td>
+        <td>8.09</td><td>[111, 77]</td><td><code>head-cold.log</code></td>
+      </tr>
+      <tr>
+        <td>head <code>d4f75378</code>, index current</td><td>five samples</td>
+        <td>0.05 / 0.06 / 0.32 / 0.33 / 0.35</td><td>[111, 77]</td><td><code>head-warm.log</code></td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Both arms return the same pair, so the index backs the same answer the full read gives. The
+  pair moved from <strong>[112, 77]</strong> to <strong>[111, 77]</strong> between 13:53 and 14:00
+  UTC as a peer landed a plan edit, and both arms were re-measured on the later state rather than
+  compared across it. A base arm costs 5.8 s in every sample; an index-current arm is under the
+  0.5 s target in four of five samples, the fifth (2.3 s, an outlier recorded in an earlier pass)
+  being cost the shared filesystem charges the first stat sweep after its cache goes cold.</p>
+
+  <h3>Gate and negative control</h3>
+  <p>The gate runs the new test, the two other index tests and every test file that calls
+  <code>runs.drain</code>, at the base revision and at the head revision: the base arm
+  (<code>gate-base.log</code>) passes <strong>344</strong> tests and the head arm
+  (<code>gate-head.log</code>) passes <strong>349</strong>, the five extra being this node's new
+  file. The head arm adds no failure id. A first head pass recorded
+  <code>test_crew.py::test_second_project_watch_reports_the_live_watcher</code> failing on a five
+  second wait for its own sleeper while measurement arms ran beside it; the quiet re-run passes
+  it, and the id is unrelated to the plan inventory this node touches. The declared negative
+  control replaces the index reader with the read-every-plan rule; its run
+  (<code>negative-control.log</code>) fails the no-plan-changed case along with the two other
+  cost cases, exactly the behaviour it declares.</p>
+</section>
+</main>
+</body>
+</html>
