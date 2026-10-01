@@ -307,16 +307,31 @@ UNWIRED_PLAN_CHECKLIST = (
     "does one section of mine wait on one section of it"
 )
 
+#: The population the wiring rule counts over, carried inside the message so
+#: a reader of a count knows what was counted. The rule reads the document's
+#: DECLARED type, so the population is plan documents and nothing else in the
+#: docs tree — an evidence or research document beside a plan is never a row.
+UNWIRED_PLAN_POPULATION = (
+    "counted over the plan documents in the docs tree, not every document: "
+    "an evidence or research document is not held to the wiring rule"
+)
+
 
 def unwired_plan_message(*, slug: str) -> str:
-    """The one refusal/audit message for a plan with no wires, checklist included."""
+    """The one refusal/audit message for a plan with no wires, checklist included.
+
+    States the population the message's count is a count of, because the rule
+    is held to the declared document type (see ``unwired_plan_finding``) and a
+    reader could otherwise take the rule for a whole-tree one.
+    """
 
     return (
         f"plan {slug!r} is still implementable and declares no plan-depends-on, "
         f"no plan-blocks, no plan-informs and no gate — author the wiring from "
         f"the sprint's plan list ({UNWIRED_PLAN_CHECKLIST}), or declare "
         f'<meta name="{PLAN_STANDALONE_META}" content="<one-sentence reason">> '
-        f"if it genuinely stands alone"
+        f"if it genuinely stands alone — "
+        f"{UNWIRED_PLAN_POPULATION}"
     )
 
 

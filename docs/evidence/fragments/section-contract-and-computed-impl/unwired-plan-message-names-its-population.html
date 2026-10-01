@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <title>The unwired-plan message names its population | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>The unwired-plan message names its population</h1>
+      <p class="lead">The wiring rule reads a document's declared type, so an audit counts plan documents and nothing else in the docs tree. The message a reader receives named no population, so the count could be read as a whole-tree one. The message now states its population, through one constant so every surface states one scope.</p>
+    </header>
+
+    <section id="the-defect">
+      <h2>The defect: a count with no population</h2>
+      <p>At base <code>39fff0435</code>, no population string exists anywhere in the shared message or its audit caller:</p>
+      <pre><code>grep -n "population\|plans-scoped\|docs-wide" reckon/_schema.py reckon/cli.py   # no match</code></pre>
+      <p>and <code>unwired_plan_message</code> composed the refusal with no statement of what it was counting over:</p>
+      <pre><code>plan 'sample' is still implementable and declares no plan-depends-on, ... if it genuinely stands alone</code></pre>
+      <p>The population is read from what the audit actually iterates: <code>unwired_plan_finding</code> returns <code>None</code> unless the document's declared <code>reckon-type</code> is <code>plan</code>, and the roadmap's caller filters <code>plan.get("type") == "plan"</code> the same way. An evidence or research document beside a plan is never a row — a fact the message left the reader to infer.</p>
+    </section>
+
+    <section id="what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/_schema.py</code> gains <code>UNWIRED_PLAN_POPULATION</code>, one wording of the population beside <code>UNWIRED_PLAN_CHECKLIST</code>, and <code>unwired_plan_message</code> carries it in the message.</li>
+        <li>The same shared message reaches every caller unchanged in shape: the document audit (<code>reckon/doccheck.py</code>), the roadmap findings (<code>reckon/roadmap.py</code>) and the create/edit refusal (<code>reckon/mcp.py</code>). <code>reckon/cli.py</code> prints findings through the shared formatter, so its output carries the clause too and needs no wording change of its own.</li>
+        <li><code>tests/test_unwired_plan_message_names_its_population.py</code>: the message names the population, and an audit over a synthetic tree holding two unwired plans beside one evidence and one research document reports exactly the two plan documents, each message naming the population.</li>
+      </ul>
+    </section>
+
+    <section id="the-gate">
+      <h2>The gate</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Command</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base <code>39fff0435</code>, with the new test present</td><td>new test + <code>test_doccheck_unwired_plan.py</code> + <code>test_roadmap_unwired_plan.py</code> + <code>test_roadmap_wiring_reads_its_own_checkout.py</code> + <code>test_edit_plan.py</code></td><td>2 failed / 102 passed, <code>EXIT=1</code>; both new tests fail, the 102 pass</td><td><code>gate-base.log</code></td></tr>
+          <tr><td>Head <code>ce39ed5b1</code></td><td>the same five files</td><td>104 passed, <code>EXIT=0</code></td><td><code>gate-head.log</code></td></tr>
+          <tr><td>Declared negative control</td><td>drop the population clause from <code>unwired_plan_message</code>, scratch archive of the head commit</td><td>2 failed, <code>EXIT=1</code>; both new tests red, message quoted in the traceback carries no clause</td><td><code>gate-negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The head arm adds no failure id: the base arm's only failing ids are the two the base cannot pass, named under the negative-control declaration. Each arm ran with a private <code>--basetemp</code>. <code>ruff check</code> and <code>ruff format --check</code> over the changed paths report the same nine pre-existing findings in <code>reckon/_schema.py</code> at both revisions and nothing from the new test file.</p>
+    </section>
+
+    <section id="negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>drop the population clause from <code>unwired_plan_message</code> in <code>reckon/_schema.py</code>; <code>tests/test_unwired_plan_message_names_its_population.py</code> fails</em>. Executed against a <code>git archive</code> of the head commit in <code>/tmp</code> with the clause deleted: both cases fail on <code>assert 'plan documents' in message</code>, the quoted message ending <code>... if it genuinely stands alone — </code>, <code>EXIT=1</code>. The head arm passes the same file, so the clause is what the test measures.</p>
+      <p>The worker did not resolve the driving followup or change terminal plan state.</p>
+    </section>
+  </main>
+</body>
+</html>
