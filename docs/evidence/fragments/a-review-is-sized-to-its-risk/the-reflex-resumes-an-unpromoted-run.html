@@ -38,7 +38,7 @@
       </p>
       <p>
         <strong>Measure.</strong> Each file run to its own log ending
-        <code>EXIT=0</code> at commit <code>1edf118d0</code> (9 passed in
+        <code>EXIT=0</code> at commit <code>91e96cf09</code> (11 passed in
         the combined run), with the resume entry point and the dispatch both
         stubbed so no worker is launched and no call reaches a scheduler:
       </p>
@@ -55,6 +55,10 @@
           the shape production actually produces.</li>
         <li><code>tests/test_a_repair_hold_names_its_cause.py</code> 4/4 — the
           holds and their control, unaffected by the busy-check change.</li>
+        <li><code>tests/test_repair_answers_only_blocking_findings.py</code> 6/6
+          — the control arm for the all-follow-on reason reads the blocking
+          finding's id off the resume advice and asserts nothing is dispatched,
+          so it still proves a blocking finding is acted on.</li>
       </ul>
       <p>
         <strong>Negative control.</strong> Restoring the any-assistant-record
@@ -63,5 +67,17 @@
         <code>negative-control-any-assistant-record-busy.log</code> under the run
         directory. An earlier control, routing the unpromoted case back to
         dispatch, reddens the three resumed-not-dispatched cases.
+      </p>
+      <p>
+        <strong>Files outside the node's original fence, edited for the new
+        branch.</strong> <code>tests/test_reflex_dispatches_one_repair.py</code>,
+        <code>tests/test_repair_skips_out_of_repo_findings.py</code>,
+        <code>tests/test_a_repair_hold_names_its_cause.py</code> and
+        <code>tests/test_repair_answers_only_blocking_findings.py</code> each
+        asserted a dispatched repair node for an unpromoted reviewed run, the
+        behaviour this change replaces. Each edit re-anchors the case on the
+        resume advice or on a promoted/live-worker run so its own subject
+        (scope, suite arms, lane holds, blocking-vs-follow-on, idempotence) is
+        still measured, and every case still fails when its guard is removed.
       </p>
     </article>
