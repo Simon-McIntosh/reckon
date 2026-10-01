@@ -50,6 +50,11 @@ from reckon.crew.node import CrewError
 # The fence's ceiling on how long an unacknowledged request may hold a dispatch.
 FLEET_ACK_CEILING = 10.0
 
+# The entry module every supervisor vector must name, so a launched supervisor
+# never runs dispatch as the main module and opens its stderr with the runpy
+# duplicate-import warning.
+SUPERVISOR_ENTRY_MODULE = "reckon.crew.supervisor_main"
+
 CONFIG: dict = {
     "default_backend": "alpha",
     "local_backend": "alpha",
@@ -295,6 +300,7 @@ def test_a_fleet_dispatch_writes_one_spawn_line_and_records_the_acked_pid(
         assert spec["run_id"] == record["run_id"]
         assert spec["argv"][-1] == str(spec_file)
         assert "__supervise__" in spec["argv"]
+        assert SUPERVISOR_ENTRY_MODULE in spec["argv"], spec["argv"]
         assert spec["plan"]["backend"] == "alpha"
 
         assert record["pid"] == stub.supervisor_pid
@@ -318,6 +324,9 @@ def test_a_dispatch_with_no_fleet_record_forks_as_before(
 
     assert recorder.forked, "no process was started at all"
     assert any("__supervise__" in argv for argv in recorder.forked), recorder.forked
+    assert any(SUPERVISOR_ENTRY_MODULE in argv for argv in recorder.forked), (
+        recorder.forked
+    )
     assert record["pid"] == os.getpid()
 
 
@@ -342,6 +351,9 @@ def test_the_fleet_lane_stays_off_until_the_batch_step_opts_in(
         _dispatch(config_home, repo, "optin")
         assert stub.lines == [], "the lane ran without the opt-in"
         assert any("__supervise__" in argv for argv in recorder.forked), recorder.forked
+        assert any(
+            SUPERVISOR_ENTRY_MODULE in argv for argv in recorder.forked
+        ), recorder.forked
     finally:
         stub.stop()
 
@@ -482,6 +494,11 @@ def test_a_review_dispatch_and_a_resumption_reach_the_supervisor(
         }
         assert all(
             "__supervise__" in json.loads(path.read_text(encoding="utf-8"))["argv"]
+            for path in spec_paths
+        )
+        assert all(
+            SUPERVISOR_ENTRY_MODULE
+            in json.loads(path.read_text(encoding="utf-8"))["argv"]
             for path in spec_paths
         )
     finally:
