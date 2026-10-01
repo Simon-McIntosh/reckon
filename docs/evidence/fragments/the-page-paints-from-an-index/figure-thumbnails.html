@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-page-paints-from-an-index">
+  <meta name="plan-title" content="A thumbnail is a thumbnail">
+  <meta name="plan-summary" content="The server serves a figure thumbnail bounded at 200 pixels on its long edge, rendered once into a cache keyed by the source's stat identity and revalidated by ETag; the figure list draws its rows from that URL, and Pillow is declared directly.">
+  <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
+  <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s6">
+  <meta name="plan-commits" content="56952fa9b">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="serve,thumbnails,pillow,spa">
+  <title>A thumbnail is a thumbnail — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="figure-thumbnails" data-reckon="landed" data-when="2026-10-01">
+  <h2>A thumbnail is a thumbnail</h2>
+
+  <p>Commit <code>56952fa9b</code> adds the thumbnail route to
+  <code>reckon/serve.py</code>. <code>/_thumb/&lt;project&gt;/&lt;figure path&gt;</code>
+  answers with a PNG downscaled to at most 200 pixels on its long edge. The render
+  happens once per source revision: the PNG is written under the configuration home's
+  <code>cache/thumbs</code> directory at a path keyed by the source file's stat identity
+  (<code>ino</code>, <code>size</code>, <code>mtime_ns</code>), so a second request —
+  another thread, another process, after a restart — reads that file rather than
+  decoding the figure again. The same stat identity is the response's
+  <code>ETag</code>, and the <code>If-None-Match</code> check runs before the cache is
+  touched, so a browser that already holds a thumbnail is answered
+  <code>304</code> without a render. An <code>.svg</code> source is passed through
+  unchanged, because it scales without cost. A source Pillow cannot open — an
+  unreadable file, or an image whose bytes contradict its extension — is served whole
+  with its own content type rather than answered with a <code>500</code>: a list row is
+  worth more drawn at full size than broken.</p>
+
+  <p><code>docs/ui/shell-plans.jsx</code> draws the figure list from that route:
+  <code>artifactImageSrc</code> prefixes a project-absolute figure href with
+  <code>/_thumb</code> and leaves anything else — an inline <code>data:</code> capture, a
+  fabricated state — as it was, and the row's <code>img</code> keeps
+  <code>loading="lazy"</code> and <code>decoding="async"</code>, so the downscales are
+  fetched as rows approach the viewport. The figure reader in
+  <code>docs/ui/plan.jsx</code> is deliberately untouched: opening a figure still draws
+  the full-resolution file. Pillow is now a declared dependency in
+  <code>pyproject.toml</code> and <code>uv.lock</code> rather than a package reached
+  through matplotlib's own dependency.</p>
+
+  <h3>Measured</h3>
+  <ul>
+    <li><strong>The declared measure, at <code>56952fa9b</code>.</strong>
+    <code>tests/test_figure_thumbnails.py</code> serves a 2000×1500 PNG from a temporary
+    project and asserts the thumbnail answers 200 with an image whose long edge is 200
+    pixels (200×150) and whose byte size is under a tenth of the source. Nine cases, all
+    passing: the downscale and its byte ratio, a tall figure bounded by its long edge,
+    the ETag <code>304</code> with the render counter proving no regeneration, the disk
+    cache answering a second request with one render, a rewritten source keyed to a new
+    cache entry and a new ETag, the SVG pass-through, the unthumbnailable source served
+    as itself (200, not a 500), a missing figure answering 404, and the served shell's
+    figure row deriving <code>/_thumb/sample/figures/demo/wide.png</code> from a figure
+    href while leaving an inline <code>data:</code> capture alone.</li>
+    <li><strong>The gate:</strong> the five files report
+    <code>38 passed, 1 skipped</code> (<code>EXIT=0</code>; log
+    <code>logs/head-gate.log</code>). The four pre-existing files at the base revision
+    <code>2976d71a</code>, run in a scratch tree, report <code>29 passed, 1 skipped</code>
+    (<code>EXIT=0</code>; log <code>logs/base-gate.log</code>). The head arm adds the
+    nine new cases and no failure id. The skip in both arms is the figure-row browser
+    case, which no browser binary on this node can run.</li>
+    <li><strong>The declared negative control is executed and logged:</strong> with the
+    route's thumbnail bytes mutated to the source file, the size assertion fails —
+    <code>thumbnail is 9013744 bytes against a 9013744-byte source</code> — alongside
+    four other thumbnail cases (<code>5 failed, 4 passed</code>, <code>EXIT=1</code>).
+    Log: <code>logs/negative-control.log</code> in the run directory
+    <code>r-20261001T024141507018-figure-thumbnails</code>; the mutation is armed by the
+    test file and reverted by it, so the tree carries it nowhere.</li>
+    <li><strong>The cache never touches the operator's home:</strong> the fixture points
+    <code>RECKON_HOME</code> and <code>RECKON_CLIENT_CACHE</code> at a temporary
+    directory and the cache case asserts <code>serve._config_home()</code> is that
+    directory; <code>~/.config/reckon/cache/thumbs</code> does not exist after the runs.</li>
+    <li><strong>Ruff:</strong> <code>reckon/serve.py</code> reports the identical 18
+    findings at base and at head; the new test file reports none, and
+    <code>ruff format --check</code> is clean over both.</li>
+  </ul>
+
+  <p><strong>Not done here, by scope.</strong> Thumbnails are rendered on first request
+  rather than at index build, so the first view of a figure pays its decode; the cache
+  is never swept, so a figure re-edited many times leaves its earlier revisions' PNGs
+  behind under the configuration home. The served process was not restarted, and no
+  browser on this node could draw the figure list, so the row's rendered
+  <code>src</code> is evidenced by the served compiled module and its probe rather than
+  by pixels.</p>
+</article>
+</body>
+</html>

@@ -41,6 +41,7 @@ import contextlib
 import gzip
 import hashlib
 import html.parser
+import io
 import json
 import logging
 import mimetypes
@@ -328,6 +329,11 @@ def _resolve_paths(mounts_file: Path | None = None) -> None:
 SAFE_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
 MAX_POST_BYTES = 1_000_000
 CREW_LOG_TAIL_BYTES = 64 * 1024
+
+# The long edge a served figure thumbnail is downscaled to, in pixels. A list
+# row draws a figure at 50 px, so 200 leaves it sharp on a 2x display while
+# costing a fraction of the capture's bytes.
+THUMB_MAX_EDGE = 200
 
 # The window the velocity route measures when the caller names none at all, so
 # the SPA's first render needs no date arithmetic of its own. A caller that
@@ -2130,6 +2136,57 @@ def safe_join(root: Path, rel: str) -> Path | None:
     return target
 
 
+def _thumbnail_cache_path(source: Path, identity: str) -> Path:
+    """Return the cache file for one source revision, under the config home.
+
+    Keyed by the source's stat identity, so a rewritten figure misses the
+    cache and a restart — or a second process — reuses the thumbnails that
+    are already there rather than rendering them again.
+    """
+
+    digest = hashlib.sha256(f"{source}\0{identity}".encode()).hexdigest()[:32]
+    return _config_home() / "cache" / "thumbs" / f"{digest}.png"
+
+
+def _render_thumbnail(source: Path) -> bytes:
+    """Downscale one figure to a thumbnail and return its PNG bytes."""
+
+    from PIL import Image
+
+    with Image.open(source) as image:
+        image.thumbnail((THUMB_MAX_EDGE, THUMB_MAX_EDGE))
+        buffer = io.BytesIO()
+        image.save(buffer, format="PNG")
+        return buffer.getvalue()
+
+
+def _thumbnail_bytes(source: Path, identity: str) -> bytes:
+    """Return the thumbnail for one source revision, rendering it at most once.
+
+    The first request for a revision renders the PNG and writes it to the
+    cache; every later one — another request, another thread, another
+    process — reads that file, so a figure costs one downscale per revision
+    rather than one per view.
+    """
+
+    cached = _thumbnail_cache_path(source, identity)
+    try:
+        return cached.read_bytes()
+    except OSError:
+        pass
+    body = _render_thumbnail(source)
+    try:
+        cached.parent.mkdir(parents=True, exist_ok=True)
+        temporary = cached.with_name(
+            f"{cached.name}.{os.getpid()}.{threading.get_ident()}.tmp"
+        )
+        temporary.write_bytes(body)
+        temporary.replace(cached)
+    except OSError as exc:
+        LOGGER.warning("cannot cache thumbnail for %s: %s", source, exc)
+    return body
+
+
 def _patch_into(target: dict, patch: dict) -> dict:
     """Merge a flat dotted-key patch into nested dict `target`, in place.
 
@@ -2222,6 +2279,69 @@ class Handler(BaseHTTPRequestHandler):
             return
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("ETag", etag)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _serve_thumbnail(self, path: str) -> None:
+        """Serve a figure's thumbnail: 200 px on its long edge, cached on disk.
+
+        The response is revalidated by an ETag derived from the source's stat
+        identity, which is also what keys the on-disk cache, so a browser that
+        already holds a thumbnail pays a stat rather than a regeneration. An
+        SVG scales without cost and is passed through unchanged; a source
+        Pillow cannot open is served as it is rather than reported as a
+        server failure.
+        """
+
+        rel = path[len("/_thumb/") :]
+        project, _, figure = rel.partition("/")
+        if not project or not SAFE_NAME.match(project):
+            self._send(HTTPStatus.BAD_REQUEST, b"bad project name")
+            return
+        mounts = load_mounts()
+        if project not in mounts:
+            self._send(HTTPStatus.NOT_FOUND, b"unknown project")
+            return
+        target = safe_join(Path(mounts[project]), figure)
+        if target is None or not target.is_file():
+            self._send(HTTPStatus.NOT_FOUND, b"not found")
+            return
+        if target.suffix.lower() == ".svg":
+            self._send_file(target, "image/svg+xml")
+            return
+        try:
+            stat = target.stat()
+        except OSError:
+            self._send(HTTPStatus.NOT_FOUND, b"figure not readable")
+            return
+        identity = f"{stat.st_ino:x}-{stat.st_size:x}-{stat.st_mtime_ns:x}"
+        etag = f'"thumb-{identity}"'
+        if etag in (self.headers.get("If-None-Match") or ""):
+            self.send_response(HTTPStatus.NOT_MODIFIED)
+            self.send_header("ETag", etag)
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            return
+        try:
+            body = _thumbnail_bytes(target, identity)
+        except Exception as exc:  # noqa: BLE001
+            # An unreadable or unsupported source is served whole rather than
+            # answered with a 500: a list row is worth more drawn at full size
+            # than broken.
+            LOGGER.warning("cannot thumbnail %s (%s); serving the source", target, exc)
+            try:
+                body = target.read_bytes()
+            except OSError:
+                self._send(HTTPStatus.NOT_FOUND, b"figure not readable")
+                return
+            ctype, _ = mimetypes.guess_type(str(target))
+            self._send(HTTPStatus.OK, body, ctype or "application/octet-stream")
+            return
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "image/png")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-cache")
         self.send_header("ETag", etag)
@@ -2822,6 +2942,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(HTTPStatus.OK, state_file.read_bytes(), "application/json")
             except OSError as e:
                 self._send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(e)})
+            return
+
+        if path.startswith("/_thumb/"):
+            self._serve_thumbnail(path)
             return
 
         if path.startswith("/_index/"):
