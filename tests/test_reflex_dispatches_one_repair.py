@@ -562,13 +562,15 @@ def test_a_live_worker_record_dispatches_no_repair(
 def test_a_dead_worker_record_lets_the_repair_compose(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """A reviewed run whose worker record names a dead pid is repaired.
+    """A reviewed run whose worker record names a dead pid is repaired in place.
 
     The worker record is the only liveness the run carries, so a reaped pid must
-    not hold the round: the busy guard passes and the reflex composes and
-    dispatches the round's one repair. This is the control the refusal above is
-    read against — without it the refusal could pass on a fixture that never
-    composed a repair at all.
+    not hold the round: the busy guard passes and the reflex composes the round's
+    one repair and delivers it as a resume of the reviewed run itself — the run
+    already owns the worktree and the commit claim a new node would be refused
+    for, so no node is dispatched. This is the control the refusal above is read
+    against — without it the refusal could pass on a fixture that never composed
+    a repair at all.
     """
     config_home, repo, head_sha = isolated_project
     record = _completed_pointer(config_home, repo)
@@ -578,10 +580,18 @@ def test_a_dead_worker_record_lets_the_repair_compose(
     dead.terminate()
     dead.wait()
     _write_worker_record(pid=dead_pid)
+    resumed = _stub_resume(monkeypatch)
     report, calls = _dispatch_direct(record, monkeypatch)
-    assert report["dispatched"] is True
-    assert len(calls) == 1
-    assert str(calls[0]["node"].id).startswith(repair.REPAIR_NODE_PREFIX)
+
+    assert report["resumed"] is True
+    # The round was delivered as one resume of the reviewed run, carrying the
+    # composed brief whose advice names every finding by its content-derived id.
+    assert len(resumed) == 1
+    assert resumed[0]["run_id"] == RUN_ID
+    for finding in FINDINGS:
+        assert _expected_id(finding) in resumed[0]["advice"]
+    # No node was composed and dispatched: the resume replaced the dispatch.
+    assert calls == []
 
 
 def test_a_resumed_worker_dispatches_no_repair(
