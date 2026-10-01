@@ -328,6 +328,26 @@ def test_the_dispatch_carries_what_the_document_readers_resolved(
     assert 20 <= reading["age_seconds"] <= 120
 
 
+def test_the_reading_fields_reader_names_the_shape_before_the_stamp() -> None:
+    """An object-shaped failure is not reported as a stamp-shaped one.
+
+    The reader resolves the document's names, so the shape it was handed and
+    the stamp it did not find are different faults and must not share one
+    message: a caller told a list carried no parseable stamp would go looking
+    for a key in something that is not a document, and from the message alone
+    it could not tell the two apart at all.
+    """
+    shaped = lane_document_module.read_lane_reading_fields(["not", "a", "document"])
+    assert shaped["observed_at"] is None
+    assert "not a JSON object" in shaped["detail"]
+    assert "observed_at" not in shaped["detail"]
+
+    unstamped = lane_document_module.read_lane_reading_fields({"running": GENERATING})
+    assert unstamped["observed_at"] is None
+    assert "observed_at" in unstamped["detail"]
+    assert "not a JSON object" not in unstamped["detail"]
+
+
 def _fixture_documents() -> list[tuple[dict, dict]]:
     """The lane documents this file's fixtures write, with the counts each states.
 
