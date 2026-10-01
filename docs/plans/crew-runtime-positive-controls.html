@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="162">
+<meta name="plan-version" content="163">
 </head>
 <body>
   <main class="plan-doc">
@@ -1514,6 +1514,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260930T124159484530-review-of-stale-manifest-guard-cli-callers" data-who="reckon-build" data-when="2026-09-30T12:52:08.102Z">
     <div class="r-comment-body"><p>Reviewed run r-20260930T122204648089-stale-manifest-guard-cli-callers — record parsed with all five dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 19, durability 17, fit 18; total 90), added_failure_count 0 with an empty id list derived from the reviewed run's own baseline_suite/after_suite logs, 2 findings; I reproduced its population independently and its marker positive control (0 at 4663e8f4, 2 at 41e8d410).</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-run-r-20261001T032531315571-control-gate-repairs" data-who="reckon-build" data-when="2026-10-01T04:27:33.450Z">
+    <div class="r-comment-body"><p>f-crpc-control-gate-repairs items (2), (3) and (4): the write-time manifest audit now judges each suite arm&#x27;s cited gate log against the revision that arm records (reckon/crew/reports.py `_gate_log_revision_findings`, called from `audit_manifest`), reporting a log whose first line names no revision, or names another arm&#x27;s, while the writer still holds a turn; and the presented branch of the gate-evidence guard in reckon/crew/promotion.py refuses an unresolvable presented identifier by value instead of filtering it out of its comparison. Base arm 33c5e761 with the new cases copied in: 3 failed, 340 passed, EXIT=1, the three reproduced items red. Declared mutation (first-line check removed from the audit): 2 failed, 3 passed, EXIT=1, the first case red. Head arm recorded in after_suite when its run completes.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
