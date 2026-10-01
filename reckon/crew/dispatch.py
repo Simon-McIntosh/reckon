@@ -7698,11 +7698,17 @@ def _supervisor_argv(*, spec_path: Path) -> list[str]:
     into the spec for the fleet's batch step to run verbatim, and the two must
     agree or a fleet spawn would start something other than what this process
     would have forked.
+
+    The entry module is ``reckon.crew.supervisor_main`` and not dispatch itself:
+    the crew package imports dispatch when it loads, so running dispatch as the
+    main module re-executes an already-imported module and opens the
+    supervisor's stderr with runpy's duplicate-import warning. Nothing imports
+    the entry module, so the launch is quiet.
     """
     return [
         sys.executable,
         "-m",
-        "reckon.crew.dispatch",
+        "reckon.crew.supervisor_main",
         SUPERVISOR_ENTRY,
         "--spec",
         str(spec_path),
