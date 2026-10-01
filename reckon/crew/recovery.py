@@ -4715,21 +4715,22 @@ def _worker_record_liveness(record: Mapping[str, Any]) -> bool | None:
     naming no pid. Reported as its own fact rather than folded into the
     pointer's answer, because a supervisor that has exited before its worker
     takes the pointer pid with it while the work continues.
+
+    The worker record carries no host of its own, so its pid is meaningful only
+    on the machine that issued it: a number live here is no evidence about a run
+    launched elsewhere, and reading it as one hands a foreign run a life this
+    host cannot support. The run's own launching host governs the read, the same
+    gate ``local_liveness`` applies, so every caller — ``classify_pointer``
+    included — answers on one set of terms. The pid itself is decided by
+    ``runs.record_process_alive``, which owns the start-tick comparison that
+    keeps a recycled number from reading as the registered worker.
     """
     data = _worker_record(record)
     if data is None:
         return None
-    pid = data.get("pid")
-    if not pid:
+    if not _launched_on_this_host(record):
         return None
-    alive = runs.process_alive(pid)
-    if alive is True:
-        expected = data.get("pid_start_time")
-        if expected is not None:
-            actual = _process_start_time(pid)
-            if actual is not None:
-                alive = actual == expected
-    return alive
+    return runs.record_process_alive(data, process_alive)
 
 
 def _worker_launched_after_manifest(record: Mapping[str, Any], manifest: Path) -> bool:
