@@ -20,12 +20,7 @@ import pytest
 from reckon import crew
 from reckon._plan_html import write_state
 from reckon.crew import promotion as promotion_module
-from reckon.crew.routing import (
-    resolve_role,
-    resolve_section_routing,
-    section_anchor,
-    section_record_id,
-)
+from reckon.crew.routing import resolve_role, resolve_section_routing
 
 PROJECT = "sample"
 SLUG = "section-routing"
@@ -263,6 +258,10 @@ def test_one_derivation_serves_every_spelling_across_the_callers(
     repository: Path,
 ) -> None:
     plan_path = repository / "docs" / "plans" / f"{SLUG}.html"
+
+    # Imported where it is exercised: a revision that carries no single
+    # derivation fails inside the case that needs one, not at collection.
+    from reckon.crew.routing import section_anchor, section_record_id
 
     # One derivation: every spelling of the reference addresses one identity.
     assert {section_record_id(spelling) for spelling in SPELLINGS} == {"s5-1"}
