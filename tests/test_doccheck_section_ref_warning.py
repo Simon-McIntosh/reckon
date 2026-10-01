@@ -19,9 +19,10 @@ from pathlib import Path
 
 import pytest
 
-from reckon.doccheck import _PLAN_REF_COULD_BE_SECTION_REF, audit_html
+from reckon import doccheck as doccheck_module
+from reckon.doccheck import audit_html
 
-CODE = _PLAN_REF_COULD_BE_SECTION_REF
+CODE = "plan-ref-could-be-section-ref"
 
 
 def _attr_json(value: object) -> str:
@@ -109,6 +110,10 @@ def _others(findings):
 
 
 # ── the pair that should use a section ref ──────────────────────────────────
+
+
+def test_the_declared_code_is_the_one_the_module_raises():
+    assert doccheck_module._PLAN_REF_COULD_BE_SECTION_REF == CODE
 
 
 def test_a_section_wait_wired_whole_plan_is_reported(tmp_path: Path):
