@@ -8717,6 +8717,27 @@ def _carry_declared_placement(
         backend["placement"] = placement
 
 
+def _carry_fence_unprotected(
+    record: dict[str, Any],
+    plan: _backends.LaunchPlan | None,
+    config: Mapping[str, Any] | None,
+) -> None:
+    """Record the defaults this run's composed fence leaves writable.
+
+    The list is written only when the fence actually composed and a layer named
+    a default under ``unprotected_paths``, and removed when it did not, so a run
+    carries the key exactly when its fence leaves a default out. A resume and a
+    lane change recompose the fence from the resolved config, so the run's own
+    record follows the fence its current attempt launched inside rather than the
+    one the prior attempt did.
+    """
+    removed = _backends.fence_unprotected_paths(config=config)
+    if removed and _plan_composed_the_fence(plan):
+        record["fence_unprotected_paths"] = [str(path) for path in removed]
+    else:
+        record.pop("fence_unprotected_paths", None)
+
+
 def resume_plan(
     run_id: str,
     advice: str,
@@ -8819,6 +8840,7 @@ def resume_plan(
             ),
             resume_session=session_id or None,
             fence=FENCE_WORKERS,
+            fence_config=config,
         )
     )
     # A resume runs where a dispatch runs. A placement-declaring backend's
@@ -8836,6 +8858,7 @@ def resume_plan(
     )
 
     def capture(current: dict[str, Any]) -> dict[str, Any]:
+        _carry_fence_unprotected(current, plan, config)
         current["session_resumed"] = _launched_prior_session(plan) is not None
         if fresh_reason:
             current["session_id"] = None
@@ -9206,6 +9229,7 @@ def change_lane(
                 final_message_path=str(final_path),
                 resume_session=session_id if continued else None,
                 fence=FENCE_WORKERS,
+                fence_config=config,
             )
         )
         target_plan = _worker_runtime_plan(
@@ -9339,6 +9363,7 @@ def change_lane(
                 "lineage": lineage,
             }
         )
+        _carry_fence_unprotected(current, target_plan, config)
         if target_plan is not None:
             current.update(
                 {

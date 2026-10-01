@@ -6555,6 +6555,15 @@ def _complete_locked(
     fence_waiver = record.get("fence_waiver")
     if isinstance(fence_waiver, Mapping):
         run["fence_waiver"] = dict(fence_waiver)
+    # The defaults a layer left writable ride the row beside the waiver, for the
+    # same reason: the pointer that held them is deleted at promotion, and a
+    # reader asking whether a run could write outside its fence's own grant needs
+    # them in the durable row. A run whose fence removed nothing records no such
+    # key, so the row never carries an empty list that would read as a fence
+    # built and found whole.
+    fence_unprotected = record.get("fence_unprotected_paths")
+    if fence_unprotected:
+        run["fence_unprotected_paths"] = [str(path) for path in fence_unprotected]
     # The advisory a dispatch computed rides the committed row the same way it
     # rode the live pointer, together with the lane declaration and reading it
     # was derived from. Promotion deletes that pointer, so an advisory reaching
