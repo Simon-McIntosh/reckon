@@ -1,0 +1,36 @@
+<article class="landed-report" data-run-id="r-20261001T005611350566-an-unchanged-worktree-is-proved-not-assumed">
+      <h3>an-unchanged-worktree-is-proved-not-assumed — the unchanged-run exemption is proved, not assumed</h3>
+      <p>
+        <code>_worktree_unchanged_since_base</code> granted the unchanged-run
+        suite exemption vacuously when the run's worktree directory was gone and
+        read only tracked changes, so an armed run whose worktree had been
+        reclaimed, or which left an untracked deliverable beside a clean head,
+        was exempted from the suite pair on its manifest alone.
+      </p>
+      <p>
+        The predicate in <code>reckon/crew/promotion.py</code> now returns
+        <code>False</code> when the worktree directory is absent, and treats any
+        untracked path from <code>git status --porcelain</code> other than the
+        worktree's provisioned <code>.venv</code> symlink as a change
+        (<code>_worktree_untracked_paths</code>), so the suite pair is required
+        as before in both cases. <code>_run_changed_nothing</code> proves the
+        worktree before reading the manifest, so the absent-worktree case reaches
+        the refusal rather than raising on the missing directory.
+      </p>
+      <p>
+        <strong>Measure.</strong>
+        <code>tests/test_an_unchanged_run_needs_no_suite_pair.py</code> passes
+        5/5 (EXIT=0): the decline-only case still promotes with
+        <code>suite_delta</code> status unchanged, a reclaimed worktree and an
+        untracked deliverable beside a clean head are each refused for the
+        missing pair (<code>missing baseline_suite, after_suite</code>), and the
+        two long-standing refusals — a commit past base and a moved head — still
+        refuse. Only the named file ran; no call reached SLURM.
+      </p>
+      <p>
+        <strong>Negative control.</strong> Restoring the vacuous <code>True</code>
+        for an absent worktree reddens exactly the reclaimed-worktree case
+        (<code>1 failed, 4 passed</code>, EXIT=1); log
+        <code>logs/negative_control.log</code> under the run directory.
+      </p>
+    </article>
