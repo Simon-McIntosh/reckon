@@ -18,12 +18,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-10-01">
-  <meta name="plan-version" content="134">
+  <meta name="plan-version" content="135">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-sprint" content="S21">
+<meta name="plan-sprint" content="S22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.96">
 </head>
@@ -1106,6 +1106,9 @@
 <div class="r-comment" data-section="_top" data-id="c-run-r-20261001T104356350322-review-of-the-dispatch-followups-are-triaged" data-who="reckon-build" data-when="2026-10-01T10:51:07.633Z">
     <div class="r-comment-body"><p>Independent review of r-20261001T102536466875-the-dispatch-followups-are-triaged: a parsed record at reviews/reckon/r-20261001T102536466875-the-dispatch-followups-are-triaged.at-4406a8d02c9b5c8bc88a50790281748aad649106.json scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20 (total 98), two follow-on findings, added_failure_count unmeasured because the reviewed manifest names no gate log.</p></div>
 </div>
+<div class="r-comment" data-section="_top" data-id="c-adrwiw-moved-to-s22" data-who="s21-1c" data-when="2026-10-01T16:45:00Z">
+    <div class="r-comment-body">Moved from S21 to S22 on 2026-10-01 at the operator's direction, so S21 closes on work it owns. Every section is done except §10's on-node proof, which the operator assigned to imas-ambix-67. That proof shows a worker outliving its session step under scancel of the step id.</div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260923T092804965136-review-of-dispatch-lifetime-probe" data-who="reckon-ship" data-when="2026-09-23T10:41:42.645Z">
     <div class="r-comment-body"><p>independent review delivered and read by the coordinator</p></div>
 </div>
@@ -1311,7 +1314,7 @@
     <div class="r-comment-body">Landed on main at a8f389ecd (run r-20261001T125431075529-the-skill-runs-a-dispatch-in-the-foreground, reviewed head 62eb59ff6, review total 88). The launch-kind table in skills/reckon-build/SKILL.md now says a CLI dispatch returns once its supervisor is running, without waiting for the worker spawn, and is run in the foreground. orchestrator-harness/claude-code.md names the follower as the session's only monitor. The scout note in sprint-orchestration.md and the backgrounding line in worker-backends.md both run the dispatch in the foreground, and the scout is still not waited on. tests/test_skill_contracts.py and the skill-pinning tests show the same single pre-existing failure at base and head. Review follow-ons: no test pins the rewritten row, and orchestrator-harness/codex-cli.md:18 still carries a 'Background dispatch | partly' row that does not instruct backgrounding.</div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261001T125431075529-the-skill-runs-a-dispatch-in-the-foreground" data-who="reckon-build" data-when="2026-10-01T13:14:21.228Z">
-    <div class="r-comment-body"><p>The skill text now runs a CLI dispatch in the foreground — the launch-kind table in skills/reckon-build/SKILL.md returns the call once the run&#x27;s supervisor is running, without waiting for the worker&#x27;s spawn and claiming no order between its exit and the spawn; skills/reckon-build/references/orchestrator-harness/claude-code.md names the follower as the session&#x27;s only monitor and says a `reckon crew dispatch` is never backgrounded; the scout note in sprint-orchestration.md and the `cli` line in worker-backends.md drop background-and-yield. Measured: `grep -rn &quot;dispatch&quot; skills/` read line by line leaves no sentence instructing a backgrounded CLI dispatch, and the nine skill-pinning test files run 132 passed with 1 pre-existing unrelated failure at 62eb59ff6, delta 0 against base 4e5f0a870c.</p></div>
+    <div class="r-comment-body"><p>The skill text now runs a CLI dispatch in the foreground — the launch-kind table in skills/reckon-build/SKILL.md returns the call once the run's supervisor is running, without waiting for the worker's spawn and claiming no order between its exit and the spawn; skills/reckon-build/references/orchestrator-harness/claude-code.md names the follower as the session's only monitor and says a `reckon crew dispatch` is never backgrounded; the scout note in sprint-orchestration.md and the `cli` line in worker-backends.md drop background-and-yield. Measured: `grep -rn "dispatch" skills/` read line by line leaves no sentence instructing a backgrounded CLI dispatch, and the nine skill-pinning test files run 132 passed with 1 pre-existing unrelated failure at 62eb59ff6, delta 0 against base 4e5f0a870c.</p></div>
 </div>
 </section>
 </main>

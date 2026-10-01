@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="152">
+<meta name="plan-version" content="154">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -1334,6 +1334,9 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261001T140351462236-review-of-the-settled-producer-lease-section" data-who="reckon-build" data-when="2026-10-01T14:06:38.359Z">
     <div class="r-comment-body"><p>restated a-crew-process-ends-with-its-owner §3 (base a4c312fbe, body digest 8b2fa3db6ac2719356df210447e0be53) in the reviewer's own words and listed the 11 sentences admitting two or more readings with both readings for each.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-acpewio-s3-coordination-with-s22" data-who="s21-1c" data-when="2026-10-01T16:46:00Z">
+    <div class="r-comment-body">Two coordination points for the coordinator who dispatches this section. First, the runs.py claim that refused it at 16:10 was released when s22-coord promoted drain-reads-the-index (merge 7b71bda64), so §3 is dispatchable now. Second, s22-coord holds its next node, the-obligations-hook-reads-a-snapshot §2, until §3 merges. That node publishes each session's obligations snapshot from the same producer loop in reckon/crew/runs.py, and it records the producer's pid, start time and code stamp. When §3 lands, tell s22-coord which functions it touched and where the lease records the producer's identity, so that snapshot can read it rather than duplicate it.</div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260924T123648020169-consumers-reach-into-reckon-internals" data-who="reckon-ship" data-when="2026-09-24T13:14:17.145Z">
     <div class="r-comment-body"><p>inventory of consumers reaching into reckon internals across five repositories: 1,537 config-home path lines, 151 crew CLI lines, 91 lane.json lines; recorded as consumers-read-reckon-through-verbs</p></div>
 </div>
@@ -1342,6 +1345,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260926T192348155133-review-of-fleet-spawn-and-the-cancelled-step" data-who="reckon-build" data-when="2026-09-26T20:14:22.103Z">
     <div class="r-comment-body"><p>review stored; verdict read and acted on by the coordinator (producer-loop 93 merged at 2bc1811b; fleet-spawn investigation 87 whose ordering exclusion was corrected in the investigation's promotion outcome)</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-acpewio-s6-deferred" data-who="s21-1c" data-when="2026-10-01T16:45:00Z">
+    <div class="r-comment-body">Deferred out of S21 on 2026-10-01 at the operator's direction. §6's done-when is a census taken on the login node after a working day, so it can't close within the sprint's remaining coding work. Run it after §3's producer lease and §11's incremental reads land, because the census measures what those leave behind.</div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260925T012000-owner-scoped-reclaim" data-who="reckon-build s21-coord" data-when="2026-09-24T23:20:00Z">
     <div class="r-comment-body">Evidence for back-pressure, and the reclaim it needs, 2026-09-24/25 on the fleet node. Registered reckon worktrees rose from 232 (19:30Z) to 287 (23:10Z). Time from dispatch to worker start rose with them: 1:57–3:40 at 20:05Z, 9:04 for one of six simultaneous launches, and 12:07 for a review launched at 22:58Z. That is the supervisor's pre-spawn snapshot walking every tree. A dry run of `crew gc --project reckon` reported 214 reclaimable (205 integrated, 35 dirty, 13 unintegrated, 24 live-referenced). gc has no session or owner scope, so `--apply` also removes other coordinators' retained worktrees, and no coordinator can run it safely. s21-coord and s23-coord each removed only their own clean, integrated, pointer-free worktrees by path, taking the repository to 270. The back-pressure this section adds needs an owner-scoped reclaim beside it: `crew gc --session S` (or by the run record's owner), which removes only that session's integrated, non-live worktrees. That lets each coordinator reclaim its share in its landing beat before dispatch refuses on retained count.</div>
@@ -1422,7 +1428,7 @@
     <div class="r-comment-body"><p>Every promoted row now carries session — the live pointer's crew session when it has one, null otherwise — filled through ledger.build_record so rows built directly by a test or caller also satisfy the schema, with session declared in RECORD_FIELDS and session_id left as the worker's harness session; gate 119 passed 1 skipped EXIT=0, and the declared mutation dropping the copy reddens the naming case.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261001T151227297216-review-of-the-ledger-row-names-its-crew-session" data-who="reckon-build" data-when="2026-10-01T15:38:39.777Z">
-    <div class="r-comment-body"><p>Independent review of r-20261001T140543620011-the-ledger-row-names-its-crew-session (base a4c312fbe, head 8edc383f0): the crew session is copied onto the promoted row and session_id left as the harness session; stored total 83 over five dimensions (goal_fidelity 18, evidence 15, scope_discipline 14, durability 18, fit 18) with added_failure_count 0, two follow-on findings naming the brief&#x27;s superseded &quot;no session key&quot; second case and the reckon/ledger.py scope expansion.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261001T140543620011-the-ledger-row-names-its-crew-session (base a4c312fbe, head 8edc383f0): the crew session is copied onto the promoted row and session_id left as the harness session; stored total 83 over five dimensions (goal_fidelity 18, evidence 15, scope_discipline 14, durability 18, fit 18) with added_failure_count 0, two follow-on findings naming the brief's superseded "no session key" second case and the reckon/ledger.py scope expansion.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
