@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="47">
+<meta name="plan-version" content="48">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -656,6 +656,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260928T070305974626-review-of-help-census-counts-split-runs" data-who="reckon-build" data-when="2026-09-28T08:24:23.903Z">
     <div class="r-comment-body"><p>review stored at 990df10b: scores 19-20; one prose finding in the negative-control paragraph of the evidence record</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-tlofpr-hold-rewrite-recurred" data-who="s25-coord" data-when="2026-10-01">
+    <div class="r-comment-body"><p><strong>f-tlofpr-hold-check-rewrites-aggregate recurred the same day, triggered by a hold opening rather than closing.</strong> At 20:42:48Z a dispatch-purpose check opened five holds at once, one per codex lane (<code>codex</code>, <code>-astra</code>, <code>-luna</code>, <code>-spark</code>, <code>-terra</code>). Each gave the reason "utilisation 100% with burn multiple 470.5x". The aggregate grew from 55.4 MB to 62.4 MB, with +199,620/−309 lines, uncommitted, and it sat in every peer's <code>git status</code> until it was committed by hand as <code>28d908043</code>. As before, it was a strict superset: 0 prior rows lost or changed, and all 109 added rows byte-identical to their per-run files. So any hold transition, in either direction, rewrites the whole file. Two occurrences in thirteen hours is the measured rate.</p><p><strong>A second defect, which may belong to a budget plan rather than this one:</strong> the five holds may be stale. Minutes later the paid-lane document reported every codex lane as <code>unknown</code> with no window readings. A burn multiple of 470× is consistent with a 100% reading carried across a window reset and divided by the new window's tiny elapsed fraction. A hold opened from such a reading is self-sustaining, because only a served run writes a fresh one.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
