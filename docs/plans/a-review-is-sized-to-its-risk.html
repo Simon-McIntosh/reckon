@@ -26,10 +26,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="77">
+<meta name="plan-version" content="78">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
-<meta name="plan-impl" content="0.85">
+<meta name="plan-impl" content="0.9">
 </head>
 <body>
   <main class="plan-doc">
@@ -224,9 +224,15 @@
     <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §3</pre>
     <p class="r-fu-outcome">Landed at d3a1a920. A repair round answers only blocking findings; a finding with no severity stays blocking so older records are repaired; follow-on findings drop out of the brief and the write scope, and an all-follow-on review composes no repair. Review 94, recovery population added no failures. Three companion fixes from s22's field cases also landed. A run that changed nothing promotes with suite_delta unchanged and no suite pair (5e5474b6). A repair is armed only when the run it repairs was, and its done-when names both arms and the literal command (5e5474b6). suite-arms-use-the-armed-command, which requires both arms to use the armed command, is under review.</p>
     </article>
-<article class="r-fu" data-id="f-arist-008" data-status="open" data-written-by="s25-coord" data-written-at="2026-10-01" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arist-008" data-status="resolved" data-written-by="s25-coord" data-written-at="2026-10-01" data-recommends-skill="reckon-build" data-resolved-at="2026-10-01T00:31:42+00:00" data-resolved-by="s25-coord">
     <h4 class="r-fu-title">Land the armed-command check and close section 3</h4>
     <div class="r-fu-body"><p>suite-arms-use-the-armed-command (run r-20260930T235030939384) refuses a suite arm measured with a command other than the run's armed suite_command, so a focused pair cannot satisfy a whole-suite arming. Once it lands, section 3's repair path is complete. Review follow-ons still open: an all-follow-on round's recorded reason names no cause (recovery.py), and the unchanged-run worktree check passes vacuously when the worktree is gone and ignores untracked files.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §3</pre>
+    <p class="r-fu-outcome">Landed at c3ee04e5. An armed promotion refuses a baseline or after arm whose command, whitespace-normalised, differs from the run's suite_command, naming the mismatched arm, so a focused pair no longer satisfies a whole-suite arming. Review 95. The promotion/ledger and suite-caller population added no failures; 8 teardown errors in tests/test_split_existing_runs.py passed alone twice on both trees and came from a concurrent promotion moving the live state tree that test fingerprints. Section 3's repair path is complete; its two review follow-ons are carried by f-arist-009.</p>
+    </article>
+<article class="r-fu" data-id="f-arist-009" data-status="open" data-written-by="s25-coord" data-written-at="2026-10-01" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Name the cause of an all-follow-on round and prove an unchanged worktree fully</h4>
+    <div class="r-fu-body"><p>Three small follow-ons from this section's reviews:</p><ul><li>dispatch_repair_for_run records 'no repair composes for this review round' when every finding is follow-on, which misattributes the cause. It should say the round carried no blocking finding.</li><li>_worktree_unchanged_since_base passes vacuously when the worktree is gone and reads only tracked changes, so an armed run that left untracked deliverables, or whose worktree was reclaimed, is exempted from the suite pair on its manifest alone.</li><li>tests/test_split_existing_runs.py fingerprints the live docs/state/reckon/runs tree in teardown, so it errors whenever a real promotion lands mid-run. It should synthesise the mounted tree rather than watch the workstation's.</li></ul></div>
     <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §3</pre>
     </article>
 </section>
@@ -421,7 +427,7 @@
     <div class="r-comment-body"><p>review-of-suite-arms-use-the-armed-command — independent review of run r-20260930T235030939384-suite-arms-use-the-armed-command at head 31152b6c against base 60d25568: the change makes _evaluate_suite_delta refuse an armed pair when either arm's recorded command differs from the run's suite_command after whitespace normalisation; reviewer re-ran the gate in the reviewed worktree at 31152b6c for 32 passed / 0 failed, EXIT=0, and scored goal_fidelity 20, evidence 18, scope_discipline 19, durability 19, fit 19 (total 95).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260930T235030939384-suite-arms-use-the-armed-command" data-who="reckon-build" data-when="2026-10-01T00:04:52.391Z">
-    <div class="r-comment-body"><p>suite-arms-use-the-armed-command — _evaluate_suite_delta now refuses a baseline_suite or after_suite arm whose command differs from the run&#x27;s recorded suite_command after whitespace normalisation (split and rejoin on single spaces), naming baseline_suite.command_matches_suite_command or after_suite.command_matches_suite_command for each mismatched arm; measure: 32 passed / 0 failed over the three named test files at revision 31152b6c, with the focused-pair refusal reddening (2 failed, EXIT=1) under the command comparison dropped.</p></div>
+    <div class="r-comment-body"><p>suite-arms-use-the-armed-command — _evaluate_suite_delta now refuses a baseline_suite or after_suite arm whose command differs from the run's recorded suite_command after whitespace normalisation (split and rejoin on single spaces), naming baseline_suite.command_matches_suite_command or after_suite.command_matches_suite_command for each mismatched arm; measure: 32 passed / 0 failed over the three named test files at revision 31152b6c, with the focused-pair refusal reddening (2 failed, EXIT=1) under the command comparison dropped.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260928T233552756785-review-of-the-suite-is-declared-and-recorded" data-who="reckon-build" data-when="2026-09-29T00:21:22.662Z">
     <div class="r-comment-body"><p>review stored for r-20260928T223146627061-the-suite-is-declared-and-recorded at cd36faeb against base 348688e8 - total 77 (goal_fidelity 14, evidence 15, scope_discipline 19, durability 13, fit 16), four findings, added_failure_count 0</p></div>
