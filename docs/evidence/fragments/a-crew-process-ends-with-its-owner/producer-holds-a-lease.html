@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A producer holds a lease, not a lifetime">
+  <meta name="plan-summary" content="A per-project crew watch producer ends one lease interval after the last follower renewal, records its lease in a registration written by rename, and never sleeps past the lease's remaining time.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s3">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,watch,producer,lease">
+  <title>A producer holds a lease — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A producer holds a lease, not a lifetime</h1>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon.crew.runs</code> gains the producer's lease
+          registration: <code>watch_registration_path</code>, read and
+          read-modify-written by <code>read_watch_registration</code> and
+          <code>update_watch_registration</code>. Each write merges its fields
+          into what is on disk under a sibling lock and lands by renaming a
+          fresh sibling over the destination, so the producer's <code>pid</code>
+          and a follower's <code>lease_renewed_at</code> never drop each other
+          and a reader never sees a partial record.
+          <code>producer_lease_seconds</code> resolves the interval
+          (<code>RECKON_PRODUCER_LEASE_SECONDS</code>, else 600 s) and
+          <code>renew_producer_lease</code> is the follower's throttled renewal.
+          The registration is a file of its own rather than the seat record,
+          because the seat is an advisory lock held on its file's inode for the
+          producer's whole life: a follower could not take that lock and a
+          rename would detach it.</li>
+        <li><code>reckon.crew.recovery.watch_ticker</code> — the producer loop —
+          reads the lease on every wake-up and ends the seat when the recorded
+          instant has fallen a full interval behind. No sleep outlasts the
+          lease's remaining time, so the exit lands within a second of the lapse
+          however far the interval has backed off.</li>
+        <li><code>reckon.cli._follow_watch_lines</code> renews the lease on its
+          wait pass through the new nested <code>_renew_producer_lease</code>.</li>
+      </ul>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <p><code>tests/test_producer_holds_a_lease.py</code> runs in a temporary
+        <code>RECKON_HOME</code> with <code>RECKON_PRODUCER_LEASE_SECONDS=3</code>
+        and holds three cases: an unattended producer ends within a second of
+        its lease lapsing (timed against the instant the producer itself
+        recorded); a producer stays up past three lease intervals while a
+        follower renews once per half interval, read through
+        <code>lease_renewed_at</code>; and two concurrent writers of the
+        registration — the producer's <code>pid</code> and the follower's
+        <code>lease_renewed_at</code> — both survive.</p>
+      <p><strong>Gate</strong> —
+        <code>tests/test_producer_holds_a_lease.py</code>:
+        <strong>3 passed in 25.60 s, EXIT=0</strong>.</p>
+      <p><strong>Arms</strong>, one invocation each at revision
+        <code>2c49c0457</code> (base, <code>git archive</code> extraction in a
+        scratch tree; no worktree, no branch) and <code>d151c1fcf</code> (head),
+        over <code>tests/test_producer_*.py</code>,
+        <code>tests/test_follower_*.py</code>,
+        <code>tests/test_crew_dispatch_arming.py</code> and
+        <code>tests/test_unmanaged_producer_keeps_a_log.py</code>:</p>
+      <ul>
+        <li><strong>Base</strong>, revision <code>2c49c0457</code>:
+          <strong>2 failed, 91 passed in 170.91 s, EXIT=1</strong>.</li>
+        <li><strong>Head</strong>, revision <code>d151c1fcf</code>:
+          <strong>2 failed, 94 passed in 209.87 s, EXIT=1</strong>.</li>
+        <li><strong>Added failures: 0.</strong> Both arms fail the same two
+          ids, which reproduce at base and are outside this node's scope:
+          <code>test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers</code>
+          and
+          <code>test_follower_bounds_its_lifetime.py::test_no_child_of_an_armed_follower_carries_the_hand_off_variables</code>
+          (the latter waits for a probe child the follower's sweep never runs
+          within its bound — the load-dependent shape recorded for that module
+          elsewhere; it fails identically at base).</li>
+      </ul>
+      <p><strong>Negative control</strong>, executed and logged: with the
+        lease-expiry check removed from the producer loop —
+        <code>watch_ticker._lease_remaining()</code> reduced to
+        <code>return None</code> — the unattended-producer case fails,
+        <strong>1 failed in 5.56 s, EXIT=1</strong>, with the producer still
+        alive three intervals in. The mutation was applied in a scratch tree
+        copy; the log's first lines name the tree and the module the run
+        imported.</p>
+      <p><strong>No new lint findings:</strong> <code>ruff check</code> over the
+        three changed modules is 11 findings at both base and head with an
+        identical rule-and-file set, and the new test file is clean under
+        <code>ruff check</code> and <code>ruff format --check</code>.</p>
+    </section>
+
+    <section id="landing">
+      <h2>Landing line</h2>
+      <p><code>landing: docs/evidence/fragments/a-crew-process-ends-with-its-owner/producer-holds-a-lease.html</code></p>
+    </section>
+  </main>
+</body>
+</html>

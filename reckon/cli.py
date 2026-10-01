@@ -2901,6 +2901,23 @@ def _follow_watch_lines(
             return
         written_place = place
 
+    def _renew_producer_lease() -> None:
+        """Push this live follower's project producer's lease forward.
+
+        A producer ends one lease interval after the last renewal, so a live
+        follower must renew repeatedly for as long as it lives — a single
+        renewal at attach would let the producer die under a follower that is
+        still reading it. The writer throttles itself to half the interval and
+        refuses when no producer is live, so this pass never resurrects the
+        registration of a producer that has already exited into the lease. A
+        failure to write must never end the pane: the renewal is best-effort and
+        a missed one merely ages the lease.
+        """
+        try:
+            runs.renew_producer_lease(project)
+        except OSError:
+            return
+
     def _tick(
         *,
         stream_path: Path | None = None,
@@ -2920,6 +2937,7 @@ def _follow_watch_lines(
             _record_checkpoint(stream_path, offset, identity=identity)
         _check_lifetime()
         _check_consumer()
+        _renew_producer_lease()
 
     from reckon.crew.resumption import DEFAULT_SWEEP_SECONDS
 
