@@ -6909,6 +6909,15 @@ def _complete_locked(
     )
     run["attempt"] = int(record.get("attempt") or 1)
     run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
+    # The crew session that dispatched this run rides the committed row beside
+    # the run it belongs to, because this promotion deletes the live pointer
+    # that carried it while ``session_id`` names the worker's own harness
+    # session rather than the coordinator's. A pointer that names no session
+    # leaves the key off the row entirely, so a run with no attributed session
+    # never reads as one attributed to an empty session.
+    pointer_session = str(record.get("session") or "").strip()
+    if pointer_session:
+        run["session"] = pointer_session
     # The worker's exit record rides the row verbatim, and the key is written
     # only when the run directory held one: a present-but-empty key would read
     # as a supervisor that ran and recorded nothing.

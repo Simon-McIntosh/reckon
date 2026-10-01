@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A promoted ledger row names its crew session">
+  <meta name="plan-summary" content="Promotion copies the live pointer's session onto the committed row as session, leaving session_id as the worker's harness session; a pointer naming no session records no key.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,ledger,session,promotion">
+  <title>A promoted ledger row names its crew session — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-ledger-row-names-its-crew-session" data-reckon="landed" data-when="2026-10-01">
+  <h2>A promoted ledger row names its crew session</h2>
+  <p>Promotion now copies the live pointer's <code>session</code> onto the committed ledger row as <code>session</code>, so a reader asking which coordinator session dispatched a run finds it at the top level instead of only under <code>node_definition.coordinator.session_id</code>. The row's <code>session_id</code> is left as the worker's own harness session. A pointer that names no session records no <code>session</code> key rather than an empty one. Gate: the new file passes, 2 passed, EXIT=0; the declared mutation (session copy dropped) fails the naming case, 1 failed 1 passed, EXIT=1.</p>
+</article>
+</body>
+</html>
