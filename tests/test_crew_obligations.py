@@ -75,12 +75,19 @@ def _write_pointer(run_id: str, *, node: str | None = None) -> None:
 
 
 def _file_mtimes(*roots: Path) -> dict[str, int]:
-    """Snapshot every file mtime below the supplied evidence roots."""
+    """Snapshot every fleet-evidence file mtime below the supplied roots.
+
+    A plan read populates the persisted metadata index — a cache under the
+    config home written through by design and keyed by stat identity — so that
+    cache is ignored here rather than its by-design write read as a mutation of
+    the evidence obligations projects.
+    """
     return {
         str(path): path.stat().st_mtime_ns
         for root in roots
         for path in root.rglob("*")
         if path.is_file()
+        and not ("cache" in path.parts and "metadata-index" in path.parts)
     }
 
 
