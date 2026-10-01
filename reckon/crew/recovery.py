@@ -461,12 +461,16 @@ def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, Any]:
         # fields — baseline_suite and after_suite are the gate logs the record
         # is annotated from at read time — so a reviewer told to derive the
         # count finds the logs by the names its own manifest will carry.
+        # The revision the review read is named by the store's canonical pair,
+        # because a record that omits it cannot be told apart from one about
+        # other code, and the ledger row records the pair a review stands for.
         "done_when": (
             f"the review for {run_id} stores a parsed record scoring all 5 "
-            "dimensions in the range 0..20, carrying added_failure_count and "
-            "added_failure_ids derived from the reviewed run's own baseline_suite "
-            "and after_suite gate logs; the turn ends once that record is stored "
-            "and the manifest reads complete"
+            "dimensions in the range 0..20, recording the revision it read as "
+            "reviewed_base_sha and reviewed_head_sha, and carrying "
+            "added_failure_count and added_failure_ids derived from the reviewed "
+            "run's own baseline_suite and after_suite gate logs; the turn ends "
+            "once that record is stored and the manifest reads complete"
         ),
         "write_path": write_paths[0],
         "write_paths": write_paths,
