@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="81">
+<meta name="plan-version" content="82">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.9">
@@ -436,7 +436,10 @@
     <div class="r-comment-body"><p>review r-20261001T005648545381-split-test-watches-only-its-own-rows stored as a parsed record scoring all five dimensions (goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 19; total 95) with two follow-on findings and no blocking finding; the change replaces the home fixture's live-tree mtime/size fingerprint in tests/test_split_existing_runs.py with an assertion that the case's own seeded run ids appear under no mounted project's runs directory or crew.json, resolving each project's name through the registry in force; head arm (20140ea8) 8 passed EXIT=0, and the base file (39fff04) reproduces the defect it repairs (8 passed, 7 teardown errors EXIT=1, reckon/runs mtime moving under a live promotion).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261001T005545699455-an-all-follow-on-round-says-so" data-who="reckon-build" data-when="2026-10-01T01:07:46.426Z">
-    <div class="r-comment-body"><p>dispatch_repair_for_run now returns and records the reason &quot;the review round carried no blocking finding (N follow-on finding(s))&quot; for a round whose findings are all follow-ons, leaving &quot;no repair composes for this review round&quot; for the re-read-differs case; measure: tests/test_repair_answers_only_blocking_findings.py 6 passed EXIT=0, negative control (single reason string restored) 1 failed 5 passed EXIT=1.</p></div>
+    <div class="r-comment-body"><p>dispatch_repair_for_run now returns and records the reason "the review round carried no blocking finding (N follow-on finding(s))" for a round whose findings are all follow-ons, leaving "no repair composes for this review round" for the re-read-differs case; measure: tests/test_repair_answers_only_blocking_findings.py 6 passed EXIT=0, negative control (single reason string restored) 1 failed 5 passed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261001T005648545381-split-test-watches-only-its-own-rows" data-who="reckon-build" data-when="2026-10-01T01:09:50.607Z">
+    <div class="r-comment-body"><p>tests/test_split_existing_runs.py&#x27;s `home` teardown no longer captures and compares an mtime/size fingerprint of every mounted project&#x27;s crew.json and runs; it records the run ids the case&#x27;s own fixture ledger rows carry (via `_write_ledger` into `_seeded_run_ids`) and asserts none appear under any mounted project&#x27;s state/&lt;project&gt;/runs (by filename) or crew.json (by any run_id value at any depth), resolving each live project&#x27;s name through the registry in force so a re-registered live name is watched wherever it points, falling back to the live path; the at-least-one-mounted-project control is kept. Measure: 8 passed on tests/test_split_existing_runs.py; negative control (one case&#x27;s split pointed at a live project name registered to a scratch copy, never the live tree) exits 1 with the teardown failing [&#x27;r-leak under reckon at &lt;scratch&gt;/docs&#x27;].</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260928T233552756785-review-of-the-suite-is-declared-and-recorded" data-who="reckon-build" data-when="2026-09-29T00:21:22.662Z">
     <div class="r-comment-body"><p>review stored for r-20260928T223146627061-the-suite-is-declared-and-recorded at cd36faeb against base 348688e8 - total 77 (goal_fidelity 14, evidence 15, scope_discipline 19, durability 13, fit 16), four findings, added_failure_count 0</p></div>
