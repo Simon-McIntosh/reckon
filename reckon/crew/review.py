@@ -1399,6 +1399,14 @@ def stored_record(
     head-first reader takes the first candidate carrying the head, so a rewrite
     that re-derived its target from the record's own fields could land beside
     the file the reader reads and leave that file unchanged.
+
+    A record sitting at one of the run's own paths — the bare path or one keyed
+    by a revision — settles where this run's review is filed, so the search for
+    a record another writer filed under a different run id does not run: a
+    named head that matched none of them is a fact about the revision, not
+    about the filing, and the caller that wants the newest record asks again
+    without a head. Only a run with none of its own files reaches the
+    store-wide search.
     """
     directory = review_store_root(base_dir) / project
     candidates = [review_path(project, reviewed_run_id, base_dir)]
@@ -1410,21 +1418,21 @@ def stored_record(
             (path, json.loads(path.read_text(encoding="utf-8")))
             for path in existing.values()
         ]
-        if reviewed_head_sha is not None:
-            named = reviewed_head_sha.strip().lower()
-            for path, record in records:
-                _, _, carried_head, stored_head = carried_revision_pair(record)
-                if not carried_head or not stored_head:
-                    continue
-                actual = stored_head.lower()
-                if actual.startswith(named) or named.startswith(actual):
-                    return path, record
-        else:
+        if reviewed_head_sha is None:
             return max(records, key=lambda item: item[0].stat().st_mtime_ns)
-    # Nothing at the expected paths carries this review, so the store's own
-    # records are scanned for one that names the run it reviews in its content —
-    # the shape a hand-written record takes when its worker keys the file on its
-    # own run id instead of the reviewed one.
+        named = reviewed_head_sha.strip().lower()
+        for path, record in records:
+            _, _, carried_head, stored_head = carried_revision_pair(record)
+            if not carried_head or not stored_head:
+                continue
+            actual = stored_head.lower()
+            if actual.startswith(named) or named.startswith(actual):
+                return path, record
+        return None, None
+    # No file of this run's own exists, so the store's records are searched for
+    # one whose content names the run it reviews — the shape a hand-written
+    # record takes when its worker keys the file on its own run id instead of
+    # the reviewed one.
     return _record_filed_elsewhere(directory, reviewed_run_id, reviewed_head_sha)
 
 
@@ -1437,42 +1445,137 @@ def _record_filed_elsewhere(
 
     A review worker writes its record by hand and may key the file on its own
     run id, so a record whose content names the run it reviews can sit where no
-    reader keyed on the reviewed run looks. The store's record files are scanned
-    and matched on what each record says about itself — its
-    ``reviewed_run_id``, and the head it read when one is named — and the newest
-    match is returned with its real path and :data:`MISFILED_KEY` set. A record
-    the store filed as an incomplete partial is skipped, because the store keeps
-    those outside current-review selection by design and a content match must
-    not undo that.
+    reader keyed on the reviewed run looks. The store's records are matched on
+    what each one says about itself — its ``reviewed_run_id``, and the head it
+    read when one is named — and the newest match is returned with its real path
+    and :data:`MISFILED_KEY` set. A record the store filed as an incomplete
+    partial is skipped, because the store keeps those outside current-review
+    selection by design and a content match must not undo that.
+
+    The match is answered from the index below, which reads the store once per
+    process rather than once per lookup: a store of thousands of records makes a
+    whole-store pass per miss the dominant cost of a per-turn reader. The file
+    the index selects is re-read from disk, so the answer is the record's
+    current content — a rewrite in place, such as a recorded disposition, is
+    returned rather than the content the index was built from.
     """
     if not directory.is_dir():
         return None, None
-    matches: list[tuple[Path, dict[str, Any]]] = []
-    for path in sorted(directory.glob("*.json")):
-        if not path.is_file() or _INCOMPLETE_RECORD_MARK in path.name:
+    candidates = _store_index(directory).get(reviewed_run_id)
+    if not candidates:
+        return None, None
+    named = None if reviewed_head_sha is None else reviewed_head_sha.strip().lower()
+    for entry in sorted(candidates, key=lambda item: item["mtime_ns"], reverse=True):
+        if not _indexed_head_matches(entry, named):
             continue
+        path = entry["path"]
         try:
             record = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
         if not isinstance(record, Mapping):
             continue
+        # The file's current content is re-checked against what the index
+        # selected on: one rewritten since the index was built must not answer a
+        # request its content no longer matches.
         if str(record.get("reviewed_run_id") or "") != reviewed_run_id:
             continue
-        if reviewed_head_sha is not None:
+        if named is not None:
             _, _, carried_head, stored_head = carried_revision_pair(record)
             if not carried_head or not stored_head:
                 continue
-            named = reviewed_head_sha.strip().lower()
             actual = stored_head.lower()
             if not (actual.startswith(named) or named.startswith(actual)):
                 continue
-        matches.append((path, dict(record)))
-    if not matches:
-        return None, None
-    path, record = max(matches, key=lambda item: item[0].stat().st_mtime_ns)
-    record[MISFILED_KEY] = True
-    return path, record
+        record = dict(record)
+        record[MISFILED_KEY] = True
+        return path, record
+    return None, None
+
+
+# ── The store index ─────────────────────────────────────────────────────────
+# Choosing the file to answer a misfiled lookup from needs two facts per record
+# file: the run id it names and the head it read. Reading every file to learn
+# them costs a whole-store pass, and a session whose live pointers carry no
+# record pays one pass per pointer. The index below holds those two facts — not
+# the record content — and is built at most once per store directory and per
+# process, then reused while the directory's stat identity is unchanged, which
+# is exactly when its set of entries can have moved.
+
+_STORE_INDEXES: dict[Path, tuple[tuple[int, ...], dict[str, list[dict[str, Any]]]]] = {}
+
+
+def _store_directory_identity(directory: Path) -> tuple[int, ...] | None:
+    """Return the stat identity of ``directory``, or ``None`` when unreadable.
+
+    Adding, removing or atomically replacing a file moves this identity, so it
+    is what tells a rebuilt index from a current one. A rewrite that leaves the
+    directory's entries alone does not move it, which is why the file the index
+    selects is read again rather than served from the index.
+    """
+    try:
+        info = directory.stat()
+    except OSError:
+        return None
+    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def _build_store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
+    """Read each record file once, keyed by the run its content reviews."""
+    index: dict[str, list[dict[str, Any]]] = {}
+    for path in sorted(directory.glob("*.json")):
+        if not path.is_file() or _INCOMPLETE_RECORD_MARK in path.name:
+            continue
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+            mtime_ns = path.stat().st_mtime_ns
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(record, Mapping):
+            continue
+        carried_head, head_sha = _first_carried_revision(record, HEAD_REVISION_FIELDS)
+        index.setdefault(str(record.get("reviewed_run_id") or ""), []).append(
+            {
+                "path": path,
+                "mtime_ns": mtime_ns,
+                "head_carried": carried_head,
+                "head_sha": head_sha,
+            }
+        )
+    return index
+
+
+def _store_index(directory: Path) -> dict[str, list[dict[str, Any]]]:
+    """Return the store's record index, rebuilt only when the directory moves."""
+    identity = _store_directory_identity(directory)
+    if identity is None:
+        _STORE_INDEXES.pop(directory, None)
+        return {}
+    cached = _STORE_INDEXES.get(directory)
+    if cached is not None and cached[0] == identity:
+        return cached[1]
+    index = _build_store_index(directory)
+    _STORE_INDEXES[directory] = (identity, index)
+    return index
+
+
+def _indexed_head_matches(entry: Mapping[str, Any], named: str | None) -> bool:
+    """Whether an indexed record file can answer a lookup for head ``named``.
+
+    ``None`` means no head was named and every indexed record of the run is a
+    candidate. A record that carries no head is skipped when one is named, the
+    same rule the lookup has always applied: a record naming no revision cannot
+    be known to describe the one asked about.
+    """
+    if named is None:
+        return True
+    if not entry.get("head_carried"):
+        return False
+    head_sha = entry.get("head_sha")
+    if not head_sha:
+        return False
+    actual = str(head_sha).lower()
+    return actual.startswith(named) or named.startswith(actual)
 
 
 def read_review(
