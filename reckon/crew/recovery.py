@@ -8018,6 +8018,18 @@ def fleet_transitions(
     is not a departure: its slot is held while the pointer lives, so the landing
     is announced once rather than re-read as a fresh dispatch each tick.
     """
+    if ledger_run_ids is None:
+        # The published-stream fold supplies no ledger reader: it is the tick
+        # the producer runs to append its transitions to the stream, and the
+        # guard in ``_publish_watch_stream`` defers the whole tick when the
+        # resolved configuration will not load, so a following reader gets the
+        # previous image rather than a transition priced against a layer nobody
+        # could read. This read is what lets that guard fire. The reader is
+        # strict here only; every other caller of the fold either supplies a
+        # ledger reader (the seat's own ticker, which pre-reads the rates and
+        # keeps its degradation) or is a direct test of the fold.
+        quota_weight.backend_rate_statuses(strict=True)
+
     running = {run_id: dict(snapshot) for run_id, snapshot in known.items()}
     changes: list[tuple[Mapping[str, Any], str | None, str]] = []
 
