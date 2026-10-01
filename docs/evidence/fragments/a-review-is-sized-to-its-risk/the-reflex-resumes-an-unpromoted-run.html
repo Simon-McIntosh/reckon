@@ -1,0 +1,92 @@
+<article class="landed-report" data-run-id="r-20261001T020803820138-the-reflex-resumes-an-unpromoted-run">
+      <h3>the-reflex-resumes-an-unpromoted-run — the repair of an unpromoted run is a resume</h3>
+      <p>
+        The reflex composed a repair node for every finding-bearing review
+        round, but an unpromoted reviewed run still holds its own worktree and
+        its commit claim, so a repair over the reviewed run's own paths was
+        refused at dispatch — measured live as a repair withdrawn about
+        fourteen seconds after it was dispatched and re-fired on every sweep,
+        while the reviewed run's findings stayed unaddressed.
+      </p>
+      <p>
+        <code>dispatch_repair_for_run</code> in
+        <code>reckon/crew/recovery.py</code> now recognises the unpromoted case:
+        when the reviewed run still has its live pointer, is not promoted, and
+        its worker process has exited, the composed repair — its blocking
+        findings by id, its write scope, the round's done-when and the declared
+        negative control — is delivered as advice to a resume of the reviewed
+        run itself, through the same entry point a hand-typed <code>crew
+        resume</code> uses (<code>reckon.crew.resumption._resume</code>). No new
+        repair node is dispatched. The round is recorded on the reviewed pointer
+        with status <code>resumed</code> and its round id. A run whose worker is
+        live or resumed, whose live pointer has gone, or which is promoted keeps
+        the dispatch path and is settled by its existing guards.
+      </p>
+      <p>
+        <strong>In flight only while the turn runs.</strong> A resumed round
+        counts as in flight only while the reviewed run's worker is live, and
+        <code>_reviewed_run_is_busy</code> now reads a resumed turn as in
+        progress only while it has not ended: the newest resume stream must hold
+        an assistant record <em>and</em> not end on the result line a finished
+        turn writes. A finished resume — the shape every resume that actually
+        ran leaves — therefore no longer marks the run busy forever, so a
+        resumed turn that ended without answering is resumed once more on the
+        next sweep rather than stranding the round. The attempt count recorded
+        on the run makes the retry visible. The retry is bounded: the branch
+        reads the durable attempt from the pointer's repair record and resumes a
+        round at most twice — the first and the one retry — recording the round
+        <code>exhausted</code> with its reason once the cap is reached, so a
+        turn that keeps ending without answering cannot spend lane capacity on
+        every cadence forever. The branch sits after lane resolution, so a round
+        with no lane is still held with its cause named rather than resumed.
+      </p>
+      <p>
+        <strong>Measure.</strong> Each file run to its own log ending
+        <code>EXIT=0</code> at commit <code>6f43630d7</code> (12 passed in
+        the combined run), with the resume entry point and the dispatch both
+        stubbed so no worker is launched and no call reaches a scheduler:
+      </p>
+      <ul>
+        <li><code>tests/test_the_reflex_resumes_an_unpromoted_run.py</code> 6/6
+          — an unpromoted exited run with one blocking finding is resumed once
+          with advice naming the finding's id and the dispatch is never called;
+          a live resumed worker is left alone; a <em>finished</em> resumed turn
+          (assistant then result) leaves the worker gone and the head unmoved,
+          so the round is retried once with attempt count 2; an
+          <em>unfinished</em> resumed turn (assistant with no result) reads busy
+          and resumes nothing; a round resumed twice is recorded
+          <code>exhausted</code> and not resumed a third time; a promoted run
+          records the exact refusal status and reason. The resume stub writes
+          the stream a real resume leaves, so the finished case measures the
+          shape production actually produces.</li>
+        <li><code>tests/test_a_repair_hold_names_its_cause.py</code> 4/4 — the
+          holds and their control, unaffected by the busy-check change.</li>
+        <li><code>tests/test_repair_answers_only_blocking_findings.py</code> 6/6
+          — the control arm for the all-follow-on reason reads the blocking
+          finding's id off the resume advice and asserts nothing is dispatched,
+          so it still proves a blocking finding is acted on.</li>
+      </ul>
+      <p>
+        <strong>Negative control.</strong> Restoring the any-assistant-record
+        busy check (dropping the result-line test) reddens the finished-turn
+        retry case (<code>1 failed</code>, EXIT=1); log
+        <code>negative-control-any-assistant-record-busy.log</code> under the run
+        directory. Removing the resume cap reddens the third-resume case
+        (<code>1 failed</code>, EXIT=1); log
+        <code>negative-control-resume-cap-removed.log</code> under the run
+        directory. An earlier control, routing the unpromoted case back to
+        dispatch, reddens the three resumed-not-dispatched cases.
+      </p>
+      <p>
+        <strong>Files outside the node's original fence, edited for the new
+        branch.</strong> <code>tests/test_reflex_dispatches_one_repair.py</code>,
+        <code>tests/test_repair_skips_out_of_repo_findings.py</code>,
+        <code>tests/test_a_repair_hold_names_its_cause.py</code> and
+        <code>tests/test_repair_answers_only_blocking_findings.py</code> each
+        asserted a dispatched repair node for an unpromoted reviewed run, the
+        behaviour this change replaces. Each edit re-anchors the case on the
+        resume advice or on a promoted/live-worker run so its own subject
+        (scope, suite arms, lane holds, blocking-vs-follow-on, idempotence) is
+        still measured, and every case still fails when its guard is removed.
+      </p>
+    </article>

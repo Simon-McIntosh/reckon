@@ -247,6 +247,24 @@ def _repair_calls(calls: list[dict]) -> list[dict]:
     ]
 
 
+@contextmanager
+def _stubbed_resume(monkeypatch):
+    """Replace the resume entry point the unpromoted path now uses.
+
+    The composed round is delivered to the reviewed run's own worker as advice
+    rather than to a new node's argv, so a case reading the composition's scope,
+    suite arms or brief reads them from the advice the resume carries.
+    """
+    calls: list[dict] = []
+
+    def fake_resume(run_id, record, *, config=None, launcher=None, advice=""):
+        calls.append({"run_id": run_id, "advice": advice})
+        return {"pid": os.getpid(), "turn": 1, "log_path": "resume-1.jsonl"}
+
+    monkeypatch.setattr(resumption, "_resume", fake_resume)
+    yield calls
+
+
 def test_a_round_with_no_repository_finding_dispatches_nothing(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
@@ -300,10 +318,10 @@ def test_a_round_with_no_repository_finding_dispatches_nothing(
     assert "no finding cites a repository path" in recorded["reason"]
 
 
-def test_a_mixed_round_dispatches_with_only_the_repository_path(
+def test_a_mixed_round_resumes_with_only_the_repository_path(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """One repository finding still dispatches, and the record path is not granted."""
+    """One repository finding still acts on the round, and the record path is not granted."""
     config_home, repo, head_sha = isolated_project
     run_dir = Path(runs.run_dir(RUN_ID))
     _completed_pointer(config_home, repo)
@@ -322,18 +340,20 @@ def test_a_mixed_round_dispatches_with_only_the_repository_path(
             ),
         ],
     )
-    with _stubbed_dispatch(monkeypatch) as calls, _armed_fleet():
+    with _stubbed_resume(monkeypatch) as calls, _armed_fleet():
         resumption.sweep(PROJECT, config=CONFIG)
 
-    repairs = _repair_calls(calls)
-    assert len(repairs) == 1
-    scope = list(repairs[0]["node"].write_paths)
-    landing = [
-        path for path in scope if path.startswith(("docs/evidence/", "docs/figures/"))
-    ]
-    finding_scope = [path for path in scope if path not in landing]
-    assert finding_scope == ["reckon/crew/recovery.py"]
-    assert not any(Path(path).is_absolute() or path.startswith("~") for path in scope)
+    assert len(calls) == 1
+    advice = calls[0]["advice"]
+    scope_line = next(
+        line for line in advice.splitlines() if line.startswith("Write scope for")
+    )
+    assert scope_line == "Write scope for this round: reckon/crew/recovery.py"
+    scope_paths = [path.strip() for path in scope_line.split(":", 1)[1].split(",")]
+    assert str(run_dir / "manifest.md") not in scope_paths
+    assert not any(
+        Path(path).is_absolute() or path.startswith("~") for path in scope_paths
+    )
 
 
 def test_the_repair_carries_the_reviewed_runs_suite_command(
@@ -359,12 +379,14 @@ def test_the_repair_carries_the_reviewed_runs_suite_command(
             )
         ],
     )
-    with _stubbed_dispatch(monkeypatch) as calls, _armed_fleet():
+    with _stubbed_resume(monkeypatch) as calls, _armed_fleet():
         resumption.sweep(PROJECT, config=CONFIG)
 
-    repairs = _repair_calls(calls)
-    assert len(repairs) == 1
-    assert repairs[0]["config"]["gates"]["suite_command"] == "uv run pytest -q"
+    assert len(calls) == 1
+    advice = calls[0]["advice"]
+    assert "baseline_suite" in advice
+    assert "after_suite" in advice
+    assert "uv run pytest -q" in advice
 
 
 def test_a_standing_suite_is_not_inherited_by_an_unarmed_run(
@@ -396,15 +418,13 @@ def test_a_standing_suite_is_not_inherited_by_an_unarmed_run(
             "suite": {"command": ["uv", "run", "pytest", "-q"], "budget": "10m"}
         },
     }
-    with _stubbed_dispatch(monkeypatch) as calls, _armed_fleet():
+    with _stubbed_resume(monkeypatch) as calls, _armed_fleet():
         resumption.sweep(PROJECT, config=standing)
 
-    repairs = _repair_calls(calls)
-    assert len(repairs) == 1
-    assert repairs[0]["config"].get("gates", {}).get("suite_command", "") == ""
-    done_when = str(repairs[0]["node"].done_when)
-    assert "baseline_suite" not in done_when
-    assert "after_suite" not in done_when
+    assert len(calls) == 1
+    advice = calls[0]["advice"]
+    assert "baseline_suite" not in advice
+    assert "after_suite" not in advice
 
 
 def test_the_suite_command_reads_only_the_reviewed_pointer() -> None:
@@ -438,9 +458,8 @@ def test_the_reflex_composes_an_unarmed_repair_for_a_malformed_standing_suite(
 
     Driven through the reflex: the reviewed run names no suite command of its
     own, so it was unarmed. The project declares a standing suite that is present
-    but malformed — the declaration is not consulted, so the reflex dispatches an
-    unarmed repair rather than refusing, and the repair's brief names neither
-    suite arm.
+    but malformed — the declaration is not consulted, so the reflex resumes an
+    unarmed round rather than refusing, and the advice names neither suite arm.
     """
     config_home, repo, head_sha = isolated_project
     _completed_pointer(config_home, repo)
@@ -458,12 +477,10 @@ def test_the_reflex_composes_an_unarmed_repair_for_a_malformed_standing_suite(
         **CONFIG,
         "review": {"suite": {"command": "uv run pytest -q", "budget": "10m"}},
     }
-    with _stubbed_dispatch(monkeypatch) as calls, _armed_fleet():
+    with _stubbed_resume(monkeypatch) as calls, _armed_fleet():
         resumption.sweep(PROJECT, config=malformed)
 
-    repairs = _repair_calls(calls)
-    assert len(repairs) == 1
-    assert repairs[0]["config"].get("gates", {}).get("suite_command", "") == ""
-    done_when = str(repairs[0]["node"].done_when)
-    assert "baseline_suite" not in done_when
-    assert "after_suite" not in done_when
+    assert len(calls) == 1
+    advice = calls[0]["advice"]
+    assert "baseline_suite" not in advice
+    assert "after_suite" not in advice

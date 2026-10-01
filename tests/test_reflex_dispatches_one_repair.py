@@ -334,64 +334,92 @@ def _dispatch_direct(record: dict, monkeypatch) -> tuple[dict, list[dict]]:
     return report, calls
 
 
-def test_a_three_finding_review_dispatches_exactly_one_repair(
-    isolated_project: tuple[Path, Path, str],
+def _stub_resume(monkeypatch) -> list[dict]:
+    """Replace the resume entry point the unpromoted path now uses.
+
+    The round's composition reaches the reviewed run's own worker as advice
+    rather than a new node's argv, so a case that read the composed brief, scope
+    or suite arms now reads them off the advice the resume carries.
+    """
+    calls: list[dict] = []
+
+    def fake_resume(run_id, record, *, config=None, launcher=None, advice=""):
+        calls.append({"run_id": run_id, "advice": advice})
+        return {"pid": os.getpid(), "turn": 1, "log_path": "resume-1.jsonl"}
+
+    monkeypatch.setattr(resumption, "_resume", fake_resume)
+    return calls
+
+
+def _write_live_worker_record() -> None:
+    """Record a live worker pid on the run, as the resumed supervisor would."""
+    directory = Path(runs.run_dir(RUN_ID))
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / recovery.WORKER_RECORD_NAME).write_text(
+        json.dumps({"pid": os.getpid()}), encoding="utf-8"
+    )
+
+
+def _scope_from_advice(advice: str) -> list[str]:
+    """The write scope the resume advice names, parsed back to a path list."""
+    line = next(
+        item for item in advice.splitlines() if item.startswith("Write scope for")
+    )
+    return [path.strip() for path in line.split(":", 1)[1].split(",")]
+
+
+def test_a_three_finding_review_resumes_exactly_once(
+    isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """The positive half: the reflex composes and dispatches the repair itself."""
+    """The positive half: the reflex composes and resumes the repair itself."""
     config_home, repo, head_sha = isolated_project
     _completed_pointer(config_home, repo)
     _store_review(head_sha, FINDINGS)
-    calls: list[dict] = []
-    report = _sweep(calls)
+    resumed = _stub_resume(monkeypatch)
+    _sweep([])
 
-    repaired = report["reviews"]["repaired"]
-    assert len(repaired) == 1
-    assert len(calls) == 1
-
-    pointer = runs.read_pointer(repaired[0])
-    node = pointer["node"]
-    goal = str(node.get("goal") or "")
-    scope = list(node.get("write_paths") or [])
-    assert str(node.get("id") or "").startswith(repair.REPAIR_NODE_PREFIX)
-    # The brief names every finding by its content-derived id, and the write
-    # scope the repair was dispatched with names every path the findings name:
-    # one node, all three findings, no coordinator command in between.
+    assert len(resumed) == 1
+    assert resumed[0]["run_id"] == RUN_ID
+    advice = resumed[0]["advice"]
+    # The brief names every finding by its content-derived id, and the scope the
+    # round grants names every path the findings name: one resume, all three
+    # findings, no coordinator command in between.
     for finding in FINDINGS:
-        assert _expected_id(finding) in goal
-        assert finding["file"] in scope
+        assert _expected_id(finding) in advice
+        assert finding["file"] in advice
 
     # The scope is narrowed to the findings' own repository paths: no run
     # directory and no review-store path is granted, and no absolute path
-    # appears. The dispatch adds the node's own evidence fragment and figure,
-    # which are its landing record rather than a finding's file.
-    landing = [
-        path for path in scope if path.startswith(("docs/evidence/", "docs/figures/"))
-    ]
-    finding_scope = [path for path in scope if path not in landing]
-    assert set(finding_scope) == {finding["file"] for finding in FINDINGS}
+    # appears.
+    scope = _scope_from_advice(advice)
+    assert set(scope) == {finding["file"] for finding in FINDINGS}
     assert not any(Path(path).is_absolute() or path.startswith("~") for path in scope)
 
     recorded = runs.read_pointer(RUN_ID)["repair_dispatch"]
-    assert recorded["status"] == "dispatched"
-    assert recorded["run_id"] == repaired[0]
+    assert recorded["status"] == "resumed"
+    assert recorded["run_id"] is None
 
 
-def test_the_repair_worktree_is_cut_from_the_reviewed_head(
+def test_the_resume_is_the_reviewed_run_itself(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """An unpromoted reviewed run's repair is based on the head the review read."""
+    """The repair is the reviewed run at the head the review read, not a new tree.
+
+    An unpromoted run's repair reuses the run that already owns the worktree, so
+    the reviewed head is inherent: the resumed worker is the one the review read;
+    there is no separate base to cut.
+    """
     config_home, repo, head_sha = isolated_project
     _completed_pointer(config_home, repo)
     _store_review(head_sha, FINDINGS)
-    with _stubbed_dispatch(monkeypatch) as calls, _armed_fleet():
+    resumed = _stub_resume(monkeypatch)
+
+    with _armed_fleet():
         resumption.sweep(PROJECT, config=CONFIG)
 
-    repairs = _repair_calls(calls)
-    assert len(repairs) == 1
-    # The base handed to the dispatch is the reviewed head, so the reviewed head
-    # is an ancestor of the repair's tree — not the branch tip, which the review
-    # never read.
-    assert repairs[0]["base"] == head_sha
+    assert len(resumed) == 1
+    assert resumed[0]["run_id"] == RUN_ID
+    assert all(finding["file"] in resumed[0]["advice"] for finding in FINDINGS)
 
 
 def test_the_repair_keeps_the_reviewed_runs_test_paths(
@@ -401,7 +429,7 @@ def test_the_repair_keeps_the_reviewed_runs_test_paths(
 
     The repair's gate is the reviewed run's own tests. A fence holding two
     source paths and a test path, with the finding naming only one source, must
-    carry the test path into the repair's scope; the source path no finding
+    carry the test path into the round's scope; the source path no finding
     named must not be carried, so a composer that granted the whole fence would
     fail this test rather than pass it.
     """
@@ -424,58 +452,58 @@ def test_the_repair_keeps_the_reviewed_runs_test_paths(
     _store_review(
         head_sha, [_finding("reckon/crew/thing.py", "10", "off-by-one in the loop")]
     )
-    with _stubbed_dispatch(monkeypatch) as calls, _armed_fleet():
+    resumed = _stub_resume(monkeypatch)
+
+    with _armed_fleet():
         resumption.sweep(PROJECT, config=CONFIG)
 
-    repairs = _repair_calls(calls)
-    assert len(repairs) == 1
-    scope = list(repairs[0]["node"].write_paths)
+    assert len(resumed) == 1
+    scope = _scope_from_advice(resumed[0]["advice"])
     assert "reckon/crew/thing.py" in scope
     assert "tests/test_reviewed_run.py" in scope
-    # The reviewed fence's uncited source path is not carried, so the repair is
+    # The reviewed fence's uncited source path is not carried, so the round is
     # not granted a file no finding named.
     assert "reckon/crew/new_module.py" not in scope
 
 
-def test_a_second_sweep_over_a_live_round_dispatches_nothing(
-    isolated_project: tuple[Path, Path, str],
+def test_a_second_sweep_while_the_resumed_worker_is_live_resumes_nothing(
+    isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """Idempotence while the repair is live: the standing round is found."""
+    """In flight only while the worker lives: a live resumed turn is left alone."""
     config_home, repo, head_sha = isolated_project
     _completed_pointer(config_home, repo)
     _store_review(head_sha, FINDINGS)
-    calls: list[dict] = []
-    launcher = _launcher_recording(calls)
+    resumed = _stub_resume(monkeypatch)
+
     with _armed_fleet():
-        first = resumption.sweep(PROJECT, config=CONFIG, launcher=launcher)
-        second = resumption.sweep(PROJECT, config=CONFIG, launcher=launcher)
-    assert len(first["reviews"]["repaired"]) == 1
-    assert second["reviews"]["repaired"] == []
-    assert len(calls) == 1
+        resumption.sweep(PROJECT, config=CONFIG)
+        # The resumed turn is now running; its own worker record makes it live.
+        _write_live_worker_record()
+        resumption.sweep(PROJECT, config=CONFIG)
+
+    assert len(resumed) == 1
 
 
-def test_a_promoted_repair_leaves_the_round_dispatching_nothing(
-    isolated_project: tuple[Path, Path, str],
+def test_a_promoted_run_leaves_the_round_resuming_nothing(
+    isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """Idempotence after promotion: the ledger, not the live pointer, is the record."""
+    """Idempotence after promotion: a settled run is not resumed again."""
     config_home, repo, head_sha = isolated_project
     _completed_pointer(config_home, repo)
     _store_review(head_sha, FINDINGS)
-    calls: list[dict] = []
-    launcher = _launcher_recording(calls)
+    resumed = _stub_resume(monkeypatch)
+
     with _armed_fleet():
-        first = resumption.sweep(PROJECT, config=CONFIG, launcher=launcher)
-        repair_run_id = first["reviews"]["repaired"][0]
-        # Promote the repair run: it lands a ledger row and its live pointer is
-        # reconciled away. The round is now satisfied, so the freed pointer must
-        # not read as an unattempted round.
-        run_file = ledger.run_path(PROJECT, repair_run_id)
+        resumption.sweep(PROJECT, config=CONFIG)
+        # Promote the reviewed run: it lands a ledger row and its live pointer is
+        # reconciled away. The round is settled, so no further resume fires.
+        run_file = ledger.run_path(PROJECT, RUN_ID)
         run_file.parent.mkdir(parents=True, exist_ok=True)
-        crew._write_json(run_file, {"run_id": repair_run_id, "status": "promoted"})
-        crew.pointer_path(repair_run_id).unlink()
-        after = resumption.sweep(PROJECT, config=CONFIG, launcher=launcher)
-    assert after["reviews"]["repaired"] == []
-    assert len(calls) == 1
+        crew._write_json(run_file, {"run_id": RUN_ID, "status": "promoted"})
+        crew.pointer_path(RUN_ID).unlink()
+        resumption.sweep(PROJECT, config=CONFIG)
+
+    assert len(resumed) == 1
 
 
 def test_a_clean_review_dispatches_no_repair(
@@ -534,13 +562,15 @@ def test_a_live_worker_record_dispatches_no_repair(
 def test_a_dead_worker_record_lets_the_repair_compose(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """A reviewed run whose worker record names a dead pid is repaired.
+    """A reviewed run whose worker record names a dead pid is repaired in place.
 
     The worker record is the only liveness the run carries, so a reaped pid must
-    not hold the round: the busy guard passes and the reflex composes and
-    dispatches the round's one repair. This is the control the refusal above is
-    read against — without it the refusal could pass on a fixture that never
-    composed a repair at all.
+    not hold the round: the busy guard passes and the reflex composes the round's
+    one repair and delivers it as a resume of the reviewed run itself — the run
+    already owns the worktree and the commit claim a new node would be refused
+    for, so no node is dispatched. This is the control the refusal above is read
+    against — without it the refusal could pass on a fixture that never composed
+    a repair at all.
     """
     config_home, repo, head_sha = isolated_project
     record = _completed_pointer(config_home, repo)
@@ -550,10 +580,18 @@ def test_a_dead_worker_record_lets_the_repair_compose(
     dead.terminate()
     dead.wait()
     _write_worker_record(pid=dead_pid)
+    resumed = _stub_resume(monkeypatch)
     report, calls = _dispatch_direct(record, monkeypatch)
-    assert report["dispatched"] is True
-    assert len(calls) == 1
-    assert str(calls[0]["node"].id).startswith(repair.REPAIR_NODE_PREFIX)
+
+    assert report["resumed"] is True
+    # The round was delivered as one resume of the reviewed run, carrying the
+    # composed brief whose advice names every finding by its content-derived id.
+    assert len(resumed) == 1
+    assert resumed[0]["run_id"] == RUN_ID
+    for finding in FINDINGS:
+        assert _expected_id(finding) in resumed[0]["advice"]
+    # No node was composed and dispatched: the resume replaced the dispatch.
+    assert calls == []
 
 
 def test_a_resumed_worker_dispatches_no_repair(
@@ -668,9 +706,9 @@ def test_record_only_findings_dispatch_nothing(
 
 
 def test_the_scope_drops_record_paths_but_keeps_source_paths(
-    isolated_project: tuple[Path, Path, str],
+    isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """A round mixing record and source findings is dispatched with source only."""
+    """A round mixing record and source findings grants source only."""
     config_home, repo, head_sha = isolated_project
     _completed_pointer(config_home, repo)
     run_dir = Path(runs.run_dir(RUN_ID))
@@ -681,11 +719,11 @@ def test_the_scope_drops_record_paths_but_keeps_source_paths(
             _finding(str(run_dir / "manifest.md"), "1", "reports the wrong count"),
         ],
     )
-    calls: list[dict] = []
-    report = _sweep(calls)
-    repaired = report["reviews"]["repaired"]
-    assert len(repaired) == 1
-    scope = list(runs.read_pointer(repaired[0])["node"].get("write_paths") or [])
+    resumed = _stub_resume(monkeypatch)
+    _sweep([])
+
+    assert len(resumed) == 1
+    scope = _scope_from_advice(resumed[0]["advice"])
     assert "reckon/crew/thing.py" in scope
     assert str(run_dir / "manifest.md") not in scope
     assert not any(Path(path).is_absolute() or path.startswith("~") for path in scope)
