@@ -16,6 +16,7 @@ stubbed, so no worker is launched and no call reaches a scheduler.
 from __future__ import annotations
 
 import importlib
+import json
 import os
 import subprocess
 import time
@@ -253,10 +254,19 @@ def test_an_unpromoted_exited_run_is_resumed_not_dispatched(
     assert recorded["node_id"]
 
 
-def test_a_second_sweep_for_the_same_round_resumes_nothing(
+def _write_live_worker_record() -> None:
+    """Record a live worker pid on the run, as the resumed supervisor would."""
+    directory = Path(runs.run_dir(RUN_ID))
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / recovery.WORKER_RECORD_NAME).write_text(
+        json.dumps({"pid": os.getpid()}), encoding="utf-8"
+    )
+
+
+def test_a_second_sweep_while_the_resumed_worker_is_live_resumes_nothing(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """Idempotence: a round already resumed is left to the run's own worker."""
+    """In flight only while the worker lives: a live resumed turn is left alone."""
     config_home, repo, head_sha = isolated_project
     _completed_pointer(config_home, repo)
     _store_review(head_sha, [FINDING])
@@ -264,10 +274,43 @@ def test_a_second_sweep_for_the_same_round_resumes_nothing(
     dispatched = _stub_dispatch(monkeypatch)
 
     _sweep()
+    # The resumed turn is now running; its own worker record makes it live.
+    _write_live_worker_record()
     _sweep()
 
     assert len(resumed) == 1
     assert dispatched == []
+
+
+def test_an_exited_resumed_worker_gets_one_more_resume(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """A resumed turn that ends without answering does not strand the round.
+
+    The round is in flight only while the worker is live, so once that worker
+    has exited and the run's head has not moved past the reviewed head, the
+    reflex resumes the round once more rather than leaving it recorded as
+    resumed forever; the attempt count records the retry.
+    """
+    config_home, repo, head_sha = isolated_project
+    _completed_pointer(config_home, repo)
+    _store_review(head_sha, [FINDING])
+    resumed = _stub_resume(monkeypatch)
+    _stub_dispatch(monkeypatch)
+
+    _sweep()
+    first = runs.read_pointer(RUN_ID)["repair_dispatch"]
+    assert first["status"] == "resumed"
+    assert first["attempt"] == 1
+
+    # The resumed worker ended without writing a live record: the round is free
+    # again, so the next sweep resumes once more.
+    _sweep()
+
+    assert len(resumed) == 2
+    second = runs.read_pointer(RUN_ID)["repair_dispatch"]
+    assert second["status"] == "resumed"
+    assert second["attempt"] == 2
 
 
 def test_a_promoted_reviewed_run_is_not_resumed(

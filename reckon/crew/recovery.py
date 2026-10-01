@@ -1884,40 +1884,26 @@ def _record_repair_dispatch(
     _mutate_pointer(run_id, record)
 
 
-def _repair_resumed_for_round(record: Mapping[str, Any], round_id: str) -> bool:
-    """Whether this round has already been answered by a resume of the run.
-
-    A resumed round writes no repair run, so the round has no standing pointer
-    to recognise it by. The reflex's own record on the reviewed run is the
-    recognition: a ``resumed`` status carrying this round's id means the round
-    was already handed to the reviewed run's own worker, so the sweep leaves it
-    alone rather than resuming a second worker onto the same turn.
-    """
-    recorded = record.get(REPAIR_DISPATCH_FIELD)
-    return (
-        isinstance(recorded, Mapping)
-        and str(recorded.get("status") or "") == "resumed"
-        and str(recorded.get("round_id") or "") == str(round_id or "")
-    )
-
-
-def _repair_resume_advice(composed: Mapping[str, Any]) -> str:
+def _repair_resume_advice(composed: Mapping[str, Any], scope: Sequence[str]) -> str:
     """The advice a resume of the reviewed run carries for its composed round.
 
     The reviewed run's own worker already holds its worktree, its claim and the
     context the findings are about, so the repair reaches it as the composed
-    brief — which names every blocking finding by id — together with the round's
-    done-when and the negative control the composer declared. The findings are
-    therefore answered by id in the reviewed run's own manifest, and no finding
-    is left without an answer.
+    brief — which names every blocking finding by id — together with the write
+    scope the round's findings grant, the round's done-when and the negative
+    control the composer declared. The findings are therefore answered by id in
+    the reviewed run's own manifest, and no finding is left without an answer.
     """
     findings = list(composed.get("findings") or ())
     ids = ", ".join(str(finding.get("id") or "") for finding in findings)
+    scope = [str(path) for path in scope]
     parts = [
         f"An independent review of this run found {len(findings)} blocking "
         f"finding(s) ({ids}). Answer each in this run.",
         "",
         str(composed.get("brief") or ""),
+        "",
+        "Write scope for this round: " + (", ".join(scope) if scope else "none"),
         "",
         f"Done when: {composed.get('done_when') or ''}",
         f"Negative control: {composed.get('negative_control') or ''}",
@@ -2063,7 +2049,10 @@ def dispatch_repair_for_run(
     composed findings ride a resume of the reviewed run itself, which already
     holds the worktree and the commit claim a new node could only be refused
     for. A promoted run, or one whose worker is live or whose live pointer has
-    gone, takes the dispatch path and is settled by its own guards there.
+    gone, takes the dispatch path and is settled by its own guards there. The
+    resume is offered once per sweep while the run's worker is not live, so a
+    resumed turn that ends without answering is retried rather than leaving the
+    round stuck, and the attempt count records each retry.
     """
     run_id = str(record.get("run_id") or "")
     refusal = _repair_source_refusal(record)
@@ -2213,67 +2202,6 @@ def dispatch_repair_for_run(
             "round_id": round_id,
         }
 
-    # An unpromoted reviewed run whose worker has exited still holds its own
-    # worktree and its commit claim, so a repair node over the reviewed run's own
-    # paths is refused at dispatch — measured on every sweep as a repair
-    # withdrawn about fourteen seconds after it was dispatched and re-fired on
-    # each cadence. The repair for such a run is the reviewed run itself: the
-    # composed findings ride a resume of the run that already owns the worktree
-    # and the claim, through the same entry point a hand-typed ``crew resume``
-    # uses, and no second node is composed. A run whose worker is live or resumed
-    # never reaches here (the busy guard above), and a promoted run or one whose
-    # pointer has gone keeps the dispatch path below, which its launch refusal
-    # settles.
-    if not _repair_launch_refusal(run_id, project):
-        if _repair_resumed_for_round(record, round_id):
-            return {
-                "run_id": run_id,
-                "dispatched": False,
-                "resumed": True,
-                "node_id": node_id,
-                "round_id": round_id,
-                "reason": "the reviewed run was already resumed for this review round",
-            }
-        from reckon.crew import resumption as resumption_module
-        from reckon.crew.dispatch import BudgetHold
-
-        advice = _repair_resume_advice(composed)
-        try:
-            resumed = resumption_module._resume(
-                run_id, record, config=config, launcher=launcher, advice=advice
-            )
-        except (BudgetHold, CrewError, OSError) as exc:
-            reason = f"the reviewed run could not be resumed: {exc}"
-            _record_repair_dispatch(
-                run_id,
-                status="refused",
-                reason=reason,
-                round_id=round_id,
-                node_id=node_id,
-            )
-            return {
-                "run_id": run_id,
-                "dispatched": False,
-                "refused": True,
-                "reason": reason,
-            }
-        _record_repair_dispatch(
-            run_id,
-            status="resumed",
-            reason="the reviewed run was resumed with the composed findings as advice",
-            round_id=round_id,
-            node_id=node_id,
-        )
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "resumed": True,
-            "node_id": node_id,
-            "round_id": round_id,
-            "reason": "resumed the reviewed run with the composed findings as advice",
-            "resumed_turn": resumed.get("turn"),
-        }
-
     resolved = _resolved_review_config(project, config)
     try:
         from reckon import flight
@@ -2317,6 +2245,69 @@ def dispatch_repair_for_run(
         }
     backend = candidates[0]
     on_local_lane = backend == local_lane
+
+    # An unpromoted reviewed run whose worker has exited still holds its own
+    # worktree and its commit claim, so a repair node over the reviewed run's own
+    # paths is refused at dispatch — measured on every sweep as a repair
+    # withdrawn about fourteen seconds after it was dispatched and re-fired on
+    # each cadence. The repair for such a run is the reviewed run itself: the
+    # composed findings ride a resume of the run that already owns the worktree
+    # and the claim, through the same entry point a hand-typed ``crew resume``
+    # uses, and no second node is composed. A run whose worker is live or resumed
+    # never reaches here (the busy guard above), and a promoted run or one whose
+    # pointer has gone keeps the dispatch path below, which its launch refusal
+    # settles.
+    #
+    # The round is in flight only while that worker is live: the busy guard above
+    # returns for a live worker, so reaching this point means the resumed turn has
+    # ended. If it ended without answering — the reviewed run's head has not moved
+    # past the reviewed head, since a moved head no longer matches the stored
+    # review — the round is resumed once more, and the attempt count recorded on
+    # the run makes the retry visible.
+    if not _repair_launch_refusal(run_id, project):
+        from reckon.crew import resumption as resumption_module
+        from reckon.crew.dispatch import BudgetHold
+
+        advice = _repair_resume_advice(composed, scope)
+        try:
+            resumed = resumption_module._resume(
+                run_id, record, config=config, launcher=launcher, advice=advice
+            )
+        except (BudgetHold, CrewError, OSError) as exc:
+            reason = f"the reviewed run could not be resumed: {exc}"
+            _record_repair_dispatch(
+                run_id,
+                status="refused",
+                reason=reason,
+                round_id=round_id,
+                node_id=node_id,
+            )
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "refused": True,
+                "reason": reason,
+            }
+        attempt = (
+            int((record.get(REPAIR_DISPATCH_FIELD) or {}).get("attempt") or 0) + 1
+        )
+        _record_repair_dispatch(
+            run_id,
+            status="resumed",
+            reason="the reviewed run was resumed with the composed findings as advice",
+            round_id=round_id,
+            node_id=node_id,
+        )
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "resumed": True,
+            "node_id": node_id,
+            "round_id": round_id,
+            "attempt": attempt,
+            "reason": "resumed the reviewed run with the composed findings as advice",
+            "resumed_turn": resumed.get("turn"),
+        }
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     from reckon.crew.dispatch import BudgetHold

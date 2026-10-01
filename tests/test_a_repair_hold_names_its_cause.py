@@ -17,7 +17,6 @@ fixture that never composed a repair at all.
 
 from __future__ import annotations
 
-import importlib
 import os
 import subprocess
 import time
@@ -27,7 +26,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew
-from reckon.crew import recovery, repair, runs
+from reckon.crew import recovery, repair, resumption, runs
 from reckon.crew import review as review_module
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 
@@ -229,6 +228,18 @@ def _dispatch_repair(record: dict, config: dict) -> dict:
         )
 
 
+def _stub_resume(monkeypatch) -> list[dict]:
+    """Replace the resume entry point the unpromoted path now uses."""
+    calls: list[dict] = []
+
+    def fake_resume(run_id, record, *, config=None, launcher=None, advice=""):
+        calls.append({"run_id": run_id, "advice": advice})
+        return {"pid": os.getpid(), "turn": 1, "log_path": "resume-1.jsonl"}
+
+    monkeypatch.setattr(resumption, "_resume", fake_resume)
+    return calls
+
+
 def _repair_pointers() -> list[dict]:
     """Every live pointer whose node is a composed repair."""
     return [
@@ -343,27 +354,23 @@ def test_a_manifest_citation_that_names_no_object_is_not_propagated(
     ]
 
 
-def test_a_spawnable_lane_still_dispatches_the_composition(
+def test_a_spawnable_lane_still_resumes_the_composition(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """The drop is a filter, not a refusal: a lane left still repair-dispatches.
+    """The drop is a filter, not a refusal: a lane left still acts on the round.
 
     Without this arm the two holds would pass on a fixture that never composed a
-    repair at all, which is a failure that looks exactly like a lane hold.
+    repair at all, which is a failure that looks exactly like a lane hold. The
+    composition is delivered as a resume of the reviewed run rather than a new
+    node, so the arm is read against the resume the unpromoted path makes.
     """
     config_home, repo, head_sha = isolated_project
     _reviewed_pointer(config_home, repo, backend="alpha")
     _store_review(head_sha, FINDINGS)
-    dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    calls: list[dict] = []
-
-    def fake_dispatch(**kwargs):
-        calls.append(kwargs)
-        return {"run_id": "r-repair-stub"}
-
-    monkeypatch.setattr(dispatch_module, "dispatch", fake_dispatch)
+    resumed = _stub_resume(monkeypatch)
     report = _dispatch_repair(runs.read_pointer(RUN_ID), CONFIG_WITH_A_LANE)
 
-    assert report["dispatched"] is True
-    assert len(calls) == 1
-    assert str(calls[0]["node"].id).startswith(repair.REPAIR_NODE_PREFIX)
+    assert report.get("awaiting_lane") is not True
+    assert report.get("resumed") is True
+    assert len(resumed) == 1
+    assert resumed[0]["run_id"] == RUN_ID
