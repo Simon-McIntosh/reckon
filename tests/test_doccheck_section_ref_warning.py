@@ -53,7 +53,11 @@ def _document(
     declared: bool = True,
 ) -> str:
     declarations = {section_id: "implementable" for section_id, _ in sections}
-    metas = [("plan-slug", slug), ("plan-status", status), ("plan-modified", "2026-10-01")]
+    metas = [
+        ("plan-slug", slug),
+        ("plan-status", status),
+        ("plan-modified", "2026-10-01"),
+    ]
     if sections:
         metas.append(("plan-section-declarations", _attr_json(declarations)))
     if declared:
@@ -142,7 +146,9 @@ def test_the_section_scoped_mapping_is_read_beside_the_section_records(
 
 
 def test_every_declaring_section_is_named(tmp_path: Path):
-    html = _pair(tmp_path, sections=[("s1", ""), ("s3", "provider"), ("s4", "provider")])
+    html = _pair(
+        tmp_path, sections=[("s1", ""), ("s3", "provider"), ("s4", "provider")]
+    )
 
     (finding,) = _of_code(audit_html(html), CODE)
 
@@ -182,9 +188,7 @@ def test_a_terminal_plan_is_not_reported(tmp_path: Path):
 
 
 def test_an_undeclared_document_is_not_held_to_the_plan_rule(tmp_path: Path):
-    html = _pair(
-        tmp_path, declared=False, sections=[("s1", ""), ("s3", "provider")]
-    )
+    html = _pair(tmp_path, declared=False, sections=[("s1", ""), ("s3", "provider")])
 
     assert _of_code(audit_html(html), CODE) == []
 
@@ -225,7 +229,7 @@ def test_the_finding_is_beside_the_wiring_findings_not_instead_of_them(
     assert _of_code(findings, "unwired-plan") == []
 
 
-@pytest.mark.parametrize("bad_mapping", ['{not json}', "[]", ""])
+@pytest.mark.parametrize("bad_mapping", ["{not json}", "[]", ""])
 def test_a_malformed_section_mapping_is_not_read_as_a_section_ref(
     tmp_path: Path, bad_mapping: str
 ):
@@ -238,7 +242,8 @@ def test_a_malformed_section_mapping_is_not_read_as_a_section_ref(
         depends_on="provider",
         sections=[("s1", ""), ("s3", "")],
     ).replace(
-        "</head>", f'<meta name="plan-section-depends-on" content="{bad_mapping}"></head>'
+        "</head>",
+        f'<meta name="plan-section-depends-on" content="{bad_mapping}"></head>',
     )
 
     assert _of_code(audit_html(html), CODE) == []

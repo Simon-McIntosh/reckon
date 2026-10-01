@@ -1208,9 +1208,7 @@ def audit_html(html_text: str, *, project: str | None = None) -> list[Finding]:
     # A plan-level ref that one of the plan's own sections already declares is
     # a section-shaped wait wired whole-plan: it holds sections the section ref
     # leaves dispatchable, so the ready set reads the plan stale.
-    out.extend(
-        _section_ref_findings(declared_type, state, soup, html_text, slug, proj)
-    )
+    out.extend(_section_ref_findings(declared_type, state, soup, html_text, slug, proj))
 
     # (a) Image src that won't resolve --------------------------------------
     for img in soup.find_all("img"):
