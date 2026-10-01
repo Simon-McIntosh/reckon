@@ -91,6 +91,17 @@ def without_dispatch_identity(monkeypatch):
 # fleet's shared reservation as a side effect of being run.
 _SCHEDULER_VERBS = ("salloc", "sbatch", "srun", "squeue", "scontrol", "scancel")
 
+# Of those verbs, the ones whose reach fails the test: the verbs that mint an
+# allocation or place a step inside one. A read-only probe (``squeue``,
+# ``scontrol``) and a cancel are still refused by the stub and recorded, but no
+# test is failed for reaching one: a test whose subject is a liveness probe may
+# legitimately ask the host's scheduler whether a job is alive, and failing it
+# would make this guard the cause of an unrelated red rather than a refusal of
+# an allocation. The allocation verbs are the ones whose reach can hold a real
+# reservation. ``srun`` is included because a bare step client with no job id
+# mints an allocation of its own.
+_ALLOCATION_VERBS = ("salloc", "sbatch", "srun")
+
 # Where a reached verb is recorded. The guard stub appends its own argv and the
 # test that reached it, so the failing message names both. An evidence run may
 # point this at its own log to correlate conftest's refusal with the run's shim.
@@ -388,25 +399,42 @@ def _refuse_real_scheduler(tmp_path_factory):
         os.environ["PATH"] = previous
 
 
+def reached_allocation_verbs(nodeid: str, log_text: str) -> list[str]:
+    """The refused allocation verbs a test reached, each rendered as 'verb argv'.
+
+    The guard stub appends one ``<test id>\\t<verb argv>`` line per refusal.
+    Only the allocation verbs are returned: a read-only probe is recorded but
+    does not fail the test that made it, so the guard refuses an allocation
+    reach without turning an unrelated liveness probe red.
+    """
+    prefix = f"{nodeid} "
+    reached: list[str] = []
+    for line in log_text.split("\n"):
+        if not line.startswith(prefix):
+            continue
+        verb_argv = line.split("\t", 1)[-1]
+        if verb_argv.split(" ", 1)[0] in _ALLOCATION_VERBS:
+            reached.append(verb_argv)
+    return reached
+
+
 @pytest.fixture(autouse=True)
 def _fails_on_a_reached_scheduler(request, _refuse_real_scheduler):
-    """Fail the test that reached a scheduler verb it did not provide.
+    """Fail the test that reached an allocation verb it did not provide.
 
-    The guard stub records the test and its argv as it refuses; this reads back
-    the reaches attributed to this test and names the verb and its argv, so a
-    forgotten recording scheduler surfaces as the assertion that names it
-    rather than as a downstream failure.
+    The guard stub records every reach as it refuses; this reads back the
+    allocation reaches attributed to this test and names the verb and its argv,
+    so a forgotten recording scheduler surfaces as the assertion that names it
+    rather than as a downstream failure. A read-only probe the test made is
+    recorded but does not fail it.
     """
     yield
     log = _refuse_real_scheduler
     if not log.exists():
         return
-    prefix = f"{request.node.nodeid} "
-    reached = [
-        line.split("\t", 1)[1]
-        for line in log.read_text(encoding="utf-8").splitlines()
-        if line.startswith(prefix)
-    ]
+    reached = reached_allocation_verbs(
+        request.node.nodeid, log.read_text(encoding="utf-8")
+    )
     if reached:
         raise AssertionError(
             "this test reached a scheduler verb it did not provide: "
