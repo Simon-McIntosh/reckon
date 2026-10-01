@@ -215,6 +215,49 @@ woken: both are project-global, wake delivery is session-local, and dispatch
 arms a producer detached on the caller's behalf, so both read true while the
 caller hears nothing. `session_attached` is the field that answers it.
 
+## What a session owns here, and when it ends
+
+The process rules are `sprint-orchestration.md` §17. Three of them turn on what
+*this* host does with a re-arming monitor, a backgrounded command and a
+backgrounded search, so the host half is here:
+
+- **A monitor expires; the follower inside it does not.** That is why a follower
+  is stopped before it is re-armed: `Monitor` ends at `timeout_ms` and reports it
+  (`Monitor expired after 30m with N events delivered`), and the expiry takes the
+  wrapper rather than the process it started: the `crew follow` inside it keeps
+  running. So each re-arm that does not first stop the previous follower
+  adds one orphan, and none of them is announced. A follower armed with
+  `--lifetime 29m` ends itself a minute under the cap, and that final line *is*
+  the stop — its successor is armed on that line, never beside it. **Measured:**
+  ten orphaned `crew follow` processes for a single week-old session on this
+  workstation, beside per-project producers up to 3.5 days old.
+
+- **The session-end step here is a process listing, because this host is where
+  the orphans come from.** Before the closing summary, run the listing in
+  `sprint-orchestration.md` §17 — bracketed pattern, own ancestry excluded by
+  pid, near-zero ages discarded — and stop what it prints, the follower
+  included. `reckon crew census` replaces the recipe when it lands.
+
+- **No backgrounded dispatch loop or wave script.**
+  `run_in_background: true` is what makes one possible. A backgrounded `Bash`
+  call survives the turn and reports only on exit, so a wave script or dispatch
+  loop started that way keeps dispatching after the session that started it has
+  ended, holding worker slots for a session nothing is reading. A `reckon crew
+  dispatch` is never that — it runs in the host's foreground and returns once the
+  run's supervisor is running, and the follower, not a loop, is what reports the
+  run's progress. **Measured:** a wave script still dispatching seven hours after
+  its session stopped, and any backgrounded call silent from its two-minute
+  boundary until it exits, with no heartbeat in between.
+
+- **A search is bounded at the producer, and `| head` is not a bound.** This host
+  runs `find` as `bfs`, so the walk *is* the work: a search bounded only by
+  `| head` prints nothing when it finds nothing and walks the whole tree to do it,
+  and its owner has moved on long before it returns. Bound the producer —
+  `timeout`, or `-maxdepth` — on an absolute path or a named subtree, and set the
+  bound before the launch rather than after, since the turn that could stop it has
+  already ended. **Measured:** `find / -name wall.h5 | head`
+  ran for 10 h 49 min against a name that did not exist.
+
 ## Resuming a held wave without a human
 
 A wave held on a reset timestamp knows *when* it can reopen —

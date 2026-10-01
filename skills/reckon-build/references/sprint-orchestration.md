@@ -937,3 +937,96 @@ than the run. Divide the work so each slice is observable on its own and every
 slice boundary writes the record, and leave the record naming the next slice
 when the turn ends — a run that dies between slices is resumable only if
 something on disk says where it stopped.
+
+## 17. What a session owns, and when it ends
+
+Three failures recur because each ends without an error: a follower re-armed over
+its predecessor, a dispatch loop or wave script started in the background, and a
+search bounded on the consumer side. Each leaves a process running after the turn
+that started it, and the session that would have noticed has already ended.
+
+### One follower per session, stopped before it is re-armed
+
+**Re-arm is a stop and an arm, in that order.** A session has exactly one
+follower, and the cost of a second one is not double delivery but an orphan: the
+monitor wrapper expires, the follower process inside it does not, so every re-arm
+that does not first stop the old follower leaves one more `follow` running with no
+session watching it. Nothing reports it — the orphan holds no registration whose
+later loss is visible, and the next arming succeeds — so the count is only ever
+found by looking for it.
+
+Where the follower's own end line is what prompts the re-arm, that line has
+already released the registration on its way out: it *is* the stop, and arming the
+successor on it is correct. Every other re-arm stops first.
+
+**A session's last step is to list the processes it still owns, and stop them.**
+Run it with the closing summary, beside the closure fence in `SKILL.md` (§4d), so the follower
+and anything else started for this session end with it:
+
+```bash
+ME=$$; ANC=" $ME "; p=$ME
+while p=$(ps -o ppid= -p $p | tr -d ' '); [ -n "$p" ] && [ "$p" != 1 ]; do ANC="$ANC$p "; done
+ps -eo pid=,etime=,args= -u "$USER" | grep -- '<session-i[d]>' |
+  while read -r pid rest; do case "$ANC" in *" $pid "*) ;; *) echo "$pid $rest";; esac; done
+```
+
+Three clauses in that recipe are each load-bearing, and each catches what the
+others miss. **Bracket the pattern** — `<session-i[d]>` cannot match itself,
+whereas a pattern passed through `ssh`, `bash -c` (a `bash -c` argv holds the whole
+script, so any echo or comment carrying the session id matches too) or a tool call
+is by construction present in the target's own argv; an unbracketed `pkill -f` was
+measured matching and killing the shell that ran it, returning mid-script and
+leaving the rest of its cleanup unrun. **Exclude your own ancestry by pid**, which
+is the half that saves the shell reading the list. And **discard near-zero ages**,
+which are the query's own siblings; a process showing `00:00` has just started and
+is not an orphan. Then confirm with `/proc/<pid>/cwd` before signalling anything,
+and signal only the pids that survived the listing — never a pattern, never pid 1.
+
+`reckon crew census` replaces that recipe when it lands: it reads the owning
+session from the environment each process recorded, rather than inferring one from
+a command line. Until then the recipe is the step, and a step rather than a
+reminder — a session that ends without it has left its processes on a shared login
+node, where they are nobody's and are attributed to whoever next reads the load.
+
+**Measured 2026-09-23/24 on one login node:** ten `crew follow` processes for a
+week-old session, per-project producers up to 3.5 days old, a wave script still
+dispatching seven hours after its session stopped, a 13 h 50 min `bfs` over a
+project tree, and a 10 h 49 min `find /`. Load average read 143 while the CPU sat
+95–98% idle: the load was storage, and a single `stat` in home took 8.5 s.
+
+### No backgrounded dispatch loop or wave script
+
+**A wave is a sequence of dispatch calls in the coordinator's own turns, so it
+ends when the session does.** Dispatch runs in the foreground and returns once the
+run's supervisor is running, so there is nothing about a wave worth waiting on in
+a background process — and a loop or script left in the background has no owner
+once the session closes. It holds worker slots for a session nobody is reading,
+spends a quota no one is accounting for, and is invisible to every later "what is
+running" question. A wave script was measured still dispatching seven hours after
+its session stopped.
+
+The general case is wider than dispatch. A backgrounded tool call is silent from
+its two-minute boundary until it dies, so its owner has usually moved on by the
+time it reports, and the host offers no heartbeat in between. Anything that must
+run past the turn is the follower's job or the host's own scheduling form, named
+in the harness reference for the session's own host
+(`references/orchestrator-harness/<harness>.md`) — never a loop left running.
+
+### A search names its subtree and is bounded at the producer
+
+**`| head` is not a bound.** It limits what the search *reports*, never what it
+walks: a search that finds nothing — exactly the one whose author has moved on —
+walks the whole tree to find it, and the shell above it dies at its two-minute
+boundary long before the walk does. So the bound goes on the producer, as
+`timeout <seconds>` around the walk or `-maxdepth` on it, and the target is an
+absolute path or a named subtree rather than a description of the file wanted.
+
+That last part reaches the brief, not only the command: a described file sends the
+worker searching for it, and the search is the cost. *"The checkpoint under the
+run's scratch"* is a search waiting to happen; the checkpoint's own path is a read.
+
+**Measured 2026-09-23/24:** `find / -name wall.h5 | head` ran for 10 h 49 min
+against a name that did not exist. The `| head` was on the command the entire
+time and bounded nothing. Naming the subtrees also skips `.venv`, so the form is
+faster as well as bounded — the same rule `SKILL.md` states under *Reading state*
+for the classifier's benefit, with the walk's cost as the second reason.
