@@ -7254,8 +7254,11 @@ def _watch_registration(project: str, stall_window: str):
                     "parent_start_time": _process_start_time(parent_pid),
                 }
             )
-            with watch_lock_path(project).open("r+b") as handle:
-                _write_watch_record(handle, watcher)
+            # The record is written through the seat handle the claim holds,
+            # never by reopening the path: an unlink in the moment between
+            # taking the seat and this write would make the reopen raise
+            # FileNotFoundError and end the producer before it polls once.
+            _write_watch_record(runs._WATCH_SEAT_HANDLES[project], watcher)
         yield acquired, watcher
 
 
@@ -8312,6 +8315,55 @@ def _refuse_unresolvable_watch(project: str) -> None:
     assert_routable_backends_resolvable(project, _resolved_review_config(project, None))
 
 
+def _recreate_unlinked_registration(
+    project: str, watcher: Mapping[str, Any]
+) -> bool:
+    """Restore the seat record when an unlink took its path out from under us.
+
+    The seat record is the file ``crew unwatch`` opens to find the producer it
+    must stop. Its record holds the advisory lock the process table reads
+    liveness from and carries the pid unwatch signals. A record unlinked under a
+    live producer leaves nothing at the path,
+    so a later ``unwatch`` opens a fresh inode, takes the lock the producer
+    believes it still holds, and reports there is nothing to stop while the
+    producer runs on unwatched — it can only be reached by pid. Writing the
+    record back to its own path on the producer's next wake-up restores what the
+    path is for, so unwatch finds the producer again.
+
+    A path that a replacement producer has meanwhile taken is left alone and
+    this returns False, so a superseded producer ends rather than overwrite a
+    seat that is no longer its own.
+    """
+    path = watch_lock_path(project)
+    handle = runs._WATCH_SEAT_HANDLES.get(project)
+    if handle is None:
+        return True
+    try:
+        held = os.fstat(handle.fileno())
+    except OSError:
+        return False
+    try:
+        current = os.stat(path)
+    except FileNotFoundError:
+        current = None
+    if current is not None:
+        return (current.st_dev, current.st_ino) == (held.st_dev, held.st_ino)
+
+    try:
+        replacement = path.open("a+b")
+    except OSError:
+        return False
+    try:
+        fcntl.flock(replacement.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        # Another producer holds this path: the seat is no longer ours.
+        replacement.close()
+        return False
+    _write_watch_record(replacement, dict(watcher))
+    runs._WATCH_SEAT_HANDLES[project] = replacement
+    return True
+
+
 def watch_ticker(
     project: str,
     *,
@@ -8375,6 +8427,11 @@ def watch_ticker(
             return
 
         while True:
+            # An unlinked seat record is rewritten before anything else, so a
+            # producer whose file was removed is findable by unwatch again, and
+            # one superseded by a replacement producer ends here.
+            if not _recreate_unlinked_registration(project, watcher):
+                return
             remaining = _lease_remaining()
             if remaining is not None and remaining <= 0:
                 return
