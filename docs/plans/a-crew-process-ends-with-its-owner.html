@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="141">
+<meta name="plan-version" content="143">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -1210,6 +1210,11 @@
     <div class="r-fu-body"><p>Measured 2026-10-01 promoting r-20261001T062920607606-a-run-can-always-be-reconciled. The first <code>crew complete</code> wrote the landing comment into the plan HTML, and its landing commit then failed on a peer's <code>.git/index.lock</code>. The re-promotion found the comment already recorded and returned <code>already_recorded: true</code>. It wrote the ledger row and released the pointer, but it never committed the plan file, so the comment stayed a dirty working-tree edit in the shared checkout until the coordinator committed it by hand (684f80218). Done when a re-promotion that finds its landing comment already recorded, with the plan file differing from HEAD, includes that file in its landing commit. A case drives the failed-commit path and asserts the plan file is clean at HEAD after the re-promotion. The negative control, that file left out of the landing commit, leaves it dirty and fails the case.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
     </article>
+<article class="r-fu" data-id="f-acpewio-ledger-row-names-its-crew-session" data-status="open" data-written-by="s21-1c" data-written-at="2026-10-01T13:55:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A promoted ledger row names the crew session that dispatched it</h4>
+    <div class="r-fu-body"><p>Reported by s22-coord and reckon-d5 on 2026-10-01. A promoted row in docs/state/reckon/runs carries no top-level <code>session</code>. The crew session that dispatched the run appears only nested, at <code>node_definition.coordinator.session_id</code>. The top-level <code>session_id</code> is the worker's harness session, so a reader asking which coordinator session a promoted run belonged to gets nothing, or the wrong session. Done when promotion copies the live pointer's <code>session</code> onto the row as <code>session</code>, leaving <code>session_id</code> as the worker's harness session. A test promotes a synthesised run whose pointer names a session and asserts the row's <code>session</code>. Dropping the copy turns it red.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260924T062557423973-review-of-a-crew-process-ends-with-its-owner" data-who="reckon-ship" data-when="2026-09-24T06:45:20.039Z">
@@ -1379,6 +1384,12 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261001T133207724096-review-of-the-waiver-test-reads-the-clock" data-who="reckon-build" data-when="2026-10-01T13:38:56.971Z">
     <div class="r-comment-body"><p>Independent review of r-20261001T132023616487-the-waiver-test-reads-the-clock (head 10d5794d9, base 8b83cfd75): the clock-derived fixture and the stale-side bound case are sound and the gate reproduces at head (4 passed, EXIT=0); stored total 96 over five dimensions with added_failure_count null (the reviewed run names no base/head suite arms), two follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-acpewio-s10-waiver-fixture-reads-the-clock" data-who="s21-1c" data-when="2026-10-01T13:55:00Z">
+    <div class="r-comment-body">The seven-day referent bound this section introduced (BOUNDARY_REFERENT_MAX_AGE_SECONDS, merge a8957c20e) turned tests/test_crew_boundary_waiver.py red once its fixture date of 2026-08-26 aged past the bound. s22-coord found this by first-parent bisect, and the shared-grant worker flagged it the same day. Fixed on main at a8f389ecd (run r-20261001T132023616487-the-waiver-test-reads-the-clock, reviewed head 10d5794d9, review total 96). The fixture's created_at is now derived from the clock. A new case one day past the bound asserts no_referent appears, so the bound is pinned from both sides with no literal date. Restoring the literal date turns the waiver case red.</div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261001T132023616487-the-waiver-test-reads-the-clock" data-who="reckon-build" data-when="2026-10-01T13:30:03.142Z">
+    <div class="r-comment-body"><p>Derived the boundary-waiver fixture&#x27;s created_at from the current UTC clock (one hour before now) so the seven-day BOUNDARY_REFERENT_MAX_AGE_SECONDS bound no longer trips it, and added a case whose created_at sits a day past the bound asserting the stored waiver carries no_referent — gate 4 passed EXIT=0, declared mutation red EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
