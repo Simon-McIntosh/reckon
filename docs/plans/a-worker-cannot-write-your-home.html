@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="83">
+<meta name="plan-version" content="84">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.98">
@@ -1786,7 +1786,10 @@
     <div class="r-comment-body"><p>Independent review of run r-20260930T183505187178-the-fence-fails-closed at head 35604d67e: stored a parsed record scoring goal_fidelity 19, evidence 18, scope_discipline 19, durability 19, fit 18 (total 93), with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own baseline_suite and after_suite gate logs. The fail-closed refusal and the --no-fence waiver are correct and durable; the one defect is that both manifest suite commands carry an angle-bracket placeholder rather than the literal command. The reviewed head 35604d67e is not an ancestor of the integrated HEAD cda83bd6e at review time; settling the merged result is a separate test node's measure.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260930T183505187178-the-fence-fails-closed" data-who="reckon-build" data-when="2026-10-01T05:05:10.658Z">
-    <div class="r-comment-body"><p>Implemented the fail-closed fence: dispatch asks _backends.fence_capability_problem() before any worktree/pointer/run directory and refuses naming the missing capability (bwrap absent, or a user namespace the kernel refuses), with --no-fence REASON recording the waiver on the live pointer, the composed launch plan and the run&#x27;s ledger row; the namespace probe is memoised per process so a repeat dispatch pays nothing; tests/test_the_fence_fails_closed.py reports 7 passed.</p></div>
+    <div class="r-comment-body"><p>Implemented the fail-closed fence: dispatch asks _backends.fence_capability_problem() before any worktree/pointer/run directory and refuses naming the missing capability (bwrap absent, or a user namespace the kernel refuses), with --no-fence REASON recording the waiver on the live pointer, the composed launch plan and the run's ledger row; the namespace probe is memoised per process so a repeat dispatch pays nothing; tests/test_the_fence_fails_closed.py reports 7 passed.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20261001T051458863889" data-who="" data-when="">
+    <div class="r-comment-body">The fail-closed half of §3 has landed. Merge 314dfa18b (run r-20260930T183505187178), reviewed at 91 and then at 93 after rework, with no added failing id. A CLI worker's dispatch asks _backends.fence_capability_problem() before any worktree, pointer or run directory exists. With bwrap absent, or a user namespace the kernel refuses, the dispatch is refused naming the missing capability. --no-fence REASON is the one way through, and the reason rides the live pointer, the composed plan and the ledger row. The probe is memoised per process: about 7 ms cold, 0.1 ms on a repeat. tests/test_the_fence_fails_closed.py passes 7 of 7, and its negative control (the check forced to succeed with bwrap absent) fails case 1 under pytest. verify-gate passed at main 8fb7f7965, after s22's dispatch and promotion changes merged on top. The first review counted one added id: the fifo refusal's 10 s wall-clock bound, measured once at 28 s. Twelve isolated and loaded runs at base and head showed no separation, and every run sat under the bound. What remains of §3: the protected_paths and unprotected_paths flight key. It waits for the flight schema files (reckon/_flight_schema.py, reckon/schema/flight.yaml), which a peer holds. §4's AGENTS.md paragraph follows once §3 is complete.</div>
 </div>
 </section>
 </main>
