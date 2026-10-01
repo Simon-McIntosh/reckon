@@ -47,10 +47,11 @@ to publish as its own, so it stays ``unknown`` here.
 
 The document's load and its achieved rate are read here too, so a key the
 document carries has one reader rather than one per caller: ``read_lane_counts``
-resolves the generating and waiting populations a routing decision weighs, and
-``read_lane_throughput`` reads the block describing the rate the generating
-population achieved, with the vintage and the denominator that make a derived
-figure interpretable.
+resolves the generating and waiting populations a routing decision weighs,
+``read_lane_reading_fields`` resolves the stamp a reading is dated by and the
+figures published beside it, and ``read_lane_throughput`` reads the block
+describing the rate the generating population achieved, with the vintage and
+the denominator that make a derived figure interpretable.
 """
 
 from __future__ import annotations
@@ -415,6 +416,97 @@ def read_lane_counts(document: object) -> dict[str, Any]:
     return {
         "generating": _resolved_count(document, _GENERATING_KEYS),
         "waiting": _resolved_count(document, _WAITING_KEYS),
+    }
+
+
+# The document's name for the constraint it observed binding. Read here so a
+# caller carrying the reading holds no spelling of the document's keys: the
+# stamp, the mean context and the shelf life are resolved by the reader below.
+_BINDING_KEY = "binding_observed"
+
+
+def _unresolved_reading(detail: str) -> dict[str, Any]:
+    """The reading fields when the stamp makes the reading undatable."""
+    return {
+        "detail": detail,
+        "observed_at": None,
+        "age": None,
+        "mean_context": None,
+        "binding_observed": None,
+        "shelf_life_seconds": None,
+    }
+
+
+def _strict_stamp(stamp: str) -> tuple[datetime | None, str | None]:
+    """Parse a reading's stamp strictly, returning the parser's own refusal.
+
+    Distinct from ``_parse_stamp`` on purpose: that one degrades a malformed
+    stamp to ``None`` for fields that can be withheld on their own, while a
+    reading's stamp is what every figure beside it is dated by, so a caller
+    withholding the reading states why the parse refused rather than a bare
+    absence. The parser's exception text is quoted for the same reason.
+    """
+    try:
+        return datetime.fromisoformat(stamp), None
+    except ValueError as exc:
+        return None, f"'observed_at' {stamp!r} is not an ISO-8601 timestamp: {exc}"
+
+
+def read_lane_reading_fields(
+    document: object, *, now: datetime | None = None
+) -> dict[str, Any]:
+    """Resolve the stamp a reading is dated by and the figures beside it.
+
+    A lane reading names the instant it was taken and the figures it observed:
+    the mean context it spends per request, the constraint it observed
+    binding, and the shelf life it claims for its own figures. This reads all
+    four from the document's own keys, so a caller carrying them holds no
+    second reading of the document -- a caller that spelled these keys itself
+    would be the duplicate reader this module exists to remove.
+
+    The stamp is the strict field. A reading whose stamp is absent, not a
+    string, not ISO-8601 -- naming the parser's refusal -- or in the future
+    cannot be dated, so it resolves to a non-empty ``detail`` and every field
+    is withheld with it. The figures degrade one at a time and each is
+    reported as the document published it: ``mean_context`` as a number,
+    ``binding_observed`` as published (a lane naming no binding constraint
+    publishes null or a blank string, and that withholds this field alone),
+    and ``suggested_shelf_life_seconds`` as a number. ``age`` is the elapsed
+    time between the stamp and ``now``, from which the caller draws the
+    staleness verdict. A document that is not an object resolves as a reading
+    carrying no stamp. The function never raises.
+    """
+    if not isinstance(document, Mapping):
+        return _unresolved_reading(
+            "lane document carries no parseable 'observed_at' timestamp"
+        )
+    stamp = document.get("observed_at")
+    if not isinstance(stamp, str):
+        return _unresolved_reading(
+            "lane document carries no parseable 'observed_at' timestamp"
+        )
+    observed, refusal = _strict_stamp(stamp)
+    if refusal is not None:
+        return _unresolved_reading(refusal)
+    assert observed is not None  # narrowed by _strict_stamp's contract
+    if observed.tzinfo is None:
+        observed = observed.replace(tzinfo=UTC)
+    reference = now if now is not None else datetime.now(UTC)
+    if reference.tzinfo is None:
+        reference = reference.replace(tzinfo=UTC)
+    age = reference - observed
+    if age.total_seconds() < 0:
+        return _unresolved_reading(f"'observed_at' {stamp!r} lies in the future")
+    binding = document.get(_BINDING_KEY)
+    if isinstance(binding, str) and not binding.strip():
+        binding = None
+    return {
+        "detail": "",
+        "observed_at": stamp,
+        "age": age,
+        "mean_context": _number(document.get("mean_context")),
+        "binding_observed": binding,
+        "shelf_life_seconds": _number(document.get(SHELF_LIFE_KEY)),
     }
 
 

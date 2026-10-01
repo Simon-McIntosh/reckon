@@ -2966,32 +2966,19 @@ def _lane_reading_carry(
         return _lane_reading_unknown(
             detail=f"lane document is {type(document).__name__}, not a JSON object"
         )
-    stamp = document.get("observed_at")
-    if not isinstance(stamp, str):
-        return _lane_reading_unknown(
-            detail="lane document carries no parseable 'observed_at' timestamp"
-        )
-    # Retained rather than routed through ``reckon._timestamps.parse_iso``: the
-    # refusal quotes the parser's own exception text, which the shared parser
-    # swallows to return ``None``, and the reading is strict enough to report
-    # why a stamp was rejected.
-    try:
-        observed = datetime.fromisoformat(stamp)
-    except ValueError as exc:
-        return _lane_reading_unknown(
-            detail=f"'observed_at' {stamp!r} is not an ISO-8601 timestamp: {exc}"
-        )
-    if observed.tzinfo is None:
-        observed = observed.replace(tzinfo=UTC)
     if now is None:
         now = datetime.now(UTC)
     elif now.tzinfo is None:
         now = now.replace(tzinfo=UTC)
-    age = now - observed
-    if age.total_seconds() < 0:
-        return _lane_reading_unknown(
-            detail=f"'observed_at' {stamp!r} lies in the future"
-        )
+    # The document's own keys -- the stamp it is dated by, the mean context,
+    # the constraint observed binding and its shelf life -- are resolved by
+    # the lane-document reader, so the dispatch holds no spelling of them and
+    # cannot drift from the one reader that owns them.
+    fields = _lane_document.read_lane_reading_fields(document, now=now)
+    if fields["detail"]:
+        return _lane_reading_unknown(detail=fields["detail"])
+    stamp = fields["observed_at"]
+    age = fields["age"]
     # Each figure is withheld on its own. A document that omits one still
     # measured the others, and the timestamp beside them is what makes any of
     # them usable, so collapsing the reading over a single absent field
@@ -3001,11 +2988,9 @@ def _lane_reading_carry(
     headroom = _metric_number(
         _lane_document.read_lane_document(document).get("headroom")
     )
-    mean_context = _metric_number(document.get("mean_context"))
-    binding = document.get("binding_observed")
-    if isinstance(binding, str) and not binding.strip():
-        binding = None
-    shelf = _metric_number(document.get("suggested_shelf_life_seconds"))
+    mean_context = fields["mean_context"]
+    binding = fields["binding_observed"]
+    shelf = fields["shelf_life_seconds"]
     if shelf is not None and shelf > 0 and age.total_seconds() > shelf:
         carry = _lane_reading_unknown(
             detail=(
