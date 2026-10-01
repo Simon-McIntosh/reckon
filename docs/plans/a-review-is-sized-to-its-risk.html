@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="108">
+<meta name="plan-version" content="109">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.94">
@@ -516,7 +516,10 @@
     <div class="r-comment-body"><p>review r-20261001T071455448553-review-of-resume-attempts-count-per-round of run r-20261001T070535631632-resume-attempts-count-per-round stores a parsed record (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, total 96) with no blocking finding; the diff keys _record_repair_dispatch's attempt figure to the round_id being written so a new round starts at attempt 1, the focused gate reproduces (7 passed EXIT=0 at head 1f1bac86) and the declared negative control reproduces (assert 3 == 1, 1 failed EXIT=1); added_failure_count is unmeasured because the reviewed manifest records no baseline_suite/after_suite arm.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261001T073602235150-review-of-an-unmarked-finding-is-reported-not-repaired" data-who="reckon-build" data-when="2026-10-01T07:49:11.059Z">
-    <div class="r-comment-body"><p>attached an independent review of run r-20261001T072105945085-an-unmarked-finding-is-reported-not-repaired at head 1e6d4503f as a parsed record scoring 67/100 (goal_fidelity 14, evidence 12, durability 9, fit 12, scope_discipline 20) with one blocking finding — the unmarked classification keys on the review record&#x27;s own storage timestamp, which store_review stamps with the current moment, so every newly-stored finding without a severity is dropped from the repair, regressing the six sibling repair suites from 39 passed / 0 failed at the parent 16434dd94 to 14 failed / 25 passed at head.</p></div>
+    <div class="r-comment-body"><p>attached an independent review of run r-20261001T072105945085-an-unmarked-finding-is-reported-not-repaired at head 1e6d4503f as a parsed record scoring 67/100 (goal_fidelity 14, evidence 12, durability 9, fit 12, scope_discipline 20) with one blocking finding — the unmarked classification keys on the review record's own storage timestamp, which store_review stamps with the current moment, so every newly-stored finding without a severity is dropped from the repair, regressing the six sibling repair suites from 39 passed / 0 failed at the parent 16434dd94 to 14 failed / 25 passed at head.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261001T072105945085-an-unmarked-finding-is-reported-not-repaired" data-who="reckon-build" data-when="2026-10-01T07:56:22.557Z">
+    <div class="r-comment-body"><p>acted f1ebabc134e: 233c21702 — an absent severity is no longer classified by the record&#x27;s storage timestamp; it blocks again so no finding a reviewer raised is dropped, and a post-audit unmarked finding is repaired and additionally listed by file and line on the composed node and in the brief; gate 57 passed EXIT=0 over this file and eight sibling repair suites, revert negative control 5 failed EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260928T233552756785-review-of-the-suite-is-declared-and-recorded" data-who="reckon-build" data-when="2026-09-29T00:21:22.662Z">
     <div class="r-comment-body"><p>review stored for r-20260928T223146627061-the-suite-is-declared-and-recorded at cd36faeb against base 348688e8 - total 77 (goal_fidelity 14, evidence 15, scope_discipline 19, durability 13, fit 16), four findings, added_failure_count 0</p></div>
