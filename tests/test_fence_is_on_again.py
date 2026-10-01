@@ -38,9 +38,7 @@ from pathlib import Path
 import pytest
 
 from reckon import _backends, crew
-from tests.test_crew import CONFIG, _node
-
-pytest_plugins = ("tests.test_crew",)
+from tests.test_crew import CONFIG, _node, home, repo  # noqa: F401
 
 # ``reckon.crew.dispatch`` names the command function on the package, so the
 # module is reached by import rather than by attribute.
@@ -73,7 +71,7 @@ CLIVE_CONFIG["backends"]["clive"] = {
 
 def _operator_home(root: Path) -> Path:
     """A synthetic operator home whose harness reads hooks and guidance."""
-    home = root / "operator-home"
+    home = root / "operator-home"  # noqa: F811 - re-exported from tests.test_crew for pytest
     (home / ".claude").mkdir(parents=True)
     (home / ".claude" / "settings.json").write_text(
         json.dumps(
@@ -91,7 +89,9 @@ def _operator_home(root: Path) -> Path:
 
 
 def _dispatch_through_the_path(
-    repo: Path, *, config: dict
+    repo: Path,  # noqa: F811
+    *,
+    config: dict,
 ) -> tuple[dict, _backends.LaunchPlan]:
     """Compose one launch through ``crew.dispatch`` with a capturing launcher."""
     launched: dict[str, object] = {}
@@ -127,7 +127,9 @@ def test_the_worker_default_is_fenced() -> None:
 
 
 def test_a_dispatch_path_clive_launch_is_fenced_and_carries_the_operator_hooks(
-    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    repo: Path,  # noqa: F811
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The dispatch path composes a fence and the run's own harness home.
 
@@ -172,7 +174,7 @@ def _negative_control_report(root: Path) -> list[str]:
     operator_home = _operator_home(root)
     config_home = root / "config"
     config_home.mkdir(parents=True, exist_ok=True)
-    repo = _synthetic_repo(root, config_home)
+    repo = _synthetic_repo(root, config_home)  # noqa: F811
     saved_home = os.environ.get("RECKON_HOME")
     saved_path_home = Path.home
     saved_fence = dispatch_module.FENCE_WORKERS
@@ -207,7 +209,7 @@ def _negative_control_report(root: Path) -> list[str]:
 
 def _synthetic_repo(root: Path, config_home: Path) -> Path:
     """A throwaway git repository carrying the worktree fleet script and plan."""
-    repo = root / "repo"
+    repo = root / "repo"  # noqa: F811 - re-exported from tests.test_crew for pytest
     (repo / "skills" / "reckon-build" / "scripts").mkdir(parents=True)
     (repo / "docs" / "plans").mkdir(parents=True)
     source = (

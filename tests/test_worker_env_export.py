@@ -12,9 +12,8 @@ from pathlib import Path
 
 from reckon import crew
 from tests import test_a_live_run_never_reads_dead as liveness
-from tests.test_crew import CONFIG, _node
+from tests.test_crew import CONFIG, _node, home, repo  # noqa: F401
 
-pytest_plugins = ("tests.test_crew",)
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 DROP_RESUME_EXPORT = "drop the export on resume"
@@ -34,8 +33,8 @@ def _config(command: str) -> dict:
 
 def _launch(
     *,
-    home: Path,
-    repo: Path,
+    home: Path,  # noqa: F811 - re-exported from tests.test_crew for pytest
+    repo: Path,  # noqa: F811 - re-exported from tests.test_crew for pytest
     command: str,
     node_id: str,
     coordinator_session: str,
@@ -88,7 +87,9 @@ def _assert_attempt_environment(
 
 
 def test_clive_dispatch_and_resume_carry_identity_and_additive_headers(
-    home, repo, monkeypatch
+    home,  # noqa: F811
+    repo,  # noqa: F811
+    monkeypatch,
 ) -> None:
     coordinator_session = "coordinator-session"
     inherited_header = "X-Existing: retained"
@@ -175,7 +176,9 @@ def test_clive_dispatch_and_resume_carry_identity_and_additive_headers(
 
 
 def test_codex_dispatch_carries_identity_without_anthropic_headers(
-    home, repo, monkeypatch
+    home,  # noqa: F811
+    repo,  # noqa: F811
+    monkeypatch,
 ) -> None:
     monkeypatch.setenv("ANTHROPIC_CUSTOM_HEADERS", "X-Existing: retained")
     record, launched = _launch(
@@ -196,7 +199,9 @@ def test_codex_dispatch_carries_identity_without_anthropic_headers(
 
 
 def test_an_in_harness_lane_change_carries_the_attempt_environment(
-    home, repo, monkeypatch
+    home,  # noqa: F811
+    repo,  # noqa: F811
+    monkeypatch,
 ) -> None:
     """A run re-pointed in-harness keeps the attempt identity the launch attaches.
 
