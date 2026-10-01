@@ -1066,28 +1066,27 @@ def _unmet_follower_conditions(
         # with the re-arm warning rather than a refusal.
         return conditions
     state = follower_state(project, session)
+    # A peer's follower is project-global and feeds the peer, never this
+    # session, so naming the sessions that do deliver answers the question the
+    # caller is left with when its own delivery is not in place.
+    others = sorted(
+        str(row.get("session") or "")
+        for row in list_followers(project)
+        if row.get("live") and str(row.get("session") or "") != session
+    )
+    peers = (
+        "; sessions delivering for this project right now: "
+        + ", ".join(repr(name) for name in others)
+        if others
+        else ""
+    )
     if state.get("registered"):
         conditions.append(
             f"session {session!r} has a follower that is not delivering: "
-            f"{state.get('not_live_because')}"
+            f"{state.get('not_live_because')}{peers}"
         )
     else:
-        # A peer's follower is project-global and feeds the peer, never this
-        # session, so naming the sessions that do deliver answers the question
-        # the caller is left with when its own follower is missing.
-        others = sorted(
-            str(row.get("session") or "")
-            for row in list_followers(project)
-            if row.get("live") and str(row.get("session") or "") != session
-        )
-        if others:
-            named = ", ".join(repr(name) for name in others)
-            conditions.append(
-                f"session {session!r} has no registered follower; sessions "
-                f"delivering for this project right now: {named}"
-            )
-        else:
-            conditions.append(f"session {session!r} has no registered follower")
+        conditions.append(f"session {session!r} has no registered follower{peers}")
     return conditions
 
 
