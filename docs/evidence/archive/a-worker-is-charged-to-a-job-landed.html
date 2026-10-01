@@ -723,8 +723,12 @@
     <code>crew complete</code>. Four are <code>assert 'failed' == 'not-run'</code>, which is the invented
     failure itself — at base the stored description is executed through <code>sh -c</code>, pytest names a
     path that does not exist, and the non-zero exit is recorded as a gate failure attached to a node that was
-    clean. The ninth is the CLI entry point exiting 0 where the refusal should have been. The ledger's own
-    record on the real run was the same shape: a non-zero exit recorded as a failure of the merge.</p>
+    clean. The ninth is the CLI entry point exiting 0 where the refusal should have been. The ledger holds
+    that shape on a real run: <code>r-20260919T233958925409-awcj-liveness-and-reaping-follow-the-job</code>
+    records an integrated verdict of failed with exit status 1 for a stored command ending in an
+    angle-bracket placeholder, a non-zero exit recorded as a failure of the merge. The run named above,
+    <code>r-20260926T095413623438</code>, supplies only the prose command; its own record reads gate passed
+    with exit status 0 and carries no integrated re-run.</p>
 
     <p><strong>Delta.</strong> The new file's 11 cases are the whole delta: nine fail at base, two (the
     positive control and the ran-and-exited-non-zero arm) pass at both revisions, and the 50 ids of
