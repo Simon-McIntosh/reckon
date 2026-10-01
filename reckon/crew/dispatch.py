@@ -594,35 +594,36 @@ def _refuse_over_concurrency_ceiling(
     *,
     exclude_run_ids: Iterable[str] = (),
 ) -> None:
-    """Refuse a dispatch that would exceed whichever bound is actually binding.
+    """Refuse a dispatch that would exceed whichever resource bound is binding.
 
-    A lane already carrying its ceiling of live runs must not be asked to carry
-    one more: the harness retry budget is fixed and reckon passes no retry
-    configuration, so once an overloaded lane refuses long enough a 429 turns
-    from a pause at the protocol into a dead print-mode worker — measured, a
-    sixth concurrent worker on the local lane killed two already-running runs
+    A physical resource that is already spent must not be asked to carry one
+    more worker: the harness retry budget is fixed and reckon passes no retry
+    configuration, so once an overcommitted resource refuses long enough a 429
+    turns from a pause at the protocol into a dead print-mode worker — measured,
+    a sixth concurrent worker on the local lane killed two already-running runs
     after ten 429 retries. Adding work destroyed work, so the only reliable
     remedy is not to create the overload.
 
-    Which resource bounds the lane is read rather than assumed. The roster
-    ceiling is one candidate; the cores a placement's reservation admits and
-    the login memory slice the coordinator still lives inside are the others,
-    and the refusal names the one that ran out with its measured value. The
-    check happens before any worktree or worker exists and never touches a run
+    Which resource bounds the lane is read rather than assumed. The cores a
+    placement's reservation admits and the login memory slice the coordinator
+    still lives inside are the candidates, and the refusal names the one that
+    ran out with its measured value. The retired roster key is still carried by
+    the bound model so a reader can find it, but it never binds. The check
+    happens before any worktree or worker exists and never touches a run
     already in flight — a finished run holds no slot (its phase is terminal),
     and terminating one to admit a new one would reproduce the harm this exists
     to prevent.
 
     Every bound is user data or a host reading. A bound that cannot be read
-    admits: an unknown ceiling, an unstated reservation and an unreadable
-    cgroup can none of them justify refusing work.
+    admits: an unstated reservation and an unreadable cgroup can neither of
+    them justify refusing work.
     """
     occupying = _live_runs_on_backend(backend_name, exclude_run_ids=exclude_run_ids)
     # The cores bound is consumed by the workers placed inside the shared
     # reservation, not by every run on the backend: an unplaced run of the same
     # backend runs outside the allocation and holds no core of it. So the cores
     # bound is measured against the reservation's own roster population, the
-    # same one the roster cap counts below.
+    # same one the reservation roster refusal below counts.
     reservation_occupancy: int | None = None
     if flight.placement_for(backend) is not None:
         from reckon.crew import placement as placement_module
@@ -647,10 +648,10 @@ def _refuse_over_concurrency_ceiling(
                 ),
             )
         )
-    # A placed backend's workers run inside the one reservation, so the roster
-    # cap is a second ceiling and the only one nothing enforces on our behalf:
-    # under --overlap the scheduler admits whatever is asked, which makes the
-    # cap a real limit rather than a formality.
+    # A placed backend's workers run inside the one shared reservation, and
+    # under --overlap the scheduler admits whatever is asked, so the
+    # reservation's own roster is a real limit rather than a formality: it is
+    # the only bound nothing else enforces on the fleet's behalf.
     _refuse_over_reservation_roster(backend, occupying, project)
 
 
@@ -5106,10 +5107,11 @@ def dispatch(
             registered_at=claim_registered_at,
         )
     with _claim_released_on_refusal(run_id, claim_published):
-        # A backend at its declared concurrency ceiling refuses a new dispatch
-        # before anything is created or spawned. A fallback backend resolved
-        # above gets the same ceiling as a directly chosen one, so a held lane
-        # never reroutes onto an already-saturated lane.
+        # A dispatch that would exceed a resource bound — the placement's
+        # admitted partition cores or the login memory slice — refuses before
+        # anything is created or spawned. A fallback backend resolved above
+        # gets the same reading as a directly chosen one, so a held lane never
+        # reroutes onto an exhausted resource.
         _refuse_over_concurrency_ceiling(
             backend_name, backend, project, exclude_run_ids=(run_id,)
         )

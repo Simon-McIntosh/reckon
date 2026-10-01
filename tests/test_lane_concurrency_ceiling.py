@@ -1,20 +1,18 @@
-"""Per-backend concurrency ceiling: refuse a dispatch that would overload a lane.
+"""Per-backend concurrency ceiling: the retired roster key never refuses.
 
-A backend that declares ``max_concurrent_runs`` must never be asked to carry
-more live runs than that ceiling. The harness retry budget is fixed and reckon
-passes no retry configuration, so once an overloaded lane refuses long enough
-a 429 turns from a pause at the protocol into a dead print-mode worker —
-measured, a sixth concurrent worker on the local lane killed two already
-running runs. Adding work destroyed work, so the only reliable remedy is not
-to create the overload: the refusal names the backend, the ceiling, the
-current count and the occupying run ids, uses the not-dispatchable exit
-convention, and happens before any worktree, process or pointer exists. A
-finished run holds no slot, and a refusal never touches a run already in
-flight.
+``max_concurrent_runs`` once capped how many live runs a backend could hold,
+and a dispatch over the cap was refused. The cap measured the promotion
+backlog across every project rather than load on the engine, and a session is
+meant to hold its runs as long as it needs them, so the key is retired. A
+backend declaring a ceiling now admits any number of runs claiming it, and a
+host flight file carrying the key still loads: the key stays readable in
+flight config, is reported as retired, and is ignored by dispatch. The bounds
+that protect real resources — the placement's admitted partition cores and the
+login memory slice — are enforced elsewhere and are not this module's subject.
 
 Every test is hermetic. ``RECKON_HOME`` moves the crew directory into a temp
 tree; live pointers claiming a backend are seeded directly into that tree;
-the repository is a real but throwaway git repo; and the one launch
+the repository is a real but throwaway git repo; and the launch
 substitutes a launcher, so nothing spawns a harness and nothing reaches a
 network.
 """
@@ -29,7 +27,6 @@ import pytest
 
 from reckon import crew, flight
 from reckon._flight_schema import BackendConfig
-from reckon.crew import runs
 
 CONFIG = {
     "default_backend": "alpha",
@@ -145,18 +142,6 @@ def _seed_run(backend: str, phase: str, token: str, *, project: str = "proj") ->
     return run_id
 
 
-def _worktree_count(repo: Path) -> int:
-    """Number of registered git worktrees for the throwaway repository."""
-    out = subprocess.run(
-        ["git", "worktree", "list"],
-        cwd=repo,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout
-    return len([line for line in out.splitlines() if line.strip()]) - 1
-
-
 def _launcher(*args, **kwargs):
     """Default launcher substitute: a fake pid, never a spawned worker."""
     return 1
@@ -209,29 +194,16 @@ def test_backend_at_ceiling_with_terminal_occupiers_dispatches(home, repo, tmp_p
     assert crew.pointer_path(record["run_id"]).is_file()
 
 
-def test_backend_at_ceiling_refuses_before_creating_anything(home, repo, tmp_path):
-    """At its ceiling, a new dispatch is refused with an actionable reason."""
+def test_backend_at_ceiling_is_admitted(home, repo, tmp_path):
+    """At its declared ceiling, a new dispatch is admitted rather than refused."""
     config = _config(ceiling=2)
-    first = _seed_run("alpha", "working", "occupying-a")
-    second = _seed_run("alpha", "working", "occupying-b")
-    before = set(runs.live_dir().glob("*.json"))
-    worktree_count_before = _worktree_count(repo)
+    _seed_run("alpha", "working", "occupying-a")
+    _seed_run("alpha", "working", "occupying-b")
 
-    def refusing_launcher(*args, **kwargs):
-        raise AssertionError("dispatch must refuse before any launch")
+    record = _dispatch(config, repo, tmp_path)
 
-    with pytest.raises(crew.CrewError) as excinfo:
-        _dispatch(config, repo, tmp_path, launcher=refusing_launcher)
-
-    message = str(excinfo.value)
-    assert message.startswith("node is not dispatchable")
-    assert "alpha" in message
-    assert "2 live runs of 2 max" in message
-    assert first in message
-    assert second in message
-    # Nothing was created or touched: no pointer, no worktree, no launch.
-    assert set(runs.live_dir().glob("*.json")) == before
-    assert _worktree_count(repo) == worktree_count_before
+    assert record["phase"] == "starting"
+    assert crew.pointer_path(record["run_id"]).is_file()
 
 
 def test_non_integer_ceiling_dispatches_instead_of_crashing(home, repo, tmp_path):
@@ -251,17 +223,18 @@ def test_non_integer_ceiling_dispatches_instead_of_crashing(home, repo, tmp_path
     assert crew.pointer_path(record["run_id"]).is_file()
 
 
-def test_ceiling_counts_only_runs_on_the_same_backend(home, repo, tmp_path):
-    """Another backend's occupancy never consumes this backend's slots."""
+def test_a_declared_ceiling_refuses_nothing_whatever_the_occupancy(
+    home, repo, tmp_path
+):
+    """A declared ceiling is ignored: occupancy on the backend does not refuse."""
     config = _config(ceiling=1)
     _seed_run("alpha", "working", "alpha-run")
     _seed_run("native", "working", "native-run")
 
-    with pytest.raises(crew.CrewError) as excinfo:
-        _dispatch(config, repo, tmp_path, launcher=lambda *a, **k: 1)
+    record = _dispatch(config, repo, tmp_path)
 
-    assert "node is not dispatchable" in str(excinfo.value)
-    assert "alpha-run" in str(excinfo.value)
+    assert record["phase"] == "starting"
+    assert crew.pointer_path(record["run_id"]).is_file()
 
 
 def _alpha_flight(ceiling: int) -> str:

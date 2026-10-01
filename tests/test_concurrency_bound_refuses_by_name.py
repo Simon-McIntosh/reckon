@@ -1,12 +1,14 @@
 """The admission check refuses a dispatch over the binding bound, naming it.
 
 The fleet's concurrency is bounded by whichever resource runs out first: the
-roster ceiling a backend declares, the cores a placement's reservation admits,
-or the login memory slice the coordinator still lives inside. The bound model
-reads all three and reports the one that actually limits the next worker; the
-admission check at the dispatch entry point refuses against that one and names
-it with its measured value, so a reader learns which resource ran out rather
-than which one somebody happened to be watching.
+cores a placement's reservation admits or the login memory slice the
+coordinator still lives inside. The bound model reads both and reports the one
+that actually limits the next worker; the admission check at the dispatch
+entry point refuses against that one and names it with its measured value, so a
+reader learns which resource ran out rather than which one somebody happened
+to be watching. The retired roster key is still carried by the bound model so
+a reader can find it, but it never binds, so a declared ceiling refuses
+nothing.
 
 These cases exercise that from outside, through ``crew.dispatch``, with each
 measured input synthesised: the roster count is live pointer files in a temp
@@ -328,37 +330,27 @@ def _synthesise_slice(tmp_path: Path, monkeypatch, *, current: int, maximum: int
     monkeypatch.setattr(summary_module, "SELF_CGROUP_PATH", cgroup_file)
 
 
-# ── The roster bound refusing, and naming itself ────────────────────────────
+# ── The retired roster key refusing nothing ─────────────────────────────────
 
 
-def test_a_dispatch_over_the_roster_bound_is_refused_naming_the_roster(
+def test_a_dispatch_over_the_declared_roster_is_admitted(
     home, repo, tmp_path, monkeypatch
 ):
-    """A roster at its ceiling refuses, naming that bound and its measured value.
+    """A dispatch over the declared ceiling is admitted: the key is retired.
 
-    The slice is synthesised with room to spare and the placement declares no
-    admitted cores, so the roster is the only bound that can refuse: a refusal
-    here can only have come from the roster, and its sentence must carry the
-    count that did the refusing.
+    Two live runs claim a backend declaring ``max_concurrent_runs: 2``, and the
+    slice has room to spare with no cores bound stated, so nothing can refuse.
+    The fourth dispatch is admitted rather than refused on the retired key.
     """
     _synthesise_slice(tmp_path, monkeypatch, current=8 * GIB, maximum=64 * GIB)
     config = _config(max_concurrent_runs=2)
-    first = _seed_run("alpha", "working", "occupying-a")
-    second = _seed_run("alpha", "working", "occupying-b")
+    _seed_run("alpha", "working", "occupying-a")
+    _seed_run("alpha", "working", "occupying-b")
 
-    with pytest.raises(crew.CrewError) as excinfo:
-        _dispatch(config, repo, tmp_path)
+    record = _dispatch(config, repo, tmp_path)
 
-    message = str(excinfo.value)
-    # The bound that bound, and the figure that refused the dispatch.
-    assert "concurrency ceiling" in message
-    assert "2 live runs of 2 max" in message
-    assert "max_concurrent_runs" in message
-    assert first in message and second in message
-    # Neither of the other bounds' sentences, so a refusal for some other
-    # reason is not read as this case passing.
-    assert "partition admitted cores" not in message
-    assert "login memory slice" not in message
+    assert record["phase"] == "starting"
+    assert crew.pointer_path(record["run_id"]).is_file()
 
 
 # ── The cores bound refusing, and naming itself ─────────────────────────────

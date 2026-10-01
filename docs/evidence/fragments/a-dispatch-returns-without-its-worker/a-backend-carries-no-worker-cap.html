@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>A backend carries no worker cap | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A backend carries no worker cap</h1>
+      <p class="lead">A dispatch was refused when a backend's <code>max_concurrent_runs</code> was reached, counting every non-terminal live pointer that claimed the backend. That counted a project's promotion backlog rather than load on the engine, so a session could be refused the right to hold its own runs. The key is retired: dispatch no longer enforces it and the summary reports the roster entry as retired. Only the roster bound retires; the partition-cores and login-memory bounds stay enforced and a case drives the cores bound to exhaustion to show the dispatch is still refused on it.</p>
+    </header>
+
+    <section id="backend-no-cap-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/summary.py</code>: <code>roster_bound</code> returns a retired entry &mdash; utilisation unknown, <code>admits_one_more</code> true, <code>value</code> <code>"retired"</code> &mdash; so it is still readable by a summary reader and never binds. The now-unreachable roster branch of <code>bound_refusal_text</code> is removed, and the module comment names the two enforced candidates.</li>
+        <li><code>reckon/crew/dispatch.py</code>: comments at the admission-check call site and on <code>_refuse_over_concurrency_ceiling</code> name the resource bounds that refuse. No enforcement code changed here because enforcement flows through <code>summary.concurrency_bounds</code>/<code>binding_bound</code>, which no longer return the roster as binding.</li>
+        <li><code>tests/test_backend_carries_no_worker_cap.py</code> (new): declares <code>max_concurrent_runs: 2</code> for a stub backend in a temp <code>RECKON_HOME</code> and a resolved flight layer, seeds three non-terminal pointers claiming it, and asserts a fourth dispatch is admitted; asserts the summary's roster entry reads <code>"retired"</code>; and drives a spent 2-core reservation to assert the dispatch is still refused on the partition-cores bound.</li>
+        <li>Existing tests that asserted the roster refusal are updated to assert its absence: <code>tests/test_crew_binding_bound.py</code>, <code>tests/test_concurrency_bound_refuses_by_name.py</code> and <code>tests/test_lane_concurrency_ceiling.py</code>. <code>tests/test_lane_reading_at_dispatch.py</code>, <code>tests/test_backend_reference_contract.py</code> and <code>tests/test_dispatch_launch_is_not_its_own_conflict.py</code> were named as candidates but assert no roster refusal &mdash; delta none.</li>
+      </ul>
+    </section>
+
+    <section id="backend-no-cap-the-gate">
+      <h2>The gate</h2>
+      <p>Every test file importing <code>reckon.crew.dispatch</code> or <code>reckon.crew.summary</code> (138 files) was run at base and at head with <code>pytest-xdist -n 8</code>, each arm with its own <code>--basetemp</code> under <code>$TMPDIR</code>. The base arm ran in a scratch extraction of the base revision; the head arm ran in the worktree at the committed revision. Both carry the same 14 failing ids, so the change adds none.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base <code>531027092</code>, scratch tree</td><td>14 failed, 1579 passed, 2 skipped, <code>EXIT=1</code></td><td><code>gate_base.log</code></td></tr>
+          <tr><td>Head <code>208cc43d3</code>, worktree</td><td>14 failed, 1579 passed, 2 skipped, <code>EXIT=1</code>; zero added ids</td><td><code>gate_head.log</code></td></tr>
+          <tr><td>Head candidates at <code>208cc43d3</code> (8 files)</td><td>2 failed, 49 passed, <code>EXIT=1</code>; both failures pre-existing at base</td><td><code>gate_head_candidates.log</code></td></tr>
+          <tr><td>Negative control, head <code>208cc43d3</code> + mutation</td><td>3 failed, <code>EXIT=1</code>; the fourth dispatch is refused</td><td><code>negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Logs live under the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T081309497681-a-backend-carries-no-worker-cap/</code>. Both arms used the shared interpreter at <code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code>. No formatter ran over a whole file; ruff check and format were scoped to the staged paths, and every edited file's finding count is unchanged from base.</p>
+    </section>
+
+    <section id="backend-no-cap-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>restore the <code>max_concurrent_runs</code> enforcement in a scratch tree; the fourth dispatch of the stub backend is then refused</em>. Applied to <code>reckon/crew/summary.py</code> in a scratch extraction of the head revision, the new test file reports 3 failed with <code>EXIT=1</code>: the fourth dispatch is refused on the roster, and the summary no longer reports the key as retired. The head arm does not fail these ids.</p>
+    </section>
+
+    <section id="backend-no-cap-commits">
+      <h2>Commits</h2>
+      <p><code>208cc43d3f0ee7a248086c2c38b81240b6366f9a</code> &mdash; fix(crew): stop enforcing the per-backend roster concurrency cap. Changes <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/summary.py</code>, <code>tests/test_backend_carries_no_worker_cap.py</code>, <code>tests/test_crew_binding_bound.py</code>, <code>tests/test_concurrency_bound_refuses_by_name.py</code> and <code>tests/test_lane_concurrency_ceiling.py</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
