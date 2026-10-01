@@ -24,9 +24,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="549">
+<meta name="plan-version" content="550">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-impl" content="0.52">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;deferred&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;deferred&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;implementable&quot;}">
 </head>
@@ -1998,10 +1998,11 @@ Model time is extractable and its scarcity is plumbing, not measurement: one dia
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth §21</pre>
     <p class="r-fu-outcome">disposition-refusal-branches-are-tested merged at 47d392a0 and promoted (review total 97, zero added failures, no findings). Two cases now assert the mismatched-head and no-record refusals: each exits non-zero, names its refusal, and leaves the sub-floor row standing. verify-gate is green at main.</p>
     </article>
-<article class="r-fu" data-id="f-cot-lane-counts-parity-and-remaining-names" data-status="open" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cot-lane-counts-parity-and-remaining-names" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-29" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="2026-10-01T05:19:20+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The lane-counts parity case compares independent readings, and dispatch.py names no document key</h4>
     <div class="r-fu-body"><p>From the review of lane-counts-read-through-the-lane-document (total 97). The parity case at <code>tests/test_lane_reading_carries_counts.py:263</code> resolves both sides through <code>read_lane_counts</code>, so a regression inside it moves both sides and the case stays green. Assert against literal expected counts from the fixture instead. Also, <code>reckon/crew/dispatch.py</code> near :2661 and :2692–:2696 still names lane-document keys, contradicting the node's record that the dispatch holds none. Either route those through <code>lane_document.py</code>, or show they are payload output names rather than document reads.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth §22</pre>
+    <p class="r-fu-outcome">The parity case at tests/test_lane_reading_carries_counts.py holds the payload's counts, and read_lane_counts' own answer, against the literal counts its fixture document states. It no longer compares two readings of one document. The lane-document keys dispatch.py still spelled (observed_at, mean_context, binding_observed and suggested_shelf_life_seconds) were document reads, and are now routed through reckon/crew/lane_document.py, with the stamp parse kept in the carry (merged f52f0bd1f, commits 68ca6c590, 4c98fb00f, 23b732f33 and a31078e74, review 97). The control forces read_lane_counts to return 0 as the generating count; it leaves the case green at base and fails it at head. Gate: 29 passed at base, 30 at head, no added failures. Review notes, none blocking: read_lane_reading_fields gives a non-object document a stamp-shaped message (unreachable through dispatch), and the 28-file lane set was re-run at the merged head by the coordinator.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
