@@ -23,12 +23,14 @@ spawns a harness and nothing reaches a network.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
 import pytest
 
 from reckon import crew
+from reckon.crew import placement as placement_module
 from reckon.crew import summary as summary_module
 from reckon.crew import ticker
 from reckon.crew.dispatch import _refuse_over_concurrency_ceiling
@@ -142,20 +144,49 @@ def _placement(*options: str) -> dict:
     return {"scheduler": "srun", "options": list(options), **PLACEMENT_QUERIES}
 
 
-def _seed_run(backend: str, phase: str, token: str, *, project: str = "proj") -> str:
-    """Write one live pointer claiming a backend, returning its run id."""
+def _seed_run(
+    backend: str,
+    phase: str,
+    token: str,
+    *,
+    project: str = "proj",
+    placement: dict | None = None,
+) -> str:
+    """Write one live pointer claiming a backend, returning its run id.
+
+    A pointer given a ``placement`` records a live pid — this process — so the
+    reservation roster counts it, exactly as it counts a placed worker still
+    holding memory in the real allocation.
+    """
     run_id = f"r-20260906T000000000000-{token}"
-    crew._write_json(
-        crew.pointer_path(run_id),
-        {
-            "run_id": run_id,
-            "project": project,
-            "backend": backend,
-            "phase": phase,
-            "node": {"id": f"peer-{token}", "write_paths": []},
-        },
-    )
+    pointer = {
+        "run_id": run_id,
+        "project": project,
+        "backend": backend,
+        "phase": phase,
+        "node": {"id": f"peer-{token}", "write_paths": []},
+    }
+    if placement is not None:
+        pointer["placement"] = placement
+        pointer["pid"] = os.getpid()
+    crew._write_json(crew.pointer_path(run_id), pointer)
     return run_id
+
+
+def _publish_reservation(cores: int) -> None:
+    """Publish the shared reservation record the cores bound reads its size from."""
+    path = placement_module.reservation_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "job_id": "88000001",
+                "size": {"cores": cores, "memory_gb": 120},
+                "partition": "all",
+            }
+        ),
+        encoding="utf-8",
+    )
 
 
 def _launcher(*args, **kwargs):
@@ -243,9 +274,11 @@ def test_the_partition_admitted_cores_refuse_when_they_are_the_binding_bound(
 ):
     """A reservation whose cores are spent refuses, naming the cores and the figure."""
     _fake_slice(tmp_path, monkeypatch, current=8 * GIB, maximum=64 * GIB)
-    config = _config(placement=_placement("--cpus=3", "--cpus-per-task=1"))
+    _publish_reservation(cores=3)
+    placement = _placement("--cpus-per-task=1")
+    config = _config(placement=placement)
     for token in ("a", "b", "c"):
-        _seed_run("alpha", "working", f"occupying-{token}")
+        _seed_run("alpha", "working", f"occupying-{token}", placement=placement)
 
     with pytest.raises(crew.CrewError) as excinfo:
         _refuse_over_concurrency_ceiling("alpha", config["backends"]["alpha"])
@@ -342,8 +375,9 @@ def test_an_undeclared_reservation_leaves_the_core_bound_unknown(
 # ── The surface reports the binding bound with its measured value ───────────
 
 
-def test_the_surface_names_the_binding_bound_with_its_value():
+def test_the_surface_names_the_binding_bound_with_its_value(home):
     """Each bound in turn is reported as binding, with the figure beside the label."""
+    _publish_reservation(cores=3)
     cases = [
         (
             {"max_concurrent_runs": 2},
@@ -353,7 +387,7 @@ def test_the_surface_names_the_binding_bound_with_its_value():
             "2 live runs of 2 max",
         ),
         (
-            {"placement": _placement("--cpus=3", "--cpus-per-task=1")},
+            {"placement": _placement("--cpus-per-task=1")},
             3,
             8 * GIB,
             "partition-cores",

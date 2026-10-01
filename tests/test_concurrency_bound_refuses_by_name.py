@@ -10,8 +10,9 @@ than which one somebody happened to be watching.
 
 These cases exercise that from outside, through ``crew.dispatch``, with each
 measured input synthesised: the roster count is live pointer files in a temp
-crew directory, the cores are the placement options a backend declares, and the
-login slice is a cgroup tree written under a temp path. Nothing here calls the
+crew directory, the cores are the size a published reservation record declares
+against the workers placed inside it, and the login slice is a cgroup tree
+written under a temp path. Nothing here calls the
 bound helpers directly — the subject is the dispatch entry point's refusal, so
 a helper that reads correctly while the call site passes the wrong occupancy or
 the wrong reading still fails these cases. Each refusal case asserts the
@@ -36,6 +37,7 @@ from pathlib import Path
 import pytest
 
 from reckon import crew
+from reckon.crew import placement as placement_module
 from reckon.crew import summary as summary_module
 
 GIB = 1024**3
@@ -240,24 +242,50 @@ def _placement(*options: str) -> dict:
     return {"scheduler": "srun", "options": list(options), **PLACEMENT_QUERIES}
 
 
-def _seed_run(backend: str, phase: str, token: str, *, project: str = "proj") -> str:
+def _seed_run(
+    backend: str,
+    phase: str,
+    token: str,
+    *,
+    project: str = "proj",
+    placement: dict | None = None,
+) -> str:
     """Write one live pointer claiming a backend, returning its run id.
 
     This is the roster count the admission check reads: a live run holds a
     slot, and the number of them is the occupancy every bound is measured at.
+    A pointer given a ``placement`` records a live pid — this process — so the
+    reservation roster counts it as a placed worker holding its seat.
     """
     run_id = f"r-20260906T000000000000-{token}"
-    crew._write_json(
-        crew.pointer_path(run_id),
-        {
-            "run_id": run_id,
-            "project": project,
-            "backend": backend,
-            "phase": phase,
-            "node": {"id": f"peer-{token}", "write_paths": []},
-        },
-    )
+    pointer = {
+        "run_id": run_id,
+        "project": project,
+        "backend": backend,
+        "phase": phase,
+        "node": {"id": f"peer-{token}", "write_paths": []},
+    }
+    if placement is not None:
+        pointer["placement"] = placement
+        pointer["pid"] = os.getpid()
+    crew._write_json(crew.pointer_path(run_id), pointer)
     return run_id
+
+
+def _publish_reservation(cores: int) -> None:
+    """Publish the shared reservation record the cores bound reads its size from."""
+    path = placement_module.reservation_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "job_id": "88000001",
+                "size": {"cores": cores, "memory_gb": 120},
+                "partition": "all",
+            }
+        ),
+        encoding="utf-8",
+    )
 
 
 def _launcher(*args, **kwargs):
@@ -342,14 +370,16 @@ def test_a_dispatch_over_the_cores_bound_is_refused_naming_the_cores(
     """A reservation whose cores are spent refuses, naming that bound.
 
     The backend declares no roster ceiling and the slice has room to spare, so
-    the placement's admitted cores are the only bound that can refuse. Three
-    occupants asking one core each against three admitted cores is the figure
-    the sentence must carry.
+    the reservation's admitted cores are the only bound that can refuse. Three
+    placed workers asking one core each against three admitted cores is the
+    figure the sentence must carry.
     """
     _synthesise_slice(tmp_path, monkeypatch, current=8 * GIB, maximum=64 * GIB)
-    config = _config(placement=_placement("--cpus=3", "--cpus-per-task=1"))
+    _publish_reservation(cores=3)
+    placement = _placement("--cpus-per-task=1")
+    config = _config(placement=placement)
     for token in ("a", "b", "c"):
-        _seed_run("alpha", "working", f"occupying-{token}")
+        _seed_run("alpha", "working", f"occupying-{token}", placement=placement)
 
     with pytest.raises(crew.CrewError) as excinfo:
         _dispatch(config, repo, tmp_path)
@@ -369,17 +399,16 @@ def test_a_dispatch_over_the_cores_bound_is_refused_naming_the_cores(
 def test_a_dispatch_under_both_bounds_is_admitted(home, repo, tmp_path, monkeypatch):
     """Occupancy inside the roster and the admitted cores dispatches.
 
-    Both bounds are declared and measured, and neither is spent: one occupant
-    against a roster of four, and two cores asked of six admitted for a
-    reservation of eight. A check that refused here would be refusing work the
-    fleet has room for.
+    Both bounds are declared and measured, and neither is spent: one placed
+    worker against a roster of four, and two cores asked of eight admitted for
+    a reservation of eight. A check that refused here would be refusing work
+    the fleet has room for.
     """
     _synthesise_slice(tmp_path, monkeypatch, current=8 * GIB, maximum=64 * GIB)
-    config = _config(
-        max_concurrent_runs=4,
-        placement=_placement("--cpus=8", "--cpus-per-task=2", "--mem=16G"),
-    )
-    _seed_run("alpha", "working", "occupying-a")
+    _publish_reservation(cores=8)
+    placement = _placement("--cpus-per-task=2", "--mem=16G")
+    config = _config(max_concurrent_runs=4, placement=placement)
+    _seed_run("alpha", "working", "occupying-a", placement=placement)
 
     record = _dispatch(config, repo, tmp_path)
 
