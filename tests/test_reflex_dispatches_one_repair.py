@@ -310,6 +310,30 @@ def _repair_calls(calls: list[dict]) -> list[dict]:
     ]
 
 
+def _dispatch_direct(record: dict, monkeypatch) -> tuple[dict, list[dict]]:
+    """Drive the reflex's repair dispatch itself, with the launch call stubbed.
+
+    The sweep is the caller in production, but the guards the round passes
+    through are read inside :func:`dispatch_repair_for_run` before the launch, so
+    driving it directly isolates the refusal under test from whatever else a
+    sweep additionally reaches. The dispatch is stubbed so the composed node is
+    observed without cutting a worktree.
+    """
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    calls: list[dict] = []
+
+    def fake_dispatch(**kwargs):
+        calls.append(kwargs)
+        return {"run_id": "r-repair-stub"}
+
+    monkeypatch.setattr(dispatch_module, "dispatch", fake_dispatch)
+    with runs.follower_claim(PROJECT, "session-orchestrating", delivery="stream"):
+        report = recovery.dispatch_repair_for_run(
+            record, config=CONFIG, launcher=lambda *a, **k: os.getpid()
+        )
+    return report, calls
+
+
 def test_a_three_finding_review_dispatches_exactly_one_repair(
     isolated_project: tuple[Path, Path, str],
 ) -> None:
@@ -478,6 +502,58 @@ def test_a_live_worker_dispatches_no_repair(
     report = _sweep(calls)
     assert report["reviews"]["repaired"] == []
     assert calls == []
+
+
+def test_a_live_worker_record_dispatches_no_repair(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """A reviewed run whose own worker record names a live pid is left alone.
+
+    The pointer records no process here, so the only liveness the run carries is
+    its worker record's — the supervisor that has exited leaves the pointer's pid
+    silent while the work it started continues. The pid names this test's own
+    child, still running when the reflex reads it and reaped when the case ends,
+    so the refusal comes from the worker-record guard alone rather than from the
+    pointer's process answer.
+    """
+    config_home, repo, head_sha = isolated_project
+    record = _completed_pointer(config_home, repo)
+    _store_review(head_sha, FINDINGS)
+    child = subprocess.Popen(["sleep", "60"])
+    try:
+        _write_worker_record(pid=child.pid)
+        report, calls = _dispatch_direct(record, monkeypatch)
+        assert report["dispatched"] is False
+        assert report["reason"] == "the reviewed run's worker is live"
+        assert calls == []
+    finally:
+        child.terminate()
+        child.wait()
+
+
+def test_a_dead_worker_record_lets_the_repair_compose(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """A reviewed run whose worker record names a dead pid is repaired.
+
+    The worker record is the only liveness the run carries, so a reaped pid must
+    not hold the round: the busy guard passes and the reflex composes and
+    dispatches the round's one repair. This is the control the refusal above is
+    read against — without it the refusal could pass on a fixture that never
+    composed a repair at all.
+    """
+    config_home, repo, head_sha = isolated_project
+    record = _completed_pointer(config_home, repo)
+    _store_review(head_sha, FINDINGS)
+    dead = subprocess.Popen(["sleep", "60"])
+    dead_pid = dead.pid
+    dead.terminate()
+    dead.wait()
+    _write_worker_record(pid=dead_pid)
+    report, calls = _dispatch_direct(record, monkeypatch)
+    assert report["dispatched"] is True
+    assert len(calls) == 1
+    assert str(calls[0]["node"].id).startswith(repair.REPAIR_NODE_PREFIX)
 
 
 def test_a_resumed_worker_dispatches_no_repair(
