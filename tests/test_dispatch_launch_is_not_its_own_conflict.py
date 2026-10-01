@@ -43,6 +43,11 @@ NODE_ID = "node-claiming"
 SESSION = "session-launch-claim"
 REAL_LIVE = Path.home() / ".config" / "reckon" / "crew" / "live"
 
+# A dispatch grants the node its own landing fragment in its write scope, so
+# this entry is the first the two live claims overlap on, so it is the path a
+# refusal between them names.
+LANDING_FRAGMENT = f"docs/evidence/fragments/fixture/{NODE_ID}.html"
+
 # A CLI backend, so a dispatch composes a real launch and writes a live
 # pointer rather than handing back an in-harness directive. Every launcher is
 # supplied by the test, so no command named here is ever executed.
@@ -270,7 +275,7 @@ def test_a_second_dispatch_meets_the_claim_of_the_launch_in_flight(
     refusal = observed.get("refusal")
     assert isinstance(refusal, crew.ScopeConflict)
     assert refusal.run_id == first_run_id
-    assert "src/claimed.py" in str(refusal)
+    assert LANDING_FRAGMENT in str(refusal)
     # The refusal left nothing of the refused dispatch behind, and the launch
     # that held the claim kept its own single pointer, run directory and
     # worktree. The second dispatch never reached the worktree seam at all.
@@ -329,7 +334,7 @@ def test_a_second_dispatch_meets_the_claim_made_before_the_preflight(
     refusal = observed.get("refusal")
     assert isinstance(refusal, crew.ScopeConflict)
     assert refusal.run_id == first_run_id
-    assert "src/claimed.py" in str(refusal)
+    assert LANDING_FRAGMENT in str(refusal)
     assert live_pointers_naming(NODE_ID) == [first_run_id]
     assert calls["worktrees"] == 1
 
