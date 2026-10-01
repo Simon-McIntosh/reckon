@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="128">
+<meta name="plan-version" content="135">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -543,7 +543,7 @@
     declared path stays in force, the five-state rule below decides the dispatch, and
     <code>lane_gate.path_check</code> records <code>skipped</code> with the reason. A skipped
     comparison never holds a dispatch on its own. Each of the two reads, the gate file and the lane
-    document, has its own deadline of 5 s, because a single stat on this filesystem took 8.5 s on
+    document, has its own independent deadline of 5 s (not one budget shared between them), because a single stat on this filesystem took 8.5 s on
     2026-09-23. Each result carries a <code>lane_gate</code> object stating the row that applied.
     The rule is:</p>
     <ul>
@@ -556,14 +556,16 @@
       object: the dispatch proceeds (<code>state: open</code>);</li>
       <li>gate path declared and the read fails with a clean file-not-found, and nothing else:
       the dispatch proceeds, <code>state</code> is <code>declared-but-missing</code>, and the
-      dispatch's printed output says <code>gate path declared but missing</code>. A mistyped
+      result's <code>lane_gate.detail</code> says <code>gate path declared but missing</code>, which
+      the CLI prints with the result. A mistyped
       path must not read like a quiet host with no router;</li>
       <li>any other failure reading the gate file (its 5 s deadline passing, a permission error, any error other
       than file-not-found), a file that is not a JSON object or has a non-boolean
       <code>paused</code>, or a declared <code>gate_document</code> that differs from the lane
       document's published <code>config_path</code>: the dispatch waits
-      (<code>state: unreadable</code>), and the result names the defect and the gate file it read,
-      and for a mismatch both the declared and the published path. A gate that exists but cannot be answered is a pause
+      (<code>state: unreadable</code>), and the result names the defect. For a read failure or a
+      malformed file it also names the declared gate file. For a mismatch it names both the
+      declared and the published path. A gate that exists but cannot be answered is a pause
       nobody can confirm has ended.</li>
     </ul>
     <p><strong>Which dispatches read the gate.</strong> Every dispatch whose resolved backend
@@ -590,10 +592,12 @@
     reads the gate like any other dispatch to that backend and waits the same way. The printed
     text itself carries no pause reason; the reason arrives in the result when the command
     runs. <code>_dispatch_lane_reading</code> in <code>reckon/crew/dispatch.py</code> today
-    documents that no value in the lane document holds a dispatch. That stays true of the lane
-    document. Its docstring gains a sentence naming the gate file's <code>paused</code> field,
-    read from the backend's <code>gate_document</code>, as the one fact that holds a dispatch,
-    so the tree and this plan agree.</p>
+    documents that no value in the lane document withholds a dispatch. After this section, two
+    facts withhold one: the gate file's <code>paused</code> field, read from the backend's
+    <code>gate_document</code>, and a lane document whose published
+    <code>router_generation_gate.config_path</code> differs from that declared path. Its docstring
+    gains a sentence naming both, and every other value of the lane document still withholds
+    nothing, so the tree and this plan agree.</p>
     <p><strong>Done when</strong> <code>tests/test_dispatch_holds_while_the_lane_is_paused.py</code>,
     in a temporary <code>RECKON_HOME</code>, declares a <code>gate_document</code> on a stub local
     backend pointing at a temporary gate file, and drives every row of the rule, asserting
@@ -611,8 +615,8 @@
       <li>no <code>gate_document</code> declared: the dispatch proceeds, with <code>state:
       not-declared</code>.</li>
       <li><code>gate_document</code> declared, file absent: the dispatch proceeds, with
-      <code>state: declared-but-missing</code>, and its output contains <code>gate path declared
-      but missing</code>.</li>
+      <code>state: declared-but-missing</code>, and its <code>lane_gate.detail</code> contains
+      <code>gate path declared but missing</code>.</li>
       <li>a file whose <code>paused</code> is the string <code>"true"</code>, a file that is not
       JSON, a file holding valid JSON that is not an object, a read stubbed to raise a permission
       error, a read stubbed to exceed the deadline, and a declared <code>gate_document</code> that
@@ -632,7 +636,14 @@
     its manifest before editing it, and that test. The whole section, not only its test, runs
     after <code>a-dispatch-returns-without-its-worker</code> &sect;3, which also writes
     <code>dispatch.py</code> and has landed.</p>
-    <p><strong>Not yet released.</strong> The second read-back of this section's rewrite
+    <p><strong>Released 2026-10-01.</strong> Two further read-backs restated the revised section:
+    <code>r-20261001T102341055719</code> at <code>4406a8d02</code> and
+    <code>r-20261001T103127315775</code> at <code>7afdf81f8</code>. Each restatement matched the
+    intent. The sentences each one found readable two ways were settled at <code>7afdf81f8</code>
+    and in the commit that releases this section: which reads carry a deadline, a skipped path
+    comparison, what a mismatch names, the two surfaces that show a paused run, where the
+    declared-but-missing text appears, and the two facts that now withhold a dispatch. The
+    history follows. The second read-back of this section's rewrite
     (<code>f4291476</code>) ended at a context compaction before it wrote a report, and was
     completed as an infrastructure failure. A third read-back, run
     <code>r-20261001T093225999649-the-lane-pause-section-is-read-back</code> at
@@ -642,7 +653,7 @@
     stated wrongly. Before that revision, the done-when drove neither the permission-error
     trigger nor the not-an-object trigger of the unreadable row. Those
     sentences were revised on 2026-10-01, and the revision adds the declared-against-published
-    path check. That revision is material, so it needs its own read-back before dispatch.</p>
+    path check. That revision was material, and the read-backs above restated it.</p>
 
     <h2 id="s10">&sect;10 &mdash; A run can always be reconciled from what survives</h2>
     <p>On 2026-09-23 and 24, runs across four repositories reached states that no command could
@@ -1277,7 +1288,7 @@
     <div class="r-comment-body"><p>review stored for r-20261001T093225999649-the-lane-pause-section-is-read-back — parsed record, all five dimensions scored 0..20 (goal_fidelity 18, evidence 17, scope_discipline 19, durability 16, fit 18), total 88, no absent dimensions or items, item_aggregate 6, two follow-on findings; verdict affirms the read-back's hold and its four contradictions, independently reproduced.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261001T102341055719-review-of-the-revised-lane-pause-section" data-who="reckon-build" data-when="2026-10-01T10:26:35.810Z">
-    <div class="r-comment-body"><p>Read-back of §9 at 4406a8d02 delivered as report.md: intent restated in the reviewer&#x27;s own words, all five gate-rule rows, the declared-against-published path check, and every done-when bullet restated, plus ten sentences listed with two or more readings each quoted with both readings stated.</p></div>
+    <div class="r-comment-body"><p>Read-back of §9 at 4406a8d02 delivered as report.md: intent restated in the reviewer's own words, all five gate-rule rows, the declared-against-published path check, and every done-when bullet restated, plus ten sentences listed with two or more readings each quoted with both readings stated.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260924T085742049782-review-of-the-producer-lease" data-who="reckon-ship" data-when="2026-09-24T09:05:50.248Z">
     <div class="r-comment-body"><p>read-back of section 3: N2, N3 and N8 closed at ad86d6ce; M2 (the lease-renewal observable is unnamed) must be settled before release, and M8 adds reckon/crew/runs.py to the write paths</p></div>
