@@ -8037,8 +8037,12 @@ def _worker_default_signals() -> None:
     worker is spawned into the supervisor's signal environment. The worker must
     end on the group signal that stops it rather than carry a handler the
     supervisor needed for itself, so it starts with the defaults its launch
-    would otherwise have had.
+    would otherwise have had. The mask is cleared as well: the spawn runs with
+    those signals blocked so a stop inside the window cannot be missed, and the
+    child inherits the mask across the fork, so a worker that kept it would
+    never see the stop the group sends it.
     """
+    signal.pthread_sigmask(signal.SIG_UNBLOCK, {signal.SIGTERM, signal.SIGHUP})
     signal.signal(signal.SIGTERM, signal.SIG_DFL)
     signal.signal(signal.SIGHUP, signal.SIG_DFL)
 
@@ -8187,6 +8191,47 @@ def _supervisor_exit_record(
     return record
 
 
+def _record_launch_abandoned_before_spawn(
+    spec: Mapping[str, Any],
+    run_directory: Path,
+    *,
+    attempt: int,
+    launched_at: str,
+) -> None:
+    """Write the one launch-failure record for a stop that ended the launch.
+
+    A stop that arrives before the worker exists abandons the launch, so none
+    is spawned. The record is still written, because the run directory outlives
+    the pointer a discard removes and a reader needs to tell this launch from a
+    worker that started and died.
+    """
+    _write_attempt_artifact(
+        run_directory,
+        EXIT_RECORD_NAME,
+        _supervisor_exit_record(
+            run_id=str(spec.get("run_id") or ""),
+            attempt=attempt,
+            worker_pid=None,
+            launched_at=launched_at,
+            status=None,
+            run_directory=run_directory,
+        )
+        | {"detail": "crew stop arrived before the worker was spawned"},
+        attempt=attempt,
+    )
+
+
+def _stop_is_requested(flag: threading.Event, blocked: set[int]) -> bool:
+    """Whether a stop has arrived, including one the signal mask is holding.
+
+    A blocked SIGTERM or SIGHUP is not delivered, so its handler cannot run and
+    the flag cannot be set; the signal stays pending and is the only observable
+    a stop leaves while the mask is applied. Both are read here so a stop
+    delivered either before the mask or inside the window it guards is seen.
+    """
+    return flag.is_set() or bool(signal.sigpending() & blocked)
+
+
 def _record_stop_before_spawn() -> threading.Event:
     """Install the supervisor's stop handler and return the flag it sets.
 
@@ -8235,42 +8280,43 @@ def _run_supervisor(spec_path: Path) -> int:
     launched_at = _utc_now()
     if stop_requested.is_set():
         # The stop arrived while the snapshot ran, before any worker existed,
-        # so none is spawned and the launch is over before it began. The one
-        # launch-failure record is still written, because the run directory
-        # outlives the pointer a discard removes.
-        _write_attempt_artifact(
-            run_directory,
-            EXIT_RECORD_NAME,
-            _supervisor_exit_record(
-                run_id=str(spec.get("run_id") or ""),
-                attempt=attempt,
-                worker_pid=None,
-                launched_at=launched_at,
-                status=None,
-                run_directory=run_directory,
-            )
-            | {"detail": "crew stop arrived before the worker was spawned"},
-            attempt=attempt,
+        # so none is spawned and the launch is over before it began.
+        _record_launch_abandoned_before_spawn(
+            spec, run_directory, attempt=attempt, launched_at=launched_at
         )
         return 0
+    # SIGTERM and SIGHUP stay blocked across the stop read and the spawn, so a
+    # stop delivered between them is deferred rather than running its handler
+    # and being missed. It is read again here, immediately before the spawn: a
+    # stop delivered inside this window means no worker is ever spawned.
+    blocked = {signal.SIGTERM, signal.SIGHUP}
+    previous_mask = signal.pthread_sigmask(signal.SIG_BLOCK, blocked)
     try:
-        pid = _supervisor_spawn_worker(spec)
-    except (OSError, ValueError, KeyError, CrewError) as exc:
-        _write_attempt_artifact(
-            run_directory,
-            EXIT_RECORD_NAME,
-            _supervisor_exit_record(
-                run_id=str(spec.get("run_id") or ""),
-                attempt=attempt,
-                worker_pid=None,
-                launched_at=launched_at,
-                status=None,
-                run_directory=run_directory,
+        if _stop_is_requested(stop_requested, blocked):
+            _record_launch_abandoned_before_spawn(
+                spec, run_directory, attempt=attempt, launched_at=launched_at
             )
-            | {"detail": f"worker did not spawn: {type(exc).__name__}: {exc}"},
-            attempt=attempt,
-        )
-        return 0
+            return 0
+        try:
+            pid = _supervisor_spawn_worker(spec)
+        except (OSError, ValueError, KeyError, CrewError) as exc:
+            _write_attempt_artifact(
+                run_directory,
+                EXIT_RECORD_NAME,
+                _supervisor_exit_record(
+                    run_id=str(spec.get("run_id") or ""),
+                    attempt=attempt,
+                    worker_pid=None,
+                    launched_at=launched_at,
+                    status=None,
+                    run_directory=run_directory,
+                )
+                | {"detail": f"worker did not spawn: {type(exc).__name__}: {exc}"},
+                attempt=attempt,
+            )
+            return 0
+    finally:
+        signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
     _write_attempt_artifact(
         run_directory,
         WORKER_RECORD_NAME,
