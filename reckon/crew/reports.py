@@ -53,6 +53,7 @@ from typing import Any, TypedDict
 import yaml
 
 from reckon import ledger
+from reckon.crew import review as review_module
 from reckon.crew.node import (
     NEEDS_HELP_FIELDS,
     NEEDS_HELP_MARKER,
@@ -1127,6 +1128,146 @@ def _gate_log_revision_findings(
     return findings
 
 
+# ── A finding with no declared severity cannot be acted on ───────────────────
+# A review run's whole deliverable is the record it stores, and a finding in
+# that record says whether it blocks the reviewed node's landing by opening
+# with one of the declared severities. A finding that states none is recorded
+# without the key rather than defaulted, which keeps a judgement nobody made
+# out of the record — and leaves the gate that reads the record unable to tell
+# a blocking defect from a follow-on. Judging the record at the write, while
+# the reviewer still holds its turn, is what lets the reviewer restate the
+# severities instead of costing a corrective node hours later. The record is
+# read through the review store's own reader so this check and every other
+# consumer see one parse of one file.
+
+_HEAD_KEYED_RECORD_NAME = re.compile(r"\.at-[0-9A-Fa-f]{7,64}\Z")
+
+
+def _record_name_reviewed_run(name: str) -> str:
+    """The reviewed run a store record's name keys, or ``""`` when it names none.
+
+    The store spells a record's name two ways — ``<reviewed run id>.json`` and
+    the head-keyed ``<reviewed run id>.at-<head>.json`` — so the reviewed run
+    is the stem before either suffix, and a declared path whose name is neither
+    is not a record this check reads.
+    """
+    stem = Path(name).stem
+    match = _HEAD_KEYED_RECORD_NAME.search(stem)
+    return stem[: match.start()] if match else stem
+
+
+def _node_is_a_reviewer(node: TaskNode) -> bool:
+    """Whether a node's role is the review role recovery mints for a review."""
+    from reckon.crew.recovery import REVIEW_ROLE
+
+    return str(node.role or "").strip() == REVIEW_ROLE
+
+
+def _severity_stated(finding: dict[str, Any]) -> bool:
+    """Whether a stored finding carries one of the declared severities.
+
+    The store records a severity in its declared spelling, and only then: a
+    finding that states none has no key here. A value outside the vocabulary —
+    one written directly into a record rather than parsed from the emitted
+    form, where the store's wordings have no agreement — is not a severity any
+    gate can read, so it is judged as absent rather than as a declaration.
+    """
+    return str(finding.get("severity") or "").strip() in frozenset(
+        review_module.FINDING_SEVERITIES
+    )
+
+
+def _unmarked_finding_severity_findings(node: TaskNode | None) -> list[str]:
+    """Report a review run's stored findings that declare no severity.
+
+    A finding that declares no severity cannot be told from a follow-on by the
+    gate that reads the stored record, so the reviewer's judgement is missing
+    rather than negative, and the reviewer is the only party that can restate
+    it. The dispatch grants the review store's record paths on the node, so the
+    record to judge is read from those declarations: the project is the
+    directory beneath the store root and the reviewed run is the id the
+    record's own name keys. A declared record path that is not a record this
+    store would read, or that cannot be read yet, is not a finding of its own
+    — a review that has not stored its record is judged by the gates that
+    require one, and this check only reports what the stored record says.
+
+    A node that is not a review is not judged: its deliverable is repository
+    work, and a path that happens to sit under the store root belongs to
+    another run's delivery. Each unmarked finding is reported on its own,
+    naming the finding's file and line, so the reviewer can restate the
+    severities in the same turn; nothing is rewritten here, because the fix
+    belongs in the record's next write by the party that authored it.
+    """
+    if node is None or not _node_is_a_reviewer(node):
+        return []
+    store_root = review_module.review_store_root()
+    findings: list[str] = []
+    read: set[tuple[str, str]] = set()
+    for declared in node.write_paths or ():
+        candidate = Path(str(declared)).expanduser()
+        if candidate.parent.parent != store_root:
+            continue
+        reviewed_run_id = _record_name_reviewed_run(candidate.name)
+        if not reviewed_run_id:
+            continue
+        # The legacy and head-keyed declarations name one run, and the reader
+        # selects one record for it, so the record is judged once however many
+        # spellings the dispatch granted.
+        key = (candidate.parent.name, reviewed_run_id)
+        if key in read:
+            continue
+        read.add(key)
+        try:
+            stored_at, record = review_module.stored_record(*key)
+        except (OSError, ValueError):
+            # A store file that will not read is left to the readers that
+            # judge the store itself; this check reports what a readable
+            # record says, never a guess about an unreadable one.
+            continue
+        if record is None:
+            continue
+        findings.extend(_unmarked_findings_in_record(record, stored_at or candidate))
+    return findings
+
+
+def _unmarked_findings_in_record(
+    record: dict[str, Any], record_path: Path
+) -> list[str]:
+    """The audit findings for each stored finding that declares no severity.
+
+    The findings are the record's own when it carries them, and otherwise the
+    ones its verbatim emitted text parses to, so a record written through the
+    store and one carrying only the reviewer's emission yield one list. A
+    malformed entry is skipped rather than given an invented location: a
+    finding that names no file and no line cannot be restated by the reviewer,
+    and the store's own readers drop it on the same rule.
+    """
+    entries = record.get("findings")
+    if not isinstance(entries, list):
+        raw_text = str(record.get("raw_text") or "")
+        entries = (
+            review_module.parse_review(raw_text).get("findings", []) if raw_text else []
+        )
+    declared = ", ".join(review_module.FINDING_SEVERITIES)
+    findings: list[str] = []
+    for entry in entries:
+        if not isinstance(entry, dict) or _severity_stated(entry):
+            continue
+        file = str(entry.get("file") or "").strip()
+        line = str(entry.get("line") or "").strip()
+        if not file or not line:
+            continue
+        findings.append(
+            f"review record {str(record_path)!r} carries finding {file}:{line} "
+            f"with no declared severity: a finding says whether it blocks by "
+            f"opening with one of {declared}, so an unstated severity leaves "
+            "the gate that reads this record unable to tell a blocking defect "
+            "from a follow-on — restate the severity on the finding and store "
+            "the record again"
+        )
+    return findings
+
+
 def _control_log_findings(
     manifest: dict[str, Any],
     node: TaskNode | None,
@@ -1295,6 +1436,7 @@ def audit_manifest(
     findings.extend(
         _gate_log_revision_findings(manifest, manifest_path=resolved_manifest_path)
     )
+    findings.extend(_unmarked_finding_severity_findings(node))
     if node is not None and manifest["changed_paths"]:
         declared = tuple(node.write_paths or ())
         stray = sorted(
