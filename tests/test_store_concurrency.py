@@ -24,18 +24,25 @@ def _repository(tmp_path: Path, monkeypatch) -> Path:
 def _simultaneous_appends(
     root: Path, monkeypatch, count: int
 ) -> list[dict[str, object]]:
+    """Race ``count`` appends to the point where they create their run files.
+
+    Each append serialises its own record before it opens its target, so the
+    barrier lands every writer at that same point and they contend on the
+    exclusive file creation that is the one shared step of an append.
+    """
+
     barrier = threading.Barrier(count)
     thread_state = threading.local()
-    real_load = ledger.load
+    real_serialize = ledger.serialize_run
 
-    def synchronized_first_load(project, load_root=None):
-        result = real_load(project, load_root)
+    def synchronized_serialize(record):
+        text = real_serialize(record)
         if not getattr(thread_state, "synchronized", False):
             thread_state.synchronized = True
             barrier.wait(timeout=10)
-        return result
+        return text
 
-    monkeypatch.setattr(ledger, "load", synchronized_first_load)
+    monkeypatch.setattr(ledger, "serialize_run", synchronized_serialize)
     records = [
         ledger.build_record(
             run_id=f"run-{index}", plan="concurrent-work", gate="passed"
@@ -49,9 +56,10 @@ def _simultaneous_appends(
             )
             for record in records
         ]
-    results = [future.result(timeout=10) for future in futures]
-    monkeypatch.setattr(ledger, "load", real_load)
-    return results
+    try:
+        return [future.result(timeout=10) for future in futures]
+    finally:
+        monkeypatch.setattr(ledger, "serialize_run", real_serialize)
 
 
 def test_two_simultaneous_writers_land_consecutive_versions(
@@ -60,10 +68,14 @@ def test_two_simultaneous_writers_land_consecutive_versions(
     root = _repository(tmp_path, monkeypatch)
 
     results = _simultaneous_appends(root, monkeypatch, 2)
-    data, version = ledger.load(PROJECT, root)
+    data, _version = ledger.load(PROJECT, root)
 
-    assert sorted(result["version"] for result in results) == [1, 2]
-    assert version == 2
+    # An append writes its own immutable run file and advances no aggregate
+    # version, so the writers' guarantee is that each record lands once rather
+    # than that they share one envelope revision.
+    assert all(result["version"] is None for result in results)
+    assert len({str(result["path"]) for result in results}) == 2
+    assert all(Path(str(result["path"])).is_file() for result in results)
     assert {record["run_id"] for record in data["runs"]} == {"run-0", "run-1"}
 
 
@@ -74,10 +86,13 @@ def test_contention_beyond_five_racers_preserves_every_run(
     racers = 8
 
     results = _simultaneous_appends(root, monkeypatch, racers)
-    data, version = ledger.load(PROJECT, root)
+    data, _version = ledger.load(PROJECT, root)
 
-    assert sorted(result["version"] for result in results) == list(range(1, racers + 1))
-    assert version == racers
+    # Every racer owns a distinct immutable file and no record is overwritten,
+    # so contention degrades to independent creates rather than a lost update.
+    assert all(result["version"] is None for result in results)
+    assert len({str(result["path"]) for result in results}) == racers
+    assert all(Path(str(result["path"])).is_file() for result in results)
     assert {record["run_id"] for record in data["runs"]} == {
         f"run-{index}" for index in range(racers)
     }
