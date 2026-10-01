@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="45">
+<meta name="plan-version" content="46">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.5">
 </head>
@@ -538,6 +538,11 @@
     <h4 class="r-fu-title">Three residuals in the run-only scope measure</h4>
     <div class="r-fu-body"><p>From the review of promotion-scope-counts-only-the-runs-commits (92): (1) a citation list of merge commits alone now measures zero paths, so a run whose content landed inside a merge is charged nothing, silently (<code>reckon/crew/promotion.py</code> near :147); (2) recorded changed_lines is now summed per commit, counting churn the old span diff netted out, which changes a fleet-wide metric (near :172); (3) the test assertion <code>stored["commits"] == cited</code> echoes its own input. Measure: a merges-only citation is refused or measured through its first parent, changed_lines is netted per run, and the test pins an independent expectation.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-ledger-is-one-file-per-run §1 — close the scope-measure residuals</pre>
+    </article>
+<article class="r-fu" data-id="f-tlofpr-hold-check-rewrites-aggregate" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-written-by="s25-coord" data-written-at="2026-10-01" data-recommends-skill="/reckon-build the-ledger-is-one-file-per-run" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A hold check rewrites the 55 MB aggregate in the shared checkout, and nothing commits it</h4>
+    <div class="r-fu-body"><p>Measured 2026-10-01. <code>docs/state/reckon/crew.json</code> sat uncommitted in the shared checkout from 09:37:03 CEST until 20:28, with +770,893/−179 lines. Every session saw a dirty tracked file it had not written, and one session spent most of an investigation suspecting the stale watch producer.</p><h4>The writer</h4><p>The writer was the hold-check path in <code>reckon/ledger.py</code>, the branch that sets <code>closed_by_purpose</code>. A dispatch-purpose check at 07:36:56Z found the <code>claude</code> lane no longer held and closed <code>hold-claude-20260923080828</code>, which had been open for 689,308 s. It then wrote the whole aggregate back through <code>write()</code>. Because <code>load()</code> folds the per-run files into the aggregate's rows, the write also carried 810 run rows that already existed under <code>docs/state/reckon/runs/</code>.</p><h4>What it carried</h4><p>All 2042 prior rows were byte-identical and the 413 members were unchanged. The hold closure was the only fact recorded nowhere else. It was committed by hand as <code>64a56280f</code>. Restoring the old blob would have shown an eight-day-old hold as still open.</p><h4>Why it belongs here</h4><p>This is §4's holds problem arriving before §4. Holds and the roster still live only in the aggregate, so any hold transition rewrites tens of megabytes in a tracked file. Nothing in the hold path commits, which leaves the result to whichever human or agent finds the dirty file.</p><h4>Remedy</h4><p>Move holds out of the aggregate, as §4 plans: into their own small file per hold, or into the run store's index. Until then, have the hold path commit its own write with a message naming the hold, as promotion does.</p><p>Prove it with a test that closes a hold in a temp repository and asserts the working tree is clean afterwards. Also assert that the committed change touches only the hold record, not the run rows.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-ledger-is-one-file-per-run f-tlofpr-hold-check-rewrites-aggregate</pre>
     </article>
 </section>
 

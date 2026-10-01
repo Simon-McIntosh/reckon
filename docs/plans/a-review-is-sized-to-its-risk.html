@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="113">
+<meta name="plan-version" content="115">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.95">
@@ -559,6 +559,12 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-arist-repair-round-cap" data-who="s25-coord" data-when="2026-10-01">
     <div class="r-comment-body"><p>s21 reported a repair loop on a-served-thread-leaves-no-memo-behind. The reflex resumed it on three reviews (82, 83, 83), each with 0 added failures. The reviewers marked no severity on any finding, my filter reads an absent severity as blocking, and the per-round resume cap restarted on every new head. one-automatic-repair-round-per-run (review 96, merged at 88848b6e) now opens at most one automatic repair round per reviewed run. A later round on a new head records handed-to-coordinator and resumes nothing. A before/after recovery population over 126 files added nothing. s22 is adding a write-time audit check that makes a reviewer restate severities when a stored finding has none. Once that lands, the filter should treat an absent severity on a new record as a defect to report, not as blocking. Follow-ons from the cap's review: the hand-back overwrites the first round's repair_dispatch record, and a round opened by a dispatch rather than a resume is untested.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-arist-out-of-vocabulary-severity" data-who="s25-coord" data-when="2026-10-01">
+    <div class="r-comment-body"><p>A live example for f-arist-011's unmarked-finding count, reported by s22-coord. The stored review of <code>drain-reads-the-index</code> (run <code>r-20261001T181816256449-review-of-drain-reads-the-index</code>) has a finding with <code>severity: "minor"</code> and null text. <code>minor</code> is outside the <code>blocking</code>/<code>follow-on</code> vocabulary, and the write-time check does not yet assert it. The repair reflex therefore treats it as blocking and lists it in the brief with nothing to say. Use it as the fixture for both halves: refuse or normalise an out-of-vocabulary severity at write time, and refuse a finding with no text.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-arist-out-of-vocabulary-severity-correction" data-who="s25-coord" data-when="2026-10-01">
+    <div class="r-comment-body"><p><strong>Correction to c-arist-out-of-vocabulary-severity.</strong> That comment said the repair reflex treats <code>severity: "minor"</code> as blocking. It does not. <code>_finding_kind</code> in <code>reckon/crew/repair.py</code> classifies any declared severity other than <code>blocking</code> as a follow-on, so <code>minor</code> is recorded on the review and never repaired. It is also absent from the unmarked count, which covers only an absent severity. The defect is therefore a silent downgrade: a reviewer's word outside the vocabulary decides that nothing is repaired, and nothing reports it. The fixture and the two remedies stand as written.</p></div>
 </div>
 </section>
 </main>
