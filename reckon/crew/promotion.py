@@ -56,6 +56,7 @@ from reckon.crew.routing import (
     _shadow_patch_retained,
     _shadow_worktree_records,
     _signal_process_group,
+    mounted_repository_projects,
     section_anchor,
     section_record_id,
 )
@@ -78,6 +79,12 @@ from reckon.crew.runs import (
 # ── Promotion: the transient record becomes committed evidence ──────────────
 
 _COORDINATOR_LANDING_AUTHOR = "reckon-build"
+
+# The run-directory records a launch leaves beside its pointer. Named here
+# rather than imported from the dispatch module so the reconstruction below
+# reads the same filenames the supervisor writes without a circular import.
+_WORKER_RECORD_NAME = "worker.json"
+_ATTEMPT_RECORD_NAME = "attempt.json"
 
 
 def scoped_diff_stat(
@@ -2571,6 +2578,35 @@ def _repository_tree_boundary_violations(
     return violations
 
 
+# A worktree older than this cannot separate its own edits from every other
+# run's, so a boundary walk against it reports changes it cannot attribute.
+BOUNDARY_REFERENT_MAX_AGE_SECONDS = 7 * 24 * 3600
+
+
+def _boundary_has_no_referent(record: Mapping[str, Any]) -> str:
+    """State why a boundary check has no worktree to attribute changes to.
+
+    Two states make the walk meaningless, and each is reported in the terms a
+    reader can act on. A record whose worktree is gone has nothing to compare
+    against: the walk then measures today's trees against a baseline from
+    dispatch, so every edit made since reads as this run's. A surviving
+    worktree whose dispatch predates the stated bound has the same defect, since
+    a week of everyone's work sits between its baseline and now. Returns an
+    empty string when a referent survives, which keeps the ordinary per-path
+    check in force.
+    """
+    worktree = str(record.get("worktree") or "").strip()
+    if not worktree:
+        return "its record names no worktree to check against"
+    if not Path(worktree).is_dir():
+        return f"its worktree {worktree} is gone"
+    age = _elapsed_seconds(record.get("created_at"), _utc_now())
+    if age is not None and age > BOUNDARY_REFERENT_MAX_AGE_SECONDS:
+        days = BOUNDARY_REFERENT_MAX_AGE_SECONDS // 86400
+        return f"its base is older than the {days}-day bound this check can attribute"
+    return ""
+
+
 def _require_repository_tree_boundary(
     run_id: str, record: Mapping[str, Any], *, waiver_reason: str = ""
 ) -> dict[str, Any] | None:
@@ -2584,6 +2620,29 @@ def _require_repository_tree_boundary(
     reason = str(waiver_reason).strip()
     violations = _repository_tree_boundary_violations(run_id, record)
     if violations:
+        # A run whose own worktree no longer survives cannot be attributed the
+        # changes the walk finds: with the tree gone and its base older than the
+        # diff it would be measured against, every edit another run made since
+        # reads as this run's. Enumerating them asks the operator for one false
+        # claim per path; the honest report is that the check has no referent,
+        # resolved by a single acknowledgement.
+        no_referent = _boundary_has_no_referent(record)
+        if no_referent:
+            if not reason:
+                raise CrewError(
+                    f"run {run_id!r} cannot have its repository-tree boundary "
+                    f"checked: {no_referent}. The changes the walk found "
+                    f"({', '.join(violations)}) cannot be attributed to this run. "
+                    "A run whose worktree survives is checked per path; this one "
+                    "takes a single acknowledgement — pass "
+                    "--waive-boundary-refusal REASON to record that you accept "
+                    "the boundary could not be checked"
+                )
+            return {
+                "reason": reason,
+                "no_referent": no_referent,
+                "waived_paths": list(violations),
+            }
         if not reason:
             raise CrewError(
                 f"run {run_id!r} has uncommitted changes at its declared paths "
@@ -2971,7 +3030,18 @@ def _record_landing_comment(
                     "section": anchor,
                     "reason": "worker_authored_landing_record",
                 }
-            if str(existing.get("body") or "") != desired_body:
+            # The store round-trips the body through HTML, so the text read back
+            # has its entities decoded (``run&apos;s`` returns as ``run's``)
+            # while ``desired_body`` is the escaped form. Comparing the raw
+            # strings makes an identical narrative look different the moment it
+            # carries an apostrophe, which makes an interrupted landing
+            # unretryable: the row is rolled back but the plan comment is not,
+            # and every re-promotion then refuses a narrative it already wrote.
+            # Compare the unescaped text on both sides so the same narrative
+            # always matches however the store happens to encode it.
+            if html.unescape(str(existing.get("body") or "")) != html.unescape(
+                desired_body
+            ):
                 raise CrewError(
                     f"landing comment {comment_id!r} for plan {plan!r} already "
                     "contains a different narrative; refusing to report the "
@@ -4096,6 +4166,195 @@ def _resolve_promotion_outcome(
     return _review_outcome_summary(stored)
 
 
+def _read_json_object(path: Path) -> dict[str, Any]:
+    """Read one small JSON object from the run directory, or return nothing.
+
+    The run directory is written by several processes and may be removed under
+    promotion at any moment, so every read here is best-effort: a file that is
+    absent, unparsable, or not an object yields an empty mapping rather than an
+    exception. The reconstruction below only ever defaults a field from what
+    survives, so a missing record degrades to the same empty field a pointer
+    that never carried the value would.
+    """
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return dict(data) if isinstance(data, Mapping) else {}
+
+
+def _project_for_repository(repository: Path) -> str:
+    """The mounted project whose docs tree lives in this repository, if one does.
+
+    A run rebuilt from its directory never carried the project on a pointer, so
+    the project is resolved from the same mounted-project map every other scope
+    lookup consults, by repository identity so a linked worktree resolves to the
+    same project as its main checkout.
+    """
+    target = repository.resolve()
+    try:
+        mounted = mounted_repository_projects()
+    except (OSError, ValueError):
+        return ""
+    for repository_root, projects in mounted.items():
+        if repository_root.resolve() == target and projects:
+            return str(projects[0])
+    return ""
+
+
+def _rebuild_record_from_run_directory(
+    run_id: str, *, root: str | Path | None
+) -> dict[str, Any] | None:
+    """Reconstruct a run's record from its surviving run directory.
+
+    A run whose live pointer was removed — or never written — keeps its run
+    directory: ``prompt.txt``, ``stderr.log`` and ``stream.jsonl`` survive
+    beside the supervisor, worker and attempt records the launch wrote, and the
+    durable manifest the worker delivered. That is enough to complete the run:
+    the directory names the repository and worktree the supervisor was given,
+    the manifest names the delivery, and the stream supplies the measurement.
+    Everything the directory cannot supply is left empty rather than guessed,
+    so the guards downstream read an absent field the way they read a pointer
+    that never carried it.
+
+    Returns ``None`` when no run directory survives, which is the caller's own
+    "no live run" case rather than a reconstruction failure.
+    """
+    directory = run_dir(run_id)
+    if not directory.is_dir():
+        return None
+    supervisor = _read_json_object(directory / "supervisor.json")
+    worker = _read_json_object(directory / _WORKER_RECORD_NAME)
+    attempt_record = _read_json_object(directory / _ATTEMPT_RECORD_NAME)
+    repo = str(supervisor.get("repo") or (root if root is not None else "") or "")
+    worktree = str(supervisor.get("worktree") or repo)
+    manifest = directory / "manifest.md"
+    manifest_path = str(manifest) if manifest.is_file() else ""
+    project = _project_for_repository(Path(repo)) if repo else ""
+    record: dict[str, Any] = {
+        "run_id": run_id,
+        "project": project,
+        "repo": repo,
+        "worktree": worktree,
+        "base_sha": "",
+        "role": "",
+        "launch": "",
+        "created_at": str(attempt_record.get("attempt_started_at") or ""),
+        "manifest_path": manifest_path,
+        "node": {},
+        "fenced": supervisor.get("fenced") is True,
+        "rebuilt_from_run_directory": True,
+    }
+    attempt = attempt_record.get("attempt") or worker.get("attempt")
+    if attempt is not None:
+        record["attempt"] = attempt
+    attempt_kind = attempt_record.get("attempt_kind")
+    if attempt_kind:
+        record["attempt_kind"] = attempt_kind
+    if "backend" in worker:
+        record["backend"] = worker.get("backend")
+    return record
+
+
+def _read_pointer_or_rebuild(run_id: str, *, root: str | Path | None) -> dict[str, Any]:
+    """A run's pointer when one survives, else its record rebuilt from disk.
+
+    Promotion is the one command that must complete a run from whatever
+    classification of it survives: a run whose pointer has been removed is
+    exactly the run ``crew complete`` was refusing, and its run directory still
+    holds the delivery. The pointer keeps first claim — it is the launch's own
+    record — and the run directory is read only in its absence.
+    """
+    if pointer_path(run_id).exists():
+        return read_pointer(run_id)
+    rebuilt = _rebuild_record_from_run_directory(run_id, root=root)
+    if rebuilt is None:
+        raise CrewError(
+            f"no live run {run_id!r} (looked in {pointer_path(run_id)}) and no "
+            "run directory survives to rebuild it from"
+        )
+    return rebuilt
+
+
+def _manifest_relative_path(value: Any, *, manifest_path: str) -> Path:
+    """Resolve one manifest-cited path under the manifest's own directory.
+
+    A worker writes its log paths relative to the run directory the manifest
+    lives in, so a relative citation is anchored there rather than to whichever
+    directory the promoting process happens to run in. An absolute path is
+    taken as written.
+    """
+    path = Path(str(value)).expanduser()
+    if not path.is_absolute() and manifest_path:
+        return Path(manifest_path).expanduser().parent / path
+    return path
+
+
+def _default_gate_evidence_from_manifest(
+    record: Mapping[str, Any],
+    *,
+    verdict: str,
+    gate_check: Mapping[str, Any] | None,
+    commits: Sequence[str],
+    no_commit_reason: str = "",
+) -> tuple[dict[str, Any], tuple[str, ...]]:
+    """Fill a passing promotion's gate flags from the worker's own manifest.
+
+    A passing gate must carry the command that produced it, its exit status and
+    its log, and a ledger row loses the work when a coordinator drops a commit
+    the manifest already named. Reckon holds all of that the moment the worker
+    delivers: the manifest states the gate command in ``tests``, the log path in
+    ``test_logs``, its exit status on the log's own ``EXIT=`` line, and the
+    commits in ``commits``. Each is taken only where the operator's flag left the
+    value absent, so an explicit --gate-command or --commit always wins, and a
+    manifest that states nothing leaves the guard's ordinary refusal untouched.
+    Returns the gate-check mapping and the commit list unchanged for a
+    non-passing gate, since neither is required there.
+    """
+    resolved_gate = dict(gate_check) if isinstance(gate_check, Mapping) else {}
+    resolved_commits = tuple(str(sha).strip() for sha in commits if str(sha).strip())
+    if str(verdict).strip().lower() != "passed":
+        return resolved_gate, resolved_commits
+    manifest = _fresh_manifest(record)
+    if manifest is None:
+        return resolved_gate, resolved_commits
+    manifest_path = str(record.get("manifest_path") or "")
+    if not str(resolved_gate.get("command") or "").strip():
+        command = str(manifest.get("tests") or "").strip()
+        if command:
+            resolved_gate["command"] = command
+    if not str(resolved_gate.get("log_path") or "").strip():
+        logs = [
+            str(entry).strip()
+            for entry in (manifest.get("test_logs") or [])
+            if str(entry).strip()
+        ]
+        if logs:
+            resolved_gate["log_path"] = str(
+                _manifest_relative_path(logs[0], manifest_path=manifest_path)
+            )
+    if resolved_gate.get("exit_status") is None:
+        log_path = str(resolved_gate.get("log_path") or "").strip()
+        recorded = None
+        if log_path:
+            try:
+                log_text = Path(log_path).read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                log_text = ""
+            recorded = _recorded_exit_status(log_text)
+        if recorded is not None:
+            resolved_gate["exit_status"] = recorded
+    if not resolved_commits and not str(no_commit_reason).strip():
+        declared = [
+            str(sha).strip()
+            for sha in (manifest.get("commits") or [])
+            if str(sha).strip()
+        ]
+        if declared:
+            resolved_commits = tuple(declared)
+    return resolved_gate, resolved_commits
+
+
 def complete(
     run_id: str,
     *,
@@ -4141,7 +4400,7 @@ def complete(
         raise CrewError("--failure-classification is valid only when --gate failed")
     commit_list = tuple(str(sha) for sha in commits if str(sha).strip())
     with _pointer_lock(run_id):
-        record = read_pointer(run_id)
+        record = _read_pointer_or_rebuild(run_id, root=root)
         # A review run's outcome is the review it stored, so the operator's
         # hand is not the only source for a non-passing gate's summary; the
         # refusal below stands for every run with no stored review to read.
@@ -4161,6 +4420,19 @@ def complete(
             root = resolve_project_repository(
                 landing_project, root, flag="--checkout-path"
             )
+        # Gate command, exit status, log path and commits default to what the
+        # worker's manifest already states, so a passing run whose evidence is
+        # on disk promotes without the coordinator retyping figures the manifest
+        # holds. Only absent values are filled: an operator's own flag always
+        # wins, and a manifest that states nothing leaves the guard's ordinary
+        # refusal in place.
+        gate_check, commit_list = _default_gate_evidence_from_manifest(
+            record,
+            verdict=verdict,
+            gate_check=gate_check,
+            commits=commit_list,
+            no_commit_reason=no_commit,
+        )
         overridden_worktree_changes = _require_commit_for_changed_manifest(
             run_id, record, no_commit_reason=no_commit
         )
@@ -4273,6 +4545,7 @@ def complete(
         )
         result = _complete_locked(
             run_id,
+            record=record,
             gate=gate,
             failure_classification=classification,
             commits=commit_list,
@@ -5742,6 +6015,7 @@ def _require_declared_negative_control(
 def _complete_locked(
     run_id: str,
     *,
+    record: Mapping[str, Any] | None = None,
     gate: str,
     failure_classification: str = "",
     commits: Iterable[str] = (),
@@ -5788,8 +6062,14 @@ def _complete_locked(
     timestamp-less stream falls back to wall duration with an explicit source;
     a stalled run keeps that duration absent. Promotion time remains an
     explicit completion fallback when no stream survives.
+
+    ``record`` is the run's own record, passed by :func:`complete` so a run
+    rebuilt from its directory and one read from its live pointer reach the
+    same body. A caller that omits it has the pointer read here, which keeps
+    the direct callers that predate the reconcile path working unchanged.
     """
-    record = read_pointer(run_id)
+    if record is None:
+        record = read_pointer(run_id)
     project = str(record.get("project") or "")
     node = record.get("node") or {}
     shadow = _is_shadow(record)
