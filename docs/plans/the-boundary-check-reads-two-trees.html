@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-boundary-check-reads-two-trees">
   <meta name="plan-title" content="The Boundary Check Reads Two Trees">
   <meta name="plan-summary" content="Dispatch and promotion each run git status in every registered worktree, 312 of them; a fenced run needs only its own worktree and the main checkout.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="5.0">
   <meta name="plan-capability-version" content="1.0">
@@ -24,8 +24,9 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="19">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="20">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;}">
+<meta name="plan-impl" content="1.0">
 </head>
 <body>
   <main class="plan-doc">
@@ -105,10 +106,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-tbcrtt-001" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-build the-boundary-check-reads-two-trees" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tbcrtt-001" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-09-23" data-recommends-skill="/reckon-build the-boundary-check-reads-two-trees" data-resolved-at="2026-10-01T08:11:09+00:00" data-resolved-by="s21-1c">
     <h4 class="r-fu-title">Wait for the supervisor snapshot and the worktree fence, then scope the check</h4>
     <div class="r-fu-body"><p>§1 waits for <code>a-dispatch-returns-without-its-worker</code> §3 (the S20 session) and <code>a-worker-cannot-write-your-home</code> §3 to merge. Its base is the later of those two merges, and the S20 session is told before it dispatches, because it writes <code>dispatch.py</code> and <code>promotion.py</code>. §2 is recorded from the first fenced promotions at the merged head.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-boundary-check-reads-two-trees</pre>
+    <p class="r-fu-outcome">Done 2026-10-01. §1 landed: the two-tree boundary snapshot (da076a65), with the supervisor survival repair at 1859c0d19 keeping the fenced two-tree baseline; gate g-tbcrtt-1 passed. §2 measured on five fenced runs at the merged head, each reading 2 trees with a 2–4 s launch; the full falsifier wording and its two unobservable clauses are recorded on §2. done — no followup.</p>
     </article>
 </section>
 
@@ -169,7 +171,10 @@
     <div class="r-comment-body"><p>§2 measured on real runs — five fenced runs at heads descending from 1859c0d19 each read 2 trees against a registered count of 63-85 (NOT the falsifier's "above 100": the registry fell from 312/214 to ~65 before the window), against 66-84 for four fenced runs promoted before the merge; the intermediate window (da076a65 to 1859c0d19) already read 2 trees on all 51 runs, so the saving begins at da076a65; no unfenced run exists in the after-window (0 of 301 post-merge run snapshots, 0 of 1048 ledger rows since 2026-09-27), the unfenced control being 2026-09-26 runs reading 79-92; no run read 2 trees while its plan composed no fence; promotion's own start-to-commit time is recorded nowhere, so only the promotion-record commit time and the worker-end latency are reported</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261001T075606493794-review-of-the-two-tree-saving-is-measured" data-who="reckon-build" data-when="2026-10-01T08:05:56.130Z">
-    <div class="r-comment-body"><p>Independent review of r-20261001T072815636138-the-two-tree-saving-is-measured recorded as parsed, total 88 (goal_fidelity 17, evidence 16, scope_discipline 20, durability 17, fit 18), three follow-on findings and no blocking finding: the reviewed report&#x27;s after-arm 2-tree read and the 66–92 before/unfenced counts were independently re-read from each run&#x27;s own tree-snapshot.json, and its falsifier verdict (registered count 63–85, not above 100; no unfenced after-window run) is reported honestly and stands.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261001T072815636138-the-two-tree-saving-is-measured recorded as parsed, total 88 (goal_fidelity 17, evidence 16, scope_discipline 20, durability 17, fit 18), three follow-on findings and no blocking finding: the reviewed report's after-arm 2-tree read and the 66–92 before/unfenced counts were independently re-read from each run's own tree-snapshot.json, and its falsifier verdict (registered count 63–85, not above 100; no unfenced after-window run) is reported honestly and stands.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20261001T081109508277" data-who="" data-when="">
+    <div class="r-comment-body">Measured 2026-10-01 by run r-20261001T072815636138 (reviewed at 88; report ~/.config/reckon/crew/reports/reckon/s21-boundary-two-trees-measured.md with its figure). Five fenced runs promoted at heads descending from 1859c0d19 each read 2 trees, whereas fenced runs before the change read the full registry. Fence was read from each run's own composed plan, not the FENCE_WORKERS constant. Dispatch to worker start fell from 23–25 s before to 2–4 s after; the supervisor's pre-spawn window fell from 17–28 s with 66–67 trees to 8–9 s with 2. No run read 2 trees while its plan composed no fence. Two clauses of the falsifier could not be shown as written. The registered count is now about 65 (63–65 measured directly; 84 the last full reading), not above 100, because the worktree fleet has shrunk since the plan's 312 and 214. No unfenced run exists after the merge, so 'an unfenced run reads the full count' rests on the code path (_boundary_snapshot_roots returns None) and on pre-change unfenced runs, which read 79–92 trees. The time from crew complete's start to its commit is not recorded anywhere, so the measured interval is coordinator latency, not promotion duration. The saving is real and larger in ratio than the premise implied.</div>
 </div>
 </section>
 </main>
