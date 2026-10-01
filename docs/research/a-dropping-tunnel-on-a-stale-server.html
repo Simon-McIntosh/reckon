@@ -7,8 +7,7 @@
   <meta name="reckon-type" content="research">
   <meta name="plan-slug" content="a-dropping-tunnel-on-a-stale-server">
   <meta name="plan-title" content="A dropping tunnel on a stale server">
-  <meta name="plan-summary" content="RCA: the plan reader's 'network error' on 1 Oct was requests that never reached a server running code two days old; the edited mctb document was valid">
-  <meta name="plan-status" content="done">
+  <meta name="plan-summary" content="RCA: the plan reader&#x27;s &#x27;network error&#x27; on 1 Oct was requests that never reached a server running code two days old; the edited mctb document was valid">
   <meta name="plan-source" content="shared server log, systemd unit state on both hosts, last -F on the login node, the mctb history, and headless Chromium through an SSH tunnel">
   <meta name="plan-source-quality" content="primary">
   <meta name="plan-reviewed-at" content="2026-10-01">
@@ -16,6 +15,9 @@
   <title>A dropping tunnel on a stale server | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-status" content="done">
+<meta name="plan-modified" content="2026-10-01">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -208,22 +210,36 @@
       suspected, not the one that occurred.
     </p>
 
-    <h2 id="s7">§7 — Remaining work</h2>
+    <h2 id="s7">§7 — Follow-up work</h2>
+    <p>Two follow-ups landed the same day and are live on the login-node server, restarted at 08:34.</p>
+    <table>
+      <thead><tr><th>Change</th><th>What it does</th><th>Commits</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>The server reports when it runs older code than disk</td>
+          <td>At start the server records every module of the package (stat identity and hash). <code>GET /_server</code> compares that with disk and returns the host, the pid and a one-sentence verdict. A touch that leaves the bytes alone is not drift. The shell shows the server's sentence and the restart command in a banner under the top bar, and <code>reckon service status</code> ends with <code>code: current</code>, <code>stale — …</code> or <code>unknown — nothing answered</code>. On a scratch server, changing one module after start produced the banner on the next page load.</td>
+          <td><code>f7019d73c</code>, <code>d32d59c1c</code></td>
+        </tr>
+        <tr>
+          <td>Every document carries a render-contract verdict without anyone running a check</td>
+          <td>The read-time binding from §6. The server keeps one verdict per live document (the <code>audit-doc</code> check), keyed on every file the check read, and computes missing ones in a niced child process. <code>GET /_checks/&lt;project&gt;</code> lists the failing documents; the reader shows a document's errors, collapsed under one line with the <code>audit-doc</code> command; the list marks a failing row; and <code>reckon audit</code> lists failures across mounts without changing its exit code. A first full pass checked 1,523 documents in about three minutes and found 32 failing in 8 projects, 17 of them in imas-efit.</td>
+          <td><code>3d5ed27b4</code>, <code>b193c4168</code></td>
+        </tr>
+        <tr>
+          <td>Persisted index rows stay valid on every host</td>
+          <td>Found while building the above: GPFS reports a different device number for the same file on each host (41 on the compute node, 65 on the login node), so 0 of 1,223 imas-efit index rows written by the server matched when read from the compute node. Every reader re-parsed the whole project and rewrote the index. Rows now compare without the device number, and the verdict store does the same.</td>
+          <td><code>c208f7a3c</code></td>
+        </tr>
+      </tbody>
+    </table>
     <p>
-      <strong>Keep the served server current.</strong> This is the recurring defect, and today's
-      fix was a manual restart. Two shapes would close it. In the first, the server records a
-      digest of the source it loaded and reports it beside the digest on disk, and the reader
-      shows a banner naming the gap when they differ. That is cheap, cannot break the site, and
-      would have made this morning's condition visible at 01:53. In the second, the server exits
-      once its package changes on disk and the new code imports cleanly in a subprocess, and
-      <code>Restart=always</code> brings it back on the new code. That removes the manual step,
-      at the cost of a restart and cold caches on every landed change. The first is recommended
-      now; the second is a decision for the lead.
-    </p>
-    <p>
-      <strong>Bind document compliance</strong> as set out in §6, starting with the read-time
-      verdict, because it needs no installation in each repository and catches the existing
-      backlog.
+      <strong>Still open.</strong> A server that restarts itself when its code changes (exit when
+      the package moves and the new code imports cleanly; <code>Restart=always</code> brings it back)
+      would remove the manual step. It costs a restart and cold caches on every landed change, so it
+      is a decision for the lead. The commit-time binding from §6 (a check-only pre-commit hook
+      installed by <code>reckon sync</code>) and the edit-time harness hook are not built; with the
+      read-time verdict live, they would move the signal earlier rather than create it. The 32
+      failing documents are listed by <code>reckon audit</code> and have not been repaired.
     </p>
   </main>
 </body>
