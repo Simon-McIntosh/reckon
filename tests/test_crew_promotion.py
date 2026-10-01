@@ -1631,7 +1631,24 @@ def test_a_checkout_that_cannot_commit_refuses_before_any_store_is_written(
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     root = tmp_path / "nongit"
+    # The basetemp may sit inside an ambient checkout, so git's own discovery
+    # ascending from the non-git root must be cut at the root's parent:
+    # otherwise an enclosing repository would answer for the non-git root, the
+    # refusal below would be measured against the machine rather than the code,
+    # and the test would pass for a reason it does not control.
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(root.parent))
     (root / "docs" / "state" / PROJECT).mkdir(parents=True)
+    probe = subprocess.run(
+        ["git", "rev-parse", "--is-inside-work-tree"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert probe.returncode != 0 or probe.stdout.strip() != "true", (
+        f"the non-git root {root} resolved to an enclosing worktree; "
+        "ceiling the search at its parent is not taking effect"
+    )
     plan_file = root / "docs" / "plans" / f"{PLAN}.html"
     _write_resource(
         plan_file,
