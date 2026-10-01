@@ -126,6 +126,7 @@ from reckon.mcp_views import (
     crew_lanes_view,
     discovery_view,
     error_response,
+    index_discovery,
     normalize_selector,
     normalize_view,
     resource_view,
@@ -1311,18 +1312,34 @@ def _read_plan_view(
                     "invalid_resource",
                     "A project is required for progressive discovery views.",
                 )
-            raw = _read_plan(
-                project=project,
-                checkout_path=checkout_path,
-                status=status,
-                doc_type=doc_type,
-                sprint=sprint,
-                milestone=milestone,
-                owner=owner,
-                search=search,
-                limit=None,
-                include_followups=include_followups,
-                include_questions=include_questions,
+            # The summary is the list-level read: it answers from the index.
+            # A search reads the documents' bodies, and the other views ask
+            # for derived state, so those keep the derived path.
+            raw = (
+                _index_project_summary(
+                    project,
+                    checkout_path,
+                    status=status,
+                    doc_type=doc_type,
+                    sprint=sprint,
+                    milestone=milestone,
+                    owner=owner,
+                    limit=None,
+                )
+                if selected_view == "summary" and search is None
+                else _read_plan(
+                    project=project,
+                    checkout_path=checkout_path,
+                    status=status,
+                    doc_type=doc_type,
+                    sprint=sprint,
+                    milestone=milestone,
+                    owner=owner,
+                    search=search,
+                    limit=None,
+                    include_followups=include_followups,
+                    include_questions=include_questions,
+                )
             )
             discovery_selector = ResourceSelector(
                 project=project,
@@ -1372,12 +1389,16 @@ def _read_plan_view(
             )
 
         if selector.type == "project" and selected_view not in {"raw", "version"}:
-            raw_discovery = _read_plan(
-                project=selector.project,
-                checkout_path=checkout_path,
-                limit=None,
-                include_followups=include_followups,
-                include_questions=include_questions,
+            raw_discovery = (
+                _index_project_summary(selector.project, checkout_path, limit=None)
+                if selected_view == "summary"
+                else _read_plan(
+                    project=selector.project,
+                    checkout_path=checkout_path,
+                    limit=None,
+                    include_followups=include_followups,
+                    include_questions=include_questions,
+                )
             )
             result = discovery_view(
                 selector.project,
@@ -1396,7 +1417,32 @@ def _read_plan_view(
             result["resource"] = selector.as_dict()
             return result
 
-        if selector.archived:
+        # A sprint summary derives its own composition — the sprint list from the
+        # project's state, hydrated against the list-level rows — rather than
+        # every document in the project, so it is answered before the legacy
+        # resource read that would scan the tree to find one sprint. The detail
+        # view asks for per-document derived state and keeps the derived path.
+        composed_sprint: dict[str, Any] | None = None
+        if (
+            selector.type == "sprint"
+            and selected_view == "summary"
+            and not selector.archived
+        ):
+            discovered = _index_sprint_state(selector.project, checkout_path)
+            composed_sprint = next(
+                (
+                    item
+                    for item in discovered.get("sprints", [])
+                    if isinstance(item, dict) and item.get("id") == selector.id
+                ),
+                None,
+            )
+
+        if composed_sprint is not None:
+            data = composed_sprint
+            version = _aggregate_version(selector.project, checkout_path)
+            deps: list[dict[str, Any]] = []
+        elif selector.archived:
             data, version = _read_archived_resource(
                 selector.project,
                 selector.id,
@@ -1454,7 +1500,7 @@ def _read_plan_view(
                 hint="Check the typed identity and archived flag.",
             )
 
-        if selector.type == "sprint" and selected_view in {"summary", "detail"}:
+        if selector.type == "sprint" and selected_view == "detail":
             discovered = _discover_project(selector.project, checkout_path)
             composed = next(
                 (
@@ -1654,6 +1700,114 @@ def _discovery_state_root(root: str | None) -> Path:
     if root is not None:
         return Path(root).expanduser().resolve() / "docs" / "state"
     return _state_root()
+
+
+def _index_project_summary(
+    project: str,
+    checkout_path: str | None,
+    *,
+    status: str | None = None,
+    doc_type: str | None = None,
+    sprint: str | None = None,
+    milestone: str | None = None,
+    owner: str | None = None,
+    limit: int | None = None,
+) -> dict[str, Any]:
+    """Return a project read's list-level payload, taken from the index.
+
+    The per-document body state the derived payload once parsed every plan for
+    is not listed here: a summary names which documents exist and the project's
+    own sprint, milestone, blocker and timeline state, and a read of one
+    document derives that document.
+    """
+
+    docs_dir = _docs_dir_for_project(project, checkout_path)
+    if docs_dir is None:
+        return {"inventory": [], "sprints": [], "milestones": []}
+    discovered = index_discovery(
+        docs_dir, project, _discovery_state_root(checkout_path)
+    )
+    inventory = list(discovered.get("inventory") or [])
+    plans = _filter_inventory(
+        [_inventory_row(item) for item in inventory],
+        status=status,
+        doc_type=doc_type,
+        sprint=sprint,
+        milestone=milestone,
+        owner=owner,
+        search=None,
+        limit=limit,
+    )
+    sprints = list(discovered.get("sprints") or [])
+    active_sprint_id = discovered.get("active_sprint_id")
+    if not active_sprint_id:
+        active_sprint_id = next(
+            (
+                item.get("id")
+                for item in sprints
+                if isinstance(item, dict) and item.get("status") == "active"
+            ),
+            None,
+        )
+    summary = _discovery_summary(
+        project,
+        plans,
+        [],
+        [],
+        sprints=sprints,
+        all_plans={
+            str(item.get("slug")): item for item in inventory if item.get("slug")
+        },
+        docs_dir=docs_dir,
+    )
+    # A count that needs the documents' bodies is dropped rather than reported
+    # as zero: the read that derives it names it.
+    for key in ("open_followups", "open_questions", "open_decisions", "impl_mean"):
+        summary.pop(key, None)
+    return {
+        "project": project,
+        "plans": plans,
+        "followups": [],
+        "questions": [],
+        "sprints": sprints,
+        "milestones": list(discovered.get("milestones") or []),
+        "blockers": list(discovered.get("blockers") or []),
+        "timeline": list(discovered.get("timeline") or []),
+        "active_sprint_id": active_sprint_id,
+        "source_format": discovered.get("source_format", "legacy-index"),
+        "resource_versions": discovered.get("resource_versions", {}),
+        "tag_inventory": _tag_inventory(inventory),
+        "summary": summary,
+    }
+
+
+def _aggregate_version(project: str, root: str | None = None) -> int:
+    """Return the project's aggregate-state version, without deriving it.
+
+    A sprint read answers from the index and still reports the concurrency
+    token its resource shares with the project's aggregate state document, so
+    the version comes from that one document rather than a tree scan.
+    """
+
+    try:
+        _data, version = read_plan(project, "index", root)
+    except Exception:  # noqa: BLE001 — an absent aggregate reads as version zero
+        return 0
+    return int(version or 0)
+
+
+def _index_sprint_state(project: str, root: str | None = None) -> dict[str, Any]:
+    """Return the project's sprint composition, taken from the index.
+
+    A sprint read derives the sprint list from the project's own state document
+    and hydrates its items against the list-level rows, instead of deriving
+    every document in the project to pick one sprint out of it.
+    """
+
+    docs_dir = _docs_dir_for_project(project, root)
+    if docs_dir is None:
+        return {"inventory": [], "sprints": [], "milestones": []}
+    return index_discovery(docs_dir, project, _discovery_state_root(root))
 
 
 def _discover_project(project: str, root: str | None = None) -> dict[str, Any]:

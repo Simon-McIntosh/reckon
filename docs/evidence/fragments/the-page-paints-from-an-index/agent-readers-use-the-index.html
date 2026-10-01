@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-page-paints-from-an-index">
+  <meta name="plan-title" content="Agent readers answer from the same index">
+  <meta name="plan-summary" content="A project summary and a sprint summary take their list-level facts from reckon.metadata_index, revalidating the rows by stat on every call and reading the project's own state document, parsing no plan file and walking no docs tree.">
+  <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
+  <meta name="plan-commits" content="ac9beac9, 3881bbd7c">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="mcp,metadata,index,readers">
+  <title>Agent readers answer from the same index — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="agent-readers-use-the-index" data-reckon="landed" data-when="2026-10-01">
+  <h2>Agent readers answer from the same index</h2>
+
+  <p>The MCP read views derived a project's whole document state in their own
+  process, with no change watch and a zero-second reuse window, to answer a
+  question that is list-level: which documents exist, and what a sprint holds.
+  The cost landed on the agent while the served page painted from the persisted
+  index.</p>
+
+  <p>Commit <code>ac9beac9</code> adds <code>reckon.mcp_views.index_discovery</code>, which
+  reads the rows of <code>reckon.metadata_index</code> — the same module and the same
+  persisted file the served process uses — and reads the project's own state
+  document for its sprints, milestones, blockers and timeline
+  (<code>state/&lt;project&gt;/index.json</code>, or the composed distributed state).
+  The sprint list is hydrated against the rows through the shared
+  <code>_derive_lifecycle</code>, so a sprint summary names its composition
+  without deriving the rest of the project. In <code>reckon/mcp.py</code> the
+  project summary view and the sprint summary view take that payload;
+  <code>view="detail"</code>, <code>view="raw"</code> and a body search keep the
+  derived path, because they ask for per-document state or document bodies. A
+  count the index cannot derive — open followups, open questions, open
+  decisions, mean impl — is omitted from the summary rather than reported as
+  zero, and <code>discovery_view</code> states the followup clause only when its
+  payload carries the count.</p>
+
+  <p>A reader in its own process runs no change watch, so an in-process build
+  would be the only one it ever sees: <code>index_rows</code> answered from the
+  cached build and compared stat identity only on a miss, and a title rewritten
+  on disk stayed invisible for the life of the process. The agent path now
+  revalidates on every call — <code>index_rows(..., revalidate=True)</code>
+  stats each covered file and re-parses only the ones whose identity moved, the
+  cost a restart already pays — while the served path keeps its cached read,
+  because the change watch invalidates the tree it watches.</p>
+
+  <h3>Measured</h3>
+  <ul>
+    <li><strong>The declared measure.</strong>
+    <code>tests/test_agent_readers_use_the_index.py</code> builds a temporary
+    project of 140 plan files and 60 evidence files over a temporary
+    configuration home, and writes a sprint document. A cold index build parses
+    all 200 documents (positive control, so a later zero distinguishes a reused
+    index from an instrument that never fired). Every in-process memo is then
+    cleared — no parse memo, no in-process index, the index file kept — and a
+    project-level <code>read_plan</code> summary and a sprint summary are
+    called: <code>walks, meta parses, full parses = 0, 0, 0</code>. The same
+     counters also cover <code>_parse_plan_uncached</code>, so a reader that
+    reached the followup scanner would trip them.</li>
+    <li><strong>The stale-read defect, reproduced before it was repaired, and
+     its fix:</strong> two further cases call a view twice in one process with a
+     file rewritten between the calls. Before the fix the second read returned
+     the original value (<code>assert 'note-000' == 'A rewritten title'</code>,
+     and a sprint read still reporting <code>completed == 0</code> after its
+     item shipped; log <code>logs/defect-reproduction.log</code>); after it the second call
+     returns the new title and the status of <code>1</code> completed item, and
+     re-parses exactly the file that moved, in both cases with zero docs-tree
+     walks.</li>
+    <li><strong>The declared negative control is executed and logged:</strong>
+     with the MCP read views in <code>reckon/mcp_views.py</code> routed through
+     <code>discover_plans</code> again, the counters read
+     <code>(2, 200, 0)</code> — two docs-tree walks and 200 meta parses — and
+     both cases fail; the log's last line reads <code>EXIT=1</code>. Log:
+     <code>logs/negative-control.log</code> in the run directory
+     <code>r-20260930T233955857938-agent-readers-use-the-index</code>.</li>
+    <li><strong>The gate at head (working tree over <code>2cc4f81a</code>):</strong>
+     <code>114 passed</code> across
+     <code>tests/test_agent_readers_use_the_index.py</code>,
+     <code>tests/test_mcp_views.py</code>, <code>tests/test_mcp_tools.py</code>,
+     <code>tests/test_mcp_roadmap.py</code>,
+     <code>tests/test_read_plan_section_view.py</code>,
+     <code>tests/test_metadata_index_survives_restart.py</code> and
+     <code>tests/test_impl_is_computed.py</code> (the five new cases included). The same gate at base revision
+     <code>4bdf93dde</code> reports <code>109 passed</code> (the six pre-existing
+     files, the new test absent): the head arm adds no failure id. Logs:
+     <code>logs/head-gate.log</code> and the base arm in the run directory.</li>
+    <li><strong>Ruff:</strong> the four changed paths are format-stable and the
+     test file adds no finding; <code>reckon/mcp.py</code>,
+     <code>reckon/mcp_views.py</code> and <code>reckon/metadata_index.py</code>
+     carry identical finding codes at base and head, so the change adds no
+     finding.</li>
+  </ul>
+
+  <p><strong>Not done here, by scope.</strong> Discovery mode
+  (<code>read_plan(project)</code> without a view, and <code>view="raw"</code>)
+  still derives its followups and questions by scanning documents, and the
+  roadmap, plan-summary and sprint-detail paths still derive through
+  <code>discover_plans</code>: each asks for per-document state rather than a
+  list, so the thin-interface read is the summary.</p>
+</article>
+</body>
+</html>

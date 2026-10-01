@@ -1124,6 +1124,156 @@ def ready_set_view(roadmap: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+#: The row types the metadata index inventories, so an agent read lists the
+#: same documents the served surface paints.
+_INDEXED_INVENTORY_TYPES = frozenset({"plan", "research", "evidence"})
+
+
+def index_discovery(
+    docs_dir: Path,
+    project: str,
+    state_root: Path | None,
+) -> dict[str, Any]:
+    """Build the list-level discovery payload from the persisted metadata index.
+
+    A reader answered through ``discover_plans`` walks every tree it touches and
+    parses every plan file, in its own process, cold on each restart. The index
+    the served process persists already carries the list-level facts — which
+    documents exist and their slug, href, type, title, status, sprint and stamps
+    — so an agent read takes those from it and derives only the project's own
+    state: the sprints, milestones, blockers and timeline held in the project
+    state document. No plan file is opened, and the heavier per-document state
+    belongs to a read of that document.
+    """
+
+    from reckon import metadata_index
+
+    # This process runs no change watch, so the rows are revalidated by stat on
+    # every call: a long-lived reader must see a later edit, and the re-stat
+    # re-parses only the files whose identity moved.
+    rows = metadata_index.index_rows(docs_dir, project, revalidate=True)
+    inventory = [
+        _indexed_item(row)
+        for row in rows
+        if str(row.get("type") or "") in _INDEXED_INVENTORY_TYPES
+    ]
+    (
+        sprints,
+        milestones,
+        blockers,
+        timeline,
+        active_sprint_id,
+        north_stars,
+        resource_versions,
+        source_format,
+    ) = _project_state_lists(docs_dir, project, state_root)
+
+    # A sprint a plan names but the state document does not carry still lists,
+    # matching the derived payload's stub instead of dropping the plan's row.
+    known = {
+        str(sprint.get("id"))
+        for sprint in sprints
+        if isinstance(sprint, dict) and sprint.get("id")
+    }
+    referenced = {str(item.get("sprint")) for item in inventory if item.get("sprint")}
+    for sprint_id in sorted(referenced - known):
+        sprints.append(
+            {
+                "id": sprint_id,
+                "theme": f"Sprint {sprint_id}",
+                "description": "Auto-synthesized from plan inventory",
+                "status": "planned",
+                "items": [],
+            }
+        )
+
+    from reckon.serve import _derive_lifecycle
+
+    inventory, sprints = _derive_lifecycle(project, inventory, sprints, blockers)
+    return {
+        "inventory": inventory,
+        "sprints": sprints,
+        "milestones": milestones,
+        "blockers": blockers,
+        "timeline": timeline,
+        "active_sprint_id": active_sprint_id,
+        "north_stars": north_stars,
+        "source_format": source_format,
+        "resource_versions": resource_versions,
+    }
+
+
+def _indexed_item(row: Mapping[str, Any]) -> dict[str, Any]:
+    """Return one index row in the item shape a discovery reader consumes."""
+
+    artifact_type = str(row.get("type") or "")
+    return {
+        "slug": row.get("slug"),
+        "href": row.get("href"),
+        "type": artifact_type,
+        "title": row.get("title") or row.get("slug"),
+        "status": row.get("status") or ("draft" if artifact_type == "plan" else ""),
+        "sprint": row.get("sprint") or None,
+        "archived": row.get("archived") or "",
+        "created": row.get("created"),
+        "edited": row.get("edited"),
+    }
+
+
+def _project_state_lists(
+    docs_dir: Path,
+    project: str,
+    state_root: Path | None,
+) -> tuple[list, list, list, list, Any, list, dict, str]:
+    """Return the project's own resource lists and their source format."""
+
+    from reckon.project_state import compose_project_state, project_state_mode
+
+    if project_state_mode(docs_dir).format == "distributed":
+        composed = compose_project_state(docs_dir, project)
+        return (
+            list(composed.get("sprints") or []),
+            list(composed.get("milestones") or []),
+            list(composed.get("blockers") or []),
+            list(composed.get("timeline") or []),
+            composed.get("active_sprint_id"),
+            list(composed.get("north_stars") or []),
+            dict(composed.get("resource_versions") or {}),
+            "distributed",
+        )
+
+    sprints: list = []
+    milestones: list = []
+    blockers: list = []
+    timeline: list = []
+    active_sprint_id = None
+    north_stars: list = []
+    if state_root is not None:
+        state_file = state_root / project / "index.json"
+        if state_file.is_file():
+            try:
+                envelope = json.loads(state_file.read_text())
+                data = envelope.get("data", {}) if isinstance(envelope, dict) else {}
+                sprints = list(data.get("sprints", []))
+                milestones = list(data.get("milestones", []))
+                blockers = list(data.get("blockers", []))
+                timeline = list(data.get("timeline", []))
+                active_sprint_id = data.get("active_sprint_id")
+                north_stars = list(data.get("north_stars", []))
+            except (OSError, json.JSONDecodeError):
+                pass
+    return (
+        sprints,
+        milestones,
+        blockers,
+        timeline,
+        active_sprint_id,
+        north_stars,
+        {},
+        "legacy-index",
+    )
+
+
 def compose_review(
     review: dict[str, Any],
     inventory: list[dict[str, Any]],
@@ -2473,12 +2623,12 @@ def resource_view(
 
     selected = normalize_view(view)
     if selector.type == "review" and selected in {"summary", "detail"}:
-        from reckon.serve import discover_plans
-
         checkout = provenance.get("checkout")
         if checkout:
-            discovered = discover_plans(
-                Path(checkout) / "docs", selector.project, Path(checkout) / "docs/state"
+            discovered = index_discovery(
+                Path(checkout) / "docs",
+                selector.project,
+                Path(checkout) / "docs/state",
             )
             data = compose_review(
                 data,
@@ -2688,16 +2838,22 @@ def discovery_view(
         for item in raw.get("followups") or []
         if isinstance(item, dict) and item.get("status", "open") == "open"
     ]
+    # The payload states an open-followup count only when it derived one: a
+    # list-level read taken from the index has not opened the documents that
+    # hold them, and zero would be a claim it cannot make.
+    summary_source = raw.get("summary") or {}
+    followup_clause = (
+        f" {summary_source['open_followups']} open followups."
+        if "open_followups" in summary_source
+        else ""
+    )
     result: dict[str, Any] = {
         "resource": selector.as_dict(),
         "version": version,
         "view": selected,
         "provenance": provenance,
         "title": project,
-        "summary": (
-            f"{raw.get('summary', {}).get('plans', 0)} plans; "
-            f"{raw.get('summary', {}).get('open_followups', 0)} open followups."
-        ),
+        "summary": f"{summary_source.get('plans', 0)} plans.{followup_clause}",
         "state": {
             "active_sprint_id": raw.get("active_sprint_id"),
             "source_format": raw.get("source_format", "legacy-index"),
