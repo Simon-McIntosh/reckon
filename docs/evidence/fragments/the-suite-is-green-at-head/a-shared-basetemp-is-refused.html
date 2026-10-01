@@ -1,0 +1,67 @@
+<section id="a-shared-basetemp-is-refused">
+  <h2>a-shared-basetemp-is-refused — a basetemp a live session holds is refused before the second session removes anything</h2>
+
+  <p><strong>Defect.</strong> At startup pytest removes and recreates an explicit
+  <code>--basetemp</code> (<code>TempPathFactory.getbasetemp</code>, <code>_pytest/tmpdir.py</code>:
+  <code>if basetemp.exists(): rm_rf(basetemp)</code>). This suite's session reaper,
+  <code>reaped_watch_producers</code> in <code>tests/conftest.py</code>, then signals every
+  <code>crew watch</code> producer whose <code>RECKON_HOME</code> lies under the same root. Two
+  sessions given one basetemp therefore destroy each other: the second removes the first's
+  in-flight configuration homes and watch seats, and a dispatch then refuses with
+  <code>WatcherRequired</code>. Measured by s22-coord at
+  <code>~/.config/reckon/crew/reports/reckon/s22-coord/reflex-tests-environment/report.md</code>.</p>
+
+  <p><strong>Fix, one commit.</strong> <code>tests/conftest.py</code>'s
+  <code>pytest_configure</code> now takes a lock when <code>config.option.basetemp</code> is set.
+  The lock is a file <em>beside</em> the basetemp directory
+  (<code>basetemp_lock_path</code> = <code>basetemp.parent / (basetemp.name + ".lock")</code>),
+  never inside it, because the directory it guards is exactly what a session removes at startup.
+  <code>acquire_basetemp_lock</code> writes this process's pid with
+  <code>O_CREAT | O_EXCL</code>; a lock whose recorded pid is alive is refused
+  (<code>BasetempInUseError</code> → <code>pytest.UsageError</code>, exit 4) <em>before</em>
+  pytest removes anything; a lock whose pid is dead is removed and the acquisition retried. The
+  lock is released at unconfigure through <code>config.add_cleanup</code>, so a clean exit frees
+  the basetemp for sequential reuse, and a crash leaves a stale lock that the next session takes
+  over. Only the explicit-basetemp path is touched; a default numbered basetemp is unaffected.</p>
+
+  <p><strong>Evidence — three cases, each driving two real child pytest sessions</strong>
+  connected to the repository's conftest with <code>-p tests.conftest</code>, in a temporary
+  directory outside any repository (<code>tests/test_a_shared_basetemp_is_refused.py</code>):</p>
+
+  <ul>
+    <li><strong>Refused, first session intact.</strong> The first session holds the basetemp and
+    writes a pid-named fixture under its <code>tmp_path</code>; the second session exits non-zero
+    with a message naming the first's pid and the basetemp, the first is still running, and its
+    fixture file is unchanged.</li>
+    <li><strong>Sequential reuse starts normally.</strong> A session run after the first exits
+    acquires the same basetemp and passes (the lock is released on clean exit).</li>
+    <li><strong>A dead pid is taken over.</strong> A session killed with an unreleased lock (its
+    pid then dead) is followed by a session that acquires the same basetemp and passes.</li>
+  </ul>
+
+  <p><strong>Measured (base vs head), both arms <code>-n 8</code>, each with its own
+  <code>--basetemp</code> under <code>$TMPDIR</code>.</strong> Head
+  (<code>531027092</code>, lock present): <strong>3 passed, EXIT=0</strong>. Base
+  (<code>531027092</code>, lock absent; new test file against the unmodified conftest):
+  <strong>2 failed, 1 passed, EXIT=1</strong> — the head arm adds no failing id. Logs in the run
+  record: <code>logs/head-arm-xdist.log</code>, <code>logs/base-arm-xdist.log</code>.</p>
+
+  <p><strong>Declared negative control, executed and logged.</strong> Remove the basetemp lock in
+  a scratch tree; the second concurrent session then deletes the first's fixture directory and
+  the case fails. Log <code>logs/negative-control.log</code>: <strong>1 failed, EXIT=1</strong>,
+  failing id
+  <code>test_a_second_session_is_refused_and_the_first_keeps_its_fixtures</code>, failing on
+  <em>“the second session removed the first session's fixture directory”</em> — the two sessions
+  rebuilt the same numbered <code>tmp_path</code> directory, so the fixture file is named for the
+  pid that wrote it; without the lock the first session's file is gone.</p>
+
+  <p><strong>Existing guards unchanged.</strong> <code>tests/test_watch_arming_isolation.py</code>
+  (the scheduler guard and producer reaper) run at base and head under <code>-n 8</code>:
+  <strong>2 failed, 6 passed</strong> at base and <strong>2 failed, 9 passed</strong> at head,
+  the same two ids failing in both arms — the head arm adds the three new passing ids and no
+  failing id. The two failures are pre-existing and outside this node's scope (see
+  <code>follow_ons</code>).</p>
+
+  <p><strong>Scope.</strong> Only <code>tests/conftest.py</code> and the new test file change;
+  no product source is touched, no test is skipped, xfailed, deleted or weakened.</p>
+</section>
