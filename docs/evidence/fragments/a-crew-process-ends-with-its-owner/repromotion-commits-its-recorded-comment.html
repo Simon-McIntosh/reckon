@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A re-promotion commits the plan comment its own earlier attempt recorded">
+  <meta name="plan-summary" content="When a landing commit fails on a held index.lock, the plan comment survives on disk uncommitted; the re-promotion now carries the plan file into its landing commit whenever the file differs from HEAD, whether this call recorded the comment or found it already recorded.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,promotion,landing,comment,index-lock,idempotent">
+  <title>A re-promotion commits its recorded comment — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="repromotion-commits-its-recorded-comment" data-reckon="landed" data-when="2026-10-01">
+  <h2>A re-promotion commits the plan comment its own earlier attempt recorded</h2>
+  <p>Promotion writes the plan landing comment, appends the ledger row, then commits both as one landing. When that commit fails — a held <code>index.lock</code> is the measured case — the rollback drops the newly created ledger run file but cannot restore the tracked plan file, because the same lock blocks <code>git restore</code>: the comment stays on disk uncommitted. The re-promotion read it back as already recorded and, in <code>promotion.py:_plan_comment_store_path</code>, returned no plan path for the already-recorded branch, so the landing commit carried only the ledger row and the plan file stayed dirty until committed by hand.</p>
+  <p>The fix carries the plan file whenever it differs from <code>HEAD</code>, not merely when this call recorded the comment: <code>_path_differs_from_head</code> compares the working tree to <code>HEAD</code> with <code>git diff --quiet</code>, and <code>_plan_comment_store_path</code> includes the file when the comment is newly recorded or the already-recorded file differs. A genuinely clean idempotent re-promotion still returns no path, so it stages and commits nothing.</p>
+  <p>Gate: <code>tests/test_repromotion_commits_its_recorded_comment.py</code> passes, 2 passed, EXIT=0. The named case drives the lock-held failure, asserts the plan file is dirty after it, then asserts the re-promotion leaves <code>git status --porcelain</code> empty for the plan file and lists it in the landing commit; the boundary case asserts a clean idempotent re-promotion leaves HEAD and the plan version unchanged. The declared negative control excludes the already-recorded plan file from the landing commit and reddens the named case (<code>M docs/plans/repromotion-target.html</code>), EXIT=1, in <code>logs/negative-control.log</code>. Scoped regression: <code>tests/test_crew_promotion.py</code> and <code>tests/test_promotion_release.py</code> run 55 passed at base <code>2c49c0457</code> and 55 passed at the head, zero added failures.</p>
+</article>
+</body>
+</html>

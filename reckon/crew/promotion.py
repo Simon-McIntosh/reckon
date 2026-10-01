@@ -3175,26 +3175,58 @@ def _require_committable_checkout(checkout: Path | None, run_id: str) -> None:
         )
 
 
+def _path_differs_from_head(checkout: Path, path: Path) -> bool:
+    """Whether a tracked path's working-tree content differs from HEAD.
+
+    ``git diff --quiet`` exits 0 when the path matches HEAD and 1 when it
+    differs. Any other exit is a git failure, which counts as differing so the
+    path is carried into the landing commit and the failure surfaces there
+    rather than silently dropping a write; a path outside the checkout cannot
+    be compared and likewise counts as differing.
+    """
+    try:
+        relative = path.resolve().relative_to(checkout.resolve()).as_posix()
+    except ValueError:
+        return True
+    diff = _git(checkout, "diff", "--quiet", "HEAD", "--", relative, check=False)
+    return diff.returncode != 0
+
+
 def _plan_comment_store_path(
     *,
     project: str,
     plan: str,
     comment: Mapping[str, Any],
     root: str | Path | None,
+    checkout: Path,
 ) -> list[Path]:
-    """The tracked plan path changed by a newly recorded landing comment.
+    """The tracked plan path a landing comment carries into the commit.
 
-    The ledger path is never returned here: a caller that appended a row adds
-    it explicitly, while the already-landed branch rewrote no ledger of its
-    own. The plan file is returned only when the comment was newly recorded,
-    since an idempotent retry leaves the plan file unchanged.
+    The ledger path is never returned here: a caller that appended a newly
+    recorded row adds it explicitly, while the already-landed branch rewrote
+    no ledger of its own.
+
+    A newly recorded comment always wrote the plan file, so the file is
+    returned. An idempotent retry usually leaves the plan file unchanged and
+    returns empty, but not when an earlier attempt recorded the comment and
+    then failed to commit it: the comment reads as already recorded from the
+    plan on disk while the file still differs from HEAD, so leaving it out
+    would strand the landing's own write as uncommitted state. The fact that
+    decides inclusion is therefore whether the file differs from HEAD, not
+    whether this call recorded it.
     """
-    if not str(plan) or not comment.get("recorded") or comment.get("already_recorded"):
+    if not str(plan) or not comment.get("recorded"):
         return []
     plan_file = _store._resolve_html_file(
         project, str(plan), root, artifact_type="plan"
     )
-    return [plan_file] if plan_file is not None else []
+    if plan_file is None:
+        return []
+    if comment.get("already_recorded") and not _path_differs_from_head(
+        checkout, plan_file
+    ):
+        return []
+    return [plan_file]
 
 
 def _restore_landing_writes(
@@ -6645,6 +6677,7 @@ def _complete_locked(
                     plan=str(node.get("plan") or ""),
                     comment=comment,
                     root=ledger_root,
+                    checkout=checkout,
                 ),
             )
             capture = _capture_member_session(record)
@@ -7128,6 +7161,7 @@ def _complete_locked(
                     plan=str(node.get("plan") or ""),
                     comment=comment,
                     root=ledger_root,
+                    checkout=checkout,
                 ),
             ],
         )
