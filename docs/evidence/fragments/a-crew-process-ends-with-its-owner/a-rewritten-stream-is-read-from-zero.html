@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>a-rewritten-stream-is-read-from-zero</title>
+<meta name="reckon-type" content="fragment">
+</head>
+<body>
+<section id="a-rewritten-stream-is-read-from-zero">
+<h3>&sect;11 &mdash; a producer re-reads a stream from its first record when it was replaced or rewritten in place</h3>
+<p>
+A stream that was replaced at a new inode, or rewritten in place at the same
+inode, is re-read from its first record by the producer's cursor. The cursor
+already resumed only while the inode was unchanged and the file was at least as
+long as the offset; neither condition catches a stream extended under a cursor
+by a rewrite, so an in-place rewrite to a new opening resumed into bytes it
+never held. The cursor now records a bounded fingerprint of the stream's
+opening beside the offset, and it resumes only while the stream still opens with
+it: an append leaves the opening intact and still resumes; a replaced or
+rewritten stream reads whole. The commits-beyond-base cache drops entries for
+worktrees no longer on disk and is bounded by the live fleet.
+</p>
+<table>
+<tr><th>measure</th><th>figure</th></tr>
+<tr><td>gate</td><td><code>tests/test_producer_reads_only_what_changed.py</code> &mdash; 6 passed (3 new)</td></tr>
+<tr><td>replacement at a new inode, longer than the cursor</td><td>passes only with the inode comparison; without it the read resumes mid-record</td></tr>
+<tr><td>in-place rewrite at the same inode, longer than the cursor</td><td>passes only with the opening fingerprint</td></tr>
+<tr><td>negative control</td><td>both cursor checks removed &rarr; both new cases resume from the stale offset; 2 failed (EXIT=1)</td></tr>
+<tr><td>base / head arms</td><td>25 / 25 passing, zero added failures</td></tr>
+<tr><td>commits-cache bound</td><td>48 classified runs, cached entries never exceed the ceiling of 8</td></tr>
+<tr><td>commit</td><td><code>8b2eb4b2365e311cb016ceb3d99e3b76d6248fa3</code></td></tr>
+</table>
+</section>
+</body>
+</html>
