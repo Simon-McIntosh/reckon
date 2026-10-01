@@ -1081,6 +1081,114 @@ def _released_follower_warning(dispatch_watch: Mapping[str, Any]) -> str:
     )
 
 
+def _unmet_follower_conditions(
+    project: str,
+    dispatch_watch: Mapping[str, Any],
+    *,
+    session: str | None,
+) -> list[str]:
+    """Name every reason this session's delivery is not in place, at once.
+
+    The conditions stand alone — no producer, no registration, a follower
+    whose lines reach nothing — and a caller can only fix the one a refusal
+    names, so a refusal naming one at a time costs a round trip per condition.
+    Measured on one worker: three refusals, about twenty-five minutes. The
+    list is reported whole, and one command clears every session-side entry on
+    it.
+    """
+    from reckon.crew.runs import follower_state, list_followers
+
+    conditions: list[str] = []
+    if not dispatch_watch.get("watcher_live"):
+        ensure = str(dispatch_watch.get("ensure_line") or "").strip()
+        line = f"no live crew watcher process is reading project {project!r}"
+        if ensure:
+            line += (
+                f"; one is started with `{ensure}`, which is safe to run "
+                "against a watcher that is already up"
+            )
+        conditions.append(line)
+    if not session:
+        conditions.append(
+            "no session was named, so no follower's pane is this run's destination"
+        )
+        return conditions
+    if dispatch_watch.get("session_attached") or dispatch_watch.get(
+        "session_follower_released"
+    ):
+        # An attached session hears the run, and a released one is admitted
+        # with the re-arm warning rather than a refusal.
+        return conditions
+    state = follower_state(project, session)
+    # A peer's follower is project-global and feeds the peer, never this
+    # session, so naming the sessions that do deliver answers the question the
+    # caller is left with when its own delivery is not in place.
+    others = sorted(
+        str(row.get("session") or "")
+        for row in list_followers(project)
+        if row.get("live") and str(row.get("session") or "") != session
+    )
+    peers = (
+        "; sessions delivering for this project right now: "
+        + ", ".join(repr(name) for name in others)
+        if others
+        else ""
+    )
+    if state.get("registered"):
+        conditions.append(
+            f"session {session!r} has a follower that is not delivering: "
+            f"{state.get('not_live_because')}{peers}"
+        )
+    else:
+        conditions.append(f"session {session!r} has no registered follower{peers}")
+    return conditions
+
+
+class _FollowerAdmissionUnmet(WatcherRequired):
+    """A dispatch refused for every unmet follower condition in one result.
+
+    The conditions are independent and fixing one reveals the next, so a
+    refusal that names a single condition teaches the caller one at a time.
+    This refusal names the whole list and the one follower command that clears
+    it, and it keeps the error key and exit code :class:`WatcherRequired`
+    already answers with so a caller reading the documented channel sees the
+    same verdict either way.
+    """
+
+    def __init__(
+        self,
+        project: str,
+        watch: Mapping[str, Any],
+        *,
+        session: str | None,
+        conditions: list[str],
+    ) -> None:
+        self.project = project
+        self.watch = dict(watch)
+        self.session = session
+        self.conditions = list(conditions)
+        attach = str(watch.get("attach_line") or "reckon crew follow").strip()
+        unmet = "\n".join(f"- {condition}" for condition in self.conditions)
+        count = len(self.conditions)
+        plural = "condition" if count == 1 else "conditions"
+        CrewError.__init__(
+            self,
+            format_refusal(
+                "D13",
+                f"session {session!r} would not hear this run finish; "
+                f"{count} follower {plural} unmet, named together so one "
+                f"dispatch reaches the fix:\n{unmet}\n"
+                f"Arm `{attach}` with the harness primitive that reports each "
+                "line as it is written -- named for this host in reckon-build "
+                "references/orchestrator-harness/<harness>.md -- then dispatch "
+                "again. A copied-but-wrongly-armed line is the common case: the "
+                "command is right and its lines still end where nothing reads "
+                "them. Or pass --no-watch to waive delivery for a synchronous "
+                "dispatch",
+            ),
+        )
+
+
 def _watcher_delivery_admission(
     project: str,
     dispatch_watch: Mapping[str, Any],
@@ -1091,24 +1199,37 @@ def _watcher_delivery_admission(
     """Decide whether a session's delivery admits the dispatch.
 
     Three cases, and the whole point is that they are told apart. An attached
-    session needs nothing. A session that never registered a follower with the
-    watcher is refused — it would launch work whose completion nothing wakes it
-    for, and a live watcher process feeds other sessions, not this one. A
-    session whose registration was released — it armed a follower that has
-    since expired — is admitted while the watcher process is live, and handed
-    the re-arm warning: the project is still watched, and the run's own record
-    keeps the delivery it was missing visible to a later reader.
+    session needs nothing. A session whose registration was released — it armed
+    a follower that has since expired — is admitted while the watcher process
+    is live, and handed the re-arm warning: the project is still watched, and
+    the run's own record keeps the delivery it was missing visible to a later
+    reader. Everything else is refused, and every unmet condition is named in
+    the one refusal rather than one per round trip.
 
     Returns the warning line when a released session proceeds, and ``None``
     when the session is attached or the launch kind carries no delivery.
-    Raises :class:`WatcherRequired` for a session with no registration to
-    release.
+    Raises :class:`WatcherRequired` for a session that would not hear the run,
+    whatever the launch kind, and for any launch kind with no live producer.
     """
-    if launch_kind != "cli" or dispatch_watch.get("session_attached"):
-        return None
-    if not dispatch_watch.get("session_follower_released"):
-        raise WatcherRequired(project, dispatch_watch, session=session)
-    return _released_follower_warning(dispatch_watch)
+    if launch_kind != "cli":
+        # A launch that is not a session delivery — an in-harness node preparing
+        # a directive — has no follower of its own to judge, so the conditions
+        # below do not apply to it. The producer does apply: every launch kind
+        # reads the project's watch seat, so its absence is refused here for
+        # this kind too, as the call site refused it for all kinds.
+        if dispatch_watch.get("watcher_live"):
+            return None
+        raise WatcherRequired(project, dispatch_watch)
+    if dispatch_watch.get("session_follower_released") and dispatch_watch.get(
+        "watcher_live"
+    ):
+        return _released_follower_warning(dispatch_watch)
+    conditions = _unmet_follower_conditions(project, dispatch_watch, session=session)
+    if conditions:
+        raise _FollowerAdmissionUnmet(
+            project, dispatch_watch, session=session, conditions=conditions
+        )
+    return None
 
 
 @dataclass(frozen=True)
@@ -5076,15 +5197,14 @@ def dispatch(
             dispatch_watch = _ensure_watch_producer(project, session=session)
             # The watcher requirement is answered by the process, read from the
             # watcher's own state — never by a session's follower, which is how a
-            # project with no watcher process at all kept admitting dispatches. A
-            # refusal here teaches the command that starts a durable watcher, which
-            # is idempotent, so it is safe to run against one already up.
-            if not dispatch_watch["watcher_live"]:
-                raise WatcherRequired(project, dispatch_watch)
-            # A producer exists now. Whether this session hears what it writes is a
-            # separate fact, and the only one that decides if the finished run gets
-            # noticed, so it is checked before a worktree exists. A released
-            # registration proceeds with a re-arm warning rather than a refusal.
+            # project with no watcher process at all kept admitting dispatches.
+            # Whether this session hears what the producer writes is a separate
+            # fact, and the only one that decides if the finished run gets
+            # noticed. Both are judged here, before a worktree exists, and one
+            # refusal names every unmet condition so the caller reaches the fix
+            # in one dispatch rather than one condition per round trip. A
+            # released registration proceeds with a re-arm warning rather than
+            # a refusal.
             released_follower_warning = _watcher_delivery_admission(
                 project,
                 dispatch_watch,

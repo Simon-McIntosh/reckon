@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-follower-outlives-its-monitor">
+  <meta name="plan-title" content="A Follower Outlives Its Monitor">
+  <meta name="plan-summary" content="The host kills every follower at thirty minutes, and the re-arm then hides exactly the runs that changed during the gap and need the coordinator.">
+  <meta name="plan-evidence-for" content="a-follower-outlives-its-monitor">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <title>The follower's lifetime bounds a poll, a reload and its children | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The follower's lifetime bounds a poll, a reload and its children</h1>
+
+    <section id="defect">
+      <h2 id="defect-h">The defect</h2>
+      <p>Four findings, all in the arming path the host ends at thirty minutes.</p>
+      <p><strong>The lifetime bounded the gap between polls, not a poll.</strong>
+        Two <code>crew follow --lifetime 29m</code> processes ran 3 h 36 m and
+        2 h 07 m under degraded storage, both inside the full-tree
+        <code>git status</code> walk the recovery sweep runs over every
+        registered worktree. The deadline was read between polls, so the only
+        thing that could end the arming was the poll returning — which is
+        exactly what a walk over hundreds of worktrees does not do.</p>
+      <p><strong>A reload re-anchored the deadline at the replacement image's
+        start.</strong> The carried instant is absolute, but the watch loop
+        re-anchored it at its own <code>started_at</code>, so each reload
+        charged the grant for that image's setup: a six-second grant ended
+        7.49 s after the arm, 8.61 s when the first sweep spawned a probe, and
+        8.61 s is past the eight-second bound <code>§8</code>'s own case
+        asserts.</p>
+      <p><strong>Two hand-off variables lived in <code>os.environ</code>.</strong>
+        The reader checkpoint (<code>RECKON_FOLLOWER_CHECKPOINT</code>) was
+        placed in the follower's own environment at the reload, and the arming
+        variable (<code>RECKON_WATCH_ARMING</code>) was inherited from the
+        session that armed it. Every child of the follower inherits that
+        environment — the recovery sweep's condition probes among them — and
+        those children then carried a variable that governs an arming none of
+        them owns. The lifetime deadline had the same defect before it was
+        carried to the replacement alone.</p>
+      <p><strong>The dispatch preflight reported follower conditions one at a
+        time.</strong> A coordinator met them in sequence: no producer, then a
+        follower whose lines end in a file, then
+        <code>session_attached: False</code> with another session named as the
+        delivering one. Each refusal named one condition, so each fix revealed
+        the next; measured at about twenty-five minutes for one worker.</p>
+    </section>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ol>
+        <li><code>reckon.cli._follow_watch_lines._sweep_on_cadence</code> runs
+          the sweep on its own thread and waits for it only as long as the
+          arming has left. A poll still walking at the deadline is abandoned
+          and the arming ends; a sweep begun after the deadline is not started
+          at all. Without a deadline the sweep runs synchronously, exactly as
+          before, so an arming without a lifetime is unchanged.</li>
+        <li><code>reckon.cli.crew_follow</code> converts the deadline — the
+          absolute UTC epoch, fixed at the first arming and carried to
+          replacements — into the watch loop's own clock once, at arming, and
+          passes it in beside the grant. <code>_follow_watch_lines</code> uses
+          an absolute <code>lifetime_deadline</code> when one is handed in and
+          falls back to granting <code>lifetime</code> from its own start only
+          when one is not.</li>
+        <li><code>_FollowerReloader.poll</code> writes the reader checkpoint
+          into the mapping the re-exec passes and never into
+          <code>os.environ</code>; the replacement reads and removes it in one
+          step, as it already did for the deadline. <code>crew_follow</code>
+          drops <code>RECKON_WATCH_ARMING</code> from its own environment as it
+          arms, so no child inherits either variable.</li>
+        <li><code>reckon.crew.dispatch._watcher_delivery_admission</code> judges
+          the producer and the session's delivery in one pass, and
+          <code>_unmet_follower_conditions</code> names every unmet condition:
+          no live producer, a follower that is registered but not delivering
+          (with the reason <code>follower_state</code> gives), no registration
+          at all, and — whenever this session's delivery is not in place — the
+          sessions that do deliver right now. <code>_FollowerAdmissionUnmet</code>
+          raises one <code>WatcherRequired</code> carrying the whole list and
+          the one follower command that clears it, so the error key, exit code
+          and <code>watch</code> payload a caller already reads are unchanged.
+          A released registration is still admitted with the re-arm warning.
+          A launch kind that carries no session delivery has no follower of its
+          own to judge, but it is refused without the producer exactly as the
+          ungated check refused it: the seat is what every launch kind reads.</li>
+      </ol>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <p><code>tests/test_follower_bounds_its_lifetime.py</code> holds one case
+        per finding, plus one that guards the producer's refusal for a launch
+        kind that carries no session delivery. Its clocks are injected, so each
+        case measures an interval it owns rather than one timed from outside:
+        the poll blocks far past a deadline 0.5 s away, and the bound case
+        requires the follower to end within one second of it with the poll
+        <em>still blocked</em> — a follower that waited for the poll would end
+        when the poll released it.</p>
+      <p>The reload case enters as a replacement image does — the same command
+        line the first arming had, with the carried instant in the case's
+        environment — and prices the replacement's setup on its own clock at
+        <strong>2.0 s</strong>, deliberately larger than the one-second slack
+        the bound allows. An image that spends what is left of the carried
+        instant ends within the slack; one that re-anchors at its own start ends
+        that whole interval past it. Measured: <strong>the case passes at head
+        in 0.86 s and fails at base with the arming ending 2.300 s past the
+        instant</strong> — by construction rather than by load, so it now guards
+        the fix where the wall-clock version of it did not (that version's base
+        failure measured 1.49 s to 2.61 s and needed a slack wide enough to let
+        it pass).</p>
+      <p>The child-environment case records each image's child environment
+        through a parked run's declared probe, and its post-reload half waits
+        for a line the replacement wrote: a dump holding only the first image's
+        line would otherwise read as a clean second image, and whether the
+        second sweep landed before the deadline is exactly the race that half no
+        longer depends on. Its grant is 25 s rather than the reload case's six,
+        because it waits for two recovery sweeps and a sweep's tail probes
+        model lanes: the property is which variables a child inherits, not the
+        deadline, so that grant has to outlast the work rather than bound it.</p>
+      <p>The launch-kind case dispatches through an <em>in-harness</em> backend
+        with a session that is delivering, so the producer is the only condition
+        left; it asserts exit 8 and the producer's refusal in the payload, and
+        fails if the refusal is narrowed back to the cli launch kind.</p>
+      <p>The declared negative control is executed and logged: with the
+        deadline check removed from the blocking poll in
+        <code>reckon/cli.py</code>, the bound case fails at
+        <code>tests/test_follower_bounds_its_lifetime.py</code> — <strong>1
+        failed in 3.31 s, EXIT=1</strong> — and <code>cli.py</code> was
+        restored byte-for-byte afterwards. The log's first line is the declared
+        string. A second control covers the restored refusal: removing the
+        producer judgement from the non-cli branch of
+        <code>_watcher_delivery_admission</code> makes the launch-kind case fail
+        — <strong>1 failed in 6.57 s, EXIT=1</strong>, the in-harness dispatch
+        admitted with <code>exit_code 0</code> — and with the refusal restored
+        the same case passes in 2.80 s. Both mutations were verified clean
+        against their commit afterwards, byte for byte.</p>
+      <p>The gate — the new module plus <code>tests/test_follow_lifetime.py</code>,
+        <code>tests/test_follow_lifetime_survives_reload.py</code>,
+        <code>tests/test_follower_reload_is_safe.py</code>,
+        <code>tests/test_follow_rearm_continues.py</code> and
+        <code>tests/test_crew_watch_lifetime.py</code>, in one invocation —
+        run at both revisions, one invocation each, each pytest process with a
+        basetemp private to it, each log naming its revision on its first line
+        and ending with a bare <code>EXIT=</code> line:</p>
+      <ul>
+        <li><strong>Head</strong>, revision <code>4536c411c</code>:
+          <strong>43 passed in 128.39 s, EXIT=0</strong> — no failure id.</li>
+        <li><strong>Base</strong>, revision <code>33c5e761</code>, source
+          extracted with <code>git archive</code> into a scratch tree (no
+          worktree, no branch):
+          <strong>6 failed, 37 passed in 149.35 s, EXIT=1</strong>. Four are
+          the new module's discriminating cases:
+          <code>test_a_poll_that_outlives_the_deadline_is_abandoned</code>,
+          <code>test_a_reload_does_not_restart_the_lifetime</code>,
+          <code>test_no_child_of_an_armed_follower_carries_the_hand_off_variables</code>
+          and
+          <code>test_a_refusal_names_every_unmet_follower_condition_and_the_one_command</code>.
+          Added failures at head: <strong>0</strong>.</li>
+        <li><strong>The two remaining base failures are in the gate's existing
+          reload module, <code>tests/test_follow_lifetime_survives_reload.py</code>,
+          and they reproduce alone at base</strong> (2 failed in 19.14 s there;
+          one of them fails in 7.33 s run entirely by itself). Both fail at
+          <code>_wait_until_reloaded</code>, with the follower's whole output
+          being <code>follower end: arming lifetime elapsed</code>: the arming
+          reached its deadline before any reload was observed, which is the
+          shape a sweep produces when it is still inside the pass at the
+          deadline. At head the sweep is waited for only as long as the arming
+          has left, and both cases pass. They are recorded rather than claimed
+          as this node's discriminator: that module is outside this node's write
+          scope, and the same two cases passed in an earlier base arm of the
+          same revision, so at base they are load-dependent.</li>
+        <li>The launch-kind case is a guard, not a base discriminator: it
+          <em>passes</em> at base, where the producer check was ungated, and at
+          head; it fails only when the refusal is removed, which is what its
+          control exercises.</li>
+        <li><strong>The instrument for the child-environment case is proved to
+          see a known-present variable before any absence is read:</strong>
+          the probe records the environment it was handed, and every recorded
+          line carries <code>RECKON_HOME</code> (which the test set) while
+          carrying neither <code>RECKON_FOLLOWER_CHECKPOINT</code> nor
+          <code>RECKON_WATCH_ARMING</code>. The base arm failed on
+          <code>RECKON_WATCH_ARMING</code> appearing in a child's environment,
+          which is the leak the finding named.</li>
+        <li><strong>No new lint findings:</strong> <code>ruff check</code> over
+          the changed Python paths is identical to the base revision's output
+          (same 11 findings, same rules and files), <code>ruff format --check</code>
+          breaks on the same six pre-existing regions of
+          <code>reckon/crew/dispatch.py</code>, and the new test file is clean
+          under both.</li>
+      </ul>
+    </section>
+
+    <section id="landing">
+      <h2>Landing line</h2>
+      <p><code>landing: docs/evidence/fragments/a-follower-outlives-its-monitor/follower-bounds-its-lifetime.html</code></p>
+    </section>
+  </main>
+</body>
+</html>
