@@ -222,6 +222,64 @@ def test_a_runnable_gate_command_still_promotes(repository: Path) -> None:
     assert row["gate_check"]["command"] == command
 
 
+# The six forms the refusal's carve-outs name, each as the literal text a
+# coordinator actually writes. The admitted rows are runnable and a false
+# refusal costs a promotion, so the plain command above is not enough on its
+# own: the quoted pytest expression is the shape the parenthetical rule could
+# trip, the subshell carries an operator so it is a command rather than a
+# selection of words, and the redirection is spaced so the angle brackets do
+# not pair into a placeholder.
+_SHELL_FORM_CASES = [
+    pytest.param(
+        "/repo/.venv/bin/python -m pytest -q -k '(a or b)' tests/test_crew_promotion.py",
+        None,
+        id="admitted-quoted-k-expression",
+    ),
+    pytest.param(
+        "(cd /repo && /repo/.venv/bin/python -m pytest -q tests/test_crew_promotion.py)",
+        None,
+        id="admitted-subshell-carries-an-operator",
+    ),
+    pytest.param(
+        "/repo/.venv/bin/python -m pytest -q tests/test_crew_promotion.py > /tmp/gate.log 2>&1",
+        None,
+        id="admitted-spaced-redirection",
+    ),
+    pytest.param(
+        "/repo/.venv/bin/python -m pytest -q (the nine focused files)",
+        (PROSE_CLASS, "(the nine focused files)"),
+        id="refused-prose-parenthetical",
+    ),
+    pytest.param(
+        "/repo/.venv/bin/python -m pytest <nine focused files>",
+        ("angle-bracket placeholder", "<nine focused files>"),
+        id="refused-angle-bracket-placeholder",
+    ),
+    pytest.param(
+        "/repo/.venv/bin/python -m pytest (cd sub)",
+        (PROSE_CLASS, "(cd sub)"),
+        id="refused-operator-less-subshell-reads-as-prose",
+    ),
+]
+
+
+@pytest.mark.parametrize(("command", "verdict"), _SHELL_FORM_CASES)
+def test_the_shape_check_admits_the_runnable_shell_forms(
+    command: str, verdict: tuple[str, str] | None
+) -> None:
+    """Every form the refusal's carve-outs name carries its own case.
+
+    The gate command is re-executed verbatim through a shell, so the admitted
+    rows are the ones that matter: a quoted pytest expression, a subshell
+    carrying an operator and a spaced redirection all run, and each must keep
+    passing. The refused rows are the same shapes written as a description —
+    a parenthetical selection of words, an angle-bracket placeholder, and a
+    subshell whose contents are words rather than a command, which the gate
+    reads as that parenthetical selection.
+    """
+    assert promotion.gate_command_prose(command) == verdict
+
+
 def test_complete_command_refuses_a_gate_command_that_cannot_run(
     repository: Path,
 ) -> None:
