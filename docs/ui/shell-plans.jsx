@@ -221,6 +221,16 @@ function artifactCaptionPresent(value) {
   return text !== "" && text !== "-" && text !== "—";
 }
 
+// A list row draws a figure from its thumbnail: the server downscales each one
+// to a 200 px long edge and caches it, so a list of captures loads in a
+// fraction of the bytes. A href that is not a project path — an inline data:
+// capture, a fabricated state — is drawn as given.
+function artifactImageSrc(item) {
+  const href = (item && item.href) || "";
+  if (href.startsWith("/") && !href.startsWith("//")) return "/_thumb" + href;
+  return href;
+}
+
 function artifactIndexRows(items, kind, sortBy, sortDir, status, hideDone) {
   let rows = (items || []).filter(item => (item.type || "plan") === kind);
   if (kind === "plan" && status) {
@@ -416,7 +426,7 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
           return (
             <button type="button" key={navKey} className={`r-artifact-row r-artifact-row-${kind}${arrivingKeys.has(navKey) ? " is-arriving" : ""}`} data-artifact-slug={navKey} onClick={() => onSelect(navKey)}>
               <span className={`r-artifact-dot ${kind}-${itemState}`} aria-hidden="true"></span>
-              {showsImages && <img className="r-artifact-thumb" src={item.href} alt="" width="50" height="34" loading="lazy" decoding="async" />}
+              {showsImages && <img className="r-artifact-thumb" src={artifactImageSrc(item)} alt="" width="50" height="34" loading="lazy" decoding="async" />}
               <span className="r-artifact-row-main">
                 <span className="r-artifact-row-title">{item.title || item.slug}</span>
                 <code>{item.slug}</code>
@@ -709,4 +719,4 @@ function PlanGraphStrip({ slug, onNav }) {
 // active set; the second group covers paused / completed / abandoned states.
 
 window.ReckonShell = window.ReckonShell || {};
-window.ReckonShell.plans = { readableFilterLabel, ListFilterControls, SORT_DIR_DEFAULTS, sortItems, SORT_OPTIONS, openGateCount, attachmentGroups, readingQueue, readingQueueStep, nextReadingMode, paletteItems, paletteKindLabel, artifactKindLabel, artifactStamp, artifactState, artifactIsDone, artifactIndexRows, ArtifactIndex, selectPlanSection, ListCol, dependencyRefSlug, dependencyConeRows, dependencyConeLabel, DependencyConeCard, PlanGraphStrip };
+window.ReckonShell.plans = { readableFilterLabel, ListFilterControls, SORT_DIR_DEFAULTS, sortItems, SORT_OPTIONS, openGateCount, attachmentGroups, readingQueue, readingQueueStep, nextReadingMode, paletteItems, paletteKindLabel, artifactKindLabel, artifactStamp, artifactState, artifactIsDone, artifactImageSrc, artifactIndexRows, ArtifactIndex, selectPlanSection, ListCol, dependencyRefSlug, dependencyConeRows, dependencyConeLabel, DependencyConeCard, PlanGraphStrip };
