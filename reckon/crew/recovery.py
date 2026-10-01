@@ -1775,9 +1775,11 @@ def _reviewed_run_is_busy(record: Mapping[str, Any]) -> str:
     read from the run's own record — the supervisor's pid and the run's own
     worker-record pid, both checked on this host — and the resumed turn from the
     run's newest stream, which is a resume file only once a resume has run and
-    holds an assistant record only while that turn is producing work. A run
-    recording no process and carrying no resumed turn is left free to be
-    repaired.
+    holds an assistant record only while that turn is producing work. A resumed
+    turn has ended once its stream's last record is the result line a finished
+    turn writes, so a finished resume no longer reads as a turn in progress and
+    does not hold the round busy forever. A run recording no process and
+    carrying no unfinished resumed turn is left free to be repaired.
     """
     if runs.record_process_alive(record, process_alive) is True:
         return "the reviewed run's worker is live"
@@ -1788,6 +1790,7 @@ def _reviewed_run_is_busy(record: Mapping[str, Any]) -> str:
         found is not None
         and found[0].name.startswith("resume-")
         and _stream_holds_assistant_record(found[0])
+        and _newest_stream_last_record_type(record) != STREAM_RESULT_RECORD_TYPE
     ):
         return "the reviewed run has a resumed turn in progress"
     return ""
