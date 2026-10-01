@@ -90,7 +90,7 @@ from reckon.crew.routing import (
     resolve_section_routing,
     resolved_time_budget,
     resolved_time_ceiling,
-    section_record_id,
+    section_id_candidates,
     shadow_worktree_session,
 )
 from reckon.crew.runs import (
@@ -289,17 +289,7 @@ def _plan_section_text(html_text: str, section: str) -> str | None:
     requested = re.sub(r"\s+", " ", section.strip()).casefold()
     if not requested:
         return None
-    # A section's identity is one, but a plan may be authored under either
-    # spelling of it, so a direct id lookup admits both: the hyphenated anchor
-    # the state records (s5-1) plus the dotted one an author may have written
-    # (s5.1). The raw requested spelling stays a candidate of its own, because
-    # for a slug section it is the whole reference.
-    identity = section_record_id(requested)
-    ids = {requested.removeprefix("#"), identity}
-    numbered = re.fullmatch(r"s(\d+(?:-\d+)*)", identity)
-    if numbered:
-        ids.add(f"s{numbered.group(1).replace('-', '.')}")
-    ids.discard("")
+    ids = section_id_candidates(requested)
 
     soup = BeautifulSoup(html_text, "html.parser")
     identified = next(

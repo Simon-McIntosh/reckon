@@ -317,3 +317,28 @@ def test_a_dotted_anchor_is_reachable_from_every_spelling() -> None:
     for html in authored:
         for spelling in SPELLINGS:
             assert _plan_section_text(html, spelling) == body
+
+
+def test_a_dotted_anchor_is_visible_to_the_section_guard() -> None:
+    """The section guard admits either authored anchor spelling of an id.
+
+    A node may name a section whose heading text omits the reference, so the
+    heading-text fallback cannot answer and the id lookup must. The plan may
+    have been authored under either spelling of that id -- the hyphenated one
+    its typed record carries (``s5-1``) or the dotted one (``s5.1``) -- and
+    the guard admits both. The section-text lookup answers the same way for
+    the same fixtures, because both draw one candidate set.
+    """
+    from reckon.crew.dispatch import _plan_section_text
+    from reckon.crew.routing import _contains_plan_section
+
+    body = "The retry bound the record owns body"
+    authored = (
+        '<h2 id="s5.1">The retry bound the record owns</h2><p>body</p>',
+        '<h2 id="s5-1">The retry bound the record owns</h2><p>body</p>',
+    )
+
+    for html in authored:
+        for spelling in SPELLINGS:
+            assert _contains_plan_section(html, spelling) is True
+            assert _plan_section_text(html, spelling) == body

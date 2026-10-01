@@ -42,6 +42,15 @@
   Promotion's section-risk lookup reads the record id the state carries rather than an anchor for it.
   The parity case in the new test file shows one key for <code>s5.1</code>, <code>s5-1</code> and the
   printed <code>§5.1</code> across the dispatch, routing and promotion callers.</p>
+  <p>Both authored-HTML scanners admit either spelling an id was authored under: a plan authored
+  with the dotted anchor <code>s5.1</code> is found when a node names the hyphenated
+  <code>s5-1</code>, and the reverse, through one candidate set
+  (<code>section_id_candidates</code>) built once in <code>routing.py</code> and drawn by both
+  lookup sites, so the two cannot drift apart. A guard case pins it with a heading whose text
+  omits the reference, so the id lookup has to answer rather than the heading-text fallback:
+  restoring the guard's old candidate set (the raw spelling and the hyphenated identity only)
+  fails that case at <code>assert False is True</code> for <code>s5-1</code> against the dotted
+  anchor (<code>logs/negative-control-guard.log</code>, EXIT=1).</p>
 
   <h3>The generator's own spelling</h3>
   <p><code>scripts/regen_flight_schema.py</code> post-processes the pydantic it emits, rewriting

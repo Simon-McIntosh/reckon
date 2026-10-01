@@ -218,6 +218,25 @@ def section_anchor(section: Any) -> str:
     return section_record_id(section) or "_top"
 
 
+def section_id_candidates(section: Any) -> set[str]:
+    """Return every authored id spelling one section reference may address.
+
+    A section's identity is one, but a plan is authored under whichever
+    spelling its author wrote: the hyphenated id a typed record carries
+    (``s5-1``) or the dotted one an author may have used (``s5.1``). The raw
+    reference stays a candidate of its own, because for a slug section it is
+    the whole id. Both authored-HTML lookups build their candidate set here,
+    so the two cannot drift apart.
+    """
+    text = re.sub(r"\s+", " ", str(section or "").strip())
+    identity = section_record_id(text)
+    candidates = {text.casefold().removeprefix("#"), identity}
+    numbered = re.fullmatch(r"s(\d+(?:-\d+)*)", identity)
+    if numbered:
+        candidates.add(f"s{numbered.group(1).replace('-', '.')}")
+    return {candidate for candidate in candidates if candidate}
+
+
 def _section_record(plan_path: str | Path, section: str) -> Mapping[str, Any]:
     """Return the typed record for one plan section, or an empty mapping."""
     wanted = section_record_id(section)
@@ -1244,8 +1263,7 @@ def _contains_plan_section(html_text: str, section: str) -> bool:
     if not requested:
         return True
     requested_folded = requested.casefold()
-    ids = {requested_folded.removeprefix("#"), section_record_id(requested)}
-    ids.discard("")
+    ids = section_id_candidates(requested)
 
     soup = BeautifulSoup(html_text, "html.parser")
     if any(
