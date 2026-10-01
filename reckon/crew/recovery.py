@@ -7449,10 +7449,15 @@ def _promote_record_holds(record: Mapping[str, Any]) -> bool:
 
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
-    if not run_id or not project:
+    # The row is read from the run's own repository, so a pointer that records
+    # none cannot say where the row would be. Resolving a default root instead
+    # would answer a promotion from a directory the run does not own — a row
+    # another run or a fixture left there would read as this run's landing.
+    repo = str(record.get("repo") or "")
+    if not run_id or not project or not repo:
         return False
     try:
-        return ledger_module.run_path(project, run_id, record.get("repo")).is_file()
+        return ledger_module.run_path(project, run_id, repo).is_file()
     except (OSError, ValueError):
         return False
 
@@ -8004,12 +8009,14 @@ def fleet_transitions(
     left, and three simultaneous landings would all claim the third one's
     totals.
 
-    Departures first, then arrivals, then state changes — a promotion frees its
-    slot before the next dispatch is counted into it, which is the order a
-    reader infers from the numbers. A manifest rewrite that leaves the state
-    unchanged is folded after the state changes of the same observation: its
-    classification word did not move, so nothing else about the run could have
-    either.
+    Departures first, then arrivals, then state changes — a run removed only by
+    its own departure leaves the fleet before the next dispatch is counted into
+    its slot, which is the order a reader infers from the numbers. A manifest
+    rewrite that leaves the state unchanged is folded after the state changes of
+    the same observation: its classification word did not move, so nothing else
+    about the run could have either. A promoted run whose live pointer remains
+    is not a departure: its slot is held while the pointer lives, so the landing
+    is announced once rather than re-read as a fresh dispatch each tick.
     """
     running = {run_id: dict(snapshot) for run_id, snapshot in known.items()}
     changes: list[tuple[Mapping[str, Any], str | None, str]] = []
@@ -8076,7 +8083,16 @@ def fleet_transitions(
     events: list[tuple[dict[str, Any], str | None, str, dict[str, int]]] = []
     for snapshot, previous, state in changes:
         run_id = str(snapshot.get("run_id") or "")
-        if state in {"promoted", "withdrawn", "discarded"}:
+        # A run present in the fleet is remembered, so the next observation
+        # compares it against itself rather than reading it as an arrival. A
+        # run absent from the fleet has departed and gives up its slot. The
+        # one state that needs the distinction drawn explicitly is promoted:
+        # promotion writes the ledger row before it removes the live pointer,
+        # so a promoted run is still observed while its pointer lives. Held in
+        # the fleet rather than dropped, it is not read as an arrival the fold
+        # would word ``dispatched`` — the landing re-announced every tick until
+        # the pointer goes; it leaves only on its own pointer's disappearance.
+        if run_id not in current:
             running.pop(run_id, None)
         elif not snapshot.get("manifest_rewritten"):
             running[run_id] = dict(snapshot)
