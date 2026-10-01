@@ -50,13 +50,24 @@ def _run_producer(project: str) -> tuple[threading.Thread, dict[str, float]]:
     return thread, state
 
 
-def _await_lease(project: str, timeout: float = 5.0) -> float:
-    """Return the producer's first recorded renewal, once it has taken the seat."""
+def _await_lease(
+    project: str, state: dict[str, float], *, timeout: float = 20.0
+) -> float:
+    """Return the producer's first recorded renewal, once it has taken the seat.
+
+    The wait is generous because taking the seat writes through shared storage:
+    under contention a seed that normally lands in milliseconds can take
+    seconds, and a short bound would read that load as a producer that never
+    started. The error the producer thread recorded is surfaced rather than
+    buried, so a refusal to start is not mistaken for a slow one.
+    """
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         renewed = runs.watch_lease_renewed_at(project)
         if renewed is not None:
             return renewed
+        if state.get("error"):
+            raise AssertionError(f"the producer failed to start: {state['error']}")
         time.sleep(0.05)
     raise AssertionError("the producer never seeded its lease registration")
 
@@ -65,7 +76,7 @@ def test_unattended_producer_exits_after_its_lease_lapses(home: Path) -> None:
     """With no follower renewing, the producer ends within a second of a lapse."""
     project = "unattended"
     thread, state = _run_producer(project)
-    renewed = _await_lease(project)
+    renewed = _await_lease(project, state)
     # The exit is timed against the lease instant the producer recorded, not
     # against the start of the test, so a slow first poll cannot read as early
     # expiry and a fast one cannot read as a late one.
@@ -86,7 +97,7 @@ def test_a_renewed_producer_outlives_three_lease_intervals(home: Path) -> None:
     """A follower renewing at least once per half interval holds the producer up."""
     project = "renewed"
     thread, state = _run_producer(project)
-    fresh = _await_lease(project)
+    fresh = _await_lease(project, state)
 
     renewals = 0
     deadline = time.monotonic() + 3 * LEASE_SECONDS
