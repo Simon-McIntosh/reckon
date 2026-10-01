@@ -1040,6 +1040,93 @@ def _read_control_log(
         return None, path
 
 
+# The arms whose gate log the audit can compare against a revision the manifest
+# itself records. The control log is judged by its exit status instead: no
+# manifest field records the revision that mutation was applied at, so a first
+# line has nothing to be compared against there.
+_GATE_LOG_ARMS = (("baseline_suite", "base"), ("after_suite", "head"))
+
+# A gate log names the revision it ran at behind one of the labels the fleet's
+# capture scripts write — ``rev=<sha>``, ``revision: <sha>``, ``# arm=base
+# revision=<sha> tree=...``. The label is required rather than any hexadecimal
+# run: a first line naming only a tree or a working directory carries digits
+# that a bare hex scan would read as a revision, and reading a timestamp as the
+# revision is how this check would pass a log that names none.
+_GATE_LOG_REVISION = re.compile(
+    r"\brev(?:ision)?\b[^0-9A-Za-z]{0,8}([0-9a-fA-F]{7,64})"
+)
+
+# A revision the audit can hold a first line against: a hexadecimal object id
+# as the manifest records it. A symbolic value is left alone rather than
+# compared, because no abbreviation of ``<output of git rev-parse HEAD>`` or of
+# a branch name can be told from a log naming nothing.
+_RECORDED_REVISION = re.compile(r"[0-9a-fA-F]{7,64}")
+
+
+def _names_the_same_revision(left: str, right: str) -> bool:
+    """Whether two revision spellings name one commit, abbreviation included."""
+    first, second = left.lower(), right.lower()
+    return first.startswith(second) or second.startswith(first)
+
+
+def _gate_log_revision_findings(
+    manifest: dict[str, Any],
+    *,
+    manifest_path: Path | None,
+) -> list[str]:
+    """Judge each arm's gate log against the revision that arm records.
+
+    The manifest template requires a gate log's first line to name the revision
+    it ran at, the tree and the command, and nothing checked it: a log called
+    for one arm could carry another arm's run — measured as a log named for the
+    new file alone carrying the whole population — and a claim about one arm
+    then rested on a different log than the one cited. Of the three facts the
+    template names, the revision is the one the audit can hold against a
+    record, because each suite arm carries the revision its own run measured on.
+    The finding states the full requirement; the comparison is the revision.
+
+    A log that cannot be read is left to the readers that judge citations and
+    temporary paths, since whether a log resolves is a different question from
+    what its first line says. A manifest that records a symbolic revision is
+    not compared, and one that cites no log for an arm is not judged. A
+    relative path resolves beside the manifest, the same way the control log's
+    does, so one manifest is not judged two ways by where the check is called.
+    """
+    findings: list[str] = []
+    for key, arm in _GATE_LOG_ARMS:
+        observation = manifest.get(key)
+        if not isinstance(observation, dict):
+            continue
+        recorded = str(observation.get("revision") or "").strip()
+        cited = str(observation.get("log_path") or "").strip()
+        if not recorded or not cited:
+            continue
+        if not _RECORDED_REVISION.fullmatch(recorded):
+            continue
+        text, resolved = _read_control_log(cited, manifest_path=manifest_path)
+        if text is None:
+            continue
+        first_line = next(
+            (line.strip() for line in text.splitlines() if line.strip()), ""
+        )
+        named = [match.group(1) for match in _GATE_LOG_REVISION.finditer(first_line)]
+        if not named:
+            findings.append(
+                f"{key} gate log {str(resolved)!r} names no revision on its "
+                "first line: the manifest template requires a gate log's first "
+                "line to name the revision it ran at, the tree and the command, "
+                "and this log's does not"
+            )
+            continue
+        if not any(_names_the_same_revision(token, recorded) for token in named):
+            findings.append(
+                f"{key} gate log {str(resolved)!r} names {named[0]} on its first "
+                f"line, but the {arm} arm of this manifest records {recorded}: "
+                "the log named for one arm carries another arm's run"
+            )
+    return findings
+
+
 def _control_log_findings(
     manifest: dict[str, Any],
     node: TaskNode | None,
@@ -1204,6 +1291,9 @@ def audit_manifest(
         resolved_manifest_path = Path(node.manifest_path).expanduser()
     findings.extend(
         _control_log_findings(manifest, node, manifest_path=resolved_manifest_path)
+    )
+    findings.extend(
+        _gate_log_revision_findings(manifest, manifest_path=resolved_manifest_path)
     )
     if node is not None and manifest["changed_paths"]:
         declared = tuple(node.write_paths or ())
