@@ -1036,11 +1036,14 @@ def _project_executable_remainder(project: str) -> tuple[int | None, int | None]
     it unknown when another plan supplies a declared remainder.  The separate
     uncovered count makes that incomplete coverage visible to the closure
     decision.  An unreadable inventory remains entirely unknown.
+
+    The plan inventory and every plan's declared remainder come from the
+    persisted metadata index, which revalidates each row by one stat of its
+    plan file and parses only the files whose stat identity moved. A drain in a
+    fresh process therefore re-reads no plan whose content has not changed.
     """
-    from reckon import _plan_html
-    from reckon._schema import plan_executable_remainder
+    from reckon import metadata_index
     from reckon._store import _docs_dir_for_project
-    from reckon.resources import resource_map
 
     docs_dir = _docs_dir_for_project(project)
     if docs_dir is None:
@@ -1049,22 +1052,13 @@ def _project_executable_remainder(project: str) -> tuple[int | None, int | None]
     remainders: list[int] = []
     uncovered_plans = 0
     plan_count = 0
-    for resource in resource_map(
-        docs_dir, project, include_archived=False, ignore_invalid=True
-    ).values():
-        if resource.type != "plan":
-            continue
+    for plan in metadata_index.plan_derivations(docs_dir, project):
         plan_count += 1
-        try:
-            state = _plan_html.read_state(resource.path.read_text(encoding="utf-8"))
-        except OSError:
-            return None, None
-        remainder = plan_executable_remainder(state)
+        remainder = plan["implementable_sections"]
         if remainder is None:
             uncovered_plans += 1
             continue
         remainders.append(remainder)
-
     if plan_count == 0:
         return None, None
     return (sum(remainders) if remainders else None), uncovered_plans

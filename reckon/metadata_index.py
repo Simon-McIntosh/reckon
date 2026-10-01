@@ -15,6 +15,12 @@ and the next read re-stats that tree and rebuilds the rows that moved. A
 reader with no watch revalidates by stat on every call instead — see
 ``index_rows(..., revalidate=True)`` — so a long-lived process still sees a
 later edit.
+
+A plan's row also carries the two figures that cannot be read from a document's
+``<meta>`` head: its open-followup count and its implementable-section count.
+They are derived once, when the row is built, and reused until the file's stat
+identity moves, so a reader that answers from the index — the drain's plan
+remainder, :func:`plan_derivations` — never parses a plan it has already seen.
 """
 
 from __future__ import annotations
@@ -59,7 +65,9 @@ ROW_FIELDS = (
 )
 
 _SCHEMA = "reckon.metadata-index"
-_VERSION = 1
+#: Bumped when an entry gains a field, so an index written by the previous
+#: shape is rebuilt rather than reused with the new field absent.
+_VERSION = 2
 _FIGURE_DIR = "figures"
 _FIGURE_SUFFIXES = (".png", ".svg", ".gif")
 #: The types discovery keeps in an inventory, so the index answers with the
@@ -74,6 +82,8 @@ class IndexBuild:
     project: str
     docs_dir: Path
     rows: list[dict] = field(default_factory=list)
+    #: One record per plan file, carrying the figures a drain reads from it.
+    plans: list[dict] = field(default_factory=list)
     #: Docs-relative paths whose row was recomputed this build.
     rebuilt: list[str] = field(default_factory=list)
     reused: int = 0
@@ -134,12 +144,61 @@ def index_rows(
             build = _CACHE.get(key)
         if build is not None:
             return [dict(row) for row in build.rows]
+    build = _build_and_cache(
+        key,
+        docs_dir,
+        project,
+        repo_dir=repo_dir,
+        git_first=git_first,
+        git_last=git_last,
+    )
+    return [dict(row) for row in build.rows]
+
+
+def plan_derivations(docs_dir: Path, project: str) -> list[dict]:
+    """Return one record per live plan file, revalidated by a stat of each.
+
+    The records are what a closure drain reads a plan inventory for: the plan's
+    docs-relative path, its open-followup count and its implementable-section
+    count, the last of which is ``None`` when the plan carries no valid
+    declaration. An archived plan (one the resource walk keeps out of the live
+    inventory) is not returned. A caller that needs the served row fields —
+    slug, href, title, stamps — reads :func:`index_rows` instead; these figures
+    are deliberately outside ``ROW_FIELDS``.
+
+    Every call re-stats each covered file, so a caller in a long-lived process
+    sees a later edit, and only a file whose identity moved is parsed again.
+    """
+
+    build = _build_and_cache(
+        _cache_key(docs_dir, project, False), docs_dir, project, repo_dir=None
+    )
+    return [
+        {
+            "path": record["path"],
+            "open_followups": record["open_followups"],
+            "implementable_sections": record["implementable_sections"],
+        }
+        for record in build.plans
+        if not record["archived"]
+    ]
+
+
+def _build_and_cache(
+    key: tuple[str, str, bool],
+    docs_dir: Path,
+    project: str,
+    *,
+    repo_dir: Path | None = None,
+    git_first: Mapping[str, int] | None = None,
+    git_last: Mapping[str, int] | None = None,
+) -> IndexBuild:
     build = build_index(
         docs_dir, project, repo_dir=repo_dir, git_first=git_first, git_last=git_last
     )
     with _LOCK:
         _CACHE[key] = build
-    return [dict(row) for row in build.rows]
+    return build
 
 
 def build_index(
@@ -173,18 +232,23 @@ def build_index(
             entries.append(entry)
             if "fields" in entry:
                 build.rows.append(dict(entry["fields"]))
+            if isinstance(entry.get("plan"), Mapping):
+                build.plans.append({"path": relative, **entry["plan"]})
             continue
         if entry is None:
             build.added += 1
         else:
             build.rebuilt.append(relative)
-        fields = _row_for(path, relative, docs_dir, project, signature, stamp)
+        fields, plan = _row_for(path, relative, docs_dir, project, signature, stamp)
         entry = {"path": relative, "stat": signature}
         if fields is None:
             entry["skip"] = True
         else:
             entry["fields"] = fields
             build.rows.append(fields)
+            if plan is not None:
+                entry["plan"] = plan
+                build.plans.append({"path": relative, **plan})
         entries.append(entry)
 
     build.removed = len(set(known) - seen)
@@ -266,11 +330,16 @@ def _row_for(
     project: str,
     signature: list[int],
     stamp: StampFn,
-) -> dict | None:
-    """Return the row for one file, or None when it is not a listed file."""
+) -> tuple[dict | None, dict | None]:
+    """Return one file's (row, plan record), each None when it has none.
+
+    The plan record holds the figures a row cannot take from a ``<meta>`` head
+    — the open-followup and implementable-section counts — and is present only
+    for a plan the resource walk can identify.
+    """
 
     if path.suffix in _FIGURE_SUFFIXES:
-        return _figure_row(path, docs_dir, project, signature, stamp)
+        return _figure_row(path, docs_dir, project, signature, stamp), None
     return _resource_row(path, docs_dir, project, signature, stamp)
 
 
@@ -280,13 +349,13 @@ def _resource_row(
     project: str,
     signature: list[int],
     stamp: StampFn,
-) -> dict | None:
+) -> tuple[dict | None, dict | None]:
     try:
         resource = resources.identify_resource(docs_dir, path, project)
     except resources.ResourceCollision:
-        return None
+        return None, None
     if resource is None or resource.type not in _INDEX_TYPES:
-        return None
+        return None, None
     rec = _plan_html.parse_meta(path)
     href = str(
         (
@@ -297,7 +366,7 @@ def _resource_row(
     )
     created, edited = stamp(path, signature)
     status = (rec.get("status") or "") if resource.type == "plan" else ""
-    return {
+    row = {
         "slug": resource.slug,
         "href": href,
         "type": resource.type,
@@ -309,6 +378,44 @@ def _resource_row(
         "edited": edited,
         "width": None,
         "height": None,
+    }
+    plan = _plan_record(path, resource.archived) if resource.type == "plan" else None
+    return row, plan
+
+
+def _plan_record(path: Path, archived: bool) -> dict:
+    """Return the derived figures one plan row carries beyond its meta fields.
+
+    ``open_followups`` counts the followups a parsed read reports as anything
+    other than resolved; ``implementable_sections`` is the declared remainder
+    itself, ``None`` when the plan carries no valid declaration. ``archived``
+    is the resource walk's path-based marker, so a drain that reads these
+    records excludes the same plans the walk does. A record whose state cannot
+    be parsed reports no figure rather than a zero, because a counted zero is
+    indistinguishable from a plan that carries no open work.
+    """
+
+    from reckon._schema import plan_executable_remainder
+
+    try:
+        state = _plan_html.read_state_file(path)
+    except ValueError:
+        state = None
+    if state is None:
+        return {
+            "archived": archived,
+            "open_followups": None,
+            "implementable_sections": None,
+        }
+    followups = state.get("followups") or []
+    return {
+        "archived": archived,
+        "open_followups": sum(
+            1
+            for followup in followups
+            if str(followup.get("status") or "") != "resolved"
+        ),
+        "implementable_sections": plan_executable_remainder(state),
     }
 
 
