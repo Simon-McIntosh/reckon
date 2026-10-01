@@ -63,7 +63,10 @@
   <p>The gate runs the new <code>tests/test_held_worktrees_read_run_files.py</code> and every test
   file calling <code>_held_worktrees</code> or <code>obligations(</code>, at the base revision in an
   extracted tree (<code>gate-base.log</code>: 50 passed, 2 failed) and at the head revision in the
-  worktree (<code>gate-head.log</code>: 51 passed, 1 failed). The head arm adds no failure id. The
+  worktree (<code>gate-head.log</code>: 51 passed, 1 failed). Each log's header names the module
+  under test as the arm imported it — the extracted tree for the base arm, the worktree for the
+  head arm — and the base arm is the one that fails the never-called case, which is what importing
+  the base module and not the head one predicts. The head arm adds no failure id. The
   one failure in both arms,
   <code>test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching</code>,
   reproduces alone on the untouched base tree
