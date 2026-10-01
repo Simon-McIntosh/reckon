@@ -51,6 +51,7 @@ from reckon.crew.runs import (
     list_live,
     producer_lease_seconds,
     read_pointer,
+    update_watch_registration,
     watch_lease_renewed_at,
     watch_lock_path,
 )
@@ -3144,7 +3145,13 @@ def _observed_stream(
     resume: dict[str, Any] | None = None
     if isinstance(stored, Mapping) and str(stored.get("path") or "") == str(log):
         state = stored.get("state")
-        if isinstance(state, Mapping):
+        # An offset only means the same thing in the file it was reached in: a
+        # stream replaced at this path since means nothing here, so a changed
+        # inode re-reads from the first record while a grown one resumes.
+        if (
+            isinstance(state, Mapping)
+            and str(stored.get("inode") or "") == _file_inode(log)
+        ):
             resume = {
                 "offset": int(stored.get("offset") or 0),
                 "state": state,
@@ -3179,6 +3186,7 @@ def _observed_stream(
         memo["stream"] = {
             "path": str(log),
             "ident": _file_identity(log),
+            "inode": _file_inode(log),
             "command": command,
             "backend": str(record.get("backend") or ""),
             "offset": int(observation.stream_state.get("offset") or 0),
@@ -5560,6 +5568,20 @@ def _file_identity(path: str | Path) -> str:
     return f"{stat.st_dev}:{stat.st_ino}:{stat.st_size}:{stat.st_mtime_ns}"
 
 
+def _file_inode(path: str | Path) -> str:
+    """A file's device and inode, the identity that moves when it is replaced.
+
+    A stream that has only grown keeps its inode and may be resumed; a stream
+    written anew at the same path is a different file, and an offset into a
+    predecessor's bytes means nothing in a file that never held them.
+    """
+    try:
+        info = Path(path).stat()
+    except OSError:
+        return "absent"
+    return f"{info.st_dev}:{info.st_ino}"
+
+
 def _classification_memo_path(record: Mapping[str, Any]) -> Path | None:
     """One run's classification memo, or None for a record without a run id.
 
@@ -7033,6 +7055,14 @@ def classify_pointer(
     return classified
 
 
+# Commits-beyond-base per (worktree, base), keyed against the worktree head it
+# was taken at. A tree that has not moved answers from here, so an unchanged
+# poll spawns no git; a moved head is recounted. Placeholder head identities
+# (no tree, no git dir, no head) are never cached, because they name a state
+# that will change once the tree or its git directory appears.
+_COMMITS_BEYOND_BASE_CACHE: dict[tuple[str, str], tuple[str, int]] = {}
+
+
 def _commits_beyond_base(record: Mapping[str, Any]) -> int:
     """Count commits in the worktree past the pointer's recorded base.
 
@@ -7042,11 +7072,23 @@ def _commits_beyond_base(record: Mapping[str, Any]) -> int:
     by a missing or unreported manifest. Zero when the worktree or base is
     absent or the count cannot be read — an unreadable tree proves nothing, so
     it must not fabricate a rescue.
+
+    The count is a function of the worktree's revision, which is read from the
+    git directory as files rather than by a subprocess, so it is cached against
+    that revision. A run whose tree has not moved is answered without spawning
+    git again; when the head moves the count is taken afresh.
     """
     worktree = Path(str(record.get("worktree") or ""))
     base = str(record.get("base_sha") or record.get("base") or "").strip()
     if not base or not worktree.is_dir():
         return 0
+    head = _worktree_head_identity(worktree)
+    cacheable = head not in {"no-tree", "no-git", "no-head"}
+    key = (str(worktree), base)
+    if cacheable:
+        cached = _COMMITS_BEYOND_BASE_CACHE.get(key)
+        if cached is not None and cached[0] == head:
+            return cached[1]
     count = subprocess.run(
         ["git", "rev-list", "--count", f"{base}..HEAD"],
         cwd=worktree,
@@ -7056,9 +7098,12 @@ def _commits_beyond_base(record: Mapping[str, Any]) -> int:
     if count.returncode != 0:
         return 0
     try:
-        return max(0, int(count.stdout.decode().strip()))
+        resolved = max(0, int(count.stdout.decode().strip()))
     except (ValueError, UnicodeDecodeError):
         return 0
+    if cacheable:
+        _COMMITS_BEYOND_BASE_CACHE[key] = (head, resolved)
+    return resolved
 
 
 def _worktree_diff_paths(record: Mapping[str, Any]) -> list[str]:
@@ -8435,6 +8480,14 @@ def watch_ticker(
             remaining = _lease_remaining()
             if remaining is not None and remaining <= 0:
                 return
+            # Every stream the tick reads is counted, so the registration
+            # carries what this poll actually parsed. An unchanged fleet
+            # resumes from every cursor and parses nothing, which is the value
+            # a reader uses to see the poll is stat-only rather than re-reading
+            # the whole of every transcript.
+            from reckon import _backends
+
+            _backends.take_parsed_stream_bytes()
             pointers = list_live(project=project)
             _stop_delivered_reviews(pointers, signal_run=signal_run)
             moment = _utc_seconds()
@@ -8445,6 +8498,10 @@ def watch_ticker(
                 for pointer in pointers
                 if pointer.get("run_id")
             }
+            update_watch_registration(
+                project,
+                bytes_parsed_last_poll=_backends.take_parsed_stream_bytes(),
+            )
             if not current and not fleet_seen:
                 if _wait(poll_interval):
                     return

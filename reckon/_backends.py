@@ -3363,6 +3363,26 @@ def classify_stream_failure(
 
 _STREAM_BOUNDARY_CHUNK = 64 * 1024
 
+# Bytes of stream records the readers have consumed since the count was last
+# taken. A producer takes it once a poll to report how much of the fleet's
+# stream traffic that poll actually parsed; no other reader consults it, and a
+# poll that resumes from every cursor and finds nothing appended leaves it at
+# nothing. It is a one-element cell so the two readers below mutate it without a
+# module-level global statement.
+_PARSED_STREAM_BYTES = [0]
+
+
+def _count_parsed_bytes(count: int) -> None:
+    if count > 0:
+        _PARSED_STREAM_BYTES[0] += count
+
+
+def take_parsed_stream_bytes() -> int:
+    """Bytes of stream records read since this was last taken, then reset."""
+    value = _PARSED_STREAM_BYTES[0]
+    _PARSED_STREAM_BYTES[0] = 0
+    return value
+
 
 def _last_line_boundary(path: Path) -> int:
     """The byte after the last complete record in a stream, 0 when there is none.
@@ -3406,6 +3426,7 @@ def _stream_lines_from(path: Path, offset: int) -> tuple[list[str], int]:
     if cut < 0:
         return [], offset
     text = data[: cut + 1].decode("utf-8", errors="replace")
+    _count_parsed_bytes(cut + 1)
     return text.splitlines(keepends=True), offset + cut + 1
 
 
@@ -3471,5 +3492,7 @@ def observe_log(
             elapsed_seconds=elapsed_seconds,
             receipt=receipt,
         )
-    obs.stream_state.update({"offset": _last_line_boundary(path)})
+    boundary = _last_line_boundary(path)
+    obs.stream_state.update({"offset": boundary})
+    _count_parsed_bytes(boundary)
     return obs
