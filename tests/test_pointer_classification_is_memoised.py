@@ -1,4 +1,4 @@
-"""A pointer's classification is memoised beside it, and the key is every input.
+"""A run's classification is memoised in its own directory, keyed by every input.
 
 A classification reads four sources — the pointer, the assertion its manifest
 makes, the worker's stream and the review stored against it — and a fleet sweep

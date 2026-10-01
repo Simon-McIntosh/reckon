@@ -1,8 +1,8 @@
 <section id="pointer-classification-is-memoised">
   <h2>Pointer classification is memoised</h2>
   <p>
-    A pointer's classification now resolves its reads through a memo persisted
-    beside the pointer, <code>live/&lt;run-id&gt;.classification.json</code>, keyed by the
+    A run's classification now resolves its reads through a memo persisted in the
+    run's own directory, <code>runs/&lt;run-id&gt;/classification.json</code>, keyed by the
     stat identity of every file the classification reads. The pointer, the manifest,
     the stream the observation consumes, the run directory's own
     <code>exit.json</code>, <code>worker.json</code> and <code>attempt.json</code>, and the review
@@ -30,6 +30,18 @@
     signal each read it for a different question; both now share one observation.
   </p>
   <p>
+    The memo first sat beside the pointer, and that was wrong in a way worth recording:
+    the pointer directory is enumerated as pointers by several readers, one of which
+    asserts the list holds exactly one file per run, so a cache there was read as a run
+    that does not exist. It now lives in the run's own directory, which nothing
+    enumerates for pointers, and the key is unchanged.
+  </p>
+  <p>
+    <strong>Gate.</strong> The same 73 test files at base and at head, each arm in its
+    own archive extraction with its own private basetemp: both arms report 13 failed and
+    1068 passed, and the failing ids are the same thirteen — the head arm adds none.
+  </p>
+  <p>
     <strong>Measurement.</strong> A worker's fence mounts the operator's crew home
     read-only, so a memo cannot be written beside a live pointer from inside a run, and
     a timing taken there measures the code with its cache disabled. The figures below
@@ -41,9 +53,9 @@
       <tr><th>arm</th><th>revision</th><th>cold [s]</th><th>warm [s]</th></tr>
     </thead>
     <tbody>
-      <tr><td>base</td><td><code>342b88ec</code></td><td>7.562</td><td>8.023</td></tr>
-      <tr><td>head, no memos on disk</td><td><code>a72081a5</code></td><td>5.494</td><td>3.612</td></tr>
-      <tr><td>head, memos on disk</td><td><code>a72081a5</code></td><td>6.341</td><td>3.560</td></tr>
+      <tr><td>base</td><td><code>342b88ec</code></td><td>14.051</td><td>12.028</td></tr>
+      <tr><td>head, no memos on disk</td><td><code>0a0702f0</code></td><td>9.780</td><td>6.171</td></tr>
+      <tr><td>head, memos on disk</td><td><code>0a0702f0</code></td><td>6.101</td><td>6.533</td></tr>
     </tbody>
   </table>
   <p>
