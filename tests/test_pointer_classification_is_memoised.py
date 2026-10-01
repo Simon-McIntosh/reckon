@@ -177,21 +177,24 @@ def test_appending_to_one_stream_re_observes_only_the_appended_bytes(
     assert calls == [1], "the run whose stream did not move parses nothing at all"
 
 
-def test_a_memo_read_from_disk_carries_no_in_call_marker(fleet) -> None:
-    """The marker that lets one call reuse its own parse does not survive to disk.
+def test_a_stream_entry_is_served_only_for_the_lane_it_was_read_for(fleet) -> None:
+    """A stream read for one command or backend is not served for another.
 
-    A stream entry written by a call is current for that call, which is what
-    lets the second reader of one classification reuse the first reader's parse.
-    Read back from the file it means nothing — the call that wrote it has ended
-    — and a later reader that took it for a fresh key would serve a stream
-    without the key having matched, which is the one thing a memo may not do.
+    An observation is a function of the file and of the lane it was translated
+    for: the same bytes read as a different backend's stream, or under a
+    different command, are a different observation. The entry carries both, so a
+    record that changed its lane is read again rather than answered with the
+    previous lane's reading.
     """
     record = fleet["one"]
     _classify(record)
 
-    reloaded = recovery._read_classification_memo(record)
+    moved = dict(record, backend="codex", command="codex")
+    _write(crew.run_dir(moved["run_id"]) / "manifest.md", _manifest_text("running"))
 
-    assert "current" not in reloaded.get("stream", {})
+    after = _classify(moved)
+
+    assert after == _uncached(moved)
 
 
 def test_a_grown_stream_reports_the_records_it_already_folded(fleet) -> None:

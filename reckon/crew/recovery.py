@@ -3079,11 +3079,40 @@ def _harness_command(record: Mapping[str, Any], argv: Any) -> str | None:
     return str(dialect) if dialect else None
 
 
+@contextlib.contextmanager
+def _memo_published(record: Mapping[str, Any], memo: dict[str, Any]) -> Iterator[None]:
+    """Make a classification's memo reachable to the stream readers it calls.
+
+    The readers that consult this run's stream take the record and nothing else,
+    because callers replace them wholesale in tests that need to shape a row.
+    Widening their signature to carry a cache would break every such caller, so
+    the memo is published here for the duration of the calls that need it and
+    read back by run id. A memo left published by an interrupted call answers
+    for the same run only, and the stream entry is guarded by the identity of
+    the file it was read from, so a stale in-flight memo can serve nothing the
+    file itself does not still say.
+    """
+    global _CLASSIFICATION_MEMO_IN_FLIGHT
+    previous = _CLASSIFICATION_MEMO_IN_FLIGHT
+    _CLASSIFICATION_MEMO_IN_FLIGHT = (str(record.get("run_id") or ""), memo)
+    try:
+        yield
+    finally:
+        _CLASSIFICATION_MEMO_IN_FLIGHT = previous
+
+
+def _memo_for(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The memo a running classification published for this run, if any."""
+    active = _CLASSIFICATION_MEMO_IN_FLIGHT
+    if active is None or active[0] != str(record.get("run_id") or ""):
+        return None
+    return active[1]
+
+
 def _observed_stream(
     record: Mapping[str, Any],
     *,
     memo: dict[str, Any] | None = None,
-    memo_fresh: bool = False,
 ) -> dict[str, Any] | None:
     """One cli run's stream observation, served from a memo while it still holds.
 
@@ -3118,14 +3147,15 @@ def _observed_stream(
                 "offset": int(stored.get("offset") or 0),
                 "state": state,
             }
-        # An entry this call wrote is current by construction, which is what
-        # lets the second reader of one classification — the background-wait
-        # signal after the budget gates — reuse the first reader's parse. The
-        # identity is re-checked either way, so a stream that moved between the
-        # two questions is still read again.
+        # What an observation is a function of is the file it was read from and
+        # the lane it was translated for, so those are what an entry is served
+        # against: an unchanged stream read for the same command and backend
+        # cannot have a different observation, and one held by a memo written
+        # before the key moved is still this run's own reading of this file.
         if (
-            (memo_fresh or stored.get("current") is True)
-            and stored.get("ident") == _file_identity(log)
+            stored.get("ident") == _file_identity(log)
+            and stored.get("command") == command
+            and stored.get("backend") == str(record.get("backend") or "")
             and isinstance(stored.get("observation"), Mapping)
         ):
             return dict(stored.get("observation") or {})
@@ -3147,20 +3177,16 @@ def _observed_stream(
         memo["stream"] = {
             "path": str(log),
             "ident": _file_identity(log),
+            "command": command,
+            "backend": str(record.get("backend") or ""),
             "offset": int(observation.stream_state.get("offset") or 0),
             "state": observation.stream_state,
             "observation": seen,
-            "current": True,
         }
     return seen
 
 
-def _stream_budget(
-    record: Mapping[str, Any],
-    *,
-    memo: dict[str, Any] | None = None,
-    memo_fresh: bool = False,
-) -> Mapping[str, Any] | None:
+def _stream_budget(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
     """The budget block a cli run's stream records, folded in or read fresh.
 
     Shared by the refusal and retry-shape gates so the stream is parsed once
@@ -3174,7 +3200,7 @@ def _stream_budget(
     budget = record.get("budget")
     if isinstance(budget, Mapping) and budget.get("refusal"):
         return budget
-    seen = _observed_stream(record, memo=memo, memo_fresh=memo_fresh)
+    seen = _observed_stream(record, memo=_memo_for(record))
     if seen is None:
         return None
     return seen.get("budget") or None
@@ -3471,12 +3497,7 @@ _BACKGROUND_WAIT_FINAL_MESSAGE_RE = re.compile(
 )
 
 
-def _background_wait_signal(
-    record: Mapping[str, Any],
-    *,
-    memo: dict[str, Any] | None = None,
-    memo_fresh: bool = False,
-) -> str | None:
+def _background_wait_signal(record: Mapping[str, Any]) -> str | None:
     """The one sentence proving a vanished process was waiting on background work.
 
     A dead process with no complete manifest is indistinguishable from one
@@ -3509,7 +3530,7 @@ def _background_wait_signal(
         # answering the same question the folded record would; the shared read
         # means a classification that already parsed this stream pays nothing
         # for asking a second question of the same bytes.
-        seen = _observed_stream(record, memo=memo, memo_fresh=memo_fresh)
+        seen = _observed_stream(record, memo=_memo_for(record))
         if seen is not None:
             final_message = str(seen.get("final_message") or "")
 
@@ -5510,6 +5531,10 @@ def _absence_of_a_verdict_is_transient(
 CLASSIFICATION_MEMO_NAME = "classification.json"
 CLASSIFICATION_MEMO_VERSION = 1
 
+# The memo a classification in progress is reading through, published for the
+# calls that consult this run's stream and withdrawn when they return.
+_CLASSIFICATION_MEMO_IN_FLIGHT: tuple[str, dict[str, Any]] | None = None
+
 # The run directory's records the classification consults, named here so the
 # memo's key covers them: each is a file whose content moves the row.
 _CLASSIFICATION_RUN_RECORDS = (
@@ -5568,16 +5593,7 @@ def _read_classification_memo(record: Mapping[str, Any]) -> dict[str, Any]:
         return {}
     if payload.get("version") != CLASSIFICATION_MEMO_VERSION:
         return {}
-    loaded = dict(payload)
-    # The stream entry's ``current`` marker means "written by this call", and it
-    # is read from the file as well as written to it. A memo on disk carries the
-    # marker of the call that wrote it, which is not this one: leaving it in
-    # would let a later reader serve the stream without the key having matched,
-    # which is the one thing the memo may never do.
-    stream = loaded.get("stream")
-    if isinstance(stream, dict):
-        stream.pop("current", None)
-    return loaded
+    return dict(payload)
 
 
 def _write_classification_memo(
@@ -5987,7 +6003,8 @@ def classify_pointer(
     # is gone but the stop is triageable (a named backend, limit and reset) and
     # resumable once the limit lifts. Detected from the same stream observe
     # reads, so the two paths agree.
-    budget = _stream_budget(record, memo=memo, memo_fresh=memo_fresh)
+    with _memo_published(record, memo):
+        budget = _stream_budget(record)
     refusal_block = (
         _refusal_block(record, budget)
         if budget is not None and budget.get("refusal")
@@ -6018,11 +6035,12 @@ def classify_pointer(
     # resolves: the event names the window and its reset, so the run pauses
     # until the window turns over rather than blocking for a coordinator.
     budget_hold = _budget_hold_block(record, budget)
-    background_wait = (
-        None
-        if (refusal_block or retry_block or budget_hold)
-        else _background_wait_signal(record, memo=memo, memo_fresh=memo_fresh)
-    )
+    with _memo_published(record, memo):
+        background_wait = (
+            None
+            if (refusal_block or retry_block or budget_hold)
+            else _background_wait_signal(record)
+        )
     # A refusal at admission is read from the stream's own marks, not from the
     # budget block: it is not a spend refusal — nothing was requested — and the
     # block carries no budget to refuse from. It is resolved here so the
