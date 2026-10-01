@@ -127,6 +127,8 @@ def _backend_rate_statuses(
 
 def backend_rate_statuses(
     anchor: date | None = None,
+    *,
+    strict: bool = False,
 ) -> dict[str, BackendRateStatus]:
     """Return every resolved backend's rate standing at the anchor date.
 
@@ -145,11 +147,20 @@ def backend_rate_statuses(
     takes the stream down with it and tells nobody why. The misconfiguration
     still surfaces where a reader can act on it: ``reckon flight`` names the
     file, the key and the violated constraint.
+
+    ``strict`` inverts the degradation for the one reader that owns a deferral
+    guard: it lets ``FlightConfigError`` out so that caller can defer its tick
+    and retry rather than publish a transition priced against a layer it could
+    not read. It is opt-in, and off for every other caller, because those sit
+    on a path whose purpose is to keep rendering when the configuration moves
+    and would rather lose a figure than a transition.
     """
     effective_anchor = anchor or datetime.now(UTC).date()
     try:
         backends = flight.resolve().config.get("backends") or {}
     except flight.FlightConfigError:
+        if strict:
+            raise
         return {}
     if not isinstance(backends, Mapping):
         return {}
