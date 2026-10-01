@@ -1340,6 +1340,55 @@ def _row_times(
     return metadata_index.stamps_for(path, repo_dir, git_times, git_last_times)
 
 
+def _served_index_rows(docs_dir: Path, project: str) -> list[dict]:
+    """Return the metadata rows ``/_index/<project>`` serves.
+
+    One call shape for the endpoint and for the change stream that pushes
+    those rows: the repository and its commit times are always supplied, so
+    the index's stamps follow the same rule the discovery payload uses and a
+    reader merging the two never sees a document's timestamps move.
+    """
+
+    repo_dir = docs_dir.parent
+    return metadata_index.index_rows(
+        docs_dir,
+        project,
+        repo_dir=repo_dir,
+        git_first=_git_first_committed(repo_dir, docs_dir),
+        git_last=_git_last_committed(repo_dir, docs_dir),
+    )
+
+
+def _index_row_identity(row: Mapping[str, object]) -> tuple[str, str]:
+    """Return one row's identity: its document type and slug."""
+
+    return (str(row.get("type") or ""), str(row.get("slug") or ""))
+
+
+def _index_row_diff(
+    previous: Mapping[tuple[str, str], dict], rows: list[dict]
+) -> dict[str, list[dict]]:
+    """Return the rows that changed, were added, or were removed.
+
+    A row's identity is its type and slug, so a file rewritten in place is a
+    change carrying the same identity, a new file is an addition, and a file
+    that left the tree is a removal carrying the row the stream held.
+    """
+
+    current = {_index_row_identity(row): row for row in rows}
+    return {
+        "changed": [
+            row
+            for identity, row in current.items()
+            if identity in previous and previous[identity] != row
+        ],
+        "added": [row for identity, row in current.items() if identity not in previous],
+        "removed": [
+            row for identity, row in previous.items() if identity not in current
+        ],
+    }
+
+
 def _discovery_signature(
     docs_dir: Path, project: str, state_root: Path | None
 ) -> tuple[int, int]:
@@ -2311,6 +2360,12 @@ class Handler(BaseHTTPRequestHandler):
         try:
             initial = discover_plans(docs_dir, project, _STATE_ROOT)
             digest = initial.get("provenance", {}).get("content_digest", "")
+            # The rows the stream diffs against: what a page painting from
+            # /_index holds when its stream opens.
+            known = {
+                _index_row_identity(row): row
+                for row in _served_index_rows(docs_dir, project)
+            }
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", "text/event-stream")
             self.send_header("Cache-Control", "no-store")
@@ -2331,20 +2386,43 @@ class Handler(BaseHTTPRequestHandler):
                 # so a page that paints from the index is never handed rows
                 # that predate the change its own stream just reported.
                 _invalidate_tree_views(docs_dir, changed_at=changed_at)
+                rows = _served_index_rows(docs_dir, project)
+                row_changes = _index_row_diff(known, rows)
+                known = {_index_row_identity(row): row for row in rows}
+                moved = any(
+                    row_changes[kind] for kind in ("changed", "added", "removed")
+                )
+                if moved:
+                    # The rows are what a page painting from the index needs,
+                    # so they go out before the derived payload is recomputed:
+                    # the resolver behind the next digest is the expensive
+                    # half of a change, and a reader must not wait on it.
+                    self._write_project_event("change", rows=row_changes)
                 current = discover_plans(docs_dir, project, _STATE_ROOT)
                 next_digest = current.get("provenance", {}).get("content_digest", "")
                 if next_digest == digest:
                     continue
                 digest = next_digest
-                self._write_project_event("change", digest)
+                if not moved:
+                    # A change the index did not see — derived state only —
+                    # keeps the digest-only event the loader answers with a
+                    # refetch.
+                    self._write_project_event("change", digest)
         except (BrokenPipeError, ConnectionResetError):
             return
         finally:
             watch.close()
 
-    def _write_project_event(self, event: str, content_digest: str) -> None:
-        payload = json.dumps({"content_digest": content_digest}, separators=(",", ":"))
-        self.wfile.write(f"event: {event}\ndata: {payload}\n\n".encode())
+    def _write_project_event(
+        self, event: str, content_digest: str | None = None, rows: dict | None = None
+    ) -> None:
+        payload: dict = {}
+        if content_digest is not None:
+            payload["content_digest"] = content_digest
+        if rows is not None:
+            payload["rows"] = rows
+        data = json.dumps(payload, separators=(",", ":"))
+        self.wfile.write(f"event: {event}\ndata: {data}\n\n".encode())
         self.wfile.flush()
 
     def _serve_velocity(self, query: dict[str, list[str]]) -> None:
@@ -2756,15 +2834,7 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown project"})
                 return
             try:
-                index_docs = index_mounts[project]
-                index_repo = index_docs.parent
-                rows = metadata_index.index_rows(
-                    index_docs,
-                    project,
-                    repo_dir=index_repo,
-                    git_first=_git_first_committed(index_repo, index_docs),
-                    git_last=_git_last_committed(index_repo, index_docs),
-                )
+                rows = _served_index_rows(index_mounts[project], project)
             except Exception as exc:  # noqa: BLE001
                 self._send_json(
                     HTTPStatus.INTERNAL_SERVER_ERROR,
