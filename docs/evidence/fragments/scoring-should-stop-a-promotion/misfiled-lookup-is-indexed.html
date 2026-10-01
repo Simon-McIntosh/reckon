@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <title>The misfiled lookup answers from an index | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>The misfiled lookup answers from an index</h1>
+      <p class="lead">The review store&rsquo;s misfiled fallback read every record file in the store to answer one lookup. The coordinator obligations hook reached it once for each live run whose lookup missed &mdash; including runs whose review sat at its expected revision-keyed path &mdash; and paid a whole-store pass each time, about 1,600 file reads against the live store. A record at one of the run&rsquo;s own paths now settles the lookup, and the store-wide search that remains answers from an index built at most once per process and per store directory.</p>
+    </header>
+
+    <section id="misfiled-lookup-why">
+      <h2>Why the fallback ran for a run whose review was filed</h2>
+      <p><code>stored_record</code> collects the run&rsquo;s expected files &mdash; the bare path and every <code>&lt;run&gt;.at-*.json</code> &mdash; and, when a head is named, returns a record only if one of them <em>carries that head in its content</em>. A run whose stored review describes an earlier revision than the pointer now resolves therefore matched nothing, the loop fell out, and the lookup dropped into the whole-store content scan even though the run&rsquo;s own file sat exactly where a reader keyed on the run looks for it. A run whose worktree head had moved past the reviewed head, or a review run with no record at all, missed on both the head-named and the unnamed lookup and scanned twice.</p>
+      <p>A spy over <code>_record_filed_elsewhere</code> during one <code>obligations(&rsquo;reckon&rsquo;, &rsquo;s21-1c&rsquo;)</code> recorded <strong>31 fallback calls</strong> (log <code>fallback-trace.log</code>, script <code>diag.py</code>). The run&nbsp;<code>r-20261001T110746880717-a-shared-grant-charges-only-its-holder</code> had a record at both its bare path and <code>&hellip;.at-b48d66a0c696596713af7c47b36d981936376bcb.json</code>, while the pointer resolved head <code>182a115a3562&hellip;</code>; the stored head did not match, so the lookup scanned the store and returned nothing. Reproduced directly on the real store at both revisions with a head that matches nothing (script <code>repro_mismatch.py</code>, logs <code>repro-mismatch-{base,head}.log</code>; the run now also carries <code>&hellip;.at-182a115a&hellip;.json</code>, written by a live review while this node ran):</p>
+      <table>
+        <thead><tr><th>Lookup, real store of 1,601 records</th><th>Record files read</th><th>Result</th><th>Time</th></tr></thead>
+        <tbody>
+          <tr><td>head that matches no record, base <code>a45ee70a7</code></td><td>1,604</td><td><code>(None, None)</code> after a whole-store pass</td><td>0.195&nbsp;s (warm)</td></tr>
+          <tr><td>head that matches no record, head <code>aeabdfa0a</code></td><td>3 (the run&rsquo;s own files)</td><td><code>(None, None)</code>, no scan</td><td>0.004&nbsp;s</td></tr>
+          <tr><td>no head named, both revisions</td><td>3</td><td>the run&rsquo;s newest record, head <code>182a115a&hellip;</code></td><td>0.003&nbsp;s</td></tr>
+        </tbody>
+      </table>
+      <p>The unnamed lookup returns the run&rsquo;s own file at either revision, which is what <code>select_review_for_head</code> falls back to; the change removes only the whole-store pass, not the record. The same scan on the store as it stood earlier returned nothing after reading 1,602 files (log <code>repro-before-fix.log</code>).</p>
+    </section>
+
+    <section id="misfiled-lookup-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/review.py</code>: <code>stored_record</code> returns <code>(None, None)</code> after a head-named miss when a file of the run&rsquo;s own exists, so the store-wide search runs only for a run with none of its own files. <code>_record_filed_elsewhere</code> answers from <code>_store_index</code>, which maps the run id each record names &mdash; with the head it reviewed &mdash; to its path, is built at most once per store directory and process, and is rebuilt when the directory&rsquo;s stat identity moves. The file the index selects is re-read, so a record rewritten in place is returned with its current content, and the misfiled flag is unchanged.</li>
+        <li><code>tests/test_misfiled_lookup_is_indexed.py</code> (new): a synthesised store of 3,000 records under <code>tmp_path</code>. Twenty-five misses read each record file at most once; a record at its revision-keyed path never reaches the scan; a misfiled record is still found and flagged; a record added after the index was built is seen on the next call.</li>
+      </ul>
+    </section>
+
+    <section id="misfiled-lookup-gate">
+      <h2>The gate</h2>
+      <p>Five test files at base and at head, each arm in its own process with a private <code>--basetemp</code> under <code>$TMPDIR</code>: <code>tests/test_misfiled_lookup_is_indexed.py</code>, <code>tests/test_review_store_finds_a_misfiled_record.py</code>, <code>tests/test_review_counts_added_failures.py</code>, <code>tests/test_logged_revision_forms.py</code>, <code>tests/test_a_promoted_row_names_its_reviewed_revision.py</code>. The base arm ran in a scratch extraction of the base revision with the new test file copied in, so both arms ran the same command; the head arm ran in the worktree.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Module under test</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>base <code>a45ee70a7</code>, scratch tree</td><td><code>$TMPDIR/base/reckon/crew/review.py</code></td><td>2 failed, 26 passed, <code>EXIT=1</code></td><td><code>gate-base.log</code></td></tr>
+          <tr><td>head <code>aeabdfa0a</code>, worktree</td><td>worktree <code>reckon/crew/review.py</code></td><td>28 passed, <code>EXIT=0</code></td><td><code>gate-head.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The two base failures are the new test&rsquo;s <code>test_many_misses_read_each_stored_record_at_most_once</code> and <code>test_a_record_at_its_expected_path_never_reaches_the_scan</code> &mdash; the defect this node repairs, reproduced at base. The head arm adds no failure id and removes those two. <code>ruff check</code> and <code>ruff format --check</code> over the changed Python paths report no finding at head and none at base.</p>
+    </section>
+
+    <section id="misfiled-lookup-measurement">
+      <h2>The measurement</h2>
+      <p><code>obligations(&rsquo;reckon&rsquo;, &rsquo;s21-1c&rsquo;)</code> timed on the real store, a fresh process per reading, one call per process. The stub figure from the brief is 19.4&nbsp;s and the limit is 22.4&nbsp;s. The paired rows were taken alternately (base, head, base, head &hellip;) so ambient load lands on both arms; the host was at load average &asymp;&nbsp;20 on 28&nbsp;CPUs, shared with peer workers.</p>
+      <table>
+        <thead><tr><th>Round</th><th>base <code>a45ee70a7</code></th><th>head <code>aeabdfa0a</code></th><th>Logs</th></tr></thead>
+        <tbody>
+          <tr><td>pair 1</td><td>26.277&nbsp;s</td><td>19.846&nbsp;s</td><td><code>measurement-pair1-{base,head}.log</code></td></tr>
+          <tr><td>pair 2</td><td>23.441&nbsp;s</td><td>20.176&nbsp;s</td><td><code>measurement-pair2-{base,head}.log</code></td></tr>
+          <tr><td>pair 3</td><td>23.580&nbsp;s</td><td>19.447&nbsp;s</td><td><code>measurement-pair3-{base,head}.log</code></td></tr>
+          <tr><td>earlier, unpaired</td><td>26.323&nbsp;s / 20.295&nbsp;s</td><td>21.080&nbsp;s / 27.322&nbsp;s</td><td><code>measurement-{base,head}{,-2}.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>Every paired head reading is inside the limit; the head&rsquo;s cost is the stubbed figure plus one index build, measured at <strong>0.571&nbsp;s for 1,601 records</strong> (log <code>index-build-cost.log</code>). The unpaired rounds show the ambient variance on this host: one head reading of 27.322&nbsp;s sat beside a base reading of 20.295&nbsp;s in the same window, which is why the paired series is the one to read. The two arms ran with <code>RECKON_RUN_ID</code> unset, the context a coordinator session runs the <code>UserPromptSubmit</code> hook in; inside a fenced worker shell the git shim refuses <code>git worktree list --porcelain</code>, which the hook never issues and this measurement does.</p>
+    </section>
+
+    <section id="misfiled-lookup-negative-control">
+      <h2>Negative control</h2>
+      <p>With the index cache disabled in <code>reckon/crew/review.py</code> so every miss rebuilds it, the read-once case fails: 75,000 record reads against 3,000 files over twenty-five misses, one failing id, <code>EXIT=1</code> (log <code>negative-control-index-disabled.log</code>).</p>
+    </section>
+  </main>
+</body>
+</html>
