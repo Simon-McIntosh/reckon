@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-impl" content="0.86">
 </head>
 <body>
@@ -295,7 +295,10 @@
     <div class="r-comment-body"><p>§5 — the change stream diffs the metadata index and pushes the changed/added/removed rows ahead of the derived digest (a rewrite reaches the event in 0.45–0.48 s of the 2 s bound across ten flows, 0 added failure ids), and the loader patches them in place, holds a row the page never carried as an arrival, drops a removed row and its arrival count, leaves Python-derived fields untouched, and refetches derived state at most once per settle window across every event shape (a digest-only event shares that refetch); record at docs/evidence/fragments/the-page-paints-from-an-index/changes-push-rows.html</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261001T024141507018-figure-thumbnails" data-who="reckon-build" data-when="2026-10-01T02:57:55.836Z">
-    <div class="r-comment-body"><p>§6 — /_thumb/&lt;project&gt;/&lt;figure path&gt; serves a PNG bounded at 200 px on its long edge (2000×1500 source: 9,013,744 B in, 57 KB-class thumbnail out, under a tenth), rendered once into a cache under the configuration home keyed by the source&#x27;s stat identity and revalidated there by an ETag derived from the same identity (second request with the ETag: 304, render counter stays 1), SVG passed through unchanged, an unthumbnailable source served as itself rather than 500, and the figure list&#x27;s image rows derive that URL (loading=&quot;lazy&quot; kept); Pillow declared in pyproject.toml and uv.lock; record at docs/evidence/fragments/the-page-paints-from-an-index/figure-thumbnails.html</p></div>
+    <div class="r-comment-body"><p>§6 — /_thumb/&lt;project&gt;/&lt;figure path&gt; serves a PNG bounded at 200 px on its long edge (2000×1500 source: 9,013,744 B in, 57 KB-class thumbnail out, under a tenth), rendered once into a cache under the configuration home keyed by the source's stat identity and revalidated there by an ETag derived from the same identity (second request with the ETag: 304, render counter stays 1), SVG passed through unchanged, an unthumbnailable source served as itself rather than 500, and the figure list's image rows derive that URL (loading="lazy" kept); Pillow declared in pyproject.toml and uv.lock; record at docs/evidence/fragments/the-page-paints-from-an-index/figure-thumbnails.html</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261001T030308294978-review-of-figure-thumbnails" data-who="reckon-build" data-when="2026-10-01T03:11:32.601Z">
+    <div class="r-comment-body"><p>§6 review — the reviewed node r-20261001T024141507018-figure-thumbnails scored goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20 (total 99), with added_failure_count 0 over the reviewed run&#x27;s own baseline_suite/after_suite gate logs and one follow-on finding on the unguarded lazy-load attribute</p></div>
 </div>
 </section>
 </main>
