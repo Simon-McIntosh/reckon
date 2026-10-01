@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-is-a-section-not-a-followup">
+  <meta name="plan-evidence-for" content="work-is-a-section-not-a-followup">
+  <title>One predicate names a followup that hides work | reckon</title>
+    <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>One predicate names a followup that hides work, and the roadmap reports it</h1>
+      <p class="lead">A followup is a pointer when its invocation sends the reader somewhere dispatchable — another plan, another mount's plan, a sprint, or its own plan's section the plan declares <code>implementable</code>. Anything else names work no surface can schedule, and until now the roadmap said nothing about it. One predicate now answers that question, and the roadmap reports each followup that hides work as a warn-severity wiring finding.</p>
+    </header>
+
+    <section id="predicate-and-finding-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/followup_pointers.py</code> is new. <code>classify_followup(plan, followup, *, project, declarations, sprint_ids)</code> parses the followup's invocation — its <code>prompt</code>, or <code>recommends_skill</code> when the prompt holds none — in the grammar <code>/reckon-VERB TARGET</code> with an optional <code>§N</code>, and returns a <code>FollowupVerdict(pointer, reason)</code>. Reasons for hiding work: <code>no-section</code>, <code>section-not-implementable</code>, <code>host-complete</code>, <code>unparseable</code>; for pointers: <code>other-plan</code>, <code>other-mount</code>, <code>sprint</code>, <code>implementable-section</code>. <code>§2</code> maps to the section identity <code>s2</code>.</li>
+        <li><code>reckon/roadmap.py</code> gains <code>_followup_work_findings</code>, called beside <code>_unwired_plan_findings</code> over every plan the roadmap inventories — completed plans included — through the existing <code>_finding</code> helper: code <code>followup-hides-work</code>, severity <code>warn</code>, message and <code>extra</code> naming the plan, the followup id and the reason. No other module re-derives the classification.</li>
+        <li>A discovery-shaped inventory row carries neither <code>followups</code> nor <code>section_declarations</code>, so <code>_plan_followups</code> reads both from the plan file when the row lacks them — the same fallback <code>_plan_declarations</code> already takes — so the finding appears on every composition path with a docs dir, not only the one that attaches followups to rows.</li>
+        <li><code>host-complete</code> is judged before the section: a followup on a completed plan hides work wherever it points inside its own plan, because the roadmap never dispatches a completed plan. A followup naming any other plan is a pointer regardless of this plan's status.</li>
+      </ul>
+    </section>
+
+    <section id="predicate-and-finding-the-gate">
+      <h2>The gate</h2>
+      <p><code>tests/test_a_followup_that_hides_work_is_found.py</code> writes five plans into a temporary docs directory in the store's own layout and reads them back through <code>parse_plan</code>. The predicate's answer and reason are asserted for the five cases; the roadmap's findings are asserted as exactly the three that hide work. Two further cases cover the recommended-skill fallback and a sprint target.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base at <code>73a6cdc48</code>, the 36 existing test files that import or call the roadmap</td><td>438 passed, 2 skipped, <code>EXIT=0</code>; base failing ids &mdash; none</td><td><code>r-20261001T194951171857-a-followup-that-hides-work-is-found/gate-base.log</code></td></tr>
+          <tr><td>Head at <code>0545d849</code> (working tree), the same 36 files plus the new file</td><td>4 failed, 444 passed, 2 skipped, <code>EXIT=1</code>; zero added failures in this node's own file, four added ids in files outside its write fence</td><td><code>r-20261001T194951171857-a-followup-that-hides-work-is-found/gate-head.log</code></td></tr>
+          <tr><td>Negative control at <code>0545d849</code>+dirty</td><td>3 failed, 7 passed, <code>EXIT=1</code>; the no-section case fails as declared</td><td><code>r-20261001T194951171857-a-followup-that-hides-work-is-found/negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The four added ids are <code>tests/test_roadmap.py::test_terminal_plan_wiring_does_not_pollute_immediate_roadmap</code>, <code>::test_archived_plan_is_excluded_from_live_roadmap</code>, <code>::test_closed_sprint_history_does_not_duplicate_live_membership</code> and <code>tests/test_sprint_summary_lists_pending.py::test_summary_without_sprint_is_unchanged</code>. Their fixtures write <code>{"id": "next", "status": "open"}</code> into every plan row <code>tests/test_roadmap.py</code> builds and then assert <code>wiring_findings == []</code>, and the sprint-summary fixture freezes <code>finding_counts</code> at three warnings. A followup with no invocation parses to <code>unparseable</code> and hides work, so these fixtures encode the pre-change result. Both files lie outside this node's write fence, so the ids are reported rather than repaired.</p>
+      <p>Ruff: with the repository configuration, <code>reckon/roadmap.py</code> carries the same three findings at base and at head (<code>I001</code>, <code>RUF005</code>, <code>PERF401</code>, all pre-existing; line numbers move), and the two new files are clean and formatted. Log: <code>ruff.log</code>.</p>
+    </section>
+
+    <section id="predicate-and-finding-the-real-tree">
+      <h2>Reckon's own plans</h2>
+      <p>Read-only over <code>/home/ITER/mcintos/Code/reckon/docs/plans</code> at revision <code>ddff8e4f6a72</code>, 2026-10-01T20:10:36Z: 145 plans, 115 open followups. Predicate counts by reason word:</p>
+      <table>
+        <thead><tr><th>Reason word</th><th>Count</th></tr></thead>
+        <tbody>
+          <tr><td><code>no-section</code></td><td>39</td></tr>
+          <tr><td><code>implementable-section</code></td><td>29</td></tr>
+          <tr><td><code>other-plan</code></td><td>18</td></tr>
+          <tr><td><code>section-not-implementable</code></td><td>15</td></tr>
+          <tr><td><code>host-complete</code></td><td>13</td></tr>
+          <tr><td><code>unparseable</code></td><td>1</td></tr>
+        </tbody>
+      </table>
+      <p>68 hide work, against 47 that point. Section 1 recorded 102 of 129 hiding on 2026-10-01; the tree has moved since (115 open now, rows resolved by the section that clears them), so the two counts are not directly comparable, and the predicate does not reproduce the two pointer buckets unchanged: 29 point at their own implementable section (Section 1: 23) and 18 at another plan (Section 1: 4).</p>
+      <p>Section 1 recorded only its table of counts, never the rows, so its per-row answer was reconstructed from that table's wording with the rule order stated at the top of the scan script. On that reconstruction, this predicate disagrees on exactly one row, and both answers hide work:</p>
+      <table>
+        <thead><tr><th>Followup</th><th>Predicate</th><th>Section 1 reconstruction</th></tr></thead>
+        <tbody>
+          <tr><td><code>north-star-orientation f-nso-002</code> (<code>/reckon-build north-star-orientation &sect;5</code>, plan shipped)</td><td><code>host-complete</code></td><td><code>own-section-not-implementable</code></td></tr>
+        </tbody>
+      </table>
+      <p>The reconstruction also explains the bucket arithmetic behind the two pointer counts: Section 1 likely read a shipped-plan host first, so its <code>sits on a shipped plan</code> bucket (27) absorbed rows that name another plan, which the predicate correctly calls pointers (today's 12 shipped-plan and 18 another-plan against Section 1's 27 and 4 sum the same way). Full log with every row: <code>real-tree-scan.log</code>; machine-readable result: <code>real-tree-result.json</code> beside it in the run directory.</p>
+    </section>
+
+    <section id="predicate-and-finding-commits">
+      <h2>Commits</h2>
+      <p><code>0545d84952bc6a3680d3c922d001a75b6e9951fe</code> &mdash; feat(roadmap): report followups whose invocation hides work. Changes <code>reckon/followup_pointers.py</code> (new), <code>reckon/roadmap.py</code> and <code>tests/test_a_followup_that_hides_work_is_found.py</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
