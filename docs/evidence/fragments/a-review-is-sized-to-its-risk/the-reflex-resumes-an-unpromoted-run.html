@@ -32,27 +32,33 @@
         ran leaves — therefore no longer marks the run busy forever, so a
         resumed turn that ended without answering is resumed once more on the
         next sweep rather than stranding the round. The attempt count recorded
-        on the run makes the retry visible. The branch sits after lane
-        resolution, so a round with no lane is still held with its cause named
-        rather than resumed.
+        on the run makes the retry visible. The retry is bounded: the branch
+        reads the durable attempt from the pointer's repair record and resumes a
+        round at most twice — the first and the one retry — recording the round
+        <code>exhausted</code> with its reason once the cap is reached, so a
+        turn that keeps ending without answering cannot spend lane capacity on
+        every cadence forever. The branch sits after lane resolution, so a round
+        with no lane is still held with its cause named rather than resumed.
       </p>
       <p>
         <strong>Measure.</strong> Each file run to its own log ending
-        <code>EXIT=0</code> at commit <code>91e96cf09</code> (11 passed in
+        <code>EXIT=0</code> at commit <code>6f43630d7</code> (12 passed in
         the combined run), with the resume entry point and the dispatch both
         stubbed so no worker is launched and no call reaches a scheduler:
       </p>
       <ul>
-        <li><code>tests/test_the_reflex_resumes_an_unpromoted_run.py</code> 5/5
+        <li><code>tests/test_the_reflex_resumes_an_unpromoted_run.py</code> 6/6
           — an unpromoted exited run with one blocking finding is resumed once
           with advice naming the finding's id and the dispatch is never called;
           a live resumed worker is left alone; a <em>finished</em> resumed turn
           (assistant then result) leaves the worker gone and the head unmoved,
           so the round is retried once with attempt count 2; an
           <em>unfinished</em> resumed turn (assistant with no result) reads busy
-          and resumes nothing; a promoted run is not resumed. The resume stub
-          writes the stream a real resume leaves, so the finished case measures
-          the shape production actually produces.</li>
+          and resumes nothing; a round resumed twice is recorded
+          <code>exhausted</code> and not resumed a third time; a promoted run
+          records the exact refusal status and reason. The resume stub writes
+          the stream a real resume leaves, so the finished case measures the
+          shape production actually produces.</li>
         <li><code>tests/test_a_repair_hold_names_its_cause.py</code> 4/4 — the
           holds and their control, unaffected by the busy-check change.</li>
         <li><code>tests/test_repair_answers_only_blocking_findings.py</code> 6/6
@@ -65,6 +71,9 @@
         busy check (dropping the result-line test) reddens the finished-turn
         retry case (<code>1 failed</code>, EXIT=1); log
         <code>negative-control-any-assistant-record-busy.log</code> under the run
+        directory. Removing the resume cap reddens the third-resume case
+        (<code>1 failed</code>, EXIT=1); log
+        <code>negative-control-resume-cap-removed.log</code> under the run
         directory. An earlier control, routing the unpromoted case back to
         dispatch, reddens the three resumed-not-dispatched cases.
       </p>
