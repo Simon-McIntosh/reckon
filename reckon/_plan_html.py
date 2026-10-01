@@ -314,15 +314,28 @@ def _record_field(record, name):
     return getattr(record, name, None)
 
 
-def derive_impl_from_sections(sections) -> float | None:
+def derive_impl_from_sections(sections, declarations=None) -> float | None:
     """impl from section effort: done over done plus remaining implementable.
 
     Deferred sections sit outside the denominator, and a plan carrying no
     record in scope derives nothing — the caller keeps the authored figure
     rather than reporting a fabricated zero.
+
+    The records must cover the declarations for the same reason. A section
+    declared done or implementable that carries no record is effort the
+    denominator cannot see, so a figure derived over the remaining records
+    reports the absent records as a zero rather than as unknown, and the
+    authored figure stands instead.
     """
     if not sections:
         return None
+    recorded = {str(_record_field(record, "id") or "") for record in sections}
+    for section, classification in (declarations or {}).items():
+        if (
+            str(classification or "").strip() in ("done", "implementable")
+            and str(section) not in recorded
+        ):
+            return None
     done = 0.0
     predicted = 0.0
     for record in sections:
@@ -508,7 +521,7 @@ def read_state(html_text: str) -> dict:
                 "object mapping section identities to classifications"
             )
     st["sections"] = _read_section_records(soup, st.get("section_declarations", {}))
-    derived = derive_impl_from_sections(st["sections"])
+    derived = derive_impl_from_sections(st["sections"], st.get("section_declarations"))
     if derived is not None:
         st["impl"] = derived
         st["impl_source"] = "computed"
@@ -1465,7 +1478,9 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
         derived = (
             None
             if parsed_state is None
-            else derive_impl_from_sections(parsed_state.get("sections"))
+            else derive_impl_from_sections(
+                parsed_state.get("sections"), parsed_state.get("section_declarations")
+            )
         )
         if derived is not None:
             rec["impl"] = derived
