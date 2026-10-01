@@ -55,6 +55,8 @@ from reckon.crew.routing import (
     _shadow_patch_retained,
     _shadow_worktree_records,
     _signal_process_group,
+    section_anchor,
+    section_record_id,
 )
 from reckon.crew.runs import (
     _live_worktree_claims,
@@ -2695,15 +2697,6 @@ class StreamMeasures:
     throughput: dict[str, Any] = field(default_factory=dict)
 
 
-def _section_anchor(section: Any) -> str:
-    """Map a numbered section reference to its semantic HTML anchor."""
-    normalized = ledger.normalize_section(section)
-    numbered = re.fullmatch(r"§(\d+(?:\.\d+)*)", normalized)
-    if numbered:
-        return f"s{numbered.group(1).replace('.', '-')}"
-    return normalized.removeprefix("#") or "_top"
-
-
 def _declared_manifest_commits(record: Mapping[str, Any]) -> list[str]:
     """Commits a run's durable manifest declares, for landing-record detection."""
     manifest_path = str(record.get("manifest_path") or "")
@@ -2799,7 +2792,7 @@ def _record_landing_comment(
     if not body_text or not plan:
         return {"recorded": False, "reason": "empty_narrative"}
     comment_id = f"c-run-{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
-    anchor = _section_anchor(section)
+    anchor = section_anchor(section)
     desired_body = f"<p>{html.escape(body_text)}</p>"
     worker_recorded = bool(
         not landing
@@ -3599,7 +3592,7 @@ def _run_capability_risk(
     if not state:
         return ""
     section_risk = ""
-    wanted = _section_anchor((record.get("node") or {}).get("section"))
+    wanted = section_record_id((record.get("node") or {}).get("section"))
     sections = state.get("sections")
     if isinstance(sections, (list, tuple)):
         for section in sections:
