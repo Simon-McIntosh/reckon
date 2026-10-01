@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A promoted row names its reviewed revision">
+  <meta name="plan-summary" content="The canonical reviewed revision pair now reaches both ends of the review path: the composed review brief's done-when and the review role prompt ask the reviewer to record reviewed_base_sha and reviewed_head_sha, and the compact block a promotion stores onto the ledger row carries that pair, resolved through the store's own reader from whichever of the five legacy spellings the record used. Base reproduces both gaps; head adds no failure id (428 passed to 433 passed, zero failed); the declared mutation drops the pair from the block again and reddens the row case.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <title>A promoted row names its reviewed revision | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A promoted row names its reviewed revision</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>A stored review is evidence about one revision, and two gaps kept that fact out
+        of reach. Nothing on the live path asked the reviewer to say which revision it
+        read: the composed review brief's done-when (<code>reckon/crew/recovery.py</code>,
+        <code>_review_dispatch_fields</code>) named the five dimensions, the added-failure
+        count and the added-failure ids, and no revision; the role prompt
+        (<code>reckon/crew/prompts/review.md</code>) contained no revision ask either. And
+        the compact block a promotion stores onto the ledger row
+        (<code>reckon/crew/review.py</code>, <code>ledger_block</code>) returned only
+        <code>status</code>, <code>scores</code>, <code>absent</code> and
+        <code>total</code>, so even a record that named the pair could not reach the row.</p>
+      <p>Reproduced at the base revision <code>fa66c530</code> against the worktree's own
+        tree (<code>gates/base-reproduction.log</code>, EXIT=0 &mdash; the script exits
+        non-zero had either defect already been absent):</p>
+      <table>
+        <thead>
+          <tr><th>fact</th><th>at base</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>the emitted brief's <code>done_when</code> names <code>reviewed_base_sha</code> / <code>reviewed_head_sha</code></td>
+            <td>False / False</td>
+          </tr>
+          <tr>
+            <td>the review prompt names <code>reviewed_base_sha</code> / <code>reviewed_head_sha</code></td>
+            <td>False / False</td>
+          </tr>
+          <tr>
+            <td><code>ledger_block</code> of a record carrying the pair</td>
+            <td><code>{'status', 'scores', 'absent', 'total'}</code> &mdash; the pair dropped</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="change">
+      <h2>The change</h2>
+      <p>The brief's done-when now requires the reviewer to record "the revision it read
+        as reviewed_base_sha and reviewed_head_sha", named beside the count it already
+        asked for. <code>reckon/crew/prompts/review.md</code> gains a short section stating
+        the same ask: the record must carry the canonical pair, base for the commit the
+        diff was taken from and head for the commit it landed at, recorded from what was
+        read rather than reconstructed from a filename or a timestamp.</p>
+      <p><code>ledger_block</code> now resolves the pair through the store's existing
+        <code>carried_revision_pair</code> and writes <code>reviewed_base_sha</code> and
+        <code>reviewed_head_sha</code> onto the block when the record carries them, so any
+        of the five recorded spellings reaches the row under the canonical names. A record
+        naming none keeps the bare block: the absence is a fact about the record, and a
+        defaulted pair would claim a revision nobody read. The existing exact-shape
+        assertions on the bare block (a legacy record's row) therefore hold unchanged.</p>
+      <p>Commits: <code>0841bff48</code> (the brief and prompt ask),
+        <code>91d959b0e</code> (the block and the new test file).</p>
+    </section>
+
+    <section id="gate">
+      <h2>The gate</h2>
+      <p>The new file plus every existing test file under <code>tests/</code> that calls
+        <code>ledger_block</code>, <code>store_review</code> or the composed review brief
+        &mdash; 41 existing files at base, 42 at head (the lists are recorded in this node's
+        run directory under <code>gates/base-gate-files.txt</code> and
+        <code>gates/head-gate-files.txt</code>, with the arm logs beside them).
+        Each arm ran with its own <code>--basetemp</code>, <code>pytest-xdist -n 8</code>,
+        and <code>PYTHONPATH</code> pointing at the tree named in the log header:</p>
+      <p>Both arms ran in the assigned worktree: the base arm before the change, the head
+        arm at the revision its log header names, with the worktree clean there.</p>
+      <table>
+        <thead>
+          <tr><th>arm</th><th>revision</th><th>result</th><th>failed ids</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>base</td>
+            <td><code>fa66c530</code></td>
+            <td><code>428 passed</code> in 136.40s</td>
+            <td>0</td>
+          </tr>
+          <tr>
+            <td>head</td>
+            <td><code>91d959b0e</code></td>
+            <td><code>433 passed</code> in 188.83s</td>
+            <td>0</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The head arm adds no failure id. Its five extra tests are the new cases: the
+        emitted brief names the ask, the prompt names the ask, a record written the way
+        <code>store_review</code> writes one reaches a row whose review block names the
+        reviewed head and base through the selector the promotion gate uses, a legacy
+        spelling reaches the block under the canonical name, and a record naming no
+        revision keeps the bare block.</p>
+      <p><code>ruff check</code> and <code>ruff format --check</code> over the changed
+        Python paths report no finding the base did not: 9 concise lines at base and 9 at
+        head (all pre-existing in <code>reckon/crew/recovery.py</code>), with
+        <code>reckon/crew/review.py</code> and the new test file both formatted.</p>
+    </section>
+
+    <section id="negative-control">
+      <h2>The negative control</h2>
+      <p>The declared control drops the reviewed revision pair from
+        <code>ledger_block</code> again and requires the row case to go red. Its log's
+        first line, verbatim:</p>
+      <pre><code># declared mutation: drop the reviewed revision pair from ledger_block in reckon/crew/review.py again; the row case in tests/test_a_promoted_row_names_its_reviewed_revision.py fails</code></pre>
+      <p>Run against the worktree carrying that mutation on top of the change:
+        <code>2 failed, 3 passed</code>, EXIT=1, the failures including
+        <code>test_a_promoted_row_names_the_reviewed_head</code>. The three that pass are
+        the ones asserting the ask in the brief and prompt and the bare-block shape, which
+        the mutation leaves untouched.</p>
+    </section>
+
+    <section id="limits">
+      <h2>What this node does not do</h2>
+      <p><code>reckon/crew/promotion.py</code> is unchanged: another live node holds its
+        refusal region, and the row reads <code>ledger_block</code> as it is. The block
+        names a pair only when the stored record carries one, so a promoted row for a
+        legacy record keeps its bare block; the row's head is comparable only once the
+        brief's ask is obeyed by a stored review. Verifying the merged result belongs to a
+        separately dispatched test node.</p>
+    </section>
+  </main>
+</body>
+</html>
