@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="177">
+<meta name="plan-version" content="178">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -480,31 +480,11 @@
     disappears from every later count of what failed and why. A case sweeps one stale pointer
     and asserts that a ledger row exists for it, carrying the classification.</p>
 
-    <h2 id="s7">&sect;7 &mdash; The skills say what a session owns and when it ends</h2>
-    <p>Guidance cannot replace &sect;2&ndash;&sect;6, but three failures were instruction
-    failures, and they recur until the skills name them. The reckon-ship skill and the
-    Claude Code harness reference gain the following:</p>
-    <ul>
-      <li>One follower per session, stopped before it is re-armed, and a session-end step
-      that runs <code>reckon crew census</code> for its own session.</li>
-      <li>No backgrounded dispatch loop or wave script. A wave is a sequence of dispatch
-      calls in the coordinator's own turns, so it ends when the session does. A nova
-      <code>wave7.sh</code> kept dispatching for seven hours after its session stopped.</li>
-      <li>A search names its subtree or absolute path and is bounded on the producer side,
-      with <code>timeout</code> or <code>-maxdepth</code>. <code>| head</code> is not a
-      bound: it limits the output, and a search that finds nothing is exactly the one that
-      then walks the whole tree. That is how <code>find / -name wall.h5 | head</code> ran for
-      10 h 49 min. A brief names the absolute data path rather than describing the file,
-      since a described file is what sends a worker searching.</li>
-    </ul>
-    <p>A backgrounded tool call is silent from its two-minute boundary until it dies, so its
-    owner has usually moved on. The harness offers no heartbeat for that. The host dashboard
-    in imas-codex's <code>host-dashboard-covers-every-agent-process</code> carries it instead,
-    as a per-session list of long-running background processes.</p>
-    <p><strong>Done when</strong> the three rules above are in the reckon-build skill
-    (<code>skills/reckon-build/</code>, renamed from reckon-ship) and the Claude Code harness
-    reference (<code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code>),
-    each beside the measurement that motivates it.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-01</span>
+    <h2 id="s7">&sect;7 &mdash; The skills say what a session owns and when it ends</h2></header>
+  <p class="landed-summary">Landed the three session-ownership rules in the reckon-build process reference (§17) and the Claude Code harness reference, each beside its measurement, with a session-end process listing until §6's census exists. A guard test pins each rule's anchor in both files (4 passed; removing a rule fails it). Commits <code>20940412d</code>, <code>0f758772a</code>. <a href="s7">full record</a></p>
+</section>
 
     <h2 id="s8">&sect;8 &mdash; Done when, for the plan</h2>
     <p>&sect;2&ndash;&sect;7 have each met their own done-when. On a working day with the
@@ -1503,7 +1483,7 @@
     <div class="r-comment-body"><p>an independent review of run r-20261001T191628687658-skill-rules-say-what-a-session-owns is stored as a parsed 5-dimension record (total 79/100: goal_fidelity 18, evidence 15, scope_discipline 20, durability 8, fit 18) at both the legacy path and the head-keyed path for reviewed head 20940412dfdbe4a8bd724da417a085555764ef4c.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261001T225700735488-skill-rules-are-asserted" data-who="reckon-build" data-when="2026-10-01T23:16:00.436Z">
-    <div class="r-comment-body"><p>§7&#x27;s three session-ownership rules now have a guard: tests/test_skill_session_ownership_rules.py pins one anchor phrase per rule in both sprint-orchestration.md §17 and orchestrator-harness/claude-code.md, and pins SKILL.md&#x27;s pointer at §17; gate 4 passed at head, and the declared mutation (the wave-script rule removed from a copy) fails 1 of 4, EXIT=1.</p></div>
+    <div class="r-comment-body"><p>§7's three session-ownership rules now have a guard: tests/test_skill_session_ownership_rules.py pins one anchor phrase per rule in both sprint-orchestration.md §17 and orchestrator-harness/claude-code.md, and pins SKILL.md's pointer at §17; gate 4 passed at head, and the declared mutation (the wave-script rule removed from a copy) fails 1 of 4, EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261001T211059037154-producer-reads-only-what-changed" data-who="reckon-build" data-when="2026-10-01T22:37:41.810Z">
     <div class="r-comment-body"><p>§11 — the producer carries each run's stream cursor: a poll parses only the bytes appended since the last (recorded as bytes_parsed_last_poll in the registration), spawns no git while the worktree head holds still, re-reads from zero on a replaced or truncated stream, and yields the same transitions as the whole-file path; 3 gate tests pass.</p></div>

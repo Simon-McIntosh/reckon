@@ -874,6 +874,11 @@
       withheld. Review, integration, the merged gate and deployment are coordinator
       work, and the driving followup stays open.</p>
     </section>
-  </main>
+    <section id="s7">
+    <h2>§7 — The skills say what a session owns and when it ends</h2>
+    <p>Two nodes landed on 2026-10-01. <code>skill-rules-say-what-a-session-owns</code> (commit <code>20940412d</code>, merge <code>272acc50e</code>, reviewed at 79) added <code>skills/reckon-build/references/sprint-orchestration.md</code> §17 and a host section in <code>orchestrator-harness/claude-code.md</code>, each rule beside its measurement: one follower per session, stopped before it is re-armed; no backgrounded dispatch loop or wave script (a wave script kept dispatching for 7 h); a search is bounded at the producer, because <code>| head</code> is not a bound (<code>find / | head</code> ran for 10 h 49 min). Because §6's census is deferred, the session-end step is the ancestry-excluding process listing, which <code>crew census</code> replaces when §6 lands. The review scored durability 8 because no test asserted the rules, so <code>skill-rules-are-asserted</code> (commit <code>0f758772a</code>, merge <code>8b9818f32</code>) added <code>tests/test_skill_session_ownership_rules.py</code>. It pins one anchor per rule in both references and SKILL.md's pointer at §17. It passes 4 of 4, and the declared mutation (the wave-script rule removed from a copy) fails 1 of 4. The skill-contract arms read 76 passed at base and at head.</p>
+  </section>
+
+</main>
 </body>
 </html>
