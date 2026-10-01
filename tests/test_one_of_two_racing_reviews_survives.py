@@ -361,3 +361,51 @@ def test_a_later_registration_is_outranked_and_an_earlier_one_is_not() -> None:
         own_run_id=None,
         own_registered_at=None,
     )
+
+
+def test_mixed_spelling_registration_times_order_by_the_parsed_moment() -> None:
+    """The parsed moment decides, not the spelling of the timestamp.
+
+    ``...T04:00:00Z`` and ``...T04:00:00.500000+00:00`` name moments half a
+    second apart, yet as raw text the ``Z`` one sorts after the fractional one
+    (``'Z'`` is above ``'.'``). A comparison over the raw strings therefore
+    ranks the earlier arrival as the later one. Parsing each stamp first ranks
+    them by when they were actually registered.
+    """
+    order = dispatch_module._peer_claim_is_a_later_racing_arrival
+
+    # The peer's spelling sorts later as text but names the earlier moment, so
+    # it is the established arrival and this dispatch must refuse it.
+    assert not order(
+        _claim("r-peer", "2026-10-01T04:00:00Z"),
+        own_run_id="r-own",
+        own_registered_at="2026-10-01T04:00:00.500000+00:00",
+    )
+    # And the reverse: the fractional spelling names the later moment, so it is
+    # outranked even though it sorts earlier as text.
+    assert order(
+        _claim("r-peer", "2026-10-01T04:00:00.500000+00:00"),
+        own_run_id="r-own",
+        own_registered_at="2026-10-01T04:00:00Z",
+    )
+
+
+def test_a_registration_time_that_does_not_parse_is_inconclusive() -> None:
+    """A stamp the parser cannot read leaves the peer claim binding.
+
+    Inconclusive is a refusal, not a quiet outranking: a claim whose
+    registration moment cannot be established is treated as established, the
+    same way an absent timestamp is today.
+    """
+    order = dispatch_module._peer_claim_is_a_later_racing_arrival
+
+    assert not order(
+        _claim("r-b", "not-a-timestamp"),
+        own_run_id="r-a",
+        own_registered_at="2026-10-01T04:00:00Z",
+    )
+    assert not order(
+        _claim("r-b", "2026-10-01T04:00:01Z"),
+        own_run_id="r-a",
+        own_registered_at="not-a-timestamp",
+    )

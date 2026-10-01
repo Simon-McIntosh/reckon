@@ -2041,15 +2041,24 @@ def _peer_claim_is_a_later_racing_arrival(
 
     A peer that has launched its worker keeps today's refusal: it has already
     passed its own admission and is no longer a racing arrival. A peer whose
-    registration cannot be shown to follow this one — an absent timestamp, or
-    this dispatch holding no claim of its own — is treated as established and
-    refused rather than quietly outranked.
+    registration cannot be shown to follow this one — an absent or unreadable
+    timestamp, or this dispatch holding no claim of its own — is treated as
+    established and refused rather than quietly outranked.
+
+    The two moments are compared as parsed instants, not as the text they were
+    written in: the same instant is written ``...T04:00:00Z`` by one caller and
+    ``...T04:00:00.500000+00:00`` by another, and those spellings sort the
+    wrong way round as strings.
     """
     if claim.launched:
         return False
     if not own_run_id or not own_registered_at or not claim.registered_at:
         return False
-    return (claim.registered_at, claim.run_id) > (own_registered_at, own_run_id)
+    peer_registered_at = parse_utc(claim.registered_at)
+    own_registered = parse_utc(own_registered_at)
+    if peer_registered_at is None or own_registered is None:
+        return False
+    return (peer_registered_at, claim.run_id) > (own_registered, own_run_id)
 
 
 def _raise_repository_scope_conflict(
