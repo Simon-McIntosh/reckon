@@ -874,12 +874,12 @@ def _require_gate_evidence(
             raise CrewError(
                 f"run {run_id!r} presents "
                 + ", ".join(repr(entry) for entry in unresolved_presented)
-                + " as a commit, but that identifier does not resolve to an "
-                f"object in the run repository ({tree}). The presented list is "
-                "what the boundary check and the ledger resolve, so a value "
-                "that names nothing is not evidence and is reported rather "
-                "than dropped from the comparison. Cite the commit the run "
-                "actually wrote, or leave the value out of the presentation"
+                + " as a commit, but that identifier does not resolve to a "
+                f"commit object in the run repository ({tree}). The presented "
+                "list is what the boundary check and the ledger resolve, so a "
+                "value that names nothing is not evidence and is reported "
+                "rather than dropped from the comparison. Cite the commit the "
+                "run actually wrote, or leave the value out of the presentation"
             )
         resolving_declared = {
             canonical
