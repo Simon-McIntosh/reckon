@@ -3160,6 +3160,7 @@ _OPEN_OPERATION_MARKERS: tuple[tuple[str, str], ...] = (
     ("rebase-merge", "rebase"),
     ("rebase-apply", "rebase"),
     ("CHERRY_PICK_HEAD", "cherry-pick"),
+    ("REVERT_HEAD", "revert"),
 )
 
 
@@ -3167,7 +3168,7 @@ def _open_operation_state(checkout: Path) -> str | None:
     """The git operation the checkout has open, or ``None`` when none has.
 
     Promotion commits the stores it writes into the checkout's index. An open
-    merge, rebase or cherry-pick means another session is mid-operation there:
+    merge, rebase, cherry-pick or revert means another session is mid-operation there:
     a landing commit would move that operation's first parent under it and a
     whole-index commit could take its staged work. The marker path is resolved
     with ``git rev-parse --git-path`` so a linked worktree, whose ``.git`` is a
@@ -3191,8 +3192,8 @@ def _require_committable_checkout(checkout: Path | None, run_id: str) -> None:
 
     Promotion writes two tracked stores (the ledger row and the plan landing
     comment) and commits them as one landing. A checkout that is not a git
-    worktree cannot host that commit, and one with an open merge, rebase or
-    cherry-pick is owned by another operation, so promotion refuses here,
+    worktree cannot host that commit, and one with an open merge, rebase,
+    cherry-pick or revert is owned by another operation, so promotion refuses here,
     before either store is written, rather than writing stores it could not
     commit or committing into a peer's operation.
     """
