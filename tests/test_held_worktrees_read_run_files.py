@@ -1,11 +1,15 @@
 """A held tree is resolved from the ledger file of the run that named it.
 
-The whole-ledger read is the authority, so the parity case derives its
+The whole-ledger read is the authority, so every parity case derives its
 expectation from that read and compares it with the per-run derivation. The
-per-run files are what the derivation is allowed to open for a tree it
-inspects, and the whole ledger is what it may fall back to for a tree no
-per-run file names — the two reads are separated here by making the whole-ledger
-readers raise.
+per-run files are what the fast path opens for a tree, and the aggregate the
+derivation also reads is what carries a row the split has written no file for —
+the two sources are separated in the never-called case by making the merged
+whole-ledger readers raise.
+
+Every record here is built by the producer's own constructor and published
+through the producer's own writers, so no case asserts against keys this test
+invented.
 """
 
 from __future__ import annotations
@@ -27,6 +31,7 @@ obligations_module = importlib.import_module("reckon.crew.obligations")
 PROJECT = "held-tree-fixture"
 SESSION = "s21-fixture"
 OBSERVED_AT = datetime(2026, 10, 1, 12, 0, tzinfo=UTC)
+DEFAULT_COMPLETED = OBSERVED_AT - timedelta(seconds=600)
 
 
 def _git(repository: Path, *arguments: str) -> str:
@@ -71,64 +76,73 @@ def _worktree(root: Path, node: str) -> Path:
     return path
 
 
-def _record(
+def _produced(
     run_id: str,
     node: str,
     *,
     worktree: Path | None = None,
-    retained_at: datetime | None = None,
     completed_at: datetime | None = None,
 ) -> dict[str, Any]:
-    completed = completed_at or (retained_at or OBSERVED_AT) - timedelta(seconds=600)
-    record: dict[str, Any] = {
-        "run_id": run_id,
-        "plan": "fixture-plan",
-        "node": node,
-        "completed_at": completed.isoformat(),
-        "worktree_retention": (
-            {
-                "worktree": str(worktree),
-                "retained_at": (retained_at or OBSERVED_AT).isoformat(),
-            }
-            if worktree is not None
-            else None
-        ),
-    }
+    """One record as the producer builds it, with its retention attached.
+
+    ``build_record`` assembles the row; the retention is attached afterwards
+    because that is where the promoter attaches it too.
+    """
+    completed = completed_at or DEFAULT_COMPLETED
+    record = ledger.build_record(
+        run_id=run_id,
+        plan="fixture-plan",
+        gate="passed",
+        node=node,
+        completed_at=completed.isoformat(),
+    )
+    if worktree is not None:
+        record["worktree_retention"] = {
+            "worktree": str(worktree),
+            "retained_at": completed.isoformat(),
+        }
+    else:
+        record["worktree_retention"] = None
     return record
 
 
-def _write_run_file(root: Path, record: dict[str, Any]) -> Path:
-    path = ledger.run_path(PROJECT, str(record["run_id"]), root)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(ledger.serialize_run(record), encoding="utf-8")
-    return path
+def _append(root: Path, record: dict[str, Any]) -> None:
+    """Publish one run as the split writes it: its own file, nothing else."""
+    ledger.append_run(PROJECT, record, root=root, allow_create=True)
 
 
-def _write_aggregate(root: Path, records: list[dict[str, Any]]) -> None:
-    ledger.ledger_path(PROJECT, root).write_text(
-        json.dumps(
-            {
-                "updated": OBSERVED_AT.isoformat(),
-                "project": PROJECT,
-                "doc": "crew",
-                "data": {
-                    "members": [],
-                    "runs": records,
-                    "holds": [],
-                    "_version": 1,
-                },
-            }
-        ),
-        encoding="utf-8",
+def _aggregate_version(root: Path) -> int:
+    return ledger._load_aggregate(PROJECT, root)[1]
+
+
+def _publish_aggregate_only(root: Path, records: list[dict[str, Any]]) -> None:
+    """Publish rows the aggregate carries and the split has written no file for.
+
+    The aggregate writer is the producer's; removing the run file it also
+    writes leaves the state of a row the split has not reached, which is how a
+    run recorded before the ledger was split is still read today.
+    """
+    data, _version = ledger._load_aggregate(PROJECT, root)
+    wanted = {str(record["run_id"]): record for record in records}
+    rows = [row for row in data["runs"] if str(row.get("run_id")) not in wanted]
+    rows += [dict(record) for record in records]
+    ledger.write(
+        PROJECT,
+        {"members": data["members"], "runs": rows, "holds": data["holds"]},
+        _aggregate_version(root),
+        root=root,
     )
+    for record in records:
+        ledger.run_path(PROJECT, str(record["run_id"]), root).unlink(missing_ok=True)
 
 
 def _whole_ledger_held(root: Path, session: str) -> set[str]:
     """Derive the held set the way the whole-ledger scan does.
 
-    This is the parity expectation: every recorded run is read, and a retained
-    tree the scan reaches is attributed to the last record that names it under
-    the session's directory.
+    This is the parity expectation: every recorded run is read from both
+    sources, merged in the ledger's own order, and a retained tree the scan
+    reaches is attributed to the last record that names it under the session's
+    directory.
     """
     registered = {
         path
@@ -179,24 +193,23 @@ def test_the_held_set_equals_the_whole_ledger_derivation(fleet: Path) -> None:
     gamma = _worktree(fleet, "gamma-aggregate-only")
     _worktree(fleet, "delta-named-by-nothing")
 
-    _write_run_file(
-        fleet,
-        _record("r-20261001T090000000000-alpha-holds", "alpha-holds", worktree=alpha),
-    )
-    _write_run_file(
-        fleet,
-        _record("r-20261001T090100000000-beta-holds", "beta-holds", worktree=beta),
-    )
-    # Recorded before the ledger was split: no file of its own.
-    _write_aggregate(
+    _publish_aggregate_only(
         fleet,
         [
-            _record(
+            _produced(
                 "r-20261001T090200000000-gamma-aggregate-only",
                 "gamma-aggregate-only",
                 worktree=gamma,
             )
         ],
+    )
+    _append(
+        fleet,
+        _produced("r-20261001T090000000000-alpha-holds", "alpha-holds", worktree=alpha),
+    )
+    _append(
+        fleet,
+        _produced("r-20261001T090100000000-beta-holds", "beta-holds", worktree=beta),
     )
 
     held = _held(fleet)
@@ -208,58 +221,99 @@ def test_the_held_set_equals_the_whole_ledger_derivation(fleet: Path) -> None:
         "r-20261001T090200000000-gamma-aggregate-only",
     }
     assert held["r-20261001T090000000000-alpha-holds"]["kind"] == "worktree-held"
-    assert held["r-20261001T090000000000-alpha-holds"]["age_seconds"] == 0
+    assert held["r-20261001T090000000000-alpha-holds"]["age_seconds"] == 600
 
 
-def test_a_tree_named_by_two_runs_follows_the_held_ledger_order(fleet: Path) -> None:
-    """A node run twice is held for the run the whole ledger lists last.
+# The mixed states a held tree can be recorded in. Two runs of one node whose
+# completion order reverses their dispatch order, and a tie on the completion
+# stamp, are the orderings the two sources disagree about.
+MIXED_STATES = (
+    "aggregate-only",
+    "per-run-only",
+    "file-and-aggregate-row",
+    "completion-reverses-dispatch",
+    "completed-at-tie",
+)
 
-    The ledger orders the runs it merges by completion, not by dispatch, so a
-    node whose later dispatch finished first is held for the run that
-    dispatched first — an order the per-run files are not listed in and cannot
-    decide between them.
-    """
-    tree = _worktree(fleet, "alpha-holds")
-    dispatched_first = "r-20261001T090000000000-alpha-holds"
-    dispatched_later = "r-20261001T100000000000-alpha-holds"
-    _write_run_file(
-        fleet,
-        _record(
-            dispatched_first,
-            "alpha-holds",
-            worktree=tree,
-            completed_at=datetime(2026, 10, 1, 11, 50, tzinfo=UTC),
-        ),
-    )
-    _write_run_file(
-        fleet,
-        _record(
-            dispatched_later,
-            "alpha-holds",
-            worktree=tree,
-            completed_at=datetime(2026, 10, 1, 11, 0, tzinfo=UTC),
-        ),
-    )
+
+def _build_case(root: Path, case: str) -> str:
+    """Publish one mixed state and return the run id it holds the tree for."""
+    tree = _worktree(root, "alpha-holds")
+    early = "r-20261001T090000000000-alpha-holds"
+    late = "r-20261001T100000000000-alpha-holds"
+    if case == "aggregate-only":
+        _publish_aggregate_only(root, [_produced(early, "alpha-holds", worktree=tree)])
+        return early
+    if case == "per-run-only":
+        _append(root, _produced(early, "alpha-holds", worktree=tree))
+        return early
+    if case == "file-and-aggregate-row":
+        # The newer run has no file, the aggregate carries it, and the ledger
+        # attributes the tree to it.
+        _append(root, _produced(early, "alpha-holds", worktree=tree))
+        _publish_aggregate_only(root, [_produced(late, "alpha-holds", worktree=tree)])
+        return late
+    if case == "completion-reverses-dispatch":
+        _append(
+            root,
+            _produced(
+                early,
+                "alpha-holds",
+                worktree=tree,
+                completed_at=OBSERVED_AT - timedelta(minutes=10),
+            ),
+        )
+        _publish_aggregate_only(
+            root,
+            [
+                _produced(
+                    late,
+                    "alpha-holds",
+                    worktree=tree,
+                    completed_at=OBSERVED_AT - timedelta(minutes=60),
+                )
+            ],
+        )
+        return early
+    if case == "completed-at-tie":
+        for run_id in (early, late):
+            _append(
+                root,
+                _produced(
+                    run_id,
+                    "alpha-holds",
+                    worktree=tree,
+                    completed_at=OBSERVED_AT - timedelta(minutes=30),
+                ),
+            )
+        return late
+    raise AssertionError(f"unknown mixed state {case!r}")
+
+
+@pytest.mark.parametrize("case", MIXED_STATES)
+def test_a_mixed_state_goes_to_the_run(fleet: Path, case: str) -> None:
+    """Every mixed state names the same run as the whole-ledger scan."""
+    expected = _build_case(fleet, case)
 
     held = _held(fleet)
 
-    assert set(held) == _whole_ledger_held(fleet, SESSION)
-    assert set(held) == {dispatched_first}
+    assert set(held) == _whole_ledger_held(fleet, SESSION), case
+    assert set(held) == {expected}, case
 
 
 def test_inspected_runs_are_read_from_their_own_files(
     fleet: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """With each inspected tree named by one run's file, the ledger is not read."""
+    """With each tree named by one run's file, the merged ledger is not read."""
     expected = set()
     for index, node in enumerate(("alpha-holds", "beta-holds", "gamma-held")):
         path = _worktree(fleet, node)
         run_id = f"r-20261001T0900{index:02d}000000-{node}"
-        _write_run_file(fleet, _record(run_id, node, worktree=path))
+        _append(fleet, _produced(run_id, node, worktree=path))
         expected.add(run_id)
 
     def _refuse(*_arguments: Any, **_keywords: Any) -> Any:
-        raise AssertionError("the whole ledger was loaded for a tree it named")
+        raise AssertionError("the merged ledger was read for a tree a file names")
 
     monkeypatch.setattr(ledger, "runs", _refuse)
     monkeypatch.setattr(ledger, "load", _refuse)
@@ -273,56 +327,18 @@ def test_inspected_runs_are_read_from_their_own_files(
     assert set(_held(fleet)) == expected
 
 
-def test_a_run_without_its_own_file_resolves_through_the_fallback(
-    fleet: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """A tree no per-run file names is resolved against the whole ledger."""
-    modern = _worktree(fleet, "alpha-holds")
-    legacy = _worktree(fleet, "beta-aggregate-only")
-    _write_run_file(
-        fleet,
-        _record("r-20261001T090000000000-alpha-holds", "alpha-holds", worktree=modern),
-    )
-    _write_aggregate(
-        fleet,
-        [
-            _record(
-                "r-20261001T090100000000-beta-aggregate-only",
-                "beta-aggregate-only",
-                worktree=legacy,
-            )
-        ],
-    )
-
-    original = ledger.runs
-    calls: list[str] = []
-
-    def _spy(project: str, root: str | Path | None = None, **keywords: Any) -> Any:
-        calls.append(project)
-        return original(project, root=root, **keywords)
-
-    monkeypatch.setattr(ledger, "runs", _spy)
-    held = _held(fleet)
-
-    assert set(held) == {
-        "r-20261001T090000000000-alpha-holds",
-        "r-20261001T090100000000-beta-aggregate-only",
-    }
-    assert calls == [PROJECT]
-
-
 def test_a_tree_a_live_run_occupies_is_not_held(fleet: Path) -> None:
     """A tree a live pointer names is skipped without reading any record."""
     held_tree = _worktree(fleet, "alpha-holds")
     live_tree = _worktree(fleet, "beta-live")
-    _write_run_file(
+    _append(
         fleet,
-        _record(
+        _produced(
             "r-20261001T090000000000-alpha-holds", "alpha-holds", worktree=held_tree
         ),
     )
     live_run = "r-20261001T090100000000-beta-live"
-    _write_run_file(fleet, _record(live_run, "beta-live", worktree=live_tree))
+    _append(fleet, _produced(live_run, "beta-live", worktree=live_tree))
     runs._write_json(
         runs.pointer_path(live_run),
         {
