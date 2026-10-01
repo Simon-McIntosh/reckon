@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A producer recreates a registration unlinked under the producer">
+  <meta name="plan-summary" content="A crew watch producer rewrites its seat record at the same path when the file is unlinked under it, so crew unwatch finds and stops it instead of answering nothing-to-stop.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s3">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,watch,producer,unwatch">
+  <title>A producer recreates a registration unlinked under it &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A producer recreates a registration unlinked under it</h1>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon.crew.recovery._recreate_unlinked_registration</code> is
+          new. On each wake-up the producer compares the seat record path against the
+          inode it holds; when the path names no file, it recreates it, locks the
+          fresh inode and writes its record, naming its own <code>pid</code>. The
+          seat handle registry is repointed at the new descriptor. A path a
+          replacement producer has meanwhile taken is left alone and the loop
+          returns, so a superseded producer ends rather than overwrite a seat that
+          is no longer its own.</li>
+        <li><code>reckon.crew.recovery.watch_ticker</code>, the producer loop, calls
+          it before the lease check on every wake-up.</li>
+        <li><code>reckon.crew.recovery._watch_registration</code> writes the
+          arm-time <code>parent_pid</code> fields through the held seat handle
+          rather than reopening the path. The reopen raised
+          <code>FileNotFoundError</code> and ended the producer before it polled
+          once when the file was unlinked in the window after the claim.</li>
+      </ul>
+      <p><strong>Which file unwatch reads.</strong> <code>crew unwatch</code> opens
+        the seat record at <code>crew.watch_lock_path(project)</code>, not the lease
+        registration the producer's lease lives in
+        (<code>watch_registration_path</code>). The lease registration is written
+        read-modify-write by two writers and records <code>lease_renewed_at</code>;
+        unwatch never opens it, so unlinking it cannot blind unwatch. The seat
+        record, whose inode carries the lock and whose record carries the pid, is
+        the file this node recreates.</p>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <p><code>tests/test_producer_registration_survives_unlink.py</code> runs in a temporary <code>RECKON_HOME</code> with <code>RECKON_PRODUCER_LEASE_SECONDS=60</code> and spawns a real producer child in its own session.</p>
+      <p>Two cases: one deletes the seat file under the live producer and shows the record back at the same path, naming the producer's pid, by its next wake-up; the other then calls <code>unwatch</code> and shows it stop the producer rather than answer nothing-to-stop.</p>
+      <p><strong>Gate</strong> &mdash; <code>tests/test_producer_registration_survives_unlink.py</code>: <strong>2 passed in 5.62 s, EXIT=0</strong> at head <code>2116ddeff</code>.</p>
+      <p><strong>Arms</strong>, one invocation each over <code>tests/test_producer_holds_a_lease.py</code>, <code>tests/test_producer_registration_survives_unlink.py</code>, <code>tests/test_producer_loop_survives_a_config_change.py</code>, <code>tests/test_producer_shares_the_classifier_verdict.py</code>, <code>tests/test_producer_takes_new_code.py</code> and <code>tests/test_crew_watch_lifetime.py</code>:</p>
+      <ul>
+        <li><strong>Base</strong>, revision <code>60b808f5f</code> (<code>git archive</code> extraction in a scratch tree): <strong>1 failed, 26 passed in 86.76 s, EXIT=1</strong>.</li>
+        <li><strong>Head</strong>, revision <code>2116ddeff</code>: <strong>1 failed, 28 passed in 93.57 s, EXIT=1</strong>.</li>
+        <li><strong>Added failures: 0.</strong> Both arms fail the same single id, which reproduces at base and is outside this node's scope: <code>test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers</code>.</li>
+      </ul>
+      <p><strong>Negative control</strong>, executed and logged: with the recreation call removed from the producer loop, both cases fail &mdash; <strong>2 failed in 46.86 s, EXIT=1</strong> &mdash; the producer never recreating its record after the unlink.</p>
+      <p><strong>Lint:</strong> <code>ruff check</code> over <code>reckon/crew/recovery.py</code> is 11 findings at both base and head, an identical count; the new test is clean under <code>ruff check</code> and <code>ruff format --check</code>.</p>
+    </section>
+
+    <section id="landing">
+      <h2>Landing line</h2>
+      <p><code>landing: docs/evidence/fragments/a-crew-process-ends-with-its-owner/registration-survives-an-unlink.html</code></p>
+    </section>
+  </main>
+</body>
+</html>
