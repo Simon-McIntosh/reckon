@@ -14,11 +14,13 @@ from reckon.crew.refusals import DISPATCH_REFUSAL_REMEDIES
 CommandPath = tuple[str, ...]
 
 STATE_PHRASES: dict[CommandPath, str] = {
+    ("ack",): "one live run's obligations",
     ("attach",): "prepared in-harness run",
     ("check-manifest",): "delivered manifest against its own node",
     ("complete",): "finished run",
     ("directory",): "live coordinator ownership",
     ("discard",): "non-running live pointer",
+    ("dispose",): "one sub-floor review dimension",
     ("dispatch",): "contract, routing, budget, watcher, and scope",
     ("drain",): "session-closure count",
     ("follow",): "one session's live runs",
@@ -42,7 +44,10 @@ STATE_PHRASES: dict[CommandPath, str] = {
     # mounted project's ledger still holds, which is the state its phrase names.
     ("split-runs",): "aggregate run rows",
     ("stop",): "running spawned worker",
+    ("suite", "run"): "the project's declared suite",
+    ("suite", "waive"): "standing-suite hold",
     ("unwatch",): "registered project watcher",
+    ("velocity",): "what the fleet delivered",
     ("verify-gate",): "one run's gate at the integrated revision",
     ("watch",): "project-wide live runs",
     ("widen",): "blocked run's own fence",
@@ -115,7 +120,7 @@ def test_every_crew_verb_help_names_its_state_or_condition() -> None:
     leaves = _leaf_commands(cli_module.crew)
 
     assert set(leaves) == set(STATE_PHRASES)
-    assert len(leaves) == 29
+    assert len(leaves) == 34
     for path, command in leaves.items():
         first_line = _first_help_line(command)
         result = _help_result(path)

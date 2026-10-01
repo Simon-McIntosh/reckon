@@ -12,10 +12,13 @@ below returns whole classifications and fails.
 from __future__ import annotations
 
 import os
+import socket
 import subprocess
+import time
 from pathlib import Path
 
 from reckon import crew, mcp
+from reckon.crew import recovery
 
 PROJECT = "alpha"
 
@@ -67,8 +70,26 @@ def _git_worktree(path: Path) -> str:
     return base
 
 
+def _reaped_pid() -> int:
+    """A pid the kernel has already collected, so the probe answers dead.
+
+    ``sys.executable`` is deliberately avoided: this runs inside the fixture
+    the gate is timed against, and a Python interpreter's start-up would push
+    the two classifications of ``log_age_seconds`` a second apart.
+    """
+    proc = subprocess.Popen(["/bin/true"])
+    proc.wait()
+    return proc.pid
+
+
 def _write_run(repository: Path, *, index: int, worktree: Path, base_sha: str) -> dict:
-    """Materialise one live run: pointer, manifest, and a current log file."""
+    """Materialise one live run: pointer, manifest, and a current log file.
+
+    The pointer names this host and a pid the kernel has since reaped, so the
+    classification's liveness reading is proven here rather than stored by an
+    observer: the retained-work count behind ``commits_beyond_base`` is taken
+    only from a reading this host can stand behind.
+    """
     run_id = f"run-{index}"
     log = repository / f"{run_id}.log"
     log.write_text("working\n", encoding="utf-8")
@@ -82,7 +103,8 @@ def _write_run(repository: Path, *, index: int, worktree: Path, base_sha: str) -
         "repo": str(repository),
         "node": {"id": f"node-{index}", "plan": PLAN_SLUG},
         "phase": "working",
-        "process_alive": False,
+        "launcher_host": socket.gethostname(),
+        "pid": _reaped_pid(),
         "worktree": str(worktree),
         "base_sha": base_sha,
         "session": f"session-{run_id}",
@@ -185,9 +207,17 @@ def test_live_view_refuses_an_unknown_field_naming_the_live_set(
 
 
 def test_runs_view_passes_through_the_coordinator_fields(
-    isolated_reckon_home: Path, tmp_path: Path
+    isolated_reckon_home: Path, tmp_path: Path, monkeypatch
 ) -> None:
-    """The three fields are populated from the live classification."""
+    """The three fields are populated from the live classification.
+
+    The clock is frozen for the comparison: ``log_age_seconds`` is measured
+    against the moment of each read, so two reads of one run a second apart
+    would differ by a second in that field without either surface failing to
+    pass its value through, which is the fact under test here.
+    """
+    frozen = time.time()
+    monkeypatch.setattr(recovery, "_utc_seconds", lambda: frozen)
     repository, records = _two_live_runs(tmp_path)
     expected = {
         str(record["run_id"]): crew.classify_pointer(record) for record in records

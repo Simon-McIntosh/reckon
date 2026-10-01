@@ -788,7 +788,11 @@ def test_spa_graph_uses_typed_navigation_identity():
     assert "goTo(_artifactKey(p))" in graph
     assert "key={_artifactKey(p)}" in graph
     assert 'onNav({ view: "plan", slug: _artifactKey(bySlug[node.slug] || node) })' in graph
-    assert 'isArchivedArtifact(inv) ? "archive:" : ""' in loader
+    # The loader hoists the archived reading once and folds the archive marker
+    # into the typed nav key, so an archived plan's key differs from a live
+    # plan's and two artifacts sharing a slug never collapse into one node.
+    assert "const archived = isArchivedArtifact(inv);" in loader
+    assert 'archived ? "archive:" : ""' in loader
     assert (
         "Object.fromEntries(mergedInventory.map(inv => [inv.nav_key, inv]))" in loader
     )
