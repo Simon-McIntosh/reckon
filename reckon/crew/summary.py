@@ -275,7 +275,7 @@ def _gib(count: int | None) -> str:
     return f"{count / 1024**3:.1f} GiB"
 
 
-def roster_bound(backend: Mapping[str, Any], *, occupancy: int) -> Bound:
+def roster_bound() -> Bound:
     """The retired roster key, reported as retired rather than enforced.
 
     ``max_concurrent_runs`` no longer caps concurrency: a session holds its
@@ -437,7 +437,7 @@ def concurrency_bounds(
     """
     reading = login_slice if login_slice is not None else read_login_slice()
     return [
-        roster_bound(backend, occupancy=occupancy),
+        roster_bound(),
         cores_bound(
             backend,
             occupancy=occupancy,
