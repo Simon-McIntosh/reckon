@@ -764,6 +764,26 @@ def load(project: str, root: str | Path | None = None) -> tuple[dict[str, Any], 
     return data, version
 
 
+def history_version(data: Mapping[str, Any], aggregate_version: int) -> str:
+    """A freshness key over the union :func:`load` returns.
+
+    The aggregate envelope version advances only when the aggregate file is
+    rewritten, while a promoted run lands in its own file beside it, so a
+    reader keying freshness on that version alone cannot tell a newly appended
+    run from an unchanged history. Folding the run ids the union already holds
+    into the key moves it when a run is appended, without reading the files
+    again; the aggregate version still contributes so a roster-only rewrite
+    that leaves the run set alone is also visible.
+    """
+    run_ids = sorted(
+        str(record.get("run_id"))
+        for record in data.get("runs") or []
+        if isinstance(record, Mapping) and record.get("run_id")
+    )
+    digest = hashlib.sha256("\n".join(run_ids).encode("utf-8")).hexdigest()
+    return f"{aggregate_version}.{digest}"
+
+
 def _roster_ids(entries: Any) -> set[str]:
     """The member ids a roster carries, ignoring rows that name none."""
     return {
