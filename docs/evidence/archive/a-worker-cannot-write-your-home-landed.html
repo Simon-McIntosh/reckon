@@ -1623,7 +1623,9 @@ exit: 0</pre>
     runs as a real worker launched through that path and records what its own environment and
     filesystem allow. The package this worker runs on carries the re-enable (<code>fafeb910</code>).
     Every probe below is a command this process actually ran; its logged output is under the run
-    directory <code>~/.config/reckon/crew/runs/r-20260926T145452839988-fenced-worker-smoke-after-reenable/logs/</code>.</p>
+    directory <code>~/.config/reckon/crew/runs/r-20260926T145452839988-fenced-worker-smoke-after-reenable/</code>
+    &mdash; the <code>logs/</code> files for each probe's exit and file checks, and the run's
+    <code>stream.jsonl</code> for the refusal text quoted in rows 4&ndash;6.</p>
 
     <figure>
       <img src="/reckon/figures/a-worker-cannot-write-your-home/fenced-worker-smoke-after-reenable.svg"
@@ -1686,11 +1688,11 @@ exit: 0</pre>
           <code>/home/ITER/mcintos/Code/reckon</code> (the main checkout) must fail; if it succeeds
           the fence is not holding and the run reports that as its finding.</td>
           <td><code>printf probe &gt; /home/ITER/mcintos/Code/reckon/fence_smoke_write_probe.txt</code></td>
-          <td><code>Read-only file system</code>, exit 1, no file created
-          (<code>file_exists_after=no</code>). <strong>PASS &mdash; the fence holds.</strong> The log's
-          first line repeats the declared string verbatim
-          (<code>logs/row4-write-main-checkout.txt</code>).</td>
-          <td><code>logs/row4-write-main-checkout.txt</code></td>
+          <td><code>Read-only file system</code> (<code>stream.jsonl</code> line 1327), exit 1, no file
+          created (<code>file_exists_after=no</code>). <strong>PASS &mdash; the fence holds.</strong>
+          The log's first line repeats the declared string verbatim.</td>
+          <td><code>logs/row4-write-main-checkout.txt</code> (exit, file check),
+          <code>stream.jsonl</code> line 1327 (the quoted refusal)</td>
         </tr>
         <tr>
           <td>5</td>
@@ -1702,19 +1704,24 @@ exit: 0</pre>
           verbatim). The underlying fence refusal was therefore probed directly &mdash; the writes
           <code>git commit</code> would need: a new file in the main checkout's <code>.git</code>
           (<code>Read-only file system</code>, exit 1) and an append to <code>.git/index</code>
-          (<code>Read-only file system</code>, exit 1). The positive control in the same log writes
+          (<code>Read-only file system</code>, exit 1). Both refusal texts are quoted from
+          <code>stream.jsonl</code> line 2304. The positive control in the same log writes
           into the <em>worktree's own</em> git dir and <strong>lands</strong> (<code>WROTE</code>,
           exit 0). <strong>PASS &mdash; two independent refusals, and the seal is not vacuous.</strong></td>
-          <td><code>logs/row5-git-commit-main-checkout.txt</code>,
-          <code>logs/row5b-main-git-readonly.txt</code></td>
+          <td><code>logs/row5-git-commit-main-checkout.txt</code> (the guard's denial),
+          <code>logs/row5b-main-git-readonly.txt</code> (exit codes, control),
+          <code>stream.jsonl</code> line 2304 (the quoted refusals)</td>
         </tr>
         <tr>
           <td>6</td>
           <td>A write into <code>~/.claude</code> fails.</td>
           <td><code>printf probe &gt; /home/ITER/mcintos/.claude/fence_smoke_probe.txt</code></td>
-          <td><code>Read-only file system</code>, exit 1, no file created. The same refusal is recorded
-          for the exact directory the original incident deleted. Both are logged. <strong>PASS.</strong></td>
-          <td><code>logs/row6-write-claude.txt</code>, <code>logs/row6b-write-memory.txt</code></td>
+          <td><code>Read-only file system</code> (<code>stream.jsonl</code> line 2183), exit 1, no file
+          created. The same refusal is recorded for the exact directory the original incident
+          deleted. Both are logged. <strong>PASS.</strong></td>
+          <td><code>logs/row6-write-claude.txt</code> (exit, file check),
+          <code>logs/row6b-write-memory.txt</code> (exit),
+          <code>stream.jsonl</code> line 2183 (the quoted refusals)</td>
         </tr>
       </tbody>
     </table>
@@ -1724,6 +1731,12 @@ exit: 0</pre>
     refusing them is the evidence it holds. The worktree-commit row (3) and the granted worktree git
     dir in row 5's control are the matching positive: the fence grants what the run needs and seals
     what it does not.</p>
+
+    <p><strong>The Stop hook, fired.</strong> Row 1 shows the Stop hook only as wiring in the staged
+    <code>settings.json</code>; the fired proof is the counter the hook writes when it refuses a
+    stop. <code>.worker_stop_blocks</code> in the run directory holds <code>1</code>, so
+    <code>reckon/hooks/worker_stop.py</code> ran in this launch and refused a stop before the
+    worker's turn was allowed to end.</p>
 
     <p><strong>What this node does not claim.</strong> This gate measures only this node's own
     observed environment at the head it was launched from. It does not re-run the fence composition
@@ -1742,7 +1755,10 @@ exit: 0</pre>
     <code>logs/row3-git-resolution.txt</code>, <code>logs/row3-marker-commit.txt</code>,
     <code>logs/row3-reachability.txt</code>, <code>logs/row4-write-main-checkout.txt</code>,
     <code>logs/row5-git-commit-main-checkout.txt</code>, <code>logs/row5b-main-git-readonly.txt</code>,
-    <code>logs/row6-write-claude.txt</code>, <code>logs/row6b-write-memory.txt</code>.</p>
+    <code>logs/row6-write-claude.txt</code>, <code>logs/row6b-write-memory.txt</code>. The citation receipt
+    counting the quoted text in each file cited above, beside the counter's value, is in the
+    citation-checking node's run directory:
+    <code>~/.config/reckon/crew/runs/r-20261001T110601090354-the-smoke-record-cites-its-observables/grep-receipt.txt</code>.</p>
   </section>
 
 <section id="s2-missing-write-parent" data-reckon="section">
