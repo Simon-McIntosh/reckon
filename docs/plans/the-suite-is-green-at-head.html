@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="152">
+<meta name="plan-version" content="153">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1654,6 +1654,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260930T183005741612-a-served-thread-leaves-no-memo-behind" data-who="reckon-build" data-when="2026-10-01T06:10:24.610Z">
     <div class="r-comment-body"><p>tests/test_server_listens_before_it_watches.py, comment-only over 5561c4b04: the post-restore assertion is deleted; the fixture keeps the restore line, the thread-alive check and the setup-time check exactly as at 5561c4b04. The teardown comment now says stop() joins the served thread and fails if it is still alive, then the fixture restores the library default, and it does not itself check the restore. The setup comment now says the check refuses a case that starts with a live memo, which a missing restore in an earlier case sharing the process would leave, and that under -n each served case runs in its own worker process so such a leak goes unseen.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20260930T182503034181-the-suite-cannot-reach-a-real-scheduler" data-who="reckon-build" data-when="2026-10-01T06:38:46.960Z">
+    <div class="r-comment-body"><p>tests/conftest.py fails only a reach of an allocation verb (salloc, sbatch, srun) it did not provide, still refusing and recording every scheduler verb, and a committed child-pytest check makes the guard fire; like-for-like whole-suite arms at the repaired head and the base revision record zero added failing ids and no real scheduler shim reached.</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260928T142353317590-s21-audit-placement" data-who="reckon-build" data-when="2026-09-28T15:23:36.908Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-suite-is-green-at-head/s21-audit-placement.html</p></div>
