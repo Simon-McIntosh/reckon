@@ -1284,6 +1284,11 @@ class _WatchStreamProducer:
     # not load. Held so the deferral is announced once per episode rather than
     # on every retry, and cleared the moment a tick reads the config cleanly.
     tick_deferred: bool = False
+    # Whether this producer is inside a sweep. The obligations a sweep
+    # publishes are derived from live pointers, and that derivation reads them
+    # through ``list_live``, which is itself a publish point, so without this
+    # every sweep would re-enter the one it is already running.
+    publishing: bool = False
 
 
 _WATCH_STREAM_PRODUCERS: dict[str, _WatchStreamProducer] = {}
@@ -1515,12 +1520,22 @@ def _publish_watch_transitions(
 
 
 def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) -> None:
-    """Fold this sweep's fleet state, then republish the sessions' snapshots."""
+    """Fold this sweep's fleet state, then republish the sessions' snapshots.
+
+    A sweep publishes the obligations it derives from the same live pointers,
+    and that derivation reads them through :func:`list_live` — one of this
+    function's own callers — so a sweep that is already running is left to
+    finish rather than re-entered by the reads it performs.
+    """
     producer = _WATCH_STREAM_PRODUCERS.get(project)
-    if producer is None:
+    if producer is None or producer.publishing:
         return
-    transition_fired = _publish_watch_transitions(project, producer, records)
-    _publish_obligation_snapshots(project, transition_fired=transition_fired)
+    producer.publishing = True
+    try:
+        transition_fired = _publish_watch_transitions(project, producer, records)
+        _publish_obligation_snapshots(project, transition_fired=transition_fired)
+    finally:
+        producer.publishing = False
 
 
 def _producer_snapshot_identity(project: str) -> dict[str, Any]:
