@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import hashlib
 from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime
 from typing import Any
 
 from reckon.crew import review as review_module
@@ -39,6 +40,16 @@ from reckon.crew.plan_review import RESPONSE_ACTIONS
 # beside the review prefix rather than sharing it: a repair that reviewed a
 # review would otherwise be indistinguishable from a review of a review.
 REPAIR_NODE_PREFIX = "repair-of-"
+
+# The moment stored reviews began to be refused for an unmarked finding. The
+# write-time severity audit landed here: from this instant the store refuses a
+# review carrying a finding with no severity, so a finding that reached the
+# store without one on a record stamped at or after this moment is there by
+# omission rather than because the field did not yet exist. Such a finding is
+# reported as unmarked rather than repaired as blocking. A record stamped
+# before this moment is treated as written by the older path, where an absent
+# severity was ordinary, so its unmarked findings stay blocking as before.
+UNMARKED_SEVERITY_REFUSED_FROM = "2026-10-01T07:14:36+00:00"
 
 # The finding-id prefix. The id itself is derived from the finding's own file,
 # line and text, so a constant cannot identify a record's findings and two
@@ -124,20 +135,78 @@ def review_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
     return composed
 
 
-def _finding_blocks(finding: Mapping[str, Any]) -> bool:
-    """Whether a finding is repaired: it blocks, or declares no severity.
+# The three states a finding sits in, decided once so the brief, the scope, the
+# refusal reason and the unmarked report can never disagree about which list a
+# finding belongs to.
+_BLOCKING = "blocking"
+_FOLLOW_ON = "follow-on"
+_UNMARKED = "unmarked"
 
-    A finding states its severity in a vocabulary shared with the review that
-    stored it. Only the blocking value commissions work; any other declared
-    severity is a follow-on, recorded on the review rather than repaired. A
-    finding that declares nothing is repaired too, because a record stored
-    before the severity field existed carries no key and dropping it would
-    silently discard findings a reviewer did raise.
+
+def _parsed_moment(value: str) -> datetime | None:
+    """Parse an ISO-8601 instant, or ``None`` when it does not name one.
+
+    A trailing ``Z`` is read as UTC and a naive stamp is taken as UTC, so the
+    store's own offset-bearing spellings and a hand-written stamp compare
+    alike. An unparseable or absent value yields ``None`` rather than raising,
+    because the caller decides what an undateable record means.
+    """
+    text = str(value or "").strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        moment = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    return moment
+
+
+def _record_predates_unmarked_refusal(review: Mapping[str, Any]) -> bool:
+    """Whether a record was written before absent severities began to be refused.
+
+    The review's own ``timestamp`` is compared against the moment the write-time
+    severity audit landed. A record stamped before it, or one carrying no
+    readable stamp at all, is treated as written by the older path, so its
+    unmarked findings stay blocking — an undateable record is never newly
+    dropped.
+    """
+    recorded = _parsed_moment(str(review.get("timestamp") or ""))
+    threshold = _parsed_moment(UNMARKED_SEVERITY_REFUSED_FROM)
+    if recorded is None or threshold is None:
+        return True
+    return recorded < threshold
+
+
+def _finding_kind(finding: Mapping[str, Any], *, predates_refusal: bool) -> str:
+    """Classify one finding as blocking, a follow-on, or unmarked.
+
+    A declared blocking severity blocks; any other declared severity is a
+    follow-on, recorded on the review rather than repaired. A finding that
+    declares nothing depends on the record's age: on a record written before
+    the severity audit it blocks, because the field did not yet exist and
+    dropping it would discard a finding a reviewer did raise; on a record
+    written after, it is unmarked and reported rather than repaired.
     """
     severity = finding.get("severity")
     if severity is None:
-        return True
-    return str(severity).strip() == review_module.BLOCKING_FINDING_SEVERITY
+        return _BLOCKING if predates_refusal else _UNMARKED
+    if str(severity).strip() == review_module.BLOCKING_FINDING_SEVERITY:
+        return _BLOCKING
+    return _FOLLOW_ON
+
+
+def _findings_of_kind(review: Mapping[str, Any], kind: str) -> list[dict[str, Any]]:
+    """The record's findings of one kind, in the record's order."""
+    predates_refusal = _record_predates_unmarked_refusal(review)
+    return [
+        finding
+        for finding in review_findings(review)
+        if _finding_kind(finding, predates_refusal=predates_refusal) == kind
+    ]
 
 
 def blocking_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -146,10 +215,31 @@ def blocking_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
     This is the one filtered list both the brief and the write scope are built
     from, so the goals, the ids the done-when names and the paths the scope
     grants can never disagree about which findings became work. A review whose
-    findings are all follow-ons yields an empty list, which is what composes no
-    repair rather than a node with an empty brief.
+    findings are all follow-ons or all unmarked yields an empty list, which is
+    what composes no repair rather than a node with an empty brief.
     """
-    return [finding for finding in review_findings(review) if _finding_blocks(finding)]
+    return _findings_of_kind(review, _BLOCKING)
+
+
+def unmarked_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Return the findings that declare no severity on a post-audit record.
+
+    These are reported rather than repaired: the write path refuses an unmarked
+    finding from the moment the severity audit landed, so one that reached the
+    store without a severity is there by omission, and repairing it as blocking
+    would direct work at a finding the record never classified.
+    """
+    return _findings_of_kind(review, _UNMARKED)
+
+
+def follow_on_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Return the findings that declare a non-blocking severity.
+
+    A follow-on is recorded on the review rather than repaired, and it is named
+    apart from an unmarked finding so a refusal can report the two counts
+    separately.
+    """
+    return _findings_of_kind(review, _FOLLOW_ON)
 
 
 def repair_round_id(
@@ -262,11 +352,19 @@ def repair_write_scope(
     return scope
 
 
+def _finding_location(finding: Mapping[str, Any]) -> str:
+    """Return a finding's location as ``file`` or ``file:line``."""
+    location = str(finding.get("file") or "")
+    line = str(finding.get("line") or "")
+    return f"{location}:{line}" if line else location
+
+
 def compose_repair_brief(
     review: Mapping[str, Any],
     findings: Sequence[Mapping[str, Any]],
     *,
     reviewed_run_id: str = "",
+    unmarked: Sequence[Mapping[str, Any]] = (),
 ) -> str:
     """Return the brief listing every finding under its stable id.
 
@@ -276,17 +374,20 @@ def compose_repair_brief(
     repair declines must be answered with a one-line reason, and one it acts on
     must name the commit that answered it. A finding left neither acted nor
     declined is unanswered work, which is the state this node exists to prevent.
+
+    A finding that declares no severity on a record written after the audit is
+    listed separately by file and line: it is reported rather than repaired, so
+    the repair is told of it without being directed to answer it.
     """
     run_id = str(review.get("reviewed_run_id") or reviewed_run_id or "").strip()
     lines = [
         f"Repair every finding below on run {run_id}, in one node.",
         "",
     ]
-    for finding in findings:
-        location = finding["file"]
-        if finding["line"]:
-            location = f"{location}:{finding['line']}"
-        lines.append(f"- [{finding['id']}] {location} {finding['text']}".rstrip())
+    lines += [
+        f"- [{finding['id']}] {_finding_location(finding)} {finding['text']}".rstrip()
+        for finding in findings
+    ]
     lines += [
         "",
         "In your manifest, answer every finding by id: one line naming the id and",
@@ -295,6 +396,13 @@ def compose_repair_brief(
         f"('{DECLINED_ACTION} <id>: <reason>'). A finding left unanswered is not",
         "repaired.",
     ]
+    if unmarked:
+        lines += [
+            "",
+            "These findings declare no severity on a record written after severity",
+            "became required, so they are reported rather than repaired:",
+            *(f"- {_finding_location(finding)}" for finding in unmarked),
+        ]
     return "\n".join(lines)
 
 
@@ -315,11 +423,12 @@ def compose_repair_node(
     """Compose the single repair node a finding-bearing review round produces.
 
     Returns ``None`` when the review carries no blocking finding: a clean review
-    is not work, and neither is a round whose findings are all follow-ons —
-    composing an empty node for either would dispatch a repair with nothing to
-    do. When it carries blocking findings, the returned mapping names the node,
-    its brief, its write scope and the round it belongs to, so a caller can
-    dispatch it or print it without re-deriving any of the three. The reviewed
+    is not work, and neither is a round whose findings are all follow-ons or all
+    unmarked — composing an empty node for either would dispatch a repair with
+    nothing to do. When it carries blocking findings, the returned mapping names
+    the node, its brief, its write scope, the unmarked findings it reports
+    rather than repairs, and the round it belongs to, so a caller can
+    dispatch it or print it without re-deriving any of them. The reviewed
     run's node id names the node when the record carries one, so the repair
     reads as work on the run rather than on the review.
 
@@ -334,12 +443,15 @@ def compose_repair_node(
     findings = blocking_findings(review)
     if not findings:
         return None
+    unmarked = unmarked_findings(review)
     run_id = str(review.get("reviewed_run_id") or reviewed_run_id or "").strip()
     project = str(review.get("project") or "").strip()
     node_id = repair_node_id(review, reviewed_run_id=run_id, source_node=source_node)
     round_id = repair_round_id(review, reviewed_run_id=run_id)
     scope = repair_write_scope(review, run_record=run_record, fence=fence)
-    brief = compose_repair_brief(review, findings, reviewed_run_id=run_id)
+    brief = compose_repair_brief(
+        review, findings, reviewed_run_id=run_id, unmarked=unmarked
+    )
     ids = ", ".join(finding["id"] for finding in findings)
     done_when = (
         f"the repair for {round_id} commits a change answering each of the "
@@ -368,6 +480,7 @@ def compose_repair_node(
         "goal": f"repair {len(findings)} finding(s) ({ids}) on run {run_id}",
         "brief": brief,
         "findings": findings,
+        "unmarked_findings": unmarked,
         "write_path": scope[0] if scope else "",
         "write_paths": scope,
         "done_when": done_when,
