@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="106">
+<meta name="plan-version" content="108">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.99">
@@ -1590,9 +1590,15 @@
     <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §3</pre>
     <p class="r-fu-outcome">Landed on main at 83a352de6 in the same run (review total 94). resume_plan and change_lane set fenced from the attempt's own composed plan. Case 3 lane-changes a fenced CLI run to an in-harness stub backend and reads fenced false. Leaving fenced untouched turns that case red.</p>
     </article>
-<article class="r-fu" data-id="f-awcwyh-shim-reads-worktree-list-porcelain" data-status="open" data-written-by="s21-1c" data-written-at="2026-10-01T12:40:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awcwyh-shim-reads-worktree-list-porcelain" data-status="resolved" data-written-by="s21-1c" data-written-at="2026-10-01T12:40:00Z" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-01T13:53:45+00:00" data-resolved-by="s21-1c">
     <h4 class="r-fu-title">The git shim reads worktree list with output options as a read</h4>
     <div class="r-fu-body"><p>Reported by s22-coord on 2026-10-01. In <code>reckon/worker_git_shim.py</code>, <code>_READ_OPTIONS["worktree"]</code> equals <code>_READ_ACTIONS["worktree"]</code>, which is <code>frozenset({"list"})</code>. That has been so since 4aa785dc8. So <code>git worktree list --porcelain</code> is classified as mutating and refused for any repository other than the run's own worktree. <code>reckon.crew.routing._registered_worktrees</code> issues exactly that form, so <code>obligations()</code> raises CrewError inside a fenced worker, and s22-coord's measurements had to unset RECKON_RUN_ID. Done when <code>worktree list</code> with <code>--porcelain</code>, <code>-z</code>, <code>-v</code> or <code>--expired</code> is admitted for any repository while every mutating worktree action stays refused outside the run's own trees. A test runs <code>_registered_worktrees</code> with RECKON_RUN_ID set and gets the list back. Restoring the list-only option turns it red.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §2</pre>
+    <p class="r-fu-outcome">Landed on main at a8f389ecd (run r-20261001T125111640916-the-shim-reads-worktree-list-as-a-read, reviewed head 0fcfa249b, review total 96). reckon/worker_git_shim.py reads git worktree list as a read under any output option: --porcelain, -z, -v and --expired, alone or together. Every mutating worktree action stays refused outside the run's own trees. tests/test_git_shim_checks_the_resolved_repo.py: 185 passed. Its new cases include routing._registered_worktrees returning the list with RECKON_RUN_ID set. Restoring the list-only option turns 8 cases red. Remaining gap: the PreToolUse guard keeps its own read-verb list, filed as f-awcwyh-guard-shares-the-shim-read-forms.</p>
+    </article>
+<article class="r-fu" data-id="f-awcwyh-guard-shares-the-shim-read-forms" data-status="open" data-written-by="s21-1c" data-written-at="2026-10-01T13:55:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">The Bash-tool git guard reads its read forms from the shim rather than keeping its own list</h4>
+    <div class="r-fu-body"><p>reckon/hooks/worker_git_guard.py classifies git verbs with its own <code>READ_ONLY_VERBS</code>, which omits <code>worktree</code>. So a worker that types <code>git worktree list</code> against another checkout in the Bash tool is refused at the PreToolUse layer, even though the git shim now forwards it. The two classifiers can drift, and this is the second time only one has been updated. Done when the guard decides read forms through the shim's own classifier, or one shared table both import. A test asserts that every form the shim admits as a read, <code>worktree list --porcelain</code> included, is allowed by the guard. Restoring the guard's private list turns that test red.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-cannot-write-your-home §2</pre>
     </article>
 </section>
@@ -1771,6 +1777,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261001T130810317081-review-of-the-shim-reads-worktree-list-as-a-read" data-who="reckon-build" data-when="2026-10-01T13:24:47.505Z">
     <div class="r-comment-body"><p>independent review of r-20261001T125111640916 attached; the parsed record scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19 (total 96) over 4e5f0a870c..0fcfa249b2, and the reviewed fix admits `git worktree list` under --porcelain/-z/-v/--expired while the mutating worktree actions stay refused, with the refusal independently reproduced (8 failed, EXIT=1) when the admission is reverted.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261001T125111640916-the-shim-reads-worktree-list-as-a-read" data-who="reckon-build" data-when="2026-10-01T13:07:11.790Z">
+    <div class="r-comment-body"><p>The git shim now admits `git worktree list` as a read form with `--porcelain`, `-z`, `-v`/`--verbose` and `--expired` as modifiers, alone or together, while the verb&#x27;s mutating actions (add, remove, prune, lock, unlock, repair) stay refused; gate at 518f5ef83 is 185 passed, EXIT=0, and the negative control restoring the list-only read option reddens the porcelain and registered-worktrees cases (8 failed, 177 passed, EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260924T122925465818-s19-internals-consumers-survey" data-who="reckon-ship" data-when="2026-09-24T12:38:14.943Z">
     <div class="r-comment-body"><p>eight consumer rows that read reckon internals directly; ranked top five: worktree_fleet re-implements pointer classification, reckon-sync fallback writes mounts.json, lane.json read by hand with no crew verb, inline pointer read in the recovery recipe, hand manifest repair</p></div>
