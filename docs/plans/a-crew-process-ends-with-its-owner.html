@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="111">
+<meta name="plan-version" content="119">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -516,15 +516,29 @@
     that has a pointer.</p>
     <p><strong>The contract, from imas-ambix <code>local-lane-admission-control</code> &sect;11</strong>
     (merged at imas-ambix <code>bc8fd549</code>, in <code>imas_ambix/agent/router.py</code>). The
-    authority is the gate file <code>/home/ITER/mcintos/public/imas-ambix/router-gate.json</code>,
-    a JSON object. Its <code>paused</code> is a JSON boolean, and its optional
-    <code>reason</code> is a string. The router re-reads it about once a second.
-    <code>imas-ambix agent pause --reason X</code> writes <code>paused: true</code> with the
-    reason, and <code>agent resume</code> writes <code>paused: false</code>.
+    authority is the gate file the router resolves, a JSON object. <code>resolve_gate_path</code>
+    in <code>imas_ambix/agent/router.py</code> takes, in order: an explicit path, then
+    <code>AMBIX_ROUTER_GATE_PATH</code>, then the site control path
+    <code>&lt;base_dir&gt;/agents/control/router-gate.json</code>, then the lane document's sibling.
+    On this host it resolves to <code>/work/projects/imas_gpu/agents/control/router-gate.json</code>,
+    and the sibling in the public directory does not exist. Its <code>paused</code> is a JSON
+    boolean, and its optional <code>reason</code> is a string. The router re-reads it about once a
+    second. <code>imas-ambix agent pause --reason X</code> writes <code>paused: true</code> with the
+    reason, and <code>agent resume</code> writes <code>paused: false</code>. Both write the same
+    resolved file through the same resolver.
     <code>lane.json</code> mirrors that fact as <code>router_generation_gate.paused</code> and
-    <code>.reason</code>, but only when refreshed. It can be stale when the router is down, and
-    it carries no <code>paused</code> key until the router is restarted onto the pause code. So
-    dispatch reads the gate file, never <code>lane.json</code>. The read has a deadline of 5 s:
+    <code>.reason</code>, and publishes the resolved path as
+    <code>router_generation_gate.config_path</code>, but only when refreshed. It can be stale when
+    the router is down, and a <code>lane.json</code> written by a router older than the pause code
+    carries no <code>paused</code> key. So dispatch reads the pause from the gate file, never from
+    <code>lane.json</code>. <strong>The declared path is checked against the published one.</strong>
+    Each backend declares its gate as <code>gate_document</code>, an absolute path. That declaration
+    is a copy of a path the router derives, so it can drift. When the lane document publishes
+    <code>router_generation_gate.config_path</code> and it differs from the declared
+    <code>gate_document</code>, the dispatch waits (<code>state: unreadable</code>) and the result
+    names both paths: a pause written to a file the dispatch is not reading would otherwise pass
+    unseen. A lane document that publishes no <code>config_path</code>, or cannot be read within
+    the same 5 s deadline, leaves the declared path in force. The read has a deadline of 5 s:
     a single stat on this filesystem took 8.5 s on 2026-09-23. Each result carries a
     <code>lane_gate</code> object stating the row that applied. The rule is:</p>
     <ul>
@@ -540,15 +554,18 @@
       dispatch's printed output says <code>gate path declared but missing</code>. A mistyped
       path must not read like a quiet host with no router;</li>
       <li>any other read failure (the 5 s deadline passing, a permission error, any error other
-      than file-not-found), or a file that is not a JSON object or has a non-boolean
-      <code>paused</code>: the dispatch waits (<code>state: unreadable</code>), and the result
+      than file-not-found), a file that is not a JSON object or has a non-boolean
+      <code>paused</code>, or a declared <code>gate_document</code> that differs from the lane
+      document's published <code>config_path</code>: the dispatch waits
+      (<code>state: unreadable</code>), and the result
       names the file and the defect. A gate that exists but cannot be answered is a pause
       nobody can confirm has ended.</li>
     </ul>
     <p><strong>Which dispatches read the gate.</strong> Every dispatch whose resolved backend
     declares a gate path reads the gate, whatever flag chose that backend. So
     <code>--local</code> and an explicit <code>--backend &lt;local-name&gt;</code> both read it,
-    and so does the printed review command, which names its lane with <code>--backend</code>.
+    and so does the printed review command, which names its lane with <code>--local</code> or
+    <code>--backend</code>.
     Today's <code>local_resolved</code> keys on the flag and would miss the explicit case, so it
     is not the criterion. A backend with no gate path declared, as a metered lane is, never
     reads it. <strong>Where the path is declared:</strong> a per-backend flight-config key,
@@ -561,7 +578,8 @@
     the gate says paused, or cannot be answered, that path launches nothing, and the watch row
     shows the run as <code>waiting on the lane pause</code>. Separately,
     <code>_review_dispatch_argv</code> in the same module composes a printed review command for
-    a coordinator to run. It names its lane with <code>--backend</code>, so when it is run it
+    a coordinator to run. It names its lane with <code>--local</code> (the local lane's usual
+    spelling) or <code>--backend</code>, so when it is run it
     reads the gate like any other dispatch to that backend and waits the same way. The printed
     text itself carries no pause reason; the reason arrives in the result when the command
     runs. <code>_dispatch_lane_reading</code> in <code>reckon/crew/dispatch.py</code> today
@@ -576,9 +594,11 @@
     <ul>
       <li><code>paused: true</code> with a reason: a <code>--local</code> dispatch, an explicit
       <code>--backend</code> dispatch to the same backend, and a sweep review dispatch each
-      create no pointer and no worktree. Each returns <code>error: "lane-paused"</code> with exit
-      status 75 and carries the reason. <code>paused: true</code> with no reason waits the same
-      way and carries none.</li>
+      create no pointer and no worktree. The two CLI dispatches return
+      <code>error: "lane-paused"</code> with exit status 75 and carry the reason. The sweep runs
+      its dispatch in-process, so it has no exit status: its report row names
+      <code>error: "lane-paused"</code> and carries the reason. <code>paused: true</code> with no
+      reason waits the same way and carries none.</li>
       <li><code>paused: false</code>, and a file with no <code>paused</code> key: the dispatch
       proceeds, with <code>state: open</code>.</li>
       <li>no <code>gate_document</code> declared: the dispatch proceeds, with <code>state:
@@ -587,8 +607,10 @@
       <code>state: declared-but-missing</code>, and its output contains <code>gate path declared
       but missing</code>.</li>
       <li>a file whose <code>paused</code> is the string <code>"true"</code>, a file that is not
-      JSON, and a read stubbed to exceed the deadline: each dispatch waits, with <code>state:
-      unreadable</code>, and names the defect.</li>
+      JSON, a file holding valid JSON that is not an object, a read stubbed to raise a permission
+      error, a read stubbed to exceed the deadline, and a declared <code>gate_document</code> that
+      differs from a stub lane document's <code>router_generation_gate.config_path</code>: each
+      dispatch waits, with <code>state: unreadable</code>, and names the defect.</li>
       <li>a metered backend with no <code>gate_document</code> proceeds while the stub gate says
       paused.</li>
     </ul>
@@ -601,8 +623,14 @@
     <code>dispatch.py</code> and has landed.</p>
     <p><strong>Not yet released.</strong> The second read-back of this section's rewrite
     (<code>f4291476</code>) ended at a context compaction before it wrote a report, and was
-    completed as an infrastructure failure. So this section's rewrite has never been read back.
-    Run that read-back before dispatch.</p>
+    completed as an infrastructure failure. A third read-back, run
+    <code>r-20261001T093225999649-the-lane-pause-section-is-read-back</code> at
+    <code>ea69eb30f</code> (review 88), returned <em>hold</em>. The gate path this section named was
+    not the file the router reads or <code>agent pause</code> writes. The printed review command's
+    lane spelling, the <code>lane.json</code> paused-key clause and the sweep's exit status were
+    stated wrongly. The done-when drove three of the unreadable row's four triggers. Those
+    sentences were revised on 2026-10-01, and the revision adds the declared-against-published
+    path check. That revision is material, so it needs its own read-back before dispatch.</p>
 
     <h2 id="s10">&sect;10 &mdash; A run can always be reconciled from what survives</h2>
     <p>On 2026-09-23 and 24, runs across four repositories reached states that no command could
@@ -1234,7 +1262,7 @@
     <div class="r-comment-body"><p>read-back of a-crew-process-ends-with-its-owner §9 at base ea69eb30: five of five anchors present; gate contract verified for the paused/reason keys, the writers and the ~1 s re-read, but the section's quoted authority path contradicts imas-ambix main (router resolves /work/projects/imas_gpu/agents/control/router-gate.json, public path absent); four contradictions (K1 material, K2-K4 minor); verdict hold with five exact edits.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261001T101129655367-review-of-the-lane-pause-section-is-read-back" data-who="reckon-build" data-when="2026-10-01T10:17:33.905Z">
-    <div class="r-comment-body"><p>review stored for r-20261001T093225999649-the-lane-pause-section-is-read-back — parsed record, all five dimensions scored 0..20 (goal_fidelity 18, evidence 17, scope_discipline 19, durability 16, fit 18), total 88, no absent dimensions or items, item_aggregate 6, two follow-on findings; verdict affirms the read-back&#x27;s hold and its four contradictions, independently reproduced.</p></div>
+    <div class="r-comment-body"><p>review stored for r-20261001T093225999649-the-lane-pause-section-is-read-back — parsed record, all five dimensions scored 0..20 (goal_fidelity 18, evidence 17, scope_discipline 19, durability 16, fit 18), total 88, no absent dimensions or items, item_aggregate 6, two follow-on findings; verdict affirms the read-back's hold and its four contradictions, independently reproduced.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260924T085742049782-review-of-the-producer-lease" data-who="reckon-ship" data-when="2026-09-24T09:05:50.248Z">
     <div class="r-comment-body"><p>read-back of section 3: N2, N3 and N8 closed at ad86d6ce; M2 (the lease-renewal observable is unnamed) must be settled before release, and M8 adds reckon/crew/runs.py to the write paths</p></div>
