@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="the-fleet-supervisor-runs-declared-services">
   <meta name="plan-title" content="The Fleet Supervisor Runs Declared Services">
-  <meta name="plan-summary" content="The fleet allocation's supervisor starts, keeps alive and reloads standing services a user config declares, generalising the health sampler.">
+  <meta name="plan-summary" content="The fleet allocation&#x27;s supervisor starts, keeps alive and reloads standing services a user config declares, generalising the health sampler.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="2.0">
@@ -19,11 +19,13 @@
   <meta name="plan-sprint" content="S22">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
-  <meta name="plan-standalone" content="A new capability of the fleet supervisor that a consuming project's telemetry ingest will run under; no reckon plan's sections wait on it and it consumes no plan&#x27;s pending evidence.">
+  <meta name="plan-standalone" content="A new capability of the fleet supervisor that a consuming project&#x27;s telemetry ingest will run under; no reckon plan&#x27;s sections wait on it and it consumes no plan&#x27;s pending evidence.">
   <title>The Fleet Supervisor Runs Declared Services | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;}">
+<meta name="plan-modified" content="2026-10-01">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -47,7 +49,14 @@
       argv list. The supervisor starts each declared service as its own-session child of the batch
       step. Each service holds a lock in the fleet runtime directory, so a reload or a second
       supervisor never starts a second copy. A service that exits is restarted with exponential
-      backoff, and the backoff resets once the service has run steadily for a stated interval. On
+      backoff: 5 s at first, doubling to a 300 s cap, and reset after 10 minutes of steady running.
+      A service is restarted only when it exits, never on a liveness timeout. A long tick is the
+      service working: the consuming project measured a cold catch-up tick of 862 s after a fleet
+      requeue. Each service's stdout and stderr are appended to a size-bounded log at
+      <code>~/.local/state/fleet/services/&lt;name&gt;.log</code>, which is on the shared filesystem, so
+      a later reader can open the last ticks after the fleet node is gone; output never goes to
+      DEVNULL. A service is started with the batch step's environment and needs no working
+      directory of its own. On
       <code>reload</code>, a newly declared service starts, and a service removed from the file is
       stopped by the pid the supervisor recorded for it, never by a pattern. The supervisor never
       names a project. The first entry a consuming project will declare is
@@ -63,9 +72,7 @@
       control removes the lock check; the no-second-copy case must then fail.
     </p>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-<h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -73,8 +80,8 @@
     <h4 class="r-fu-title">Land the declared services</h4>
     <div class="r-fu-body"><p>One node for §1, dispatched once the local lane has worker slots.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-fleet-supervisor-runs-declared-services §1</pre>
-</article>
-    </section>
+    </article>
+</section>
   </main>
 </body>
 </html>
