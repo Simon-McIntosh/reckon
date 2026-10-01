@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="Complete refuses while the checkout has a merge open">
+  <meta name="plan-summary" content="crew complete refuses before writing the ledger row or the plan landing comment when the checkout it would commit into has an open merge, rebase or cherry-pick, naming the state; each marker is resolved with git rev-parse --git-path so a linked worktree reads its own state, and a clean checkout still promotes.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,promotion,git,merge,worktree">
+  <title>Complete refuses while the checkout has a merge open — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="complete-refuses-an-open-merge" data-reckon="landed" data-when="2026-10-01">
+  <h2>Complete refuses while the checkout has a merge open</h2>
+  <p>Promotion commits the two stores it writes — the ledger row and the plan landing comment — into the checkout's index. Measured 2026-09-26, a <code>crew complete</code> of a review run committed into the shared checkout while a peer session's merge was open there, changing that merge's first parent under it. <code>complete</code> now refuses, before either store is written, while the checkout has an open <code>MERGE_HEAD</code>, a rebase state directory (<code>rebase-merge</code> or <code>rebase-apply</code>) or <code>CHERRY_PICK_HEAD</code>, and the refusal names the state it found.</p>
+  <p>Each marker path is resolved with <code>git rev-parse --git-path</code> rather than a literal <code>.git/</code> join, so a linked worktree — whose <code>.git</code> is a file pointing at its private directory — is read where git actually keeps the marker. The guard lives in <code>promotion._require_committable_checkout</code> (helper <code>_open_operation_state</code>), the checkpoint that already refuses a checkout which cannot host the landing commit, so both the ordinary and the reconcile promotion paths refuse at the same place.</p>
+  <p><code>tests/test_complete_refuses_an_open_merge.py</code> builds a scratch repository under <code>tmp_path</code>: the MERGE_HEAD case is a genuine conflict-free merge left open, the rebase cases create the state directory, and the cherry-pick case writes <code>CHERRY_PICK_HEAD</code>. For each, promotion refuses naming the state, no ledger row is written, the live pointer survives and the plan carries no landing comment. A clean checkout still promotes, and a case in a linked worktree (mount repointed so promotion commits into the worktree) shows the marker resolved at the linked worktree's own git directory. <strong>6 passed</strong>.</p>
+  <p>The declared mutation — the open-state check removed — lets the MERGE_HEAD case promote (<code>DID NOT RAISE</code>) and turns the rebase and cherry-pick cases red: <code>EXIT=1</code>, <strong>5 failed ids</strong> the head arm does not fail, recorded in <code>negative-control.log</code>. Head and base arms of <code>tests/test_crew_promotion.py</code> show zero added failures: <strong>50 passed, EXIT=0</strong> at the base revision (fresh scratch tree) and <strong>56 passed, EXIT=0</strong> at the head revision, the six extra passing ids being this node's new file. This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>

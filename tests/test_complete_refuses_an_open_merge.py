@@ -28,7 +28,7 @@ PLAN = "plan-a"
 # marker name, the word the refusal must carry, and whether the marker is a
 # directory (a rebase state) rather than a file.
 OPEN_STATES = (
-    ("MERGE_HEAD", "merge", "file"),
+    ("MERGE_HEAD", "merge", "merge"),
     ("rebase-merge", "rebase", "dir"),
     ("rebase-apply", "rebase", "dir"),
     ("CHERRY_PICK_HEAD", "cherry-pick", "file"),
@@ -123,6 +123,25 @@ def _marker_path(repository: Path, marker: str) -> Path:
 
 
 def _open_state(repository: Path, marker: str, kind: str) -> None:
+    if kind == "merge":
+        # A genuine, conflict-free merge left open: MERGE_HEAD is present and
+        # the merge result is staged, so a landing commit would conclude the
+        # peer's merge and rewrite its first parent.
+        _git(repository, "checkout", "-q", "-b", "peer")
+        (repository / "peer.txt").write_text("peer\n", encoding="utf-8")
+        _git(repository, "add", "peer.txt")
+        _git(repository, "commit", "-q", "-m", "test: peer change")
+        _git(repository, "checkout", "-q", "main")
+        _git(
+            repository,
+            "merge",
+            "--no-ff",
+            "--no-commit",
+            "-m",
+            "test: peer merge",
+            "peer",
+        )
+        return
     path = _marker_path(repository, marker)
     if kind == "dir":
         path.mkdir(parents=True, exist_ok=True)
@@ -142,7 +161,7 @@ def test_complete_refuses_while_an_open_state_exists(
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(run_id, gate="passed", root=repository)
 
-    assert state_word in str(refusal.value)
+    assert f"has an open {state_word} in progress" in str(refusal.value)
     # Refused before either store was written: no ledger row, the live pointer
     # survives, and the plan carries no landing comment.
     assert ledger.runs(PROJECT, root=repository) == []
@@ -183,6 +202,6 @@ def test_a_linked_worktree_resolves_its_own_open_state(
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(run_id, gate="passed", root=worktree)
 
-    assert "merge" in str(refusal.value)
+    assert "has an open merge in progress" in str(refusal.value)
     assert ledger.runs(PROJECT, root=worktree) == []
     assert pointer_path(run_id).is_file()
