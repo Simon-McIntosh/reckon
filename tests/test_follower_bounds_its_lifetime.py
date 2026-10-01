@@ -13,7 +13,11 @@ A reloaded follower ends within the original grant plus one poll interval. The
 deadline is an absolute instant fixed at the first arming, and the replacement
 image must spend what is left of it rather than re-anchoring at its own start,
 which charged each reload for that image's setup — measured at up to 2.6 s past
-a six-second grant.
+a six-second grant. The case enters as a replacement does, with the carried
+instant in the environment and the same command line, and its clock is injected
+with the setup priced on that clock a known interval, so the difference is
+exact rather than a race: an image that re-anchors ends that interval past the
+case's slack, every run.
 
 No child of an armed follower carries ``RECKON_FOLLOWER_CHECKPOINT`` or
 ``RECKON_WATCH_ARMING``. Both are hand-offs to one process, and both were placed
@@ -27,7 +31,10 @@ A dispatch refused on follower conditions names every unmet condition in one
 result, together with the one follower command that clears them. Reported one
 at a time — no producer, then a follower whose lines reach a file, then a
 session with no registration at all — the conditions cost one round trip each;
-measured at about twenty-five minutes for a single worker.
+measured at about twenty-five minutes for a single worker. Judging the
+session-side conditions in one pass must not widen a launch kind that carries
+no session delivery: the producer is a condition of every kind, and a dispatch
+under one of those kinds is still refused without it.
 """
 
 from __future__ import annotations
@@ -75,15 +82,22 @@ ONE_POLL_INTERVAL_SLACK = 1.0
 POLL_SECONDS = 0.05
 ARM_WITHIN_SECONDS = 30.0
 RELOAD_WITHIN_SECONDS = 10.0
-# How long after the arm the source change is forced. Later than the reload
-# case's own window so an image that restarts its clock is unmistakably past
-# the original grant, and early enough that the replacement image is up well
-# before the deadline.
-RELOAD_AFTER_SECONDS = 2.0
+# The injected clock of the carried-deadline case: one fixed step per read, so
+# every interval it measures is a count of the follower's own clock reads. The
+# replacement's setup is priced on that clock at a known interval, deliberately
+# larger than the slack the bound allows, so an image that re-anchors lands past
+# the bound by construction rather than by load.
+CARRY_STEP = 0.05
+SETUP_SECONDS = 2.0
 # A poll stubbed to block past its lifetime: any value comfortably longer than
 # the deadline will do, because the property under measure is that the follower
 # does not wait for it.
 STUB_BLOCK_SECONDS = 30.0
+# The child-environment case waits for two recovery sweeps — the arm's and the
+# replacement's — and a sweep's tail probes model lanes, so its grant must
+# outlast the sweep rather than the case's bound: the property it measures is
+# which variables a child inherits, not the deadline the reload case owns.
+CHILD_LIFETIME = "25s"
 
 # The replacement image is launched by the follower with a launcher that
 # inserts its import root on ``sys.path`` before entering the command. That
@@ -113,6 +127,50 @@ class _Clock:
 
     def advance(self, seconds: float) -> None:
         self._t += seconds
+
+
+class _StepClock:
+    """A clock that advances one fixed step per read, so a case is exact.
+
+    The interval between two reads is the number of reads in between, so an
+    image that charges its setup to a grant ends that many steps later, and one
+    that spends the instant it was handed ends within the reads of its exit
+    path. Nothing here is timed from outside the process.
+    """
+
+    def __init__(self, start: float, step: float) -> None:
+        self._t = float(start)
+        self.step = float(step)
+
+    def __call__(self) -> float:
+        value = float(self._t)
+        self._t += self.step
+        return value
+
+    def advance(self, seconds: float) -> None:
+        self._t += seconds
+
+    def now(self) -> float:
+        """The current reading, without spending a step to take it."""
+        return self._t
+
+
+class _InjectedTime:
+    """The ``time`` module as ``reckon.cli`` sees it, with both clocks replaced.
+
+    The command reads ``time.monotonic`` and ``time.time``, so both name the
+    case's clock and every other attribute is the real module's. Only the
+    module object the command resolves its own ``time`` through is swapped, so
+    no other code in the process sees anything but real time.
+    """
+
+    def __init__(self, real, clock) -> None:
+        self._real = real
+        self.monotonic = clock
+        self.time = clock
+
+    def __getattr__(self, name: str):
+        return getattr(self._real, name)
 
 
 # ── A poll that outlives the deadline is abandoned, not waited for ──────────
@@ -211,29 +269,19 @@ def home(tmp_path, monkeypatch):
     return config_home
 
 
-def _write_unpromoted_run(home: Path) -> None:
-    """One delivered run of the owning session that nobody has promoted."""
-    log = home / "logs" / f"{RUN_ID}.jsonl"
-    log.parent.mkdir(parents=True, exist_ok=True)
-    log.write_text('{"type":"turn.started"}\n')
-    manifest = home / "manifests" / f"{RUN_ID}.md"
-    manifest.parent.mkdir(parents=True, exist_ok=True)
-    manifest.write_text(
-        f"node: {NODE}\nstatus: complete\ncommits: HEAD\nblockers: none\n"
-    )
-    crew._write_json(
-        crew.pointer_path(RUN_ID),
-        {
-            "run_id": RUN_ID,
-            "project": PROJECT,
-            "session": SESSION,
-            "node": {"id": NODE, "plan": "plan-a", "time_budget": "20m"},
-            "phase": "working",
-            "created_at": runs._utc_now(),
-            "manifest_path": str(manifest),
-            "log_path": str(log),
-        },
-    )
+def _clean_environ(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Drop every RECKON_ variable but the temporary home, for one case.
+
+    The worker running this file may itself be under ``crew follow``, so its
+    exported RECKON_ variables, inherited unchanged, would be read by the arming
+    this case reconstructs as though it belonged to that session.
+    """
+    for key in [
+        name
+        for name in os.environ
+        if name.startswith("RECKON_") and name != "RECKON_HOME"
+    ]:
+        monkeypatch.delenv(key, raising=False)
 
 
 def _follower_env(home: Path, **extra: str) -> dict[str, str]:
@@ -384,55 +432,73 @@ def _restore_source_bytes(restore: tuple[bytes, int, int]) -> None:
     os.utime(FOLLOWER_SOURCE, ns=(atime_ns, mtime_ns))
 
 
-@pytest.mark.xdist_group(SOURCE_CHANGE_GROUP)
-def test_a_reload_does_not_restart_the_lifetime(home) -> None:
-    """The deadline fixed at the first arming still ends it after a reload.
+def test_a_reload_does_not_restart_the_lifetime(home, monkeypatch) -> None:
+    """An image entering with a carried deadline spends what is left of it.
 
-    Armed with a six-second grant and forced to reload about two seconds in,
-    the follower ends within the original grant plus one poll interval of the
-    arm — not of the reload. An image that anchors the deadline at its own
-    start lands past that bound, because the replacement's own setup is
-    charged to the grant.
+    This is a replacement's entry: the same command line the first arming had,
+    with the absolute instant the re-exec hands over in the case's environment.
+    The clock is injected and advances one step per read, and the setup a
+    replacement pays before its wait loop is priced on that clock at a known
+    interval, deliberately larger than the slack the bound allows. An image that
+    re-anchors at its own start lands that whole interval past the bound by
+    construction, where a wall-clock version of this case measured the
+    replacement's setup and needed a slack wide enough to let it pass.
     """
-    _write_unpromoted_run(home)
-    restore = None
-    with _source_mutation_window():
-        process = _arm(home, "--lifetime", LIFETIME)
-        try:
-            _wait_until_armed(process)
-            arm_at = time.monotonic()
-            _wait_until_looping(home, process.pid)
-            wait_left = RELOAD_AFTER_SECONDS - (time.monotonic() - arm_at)
-            if wait_left > 0:
-                time.sleep(wait_left)
-            restore = _force_source_change()
-            _wait_until_reloaded(process)
-            grant = float(crew.parse_duration(LIFETIME))
-            bound = arm_at + grant + ONE_POLL_INTERVAL_SLACK
-            while time.monotonic() < bound and process.poll() is None:
-                time.sleep(POLL_SECONDS)
-            ended_at = time.monotonic()
-            stdout, stderr = process.communicate(timeout=ARM_WITHIN_SECONDS)
-        finally:
-            if process.poll() is None:
-                _kill(process)
-            if restore is not None:
-                _restore_source_bytes(restore)
+    _clean_environ(monkeypatch)
+    clock = _StepClock(1000.0, CARRY_STEP)
+    grant = float(crew.parse_duration(LIFETIME))
+    setup_readings: list[float] = []
 
-    assert process.returncode == 0, (
-        f"a lifetime exit is the follower ending by itself, so it exits zero; "
-        f"got {process.returncode}; stderr={stderr!r}"
+    def _priced_setup() -> str:
+        """A replacement image's setup, priced on this case's own clock."""
+        setup_readings.append(clock.now())
+        clock.advance(SETUP_SECONDS)
+        return "stream"
+
+    monkeypatch.setattr(runs, "delivery_mode", _priced_setup)
+    real_lines = cli._follow_watch_lines
+
+    def _injected_lines(*args, **kwargs):
+        kwargs.setdefault("clock", clock)
+        kwargs.setdefault("sleeper", lambda _seconds: None)
+        return real_lines(*args, **kwargs)
+
+    monkeypatch.setattr(cli, "_follow_watch_lines", _injected_lines)
+    monkeypatch.setattr(cli, "time", _InjectedTime(time, clock))
+    # The instant the re-exec of an armed follower carries, in the variable it
+    # carries it in, so this case enters where a replacement image enters.
+    monkeypatch.setenv(cli._FOLLOWER_LIFETIME_ENV, str(1000.0 + grant))
+
+    result = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            "follow",
+            "--project",
+            PROJECT,
+            "--session",
+            SESSION,
+            "--no-color",
+            "--lifetime",
+            LIFETIME,
+        ],
     )
-    lines = [line for line in stdout.splitlines() if line.strip()]
-    assert lines, f"the follower ended without printing anything; stderr={stderr!r}"
-    assert lines[-1].startswith("follower end:"), (
-        f"the last line must be marked as the follower's end; got {lines[-1]!r}"
+
+    assert setup_readings, (
+        "the replacement's setup was never priced, so the cost a re-anchoring "
+        "image charges to the grant was never measured"
     )
-    elapsed = ended_at - arm_at
-    assert elapsed <= grant + ONE_POLL_INTERVAL_SLACK, (
-        f"the carried deadline must end the arming within the original grant "
-        f"({grant!r}s) plus {ONE_POLL_INTERVAL_SLACK!r}s; took {elapsed:.3f}s "
-        f"from the arm, so the reload restarted the clock"
+    assert result.exit_code == 0, result.output
+    lines = [line for line in result.output.splitlines() if line.strip()]
+    assert lines and lines[-1].strip().startswith("follower end:"), (
+        f"the arming must end with its own final line; got {lines!r}"
+    )
+    overshoot = clock.now() - (1000.0 + grant)
+    assert overshoot <= ONE_POLL_INTERVAL_SLACK, (
+        f"the carried instant must end the arming within "
+        f"{ONE_POLL_INTERVAL_SLACK!r}s of itself, whatever the replacement pays "
+        f"to start; it ended {overshoot:.3f}s past it, which is the "
+        f"replacement's own setup charged to the grant"
     )
 
 
@@ -517,8 +583,35 @@ def _wait_for_child(dump: Path, process: subprocess.Popen) -> list[str]:
     stdout, stderr = _kill(process)
     pytest.fail(
         "the follower ran no probe child within "
-        f"{ARM_WITHIN_SECONDS!r}s of its arm, so the environment it hands a "
-        f"child was never observed; stdout={stdout!r} stderr={stderr!r}"
+        f"{ARM_WITHIN_SECONDS!r}s of its arm, so the probe that reports what a "
+        f"child inherits was never run; stdout={stdout!r} stderr={stderr!r}"
+    )
+
+
+def _wait_for_more_children(
+    dump: Path, observed: int, process: subprocess.Popen
+) -> list[str]:
+    """Wait for the replacement image's own probe child, or fail saying which.
+
+    A dump holding only the first image's line is a clean report about one
+    image, so the post-reload half waits for a line the replacement wrote
+    rather than asserting over whatever is there when the deadline arrives.
+    """
+    deadline = time.monotonic() + ARM_WITHIN_SECONDS
+    while time.monotonic() < deadline:
+        lines = _recorded_environments(dump)
+        if len(lines) > observed:
+            return lines
+        if process.poll() is not None:
+            break
+        time.sleep(POLL_SECONDS)
+    stdout, stderr = _kill(process)
+    pytest.fail(
+        f"the replacement image ran no probe child of its own within "
+        f"{ARM_WITHIN_SECONDS!r}s of the reload, so the environment the second "
+        f"image hands a child was never observed; "
+        f"lines={_recorded_environments(dump)!r} stdout={stdout!r} "
+        f"stderr={stderr!r}"
     )
 
 
@@ -541,7 +634,7 @@ def test_no_child_of_an_armed_follower_carries_the_hand_off_variables(home) -> N
         process = _arm(
             home,
             "--lifetime",
-            LIFETIME,
+            CHILD_LIFETIME,
             env=_follower_env(home, RECKON_WATCH_ARMING="off"),
         )
         try:
@@ -566,12 +659,15 @@ def test_no_child_of_an_armed_follower_carries_the_hand_off_variables(home) -> N
             _wait_until_looping(home, process.pid)
             restore = _force_source_change()
             _wait_until_reloaded(process)
-            # The replacement image sweeps too, so its own child is covered:
-            # read the dump again after the reload and require no image to have
-            # leaked either variable across the checkpoint hand-over.
+            # The replacement image runs the sweep on its first wait pass, so
+            # this half waits for a line the replacement itself wrote: a dump
+            # holding only the first image's line is a clean report about one
+            # image, and whether the second sweep lands before the deadline is
+            # exactly the race this half must not depend on.
+            _wait_for_more_children(dump, len(lines), process)
             deadline = (
                 arm_at
-                + float(crew.parse_duration(LIFETIME))
+                + float(crew.parse_duration(CHILD_LIFETIME))
                 + (ONE_POLL_INTERVAL_SLACK)
             )
             while time.monotonic() < deadline and process.poll() is None:
@@ -609,6 +705,22 @@ CONFIG = {
         "worker": {
             "launch": "cli",
             "command": "worker",
+            "sandbox": "worktree-full",
+            "time_budget": "20m",
+        }
+    },
+    "roles": {"implement": {}},
+    "fences": {"time_budget": "20m", "needs_help_after_failures": 2},
+}
+
+# One backend whose launch is not a session delivery, so the session-side
+# follower conditions do not apply to it while the producer's absence still does.
+IN_HARNESS_CONFIG = {
+    "default_backend": "local",
+    "backends": {
+        "local": {
+            "launch": "in-harness",
+            "model": "fixture-model",
             "sandbox": "worktree-full",
             "time_budget": "20m",
         }
@@ -741,5 +853,50 @@ def test_a_refusal_names_every_unmet_follower_condition_and_the_one_command(
     attach = runs.watch_state(project, session=session)["attach_line"]
     assert f"`{attach}`" in detail or attach in detail, (
         f"the one required follower command must be quoted; detail={detail!r}"
+    )
+    assert not list(crew.list_live(project=project)), "nothing may be created"
+
+
+def test_a_launch_that_carries_no_delivery_still_needs_the_producer(
+    home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A launch kind with no session delivery is still refused without a producer.
+
+    An in-harness node prepares a directive rather than delivering lines to a
+    session, so the session-side follower conditions do not apply to it — but
+    the producer is a condition of every launch kind: the seat is what the
+    project's watcher holds, and a launch was refused for its absence before
+    the session-side conditions were judged in one pass. The session here is
+    delivering, so the producer is the only condition left, and narrowing the
+    refusal to the cli kind would admit this launch with nothing reading the
+    project at all.
+    """
+    project = "sample"
+    session = "session-in-harness"
+    monkeypatch.setattr(
+        cli, "_resolved_flight", lambda *args, **kwargs: IN_HARNESS_CONFIG
+    )
+
+    class _DeadSupervisor:
+        """A producer that could not be started: the arming died at once."""
+
+        def poll(self) -> int:
+            return 1
+
+    monkeypatch.setattr(
+        dispatch_module, "_start_watch_producer", lambda _project: _DeadSupervisor()
+    )
+
+    with runs.follower_registration(project, session, delivery="stream"):
+        result = CliRunner().invoke(cli.main, _dispatch_arguments(repo, session))
+
+    assert result.exit_code == 8, result.output
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["error"] == "watcher-required"
+    detail = str(payload["detail"])
+    assert "no live crew watcher process" in detail, (
+        f"the producer condition must be named for this launch kind too; "
+        f"detail={detail!r}"
     )
     assert not list(crew.list_live(project=project)), "nothing may be created"

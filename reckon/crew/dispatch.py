@@ -1154,10 +1154,18 @@ def _watcher_delivery_admission(
 
     Returns the warning line when a released session proceeds, and ``None``
     when the session is attached or the launch kind carries no delivery.
-    Raises :class:`WatcherRequired` for a session that would not hear the run.
+    Raises :class:`WatcherRequired` for a session that would not hear the run,
+    whatever the launch kind, and for any launch kind with no live producer.
     """
     if launch_kind != "cli":
-        return None
+        # A launch that is not a session delivery — an in-harness node preparing
+        # a directive — has no follower of its own to judge, so the conditions
+        # below do not apply to it. The producer does apply: every launch kind
+        # reads the project's watch seat, so its absence is refused here for
+        # this kind too, as the call site refused it for all kinds.
+        if dispatch_watch.get("watcher_live"):
+            return None
+        raise WatcherRequired(project, dispatch_watch)
     if dispatch_watch.get("session_follower_released") and dispatch_watch.get(
         "watcher_live"
     ):
