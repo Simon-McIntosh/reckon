@@ -5719,8 +5719,37 @@ def service_status():
         for line in module.unit_path().read_text().splitlines():
             if line.startswith("ExecStart="):
                 click.echo(f"  command: {line.removeprefix('ExecStart=')}")
+        click.echo(f"  code:    {_served_code_line(module.unit_path())}")
 
     _service_call(action)
+
+
+def _served_code_line(unit_file: Path) -> str:
+    """Ask the server on this host whether it still runs the code on disk.
+
+    The server owns the verdict (GET /_server); this reads it from the port the
+    unit serves on, and says plainly when nothing answers there.
+    """
+
+    import json as json_module
+    from urllib.request import urlopen
+
+    port = 8765
+    for line in unit_file.read_text().splitlines():
+        argv = line.removeprefix("ExecStart=").split()
+        if line.startswith("ExecStart=") and "--port" in argv[:-1]:
+            value = argv[argv.index("--port") + 1]
+            port = int(value) if value.isdigit() else port
+    try:
+        with urlopen(f"http://127.0.0.1:{port}/_server", timeout=5) as response:
+            report = json_module.loads(response.read()).get("code")
+    except (OSError, ValueError):
+        return f"unknown — nothing answered on 127.0.0.1:{port}"
+    if not isinstance(report, dict):
+        return "unknown — the server does not report the code it runs"
+    if report.get("stale"):
+        return f"stale — {report.get('summary') or 'the code on disk has changed'}"
+    return "current"
 
 
 @service.command(name="logs")

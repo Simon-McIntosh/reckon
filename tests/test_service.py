@@ -144,3 +144,88 @@ def test_installing_creates_the_log_directory(
 
     service.write_unit()
     assert service.log_path().parent.is_dir()
+
+
+def _status_output(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, report) -> str:
+    """Run `reckon service status` against a stand-in server on a free port."""
+
+    import http.server
+    import json
+    import subprocess
+    import threading
+
+    from click.testing import CliRunner
+
+    from reckon.cli import main
+
+    class _Server(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            body = json.dumps({"code": report}).encode()
+            self.send_response(200 if self.path == "/_server" else 404)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *args):
+            pass
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Server)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    unit = tmp_path / "reckon.service"
+    unit.write_text(
+        f"[Service]\nExecStart=/x/reckon serve --port {server.server_port}\n"
+    )
+    completed = subprocess.CompletedProcess([], 0, stdout="active\n", stderr="")
+    monkeypatch.setattr(service, "installed", lambda: True)
+    monkeypatch.setattr(service, "unit_path", lambda: unit)
+    monkeypatch.setattr(service, "linger_enabled", lambda: True)
+    monkeypatch.setattr(service, "systemctl", lambda *args, check=True: completed)
+    try:
+        result = CliRunner().invoke(main, ["service", "status"])
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+    assert result.exit_code == 0, result.output
+    return result.output
+
+
+def test_status_reports_a_server_running_current_code(tmp_path, monkeypatch):
+    output = _status_output(tmp_path, monkeypatch, {"stale": False, "summary": None})
+    assert "  code:    current" in output
+
+
+def test_status_reports_the_servers_own_drift_sentence(tmp_path, monkeypatch):
+    summary = "The server is running older code than is on disk: 4 files changed."
+    output = _status_output(tmp_path, monkeypatch, {"stale": True, "summary": summary})
+    assert f"  code:    stale — {summary}" in output
+
+
+def test_status_says_when_no_server_answers(tmp_path, monkeypatch):
+    import socket
+
+    from click.testing import CliRunner
+
+    from reckon.cli import main
+
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        free_port = probe.getsockname()[1]
+    unit = tmp_path / "reckon.service"
+    unit.write_text(f"[Service]\nExecStart=/x/reckon serve --port {free_port}\n")
+    import subprocess
+
+    completed = subprocess.CompletedProcess([], 3, stdout="inactive\n", stderr="")
+    monkeypatch.setattr(service, "installed", lambda: True)
+    monkeypatch.setattr(service, "unit_path", lambda: unit)
+    monkeypatch.setattr(service, "linger_enabled", lambda: True)
+    monkeypatch.setattr(service, "systemctl", lambda *args, check=True: completed)
+
+    result = CliRunner().invoke(main, ["service", "status"])
+
+    assert result.exit_code == 0, result.output
+    assert (
+        f"  code:    unknown — nothing answered on 127.0.0.1:{free_port}"
+        in result.output
+    )
