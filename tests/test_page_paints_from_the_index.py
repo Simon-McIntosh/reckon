@@ -7,17 +7,29 @@ afterwards in the background and merged into the rows already on screen,
 without re-sorting them. An index that is unavailable must not cost the page
 its rows: the loader then takes the discovery path it used before.
 
-Each case runs the real ``docs/ui/state-loader.js`` under ``node`` with a
-recording ``fetch``, so the assertions are about the requests the loader
+Each loader case runs the real ``docs/ui/state-loader.js`` under ``node`` with
+a recording ``fetch``, so the assertions are about the requests the loader
 actually made and the state it actually assembled. A case whose readiness
 never comes fails on its timeout rather than hanging the suite.
+
+The last case runs the real server: a page paints from the index, so the
+change stream that reports a tree must leave that tree's index rows fresh, or
+the reader revalidates against a row list that predates the change they were
+just told about.
 """
 
 from __future__ import annotations
 
+import http.client
 import json
+import os
 import subprocess
+import threading
 from pathlib import Path
+
+import pytest
+
+from reckon import metadata_index, serve
 
 ROOT = Path(__file__).resolve().parents[1]
 LOADER = ROOT / "docs" / "ui" / "state-loader.js"
@@ -373,3 +385,113 @@ window.STATE_READY.then(state => {{
         assert observed["effective_status"] == ["blocked", "ready", "recorded"], (
             observed
         )
+
+
+# ─── The served index, after a change the page's own stream reported ──────
+
+
+def _plan_page(slug: str, title: str) -> str:
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="docs-project" content="{PROJECT}">
+<meta name="reckon-type" content="plan">
+<meta name="plan-slug" content="{slug}">
+<meta name="plan-title" content="{title}">
+<meta name="plan-status" content="active">
+<title>{title}</title></head><body><main class="plan-doc"></main></body></html>
+"""
+
+
+def _write(title: str, path: Path) -> None:
+    """Rewrite one plan page so its stat identity moves with it."""
+
+    previous = path.stat().st_mtime_ns
+    path.write_text(_plan_page("alpha", title), encoding="utf-8")
+    stat = path.stat()
+    os.utime(path, ns=(stat.st_atime_ns, max(stat.st_mtime_ns, previous + 1)))
+
+
+def _get(port: int, path: str) -> tuple[int, object]:
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+    try:
+        connection.request("GET", path)
+        response = connection.getresponse()
+        return response.status, json.loads(response.read())
+    finally:
+        connection.close()
+
+
+def _title(rows: list[dict], slug: str) -> str:
+    return next(row["title"] for row in rows if row["slug"] == slug)
+
+
+class _ChangeStream:
+    """Read ``/_changes/<project>`` frames, one event at a time."""
+
+    def __init__(self, port: int, project: str) -> None:
+        self._connection = http.client.HTTPConnection("127.0.0.1", port, timeout=30)
+        self._connection.request("GET", f"/_changes/{project}")
+        self._response = self._connection.getresponse()
+
+    def next_event(self) -> str:
+        event = ""
+        while True:
+            line = self._response.readline().decode("utf-8")
+            if not line:
+                raise AssertionError("the change stream closed before an event")
+            line = line.rstrip("\r\n")
+            if line.startswith("event: "):
+                event = line[len("event: ") :]
+            elif not line and event:
+                return event
+
+    def close(self) -> None:
+        self._connection.close()
+
+
+def test_a_reported_change_refreshes_the_served_index(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The stream that reports a tree change drops that tree's index rows.
+
+    A page paints from ``/_index/<project>``. Once the reader's own stream has
+    told it the tree moved, the next index read must not hand back the row as
+    it was: every watch that reports a tree drops the same views of it.
+    """
+
+    docs = tmp_path / "docs"
+    plans = docs / "plans"
+    plans.mkdir(parents=True)
+    target = plans / "alpha.html"
+    target.write_text(_plan_page("alpha", "Alpha"), encoding="utf-8")
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(serve, "load_mounts", lambda: {PROJECT: docs})
+    monkeypatch.setattr(serve, "_STATE_ROOT", None)
+    metadata_index.clear()
+    serve._DISC_CACHE.clear()
+
+    server = serve.ThreadingHTTPServer(("127.0.0.1", 0), serve.Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    stream = _ChangeStream(server.server_port, PROJECT)
+    try:
+        assert stream.next_event() == "ready"
+        # Read the endpoint first, so the assertion below is about the
+        # invalidation and not about a first, cold read.
+        status, rows = _get(server.server_port, INDEX_ENDPOINT)
+        assert status == 200
+        assert _title(rows, "alpha") == "Alpha"
+
+        _write("Alpha renamed", target)
+        assert stream.next_event() == "change"
+
+        status, rows = _get(server.server_port, INDEX_ENDPOINT)
+    finally:
+        stream.close()
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+    assert status == 200
+    assert _title(rows, "alpha") == "Alpha renamed"
