@@ -103,7 +103,9 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
     return {"home": config_home, "repo": root, "frozen": frozen}
 
 
-def _write_pointer(fleet: dict[str, Path], run_id: str, *, phase: str, status: str) -> None:
+def _write_pointer(
+    fleet: dict[str, Path], run_id: str, *, phase: str, status: str
+) -> None:
     """Write one live pointer and the manifest its delivery is read from."""
     root = fleet["repo"]
     manifest = fleet["home"] / "manifests" / f"{run_id}.md"
@@ -179,9 +181,7 @@ def test_the_snapshot_carries_the_derivation_over_unmodified_files(
     # own clock moves between the sweep and the comparison and an age that
     # ticked forward would read as a content diff. It is the *inputs* that must
     # be unmodified, not the wall clock.
-    monkeypatch.setattr(
-        recovery, "_utc_seconds", lambda: fleet["frozen"].timestamp()
-    )
+    monkeypatch.setattr(recovery, "_utc_seconds", fleet["frozen"].timestamp)
     _write_pointer(fleet, "r-owed", phase="complete", status="complete")
     _write_pointer(fleet, "r-working", phase="working", status="working")
     with runs.follower_registration(PROJECT, SESSION):
@@ -195,9 +195,9 @@ def test_the_snapshot_carries_the_derivation_over_unmodified_files(
     # The age fields are the one deliberate rebasing: the snapshot stores the
     # instant each age is measured from, so reading it at the instant it was
     # computed must reproduce the derivation exactly, ages included.
-    assert obligation_snapshot.live_payload(
-        stored, now=_computed_at(stored)
-    ) == expected  # __T5__
+    assert (
+        obligation_snapshot.live_payload(stored, now=_computed_at(stored)) == expected
+    )  # __T5__
 
 
 def _stopped_between_write_and_rename(staging: str, destination: str) -> None:
@@ -281,7 +281,9 @@ def test_each_freshness_outcome_is_returned_for_its_case() -> None:
         obligation_snapshot.freshness(reused_pid, current_stamp="stamp-one")
         == "no-producer"
     )
-    assert obligation_snapshot.freshness(dead, current_stamp="stamp-one") == "no-producer"
+    assert (
+        obligation_snapshot.freshness(dead, current_stamp="stamp-one") == "no-producer"
+    )
     assert (
         obligation_snapshot.freshness(stale_code, current_stamp="stamp-one")
         == "producer-stale-code"
@@ -290,7 +292,9 @@ def test_each_freshness_outcome_is_returned_for_its_case() -> None:
         obligation_snapshot.freshness(stale_age, current_stamp="stamp-one")
         == "stale-snapshot"
     )
-    assert obligation_snapshot.freshness(None, current_stamp="stamp-one") == "no-producer"
+    assert (
+        obligation_snapshot.freshness(None, current_stamp="stamp-one") == "no-producer"
+    )
 
 
 def test_a_file_change_and_the_floor_tick_each_republish(fleet: dict[str, Any]) -> None:

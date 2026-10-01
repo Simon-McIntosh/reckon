@@ -317,7 +317,9 @@ def live_payload(document: Mapping[str, Any], *, now: datetime | None = None) ->
     showing a frozen age however long it has been on disk.
     """
     instant = _utc_now() if now is None else now
-    payload = {key: value for key, value in document.items() if key not in _SNAPSHOT_KEYS}
+    payload = {
+        key: value for key, value in document.items() if key not in _SNAPSHOT_KEYS
+    }
     for key in ("obligations", "acknowledged"):
         rows = payload.get(key)
         if isinstance(rows, list):

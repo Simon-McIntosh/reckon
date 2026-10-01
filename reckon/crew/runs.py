@@ -1254,7 +1254,9 @@ def update_watch_registration(project: str, **fields: Any) -> dict[str, Any]:
     return record
 
 
-def renew_producer_lease(project: str, *, now: float | None = None) -> dict[str, Any] | None:
+def renew_producer_lease(
+    project: str, *, now: float | None = None
+) -> dict[str, Any] | None:
     """A live follower's lease renewal for its project's producer.
 
     Called on the follower's wait pass. It is throttled to half the lease
@@ -1473,9 +1475,7 @@ def _publish_watch_transitions(
 
     try:
         if not producer.fleet_seen:
-            baseline = {
-                run_id: dict(snapshot) for run_id, snapshot in current.items()
-            }
+            baseline = {run_id: dict(snapshot) for run_id, snapshot in current.items()}
             counts = _fleet_counts(current)
             lines = [
                 _stream_transition(
@@ -1575,10 +1575,7 @@ def _publish_obligation_snapshots(project: str, *, transition_fired: bool) -> li
     """
     from reckon.crew import obligation_snapshot
 
-    sessions = [
-        str(row.get("session") or "")
-        for row in list_followers(project)
-    ]
+    sessions = [str(row.get("session") or "") for row in list_followers(project)]
     docs = _docs_dir_for_project(project)
     written = obligation_snapshot.sweep(
         project,
@@ -1673,9 +1670,8 @@ def watch_producer_identity(project: str) -> dict[str, Any]:
     # case a reader most needs to distinguish.
     current_stamp = follower_code_stamp()
     stale = code_stamp != current_stamp
-    detail = (
-        f"reckon {version or 'unknown'} started {started_at or 'unknown'}"
-        + (", code stale" if stale else "")
+    detail = f"reckon {version or 'unknown'} started {started_at or 'unknown'}" + (
+        ", code stale" if stale else ""
     )
     return {
         "reckon_version": version,
