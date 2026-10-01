@@ -21,7 +21,7 @@
   <main class="plan-doc">
     <h1>A producer recreates a registration unlinked under it</h1>
 
-    <section id="changes">
+    <section id="registration-survives-an-unlink-changes">
       <h2>What changed</h2>
       <ul>
         <li><code>reckon.crew.recovery._recreate_unlinked_registration</code> is
@@ -50,7 +50,7 @@
         the file this node recreates.</p>
     </section>
 
-    <section id="evidence">
+    <section id="registration-survives-an-unlink-evidence">
       <h2>Evidence</h2>
       <p><code>tests/test_producer_registration_survives_unlink.py</code> runs in a temporary <code>RECKON_HOME</code> with <code>RECKON_PRODUCER_LEASE_SECONDS=60</code> and spawns a real producer child in its own session.</p>
       <p>Two cases: one deletes the seat file under the live producer and shows the record back at the same path, naming the producer's pid, by its next wake-up; the other then calls <code>unwatch</code> and shows it stop the producer rather than answer nothing-to-stop.</p>
@@ -65,7 +65,7 @@
       <p><strong>Lint:</strong> the repository's ruff (0.16.4), <code>ruff check</code> over <code>reckon/crew/recovery.py</code> is <strong>9 findings</strong> at head, the same count as at base <code>60b808f5f</code>; the new test is clean under <code>ruff check</code> and <code>ruff format --check</code>.</p>
     </section>
 
-    <section id="landing">
+    <section id="registration-survives-an-unlink-landing">
       <h2>Landing line</h2>
       <p><code>landing: docs/evidence/fragments/a-crew-process-ends-with-its-owner/registration-survives-an-unlink.html</code></p>
     </section>
