@@ -3827,13 +3827,64 @@ def _wait_condition_declares_no_wait(condition: str) -> bool:
 # filled in.
 _WAIT_PROBE_NO_OP_COMMANDS = frozenset({"true", ":", "exit"})
 
+# A probe also has to be able to differ. ``echo pending`` prints a constant and
+# ``git rev-parse HEAD`` reports the worker's own tree; neither can change
+# between sweeps however the awaited work is doing, so both are satisfied
+# unconditionally and a wait resting on one tests nothing. What makes a probe
+# able to differ is a reference to something outside the worker, and the
+# references a wait actually rests on are an id, a pid, a port and a path —
+# a digit, a path separator, or a shell expansion that reaches outside the
+# vector. The file-test commands are read for an operand as well, because
+# ``test -f checkpoints/done`` and ``test -f DONE`` are the same kind of wait
+# and the derived probe of a ``wait_file`` condition is exactly this shape.
+_WAIT_PROBE_EXTERNAL_REFERENCE = re.compile(r"[0-9/$`]")
+_WAIT_FILE_TEST_COMMANDS = frozenset({"test", "["})
+# A shell-free vector gives a printer no way to read anything: ``echo`` and
+# ``printf`` write their own arguments whatever is happening outside the
+# worker, so a probe spelled with one is a command that cannot fail even when
+# its text mentions a path. A probe that needs a shell to reach the scheduler
+# keeps its ``bash -lc`` head, which is not a printer and is read by the
+# reference rule instead.
+_WAIT_PROBE_PRINTER_COMMANDS = frozenset({"echo", "printf"})
+
+
+def _wait_probe_cannot_fail(probe: Sequence[str]) -> bool:
+    """True when a present probe's result cannot differ between sweeps.
+
+    The discriminator is whether anything the probe reads lives outside the
+    worker: a job id, a pid, a port or a path. A printer is refused outright
+    because in a shell-free vector it can only echo its own text, and any
+    other probe must name one of those references: ``["squeue", "-h", "-j",
+    "1271081"]`` names one; ``["echo", "pending"]`` and ``["git", "rev-parse",
+    "HEAD"]`` name none, run whatever is happening, and read the same on every
+    sweep. Only a probe that is actually present is read this way: an absent
+    one is the incomplete-declaration case the reader already reports, so the
+    two outcomes stay distinguishable.
+    """
+    if not probe:
+        return False
+    command = Path(str(probe[0])).name
+    if command in _WAIT_PROBE_NO_OP_COMMANDS:
+        return True
+    if command in _WAIT_PROBE_PRINTER_COMMANDS:
+        return True
+    if command in _WAIT_FILE_TEST_COMMANDS:
+        return not any(
+            str(item).strip() and not str(item).startswith("-") for item in probe[1:]
+        )
+    return not _WAIT_PROBE_EXTERNAL_REFERENCE.search(
+        " ".join(str(item) for item in probe)
+    )
+
 
 def _wait_probe_is_a_no_op(probe: Sequence[str]) -> bool:
     """True when a present probe can report nothing but success.
 
-    Only a probe that is actually present is read this way: an absent one is
-    the incomplete-declaration case the reader already reports, so the two
-    outcomes stay distinguishable.
+    The null command prints nothing at all, which makes it the extreme member
+    of the probes that cannot fail; the wider family is read by
+    :func:`_wait_probe_cannot_fail`, and this reading keeps its own meaning so
+    a declaration resting on ``["true"]`` still reduces to no declaration at
+    all.
     """
     if not probe:
         return False
@@ -4587,6 +4638,14 @@ def _manifest_wait(
     run to the resume loop forever. The offending token is named in the refusal
     so the repair is a one-line edit rather than a reread of the probe.
 
+    A declaration whose probe cannot fail is refused as invalid, with the
+    probe named, and for the same reason: it names nothing outside the worker
+    — ``echo pending``, ``git rev-parse HEAD`` — so it reports the same thing
+    whatever the awaited work is doing and can neither end a wait nor report
+    one still pending. The refusal names the probe rather than reducing the
+    declaration to nothing, because the shape is one a worker can repair from
+    the row.
+
     A condition takes one of two shapes. An argument vector is the one a
     scheduler query needs; ``wait_file`` is the ordinary one, because a worker
     waits for a job's log far more often than for a scheduler to report that
@@ -4655,6 +4714,17 @@ def _manifest_wait(
     if files and declared_probe:
         missing.append(
             "either wait_probe or wait_file, not both: a wait has one shape"
+        )
+    if declared_probe and _wait_probe_cannot_fail(declared_probe):
+        # A probe that runs but cannot differ is satisfied unconditionally, so
+        # a wait resting on it reads the same however the awaited work is
+        # doing. The refusal names the probe and the references the reader
+        # accepts, because the repair is a one-line edit to the declaration.
+        missing.append(
+            f"wait_probe {[str(item) for item in declared_probe]!r} cannot "
+            "fail: it names nothing outside the worker — no job id, pid, port "
+            "or path — so its result cannot differ between sweeps and it tests "
+            f"nothing; {_WAIT_ACCEPTED_SHAPES}"
         )
     if files and declared_terminal:
         missing.append(

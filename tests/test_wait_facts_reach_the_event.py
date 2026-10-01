@@ -15,6 +15,7 @@ never arrives in place of a measurement nobody took.
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from pathlib import Path
 
@@ -61,7 +62,7 @@ def _pointer(tmp_path: Path, *, run_id: str, manifest_text: str) -> dict:
 WAITING_MANIFEST = (
     "status: waiting\n"
     "wait_condition: scheduler job 42\n"
-    'wait_probe: ["printf", "COMPLETED"]\n'
+    "wait_probe: {wait_probe}\n"
     'wait_terminal: ["COMPLETED", "FAILED"]\n'
     f"wait_started_at: {WAIT_STARTED_AT}\n"
     "wait_expected: 59m\n"
@@ -103,11 +104,15 @@ def test_a_declared_wait_carries_all_five_facts_into_the_event(tmp_path: Path) -
     declared expectation, the wait is overdue against a moment chosen past it,
     and the brief is the declared one.
     """
+    answer = tmp_path / "scheduler-answer.txt"
+    answer.write_text("COMPLETED\n", encoding="utf-8")
     moment = STARTED.timestamp() + WAIT_EXPECTED_SECONDS + 60
     snapshot = _snapshot(
         tmp_path,
         run_id="r-declared-wait",
-        manifest_text=WAITING_MANIFEST,
+        manifest_text=WAITING_MANIFEST.format(
+            wait_probe=json.dumps(["cat", str(answer)])
+        ),
         moment=moment,
     )
 

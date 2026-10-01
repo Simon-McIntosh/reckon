@@ -14,6 +14,7 @@ wait facts — never run, run and unmet, run and met, and no wait declared.
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -193,8 +194,14 @@ def test_a_live_run_whose_declaration_was_never_probed_carries_the_marker(
 
 def test_a_declared_wait_that_was_probed_carries_no_marker(tmp_path: Path) -> None:
     """The control for the shape above: same node, a probe that does run."""
+    state = tmp_path / "scheduler-state.txt"
+    state.write_text("PENDING\n", encoding="utf-8")
     snapshot = _snapshot(
-        tmp_path, run_id="r-probed-live", manifest_text=PROBED_WAIT_MANIFEST
+        tmp_path,
+        run_id="r-probed-live",
+        manifest_text=PROBED_WAIT_MANIFEST.format(
+            wait_probe=json.dumps(["cat", str(state)])
+        ),
     )
     event = _event(snapshot)
     assert event["wait_condition_state"] is not None, "the probe's verdict is absent"
@@ -214,7 +221,7 @@ INCOMPLETE_WAIT_MANIFEST = (
 PROBED_WAIT_MANIFEST = (
     "status: waiting\n"
     "wait_condition: scheduler job 42\n"
-    'wait_probe: ["printf", "PENDING"]\n'
+    "wait_probe: {wait_probe}\n"
     'wait_terminal: ["COMPLETED", "FAILED"]\n'
     f"wait_started_at: {WAIT_STARTED_AT}\n"
     "resume_brief: collect the scheduler result\n"
