@@ -1,0 +1,80 @@
+<article class="landed-report" data-run-id="r-20261001T020803820138-the-reflex-resumes-an-unpromoted-run">
+      <h3>the-reflex-resumes-an-unpromoted-run — the repair of an unpromoted run is a resume</h3>
+      <p>
+        The reflex composed a repair node for every finding-bearing review
+        round, but an unpromoted reviewed run still holds its own worktree and
+        its commit claim, so a repair over the reviewed run's own paths was
+        refused at dispatch — measured live as a repair withdrawn about
+        fourteen seconds after it was dispatched and re-fired on every sweep,
+        while the reviewed run's findings stayed unaddressed.
+      </p>
+      <p>
+        <code>dispatch_repair_for_run</code> in
+        <code>reckon/crew/recovery.py</code> now recognises the unpromoted case:
+        when the reviewed run still has its live pointer, is not promoted, and
+        its worker process has exited, the composed repair — its blocking
+        findings by id, its write scope, the round's done-when and the declared
+        negative control — is delivered as advice to a resume of the reviewed
+        run itself, through the same entry point a hand-typed <code>crew
+        resume</code> uses (<code>reckon.crew.resumption._resume</code>). No new
+        repair node is dispatched. The round is recorded on the reviewed pointer
+        with status <code>resumed</code> and its round id. A run whose worker is
+        live or resumed, whose live pointer has gone, or which is promoted keeps
+        the dispatch path and is settled by its existing guards.
+      </p>
+      <p>
+        <strong>Retry.</strong> A resumed round counts as in flight only while
+        the reviewed run's worker is live — the busy guard above the branch
+        returns for a live worker — so a resumed turn that ends without
+        answering is resumed once more on the next sweep rather than leaving the
+        round stuck as resumed. The attempt count recorded on the run makes each
+        retry visible. The branch sits after lane resolution, so a round with no
+        lane is still held with its cause named rather than resumed.
+      </p>
+      <p>
+        <strong>Measure.</strong> Four test files, each run to its own log
+        ending <code>EXIT=0</code> at commit <code>58d5e62</code> (31 passed in
+        the combined run), with the resume entry point and the dispatch both
+        stubbed so no worker is launched and no call reaches a scheduler:
+      </p>
+      <ul>
+        <li><code>tests/test_the_reflex_resumes_an_unpromoted_run.py</code> 4/4 —
+          an unpromoted exited run with one blocking finding is resumed once
+          with advice naming the finding's id and the dispatch is never called;
+          a live resumed worker is left alone; an exited resumed worker is
+          resumed once more with attempt count 2; a promoted run is not
+          resumed.</li>
+        <li><code>tests/test_reflex_dispatches_one_repair.py</code> 16/16 — the
+          dispatch-asserting cases now read the composed brief, scope and suite
+          arms off the resume advice, and the idempotence cases model a live
+          worker or a promoted run.</li>
+        <li><code>tests/test_repair_skips_out_of_repo_findings.py</code> 7/7 —
+          the mixed-round scope, suite inheritance and unarmed-suite cases read
+          the advice.</li>
+        <li><code>tests/test_a_repair_hold_names_its_cause.py</code> 4/4 — the
+          two holds are unchanged (lane resolution precedes the branch); the
+          control asserts the reflex resumes rather than holds when a lane is
+          left.</li>
+      </ul>
+      <p>
+        <strong>Negative controls.</strong> (1) Routing the unpromoted case back
+        to <code>dispatch_module.dispatch</code> reddens the three
+        resumed-not-dispatched cases (<code>3 failed</code>, EXIT=1);
+        (2) blocking a resumed round from being resumed again reddens the retry
+        case (<code>1 failed</code>, EXIT=1). Logs
+        <code>negative-control-routes-back-to-dispatch.log</code> and
+        <code>negative-control-resumed-round-blocked.log</code> under the run
+        directory.
+      </p>
+      <p>
+        <strong>Files outside the node's original fence, edited for the new
+        branch.</strong> <code>tests/test_reflex_dispatches_one_repair.py</code>,
+        <code>tests/test_repair_skips_out_of_repo_findings.py</code> and
+        <code>tests/test_a_repair_hold_names_its_cause.py</code> each asserted a
+        dispatched repair node for an unpromoted reviewed run, the behaviour this
+        change replaces. Each edit re-anchors the case on the resume advice or on
+        a promoted/live-worker run so its own subject (scope, suite arms, lane
+        holds, idempotence) is still measured, and every case still fails when
+        its guard is removed.
+      </p>
+    </article>
