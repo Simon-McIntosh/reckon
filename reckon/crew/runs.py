@@ -1164,6 +1164,114 @@ def _write_watch_record(handle, record: Mapping[str, Any]) -> None:
     os.fsync(handle.fileno())
 
 
+# The producer's lease registration. It is separate from the seat record because
+# the seat is an advisory lock held on its own file's inode for the producer's
+# whole life: a follower that had to renew the lease could never take that lock,
+# and a write that replaced that inode by rename would detach the seat lock the
+# process table checks depend on. This file carries no lock of its own for the
+# same reason a replace is safe here and not there — its inode may churn — so
+# writers serialise on a sibling lock file that is never renamed.
+DEFAULT_PRODUCER_LEASE_SECONDS = 600.0
+PRODUCER_LEASE_ENV = "RECKON_PRODUCER_LEASE_SECONDS"
+
+
+def watch_registration_path(project: str) -> Path:
+    """Stable JSON registration the producer's lease is read from and written to."""
+    base = watch_lock_path(project)
+    return base.with_name(base.name + ".registration")
+
+
+def watch_registration_lock_path(project: str) -> Path:
+    """Lock serialising the two writers of one project's registration."""
+    base = watch_registration_path(project)
+    return base.with_name(base.name + ".lock")
+
+
+def _utc_epoch_seconds() -> float:
+    """Current time as epoch seconds, matching a file mtime's clock."""
+    return datetime.now(tz=UTC).timestamp()
+
+
+def producer_lease_seconds() -> float:
+    """The effective producer lease interval, in seconds.
+
+    ``RECKON_PRODUCER_LEASE_SECONDS`` overrides the ten-minute default so a
+    test can run a lease of a few seconds. A missing, unparseable or
+    non-positive override falls back to the default rather than to zero, because
+    a lease of zero would end every producer on its first wake-up.
+    """
+    raw = os.environ.get(PRODUCER_LEASE_ENV)
+    if raw is None:
+        return DEFAULT_PRODUCER_LEASE_SECONDS
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        return DEFAULT_PRODUCER_LEASE_SECONDS
+    return value if value > 0 else DEFAULT_PRODUCER_LEASE_SECONDS
+
+
+def read_watch_registration(project: str) -> dict[str, Any]:
+    """Read a project's lease registration, tolerating absence or a torn read."""
+    try:
+        value = json.loads(watch_registration_path(project).read_text() or "{}")
+    except (OSError, ValueError):
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def watch_lease_renewed_at(project: str) -> float | None:
+    """The instant a follower last renewed the project's producer lease."""
+    value = read_watch_registration(project).get("lease_renewed_at")
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value)
+
+
+def update_watch_registration(project: str, **fields: Any) -> dict[str, Any]:
+    """Read-modify-write the producer's registration, atomically.
+
+    The registration has two writers — the producer, which records its pid and
+    current poll interval, and each live follower, which records
+    ``lease_renewed_at`` on every renewal. A whole-record replace by either one
+    would drop the other's field, so each merges its fields into what is on
+    disk. The read and the write are serialised by the sibling lock, and the
+    write lands by renaming a fresh sibling over the destination, so a reader
+    never observes a partial record and a reader that sees the file mid-write
+    sees the whole previous record instead.
+    """
+    path = watch_registration_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock = watch_registration_lock_path(project)
+    with lock.open("a+b") as guard:
+        fcntl.flock(guard.fileno(), fcntl.LOCK_EX)
+        try:
+            record = read_watch_registration(project)
+            record.setdefault("project", project)
+            record.update(fields)
+            write_json_atomically(path, record)
+        finally:
+            fcntl.flock(guard.fileno(), fcntl.LOCK_UN)
+    return record
+
+
+def renew_producer_lease(project: str, *, now: float | None = None) -> dict[str, Any] | None:
+    """A live follower's lease renewal for its project's producer.
+
+    Called on the follower's wait pass. It is throttled to half the lease
+    interval so a tight poll loop does not rewrite the shared record on every
+    tick — the plan's own cadence for "at least once per half interval" — and
+    it refuses to write when no producer is live, so a follower arming an
+    already-exited producer does not resurrect its registration.
+    """
+    if not producer_live(project):
+        return None
+    moment = _utc_epoch_seconds() if now is None else float(now)
+    previous = watch_lease_renewed_at(project)
+    if previous is not None and moment - previous < producer_lease_seconds() / 2:
+        return read_watch_registration(project)
+    return update_watch_registration(project, lease_renewed_at=moment)
+
+
 @dataclass
 class _WatchStreamProducer:
     """In-process transition memory owned by the kernel-backed watcher seat."""
@@ -1914,6 +2022,18 @@ def _project_watch_claim(project: str, stall_window: str):
         if unit:
             record["unit"] = str(unit)
         _write_watch_record(handle, record)
+        # The lease registration names this producer for as long as it lives and
+        # starts its lease clock at the instant it took the seat: a producer
+        # nobody renews therefore expires one lease interval from now, while a
+        # follower's renewal pushes that instant forward.
+        update_watch_registration(
+            project,
+            pid=os.getpid(),
+            pid_start_time=pid_start_time,
+            host=socket.gethostname(),
+            started_at=record.get("started_at"),
+            lease_renewed_at=_utc_epoch_seconds(),
+        )
         producer = _WatchStreamProducer(
             path=watch_stream_path(project),
             known={},

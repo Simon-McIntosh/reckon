@@ -47,7 +47,9 @@ from reckon.crew.runs import (
     _utc_now,
     _write_watch_record,
     list_live,
+    producer_lease_seconds,
     read_pointer,
+    watch_lease_renewed_at,
     watch_lock_path,
 )
 from reckon.crew.ticker import NEEDS_ACTION, Ticker, _agent_label
@@ -7920,6 +7922,31 @@ def watch_ticker(
     # whole watch session rather than a config read per transition.
     rate_statuses = quota_weight.backend_rate_statuses()
 
+    # The producer holds a lease, not a lifetime: every live follower renews it
+    # on its wait pass. A lease whose instant is absent is not a lapsed one — the
+    # registration may simply have gone missing, which a later wake-up recreates
+    # — so only a recorded instant that has fallen a full interval behind ends
+    # the seat. The sleep is bounded by the lease's remaining time so an exit
+    # lands within a second of the lapse however far the interval has backed off.
+    lease_seconds = producer_lease_seconds()
+
+    def _lease_remaining() -> float | None:
+        renewed = watch_lease_renewed_at(project)
+        if renewed is None:
+            return None
+        return lease_seconds - (_utc_seconds() - renewed)
+
+    def _wait(interval: float) -> bool:
+        """Sleep, bounded by the lease; report whether the seat has lapsed."""
+        remaining = _lease_remaining()
+        if remaining is None:
+            sleeper(interval)
+            return False
+        if remaining <= 0:
+            return True
+        sleeper(max(0.0, min(interval, remaining)))
+        return _lease_remaining() is not None and _lease_remaining() <= 0
+
     with _watch_registration(project, stall_window) as (acquired, watcher):
         if not acquired:
             yield {
@@ -7934,6 +7961,9 @@ def watch_ticker(
             return
 
         while True:
+            remaining = _lease_remaining()
+            if remaining is not None and remaining <= 0:
+                return
             pointers = list_live(project=project)
             _stop_delivered_reviews(pointers, signal_run=signal_run)
             moment = _utc_seconds()
@@ -7945,7 +7975,8 @@ def watch_ticker(
                 if pointer.get("run_id")
             }
             if not current and not fleet_seen:
-                sleeper(poll_interval)
+                if _wait(poll_interval):
+                    return
                 continue
 
             counts = _fleet_counts(current)
@@ -7987,7 +8018,8 @@ def watch_ticker(
                 if not current:
                     return
                 continue
-            sleeper(poll_interval)
+            if _wait(poll_interval):
+                return
 
 
 def watch_follow(
