@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="admitted-shell-forms-are-tested">
+  <meta name="plan-title" content="The admitted shell forms are pinned">
+  <meta name="plan-summary" content="The gate-command shape check admits a quoted pytest expression, a subshell carrying an operator and a spaced redirection, and refuses the same shapes written as prose. Six table-driven cases pin each verdict — 21 passed at base, 27 at head — and the declared in-memory mutation reddens exactly the two admitted rows that carry parentheses.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-is-charged-to-a-job">
+  <meta name="plan-verifies" content="reckon:a-worker-is-charged-to-a-job#s1">
+  <meta name="plan-commits" content="e9f66c654">
+  <meta name="plan-artifacts" content="tests/test_crew_gate_command_is_runnable.py">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,promotion,gates,tests">
+  <title>The admitted shell forms are pinned — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="admitted-shell-forms-are-tested" data-reckon="landed" data-when="2026-10-01">
+  <h2>The admitted shell forms are pinned</h2>
+
+  <p><strong>What changed.</strong> <code>tests/test_crew_gate_command_is_runnable.py</code> gains a
+  table-driven case with six rows, one per form the gate-command shape check's carve-outs name.
+  The three admitted rows assert <code>gate_command_prose</code> returns <code>None</code>: a
+  quoted <code>-k '(a or b)'</code> expression, a subshell carrying an operator, and a spaced
+  redirection. The three refused rows assert the class and token it returns instead: a prose
+  parenthetical, an angle-bracket placeholder, and an operator-less subshell, which the check
+  reads as a parenthetical prose selection. One plain command was the only positive control
+  before this, so the carve-outs the refusal relies on had nothing holding them. No source file
+  changed.</p>
+
+  <p><strong>The measure.</strong> The gate is the changed file plus
+  <code>tests/test_cited_identifier_resolves.py</code>, run at both revisions in its own pytest
+  process with a private basetemp. Base <code>39fff043</code>, in a <code>git archive</code>
+  scratch tree under <code>/tmp</code>: <strong>21 passed</strong>, exit 0. Head
+  <code>e9f66c654</code>: <strong>27 passed</strong>, exit 0. The +6 is exactly the six new rows,
+  and the added failure id set is empty. Both logs open with the revision, tree and literal
+  command, and their provenance lines name the module as imported — <code>module.__file__</code>
+  under the tree exercised — and the resolved working directory, so the scratch arm cannot have
+  measured the worktree's module by accident.</p>
+
+  <p><strong>The negative control.</strong> The declared mutation — <code>gate_command_prose</code>
+  made to treat every parenthesis as prose, patched in memory inside the test process and never on
+  disk — was applied and reddened <strong>2 failed, 25 passed</strong>, exit 1. The two failing ids
+  are the admitted rows that carry parentheses; the other four rows, admitted or refused, keep
+  their expected verdicts. The log carries the patch proof line: a runnable quoted expression,
+  which the mutation returned as a prose refusal, which is the receipt that the mutation was live
+  rather than merely installed.</p>
+
+  <p><strong>What this node did not do.</strong> The two evidence-record corrections the driving
+  followup also lists — the run named at its <code>:693</code> and the
+  <code>ruff-head.txt</code> snapshot — lie in a ledger/evidence record outside this node's write
+  grant and are reported as follow-ons rather than edited here. The scratch tree, basetemps and the
+  mutation plugin under <code>/tmp/admitted-shell-forms-are-tested/</code> are deleted before the
+  manifest reads complete; the logs live in the run directory. The node sets no terminal status and
+  resolves no followup: only the coordinator observes the other nodes.</p>
+
+  <p>Logs in run <code>r-20261001T004658125751-admitted-shell-forms-are-tested</code>:
+  <code>logs/base.log</code>, <code>logs/head.log</code>, <code>logs/negative-control.log</code>.</p>
+</article>
+</body>
+</html>
