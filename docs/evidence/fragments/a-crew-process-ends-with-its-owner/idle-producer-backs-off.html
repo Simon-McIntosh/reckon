@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="An idle producer backs its poll interval off to a cap">
+  <meta name="plan-summary" content="A crew watch producer doubles its poll interval on each wake that sees no live run pointer, from the armed base to a 30 s ceiling, records it as poll_interval_seconds, and returns to the base on the first wake that sees a live run.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s3">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,watch,producer,backoff,poll-interval">
+  <title>An idle producer backs its poll interval off to a cap &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>An idle producer backs its poll interval off to a cap</h1>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon.crew.recovery.watch_ticker</code>, the producer loop,
+          now carries a live <code>poll_interval_current</code> alongside the
+          armed <code>poll_interval</code>. On each wake it records that value
+          into the lease registration as <code>poll_interval_seconds</code>
+          through the existing <code>update_watch_registration</code> (which
+          merges the field rather than replacing the record, so the follower's
+          <code>lease_renewed_at</code> survives).</li>
+        <li>A wake that sees a live run pointer sets the interval back to the
+          armed base in the same pass. A wake that sees no live run pointer
+          doubles it for the next wake, capped at
+          <code>IDLE_POLL_INTERVAL_CAP_SECONDS</code> (30 s). The recording
+          precedes the sleep, so the registered value is the interval in
+          effect for that pass.</li>
+        <li>No sleep was widened: both wait sites still go through
+          <code>_wait</code>, which bounds every sleep by the lease's remaining
+          time, so a backed-off producer still ends within a second of its
+          lease lapsing.</li>
+      </ul>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <p><code>tests/test_idle_producer_backs_off.py</code> runs in a temporary
+        <code>RECKON_HOME</code> with <code>RECKON_PRODUCER_LEASE_SECONDS=3</code>
+        and no live run pointer, and reads
+        <code>poll_interval_seconds</code> from the registration.</p>
+      <ul>
+        <li><strong>Back-off and recovery.</strong> With a fake sleeper the
+          producer's recorded interval follows <code>1, 2, 4, 8, 16, 30</code>
+          from the armed base to the cap, and returns to <code>1.0</code> on the
+          first wake that sees a fabricated live run pointer.</li>
+        <li><strong>Lease bound.</strong> With <code>base=0.2 s</code> and a real
+          sleeper the producer's recorded interval grows past its base and it
+          still ends at the lease lapse (asserted within one second), showing
+          the increased interval never outlasts the remaining lease.</li>
+      </ul>
+      <p><strong>Gate</strong> &mdash;
+        <code>tests/test_idle_producer_backs_off.py</code>:
+        <strong>2 passed in 4.73 s, EXIT=0</strong> at the node head.</p>
+      <p><strong>Negative control</strong>, executed and logged: with the
+        interval doubling removed (growth factor 1.0), the recorded interval
+        stays at the base (<code>max([0.2, 0.2, ...]) &gt; 0.2</code> is false)
+        and the gate fails &mdash; <strong>2 failed in 24.08 s, EXIT=1</strong>.</p>
+      <p><strong>Arms</strong> (zero added failures) over
+        <code>tests/test_producer_*.py</code>:</p>
+      <ul>
+        <li><strong>Base</strong>, revision <code>df6a40b5c</code>
+          (<code>git archive</code> extraction in a scratch tree):
+          <strong>1 failed, 28 passed, EXIT=1</strong>.</li>
+        <li><strong>Head</strong>, same set at the node tree:
+          <strong>1 failed, 28 passed, EXIT=1</strong>.</li>
+        <li>Both arms fail the same single id, which reproduces at base and is
+          outside this node's scope:
+          <code>test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers</code>.</li>
+      </ul>
+      <p><strong>Lint:</strong> <code>ruff check</code> over
+        <code>reckon/crew/recovery.py</code> reports 11 findings at both base and
+        head &mdash; an identical count, so this change adds none. The new test
+        is clean under <code>ruff check</code> and
+        <code>ruff format --check</code>.</p>
+    </section>
+
+    <section id="landing">
+      <h2>Landing line</h2>
+      <p><code>landing: docs/evidence/fragments/a-crew-process-ends-with-its-owner/idle-producer-backs-off.html</code></p>
+    </section>
+  </main>
+</body>
+</html>

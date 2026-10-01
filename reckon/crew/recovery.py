@@ -8425,6 +8425,15 @@ def _recreate_unlinked_registration(
     return True
 
 
+# An idle producer — one whose project has no live run pointer — doubles its
+# poll interval on each wake-up, from the base it was armed with to this
+# ceiling, so a project nobody is watching costs one wake a minute rather than
+# one a second. A wake that sees a live run returns the interval to the base in
+# the same pass. The value is written into the registration as
+# ``poll_interval_seconds``, which is what a reader sees.
+IDLE_POLL_INTERVAL_CAP_SECONDS = 30.0
+
+
 def watch_ticker(
     project: str,
     *,
@@ -8487,6 +8496,11 @@ def watch_ticker(
             }
             return
 
+        # The interval actually slept grows while the project has no live run
+        # pointer and returns to the base on the first wake that sees one. The
+        # producer records it each pass so a reader sees how far it has backed
+        # off without asking the process.
+        poll_interval_current = poll_interval
         while True:
             # An unlinked seat record is rewritten before anything else, so a
             # producer whose file was removed is findable by unwatch again, and
@@ -8514,13 +8528,21 @@ def watch_ticker(
                 for pointer in pointers
                 if pointer.get("run_id")
             }
+            if current:
+                # A wake that sees a live run ends any back-off: the producer's
+                # interval is its base again from this pass.
+                poll_interval_current = poll_interval
             update_watch_registration(
                 project,
+                poll_interval_seconds=poll_interval_current,
                 bytes_parsed_last_poll=_backends.take_parsed_stream_bytes(),
             )
             if not current and not fleet_seen:
-                if _wait(poll_interval):
+                if _wait(poll_interval_current):
                     return
+                poll_interval_current = min(
+                    poll_interval_current * 2.0, IDLE_POLL_INTERVAL_CAP_SECONDS
+                )
                 continue
 
             counts = _fleet_counts(current)
@@ -8562,8 +8584,12 @@ def watch_ticker(
                 if not current:
                     return
                 continue
-            if _wait(poll_interval):
+            if _wait(poll_interval_current):
                 return
+            if not current:
+                poll_interval_current = min(
+                    poll_interval_current * 2.0, IDLE_POLL_INTERVAL_CAP_SECONDS
+                )
 
 
 def watch_follow(
