@@ -277,6 +277,28 @@ def test_a_second_call_with_nothing_changed_parses_no_plan(project, parsed_plans
     assert parsed_plans == {}
 
 
+def test_an_unreadable_plan_reports_the_inventory_unknown(project, monkeypatch):
+    target = project.plans_dir / "plan-011.html"
+    original_read_text = Path.read_text
+    unavailable = True
+
+    def read(path, *args, **kwargs):
+        if path == target and unavailable:
+            raise OSError("inventory unavailable")
+        return original_read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", read)
+
+    # One unreadable plan makes the whole inventory unknown: a remainder that
+    # simply skipped it would read as a smaller amount of work than there is.
+    assert runs._project_executable_remainder(_PROJECT) == (None, None)
+
+    # The row kept no figures, so the next call reads the file again rather than
+    # answering unknown for as long as the index lives.
+    unavailable = False
+    assert runs._project_executable_remainder(_PROJECT) == _expected_remainder()
+
+
 def test_one_changed_plan_is_the_only_one_parsed_again(project, parsed_plans):
     first = runs._project_executable_remainder(_PROJECT)
     parsed_plans.clear()

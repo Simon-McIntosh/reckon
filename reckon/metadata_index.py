@@ -161,10 +161,11 @@ def plan_derivations(docs_dir: Path, project: str) -> list[dict]:
     The records are what a closure drain reads a plan inventory for: the plan's
     docs-relative path, its open-followup count and its implementable-section
     count, the last of which is ``None`` when the plan carries no valid
-    declaration. An archived plan (one the resource walk keeps out of the live
-    inventory) is not returned. A caller that needs the served row fields —
-    slug, href, title, stamps — reads :func:`index_rows` instead; these figures
-    are deliberately outside ``ROW_FIELDS``.
+    declaration, and ``unreadable`` for a plan file the build could not read.
+    An archived plan (one the resource walk keeps out of the live inventory) is
+    not returned. A caller that needs the served row fields — slug, href,
+    title, stamps — reads :func:`index_rows` instead; these figures are
+    deliberately outside ``ROW_FIELDS``.
 
     Every call re-stats each covered file, so a caller in a long-lived process
     sees a later edit, and only a file whose identity moved is parsed again.
@@ -178,6 +179,7 @@ def plan_derivations(docs_dir: Path, project: str) -> list[dict]:
             "path": record["path"],
             "open_followups": record["open_followups"],
             "implementable_sections": record["implementable_sections"],
+            "unreadable": record["unreadable"],
         }
         for record in build.plans
         if not record["archived"]
@@ -227,7 +229,11 @@ def build_index(
             # whatever replaced it.
             continue
         entry = known.get(relative)
-        if entry is not None and _same_file(entry.get("stat"), signature):
+        if (
+            entry is not None
+            and _same_file(entry.get("stat"), signature)
+            and _row_is_complete(entry)
+        ):
             build.reused += 1
             entries.append(entry)
             if "fields" in entry:
@@ -247,7 +253,11 @@ def build_index(
             entry["fields"] = fields
             build.rows.append(fields)
             if plan is not None:
-                entry["plan"] = plan
+                # A plan the build could not read keeps no record, so the next
+                # call reads it again rather than reusing a row that never had
+                # one; see _row_is_complete.
+                if not plan["unreadable"]:
+                    entry["plan"] = plan
                 build.plans.append({"path": relative, **plan})
         entries.append(entry)
 
@@ -255,6 +265,21 @@ def build_index(
     if build.changed or not known:
         _store_persisted(docs_dir, project, entries)
     return build
+
+
+def _row_is_complete(entry: Mapping) -> bool:
+    """Whether a persisted entry carries everything its file type derives.
+
+    A plan row is written without its plan record when the build could not read
+    the file, so the row is rebuilt on the next call: a drain then reports the
+    inventory unknown, as it does for a plan it cannot read, instead of
+    answering from a row whose figures were never derived.
+    """
+
+    fields = entry.get("fields")
+    if not isinstance(fields, Mapping) or fields.get("type") != "plan":
+        return True
+    return isinstance(entry.get("plan"), Mapping)
 
 
 def _same_file(stored: object, signature: list[int]) -> bool:
@@ -390,22 +415,27 @@ def _plan_record(path: Path, archived: bool) -> dict:
     other than resolved; ``implementable_sections`` is the declared remainder
     itself, ``None`` when the plan carries no valid declaration. ``archived``
     is the resource walk's path-based marker, so a drain that reads these
-    records excludes the same plans the walk does. A record whose state cannot
-    be parsed reports no figure rather than a zero, because a counted zero is
-    indistinguishable from a plan that carries no open work.
+    records excludes the same plans the walk does.
+
+    A file that cannot be read yields ``unreadable`` and no figure: a counted
+    zero is indistinguishable from a plan that carries no open work, and the
+    plan inventory as a whole is unknown rather than shorter. The read here is
+    the file's own, not the memoised text parse_meta shares — that one reports
+    an unreadable file as an empty document, which is exactly the reading this
+    record exists to refuse.
     """
 
     from reckon._schema import plan_executable_remainder
 
     try:
-        state = _plan_html.read_state_file(path)
-    except ValueError:
-        state = None
-    if state is None:
+        text = path.read_text(encoding="utf-8")
+        state = _plan_html.read_state(text)
+    except (OSError, ValueError):
         return {
             "archived": archived,
             "open_followups": None,
             "implementable_sections": None,
+            "unreadable": True,
         }
     followups = state.get("followups") or []
     return {
@@ -416,6 +446,7 @@ def _plan_record(path: Path, archived: bool) -> dict:
             if str(followup.get("status") or "") != "resolved"
         ),
         "implementable_sections": plan_executable_remainder(state),
+        "unreadable": False,
     }
 
 

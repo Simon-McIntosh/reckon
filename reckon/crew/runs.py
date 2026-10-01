@@ -1053,6 +1053,8 @@ def _project_executable_remainder(project: str) -> tuple[int | None, int | None]
     uncovered_plans = 0
     plan_count = 0
     for plan in metadata_index.plan_derivations(docs_dir, project):
+        if plan["unreadable"]:
+            return None, None
         plan_count += 1
         remainder = plan["implementable_sections"]
         if remainder is None:
