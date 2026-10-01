@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="lane-counts-parity">
+  <meta name="plan-title" content="The lane-counts parity is measured against the fixture, and the reading's remaining names move to the reader">
+  <meta name="plan-summary" content="The parity case that pinned the carried lane counts compared the payload against a second reading of the same document, so a regression inside read_lane_counts moved both sides and the case stayed green; it now holds both sides against the counts each fixture document states as a literal, and the four lane-document keys the carry still spelled -- observed_at, mean_context, binding_observed and suggested_shelf_life_seconds -- resolve through lane_document.read_lane_reading_fields.">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>The lane-counts parity is measured against the fixture | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution record &middot; 2026-10-01</p>
+      <h1>The lane-counts parity is measured against the fixture</h1>
+      <p class="lead">
+        The case that pinned the carried lane counts compared the dispatch payload against
+        a second reading of the same document through <code>read_lane_counts</code>, so the
+        comparison was the reader against itself &mdash; a regression inside it moved both
+        sides and the case stayed green. It now holds both sides against the counts each
+        fixture document states as a literal. The same review found four lane-document keys
+        the carry still spelled beside the reader that owns them; those reads now resolve
+        through <code>lane_document.read_lane_reading_fields</code>, so the dispatch region
+        that composes the reading holds no spelling of the document's keys.
+      </p>
+    </header>
+
+    <h2 id="found">&sect;1 &mdash; What the review found</h2>
+    <p>
+      Two defects, both from the review of the node that moved the counts and the rate
+      through the lane-document reader.
+    </p>
+    <p>
+      <strong>The parity case was the reader against itself.</strong> At base,
+      <code>test_the_document_reader_returns_the_counts_the_payload_carries</code> in
+      <code>tests/test_lane_reading_carries_counts.py</code> dispatched each fixture
+      document, took the payload's <code>generating</code> and <code>waiting</code>, and
+      compared them against <code>read_lane_counts(written)</code> over the same bytes.
+      Both sides are the reader's answer, so a regression inside
+      the reader moves both and the case stays green &mdash; and a reader regression is
+      exactly what the case exists to catch. This is the general shape the repository
+      keeps finding: a check whose two sides derive from one source reports agreement it
+      cannot establish.
+    </p>
+    <p>
+      <strong>The carry still spelled four of the document's own keys.</strong> At the
+      reviewed revision <code>_lane_reading_carry</code> in
+      <code>reckon/crew/dispatch.py</code> resolved <code>observed_at</code> at :2661 and
+      <code>mean_context</code>, <code>binding_observed</code> and
+      <code>suggested_shelf_life_seconds</code> at :2692&ndash;:2696 through
+      <code>document.get(...)</code> &mdash; a second reader of the same document beside
+      the module that exists to own it (<code>reckon/crew/lane_document.py</code>). The
+      counts and the headroom had already been routed; these four had not.
+    </p>
+
+    <h2 id="moved">&sect;2 &mdash; What moved</h2>
+    <p>
+      <code>reckon/crew/lane_document.py</code> gained
+      <code>read_lane_reading_fields(document, *, now=None)</code>, which resolves the
+      stamp the reading is dated by and the figures published beside it:
+      <code>observed_at</code> as published, <code>age</code> at <code>now</code>,
+      <code>mean_context</code>, <code>binding_observed</code> (blank or null withholds
+      the field alone) and <code>suggested_shelf_life_seconds</code>. The stamp keeps the
+      carry's existing strictness: an absent or non-string stamp, one the ISO-8601
+      parser refuses &mdash; quoting the parser's own text &mdash; and one in the future
+      each resolve to a non-empty <code>detail</code> that withholds the reading. The
+      parser is not the module's <code>parse_utc</code> path used for other fields on
+      purpose: that one swallows a malformed value to <code>None</code>, while a reading
+      whose own stamp is unreadable must say why.
+    </p>
+    <p>
+      <code>_lane_reading_carry</code> &mdash; the region that composes the carried reading
+      &mdash; now calls that reader and its sibling readers for every document-derived
+      value it reports; <code>grep -n 'document\.get(' reckon/crew/dispatch.py</code>
+      returns nothing. The keys the region still names are the payload's own output
+      field names, whose values come from the readers:
+    </p>
+    <table>
+      <thead><tr><th>Name spelled in dispatch.py</th><th>Classification</th><th>Resolved by</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>observed_at</code> (reviewed :2661)</td>
+          <td>document read &mdash; now routed</td>
+          <td><code>lane_document.read_lane_reading_fields</code></td>
+        </tr>
+        <tr>
+          <td><code>mean_context</code> (reviewed :2692)</td>
+          <td>document read &mdash; now routed</td>
+          <td><code>lane_document.read_lane_reading_fields</code></td>
+        </tr>
+        <tr>
+          <td><code>binding_observed</code> (reviewed :2693&ndash;:2695)</td>
+          <td>document read &mdash; now routed</td>
+          <td><code>lane_document.read_lane_reading_fields</code></td>
+        </tr>
+        <tr>
+          <td><code>suggested_shelf_life_seconds</code> (reviewed :2696)</td>
+          <td>document read &mdash; now routed</td>
+          <td><code>lane_document.read_lane_reading_fields</code></td>
+        </tr>
+        <tr>
+          <td><code>headroom</code></td>
+          <td>document read &mdash; already routed</td>
+          <td><code>lane_document.read_lane_document</code></td>
+        </tr>
+        <tr>
+          <td><code>generating</code>, <code>waiting</code>, <code>throughput</code></td>
+          <td>payload output names whose values are the counts and the rate the readers resolved</td>
+          <td><code>read_lane_counts</code>, <code>read_lane_throughput</code> (already routed)</td>
+        </tr>
+        <tr>
+          <td><code>state</code>, <code>age_seconds</code>, <code>detail</code>, and the carry's own keys</td>
+          <td>payload output names &mdash; the carry's shape, not the document's</td>
+          <td>composed in dispatch from the figures above</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Two of those names, <code>observed_at</code> and <code>headroom</code>, also
+      appear elsewhere in <code>dispatch.py</code> (<code>:2536&ndash;:2538</code>,
+      <code>:2577</code>, <code>:2865</code>), where they read the budget observation the
+      dispatch takes from <code>reckon.budget</code> &mdash; a different document with
+      different keys &mdash; and those sites are outside this change.
+    </p>
+
+    <h2 id="parity">&sect;3 &mdash; The repaired case</h2>
+    <p>
+      The parity case now compares two independent things against the fixture's own
+      statement. Each entry of the fixture list carries the document and the counts it
+      states, and the case asserts both <code>read_lane_counts(written)</code> and the
+      payload's <code>generating</code>/<code>waiting</code> against that literal. The
+      payload is compared against the fixture's statement rather than against the
+      reader's answer, so the two sides have independent provenance.
+    </p>
+    <p>
+      A new case,
+      <code>test_the_dispatch_carries_what_the_document_readers_resolved</code>, patches
+      both readers to sentinel answers (counts, stamp, age, mean context, binding and
+      shelf life) and requires the payload to carry them &mdash; the age included, which
+      only the reader's answer can supply. A dispatch that kept its own reads of the
+      document would carry the document's figures instead.
+    </p>
+
+    <h2 id="evidence">&sect;4 &mdash; What the arms measured</h2>
+    <p>
+      Every arm ran with a private <code>--basetemp</code>, and the scratch-tree runs
+      print <code>module.__file__</code> and the resolved working directory in their
+      header, so the tree under test is proven rather than assumed. Gate files:
+      <code>tests/test_lane_document.py</code>,
+      <code>tests/test_lane_reading_at_dispatch.py</code> and
+      <code>tests/test_lane_reading_carries_counts.py</code> &mdash; the parity case's
+      file plus every existing file whose name contains <code>lane_document</code> or
+      <code>lane_reading</code>.
+    </p>
+    <table>
+      <thead><tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>base gate</td>
+          <td><code>33c5e761</code>, scratch tree</td>
+          <td><code>29 passed</code>, EXIT=0</td>
+          <td><code>gate-base.log</code></td>
+        </tr>
+        <tr>
+          <td>head gate</td>
+          <td><code>68ca6c59</code>, worktree</td>
+          <td><code>30 passed</code>, EXIT=0 &mdash; zero added failures</td>
+          <td><code>gate-head.log</code></td>
+        </tr>
+        <tr>
+          <td>negative control, base arm</td>
+          <td><code>33c5e761</code> scratch tree with <code>read_lane_counts</code> mutated to return a literal <code>0</code> as the generating count</td>
+          <td><code>1 passed</code>, EXIT=0 &mdash; the parity case stays green under the mutation, which is the defect being repaired</td>
+          <td><code>control-base-mutation.log</code></td>
+        </tr>
+        <tr>
+          <td>negative control, head arm</td>
+          <td><code>68ca6c59</code> scratch tree, same mutation</td>
+          <td><code>1 failed</code>, EXIT=1 &mdash; with <code>{'generating': 0} != {'generating': 7}</code></td>
+          <td><code>negative-control.log</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      The control's two arms are the measurement of the repair. Under the same mutation
+      the case passed before the change and fails after it, so the case now measures the
+      reader's counts rather than its agreement with itself. Each arm's log ends in a
+      bare <code>EXIT=</code> line, and the head arm's failing id is the parity case,
+      which the head gate passes.
+    </p>
+    <p>
+      <code>ruff check</code> over the three changed paths returns the same finding set at
+      base and at head &mdash; seven findings at each revision, all pre-existing in
+      <code>reckon/crew/dispatch.py</code> and each outside the region this change
+      touches &mdash; and
+      <code>ruff format --check</code> lists the same single file,
+      <code>reckon/crew/dispatch.py</code>, at both revisions with the same hunks. The two
+      other changed files are clean at head.
+    </p>
+
+    <h2 id="boundaries">&sect;5 &mdash; Boundaries</h2>
+    <ul>
+      <li>
+        <strong>The change stays inside the lane-count reads.</strong> Other live nodes
+        edit follower conditions, section routing and member resolution in
+        <code>reckon/crew/dispatch.py</code>; this change touches only the
+        <code>_lane_reading_carry</code> region and adds no name to it.
+      </li>
+      <li>
+        <strong>No figure.</strong> This node's done-when names no figure, and the change
+        is a reader ownership move with no spatial or plotted relationship that a figure
+        would carry better than the table above.
+      </li>
+      <li>
+        <strong>The carried shape is unchanged.</strong> The values, the unknown-not-zero
+        rule and the <code>detail</code> strings are the ones the tests pinned before this
+        change; the routing moves the keys and the strict stamp parse, not the semantics.
+      </li>
+    </ul>
+
+    <h2 id="outcome">&sect;6 &mdash; Outcome</h2>
+    <p>
+      <code>68ca6c590857f7d614475c784fdbeb385e545885</code> carries the change. The parity
+      the file's name states is now between two independent statements &mdash; the
+      fixture's and the payload's &mdash; with the reader held to the fixture as well,
+      and the lane reading's stamp and figures are read by the module that owns the
+      document's keys.
+    </p>
+  </main>
+</body>
+</html>
