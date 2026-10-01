@@ -4142,6 +4142,16 @@ def complete(
         return result
 
 
+def _normalized_command(value: Any) -> str:
+    """Return a command with runs of whitespace collapsed to single spaces.
+
+    Two arms that differ only in spacing exercise the same command, so the
+    comparison against the record's armed command is made on the normalised
+    spelling rather than the raw one.
+    """
+    return " ".join(str(value or "").split())
+
+
 def _evaluate_suite_delta(
     run_id: str,
     record: Mapping[str, Any],
@@ -4154,7 +4164,9 @@ def _evaluate_suite_delta(
     declaring no changed path and no commit beyond the base, over a worktree
     still sitting on that base — carries a delta of ``unchanged`` and needs no
     baseline and after pair. Every other run with missing suite evidence is
-    refused as before.
+    refused as before, and an arm whose recorded command differs from the
+    command the run was armed with measures a different suite, so it is
+    refused as missing evidence too.
     """
     suite_command = str(record.get("suite_command") or "").strip()
     if not suite_command:
@@ -4179,6 +4191,16 @@ def _evaluate_suite_delta(
         ledger.suite_observation_missing_fields(baseline, name="baseline_suite")
     )
     missing.extend(ledger.suite_observation_missing_fields(after, name="after_suite"))
+    armed_command = _normalized_command(suite_command)
+    for arm_name, observation in (
+        ("baseline_suite", baseline),
+        ("after_suite", after),
+    ):
+        if not isinstance(observation, Mapping):
+            continue
+        arm_command = str(observation.get("command") or "").strip()
+        if arm_command and _normalized_command(arm_command) != armed_command:
+            missing.append(f"{arm_name}.command_matches_suite_command")
     base_sha = str(record.get("base_sha") or "").strip()
     if (
         isinstance(baseline, Mapping)

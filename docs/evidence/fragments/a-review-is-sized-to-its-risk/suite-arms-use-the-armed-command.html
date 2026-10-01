@@ -1,0 +1,54 @@
+<article class="landed-report" data-run-id="r-20260930T235030939384-suite-arms-use-the-armed-command">
+      <h3>suite-arms-use-the-armed-command — an armed run's suite pair must measure the command it was armed with</h3>
+      <p>
+        An armed promotion derives its added-failure delta from the
+        <code>baseline_suite</code> and <code>after_suite</code> arms its
+        manifest carries, comparing them against the run's recorded
+        <code>suite_command</code>. Nothing tied an arm's own <code>command</code>
+        to that armed command: a run armed with the project's whole suite could
+        hand in a pair run over a focused test selection, and the delta would be
+        calculated as if it measured the armed suite. Two selections of tests
+        produce two different failure sets, so the recorded delta then described
+        a suite the run was never armed with.
+      </p>
+      <p>
+        <code>reckon/crew/promotion.py</code> now refuses such a pair.
+        <code>_evaluate_suite_delta</code> compares each arm's
+        <code>command</code> against the record's <code>suite_command</code>
+        after whitespace normalisation — runs of whitespace collapse to single
+        spaces (<code>_normalized_command</code>) — and appends
+        <code>baseline_suite.command_matches_suite_command</code> or
+        <code>after_suite.command_matches_suite_command</code> to the
+        missing-evidence list for each arm that differs. The mismatch rides the
+        same refusal path as any other missing suite evidence, so the run is
+        refused with <code>suite-delta-refused</code> and the pointer carries the
+        refusal. An arm whose command matches is accepted as before, and the
+        unchanged-run exemption and the reasoned waiver path are untouched: an
+        unchanged run needs no pair at all, and a waived run keeps its waiver.
+      </p>
+      <p>
+        <strong>Measure.</strong>
+        <code>tests/test_suite_arms_use_the_armed_command.py</code> passes 3/3: a
+        focused pair handed in against a whole-suite arming is refused naming
+        both <code>baseline_suite.command_matches_suite_command</code> and
+        <code>after_suite.command_matches_suite_command</code>; a pair whose arms
+        differ from the arming only in spacing is accepted with a
+        <code>clean</code> delta; and one arm matching while the other does not is
+        refused naming only the mismatched arm. The named gate ran
+        <code>tests/test_suite_arms_use_the_armed_command.py</code>,
+        <code>tests/test_gate_evidence.py</code> and
+        <code>tests/test_an_unchanged_run_needs_no_suite_pair.py</code> together —
+        32 passed, exit 0 — with no call reaching SLURM.
+      </p>
+      <p>
+        <strong>Negative control.</strong> Against a scratch copy of the tree with
+        the command comparison removed, the two refusal cases fail
+        (<code>2 failed, 1 passed</code>, <code>EXIT=1</code>), each because the
+        mismatched pair promoted instead of being refused; the module under test
+        resolved to the scratch <code>promotion.py</code>, confirmed on the log's
+        header. The red log is <code>logs/negative_control.log</code> under the
+        run directory, whose comment line records the declared mutation:
+        <em>drop the command comparison; the focused-pair case must promote and so
+        fail its refusal assertion</em>.
+      </p>
+    </article>
