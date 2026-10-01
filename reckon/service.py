@@ -14,6 +14,7 @@ than assumed:
 
 import os
 import shutil
+import socket
 import subprocess
 import sys
 from pathlib import Path
@@ -25,6 +26,7 @@ UNIT_TEMPLATE = """\
 Description=reckon plan server
 Documentation=https://github.com/Simon-McIntosh/reckon
 After=network.target
+ConditionHost={host_name}
 
 [Service]
 Type=simple
@@ -150,7 +152,12 @@ def render_unit(
         resolved = Path(config_override).expanduser().resolve()
         environment = f'Environment="RECKON_HOME={resolved}"\n'
 
+    # The unit file sits under the home directory, which every cluster node
+    # mounts. A user manager starting on any other node would read the same
+    # enabled unit and start a second server writing to the same log, so the
+    # unit runs only on the host that installed it.
     return UNIT_TEMPLATE.format(
+        host_name=socket.gethostname(),
         working_directory=Path.home(),
         path=search_path,
         environment=environment,

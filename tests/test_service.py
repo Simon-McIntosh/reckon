@@ -38,6 +38,17 @@ def test_unit_restarts_always_and_installs_into_the_default_target(
     assert "WantedBy=default.target" in unit
 
 
+def test_unit_runs_only_on_the_host_that_installed_it(
+    executable: Path, monkeypatch: pytest.MonkeyPatch
+):
+    # The unit file lives under a home directory every cluster node mounts, so
+    # without a host condition each node's user manager starts its own server.
+    monkeypatch.setattr(service.socket, "gethostname", lambda: "login-a.example")
+    unit = service.render_unit(executable=executable)
+    unit_section = unit.split("[Service]", 1)[0]
+    assert re.search(r"^ConditionHost=login-a\.example$", unit_section, re.MULTILINE)
+
+
 def test_optional_arguments_are_omitted_when_unset(executable: Path):
     unit = service.render_unit(executable=executable)
     assert "--host" not in unit
