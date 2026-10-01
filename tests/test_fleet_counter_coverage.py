@@ -31,7 +31,7 @@ from reckon.crew import ticker as ticker_module
 
 
 def _emitted_states() -> set[str]:
-    """The states ``_watch_snapshot`` can assign, read from its source.
+    """The states the verdict reducer can assign, read from its source.
 
     The possible values are the literal ``state = "..."`` assignments, the
     manifest verdicts assigned from ``manifest_status``, the classifier's
@@ -43,7 +43,7 @@ def _emitted_states() -> set[str]:
     recovery-class tuple beside it, because that tuple is a second copy of the
     same fact and had already fallen behind the classifier once.
     """
-    source = inspect.getsource(recovery._watch_snapshot)
+    source = inspect.getsource(recovery._watch_verdict)
     emitted = set(re.findall(r'state = "([a-z_-]+)"', source))
     emitted |= {"complete", "blocked", "failed"}  # assigned from manifest_status
     emitted |= _classifications_that_become_a_state()
@@ -66,7 +66,7 @@ def _classifications_that_become_a_state() -> set[str]:
     reintroduce.
     """
     classifier_lines = inspect.getsource(recovery.classify_pointer).splitlines()
-    reducer = inspect.getsource(recovery._watch_snapshot)
+    reducer = inspect.getsource(recovery._watch_verdict)
     claimed = set(re.findall(r'classification == "([a-z_-]+)"', reducer))
     for group in re.findall(r"classification in \{([^}]*)\}", reducer):
         claimed |= set(re.findall(r'"([a-z_-]+)"', group))
