@@ -1,0 +1,398 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 480000,
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "2c49c045748cd9b00bfd5217ff371410eb8a78e5",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 16657422,
+      "input_tokens_cumulative": 16657422,
+      "output_tokens": 59070,
+      "output_tokens_cumulative": 59070,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 334,
+    "files": 2,
+    "removed": 0
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 93,
+        "name": "_proc_fields",
+        "path": "tests/test_supervisor_outlives_its_launcher.py"
+      },
+      "run_function": {
+        "line": 176,
+        "name": "_proc_fields",
+        "path": "tests/test_reflex_review_outlives_its_follower.py"
+      },
+      "window_line": 176
+    },
+    {
+      "existing_function": {
+        "line": 153,
+        "name": "_wait_until",
+        "path": "tests/test_supervisor_outlives_its_launcher.py"
+      },
+      "run_function": {
+        "line": 196,
+        "name": "_wait_until",
+        "path": "tests/test_reflex_review_outlives_its_follower.py"
+      },
+      "window_line": 196
+    },
+    {
+      "existing_function": {
+        "line": 163,
+        "name": "_supervisor_from",
+        "path": "tests/test_supervisor_outlives_its_launcher.py"
+      },
+      "run_function": {
+        "line": 205,
+        "name": "_launch",
+        "path": "tests/test_reflex_review_outlives_its_follower.py"
+      },
+      "window_line": 217
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "dbaff2b09357cc37d6cfe769e992b47fe60a2f80",
+    "168455b582e0daa885b06ce4b48c3b0e10f0e242"
+  ],
+  "completed_at": "2026-10-01T19:51:57.997Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-01T19:18:34Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_reflex_review_outlives_its_follower.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T191814388880-reflex-review-outlives-its-follower/gate.log"
+  },
+  "impl_move": {
+    "at_complete": 1.0,
+    "at_dispatch": 1.0,
+    "plan": "a-crew-process-ends-with-its-owner",
+    "reason": "plan impl already reads 1.0 while s3, s7, s10 and s11 are declared implementable; it reads true again when those sections close",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-01T20:18:15.349833+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-01T19:18:15Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 1,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 7,
+    "headroom": 8,
+    "mean_context": 102857,
+    "observed_at": "2026-10-01T19:18:14Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-01T19:51:57.997Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T191814388880-reflex-review-outlives-its-follower/manifest.md",
+  "member": "disposable-r-20261001T191814388880-reflex-review-outlives-its-follower",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_reflex_review_outlives_its_follower.py::test_a_reflex_review_supervisor_survives_the_followers_group_in_tree"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_reflex_review_outlives_its_follower.py::test_a_reflex_review_supervisor_survives_the_followers_group_in_tree"
+    ],
+    "declaration": "launch the reflex review with an in-tree launcher that does not detach; the supervisor dies and the test fails",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T191814388880-reflex-review-outlives-its-follower/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T191814388880-reflex-review-outlives-its-follower/negative-control.log",
+    "test_paths": [
+      "tests/test_reflex_review_outlives_its_follower.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "reflex-review-outlives-its-follower",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 394,
+          "cached_input_tokens": 261264,
+          "input_tokens": 261660,
+          "output_tokens": 228,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 261888,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "dea7b557-cbf3-46c1-bbfe-33166244c4a3",
+      "session_id": "s21-fin"
+    },
+    "done_when": "tests/test_reflex_review_outlives_its_follower.py, in a temporary RECKON_HOME with a stub backend, starts a follower in its own process group, lets its reflex launch a review, sends SIGTERM to the follower's whole process group, and asserts the review's supervisor is alive afterwards in a session other than the follower's. The declared negative control is executed and logged: launching the reflex review with an in-tree launcher that does not detach, the supervisor dies with the group and the test fails. Base and head arms of tests/test_supervisor_outlives_its_launcher.py and tests/test_review_reflex_sweep.py show zero added failures. The mechanism landed in 149d3c29a; see ~/.config/reckon/crew/reports/reckon/s21-currency-crew.md item 4.6. If the mechanism turns out not to hold for the reflex path, report it in follow_ons rather than repair product code.",
+    "estimated_hours": 1.0,
+    "goal": "A test proves a review the follower's reflex launches survives a SIGTERM to the follower's process group (f-acpewio-reflex-dispatch-detaches-from-its-follower)",
+    "id": "reflex-review-outlives-its-follower",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-01T19:18:15Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 1,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 7,
+      "headroom": 8,
+      "mean_context": 102857,
+      "observed_at": "2026-10-01T19:18:14Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T191814388880-reflex-review-outlives-its-follower/manifest.md",
+    "negative_control": "launch the reflex review with an in-tree launcher that does not detach; the supervisor dies and the test fails",
+    "plan": "a-crew-process-ends-with-its-owner",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§10",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "tests/test_reflex_review_outlives_its_follower.py",
+      "docs/evidence/fragments/a-crew-process-ends-with-its-owner/reflex-review-outlives-its-follower.html",
+      "docs/figures/a-crew-process-ends-with-its-owner/reflex-review-outlives-its-follower"
+    ]
+  },
+  "orientation_input_tokens": 6100190.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "reflex-review-outlives-its-follower",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-01T19:18:25.829334+00:00",
+    "score": 0.7375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-crew-process-ends-with-its-owner",
+  "plan_impl_at_dispatch": 1.0,
+  "plan_link": null,
+  "promoted_revision": "168455b582e0daa885b06ce4b48c3b0e10f0e242",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "2c49c045748cd9b00bfd5217ff371410eb8a78e5",
+    "reviewed_head_sha": "168455b582e0daa885b06ce4b48c3b0e10f0e242",
+    "scores": {
+      "durability": 18,
+      "evidence": 18,
+      "fit": 18,
+      "goal_fidelity": 19,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 92
+  },
+  "review_tier": "none",
+  "role": "implement",
+  "run_id": "r-20261001T191814388880-reflex-review-outlives-its-follower",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§10",
+  "session": "s21-fin",
+  "session_harness": "claude",
+  "session_id": "03f60638-26b9-4df6-8126-daae21ae3f3b",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 2,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 16657422,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 1995.626,
+    "generated_tokens": 59070,
+    "generation_seconds": 1551.086,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 41.8,
+    "machine_seconds": 444.54,
+    "peak_input_tokens": 200662,
+    "tokens_per_second": 38.08,
+    "wall_tokens_per_second": 29.6
+  },
+  "time_budget": "60m",
+  "tool_steps": 120.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 2003,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-01T19:51:59Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-01T19:18:37Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261001T191814388880-reflex-review-outlives-its-follower",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 10861,
+    "worker_pid": 2498185
+  },
+  "worker_seconds": 1983,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
