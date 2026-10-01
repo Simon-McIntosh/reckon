@@ -144,14 +144,27 @@ function App() {
   // views (filter list, graph) recompute against the updated inventory record.
   const [invRev, setInvRev] = useState(0);
   const bumpInv = useCallback(() => setInvRev(r => r + 1), []);
+  // Render-contract verdicts are an overlay on the rows: asked for once derived
+  // state has settled, so they never compete with the first paint.
+  const loadChecksAfterDerived = useCallback(() => (
+    Promise.resolve(window.STATE_DERIVED_READY)
+      .catch(() => {})
+      .then(() => window.loadDocumentChecks?.())
+  ), []);
   const refreshProjectState = useCallback(async () => {
     await window.revalidateProjectState?.();
     bumpInv();
-  }, [bumpInv]);
+    loadChecksAfterDerived();
+  }, [bumpInv, loadChecksAfterDerived]);
   useEffect(() => {
     const changes = window.watchProjectStateChanges?.(refreshProjectState);
     return () => changes?.close();
   }, [refreshProjectState]);
+  useEffect(() => {
+    window.addEventListener("reckon:checks", bumpInv);
+    loadChecksAfterDerived();
+    return () => window.removeEventListener("reckon:checks", bumpInv);
+  }, [bumpInv, loadChecksAfterDerived]);
   useEffect(() => {
     try { localStorage.setItem(SK.collapsed, filtersHidden ? "1" : "0"); } catch {}
   }, [filtersHidden]);

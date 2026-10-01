@@ -48,9 +48,11 @@ import mimetypes
 import os
 import re
 import select
+import shutil
 import socket
 import struct
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -67,6 +69,7 @@ from reckon import (
     _backends,
     _plan_html,
     capabilities,
+    compliance,
     crew,
     fleet_index,
     ledger,
@@ -968,6 +971,12 @@ _SIGNATURE_TTL_S = 0.0
 # The package source the served process started with, recorded by main() so
 # /_server can report when the code on disk has moved past the code running.
 _SOURCE_SNAPSHOT: served_code.SourceSnapshot | None = None
+# Document verdicts are computed out of process (see _start_check_refresh). Only
+# the served process opts in, in main(); a handler driven by a test or another
+# caller reports pending verdicts and starts nothing.
+_CHECK_REFRESH_ENABLED = False
+_CHECK_REFRESHES: dict[str, subprocess.Popen] = {}
+_CHECK_REFRESH_LOCK = threading.Lock()
 _SIGNATURE_MEMO: dict[tuple[str, str, str], tuple[float, tuple[int, int]]] = {}
 _SIGNATURE_MEMO_LOCK = threading.Lock()
 # The served process opts into the longer window; the library default stays 0
@@ -2218,6 +2227,40 @@ def _project_for_root(root: Path) -> str:
     return root.parent.name
 
 
+def _spawn_check_refresh(argv: list[str]) -> subprocess.Popen:
+    return subprocess.Popen(argv, stdin=subprocess.DEVNULL)
+
+
+def _start_check_refresh(project: str) -> bool:
+    """Check a project's pending documents in a child process; True if running.
+
+    One check costs about a tenth of a second on a shared filesystem, so a large
+    project would hold a request thread for minutes. The child runs at lower
+    priority, writes the verdict store the routes read, and logs to the server's
+    own output. At most one runs per project.
+    """
+
+    if not _CHECK_REFRESH_ENABLED:
+        return False
+    with _CHECK_REFRESH_LOCK:
+        running = _CHECK_REFRESHES.get(project)
+        if running is not None and running.poll() is None:
+            return True
+        argv = [sys.executable, "-m", "reckon.compliance", "refresh"]
+        argv += ["--project", project]
+        if _MOUNTS_FILE is not None:
+            argv += ["--mounts", str(_MOUNTS_FILE)]
+        nice = shutil.which("nice")
+        if nice:
+            argv = [nice, "-n", "10", *argv]
+        try:
+            _CHECK_REFRESHES[project] = _spawn_check_refresh(argv)
+        except OSError as exc:
+            print(f"compliance refresh for {project} did not start: {exc}", flush=True)
+            return False
+        return True
+
+
 def _resolve_plan_file(
     root: Path,
     slug: str,
@@ -2985,6 +3028,62 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(HTTPStatus.OK, rows)
             return
 
+        if path.startswith("/_checks/"):
+            # GET /_checks/<project>                — failing documents, pending count
+            # GET /_checks/<project>/<root>/<slug>  — one document's verdict
+            parts = path[len("/_checks/") :].strip("/").split("/")
+            project = parts[0]
+            if len(parts) not in (1, 3) or not SAFE_NAME.match(project):
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad path"})
+                return
+            check_mounts = load_mounts()
+            if project not in check_mounts:
+                self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown project"})
+                return
+            docs_root = Path(check_mounts[project])
+            if len(parts) == 1:
+                try:
+                    summary = compliance.project_checks(docs_root, project)
+                except Exception as exc:  # noqa: BLE001
+                    self._send_json(
+                        HTTPStatus.INTERNAL_SERVER_ERROR,
+                        {"error": "compliance_failed", "detail": str(exc)},
+                    )
+                    return
+                summary["refreshing"] = bool(summary["pending"]) and (
+                    _start_check_refresh(project)
+                )
+                self._send_json(HTTPStatus.OK, summary)
+                return
+            artifact_type = ROOT_TYPES.get(parts[1])
+            slug = parts[2].removesuffix(".html")
+            if artifact_type not in ("plan", "research", "evidence"):
+                self._send_json(HTTPStatus.BAD_REQUEST, {"error": "bad resource type"})
+                return
+            try:
+                document = _resolve_plan_file(
+                    docs_root, slug, artifact_type, project=project
+                )
+            except ResourceCollision as exc:
+                self._send_json(HTTPStatus.CONFLICT, {"error": str(exc)})
+                return
+            if document is None:
+                self._send_json(HTTPStatus.NOT_FOUND, {"error": "unknown document"})
+                return
+            verdict = compliance.document_check(docs_root, project, document)
+            relative = compliance.relative_path(docs_root, document)
+            self._send_json(
+                HTTPStatus.OK,
+                {
+                    "project": project,
+                    "type": artifact_type,
+                    "slug": slug,
+                    "path": f"{docs_root.name}/{relative}",
+                    **verdict,
+                },
+            )
+            return
+
         if path.startswith("/_discover/"):
             project = path[len("/_discover/") :].strip("/")
             if not project or not SAFE_NAME.match(project):
@@ -3620,7 +3719,9 @@ def main(
 ) -> None:
     global _SIGNATURE_TTL_S  # noqa: PLW0603 — the served process opts into reuse
     global _SOURCE_SNAPSHOT  # noqa: PLW0603 — recorded once, as the code loads
+    global _CHECK_REFRESH_ENABLED  # noqa: PLW0603 — the served process opts in
     _SOURCE_SNAPSHOT = served_code.take_snapshot()
+    _CHECK_REFRESH_ENABLED = True
     _resolve_paths(mounts_file)
     _SIGNATURE_TTL_S = _served_signature_ttl()
     _host = host or os.environ.get("DOCS_SERVER_BIND", "127.0.0.1")

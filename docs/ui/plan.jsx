@@ -186,6 +186,29 @@ function readerFailureStatus(error) {
   return `unreadable response — ${error?.name || "Error"}: ${error?.message || String(error)}`;
 }
 
+// The server checks each document against the render contract (the check
+// `reckon audit-doc` runs) and serves the verdict; the reader shows its errors.
+function readerComplianceErrors(check) {
+  return check && check.errors > 0
+    ? (check.findings || []).filter(finding => finding.severity === "error")
+    : [];
+}
+
+function ReaderComplianceFailure({ check }) {
+  const errors = readerComplianceErrors(check);
+  return (
+    <div className="r-reader-compliance" role="alert" style={{ display: "grid", gap: 5, marginBottom: 12, padding: "11px 13px", border: "1px solid var(--border)", borderLeft: "3px solid var(--danger, #b42318)", background: "var(--bg)" }}>
+      <strong>This document fails the render contract — {check.errors} error{check.errors === 1 ? "" : "s"}</strong>
+      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5 }}>
+        {errors.map((finding, index) => (
+          <li key={`${finding.code}-${index}`}><code>{finding.code}</code> {finding.message}</li>
+        ))}
+      </ul>
+      {check.path && <span style={{ color: "var(--muted)", fontSize: 12 }}>Every finding, warnings included: <code>reckon audit-doc {check.path}</code></span>}
+    </div>
+  );
+}
+
 function ReaderSourceFailure({ source, status, missing, onRetry }) {
   return (
     <div className="r-reader-source-failure" role="alert" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 18, marginBottom: 12, padding: "11px 13px", border: "1px solid var(--border)", borderLeft: "3px solid var(--danger, #b42318)", background: "var(--bg)" }}>
@@ -502,6 +525,7 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
   const [fullState, setFullState] = useState(null);
   const [stateFailure, setStateFailure] = useState(null);
   const [stateRetry, setStateRetry] = useState(0);
+  const [complianceCheck, setComplianceCheck] = useState(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [, setReaderListRevision] = useState(0);
   const [readerSelectionKey, setReaderSelectionKey] = useState(null);
@@ -609,6 +633,20 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
         }));
       })
       .catch(error => setStateFailure({ status: readerFailureStatus(error) }));
+  }, [project, slug, PG.type, usesImageReader, stateRetry]);
+
+  // ── Fetch the document's render-contract verdict ────────────────────────
+  useEffect(() => {
+    setComplianceCheck(null);
+    if (!project || usesImageReader) return;
+    const stateRoot = { plan: "plans", research: "research", evidence: "evidence" }[kind];
+    if (!stateRoot) return;
+    let cancelled = false;
+    fetch(`/_checks/${project}/${stateRoot}/${PG.slug}`, { cache: "no-store" })
+      .then(r => (r.ok ? r.json() : null))
+      .then(check => { if (!cancelled) setComplianceCheck(check); })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, [project, slug, PG.type, usesImageReader, stateRetry]);
 
   // ── Comment / prompt wiring ─────────────────────────────────────────────
@@ -857,6 +895,9 @@ function Plan({ slug, onNav, attachmentGroups, focusMode = false, onToggleFocus 
               missing={["interactive decisions", "evidence gates", "structured followups", "loaded plan version"]}
               onRetry={() => setStateRetry(value => value + 1)}
             />
+          )}
+          {readerComplianceErrors(complianceCheck).length > 0 && (
+            <ReaderComplianceFailure check={complianceCheck} />
           )}
           <ReaderAttachmentBars
             groups={attachmentGroups}

@@ -447,6 +447,11 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
                 )}
               </span>
               <span className="r-artifact-row-trailing">
+                {item.check && item.check.errors > 0 && (
+                  <span className="r-artifact-check" title={artifactCheckTitle(item.check)} style={{ color: "var(--danger, #b42318)", font: "600 11.5px/1.2 var(--sans)", whiteSpace: "nowrap" }}>
+                    {item.check.errors} contract error{item.check.errors === 1 ? "" : "s"}
+                  </span>
+                )}
                 <span className="r-artifact-stamps">
                   <span>created {artifactStamp(item.created, true)}</span>
                   <i aria-hidden="true">·</i>
@@ -462,6 +467,14 @@ function ArtifactIndex({ kind, onSelect, filters, setFilters, sortBy, setSortBy,
       </div>
     </section>
   );
+}
+
+// A row's render-contract verdict is the server's; the title lists its errors.
+function artifactCheckTitle(check) {
+  return (check.findings || [])
+    .filter(finding => finding.severity === "error")
+    .map(finding => `${finding.code}: ${finding.message}`)
+    .join("\n");
 }
 
 function selectPlanSection(event, onSelectPlan, slug, sectionId) {

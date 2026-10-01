@@ -5,10 +5,18 @@ import os
 import time
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
 from reckon._plan_html import write_state
 from reckon.cli import main
+
+
+@pytest.fixture(autouse=True)
+def _isolated_config_home(tmp_path, monkeypatch):
+    # The audit stores render-contract verdicts under the configuration home;
+    # a test must not write them into the real one.
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config-home"))
 
 
 def _write_plan(docs_dir: Path, slug: str, state: dict) -> Path:
@@ -501,3 +509,50 @@ def test_audit_doc_typed_resource_with_parseable_island_reports_ok(tmp_path):
     code, output = _audit_doc(tmp_path, "island-present.html", text)
     assert code == 0
     assert "OK" in output
+
+
+_UNCLOSED_RESEARCH = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="docs-project" content="proj">
+<meta name="reckon-type" content="research">
+<meta name="plan-slug" content="broken">
+<meta name="plan-title" content="Broken">
+<meta name="plan-status" content="done">
+<title>Broken</title></head><body><main class="plan-doc">
+<section id="s1"><h2 id="h1">Findings</h2><p>Prose.</p>
+</main></body></html>
+"""
+
+
+def _research_mount(tmp_path, monkeypatch) -> Path:
+    docs_dir = tmp_path / "docs"
+    (docs_dir / "research").mkdir(parents=True)
+    (docs_dir / "research" / "broken.html").write_text(_UNCLOSED_RESEARCH)
+    mounts_file = tmp_path / "mounts.json"
+    mounts_file.write_text(json.dumps({"proj": str(docs_dir)}), encoding="utf-8")
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(mounts_file))
+    return docs_dir
+
+
+def test_audit_lists_render_contract_failures_without_changing_the_exit_code(
+    tmp_path, monkeypatch
+):
+    _research_mount(tmp_path, monkeypatch)
+
+    result = CliRunner().invoke(main, ["audit"])
+
+    assert result.exit_code == 0, result.output
+    assert "Render-contract failures" in result.output
+    assert "research/broken.html" in result.output
+    assert "section-unclosed" in result.output
+    assert (tmp_path / "config-home" / "cache" / "compliance").is_dir()
+
+
+def test_audit_without_checks_leaves_the_render_contract_alone(tmp_path, monkeypatch):
+    _research_mount(tmp_path, monkeypatch)
+
+    result = CliRunner().invoke(main, ["audit", "--no-checks"])
+
+    assert result.exit_code == 0, result.output
+    assert "render-contract" not in result.output.lower()
+    assert not (tmp_path / "config-home" / "cache" / "compliance").exists()

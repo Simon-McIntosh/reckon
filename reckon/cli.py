@@ -6370,7 +6370,13 @@ def doctor():
     default=None,
     help="Limit the lifecycle audit to one mounted project.",
 )
-def audit(project):
+@click.option(
+    "--checks/--no-checks",
+    default=True,
+    show_default=True,
+    help="Also list documents that fail the render contract.",
+)
+def audit(project, checks):
     """Report stale lifecycle state across mounted reckon projects.
 
     Flags:
@@ -6378,7 +6384,12 @@ def audit(project):
       - MISSING_IMPL: shipped/done plans with missing or zero impl
       - STALE_RCA: research docs older than 60 days that are not done/archived
 
-    Exits 1 when any MISSING_IMPL row is found (CI-friendly).
+    Then lists every live document that fails the render contract — the check
+    ``reckon audit-doc`` runs — using stored verdicts and checking only the
+    documents that changed since.
+
+    Exits 1 when any MISSING_IMPL row is found (CI-friendly); a render-contract
+    failure is listed but does not change the exit code.
     """
     import sys
 
@@ -6391,8 +6402,56 @@ def audit(project):
 
     if not findings:
         click.echo("No lifecycle hygiene findings.")
-        return
+    else:
+        _echo_lifecycle_findings(findings)
+    if checks:
+        _echo_render_contract_failures(project)
+    if any(item.flag == "MISSING_IMPL" for item in findings):
+        sys.exit(1)
 
+
+def _echo_render_contract_failures(project: str | None) -> None:
+    """List each live document that fails the render contract, per mount."""
+
+    from reckon import compliance
+    from reckon.doccheck import _load_mounts
+
+    mounts = _load_mounts()
+    names = [project] if project else sorted(mounts)
+    rows = []
+    for name in names:
+        docs_dir = mounts.get(name)
+        if docs_dir is None or not Path(docs_dir).is_dir():
+            continue
+        compliance.refresh(Path(docs_dir), name)
+        for document in compliance.project_checks(Path(docs_dir), name)["documents"]:
+            first = next(
+                (f for f in document["findings"] if f["severity"] == "error"), None
+            )
+            detail = f"{first['code']}: {first['message']}" if first else ""
+            if len(detail) > 90:
+                detail = detail[:89] + "…"
+            rows.append((name, document["path"], str(document["errors"]), detail))
+    click.echo("")
+    if not rows:
+        click.echo("No render-contract failures.")
+        return
+    click.echo(
+        "Render-contract failures (run reckon audit-doc <path> for every finding):"
+    )
+    headers = ("project", "document", "errors", "first error")
+    widths = [
+        max(len(header), *(len(row[idx]) for row in rows))
+        for idx, header in enumerate(headers)
+    ]
+    fmt = "  ".join(f"{{:<{width}}}" for width in widths)
+    click.echo(fmt.format(*headers))
+    click.echo(fmt.format(*("-" * width for width in widths)))
+    for row in rows:
+        click.echo(fmt.format(*row))
+
+
+def _echo_lifecycle_findings(findings) -> None:
     rows = [
         (
             item.project,
@@ -6414,9 +6473,6 @@ def audit(project):
     click.echo(fmt.format(*("-" * width for width in widths)))
     for row in rows:
         click.echo(fmt.format(*row))
-
-    if any(item.flag == "MISSING_IMPL" for item in findings):
-        sys.exit(1)
 
 
 @main.command(name="archive")

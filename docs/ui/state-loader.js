@@ -199,6 +199,64 @@ const applyIndexRowChanges = (delta) => {
   return true;
 };
 
+// ── Document checks ──────────────────────────────────────────────────────
+// /_checks/<project> lists the documents that fail the render contract and how
+// many verdicts are still pending; the server computes and keeps the verdicts.
+// Each listed verdict lands on its row as `check`, and every other row's is
+// cleared. While verdicts are pending the server is computing them, so the
+// loader asks again after a pause, a bounded number of times.
+//
+// Nothing in the load sequence calls this: the verdicts are an overlay, and the
+// shell asks for them once derived state has settled, so they never compete
+// with the first paint or with discovery.
+const CHECKS_RETRY_MS = 20000;
+const CHECKS_MAX_RETRIES = 30;
+let checksTimer = null;
+
+window.loadDocumentChecks = async function (project, attempt = 0) {
+  project = project ||
+            (document.querySelector('meta[name="docs-project"]')?.content) ||
+            window.location.pathname.replace(/^\/+/, "").split("/")[0];
+  if (!project) return null;
+  if (checksTimer !== null) {
+    clearTimeout(checksTimer);
+    checksTimer = null;
+  }
+  let payload = null;
+  try {
+    const response = await fetch(`/_checks/${project}`, { cache: "no-store" });
+    if (response.ok) payload = await response.json();
+  } catch (cause) {
+    payload = null; // no checks route: the rows render without verdicts
+  }
+  if (!payload || !Array.isArray(payload.documents)) return null;
+  const byKey = new Map(
+    payload.documents.map(doc => [arrivalKeyOf(mapInventoryRow(doc)), doc])
+  );
+  const state = window.STATE;
+  if (state && Array.isArray(state.inventory)) {
+    for (const row of state.inventory) {
+      const doc = byKey.get(arrivalKeyOf(row));
+      row.check = doc
+        ? { errors: doc.errors, warnings: doc.warnings, findings: doc.findings, path: doc.path }
+        : null;
+    }
+    state.checks = {
+      checked: payload.checked,
+      pending: payload.pending,
+      failing: payload.failing,
+    };
+  }
+  window.dispatchEvent(new CustomEvent("reckon:checks", { detail: state?.checks || null }));
+  if (payload.pending > 0 && payload.refreshing && attempt < CHECKS_MAX_RETRIES) {
+    checksTimer = setTimeout(
+      () => window.loadDocumentChecks(project, attempt + 1),
+      CHECKS_RETRY_MS,
+    );
+  }
+  return payload;
+};
+
 window.revalidateProjectState = async function () {
   const PROJECT = (document.querySelector('meta[name="docs-project"]')?.content) ||
                   window.location.pathname.replace(/^\/+/, "").split("/")[0] ||
