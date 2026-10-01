@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S21">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="111">
+<meta name="plan-version" content="112">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.99">
@@ -1792,6 +1792,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261001T140516037424-the-git-guard-shares-the-shim-read-forms" data-who="reckon-build" data-when="2026-10-01T14:17:35.175Z">
     <div class="r-comment-body"><p>The Bash-tool git guard (reckon/hooks/worker_git_guard.py) no longer keeps a private read-verb list; it imports mutating_verb from reckon.worker_git_shim and classifies each parsed invocation through it, so `git worktree list --porcelain` at another checkout is allowed (head gate 242 passed EXIT=0; restoring a private read-verb list omitting worktree reddens the new case, 17 failed EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261001T155334758817-review-of-the-guard-docstrings-name-the-import" data-who="reckon-build" data-when="2026-10-01T15:59:46.924Z">
+    <div class="r-comment-body"><p>Independent review of r-20261001T154624314762-the-guard-docstrings-name-the-import passed at total 95 (goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 19): the two corrected docstrings name the checkout the git guard imports reckon.worker_git_shim from and its fail-open, both new cases are present, the gate reproduces at 59 passed EXIT=0 (base 57), and renaming the shim import reddens the isolated deny case exactly as declared.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260924T122925465818-s19-internals-consumers-survey" data-who="reckon-ship" data-when="2026-09-24T12:38:14.943Z">
     <div class="r-comment-body"><p>eight consumer rows that read reckon internals directly; ranked top five: worktree_fleet re-implements pointer classification, reckon-sync fallback writes mounts.json, lane.json read by hand with no crew verb, inline pointer read in the recovery recipe, hand manifest repair</p></div>
