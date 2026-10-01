@@ -307,6 +307,7 @@ window.revalidateProjectState = async function () {
       milestones,
       north_stars:      northStars,
       inventory:        mergedInventory,
+      loaded_at:        new Date().toISOString(),
       ...derivedBlocks(mergedInventory, { sprints, disc, idx }),
       attachment_relations: attachmentRelations,
       plans,
