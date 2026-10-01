@@ -10,9 +10,9 @@
   <meta name="plan-summary" content="The loader resolves the first paint from /_index/<project> and merges the discovery payload's derived fields into the same rows afterwards, in place and in order; an index that is unavailable falls back to the discovery path.">
   <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
   <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s4">
-  <meta name="plan-commits" content="f83e38014,ad6971e0d">
+  <meta name="plan-commits" content="f83e38014,ad6971e0d,83207a0e0">
   <meta name="plan-recorded-at" content="2026-10-01">
-  <meta name="plan-verdict" content="qualified">
+  <meta name="plan-verdict" content="passed">
   <meta name="plan-tags" content="spa,state-loader,index,discovery,first-paint">
   <title>A page paints from the index — evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -66,38 +66,39 @@
     merged ready set: <code>2 failed, 1 passed, EXIT=1</code>
     (<code>negative-control-readiness-gated-on-discovery.log</code>). Mutation reverted.</li>
     <li><strong>The gate.</strong> Base <code>4bdf93dde</code>: <code>75 passed, 2 skipped,
-    EXIT=0</code>. Head <code>ad6971e0d</code>: <code>77 passed, 2 skipped, 1 failed,
-    EXIT=1</code>. The one added failure is
-    <code>tests/test_spa_state_boundary.py::test_open_page_receives_new_plan_without_navigation_or_polling</code>,
-    and it is <em>not</em> a discovery-only assertion. <code>ruff check</code> and
-    <code>ruff format --check</code> over the changed Python paths report no finding the
-    base did not.</li>
+    EXIT=0</code>. Head <code>83207a0e0</code>: <code>87 passed, 2 skipped, EXIT=0</code>
+    across the new test, the discovery-only file, the three SPA files and the index file.
+    No added failure id. <code>ruff check</code> and <code>ruff format --check</code> over
+    the changed Python paths report no finding the base did not.</li>
   </ul>
 
-  <h3>The added failure, and the defect behind it</h3>
+  <h3>The stale index the first paint exposed</h3>
 
-  <p>The change watch that serves <code>/_changes/&lt;project&gt;</code> drops the cached
-  discovery but not the cached metadata index, so after a reported change the next
-  <code>/_index/&lt;project&gt;</code> request can answer a row list that predates it.
-  <code>reckon/serve.py</code>'s <code>_send_project_changes</code> calls
-  <code>_invalidate_discovery_signatures</code> and <code>_invalidate_discovery</code>;
-  <code>_invalidate_tree_views</code> — which also calls
-  <code>metadata_index.invalidate_tree</code> — is reached only by the fleet watch that
-  <code>main()</code> arms.</p>
+  <p>Painting from the index first made a second defect visible. The watch that serves
+  <code>/_changes/&lt;project&gt;</code> dropped the cached discovery but not the cached
+  metadata index, so a page revalidating after its own change event was handed rows that
+  predated it. Measured at <code>ad6971e0d</code> with
+  <code>tests/test_spa_state_boundary.py::test_open_page_receives_new_plan_without_navigation_or_polling</code>,
+  left unchanged: after the change event and <code>await window.revalidateProjectState()</code>
+  the loader's requests are <code>/_index/sample</code>, <code>/_discover/sample</code>,
+  <code>/_index/sample</code> and the inventory is <code>["present"]</code> — the plan
+  written before the event is missing. Only the fleet watch that <code>main()</code> arms
+  reached <code>_invalidate_tree_views</code>, which is the call that drops all three views
+  of a tree together.</p>
 
-  <p>Reproduced at <code>ad6971e0d</code> with the test's own harness: after the change
-  event and <code>await window.revalidateProjectState()</code>, the loader's requests are
-  <code>/_index/sample</code>, <code>/_discover/sample</code>,
-  <code>/_index/sample</code>, and the inventory is <code>["present"]</code> — the plan
-  written before the event is missing. At the base revision the same test passes because
-  the old loader re-read discovery, which the change watch does invalidate.</p>
+  <p>Commit <code>83207a0e0</code> routes the per-connection watch through that same call,
+  so every watch that reports a tree drops the discovery reuse window, the cached
+  discoveries and the in-process index in one rule; the per-stream stamp helper
+  <code>_invalidate_discovery</code>, whose only caller it was, goes with it. The watch-side
+  rule was chosen over revalidating rows by stat identity on every request, which would
+  re-stat the whole tree per request and undo the restart cost the index exists to remove.
+  The boundary case above now passes unchanged.</p>
 
-  <p>The repair is one line in the change watch — route its invalidation through
-  <code>serve._invalidate_tree_views(docs_dir)</code>, which is the two calls it already
-  makes plus <code>metadata_index.invalidate_tree</code>, the intent its docstring states
-  ("a change to any one of them must drop all three together"). This node's write scope
-  does not include <code>reckon/serve.py</code>, so the failure is recorded as a follow-on
-  rather than fixed here.</p>
+  <p><code>tests/test_metadata_index_survives_restart.py</code> gains the case that pins it:
+  a served index is read, one plan is rewritten, the change event is awaited, and the
+  endpoint is read again — the row carries the new title. Against the old route the case
+  fails (<code>1 failed, 8 passed, EXIT=1</code>); with this one the file is
+  <code>9 passed</code>.</p>
 </article>
 </body>
 </html>
