@@ -618,8 +618,23 @@ def _refuse_over_concurrency_ceiling(
     cgroup can none of them justify refusing work.
     """
     occupying = _live_runs_on_backend(backend_name, exclude_run_ids=exclude_run_ids)
+    # The cores bound is consumed by the workers placed inside the shared
+    # reservation, not by every run on the backend: an unplaced run of the same
+    # backend runs outside the allocation and holds no core of it. So the cores
+    # bound is measured against the reservation's own roster population, the
+    # same one the roster cap counts below.
+    reservation_occupancy: int | None = None
+    if flight.placement_for(backend) is not None:
+        from reckon.crew import placement as placement_module
+
+        reservation_occupancy = len(
+            placement_module.occupying_the_reservation(occupying)
+        )
     bounds = summary.concurrency_bounds(
-        backend, occupancy=len(occupying), login_slice=summary.read_login_slice()
+        backend,
+        occupancy=len(occupying),
+        login_slice=summary.read_login_slice(),
+        reservation_occupancy=reservation_occupancy,
     )
     binding = summary.binding_bound(bounds)
     if binding is not None and not binding.admits_one_more:

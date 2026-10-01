@@ -306,28 +306,56 @@ def roster_bound(backend: Mapping[str, Any], *, occupancy: int) -> Bound:
     )
 
 
-def cores_bound(backend: Mapping[str, Any], *, occupancy: int) -> Bound:
-    """The cores a placement's reservation admits, as a worker count.
+def _reservation_admitted_cores() -> int | None:
+    """The cores the published shared reservation admits, or None.
 
-    A placement declares its resource request among the scheduler options it
-    passes: the cores admitted to the whole reservation and the share one
-    worker asks for. Their quotient is how many concurrent workers fit inside
-    it. Either figure being absent leaves the bound unknown — a reservation
-    whose size was never stated cannot refuse a worker.
+    The reservation's size is published in its own record, not in any
+    placement's options: a placement's ``--ntasks`` is the shape of one step
+    and says nothing about the allocation's size. A record that names no job,
+    or a record that cannot be read, states no admitted size and so returns
+    None, which leaves the bound unknown rather than a zero that would refuse
+    every worker.
+    """
+    from reckon.crew import placement as placement_module
+
+    record = placement_module.read_reservation()
+    if not isinstance(record, Mapping) or not record.get("job_id"):
+        return None
+    size = record.get("size")
+    if not isinstance(size, Mapping):
+        return None
+    return _as_count(str(size.get("cores")))
+
+
+def cores_bound(
+    backend: Mapping[str, Any],
+    *,
+    occupancy: int,
+    reservation_occupancy: int | None = None,
+) -> Bound:
+    """The cores the shared reservation admits, read against one worker's share.
+
+    The admitted cores are the reservation's own published size, never a
+    scheduler option a placement carries: ``--ntasks`` is the shape of a single
+    step and reading it as the whole allocation's size refused every dispatch
+    into a reservation of thousands of cores. The share one worker asks for is
+    its ``--cpus-per-task`` (or ``-c``), defaulting to one core. The occupancy
+    this is measured against is the reservation's roster — placed workers that
+    can still hold resources — supplied by the caller as
+    ``reservation_occupancy``; a caller that cannot read that population falls
+    back to the occupancy it was given. A reservation that was never stated,
+    or a placement that declares none, leaves the bound unknown rather than a
+    zero that would refuse the first worker.
     """
     placement = backend.get("placement")
     options = (placement or {}).get("options") if isinstance(placement, Mapping) else None
-    admitted = None
-    for text in _option_values(options, ("--cpus", "--ntasks")):
-        admitted = _as_count(text)
-        if admitted is not None:
-            break
     share = 1
     for text in _option_values(options, ("--cpus-per-task", "-c")):
         parsed = _as_count(text)
         if parsed is not None:
             share = parsed
             break
+    admitted = _reservation_admitted_cores()
     if admitted is None or not isinstance(placement, Mapping) or not placement:
         return Bound(
             name="partition-cores",
@@ -335,9 +363,10 @@ def cores_bound(backend: Mapping[str, Any], *, occupancy: int) -> Bound:
             utilisation=None,
             admits_one_more=True,
             value="unknown",
-            detail="placement declares no admitted core count",
+            detail="no held reservation states an admitted core count",
         )
-    demanded = occupancy * share
+    held = occupancy if reservation_occupancy is None else reservation_occupancy
+    demanded = held * share
     return Bound(
         name="partition-cores",
         capacity=admitted / share,
@@ -401,12 +430,23 @@ def concurrency_bounds(
     *,
     occupancy: int,
     login_slice: LoginSlice | None = None,
+    reservation_occupancy: int | None = None,
 ) -> list[Bound]:
-    """Every readable candidate bound on one backend, in a fixed order."""
+    """Every readable candidate bound on one backend, in a fixed order.
+
+    ``occupancy`` is the population every candidate is counted at; the cores
+    bound is the exception, because an allocation is consumed only by the
+    workers placed inside it, so ``reservation_occupancy`` carries that
+    population when the caller can read it.
+    """
     reading = login_slice if login_slice is not None else read_login_slice()
     return [
         roster_bound(backend, occupancy=occupancy),
-        cores_bound(backend, occupancy=occupancy),
+        cores_bound(
+            backend,
+            occupancy=occupancy,
+            reservation_occupancy=reservation_occupancy,
+        ),
         memory_bound(backend, occupancy=occupancy, login_slice=reading),
     ]
 
@@ -436,6 +476,7 @@ def fleet_bound_report(
     *,
     occupancy: int,
     login_slice: LoginSlice | None = None,
+    reservation_occupancy: int | None = None,
 ) -> dict[str, Any]:
     """The fleet surface's answer to which bound binds, with its figure.
 
@@ -444,7 +485,10 @@ def fleet_bound_report(
     of matching a sentence that a later wording change would silently break.
     """
     bounds = concurrency_bounds(
-        backend, occupancy=occupancy, login_slice=login_slice
+        backend,
+        occupancy=occupancy,
+        login_slice=login_slice,
+        reservation_occupancy=reservation_occupancy,
     )
     binding = binding_bound(bounds)
     return {
