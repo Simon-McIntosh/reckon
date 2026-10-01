@@ -9,9 +9,11 @@
 // same rows plus the derived fields (effective status, blockers, readiness)
 // and the ready set; when it arrives it is merged into the rows already on
 // screen, in place and in the order the reader is looking at, and then
-// window.STATE_DERIVED_READY resolves. A plan's body is fetched only when
-// that plan is opened. The derived values are computed in Python on the
-// server; the loader merges them and never derives them itself.
+// window.STATE_DERIVED_READY resolves. Every path settles that promise — the
+// fallback below carries its derived state already, so it resolves with the
+// state it assembled. A plan's body is fetched only when that plan is opened.
+// The derived values are computed in Python on the server; the loader merges
+// them and never derives them itself.
 //
 // An index that is unavailable — a 404, or a request that fails at the
 // network — costs the page nothing: the loader falls back to the sources that
@@ -332,8 +334,8 @@ window.revalidateProjectState = async function () {
       if (onScreen) {
         Object.assign(onScreen, row);
       } else {
-        state.inventory.push(row);
-        byKey.set(key, row);
+        // A row the index did not carry is held as an arrival: the open list
+        // keeps the rows the reader is already looking at.
         pending.push(row);
       }
     }
@@ -525,6 +527,9 @@ window.revalidateProjectState = async function () {
   const state = assemble({ rows: inventory, sprints, milestones, northStars, disc, idx });
   window.STATE = state;
   window.STATE_ERROR = null;
+  // This path already carries everything a source had, derived state included,
+  // so the promise a consumer awaits is settled with the state it can read.
+  window.STATE_DERIVED_READY = Promise.resolve(state);
   return state;
 };
 

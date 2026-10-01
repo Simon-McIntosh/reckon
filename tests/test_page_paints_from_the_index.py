@@ -25,6 +25,7 @@ import json
 import os
 import subprocess
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -150,6 +151,24 @@ DISCOVERY = {
     ],
 }
 
+#: The same payload with one row the index never carried: it must land as an
+#: arrival rather than be inserted into the list already on screen.
+DISCOVERY_WITH_ARRIVAL = {
+    **DISCOVERY,
+    "inventory": [
+        *DISCOVERY["inventory"],
+        {
+            "slug": "late",
+            "type": "evidence",
+            "title": "Late",
+            "status": "recorded",
+            "effective_status": "recorded",
+            "created": 60,
+            "edited": "2026-01-06T00:00:00",
+        },
+    ],
+}
+
 #: The order the index listed the rows in, which the merge must not change.
 INDEX_ORDER = ["alpha", "beta", "evidence:gate", "figure:plot.png"]
 
@@ -216,6 +235,13 @@ _DISCOVERY_ANSWERS = """
   }
 """
 
+_DISCOVERY_ANSWERS_WITH_ARRIVAL = """
+  if (url === "/_discover/sample") {
+    requested.push(url);
+    return ok(DATA.discovery_arrival);
+  }
+"""
+
 # The first paint's own summary, shared by the cases that read it.
 _SUMMARIZE = """
 const summary = state => ({
@@ -238,7 +264,13 @@ def _run_node(behaviour: str, body: str) -> dict:
         .replace("__TIMEOUT__", str(READY_TIMEOUT_MS))
         .replace(
             "__DATA__",
-            json.dumps({"index": INDEX_ROWS, "discovery": DISCOVERY}),
+            json.dumps(
+                {
+                    "index": INDEX_ROWS,
+                    "discovery": DISCOVERY,
+                    "discovery_arrival": DISCOVERY_WITH_ARRIVAL,
+                }
+            ),
         )
         .replace("__BEHAVIOUR__", behaviour)
         .replace("__BODY__", body)
@@ -495,3 +527,207 @@ def test_a_reported_change_refreshes_the_served_index(
 
     assert status == 200
     assert _title(rows, "alpha") == "Alpha renamed"
+
+
+def test_two_change_streams_recompute_discovery_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One reported change costs one rediscovery however many pages watch it.
+
+    Every open stream observes the same filesystem event, so the recomputation
+    the first one pays for is what the others read instead of each repeating
+    the scan.
+    """
+
+    docs = tmp_path / "docs"
+    plans = docs / "plans"
+    plans.mkdir(parents=True)
+    target = plans / "alpha.html"
+    target.write_text(_plan_page("alpha", "Alpha"), encoding="utf-8")
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(serve, "load_mounts", lambda: {PROJECT: docs})
+    monkeypatch.setattr(serve, "_STATE_ROOT", None)
+    metadata_index.clear()
+    serve._DISC_CACHE.clear()
+
+    scans: list[str] = []
+    uncached = serve._discover_plans_uncached
+
+    def counted(docs_dir, project, state_root, sig, cache_key):
+        scans.append(str(docs_dir))
+        return uncached(docs_dir, project, state_root, sig, cache_key)
+
+    monkeypatch.setattr(serve, "_discover_plans_uncached", counted)
+
+    server = serve.ThreadingHTTPServer(("127.0.0.1", 0), serve.Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    streams = [_ChangeStream(server.server_port, PROJECT) for _ in range(2)]
+    try:
+        for stream in streams:
+            assert stream.next_event() == "ready"
+        baseline = len(scans)
+
+        _write("Alpha renamed", target)
+        for stream in streams:
+            assert stream.next_event() == "change"
+    finally:
+        for stream in streams:
+            stream.close()
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+    # The cold read scanned the tree; the change must add exactly one more.
+    assert baseline >= 1, "the tree was never scanned, so the count proves nothing"
+    assert len(scans) - baseline == 1, (
+        f"{len(scans) - baseline} rediscoveries for one reported change "
+        "across two open streams"
+    )
+
+
+def test_a_report_keeps_a_discovery_newer_than_the_report(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A report drops what predates it, not what another watcher just rebuilt.
+
+    Two watchers of one tree report the same filesystem event; the second
+    observed it before the first rebuilt the rows, so the rebuild must survive
+    the second's report — while the index rows go on every report, so a page
+    painting from them never reads a list that predates the change.
+    """
+
+    docs = tmp_path / "docs"
+    plans = docs / "plans"
+    plans.mkdir(parents=True)
+    (plans / "alpha.html").write_text(_plan_page("alpha", "Alpha"), encoding="utf-8")
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(serve, "load_mounts", lambda: {PROJECT: docs})
+    monkeypatch.setattr(serve, "_STATE_ROOT", None)
+    metadata_index.clear()
+    serve._DISC_CACHE.clear()
+
+    scans: list[str] = []
+    uncached = serve._discover_plans_uncached
+
+    def counted(docs_dir, project, state_root, sig, cache_key):
+        scans.append(str(docs_dir))
+        return uncached(docs_dir, project, state_root, sig, cache_key)
+
+    monkeypatch.setattr(serve, "_discover_plans_uncached", counted)
+
+    builds: list[str] = []
+    built = metadata_index.build_index
+
+    def counted_build(docs_dir, project, **kwargs):
+        builds.append(str(docs_dir))
+        return built(docs_dir, project, **kwargs)
+
+    monkeypatch.setattr(metadata_index, "build_index", counted_build)
+
+    assert serve.discover_plans(docs, PROJECT, None)
+    assert len(scans) == 1, "the cold read never scanned, so the count proves nothing"
+    assert metadata_index.index_rows(docs, PROJECT)
+    assert len(builds) == 1
+
+    # One watcher observes the change and reports it; the rows and the cached
+    # discovery that predate it go, and the next read rebuilds them.
+    observed_at = time.monotonic()
+    _write("Alpha renamed", plans / "alpha.html")
+    serve._invalidate_tree_views(docs, changed_at=observed_at)
+    rebuilt = serve.discover_plans(docs, PROJECT, None)
+
+    assert len(scans) == 2
+    assert _title(rebuilt["inventory"], "alpha") == "Alpha renamed"
+
+    # A second watcher reports the same change, observed at the same moment:
+    # the rebuild that already answers it must survive its report.
+    serve._invalidate_tree_views(docs, changed_at=observed_at)
+
+    assert serve.discover_plans(docs, PROJECT, None) == rebuilt
+    assert len(scans) == 2, (
+        "a discovery newer than the reporting watcher's own observation was "
+        "discarded, so every open stream pays for the scan again"
+    )
+
+    # The index rows are dropped on every report, stale discovery or not.
+    assert metadata_index.index_rows(docs, PROJECT)
+    assert len(builds) == 2, (
+        "the reported change left the index rows in place: a page painting "
+        "from /_index would read a row list that predates it"
+    )
+
+
+def test_the_fallback_settles_the_derived_promise(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A consumer awaiting derived readiness is never left with undefined."""
+
+    body = f"""
+{_SUMMARIZE}
+window.STATE_READY.then(async state => {{
+  clearTimeout(watchdog);
+  const derived = await window.STATE_DERIVED_READY;
+  console.log(JSON.stringify({{
+    resolved: true,
+    timeout: false,
+    is_promise: typeof window.STATE_DERIVED_READY?.then === "function",
+    is_assembled_state: derived === state,
+    is_published_state: derived === window.STATE,
+    keys: summary(derived).keys,
+    ready_set: derived.ready_set,
+  }}));
+}});
+"""
+    observed = _run_node(_INDEX_IS_ABSENT + _DISCOVERY_ANSWERS, body)
+
+    assert observed["resolved"] is True, observed
+    assert observed["is_promise"] is True, (
+        "the fallback path left window.STATE_DERIVED_READY undefined"
+    )
+    assert observed["is_assembled_state"] is True
+    assert observed["is_published_state"] is True
+    assert observed["keys"] == ["alpha", "beta", "evidence:gate"]
+    assert observed["ready_set"] == DISCOVERY["ready_set"]
+
+
+def test_a_discovery_only_row_is_held_as_an_arrival() -> None:
+    """A row the index did not carry is not inserted into the open list."""
+
+    body = f"""
+{_SUMMARIZE}
+window.STATE_READY.then(async state => {{
+  clearTimeout(watchdog);
+  const painted = state.inventory.slice();
+  await window.STATE_DERIVED_READY;
+  const arrival = window.STATE.arrival;
+  console.log(JSON.stringify({{
+    resolved: true,
+    timeout: false,
+    after: summary(window.STATE),
+    same_rows: window.STATE.inventory.every((row, index) => row === painted[index]),
+    row_count: window.STATE.inventory.length,
+    pending: arrival.pending.map(row => row.nav_key),
+    pending_title: arrival.pending.map(row => row.title),
+    receipt: arrival.receipt,
+    plans_keys: Object.keys(window.STATE.plans),
+  }}));
+}});
+"""
+    observed = _run_node(_INDEX_ANSWERS + _DISCOVERY_ANSWERS_WITH_ARRIVAL, body)
+
+    assert observed["resolved"] is True, observed
+    assert observed["after"]["keys"] == INDEX_ORDER, (
+        "the discovery-only row was inserted into the list on screen: "
+        f"{observed['after']['keys']}"
+    )
+    assert observed["row_count"] == len(INDEX_ROWS)
+    assert observed["same_rows"] is True
+    assert observed["pending"] == ["evidence:late"]
+    assert observed["pending_title"] == ["Late"]
+    assert observed["receipt"] == "1 new"
+    assert observed["plans_keys"] == INDEX_ORDER
+    # The derived fields still landed on the rows the index did carry.
+    assert observed["after"]["effective_status"][:2] == ["blocked", "ready"]
