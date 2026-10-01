@@ -106,7 +106,7 @@ def _synthesise_run(
     return directory
 
 
-def _write_review() -> Path:
+def _write_review(*, total: int | None = TOTAL) -> Path:
     """Write a review record by hand, as a review worker does in its own fence."""
     record = {
         "project": PROJECT,
@@ -114,7 +114,7 @@ def _write_review() -> Path:
         "status": "parsed",
         "scores": dict.fromkeys(review_module.REVIEW_DIMENSIONS, SCORE),
         "absent": [],
-        "total": TOTAL,
+        "total": total,
         review_module.REVIEWED_BASE_KEY: BASE_SHA,
         review_module.REVIEWED_HEAD_KEY: HEAD_SHA,
         "timestamp": "2026-09-26T18:30:00+00:00",
@@ -150,6 +150,41 @@ def test_added_failures_are_counted_by_id_and_cap_the_total(
         "a run that added unretired failures must not carry its uncapped total"
     )
     assert "capped" in review["added_failures_note"]
+
+
+def test_a_null_total_reads_unscored_and_is_not_named_capped(
+    crew_home: Path,
+) -> None:
+    """A record with no total has nothing to cap, so no cap may be named."""
+    _write_review(total=None)
+    _synthesise_run([A, B], [B, C, D])
+
+    review = _selected()
+
+    assert review["total"] is None
+    assert review["added_failure_count"] == 2
+    assert review["added_failures_note"] == "unscored; 2 added failures"
+
+
+def test_a_total_already_at_the_cap_is_not_named_capped(crew_home: Path) -> None:
+    """``min()`` leaves a total at the cap unchanged, so nothing was applied."""
+    _write_review(total=review_module.ADDED_FAILURES_TOTAL_CAP)
+    _synthesise_run([A, B], [B, C, D])
+
+    review = _selected()
+
+    assert review["total"] == review_module.ADDED_FAILURES_TOTAL_CAP
+    assert "added_failures_note" not in review
+
+
+def test_a_total_above_the_cap_is_capped_and_says_so(crew_home: Path) -> None:
+    _write_review(total=TOTAL)
+    _synthesise_run([A, B], [B, C, D])
+
+    review = _selected()
+
+    assert review["total"] == review_module.ADDED_FAILURES_TOTAL_CAP
+    assert "total capped at" in review["added_failures_note"]
 
 
 def test_ids_retired_by_name_leave_the_total_uncapped(crew_home: Path) -> None:
