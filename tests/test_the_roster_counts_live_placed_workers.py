@@ -84,12 +84,12 @@ def test_a_placed_run_whose_worker_exited_holds_no_seat(
     ]
     monkeypatch.setattr(runs, "process_alive", StubProbe(live))
 
+    # Four live placed workers, far below the cap, so the next dispatch lands.
+    dispatch_module._refuse_over_reservation_roster(_placed_backend(), pointers)
+
     assert placement.occupying_the_reservation(pointers) == [
         _placed_pointer(f"r-live-{i}", pid=pid) for i, pid in enumerate(sorted(live))
     ]
-
-    # Four live placed workers, far below the cap, so the next dispatch lands.
-    dispatch_module._refuse_over_reservation_roster(_placed_backend(), pointers)
 
 
 def test_a_finished_run_is_not_counted_by_its_phase(
