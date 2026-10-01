@@ -123,24 +123,26 @@ def test_concurrent_writers_keep_both_registration_fields(home: Path) -> None:
     """The producer's pid and the follower's renewal each survive the other."""
     project = "concurrent"
     runs.update_watch_registration(project, pid=1, lease_renewed_at=1000.0)
+
+    def write_pid() -> None:
+        for _ in range(50):
+            runs.update_watch_registration(project, pid=os.getpid())
+
+    def write_renewal() -> None:
+        for step in range(50):
+            runs.update_watch_registration(project, lease_renewed_at=2000.0 + step)
+
     writers = [
-        threading.Thread(
-            target=lambda: [
-                runs.update_watch_registration(project, pid=os.getpid())
-                for _ in range(300)
-            ]
-        ),
-        threading.Thread(
-            target=lambda: [
-                runs.update_watch_registration(project, lease_renewed_at=2000.0 + i)
-                for i in range(300)
-            ]
-        ),
+        threading.Thread(target=write_pid),
+        threading.Thread(target=write_renewal),
     ]
     for writer in writers:
         writer.start()
+    # Joined without a timeout: each write renames a file on shared storage, and
+    # a thread abandoned mid-write would outlive the test's RECKON_HOME and then
+    # resolve the registration against the operator's own crew home.
     for writer in writers:
-        writer.join(timeout=10)
+        writer.join()
 
     record = runs.read_watch_registration(project)
     assert record.get("pid") == os.getpid()
