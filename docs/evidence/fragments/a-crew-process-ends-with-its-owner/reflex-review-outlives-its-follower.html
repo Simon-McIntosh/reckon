@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A reflex-launched review outlives its follower">
+  <meta name="plan-summary" content="A review the follower's reflex dispatches starts its supervisor detached, so SIGTERM to the follower's whole process group leaves the review running in a session of its own — the same detachment a hand-dispatched review gets.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,follower,reflex,review,supervisor,detach">
+  <title>A reflex-launched review outlives its follower — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="reflex-review-outlives-its-follower" data-reckon="landed" data-when="2026-10-01">
+  <h2>A reflex-launched review outlives its follower</h2>
+  <p>The review reflex fires from the follower's cadence and hands the composed review to <code>dispatch</code>, which starts the review's per-run supervisor through <code>_start_supervisor</code>. The mechanism that detaches that supervisor from its launcher (<code>149d3c29a</code>) is shared with a hand dispatch, and this gate is the measurement that the shared path covers the reflex: the review's supervisor is never a child of the follower's process tree, so a Monitor stop or expiry — which signals the follower's whole process group — cannot take the review with it. The two dispatch paths must not differ; only the hand-dispatched review survives that signal today, and the follower fix is what makes the reflex review survive it too.</p>
+  <p>The gate starts a real follower process in a session and process group of its own (<code>start_new_session</code>), builds a throwaway repository and configuration home, and lets the follower's reflex dispatch a review through the real <code>dispatch_review_for_run</code> with only the worktree creation and the supervisor's own launch target stubbed — the launch target is a long sleep, so the vector under test is how dispatch starts it, not what the review does afterwards. It then reads the supervisor pid dispatch recorded for the review, sends <code>SIGTERM</code> to the follower's <em>whole process group</em> (what a Monitor stop delivers), waits for the follower to be gone, and reads the kernel's own record: the review's supervisor is still alive, and it leads a process group and a session of its own rather than the follower's. The assertions are the kernel's facts from <code>/proc/&lt;pid&gt;/stat</code> — liveness by state, and the session column — never a source reading.</p>
+  <p>Positive control: the follower is a session and process-group leader, and the signal is <code>killpg</code>, so a review that stayed in the group would take the same signal the follower did. The declared mutation — the launch put back in-tree (a plain child of the follower, no intermediate and no new session, as the single-<code>EXIT</code> vector was before it was fixed) — makes the supervisor die with the group and the survival assertion fail. Head gate: <code>pytest tests/test_reflex_review_outlives_its_follower.py</code> at the stated revision, 1 passed, 1 skipped, <code>EXIT=0</code>. Negative arm: the same file with the mutation applied, 1 failed (the in-tree case, its survival assertion), 1 passed, <code>EXIT=1</code>. Sibling arms of <code>tests/test_supervisor_outlives_its_launcher.py</code> and <code>tests/test_review_reflex_sweep.py</code> at the same revision: 14 passed, <code>EXIT=0</code>, zero added failures. This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>
