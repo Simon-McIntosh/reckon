@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-title" content="The Obligations Hook Reads A Snapshot">
+  <meta name="plan-summary" content="The per-turn obligations hook reads a snapshot the always-on producer publishes, so it answers in milliseconds instead of re-deriving the fleet.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="12.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S22">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-standalone" content="Extends the shipped obligations view of an-orchestrator-cannot-forget-its-obligations and the landed metadata index; no live plan waits on it and it consumes no plan&#x27;s pending evidence.">
+  <title>The Obligations Hook Reads A Snapshot | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-10-01">
+<meta name="plan-version" content="1">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="lead">
+        Every coordinator prompt runs <code>reckon/hooks/coordinator_obligations.py</code>, and every
+        run re-derives the whole fleet's state in a fresh process: every plan, every live pointer,
+        every worker stream and the whole run ledger. On 2026-10-01 that took 31.4 s cold for the
+        S21 session, against a 30 s hook limit, after a fix that had already removed 30 s from it.
+        A hook on every turn has to answer in milliseconds, which no amount of tuning the derivation
+        reaches while the hook still performs it. This plan moves the derivation into the process
+        that already runs continuously and already watches every pointer, publishes the result, and
+        makes the hook a reader of what was published.
+      </p>
+    </header>
+
+    <h2 id="s1">§1 — What the hook costs today</h2>
+    <p>
+      The hook calls <code>reckon.crew.obligations.obligations(project, session)</code>, which
+      classifies each live pointer, computes the session-closure drain, and checks held worktrees.
+      Measured at main <code>678865de9</code> on the fleet node, after the misfiled-lookup index
+      landed (<code>ab7ee0252</code>):
+    </p>
+    <table>
+      <thead><tr><th>Call</th><th>Time</th></tr></thead>
+      <tbody>
+        <tr><td><code>obligations('reckon', 's21-1c')</code>, fresh process</td><td>31.4 s</td></tr>
+        <tr><td>the same call again in the same process</td><td>11.1 s</td></tr>
+        <tr><td><code>obligations('reckon', 's22-coord')</code>, same process</td><td>9.3 s</td></tr>
+        <tr><td>the S21 hook as its session timed it, under load average 43</td><td>16.9 s</td></tr>
+      </tbody>
+    </table>
+    <p>The hook starts a new interpreter every turn, so it always pays the cold figure. The cold profile:</p>
+    <table>
+      <thead><tr><th>Component</th><th>Cold time</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>runs._project_executable_remainder</code> inside <code>runs.drain</code></td><td>19.7 s</td><td>calls <code>_plan_html.read_state</code> on 160 plans to count foldable followups</td></tr>
+        <tr><td><code>recovery.classify_pointer</code> over 12 pointers</td><td>8.4 s</td><td>re-parses whole worker streams (<code>observe_log</code>, <code>parse_events</code>, 4.2 s), budget and admission checks, the stored review</td></tr>
+        <tr><td><code>_plan_html.parse_meta</code></td><td>3.0 s</td><td>uncached meta parsing across plans</td></tr>
+        <tr><td><code>obligations._held_worktrees</code></td><td>2.8 s</td><td>loads the whole <code>crew.json</code> ledger (2.4 s)</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Every term grows with the fleet: plans with the number of plans, classification with live
+      pointers and stream length, the ledger with every run ever promoted. The 30 s limit was
+      crossed once already on 2026-10-01, when a fallback added a whole-store review scan per
+      pointer (64 s cold), and it will be crossed again by growth alone.
+    </p>
+
+    <h2 id="s2">§2 — The producer publishes each session's obligations</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      The per-project watch producer (<code>runs.watch</code> in <code>reckon/crew/runs.py</code>,
+      started by <code>reckon crew watch --ensure</code>) runs continuously and already classifies
+      every live pointer each sweep to emit transitions. After any sweep in which an input changed,
+      it derives the obligations of each session that has a delivering follower, and writes
+      <code>&lt;config-home&gt;/crew/obligations/&lt;project&gt;/&lt;session&gt;.json</code> by
+      writing a temporary file and renaming it over the old one, so a reader never sees a partial
+      file.
+    </p>
+    <p>The snapshot carries the obligations payload exactly as <code>obligations()</code> returns it, plus:</p>
+    <ul>
+      <li><code>computed_at</code>, and the event-stream offset the snapshot reflects;</li>
+      <li>the producer's pid and the code stamp of the source it is running;</li>
+      <li>for every age, the instant it is measured from rather than a number of seconds, so a reader renders the age at read time and a snapshot never shows a frozen age.</li>
+    </ul>
+    <p>The producer recomputes on three triggers:</p>
+    <ul>
+      <li>a pointer transition, which it already detects;</li>
+      <li>a change to the ledger or to the plan store, read from the stat identity of <code>docs/state/&lt;project&gt;/</code> and <code>docs/plans/</code>;</li>
+      <li>a floor tick every 60 s, so obligations that become due by the passage of time, such as a stale promotable run, appear without any other event.</li>
+    </ul>
+    <p>
+      <strong>Done when</strong> a pointer transition is reflected in the session's snapshot within
+      one producer sweep; the snapshot's obligations equal <code>obligations()</code> computed at the
+      same instant on a synthesised fleet (a parity case); and a producer killed mid-write leaves
+      the previous snapshot intact.
+    </p>
+
+    <h2 id="s3">§3 — The hook reads the snapshot and never derives</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      <code>coordinator_obligations.py</code> resolves its session as it does today, then reads the
+      session's snapshot: one stat and one small JSON read. The snapshot is <em>fresh</em> when the
+      producer pid is alive, its code stamp equals the installed source's, and
+      <code>computed_at</code> is within 120 s. A fresh snapshot is injected exactly as today,
+      including the existing digest that suppresses an unchanged list. A snapshot that is not fresh
+      is replaced by one line naming the reason (no producer, producer running older code, or the
+      age of the snapshot) and the remedy, <code>reckon crew watch --ensure --project &lt;project&gt;</code>.
+      The hook exits 0 in every case. It never imports the derivation modules, so a slow plan or a
+      large stream can no longer slow a turn.
+    </p>
+    <p>
+      The stop hook (<code>--hook stop</code>) reads the same snapshot. What it does with a snapshot
+      that is not fresh is an enforcement policy, recorded as a decision below rather than settled
+      by this section.
+    </p>
+    <p>
+      <strong>Done when</strong> 20 consecutive cold invocations of the prompt hook on the real fleet
+      have a p95 under 250 ms; a test shows the hook's import surface excludes
+      <code>reckon._plan_html</code>, <code>reckon._backends</code> and <code>reckon.ledger</code>;
+      and each not-fresh reason produces its line, with a control that makes the hook derive inline
+      and fails the import-surface case.
+    </p>
+
+    <h2 id="s4">§4 — The derivation itself becomes incremental</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="5.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      The producer, <code>reckon crew obligations</code>, the MCP obligations view and
+      <code>runs.drain</code> all still derive. Each of the three large terms gets a cache keyed by
+      the stat identity of the files it reads, so a recompute only reads what changed.
+    </p>
+    <ol>
+      <li>
+        <strong>Plans.</strong> <code>runs._project_executable_remainder</code> answers from the
+        persisted metadata index (<code>reckon/metadata_index.py</code>, rows revalidated by stat
+        identity) instead of calling <code>read_state</code> on every plan. The index rows gain each
+        plan's open-followup and implementable-section counts. Target: under 0.5 s cold for 160
+        plans, from 19.7 s.
+      </li>
+      <li>
+        <strong>Pointers.</strong> <code>classify_pointer</code> results are memoised by the stat
+        identity of their inputs (pointer, manifest, stream size and mtime, review record), and
+        stream observation resumes from a stored byte offset instead of re-parsing the whole stream.
+      </li>
+      <li>
+        <strong>Ledger.</strong> <code>_held_worktrees</code> reads the rows it needs rather than
+        loading <code>crew.json</code> whole. This should reuse the per-run ledger files from
+        the-ledger-is-one-file-per-run where they exist, not build a second index.
+      </li>
+    </ol>
+    <p>
+      <strong>Done when</strong> <code>obligations()</code> for the largest live session takes under
+      2 s cold in a fresh process and under 0.3 s on a repeat call, with a parity case showing the
+      cached derivation returns the same obligations as the uncached one on a synthesised fleet of
+      40 pointers and 200 plans.
+    </p>
+
+    <h2 id="s5">§5 — Guards that keep it fast</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      Timing alone is a poor guard on a shared node, so each section ships call-count guards that
+      fail deterministically. On the synthesised fleet, a hook invocation calls none of
+      <code>read_state</code>, <code>parse_events</code> or <code>ledger.load</code> (each patched to
+      raise). Between two producer sweeps with one plan rewritten, <code>read_state</code> runs for
+      that plan only. A pointer whose inputs did not change is not re-classified. Wall-clock budgets
+      are recorded as measurements in the evidence, never asserted in the suite.
+    </p>
+
+    <h2 id="s6">§6 — Order of work</h2>
+    <p>
+      §4 item 1 comes first. It is the largest single term, it is independent of the snapshot, and it
+      speeds every reader, including the MCP view and the CLI. §2 and §3 land together, because a
+      hook that reads a snapshot nothing writes reads nothing. §4 items 2 and 3 follow. Each section
+      carries its own §5 guards. The stop-hook decision must be settled before §3 changes the stop
+      path; the prompt path does not wait on it.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="where-derivation-runs" data-choice="producer" data-by="s22-coord" data-when="2026-10-01">
+    <p class="r-dec-q">Which process derives and publishes obligations?</p>
+    <p class="r-dec-ctx">The per-project watch producer runs continuously and already classifies every pointer. A session&#x27;s follower runs only while its harness monitor is armed.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="producer">The per-project watch producer</button>
+      <button class="r-opt" data-value="follower">Each session&#x27;s follower</button>
+      </p>
+    <p class="r-dec-rat">The producer is always on, holds warm caches across sweeps, and already does the classification. A follower dies with its monitor every 25 minutes, so its snapshot would go stale exactly between re-arms.</p>
+    </div>
+<div class="r-dec" data-key="stale-snapshot-at-stop" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">When the stop hook finds no fresh snapshot, what does it do?</p>
+    <p class="r-dec-ctx">The stop hook enforces obligations by blocking a stop. A snapshot can go stale when the producer is down or runs older code.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="bounded-derive">Derive inline under a time budget once §4 makes that fast, and allow the stop if the budget runs out</button>
+      <button class="r-opt" data-value="warn-and-allow">Allow the stop with a line naming the stale snapshot</button>
+      <button class="r-opt" data-value="block-until-producer">Block the stop until a producer is running</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tohras-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-10-01" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Cut the plan-read term first, then publish the snapshot</h4>
+    <div class="r-fu-body"><p>§4 item 1 first: the drain's plan reads are 19.7 s of the 31.4 s and speed every reader. Then §2 and §3 together, then §4 items 2 and 3. The stop-hook decision gates only the stop path of §3.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §4</pre>
+    </article>
+</section>
+  </main>
+</body>
+</html>
