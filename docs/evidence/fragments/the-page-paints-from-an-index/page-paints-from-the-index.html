@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="The loader resolves the first paint from /_index/<project> and merges the discovery payload's derived fields into the same rows afterwards, in place and in order; an index that is unavailable falls back to the discovery path.">
   <meta name="plan-evidence-for" content="reckon:the-page-paints-from-an-index">
   <meta name="plan-verifies" content="reckon:the-page-paints-from-an-index#s4">
-  <meta name="plan-commits" content="f83e38014,ad6971e0d,83207a0e0">
+  <meta name="plan-commits" content="f83e38014,ad6971e0d,83207a0e0,39d09daab">
   <meta name="plan-recorded-at" content="2026-10-01">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-tags" content="spa,state-loader,index,discovery,first-paint">
@@ -66,9 +66,8 @@
     merged ready set: <code>2 failed, 1 passed, EXIT=1</code>
     (<code>negative-control-readiness-gated-on-discovery.log</code>). Mutation reverted.</li>
     <li><strong>The gate.</strong> Base <code>4bdf93dde</code>: <code>75 passed, 2 skipped,
-    EXIT=0</code>. Head <code>83207a0e0</code>: <code>87 passed, 2 skipped, EXIT=0</code>
-    across the new test, the discovery-only file, the three SPA files and the index file.
-    No added failure id. <code>ruff check</code> and <code>ruff format --check</code> over
+    EXIT=0</code>. Head <code>39d09daab</code>: <code>79 passed, 2 skipped, EXIT=0</code>
+    across the new test and the four pre-existing files. No added failure id. <code>ruff check</code> and <code>ruff format --check</code> over
     the changed Python paths report no finding the base did not.</li>
   </ul>
 
@@ -94,11 +93,11 @@
   re-stat the whole tree per request and undo the restart cost the index exists to remove.
   The boundary case above now passes unchanged.</p>
 
-  <p><code>tests/test_metadata_index_survives_restart.py</code> gains the case that pins it:
-  a served index is read, one plan is rewritten, the change event is awaited, and the
-  endpoint is read again — the row carries the new title. Against the old route the case
-  fails (<code>1 failed, 8 passed, EXIT=1</code>); with this one the file is
-  <code>9 passed</code>.</p>
+  <p>The case that pins it lives in <code>tests/test_page_paints_from_the_index.py</code>,
+  against a real server: the served index is read, one plan is rewritten, the change
+  event is awaited, and the endpoint is read again — the row carries the new title.
+  Against the old route the case fails (<code>1 failed, 3 deselected, EXIT=1</code>);
+  with this one the file is <code>4 passed</code>.</p>
 </article>
 </body>
 </html>
