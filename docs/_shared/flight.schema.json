@@ -132,6 +132,13 @@
                         "null"
                     ]
                 },
+                "gate_document": {
+                    "description": "Optional absolute path to the JSON gate file that decides whether a serving lane will admit work, as the router resolves it: a `paused` boolean and an optional `reason` string. A dispatch whose resolved backend declares this path reads it before creating a pointer or a worktree, and waits rather than launching while `paused` is true or the gate cannot be answered; the declared path is also checked against the lane document's published `router_generation_gate.config_path`, and a mismatch waits. User data naming one host's own gate; the schema supplies no path, and the read never goes over the network.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
                 "input_modalities": {
                     "description": "Input modalities this backend's model actually receives. Absent means undeclared, never \"every modality\": a lane that does not say it reads images is treated as not reading them, so a profile requiring an image is refused by name rather than routed here and answered from the filename. User data naming the lane's own measured path to the model; the schema supplies no value, and a declaration is a claim about the delivered input rather than about what the attachment flag accepts.",
                     "items": {
@@ -375,6 +382,13 @@
                 },
                 "fallback": {
                     "description": "Backend to substitute when this one is held on budget. Declared, never inferred: a backend naming no fallback still refuses a held dispatch exactly as one would with this key absent. The substitution is recorded on the run \u2014 the backend asked for, the backend used and the hold that caused it \u2014 so a calibration slice never attributes a fallback run to the backend the caller named. A fallback that is itself held still refuses; this key does not chain into a search across backends.",
+                    "type": [
+                        "string",
+                        "null"
+                    ]
+                },
+                "gate_document": {
+                    "description": "Optional absolute path to the JSON gate file that decides whether a serving lane will admit work, as the router resolves it: a `paused` boolean and an optional `reason` string. A dispatch whose resolved backend declares this path reads it before creating a pointer or a worktree, and waits rather than launching while `paused` is true or the gate cannot be answered; the declared path is also checked against the lane document's published `router_generation_gate.config_path`, and a mismatch waits. User data naming one host's own gate; the schema supplies no path, and the read never goes over the network.",
                     "type": [
                         "string",
                         "null"

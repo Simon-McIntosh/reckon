@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A dispatch holds while the lane is paused">
+  <meta name="plan-summary" content="A dispatch whose resolved backend declares a gate_document reads the gate before creating a pointer or a worktree, waits with error lane-paused and exit 75 while it says paused or cannot be answered, and the follower's review reflex launches nothing while the gate waits.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s9">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,dispatch,lane-gate,pause">
+  <title>A dispatch holds while the lane is paused — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-dispatch-holds-while-the-lane-is-paused" data-reckon="landed" data-when="2026-10-01">
+  <h2>A dispatch holds while the lane is paused</h2>
+  <p>A backend may declare <code>gate_document</code>, an absolute path to the JSON gate the router resolves, and every dispatch whose <em>resolved</em> backend declares it reads that file before creating a pointer or a worktree — whether <code>--local</code> or an explicit <code>--backend</code> chose the backend. The read returns one row of the five-state rule and carries it as <code>lane_gate</code> on every result: <code>not-declared</code> (proceed), <code>open</code> (proceed), <code>declared-but-missing</code> (proceed, naming the mistyped path), <code>paused</code> (wait), and <code>unreadable</code> (wait). The two waiting rows raise a dispatch hold — <code>ok: false</code>, <code>error: lane-paused</code>, exit status 75 — with no pointer and no worktree left behind. A declared path that differs from the lane document's published <code>router_generation_gate.config_path</code> waits and names both paths; a comparison that cannot be made records <code>lane_gate.path_check: skipped</code> with its reason and never holds on its own. Each of the two reads — the gate file and the lane document — carries its own 5&nbsp;s deadline. The follower's review reflex (<code>dispatch_review_for_run</code>) launches nothing while the gate waits and reports the row it read, and the dry run reaches the same hold as the launch.</p>
+  <p>Nineteen cases pass in a temporary <code>RECKON_HOME</code> against a stub local backend, a temporary gate file and a stub lane document; no real gate file, lane document or scheduler is read or written. They drive every row of the rule and assert <code>lane_gate.state</code> in each result, including the <code>--local</code> and explicit <code>--backend</code> CLI dispatches (exit 75, no pointer, no worktree) and the in-process sweep review.</p>
+  <p>The declared mutation — the gate wait raise disabled (<code>if False and lane_gate.get("state") in _LANE_GATE_WAITING_STATES</code>) — leaves the paused dispatch creating a pointer and a worktree, and the head-paused cases fail (<code>EXIT=1</code>, 10 failed ids the head arm does not fail). Head gate: <code>pytest tests/test_dispatch_holds_while_the_lane_is_paused.py</code> at the stated revision, 19 passed, <code>EXIT=0</code>. This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>
