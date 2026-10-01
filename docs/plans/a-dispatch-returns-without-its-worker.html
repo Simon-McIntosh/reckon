@@ -18,7 +18,7 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-modified" content="2026-10-01">
-  <meta name="plan-version" content="127">
+  <meta name="plan-version" content="128">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -1148,6 +1148,9 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260925T092058131570-review-of-stop-before-spawn-spawns-nothing" data-who="reckon-build" data-when="2026-09-25T11:19:37.154Z">
     <div class="r-comment-body"><p>review stored; findings routed to the implementer or carried as a followup</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261001T131410696573-review-of-the-supervisor-starts-without-a-runpy-warning" data-who="reckon-build" data-when="2026-10-01T13:23:38.533Z">
+    <div class="r-comment-body"><p>Independent review of r-20261001T125456379093-the-supervisor-starts-without-a-runpy-warning landed: a parsed record scoring goal_fidelity 20, evidence 16, scope_discipline 20, durability 19, fit 20 (total 95), reviewed_base_sha 4e5f0a870c00a33a14f63b09ac5c450ca46a4683 and reviewed_head_sha d65b8da6d9e6e83bb70111b3c266a59166e4cc65, one follow-on finding on four unheaded gate logs, and added_failure_count unmeasured because the reviewed manifest names no baseline_suite or after_suite.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260923T131048752851-refusal-leaves-no-trace" data-who="reckon-ship" data-when="2026-09-23T14:39:02.322Z">
     <div class="r-comment-body"><p>every refusal after worktree creation begins is shown to leave no pointer, worktree or watch row; two paths that did were repaired (merged 4248cbaf); review 94: the record counts the watcher-required refusal as in the tested set although it raises before worktree creation, the evidence table has three pre-pointer rows not four, and the gate log header names the base revision; correction appended to the landed record, gate re-verified at merged main</p></div>
 </div>
@@ -1272,7 +1275,7 @@
     <div class="r-comment-body"><p>review of r-20261001T110717125397-the-validation-refusal-test-reads-the-key stored as a parsed five-dimension record (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20; total 98) under reviews/reckon/ at both the plain and .at-aee0b35 paths, carrying added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own base log (baseline-head.log at a0d770a61) and head log (gate.log at aee0b35).</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261001T110717125397-the-validation-refusal-test-reads-the-key" data-who="reckon-build" data-when="2026-10-01T11:18:54.124Z">
-    <div class="r-comment-body"><p>tests/test_dispatch_result_matches_launch.py — the contract-validation case now asserts error == &quot;contract-validation&quot; and reads the failed property (&quot;fully-specified&quot;) plus a non-empty detail from payload[&quot;validation&quot;][&quot;findings&quot;], with no literal substring of the rendered message; gate 22 passed, EXIT=0 at aee0b35.</p></div>
+    <div class="r-comment-body"><p>tests/test_dispatch_result_matches_launch.py — the contract-validation case now asserts error == "contract-validation" and reads the failed property ("fully-specified") plus a non-empty detail from payload["validation"]["findings"], with no literal substring of the rendered message; gate 22 passed, EXIT=0 at aee0b35.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-adrwiw-s8-landed" data-who="s21-1c" data-when="2026-10-01T09:50:00Z">
     <div class="r-comment-body">Landed at merge df1e01574 (run r-20261001T081309497681-a-backend-carries-no-worker-cap, reviewed head 11a32aa4f, review total 96). Dispatch no longer refuses on max_concurrent_runs. summary.roster_bound reports the key as retired and never binding, and the roster refusal sentence is gone. tests/test_backend_carries_no_worker_cap.py admits a fourth dispatch past a declared cap of 2. It still refuses a spent 2-core reservation with '2 of 2 cores admitted (1 per worker)'. Negative control: with roster enforcement restored, 3 cases fail. Coordinator measures: the 143 files importing dispatch or summary, at main f1e3315c7 and at the merge, show 14 failed and 1 error each, with identical ids. The whole suite at main ea69eb30f and at the stacked head 7ec337b28 shows 73 failed and 1 error each, with identical ids and no added failure.</div>
