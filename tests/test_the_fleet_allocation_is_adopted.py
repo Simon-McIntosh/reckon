@@ -22,6 +22,7 @@ from __future__ import annotations
 import importlib
 import json
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -271,3 +272,67 @@ def test_a_backend_declaring_no_placement_is_untouched_on_resume(
     assert _step_job_id(plan.argv) is None
     assert _allocation_requests() == 0
     assert _asked("squeue") == [], "an unplaced backend asks the scheduler nothing"
+
+
+# A queue row for an allocation the fleet record does not name, so the query is
+# answered and simply does not carry the recorded job — an absence, not a
+# failure to ask.
+_OTHER_JOB_ROW = "99000001|reckon-fleet|RUNNING|00:10:00|clu-2018||reckon-fleet|UNLIMITED"
+
+
+def test_a_recorded_job_the_queue_cannot_be_asked_about_refuses(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An unanswerable queue for a recorded job is unknown, not absent.
+
+    The fleet record names a supervisor-running allocation, so a query that
+    cannot run must not read as no adoption: the ensure refuses, and never
+    falls through to mint a second allocation beside the fleet's. A recording
+    salloc is on PATH to show the difference — the refusal logs no allocation
+    request, where swallowing the queue failure would log one.
+    """
+    _isolate(monkeypatch, tmp_path)
+    bin_dir = _recording_scheduler(tmp_path / "bin")
+    monkeypatch.setenv("PATH", _scheduler_path(bin_dir))
+    _publish_fleet_record(tmp_path)
+
+    def client(argv: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        if argv[0] == "squeue":
+            raise FileNotFoundError(2, "No such file or directory", "squeue")
+        return subprocess.run(argv, capture_output=True, text=True, check=False)
+
+    message = ""
+    refused = False
+    try:
+        placement.ensure_reservation(project="alpha", session="s-1", runner=client)
+    except crew.CrewError as exc:
+        refused = True
+        message = str(exc)
+
+    # Asserted first: the record names a job, so no allocation may be obtained.
+    assert _allocation_requests() == 0, "a queue that cannot be asked submits nothing"
+    assert refused, "an unanswerable queue is a refusal, not a fallthrough to minting"
+    assert "squeue" in message
+    assert placement.read_reservation() is None
+
+
+def test_a_queue_without_the_recorded_job_reads_as_no_adoption(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A queue that answers without the recorded job is an answered absence.
+
+    The queue is reachable and simply does not list the job the record names —
+    the fleet allocation has gone — so adoption returns None and the ensure
+    holds the reservation the usual way, submitting exactly one allocation.
+    """
+    _isolate(monkeypatch, tmp_path)
+    bin_dir = _recording_scheduler(tmp_path / "bin")
+    monkeypatch.setenv("PATH", _scheduler_path(bin_dir))
+    monkeypatch.setenv("FAKE_JOB_ROW", _OTHER_JOB_ROW)
+    _publish_fleet_record(tmp_path)
+
+    result = placement.ensure_reservation(project="alpha", session="s-1")
+
+    assert result["reason"] == "held"
+    assert result.get("adopted") is not True
+    assert _allocation_requests() == 1, "an answered absence holds one allocation"

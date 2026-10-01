@@ -460,6 +460,19 @@ def ensure_reservation(
         )
 
 
+def _unanswerable_queue(exc: BaseException) -> CrewError:
+    """The refusal when a queue cannot be asked about a recorded fleet job.
+
+    A recorded job whose allocation cannot be queried is unknown, not absent:
+    the ensure refuses and submits nothing rather than falling through to mint
+    a second allocation beside the one the record names.
+    """
+    return CrewError(
+        "cannot hold the placement reservation: squeue could not be run — "
+        f"{exc}; nothing was submitted"
+    )
+
+
 def _adopt_live_fleet_allocation(
     *,
     project: str | None,
@@ -479,7 +492,12 @@ def _adopt_live_fleet_allocation(
     the supervisor-running allocation apart from any other job carrying the
     comment. The shape is read from the scheduler, so the published record
     describes the size the adopted job was actually submitted with, and nothing
-    is submitted here.
+    is submitted here. A recorded job the scheduler cannot be asked about — a
+    client that will not run, or a query that fails — is unknown rather than
+    absent: adoption refuses with a CrewError and submits nothing, never falling
+    through to mint a second allocation beside the one the record names; only a
+    record naming no job, or a queue that answers without it, is an answered
+    absence and returns None.
     """
     from reckon.crew import fleet_node
 
@@ -488,12 +506,15 @@ def _adopt_live_fleet_allocation(
         return None
     try:
         jobs = fleet_node.query_jobs(fleet_node.fleet_size().account, runner=runner)
-    except fleet_node.FleetNodeError:
-        return None
+    except (fleet_node.FleetNodeError, OSError, subprocess.SubprocessError) as exc:
+        raise _unanswerable_queue(exc) from exc
     job = fleet_node.find_allocation(jobs, preferred=recorded)
     if job is None or str(job.get("jobid", "")).strip() != recorded:
         return None
-    shape = fleet_node.allocation_shape(recorded, runner=runner)
+    try:
+        shape = fleet_node.allocation_shape(recorded, runner=runner)
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise _unanswerable_queue(exc) from exc
     if shape is None or shape.get("memory_gb") is None:
         return None
     partition = str(shape["partition"])
