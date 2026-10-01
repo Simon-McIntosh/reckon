@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="145">
+<meta name="plan-version" content="146">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -255,6 +255,16 @@
     <code>reckon/crew/runs.py</code>. On the fleet, the producer launch also takes
     <code>a-dispatch-returns-without-its-worker</code> &sect;10's spawn path, so this section
     runs after that one.</p>
+    <p><strong>Three readings settled before release (read-back
+    <code>r-20261001T140351462236</code>, 2026-10-01).</strong> The lease interval a producer
+    compares against is the effective one: <code>RECKON_PRODUCER_LEASE_SECONDS</code> when set,
+    600 s otherwise. A live run pointer is a pointer for the project whose run is not terminal.
+    A completed-but-unpromoted run therefore keeps its producer awake, and a promoted or
+    discarded one does not. The registration has two writers, the producer (pid,
+    <code>poll_interval_seconds</code>) and the follower (<code>lease_renewed_at</code>). Each
+    write is a read-modify-write under the registration's existing lock, and it lands by
+    temp-file rename. So neither writer drops the other's field, and a reader never sees a
+    partial record. The section is released for dispatch.</p>
 
     <h2 id="s4">&sect;4 &mdash; Polling reads what changed, never the whole tree</h2>
     <p><code>git status --untracked-files=all</code> is issued from
