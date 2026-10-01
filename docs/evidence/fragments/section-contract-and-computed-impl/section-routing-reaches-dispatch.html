@@ -87,20 +87,27 @@ E       AssertionError: assert 'section-lane' == 'raised-lane'
   <p>A wider crew-dispatch regression set (<code>test_crew.py</code>, <code>test_crew_dryrun.py</code>,
   <code>test_crew_mounted_paths.py</code>, <code>test_crew_dispatch_guard.py</code>,
   <code>test_dry_run_reaches_admission.py</code>, <code>test_plan_review_gate.py</code>,
-  <code>test_brief_plan_exclusivity.py</code>) was attempted as a second read of the wiring and is
-  <strong>unmeasured</strong>: its basetemp was deleted mid-run by the operator's own scratch
-  cleanup, so every failure and error in the log it left (1 failed, 170 passed, 84 errors,
-  <code>logs/head-dispatch-regression-invalidated.log</code>) is a
-  <code>FileNotFoundError</code> naming that deleted path rather than a code verdict. It is
-  reported here as unrun, not as passed or failed, and the set is a re-run for the coordinator.</p>
+  <code>test_brief_plan_exclusivity.py</code>) was run as a second read of the wiring at two matched
+  revisions: <strong>head 15 failed, 240 passed</strong> at <code>ebd212e9a</code>
+  (<code>logs/head-dispatch-regression-repaired.log</code>) against <strong>base 17 failed, 238
+  passed</strong> at <code>33c5e761d</code> (<code>logs/base-dispatch-regression.log</code>), with
+  no failure id seen at the head that the base did not also carry. The two base-only ids are
+  watcher-arming tests that flip with the live fleet's watcher state. An earlier attempt at this
+  set was invalidated by the operator's own scratch cleanup deleting its basetemp mid-run; every
+  failure and error in the log it left (<code>logs/head-dispatch-regression-invalidated.log</code>)
+  is a <code>FileNotFoundError</code> naming that deleted path rather than a code verdict, so the
+  figures above come from the re-run.</p>
   <p>Lint delta over the changed Python paths: <code>ruff check</code> and
   <code>ruff format --check</code> report no finding the base revision did not, and the new test file
   is clean under both.</p>
 
   <h3>Records</h3>
-  <p>Commits <code>1ff67f859</code> (the wiring, the single derivation and the generator) and
+  <p>Commits <code>1ff67f859</code> (the wiring, the single derivation and the generator),
   <code>4fba21b2a</code> (the parity case's lazy import, so a revision without the derivation fails on
-  its assertion rather than at collection). Logs live under
+  its assertion rather than at collection), <code>ebd212e9a</code> (both authored anchor spellings
+  reach the section-text lookup) and <code>b534dcd47</code> (one candidate set serves both
+  authored-HTML lookups). The gate re-run at <code>b534dcd47</code> reports 149 passed, 2 skipped
+  (<code>logs/head-gate-guard.log</code>). Logs live under
   <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T032201101995-section-routing-reaches-dispatch/logs/</code>.</p>
 </article>
 </body>
