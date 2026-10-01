@@ -3151,13 +3151,50 @@ def _record_landing_comment(
     )
 
 
+# The git state files whose presence means another operation owns the index.
+# Each is resolved through ``git rev-parse --git-path`` rather than a literal
+# ``.git/`` join, so a linked worktree — whose ``.git`` is a file pointing at
+# its private directory — resolves the marker where git actually keeps it.
+_OPEN_OPERATION_MARKERS: tuple[tuple[str, str], ...] = (
+    ("MERGE_HEAD", "merge"),
+    ("rebase-merge", "rebase"),
+    ("rebase-apply", "rebase"),
+    ("CHERRY_PICK_HEAD", "cherry-pick"),
+)
+
+
+def _open_operation_state(checkout: Path) -> str | None:
+    """The git operation the checkout has open, or ``None`` when none has.
+
+    Promotion commits the stores it writes into the checkout's index. An open
+    merge, rebase or cherry-pick means another session is mid-operation there:
+    a landing commit would move that operation's first parent under it and a
+    whole-index commit could take its staged work. The marker path is resolved
+    with ``git rev-parse --git-path`` so a linked worktree, whose ``.git`` is a
+    file, is read at its own git directory rather than a ``.git/`` that does
+    not exist.
+    """
+    for marker, description in _OPEN_OPERATION_MARKERS:
+        resolved = _worktree_git_paths(checkout, "rev-parse", "--git-path", marker)
+        if not resolved:
+            continue
+        candidate = Path(resolved[0])
+        if not candidate.is_absolute():
+            candidate = checkout / candidate
+        if candidate.exists():
+            return description
+    return None
+
+
 def _require_committable_checkout(checkout: Path | None, run_id: str) -> None:
     """Refuse before writing when the checkout cannot host the landing commit.
 
     Promotion writes two tracked stores (the ledger row and the plan landing
     comment) and commits them as one landing. A checkout that is not a git
-    worktree cannot host that commit, so promotion refuses here, before either
-    store is written, rather than writing stores it could not commit.
+    worktree cannot host that commit, and one with an open merge, rebase or
+    cherry-pick is owned by another operation, so promotion refuses here,
+    before either store is written, rather than writing stores it could not
+    commit or committing into a peer's operation.
     """
     if checkout is None:
         raise CrewError(
@@ -3172,6 +3209,14 @@ def _require_committable_checkout(checkout: Path | None, run_id: str) -> None:
             "a git worktree, so the ledger row and plan comment it would write "
             "could not be committed in one landing; promotion refuses before "
             "writing either store"
+        )
+    open_state = _open_operation_state(checkout)
+    if open_state is not None:
+        raise CrewError(
+            f"run {run_id!r} cannot be promoted: the checkout {checkout} has an "
+            f"open {open_state} in progress, so the landing commit would write "
+            "into an operation another session may be concluding; promotion "
+            "refuses before writing either store"
         )
 
 
