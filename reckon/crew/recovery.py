@@ -8376,9 +8376,7 @@ def _refuse_unresolvable_watch(project: str) -> None:
     assert_routable_backends_resolvable(project, _resolved_review_config(project, None))
 
 
-def _recreate_unlinked_registration(
-    project: str, watcher: Mapping[str, Any]
-) -> bool:
+def _recreate_unlinked_registration(project: str, watcher: Mapping[str, Any]) -> bool:
     """Restore the seat record when an unlink took its path out from under us.
 
     The seat record is the file ``crew unwatch`` opens to find the producer it
