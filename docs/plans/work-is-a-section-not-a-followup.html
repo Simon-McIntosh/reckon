@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="work-is-a-section-not-a-followup">
+  <meta name="plan-title" content="Work Is A Section, Not A Followup">
+  <meta name="plan-summary" content="The roadmap schedules sections, never followups. One predicate names a followup that hides work; the roadmap reports it and the write path refuses it.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="8.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S22">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-standalone" content="It changes the followup write path and adds one roadmap wiring finding. No live plan&#x27;s sections wait on it, and it consumes no plan&#x27;s pending evidence; the plans whose followups it migrates are edited, not depended on.">
+  <title>Work Is A Section, Not A Followup | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="lead">
+        The roadmap decides what can run from each plan's sections classified
+        <code>implementable</code>, its gates, its decisions and its dependency edges. A followup
+        contributes none of those. Its schema carries a title, a body, a one-line invocation, a
+        status and author fields, and no section, gate, effort or edge. So work written into a
+        followup cannot appear in <code>ready_now</code>, cannot be dispatched as a section, cannot
+        be held by a gate and carries no effort. On a shipped plan it does not appear at all. The
+        build skill already says that same-plan work becomes a section and a followup is only a
+        pointer to another plan. On 2026-10-01, 102 of the 129 open followups on reckon's plans
+        broke that rule, because nothing checks it. This plan adds the check, at both the read
+        side and the write side, and then clears the 102.
+      </p>
+    </header>
+
+    <h2 id="s1">§1 — What the roadmap cannot see today</h2>
+    <p>
+      Reckon reads followups in exactly two places. <code>continuation_present</code> in
+      <code>reckon/_store.py</code> accepts an open followup as the continuation a landing write
+      must name. <code>_dispatchability</code> in <code>reckon/roadmap.py</code> counts a plan with
+      an execution gate as dispatchable only while it has some open followup. Nothing else that
+      decides readiness, order or effort reads them.
+    </p>
+    <p>
+      On 2026-10-01 the coordinator of S22 classified every open followup on
+      <code>docs/plans/*.html</code> by the plan and section its invocation line names. The
+      classifier was a heuristic over the <code>prompt</code> and <code>recommends_skill</code>
+      fields, so a few rows may be misfiled:
+    </p>
+    <table>
+      <thead><tr><th>Count</th><th>What the followup is</th><th>What the roadmap shows</th></tr></thead>
+      <tbody>
+        <tr><td>23</td><td>points at an implementable section of its own plan</td><td>correct</td></tr>
+        <tr><td>4</td><td>points at another plan</td><td>correct</td></tr>
+        <tr><td>37</td><td>describes work on its own plan, with no section</td><td>nothing to dispatch</td></tr>
+        <tr><td>20</td><td>names a section of its own plan that is not classified implementable</td><td>nothing to dispatch</td></tr>
+        <tr><td>18</td><td>sits on an active plan already at <code>impl</code> 1.0</td><td>the plan, with no implementable sections</td></tr>
+        <tr><td>27</td><td>sits on a shipped plan</td><td>nothing at all</td></tr>
+      </tbody>
+    </table>
+    <p>
+      In the S22 roadmap, <code>crew-runtime-positive-controls</code> is listed as ready with
+      <code>implementable_sections: []</code> while it holds five open followups, each with a
+      done-when and a negative control. Fifteen of the 102 were written by s22-coord. The rest
+      were written by S16 to S25 ship and coordinator sessions and by <code>reckon-create</code>
+      seeds.
+    </p>
+
+    <h2 id="s2">§2 — One predicate names a followup that hides work, and the roadmap reports it</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      Write one function that takes a parsed plan and one open followup and answers whether the
+      followup is a pointer or hides work. It is a pointer when its invocation names a different
+      plan (a bare slug other than the host, or <code>project:slug</code> in another mount) or a
+      sprint, or when it names its own plan together with a section the plan's
+      <code>section_declarations</code> classify <code>implementable</code>. Anything else hides
+      work. That covers an invocation naming its own plan with no section, with a section that is
+      done or unclassified, or naming nothing parseable. The function returns the reason as one
+      of a small fixed set of words, so a reader can tell the cases apart.
+    </p>
+    <p>
+      The roadmap calls this function for every open followup on every plan it inventories,
+      including completed plans, and reports each one that hides work as a wiring finding of
+      severity <code>warn</code>. The finding names the plan, the followup id and the reason.
+      There is one implementation: the finding and §3's refusal import the same function, and no
+      surface re-derives it.
+    </p>
+    <p>
+      <strong>Done when</strong> a test builds plans in a temporary docs directory, one for each
+      case: a pointer to another plan, a pointer to the plan's own implementable section, a
+      followup naming a done section, a followup naming no section, and a followup on a shipped
+      plan. It asserts the predicate's answer and reason for each, and that the roadmap's
+      findings list exactly the three that hide work. Run against reckon's own
+      <code>docs/plans</code>, the finding count is recorded beside §1's 102, and every disagreement
+      with §1's heuristic is listed by followup id with the reason. The negative control makes the
+      predicate accept a followup that names its own plan with no section; the no-section case
+      must then fail.
+    </p>
+
+    <h2 id="s3">§3 — The write path refuses a new followup that hides work</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      Appending a followup through <code>edit_plan</code>, or through the HTTP patch path, is
+      refused when §2's predicate says the new followup hides work. The refusal names the reason
+      and the remedy: add the work as a section of this plan, or create a new plan when this one is
+      complete, and point the followup at it. Resolving, superseding and reading an existing
+      followup are never refused, because those are how §4 clears the backlog.
+    </p>
+    <p>
+      This closes a guard that has been open, so measure what rests on it before writing the
+      refusal. Flip the check on in a scratch tree and count the failing tests and the callers
+      that append followups: <code>crew.followup_ops_from_manifest</code>, the promotion
+      path, and test fixtures that append a followup to a plan with no sections. That count goes
+      in the manifest. A caller that appends work as a followup is repaired to write a pointer or
+      to stop appending. A fixture is changed only where it encodes the old behaviour, not to make
+      the gate pass.
+    </p>
+    <p>
+      <strong>Done when</strong> a test appends each of §2's five cases through
+      <code>edit_plan</code> and asserts that the three that hide work are refused with the reason
+      word, the two pointers are written, and resolving an existing followup that hides work
+      succeeds. The negative control removes the check from the append path; the
+      followup-naming-no-section case must then be written rather than refused. The gate covers
+      every test file that appends a followup, found by a text search of <code>tests/</code> for the
+      append op and for <code>followup_ops_from_manifest</code>.
+    </p>
+
+    <h2 id="s4">§4 — The open followups that hide work become sections, plans or pointers</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      The coordinator works through §2's finding list, because plan state is the coordinator's to
+      write. Each row is disposed in one of four ways:
+    </p>
+    <ul>
+      <li>Same-plan work on a live plan becomes a section classified implementable. The followup is resolved with an outcome naming the section.</li>
+      <li>Work on a complete plan moves to a live plan that owns it, as a section there. If no plan owns it, a new plan is created. The followup is resolved with an outcome naming where the work went.</li>
+      <li>A followup that is really a pointer, but is written against its own plan, is rewritten as a resolved followup plus a new one that points at the right place.</li>
+      <li>Work that is already done or no longer wanted is resolved with an outcome saying so and citing the commit or the reason.</li>
+    </ul>
+    <p>
+      The coordinator of the session that wrote a row decides its disposition, or is told of it
+      before its plan changes. s22-coord converts its own fifteen first. Rows from sessions that
+      have ended are disposed by the coordinator running this section.
+    </p>
+    <p>
+      <strong>Done when</strong> the roadmap's finding from §2 lists zero followups that hide work
+      on reckon's plans, or each remaining row is named here with the coordinator that holds it.
+      A table in this plan's landed record shows every row's disposition and where its work went.
+    </p>
+
+    <h2 id="s5">§5 — Order of work</h2>
+    <p>
+      §2 lands first, because it is read-only and gives §4 its worklist from the server instead of
+      from a heuristic. §3 and §4 then proceed side by side. The refusal applies only to new
+      appends, and §4 only resolves and adds sections, so neither waits on the other. s22-coord's
+      fifteen are converted at once, before §2 lands, because they are known now.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="scope" data-choice="all-three" data-by="lead" data-when="2026-10-01">
+    <p class="r-dec-q">How far should the followup fix go?</p>
+    <p class="r-dec-ctx">The audit found 102 open followups that hide work, 15 of them s22-coord&#x27;s.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="all-three">Convert s22-coord&#x27;s 15, add the write-time refusal and the roadmap finding, then migrate the other 87 with S21 and S25</button>
+      <button class="r-opt" data-value="mine-and-check">Convert the 15 and add the check; leave the 87 to their owners</button>
+      <button class="r-opt" data-value="mine-only">Convert the 15 only</button>
+      <button class="r-opt" data-value="schedulable-followups">Give followups section, effort and gate fields instead</button>
+    </p>
+    <p class="r-dec-rat">A rule without a check decays, and 87 violations from other sessions show it already has. Making followups schedulable would add a second unit of work beside sections, so the fix keeps followups as pointers and checks that they are.</p>
+</div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-wisnaf-001" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-01" data-recommends-skill="/reckon-build work-is-a-section-not-a-followup §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the predicate and the roadmap finding</h4>
+    <div class="r-fu-body"><p>§2 first: it is read-only and gives §4 its worklist. §3 and §4 follow side by side.</p></div>
+    <pre class="r-fu-prompt">/reckon-build work-is-a-section-not-a-followup §2</pre>
+</article>
+    </section>
+  </main>
+</body>
+</html>
