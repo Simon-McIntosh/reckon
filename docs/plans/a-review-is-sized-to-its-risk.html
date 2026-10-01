@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="73">
+<meta name="plan-version" content="74">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.75">
@@ -328,6 +328,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T222131092669-supervisor-outlives-its-launcher" data-who="reckon-build" data-when="2026-09-30T23:39:45.149Z">
     <div class="r-comment-body"><p>supervisor-outlives-its-launcher: reckon/crew/dispatch.py _start_supervisor starts the per-run supervisor through a short-lived intermediate on the fleet-spawn-disabled path — a fresh interpreter (subprocess.Popen, close_fds=True) is handed the supervisor argv and stderr path as JSON on stdin and starts the supervisor with start_new_session=True before exiting at once, so the supervisor is reparented away from the launching process and leads its own session and process group, and _spawn_detached_supervisor returns its pid with _confirm_supervisor_survived still run on it; an intermediate that exits without a pid raises CrewError carrying its exit status and the tail of its stderr. The in-process fork, os.execv, the S606 suppression and the manual closerange are gone, so a threaded launcher (the MCP server) is never forked. Measure tests/test_supervisor_outlives_its_launcher.py 5 passed exit 0, tests/test_dispatch_returns_without_worker.py 7 passed exit 0, tests/test_dispatch_spawns_through_the_fleet.py 6 passed exit 0; negative control (single Popen restored) 2 failed exit 1 on the parent-pid and tree-kill assertions.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260930T234003133267-review-of-supervisor-outlives-its-launcher" data-who="reckon-build" data-when="2026-09-30T23:59:40.477Z">
+    <div class="r-comment-body"><p>an independent §5 review of run r-20260930T222131092669-supervisor-outlives-its-launcher is stored against reviewed head 532a5f639f30b559cb51c449d321ab55d3415c48 / base 27c67a3a56b0773d9e80d90a1f62a8c6807fd8df, scoring goal_fidelity 20, evidence 17, scope_discipline 17, durability 19 and fit 18 (total 91, no absent dimension, complete True, added_failure_count unmeasured-from-manifest and 0 by the reviewer&#x27;s own arms), with five follow-on findings and no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T195034464501-review-of-review-findings-compose-one-repair" data-who="reckon-build" data-when="2026-09-28T20:06:07.166Z">
     <div class="r-comment-body"><p>review of r-20260928T193846170874-review-findings-compose-one-repair stored at ~/.config/reckon/crew/reviews/reckon/r-20260928T193846170874-review-findings-compose-one-repair.json (and its .at-fac12a7e… companion): status parsed, all 5 dimensions scored 0..20, total 86 (goal_fidelity 18, evidence 18, scope_discipline 20, durability 14, fit 16), added_failure_count 0 over the reviewed run's own baseline_suite/after_suite gate logs, 3 findings.</p></div>
