@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="section-contract-and-computed-impl">
+  <meta name="plan-title" content="A raise that fails to resolve is visible where a section with no raise is silent">
+  <meta name="plan-summary" content="A dispatch whose section raise cannot be resolved records the failure on the dispatch payload and the run pointer, naming the exception class and the section, and still falls back to role routing; a section carrying no rule records no failure and a valid rule records its resolved raise, so the three states are distinguishable. The base arm confirms both cases read section_routing None before the change; the head arm passes 23 tests across the new file and the three section-routing files; the declared control (the failure dropped again) turns the malformed and no-rule records back into the same evidence and reddens three tests.">
+  <meta name="plan-evidence-for" content="reckon:section-contract-and-computed-impl">
+  <meta name="plan-verifies" content="reckon:section-contract-and-computed-impl#s5">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,dispatch,section-routing,capability-raise,evidence">
+  <title>A raise that fails to resolve is visible where a section with no raise is silent</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-raise-failure-is-visible" data-reckon="landed" data-when="2026-10-01">
+  <h2>A raise that fails to resolve is visible where a section with no raise is silent</h2>
+  <p><code>_dispatch_section_routing</code> in <code>reckon/crew/dispatch.py</code> caught every failure
+  its read could raise — <code>CrewError</code>, <code>PlanVisibilityError</code>,
+  <code>ResourceCollision</code>, <code>OSError</code>, <code>ValueError</code> — and returned
+  <code>None</code>, which is the same value it returns for a node whose section reference names no
+  record at all. A rule whose raised class routes to a lane no layer defines therefore disabled the
+  raise silently, and a dispatch record could not distinguish "this section has not earned a raise"
+  from "the raise could not be read". The read now returns a routing failure record naming the
+  exception class and the section, the dispatch proceeds on role routing exactly as before, and the
+  failure travels on the dispatch payload and on the run pointer, which is the record a later reader
+  reaches without the dispatching process.</p>
+
+  <h3>Three states, three records</h3>
+  <table>
+    <thead>
+      <tr><th>Section record</th><th>Recorded <code>section_routing</code></th><th>Lane taken</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>no section reference</td>
+        <td><code>None</code></td>
+        <td>role routing</td>
+      </tr>
+      <tr>
+        <td>a section whose rule resolves, raise or not</td>
+        <td><code>attempts</code>, <code>capability</code>, <code>raise</code>, <code>failure: None</code>, <code>summary</code></td>
+        <td>the resolved lane</td>
+      </tr>
+      <tr>
+        <td>a section whose rule raises while being read</td>
+        <td><code>failure: {section, exception, detail}</code>, <code>summary</code></td>
+        <td>role routing</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>The <code>failure</code> key is written on every outcome rather than left off when the rule
+  resolved cleanly, so its absence cannot be read as "checked and found clean" for a section whose
+  rule was never opened.</p>
+
+  <h3>Arms</h3>
+  <p>All three arms run the same gate — the new
+  <code>tests/test_a_raise_failure_is_visible.py</code> plus
+  <code>tests/test_section_routing_reaches_dispatch.py</code>,
+  <code>tests/test_section_attempts_capability.py</code> and
+  <code>tests/test_crew_dispatch_arming.py</code> — from a fixture that builds its plan, its flight
+  config and its crew home under the test's own temporary path. The base arm runs in a scratch
+  extraction of <code>c091e7c9c</code> with only the new test file copied in; the head arm runs in the
+  node's worktree at <code>1d7d6959c</code>.</p>
+  <table>
+    <thead>
+      <tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>base</td><td><code>c091e7c9c</code></td><td>18 passed, 5 failed (<code>EXIT=1</code>)</td><td><code>logs/gate-base.log</code></td></tr>
+      <tr><td>head</td><td><code>1d7d6959c</code></td><td>23 passed (<code>EXIT=0</code>)</td><td><code>logs/gate-head.log</code></td></tr>
+      <tr><td>control</td><td><code>1d7d6959c</code> + the declared mutation</td><td>2 passed, 3 failed (<code>EXIT=1</code>)</td><td><code>logs/negative-control.log</code></td></tr>
+    </tbody>
+  </table>
+  <p>The base arm confirms the defect as observed rather than as assumed: at <code>c091e7c9c</code> a
+  dispatch whose section carries the malformed rule records <code>section_routing: null</code> exactly
+  as a node whose section reference is absent does, while a section whose rule resolves records a
+  payload with <code>raise: null</code>. The five base failures are the new file's own cases; the
+  three sibling files pass at both arms, so the head arm adds no failure id.</p>
+  <p>The declared control drops the routing failure again so the read returns
+  <code>None</code>; the malformed rule and the no-rule section then carry the same evidence and three
+  of the new file's cases fail (<code>EXIT=1</code>). The mutation was applied and reverted in the
+  node's worktree; the head arm above was measured at the committed revision after the revert.</p>
+  <p>Lint delta over the changed Python paths: <code>ruff check</code> reports the same eight findings
+  at base and at head (none added), <code>ruff format --check</code>'s diff is byte-identical base and
+  head apart from the file path header, and the new test file is clean under both.</p>
+
+  <h3>Records</h3>
+  <p>Commit <code>1d7d6959c</code> carries the change and the new test. Logs live under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T075825399501-a-raise-failure-is-visible/logs/</code>.
+  The evidence fence names no artifact for this node, so no figure accompanies this record: the three
+  states above are a table, not a plot.</p>
+</article>
+</body>
+</html>
