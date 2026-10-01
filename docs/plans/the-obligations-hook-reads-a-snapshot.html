@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -290,6 +290,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261001T183044423847-held-worktrees-read-run-files" data-who="reckon-build" data-when="2026-10-01T20:54:51.542Z">
     <div class="r-comment-body"><p>§4 item 3 — obligations._held_worktrees resolves each inspected tree from the per-run ledger file of the run that named it (r-&lt;stamp&gt;-&lt;node id&gt; under docs/state/&lt;project&gt;/runs/) and falls back to the whole ledger for a tree no per-run file names and for one more than one names, where the ledger's completion order decides attribution; session s21-1c in fresh processes 3.324 s at base → 0.675 s at head with the same empty held set, and 25 live sessions compared with 0 mismatching run ids. Evidence: docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/held-worktrees-read-run-files.html</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261001T205610034127-review-of-held-worktrees-read-run-files" data-who="reckon-build" data-when="2026-10-01T21:28:20.868Z">
+    <div class="r-comment-body"><p>review of r-20261001T183044423847-held-worktrees-read-run-files stored as a parsed record over its base 64a56280f..head 93c328388, total 82 (goal_fidelity 16, evidence 15, scope_discipline 18, durability 17, fit 16), added_failure_count 0 with no added ids derived from the reviewed run&#x27;s own gate-base.log and gate-head.log via reckon.crew.review.added_failures_from_gate_logs, and three follow-on findings (a manifest failure_id naming a module file that does not exist, a negative-control log that exercises a different mutation than the declared string, and a fast-path selection that keys a per-run file on its run id&#x27;s node token matching the worktree directory name)</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-tohras-s4-item2-memo-landed" data-who="" data-when="">
     <div class="r-comment-body"><p>§4 item 2 landed: pointer-classification-is-memoised, merged at 2ace5a681 and promoted.</p><ul><li><code>classify_pointer</code> memoises its result in <code>runs/&lt;run-id&gt;/classification.json</code>, keyed by the stat identity of every file it reads: the pointer, manifest, stream, run-record files, review-store entries and the worktree head.</li><li>Stream observation resumes from a persisted byte offset.</li><li>The 73-file gate fails the same 13 ids at base 342b88ec5 and at head: 1068 passed, 0 added.</li><li><code>obligations('reckon','s21-1c')</code> warm went from 12.03 s to 6.17 s, measured while the lane was loaded. Earlier readings of the same call ranged 8 to 12 s.</li><li>The review scored 90.</li></ul><p>The first head put the memo in the live pointer directory, which several readers enumerate as run pointers. That added 9 failures; moving the memo into the run's own directory cleared them. The worker had also ended its first turn 14 minutes into a 60-minute fence, believing it spent; crew-observability-truth §24 now owns that defect. The review's two follow-ons are §7 of this plan. Item 3 (held-worktrees-read-run-files) is in its second repair.</p></div>
