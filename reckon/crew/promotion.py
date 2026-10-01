@@ -6912,12 +6912,11 @@ def _complete_locked(
     # The crew session that dispatched this run rides the committed row beside
     # the run it belongs to, because this promotion deletes the live pointer
     # that carried it while ``session_id`` names the worker's own harness
-    # session rather than the coordinator's. A pointer that names no session
-    # leaves the key off the row entirely, so a run with no attributed session
-    # never reads as one attributed to an empty session.
-    pointer_session = str(record.get("session") or "").strip()
-    if pointer_session:
-        run["session"] = pointer_session
+    # session rather than the coordinator's. The key is present on every row —
+    # null when the pointer named no session — because every key in
+    # ``RECORD_FIELDS`` is present on every promoted row, so a reader can tell
+    # an absent attribution from one never asked for.
+    run["session"] = str(record.get("session") or "").strip() or None
     # The worker's exit record rides the row verbatim, and the key is written
     # only when the run directory held one: a present-but-empty key would read
     # as a supervisor that ran and recorded nothing.

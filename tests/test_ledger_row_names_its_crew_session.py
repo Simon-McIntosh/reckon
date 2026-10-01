@@ -183,13 +183,14 @@ def test_a_promoted_row_names_its_crew_session(
     assert row.get("session_id") == "harness-abc"
 
 
-def test_a_promoted_row_without_a_session_carries_no_key(
+def test_a_promoted_row_without_a_session_records_null(
     repository: Path, tmp_path: Path
 ) -> None:
-    """A pointer naming no crew session leaves no ``session`` key.
+    """A pointer naming no crew session records ``session`` as null.
 
-    A present-but-empty ``session`` would read as a run attributed to an empty
-    session, so the key must be absent when the pointer never named one.
+    Every key in ``RECORD_FIELDS`` is present on every promoted row, so the
+    ``session`` key stays present and null when the pointer never named one —
+    an absent key would read as a schema gap rather than an unattributed run.
     """
     run_id = "r-20260924T101800000000-node-a"
     manifest = tmp_path / "manifests" / f"{run_id}.md"
@@ -211,4 +212,5 @@ def test_a_promoted_row_without_a_session_carries_no_key(
     )
 
     row = _committed_row(repository, run_id)
-    assert "session" not in row
+    assert "session" in row
+    assert row["session"] is None
