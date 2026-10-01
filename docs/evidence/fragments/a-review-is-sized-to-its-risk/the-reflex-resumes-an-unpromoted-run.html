@@ -1,0 +1,55 @@
+<article class="landed-report" data-run-id="r-20261001T020803820138-the-reflex-resumes-an-unpromoted-run">
+      <h3>the-reflex-resumes-an-unpromoted-run — the repair of an unpromoted run is a resume</h3>
+      <p>
+        The reflex composed a repair node for every finding-bearing review
+        round, but an unpromoted reviewed run still holds its own worktree and
+        its commit claim, so a repair over the reviewed run's own paths was
+        refused at dispatch — measured live as a repair withdrawn about
+        fourteen seconds after it was dispatched and re-fired on every sweep,
+        while the reviewed run's findings stayed unaddressed.
+      </p>
+      <p>
+        <code>dispatch_repair_for_run</code> in
+        <code>reckon/crew/recovery.py</code> now recognises the unpromoted case:
+        when the reviewed run still has its live pointer, is not promoted, and
+        its worker process has exited, the composed repair — its blocking
+        findings by id, the round's done-when and the declared negative control
+        — is delivered as advice to a resume of the reviewed run itself, through
+        the same entry point a hand-typed <code>crew resume</code> uses
+        (<code>reckon.crew.resumption._resume</code>). No new repair node is
+        dispatched. The round is recorded on the reviewed pointer with status
+        <code>resumed</code> and its round id, and a second sweep for the same
+        round resumes nothing. A run whose worker is live or resumed, whose live
+        pointer has gone, or which is promoted keeps the dispatch path and is
+        settled by its existing guards.
+      </p>
+      <p>
+        <strong>Measure.</strong>
+        <code>tests/test_the_reflex_resumes_an_unpromoted_run.py</code> passes
+        3/3 (EXIT=0) at commit <code>afa5c04f</code>, with the resume entry
+        point and the dispatch both stubbed so no worker is launched and no call
+        reaches a scheduler. The three cases: an unpromoted exited run with one
+        blocking finding is resumed once with advice naming the finding's id and
+        the dispatch is never called; the same round swept twice resumes once;
+        and a promoted run is not resumed and still refuses at dispatch.
+      </p>
+      <p>
+        <strong>Negative control.</strong> Disabling the resume branch
+        (<code>if not _repair_launch_refusal(...)</code> &rarr; <code>if
+        False</code>) so the unpromoted case routes back to
+        <code>dispatch_module.dispatch</code> reddens the two resumed-not-dispatched
+        cases (<code>2 failed, 1 passed</code>, EXIT=1);
+        <code>negative-control.log</code> under the run directory. Only the
+        named test file ran.
+      </p>
+      <p>
+        <strong>Wider population.</strong> Two sibling suites encode the
+        superseded behaviour and fail against this change —
+        <code>tests/test_reflex_dispatches_one_repair.py</code> and
+        <code>tests/test_repair_skips_out_of_repo_findings.py</code> (base arm 23
+        passed EXIT=0; head arm 10 failed / 13 passed EXIT=1). They are outside
+        this node's write scope and are reported as follow-ons; each asserts a
+        dispatched repair node for an unpromoted reviewed run, which this change
+        replaces with a resume.
+      </p>
+    </article>
