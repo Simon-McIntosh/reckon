@@ -1,0 +1,27 @@
+<section id="suite-worker-digests-are-current">
+  <h2>The committed role digests regenerate byte-identically</h2>
+
+  <p>The four generated digests under <code>reckon/crew/digests/</code> were stale against
+  the canonical policy <code>~/.agents/AGENTS.md</code>. Their provenance header records the
+  sha256, byte count and token estimate of the whole canonical file, so every canonical edit
+  makes them stale even when the retained sections are unchanged. They are generated artifacts,
+  so they were regenerated rather than hand-edited, with the repository's own generator:
+  <code>python -m reckon.crew.worker_digest</code>. The retained section bodies were byte-identical
+  before and after; only the provenance header lines moved (sha256
+  <code>d01e79e2…</code> &rarr; <code>1ea8e9ca…</code>, 90028 &rarr; 97181 bytes,
+  ~22507 &rarr; ~24296 tokens).</p>
+
+  <p>The five canonical edits since the digests were last generated — all in dotfiles
+  <code>agents/AGENTS.md</code>, none of them changing a retained section — are
+  <code>5969d4f</code> <em>bind every plot to a high data-ink style</em>, <code>b3c87d2</code>
+  <em>size a local-lane wave by worker_slots rather than request headroom</em>,
+  <code>fffaaaa</code> <em>figure sizes, caption-first labels and authorized palettes</em>,
+  <code>758c41f</code> <em>the write fence keeps a worker out of the coordinator's memory</em>,
+  and <code>232d07d</code> <em>colour names a component; drop the fixed palettes</em>
+  (base canonical <code>56607d2</code>).</p>
+
+  <p><strong>Measure.</strong> At the base revision both named ids fail; at the head both pass.
+  Base arm in a scratch extraction of the base revision: 2 failed, 20 passed, exit 1; head arm in
+  the gate worktree: 22 passed, exit 0. Zero added failures. Generator check mode reports
+  <code>up to date: report, review, implement, test</code>.</p>
+</section>
