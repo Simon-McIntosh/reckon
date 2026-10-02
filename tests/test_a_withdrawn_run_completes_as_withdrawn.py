@@ -61,6 +61,7 @@ def test_a_pointerless_withdrawn_run_completes_as_withdrawn(home: Path) -> None:
     assert result["ledger_row_written"] is False
     assert result["promoted"] is False
     assert result["record"]["rebuilt_from_run_directory"] is True
+    assert not pointer_path(run_id).exists()
     assert _no_ledger_written(home / "config")
 
 
@@ -90,4 +91,6 @@ def test_a_pointer_with_no_project_completes_as_withdrawn(home: Path) -> None:
 
     assert result["withdrawn"] is True
     assert result["status"] == "withdrawn"
+    assert result["pointer_removed"] is True
+    assert not pointer_path(run_id).exists()
     assert _no_ledger_written(home / "config")
