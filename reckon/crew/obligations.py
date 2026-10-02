@@ -51,6 +51,25 @@ RECOVERY_CLASSIFICATION_DUTY_KINDS = {"needs-help": "needs-help"}
 # run the review is about rather than the reviewing run.
 SUB_FLOOR_DUTY_KIND = "review-dimension-sub-floor"
 
+# A review whose attempt the lane's admission gate refused with ``lane-paused``
+# is not work the coordinator skipped: the reflex still owns it and retries when
+# a slot frees, so the duty reads as queued rather than missing, is listed like
+# any other duty, and does not hold a turn open. The reading is bounded by the
+# refusal's own instant, because a refusal nobody acted on within the bound is
+# evidence about the reflex rather than an explanation for the duty, and the
+# duty returns to review-missing so the coordinator sees it again.
+REVIEW_QUEUED_DUTY_KIND = "review-queued"
+REVIEW_QUEUED_BOUND_SECONDS = 30 * 60
+
+# The status the review reflex records on a run's pointer when the lane refused
+# the attempt as paused; the refusal instant it carries is the bound's origin.
+REVIEW_LANE_PAUSED_STATUS = "lane-paused"
+
+# The duty kinds that are listed but never hold a stop open: the work behind
+# them is already owned by a reflex that retries, so blocking would ask the
+# coordinator to act on a wait it cannot shorten.
+NON_BLOCKING_DUTY_KINDS = frozenset({REVIEW_QUEUED_DUTY_KIND})
+
 
 def _utc_now() -> datetime:
     """Return the observation instant through a patchable clock boundary."""
@@ -208,6 +227,82 @@ def _live_item(row: Mapping[str, Any], *, kind: str, now: datetime) -> dict[str,
     }
 
 
+def _published_worker_slots(session: str) -> Any:
+    """The session's share of the local lane's published admission block.
+
+    The lane's router publishes each session's fair share as ``worker_slots``;
+    the session's own entry is the figure the refusal was about, and the
+    new-session and lane-wide shares stand in when the map lists no entry for
+    it. An unreadable document, or a block publishing no figure, reads as
+    ``"unknown"``: absence of a published figure is not a published zero.
+    """
+    from reckon.crew import lane_document, paid_lanes
+
+    try:
+        document = json.loads(paid_lanes.local_lane_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return "unknown"
+    admission = lane_document.read_lane_admission(document)
+    listed = (
+        admission.get("sessions", {}).get(session)
+        if admission.get("sessions_present")
+        else None
+    )
+    candidates = [
+        listed.get("worker_slots") if isinstance(listed, Mapping) else None,
+        (
+            admission.get(lane_document.ADMISSION_NEW_SESSION_WORKER_SLOTS_KEY)
+            if admission.get("sessions_present")
+            else None
+        ),
+        admission.get(lane_document.ADMISSION_WORKER_SLOTS_KEY),
+    ]
+    for value in candidates:
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return value
+    return "unknown"
+
+
+def _queued_review_fields(
+    pointer: Mapping[str, Any], *, head: str, now: datetime
+) -> dict[str, Any] | None:
+    """The queued reading of a review the lane refused, or None.
+
+    The reflex records every attempt on the run it acted for, dated and naming
+    the head it composed for, so a refusal is read from that record rather than
+    inferred from an absent review. Only a paused refusal is queued: any other
+    refusal is a defect the coordinator must see. A refusal about an earlier
+    revision no longer speaks for the head the run carries, and one older than
+    the bound has had its chance to be retried, so both fall back to the
+    missing reading.
+    """
+    record = pointer.get(recovery.REVIEW_DISPATCH_FIELD)
+    if not isinstance(record, Mapping):
+        return None
+    if str(record.get("status") or "") != REVIEW_LANE_PAUSED_STATUS:
+        return None
+    refused_at = parse_utc(record.get("at"))
+    if refused_at is None:
+        return None
+    age = (now - refused_at).total_seconds()
+    if age < 0 or age > REVIEW_QUEUED_BOUND_SECONDS:
+        return None
+    if not recovery._review_head_covers(str(record.get("head") or ""), head):
+        return None
+    session = str(pointer.get("session") or "")
+    slots = _published_worker_slots(session)
+    stamp = str(record.get("at") or "")
+    return {
+        "refused_at": stamp,
+        "worker_slots": slots,
+        "next_command": (
+            f"the lane refused this review dispatch at {stamp} "
+            f"(session worker slots: {slots}); the reflex retries for up to "
+            f"{REVIEW_QUEUED_BOUND_SECONDS // 60}m"
+        ),
+    }
+
+
 def _review_duty_item(
     project: str,
     row: Mapping[str, Any],
@@ -232,6 +327,11 @@ def _review_duty_item(
     is gone keeps the classifier's reading too, there being no tree left to
     ask, and a review the store cannot answer for reads missing rather than
     ready, because the safe direction is to ask for evidence.
+
+    A missing review whose most recent attempt the lane refused as paused reads
+    review-queued while the refusal is inside its bound, naming when the lane
+    refused it and the session's published worker slots, so the coordinator
+    sees a wait the reflex owns rather than a dispatch nobody ran.
     """
     age = _row_age(row, now=now)
     classification = str(row.get("classification") or "")
@@ -265,6 +365,15 @@ def _review_duty_item(
         # the duty so the reader sees which two disagree.
         item["kind"] = "review-missing"
         item["reviewed_head"] = reviewed_head
+    else:
+        # No stored review covers the head, so the duty would read
+        # review-missing. A refused attempt the reflex still owns is the one
+        # exception: within the bound it reads as queued, and the duty does not
+        # hold a turn open over a wait the coordinator cannot shorten.
+        queued = _queued_review_fields(pointer, head=head, now=now)
+        if queued is not None:
+            item["kind"] = REVIEW_QUEUED_DUTY_KIND
+            item.update(queued)
     return item
 
 

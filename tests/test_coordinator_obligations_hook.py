@@ -348,12 +348,11 @@ def _hook(
     *,
     claude_pid: int | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    # The prompt path reads the session's published snapshot, so a prompt drive
-    # publishes the current state first, exactly as the project's producer
-    # republishes on a trigger before the next turn opens. The stop path still
-    # derives at the moment of the stop and reads no snapshot.
-    if mode == "prompt":
-        _publish_snapshot()
+    # Both paths read the session's published snapshot, so a drive publishes the
+    # current state first, exactly as the project's producer republishes on a
+    # trigger before the next event. The stop path also derives inline, but only
+    # when the snapshot is not fresh, which these drives never leave it.
+    _publish_snapshot()
     environment = dict(os.environ)
     environment["PYTHONPATH"] = str(REPO_ROOT)
     # Every case names its harness identity, so nothing ambient steers the
@@ -494,8 +493,7 @@ def _hook_under_bare_harness(
     wrapper.write_text(_BARE_HARNESS_WRAPPER, encoding="utf-8")
     # This drive skips ``_hook``, so it publishes the session's snapshot for the
     # current state itself, for the same reason ``_hook`` does.
-    if mode == "prompt":
-        _publish_snapshot()
+    _publish_snapshot()
     environment = dict(os.environ)
     # Renaming argv[0] hides the interpreter's own directory from CPython, so
     # the virtual environment is found through the path rather than the layout.
