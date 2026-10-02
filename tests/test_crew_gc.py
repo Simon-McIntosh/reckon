@@ -486,7 +486,10 @@ def test_a_withheld_worktree_says_which_condition_holds_it(tmp_path, monkeypatch
 
     Both look like an integrated worktree that was not offered, and the remedies
     are opposite: one is a condition to clear, the other a defect to report. So
-    every row that `--apply` would not reclaim names the condition.
+    every row that `--apply` would not reclaim names the condition. A dirty
+    worktree whose commits are not on the integration head is withheld only
+    while one of those commits has no patch-equivalent there, so the row also
+    names the commit that holds it.
     """
     home = tmp_path / "config"
     monkeypatch.setenv("RECKON_HOME", str(home))
@@ -498,6 +501,7 @@ def test_a_withheld_worktree_says_which_condition_holds_it(tmp_path, monkeypatch
     (dirty / "divergent.txt").write_text("only here\n")
     git(dirty, "add", "divergent.txt")
     git(dirty, "commit", "-q", "-m", "test: divergent content")
+    divergent = git(dirty, "rev-parse", "HEAD")
     write_pointer(home, "run-live", live)
 
     result = CliRunner().invoke(cli.main, ["crew", "gc", "--repo", str(repo)])
@@ -510,6 +514,13 @@ def test_a_withheld_worktree_says_which_condition_holds_it(tmp_path, monkeypatch
     assert rows[dirty.name]["reclaimable"] is False
     assert "uncommitted changes" in rows[dirty.name]["withheld"]
     assert "exists nowhere else" in rows[dirty.name]["withheld"]
+    assert rows[dirty.name]["non_equivalent_commits"] == [
+        {
+            "sha": divergent,
+            "subject": "test: divergent content",
+            "equivalent": False,
+        }
+    ]
 
     assert rows[live.name]["reclaimable"] is False
     assert "live run pointer" in rows[live.name]["withheld"]

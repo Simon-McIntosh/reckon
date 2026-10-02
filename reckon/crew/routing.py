@@ -655,6 +655,39 @@ def _repository_tree_snapshot(
     }
 
 
+def _commits_beyond_merge_base(
+    repo: Path, path: Path, integrated_into: str
+) -> list[dict[str, str]]:
+    """List the commits a worktree carries beyond the integration head.
+
+    ``git cherry`` compares each commit's patch against the integration head and
+    marks the ones whose change is already there, so a commit that landed as
+    part of a squash or a rebase is recognised even though its sha is not an
+    ancestor. A comparison that cannot run returns nothing, and a caller treats
+    an empty list as not equivalent, so an unreadable tree is kept rather than
+    released.
+    """
+    integration = _git(
+        repo, "rev-parse", f"{integrated_into}^{{commit}}"
+    ).stdout.strip()
+    result = subprocess.run(
+        ["git", "cherry", "-v", integration, "HEAD"],
+        cwd=path,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode:
+        return []
+    commits: list[dict[str, str]] = []
+    for line in result.stdout.splitlines():
+        mark, _, remainder = line.partition(" ")
+        sha, _, subject = remainder.partition(" ")
+        if mark in {"+", "-"} and sha:
+            commits.append({"sha": sha, "subject": subject, "equivalent": mark == "-"})
+    return commits
+
+
 def _inspect_workspace(
     repo: Path,
     path: Path,
@@ -684,6 +717,8 @@ def _inspect_workspace(
             "dirty": [],
             "integrated_into": integrated_into,
             "claimed_by_live_runs": sorted(claimed_by),
+            "non_equivalent_commits": [],
+            "patch_equivalent_commits": [],
             "shadow_run_id": "",
             "shadow_patch": "",
         }
@@ -701,13 +736,21 @@ def _inspect_workspace(
         == 0
     )
     claims = sorted(claimed_by)
+    commits: list[dict[str, str]] = []
+    if dirty and not reachable and release_residue:
+        commits = _commits_beyond_merge_base(repo, path, integrated_into)
     if claims:
         classification = "live-referenced"
     elif shadow_record is not None and _shadow_patch_retained(shadow_record):
         classification = "disposable"
     elif dirty:
+        landed_elsewhere = bool(commits) and all(
+            commit["equivalent"] for commit in commits
+        )
         classification = (
-            "dirty-integrated" if reachable and release_residue else "dirty"
+            "dirty-integrated"
+            if release_residue and (reachable or landed_elsewhere)
+            else "dirty"
         )
     elif reachable:
         classification = "integrated"
@@ -720,6 +763,12 @@ def _inspect_workspace(
         "dirty": dirty,
         "integrated_into": integrated_into,
         "claimed_by_live_runs": claims,
+        "non_equivalent_commits": [
+            commit for commit in commits if not commit["equivalent"]
+        ],
+        "patch_equivalent_commits": [
+            commit for commit in commits if commit["equivalent"]
+        ],
         "shadow_run_id": (
             str(shadow_record.get("run_id") or "") if shadow_record else ""
         ),
@@ -897,7 +946,9 @@ def _save_and_release_worktree(
     if _git(
         repo, "merge-base", "--is-ancestor", head, integrated_into, check=False
     ).returncode:
-        raise CrewError(f"worktree {path} is not integrated into {integrated_into}")
+        landed = _commits_beyond_merge_base(repo, path, integrated_into)
+        if not landed or not all(commit["equivalent"] for commit in landed):
+            raise CrewError(f"worktree {path} is not integrated into {integrated_into}")
     status_before = _tree_state(path)["status_digest"]
     patch = subprocess.run(
         ["git", "diff", "HEAD", "--binary", "--no-ext-diff", "--no-renames", "--"],
@@ -978,7 +1029,14 @@ def _save_and_release_worktree(
                     f"saved patch for {path} does not apply to its HEAD: {os.fsdecode(verified.stderr).strip()}"
                 )
     already_saved = _residue_digests()
-    base = str(record.get("base_sha") or head) if record else head
+    # The worktree's base is the merge base with the integration head when the
+    # record names none: for an ancestor head that is the head itself, and for a
+    # head whose commits landed elsewhere it is where the two histories parted,
+    # so "superseded" asks whether the integration head moved the path since.
+    base = (str(record.get("base_sha") or "") if record else "") or _git(
+        repo, "merge-base", integrated_into, head, check=False
+    ).stdout.strip()
+    base = base or head
     classes: dict[str, str] = {}
     detail: dict[str, dict[str, str]] = {}
     for relative in sorted(set(tracked + untracked)):

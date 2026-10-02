@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-finished-worktree-releases-without-a-force">
+  <meta name="plan-verifies" content="reckon:a-finished-worktree-releases-without-a-force#s6">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-02">
+  <meta name="evidence-commit" content="d4951807">
+  <title>Squash-landed worktrees release through the residue path | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="gc-releases-squash-landed-worktrees">
+  <h2>gc releases a worktree whose commits landed elsewhere by patch equivalence</h2>
+  <p><strong>Change (commit <code>d4951807</code>).</strong> <code>garbage_collect</code> judged a
+  worktree only by ancestry: a head that was not an ancestor of the integration head read as
+  <code>unintegrated</code> and was kept whatever its commits contained. Each commit beyond the
+  merge base is now compared against the integration head with <code>git cherry -v</code>
+  (<code>reckon/crew/routing.py</code>, <code>_commits_beyond_merge_base</code>, called from
+  <code>_inspect_workspace</code> and from <code>_save_and_release_worktree</code>). A dirty
+  worktree every one of whose commits has a patch-equivalent there is classified
+  <code>dirty-integrated</code> and releases through the same residue-preserving path as an
+  ancestor-integrated tree, with its patch and untracked tar saved first. A tree carrying any
+  commit with no equivalent is kept, and its row names that commit under
+  <code>non_equivalent_commits</code> with its sha and subject; a tree whose release is justified
+  this way names the equivalents under <code>patch_equivalent_commits</code>. The residue
+  classification now measures a head that landed elsewhere against the merge base rather than
+  against its own head, so <code>superseded</code> asks whether the integration head moved the
+  path since the histories parted. A worktree claimed by a live run is still never touched: the
+  claim is resolved before the classification and re-checked in the apply loop.</p>
+
+  <p><strong>Gate.</strong> Both arms ran under <code>pytest -n 8 --timeout=300</code>, each with
+  its own basetemp under scratch and its own log in the run directory. The base arm
+  (<code>git archive</code> of <code>344c3af9</code> into a scratch tree; 6 test files) reports
+  <strong>49 passed</strong>, <code>EXIT=0</code>. The head arm at <code>d4951807</code> (the same
+  6 files plus <code>tests/test_gc_releases_squash_landed_worktrees.py</code>) reports
+  <strong>52 passed</strong>, <code>EXIT=0</code>; added failure ids: none. The head-arm
+  <code>module.__file__</code> is the worktree's own <code>reckon/crew/routing.py</code>.</p>
+
+  <p><strong>New tests</strong> (<code>tests/test_gc_releases_squash_landed_worktrees.py</code>,
+  each in a temporary repository with <code>RECKON_HOME</code> under <code>tmp_path</code>;
+  no test touches a real worktree under <code>~/Code/.reckon-worktrees</code>):</p>
+  <ul>
+    <li>a dirty worktree whose only commit landed on main as a squash releases, with its
+      untracked residue saved to the tar and the worktree gone;</li>
+    <li>a dirty worktree whose commit landed nowhere is kept, with its sha and subject under
+      <code>non_equivalent_commits</code>;</li>
+    <li>a live-claimed squash-landed worktree is left untouched, classification
+      <code>live-referenced</code>, residue in place.</li>
+  </ul>
+  <p>The existing withheld-row test in <code>tests/test_crew_gc.py</code> is updated to the
+  equivalence rule: its dirty divergent-commit worktree is still kept, and the row now also
+  names that commit. No existing case is deleted.</p>
+
+  <p><strong>Negative control.</strong> Dropping the equivalence branch from
+  <code>_inspect_workspace</code> (classification back to
+  <code>-reachable and release_residue</code>) turns the equivalent-commit case red:
+  <code>assert row["classification"] == "dirty-integrated"</code> fails with
+  <code>+ dirty</code>, <code>EXIT=1</code>, one failed id —
+  <code>test_a_squash_landed_dirty_tree_releases_with_its_residue_saved</code> — which the head
+  arm does not fail. Log:
+  <code>~/.config/reckon/crew/runs/r-20261002T214116756941-gc-releases-squash-landed-worktrees/logs/negative-control-drop-equivalence.log</code>.</p>
+
+  <p><strong>Scope.</strong> The twelve worktrees kept by §4's release are not released by this
+  node: this node lands the <code>crew gc</code> rule and its tests, and the release pass over
+  those twelve runs through the landed <code>gc --apply</code> under the coordinator's
+  authorisation. The commit-by-commit census of them is reported in the node manifest under
+  <code>evidence_inputs</code>.</p>
+</section>
+</main>
+</body>
+</html>
