@@ -662,10 +662,31 @@ def _inspect_workspace(
     integrated_into: str,
     claimed_by: Iterable[str],
     shadow_record: Mapping[str, Any] | None = None,
+    *,
+    raise_on_unavailable: bool = True,
 ) -> dict[str, Any]:
     state = _tree_state(path)
     if not state.get("available"):
-        raise CrewError(f"worktree {path} is unavailable: {state.get('detail')}")
+        detail = state.get("detail") or "tree is unavailable"
+        if raise_on_unavailable:
+            raise CrewError(f"worktree {path} is unavailable: {detail}")
+        # A caller sweeping a whole registry (gc) cannot abort on one tree whose
+        # directory is gone while git still lists it: one such registration
+        # would otherwise stop the pass from reclaiming every other tree. It is
+        # reported as its own classification and left for a reader, never
+        # judged by the worktree rules — there is no working tree to read a
+        # commit or a status from.
+        return {
+            "path": str(path),
+            "head": "",
+            "classification": "unavailable",
+            "detail": detail,
+            "dirty": [],
+            "integrated_into": integrated_into,
+            "claimed_by_live_runs": sorted(claimed_by),
+            "shadow_run_id": "",
+            "shadow_patch": "",
+        }
     dirty = [f"{entry['code']} {entry['path']}" for entry in state["status_entries"]]
     head = str(state.get("head") or "")
     reachable = (
@@ -811,6 +832,14 @@ RUN_DIRECTORY_EXTRACTION_REASON = (
     "a plain extraction with no git directory, so it has no commit to judge "
     "by containment; it is never removed, only reported"
 )
+# A registered worktree whose directory is gone is reported and left alone. The
+# registration is another session's record of a tree it may still be reasoning
+# about, so gc neither prunes it nor counts it reclaimed.
+UNAVAILABLE_WORKTREE_REASON = (
+    "git still registers this worktree but its directory is gone, so there is "
+    "no commit or working tree to judge; it is reported and left in place, "
+    "because removing its registration would discard another session's record"
+)
 # Figures the routing derivation reads from raw run streams when the ledger
 # row carries no recorded measurement. A run source may be reaped only once
 # every such figure is recorded on its row, because a reaped stream is the
@@ -920,6 +949,7 @@ def garbage_collect(
             integrated_into,
             claims.get(path.resolve(), ()),
             shadow_records.get(path.resolve()),
+            raise_on_unavailable=False,
         )
         for path in sorted(candidates)
     ]
@@ -948,7 +978,10 @@ def garbage_collect(
             else:
                 _git(repo_root, "worktree", "remove", str(path))
             removed.append(str(path))
-        _git(repo_root, "worktree", "prune")
+        # No blanket `worktree prune` after the pass: each removal above already
+        # deregisters its own tree, while a prune would also drop the
+        # registration of a tree whose directory vanished outside git — exactly
+        # the another-session record this pass reports and leaves in place.
 
     ledgered_records = {
         str(record.get("run_id") or ""): record
@@ -1042,11 +1075,14 @@ def garbage_collect(
         classification = str(item["classification"])
         item["reclaimable"] = classification in RECLAIMABLE_CLASSES
         if not item["reclaimable"]:
-            item["withheld"] = (
-                RUN_DIRECTORY_EXTRACTION_REASON
-                if classification == "extraction"
-                else WITHHELD_REASONS.get(classification, "unrecognised classification")
-            )
+            if classification == "extraction":
+                item["withheld"] = RUN_DIRECTORY_EXTRACTION_REASON
+            elif classification == "unavailable":
+                item["withheld"] = UNAVAILABLE_WORKTREE_REASON
+            else:
+                item["withheld"] = WITHHELD_REASONS.get(
+                    classification, "unrecognised classification"
+                )
 
     counts = {
         name: sum(item["classification"] == name for item in worktrees)

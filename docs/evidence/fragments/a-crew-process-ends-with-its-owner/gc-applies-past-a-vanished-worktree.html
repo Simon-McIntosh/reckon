@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="gc applies past a registered worktree whose directory vanished">
+  <meta name="plan-summary" content="crew gc --apply reports a worktree whose directory is gone while git still registers it, instead of aborting the whole pass, and reclaims every reclaimable tree beside it.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s4">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,gc,worktree,reclaim">
+  <title>gc applies past a vanished worktree &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>gc applies past a registered worktree whose directory vanished</h1>
+
+    <section id="gc-applies-past-a-vanished-worktree-changes">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon.crew.routing.garbage_collect</code> now inspects each
+          registry candidate with <code>_inspect_workspace(..., raise_on_unavailable=False)</code>.
+          A registered worktree whose directory is gone is returned as its own
+          <code>unavailable</code> classification carrying the state's detail,
+          is never counted reclaimable, and is neither removed nor pruned; the
+          pass continues and reclaims every reclaimable tree beside it.</li>
+        <li><code>_inspect_workspace</code> keeps raising by default, so
+          promotion's two callers are unchanged; only gc opts out.</li>
+        <li>The blanket <code>git worktree prune</code> after removal is gone:
+          each <code>git worktree remove</code> already deregisters its own
+          tree, while a prune would drop the registration of a tree whose
+          directory vanished outside git &mdash; the record this pass reports
+          and leaves in place.</li>
+      </ul>
+    </section>
+
+    <section id="gc-applies-past-a-vanished-worktree-evidence">
+      <h2>Evidence</h2>
+      <p>Reproduction before repair (base revision <code>53a72f8c9</code>,
+        scratch script under <code>$TMPDIR</code>): both the dry run and
+        <code>--apply</code> raised
+        <code>CrewError: worktree .../s/vanished is unavailable: tree is no
+        longer available</code>, and nothing was reclaimed.</p>
+      <p><strong>Gate</strong> &mdash;
+        <code>tests/test_gc_applies_past_a_vanished_worktree.py</code> builds one
+        integrated worktree and one whose directory was removed, and asserts
+        <code>--apply</code> reclaims the first, reports the second as
+        <code>unavailable</code> with its detail, and leaves its git
+        registration intact: <strong>2 passed, EXIT=0</strong>.</p>
+      <p><strong>Arms</strong> over the test files that call gc at the base
+        (<code>test_crew_gc.py</code>,
+        <code>test_gc_covers_run_directory_trees.py</code>,
+        <code>test_a_runs_scratch_ends_with_the_run.py</code>), each <code>-n 8</code>.</p>
+      <ul>
+        <li><strong>Base</strong>, revision <code>53a72f8c9</code> (scratch
+          tree): <strong>36 passed, EXIT=0</strong>.</li>
+        <li><strong>Head</strong>: <strong>38 passed, EXIT=0</strong> (the two
+          extra are the gate's own cases). <strong>Zero added failures.</strong></li>
+      </ul>
+      <p><strong>Negative control</strong> &mdash; declared string <em>raise on
+        the unavailable tree again; the apply case reclaims nothing and
+        fails</em>, applied by reverting the gc call to the default raise:
+        <strong>2 failed, EXIT=1</strong>, both gate cases fail at the raise.
+        Log restored to the committed state afterwards.</p>
+    </section>
+  </main>
+</body>
+</html>
