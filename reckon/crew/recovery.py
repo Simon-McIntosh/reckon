@@ -7405,6 +7405,13 @@ def unwatch(project: str) -> dict[str, Any]:
                     "the locked registration has no valid pid"
                 ) from exc
 
+            # A watcher has no run directory, so the sender record lands beside
+            # the seat registration unwatch read the pid from. It is written
+            # before the signal: the signal ends the watcher, and a write
+            # ordered after it would have nothing on disk to attribute the stop
+            # to. The record names the watcher pid, so a stop that could not be
+            # delivered is still readable as this command's attempt.
+            _write_sender_record(path.parent, target_pid=pid, reason="unwatch")
             try:
                 _signal_process_group(pid, watcher.get("pid_start_time"))
             except ProcessLookupError:
