@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="10">
+<meta name="plan-version" content="11">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -201,6 +201,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261002T112800164243-every-writer-commutes-with-landing" data-who="reckon-build" data-when="2026-10-02T12:20:42.108Z">
     <div class="r-comment-body"><p>tests/test_landing_write_races_every_writer.py races five writers — the landing record, a followup append, a section append, a state set and a comment append — each against an in-flight landing write on the same plan and requires its change present afterwards or its loss refused with both versions named; every case passes at head (focused gate 133 passed at base ff112f9f and 133 passed at head ae46158ea, zero added failure ids; reverting the write-path fence turns 4 cases red including comment-append, EXIT=1)</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261002T122234770611-review-of-every-writer-commutes-with-landing" data-who="reckon-build" data-when="2026-10-02T12:39:44.567Z">
+    <div class="r-comment-body"><p>independent review of r-20261002T112800164243-every-writer-commutes-with-landing (base ff112f9f, head 3697b1d8) scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 16, fit 18 (total 91 of 100), records added_failure_count 0 with no added failure ids, and carries two follow-on findings (the negative control reverts the per-file lock as well as the declared comment append; the state-set case does not discriminate the fence)</p></div>
 </div>
 </section>
 </main>
