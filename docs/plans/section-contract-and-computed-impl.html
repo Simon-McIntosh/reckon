@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="reckon-tooling,crew,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="work-scheduling-surface">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>Section contract and computed impl | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="65">
-<meta name="plan-impl" content="0.87">
+<meta name="plan-version" content="66">
+<meta name="plan-impl" content="0.9">
 </head>
 <body>
   <main class="plan-doc">
@@ -475,7 +475,7 @@
 <p>Since §8, a plan whose section records do not cover every declared section keeps its authored impl. The store still refuses <code>set impl</code> on any plan that carries one record (<code>reckon/_store.py</code> near line 2261), so that authored figure can no longer be changed. Reported on 2026-10-02 by nova's S21 coordinator, and met by s22-coord: on the-obligations-hook-reads-a-snapshot the authored figure was 0 and could not be set, and records had to be attached to its done sections instead. A plan also switches to computed impl silently on its first record.</p><p><code>set impl</code> is refused only when the records cover every declared non-deferred section, the same condition under which <code>derive_impl_from_sections</code> answers. An append or insert that gives a plan its first section record carries a warning saying that impl becomes computed once the records cover every declared section.</p><p><strong>Done when</strong> tests show three things: <code>set impl</code> succeeds on a plan with partial records; it is refused on a plan with full coverage; and a first record's append returns the warning. The negative control restores the refusal on any record, and the partial case is then refused.</p>
 
     <h2 id="s10">§10 — collapse_section finds a section whose id sits on its wrapper</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p>Reported on 2026-10-02 by nova's S21 coordinator. <code>collapse_section</code> refused with "no section with id 's2'" on nova-portfolio-replan, although <code>&lt;section id="s2"&gt;&lt;h2&gt;</code> is in the file (plan version 5), and the coordinator had to collapse by text mode. Some plans carry the section id on a wrapping <code>section</code> element rather than on the <code>h2</code>, and a-review-dies-where-nobody-is-looking is one of them. <code>read_plan(view='section')</code> has the same blindness: it reported "available sections: none" for that plan on 2026-10-01.</p><p><strong>Done when</strong> collapse and the section read both resolve an id carried on the wrapper as well as on the <code>h2</code>. Tests over both shapes collapse and read the section. The negative control restores the <code>h2</code>-only lookup, and the wrapper case is then refused.</p>
 
     <h2 id="s11">§11 — Land §1 and §2 together (the schema and its refusal), then §3, then §4 and §5, then §6</h2>

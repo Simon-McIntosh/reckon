@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -274,10 +274,16 @@
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §2</pre>
     <p class="r-fu-outcome">§2 landed at d53a3fc68 after a review of 88 with no added failures: the producer publishes each live session's obligations snapshot, derived once per sweep off the tick. The hook still derives per call (15.5 s measured on s22-coord after the merge), which §3 replaces.</p>
     </article>
-<article class="r-fu" data-id="f-tohras-004" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §3" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tohras-004" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §3" data-resolved-at="2026-10-02T16:35:38+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Read the snapshot in the prompt and stop hooks</h4>
     <div class="r-fu-body"><p>§2's snapshot is published; the hook still derives obligations per call, measured at 15.5 s for s22-coord at d53a3fc68. §3 switches the prompt path, then the stop path, to read the snapshot.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §3</pre>
+    <p class="r-fu-outcome">§3's prompt path landed at a6e637292 after a review of 93: the prompt hook reads the published snapshot and never derives, measured at a median of 95.5 ms and a second-slowest of 112.7 ms over 20 fresh processes against a 250 ms target, from 15.5 s before. The stop path still derives. During a producer reload the prompt hook reported no producer for a few seconds, then the full list at 0.27 s.</p>
+    </article>
+<article class="r-fu" data-id="f-tohras-005" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §9" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Repair snapshot parity, then move the stop path onto the snapshot</h4>
+    <div class="r-fu-body"><p>§9 first: the snapshot's review duties must match the derivation's before the stop path, which gates turn ends, reads them. Then §3's stop path. Note for §3: a producer reload leaves a window of a few seconds in which the hook reads no producer; the stop path must not block a turn on that reading alone.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §9</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
