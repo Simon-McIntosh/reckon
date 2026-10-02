@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A stale-producer warning waits for its reload">
+  <meta name="plan-summary" content="A producer whose code stamp trails the follower's is granted its reload window before the cycle advice: a reloading note inside the window, the advice only once the window has passed.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s3">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,watch,producer,reload,test">
+  <title>A stale-producer warning waits for its reload — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A stale-producer warning waits for its reload</h1>
+    <section id="stale-producer-warning-waits-for-its-reload-changes">
+      <h2>What changed</h2>
+      <p><code>reckon/cli.py</code> — on an in-place reload the follower now
+        defers a producer stamp mismatch for <code>PRODUCER_RELOAD_WINDOW_SECONDS</code>,
+        derived from the reload's own bounds (the import-proof timeout plus the
+        producer's idle poll interval cap plus a margin), showing
+        <code>producer-reloading</code> inside the window and the cycle advice only
+        once it has passed. The deferral keys on the image having replaced another
+        in place — the checkpoint inside it may be empty — and a fresh arming still
+        reports at once. <code>tests/test_stale_producer_warning_waits_for_its_reload.py</code>
+        drives a reload attach with an injected clock. Gate: <strong>5 passed, EXIT=0</strong>.</p>
+    </section>
+    <section id="stale-producer-warning-waits-for-its-reload-landing">
+      <h2>Landing line</h2>
+      <p><code>landing: docs/evidence/fragments/a-crew-process-ends-with-its-owner/stale-producer-warning-waits-for-its-reload.html</code></p>
+    </section>
+  </main>
+</body>
+</html>
