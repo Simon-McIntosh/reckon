@@ -221,7 +221,7 @@ def test_an_in_harness_lane_change_carries_the_attempt_environment(
     )
     run_id = record["run_id"]
     monkeypatch.setattr(dispatch_module, "process_alive", lambda pid: pid == 900_001)
-    monkeypatch.setattr(dispatch_module, "_signal_process_group", lambda *args: None)
+    monkeypatch.setattr(dispatch_module, "_signal_process_group", lambda *args, **kwargs: None)
 
     moved = dispatch_module.change_lane(
         run_id,

@@ -2685,9 +2685,9 @@ def test_pointer_write_failure_terminates_process_and_removes_dispatch_artifacts
             raise OSError("forced pointer write failure")
         return original_write(path, payload)
 
-    def record_signal(pid, expected_start_time):
+    def record_signal(pid, expected_start_time, **kwargs):
         events.append("signal")
-        original_signal(pid, expected_start_time)
+        original_signal(pid, expected_start_time, **kwargs)
 
     def record_remove(root, path):
         events.append("remove")
@@ -3712,7 +3712,11 @@ def test_opt_in_budget_watchdog_stops_and_records_the_run_phase(
     signalled = []
     monkeypatch.setattr(crew, "process_alive", lambda pid: True)
     monkeypatch.setattr(
-        crew, "_signal_process_group", lambda pid, started_at: signalled.append(pid)
+        crew,
+        "_signal_process_group",
+        lambda pid, started_at, *, reason="", **kwargs: signalled.append(
+            (pid, reason)
+        ),
     )
     config = {
         "fences": {
@@ -3724,7 +3728,7 @@ def test_opt_in_budget_watchdog_stops_and_records_the_run_phase(
     observed = crew.observe(run_id, config=config)
     row = crew.classify_pointer(observed)
 
-    assert signalled == [4242]
+    assert signalled == [(4242, "budget-watchdog")]
     assert observed["watchdog_enforced"] is True
     assert observed["phase"] == "stopped"
     assert row["classification"] == "stopped"

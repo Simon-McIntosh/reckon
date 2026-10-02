@@ -242,7 +242,7 @@ def test_a_live_writer_is_ended_first_and_its_receipt_is_folded(
     def fake_alive(pid):
         return state["alive"]
 
-    def release_when_signalled(pid: int, started_at) -> None:
+    def release_when_signalled(pid: int, started_at, **kwargs) -> None:
         # The release signal is what makes the harness write its terminal
         # record: on shutdown it appends the receipt that promotion must fold.
         state["signalled"] += 1
@@ -297,7 +297,7 @@ def test_a_live_writer_that_never_emits_a_receipt_keeps_the_fallback(
     def fake_alive(pid):
         return state["alive"]
 
-    def signal_without_receipt(pid: int, started_at) -> None:
+    def signal_without_receipt(pid: int, started_at, **kwargs) -> None:
         # The writer ends on the signal but never writes a terminal record, as
         # a killed or hard-exiting harness never does.
         state["alive"] = False
@@ -390,7 +390,7 @@ def test_a_writer_that_never_stops_cannot_hang_the_folded_promotion(
     def fake_alive(pid):
         return state["alive"]
 
-    def signal_then_keep_writing(pid: int, started_at) -> None:
+    def signal_then_keep_writing(pid: int, started_at, **kwargs) -> None:
         # The writer is ended yet something keeps appending to its stream, so
         # the settle never observes quiescence before the ceiling.
         state["alive"] = False
@@ -458,7 +458,7 @@ def test_a_writer_the_release_would_not_signal_is_left_alone(
     monkeypatch.setattr(
         promotion,
         "_signal_process_group",
-        lambda pid, started_at: signalled.append(pid),
+        lambda pid, started_at, **kwargs: signalled.append(pid),
     )
 
     ended = promotion._end_live_writer_for_settle(record)
@@ -482,11 +482,11 @@ def test_the_pre_release_gate_is_the_release_gates_signal(
     manifest = tmp_path / "manifests" / "r-gate.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text("node: node-a\nstatus: complete\n", encoding="utf-8")
-    signalled: list[int] = []
+    signalled: list[tuple[int, str]] = []
     monkeypatch.setattr(
         promotion,
         "_signal_process_group",
-        lambda pid, started_at: signalled.append(pid),
+        lambda pid, started_at, *, reason="", **kwargs: signalled.append((pid, reason)),
     )
 
     base = {
@@ -501,13 +501,13 @@ def test_the_pre_release_gate_is_the_release_gates_signal(
 
     monkeypatch.setattr(promotion, "process_alive", lambda pid: True)
     assert promotion._end_live_writer_for_settle(base) is True
-    assert signalled == [4242]
+    assert signalled == [(4242, "promotion-settle")]
 
     monkeypatch.setattr(promotion, "process_alive", lambda pid: False)
     assert promotion._end_live_writer_for_settle(base) is False
-    assert signalled == [4242]
+    assert signalled == [(4242, "promotion-settle")]
 
     monkeypatch.setattr(promotion, "process_alive", lambda pid: True)
     non_cli = {**base, "launch": "in-harness"}
     assert promotion._end_live_writer_for_settle(non_cli) is False
-    assert signalled == [4242]
+    assert signalled == [(4242, "promotion-settle")]
