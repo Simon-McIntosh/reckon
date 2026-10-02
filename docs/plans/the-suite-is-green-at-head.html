@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="219">
+<meta name="plan-version" content="220">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1716,6 +1716,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261002T054126492519-guard-test-docstring-names-sections-as-examples" data-who="reckon-build" data-when="2026-10-02T05:58:23.482Z">
     <div class="r-comment-body"><p>The landing-commit test docstring now states the admitted class as every data-reckon section the store writes and names gates, decisions, followups, questions, research, comments, landed notes, sprint items and evidence as examples rather than an exhaustive list; base arm fd667e1c and head arm 87ba073b of tests/test_landing_commit_carries_only_its_own_comment.py both report 6 passed, 0 failures, so zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261002T050150455900-suite-final-measure" data-who="reckon-build" data-when="2026-10-02T05:53:52.001Z">
+    <div class="r-comment-body"><p>Suite final measure at 903f6e9911d87b94f28f2b05b7c125973b65a0cc after the second repair round: 1 failed, 9869 passed, 76 skipped, 0 errors in 1267.82 s (wall 1270 s, EXIT=1) under -n 8; the single failure (tests/test_follower_checks_its_owner.py::test_a_reload_under_a_live_subreaper_keeps_the_dead_owner) is load-only (passes 4/4 alone) and new against 3b883745b, attributed unknown; all 27 deterministic ids recorded at 3b883745b are fixed, proved by a serial re-run of those ids (27 passed in 154.20 s), with 0 remaining and 0 new deterministic; record at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T050150455900-suite-final-measure/suite-final.md (copy in /home/ITER/mcintos/.config/reckon/crew/reports/reckon/)</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
