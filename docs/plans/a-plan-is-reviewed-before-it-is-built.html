@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="20">
+<meta name="plan-version" content="21">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
 </head>
 <body>
@@ -202,6 +202,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261002T141513710685-plan-review-test-reads-frozen-plans" data-who="reckon-build" data-when="2026-10-02T14:57:32.539Z">
     <div class="r-comment-body"><p>tests/test_plan_review_store.py reads three committed fixture copies under tests/fixtures/plan_review_store/ (a legacy plan without the named effort field, a modern plan whose authored impl stands on records short of its declarations, and a plan whose impl is computed from records covering its declarations); no case reads a path under docs/plans/, the metadata-edit case passes, and a new case holds that a plan-impl edit on the derived plan leaves the derived impl and the fingerprint unchanged; head gate 7 passed / 0 failed (base: 1 failed, 5 passed, EXIT=1), negative control fails test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it with EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261002T164034134416-review-of-plan-review-test-reads-frozen-plans" data-who="reckon-build" data-when="2026-10-02T17:03:16.505Z">
+    <div class="r-comment-body"><p>the independent review for run r-20261002T141513710685-plan-review-test-reads-frozen-plans is stored as a parsed record scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 19 (total 98), reading base ba2c17c79 and head dedb1bad, with added_failure_count 0 and no added_failure_ids; it reproduces both the base-arm defect and the head-arm pass and verifies the three fixture copies byte-for-byte against their claimed live sources.</p></div>
 </div>
 </section>
 </main>
