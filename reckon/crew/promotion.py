@@ -1259,7 +1259,9 @@ def _arm_without_completion(manifest: Mapping[str, Any] | None) -> str | None:
         return None
     for name in ("baseline_suite", "after_suite"):
         observation = manifest.get(name)
-        if isinstance(observation, Mapping) and observation.get("completed") is not True:
+        if not isinstance(observation, Mapping):
+            continue
+        if observation.get("completed") is not True:
             return name
     return None
 
