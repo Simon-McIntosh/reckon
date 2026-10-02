@@ -22,12 +22,18 @@ would let the router weigh a lane it never heard from.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
+from statistics import median
+from types import SimpleNamespace
 from typing import Any
 
 from reckon import budget
 from reckon._timestamps import parse_utc
+from reckon.crew import lane_document
+from reckon.crew.dispatch import _dispatch_lane_gate
+from reckon.crew.paid_lanes import local_lane_path
 from reckon.crew.run_time_profile import (
     BUDGET_BUCKETS,
     TOKEN_BUCKETS,
@@ -37,6 +43,7 @@ from reckon.crew.run_time_profile import (
     local_lane_load,
     run_time_profile,
 )
+from reckon.crew.runs import list_live
 
 #: Sources a budget reading may carry that came from the ledger rather than a
 #: live account surface read, and so are subject to the shelf life.
@@ -214,11 +221,117 @@ def return_times(
     return blocks
 
 
-def local_lane() -> dict[str, Any]:
-    """Return the local lane's live load with nulls for unpublished fields."""
+def _expected_wait(
+    *,
+    project: str | None,
+    records: Sequence[Mapping[str, Any]] | None,
+    local_backend: str | None,
+    now: datetime,
+) -> float | None:
+    """Median historical wall time for the shapes of local workers now live.
 
+    Each live worker contributes its matching profile median once. This is a
+    typical total run duration, not a prediction of the next slot's release.
+    Unmeasured shapes contribute no invented duration.
+    """
+    profiles = {}
+    walls = []
+    for row in list_live():
+        agent = _as_mapping(row.get("agent"))
+        if row.get("phase") not in {"starting", "working", "running"}:
+            continue
+        if not (
+            agent.get("local") is True
+            or (
+                row.get("project") == project
+                and local_backend
+                and row.get("backend") == local_backend
+            )
+        ):
+            continue
+        owner = row.get("project")
+        if not owner:
+            continue
+        if owner not in profiles:
+            if owner == project and records is not None:
+                recent = [
+                    r
+                    for r in records
+                    if (
+                        stamp := parse_utc(
+                            str(r.get("completed_at") or r.get("dispatched_at") or "")
+                        )
+                    )
+                    is not None
+                    and now - timedelta(days=14) <= stamp <= now
+                ]
+                profiles[owner] = {"groups": _group_rows(recent)}
+            else:
+                profiles[owner] = run_time_profile(owner, now=now)
+        shape = _as_mapping(row.get("node"))
+        node = SimpleNamespace(
+            role=shape.get("role") or row.get("role"),
+            spec_level=shape.get("spec_level") or row.get("spec_level"),
+        )
+        group = _group(profiles[owner], row.get("backend"), node, agent.get("effort"))
+        wall = _number((group or {}).get("wall_seconds_median"))
+        if wall is not None:
+            walls.append(wall)
+    return median(walls) if walls else None
+
+
+def local_lane(
+    *,
+    config: Mapping[str, Any] | None = None,
+    candidates: Sequence[Any] | None = None,
+    project: str | None = None,
+    records: Sequence[Mapping[str, Any]] | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Return admission, typical wait and live load; unknown figures stay null."""
+    moment = now if now is not None else datetime.now(UTC)
     load = local_lane_load()
+    config = config or {}
+    local_backend = config.get("local_backend")
+    backend = config.get("backends", {}).get(local_backend, {})
+    gate = _dispatch_lane_gate(backend)
+    try:
+        document = json.loads(local_lane_path().read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        document = None
+    reading = lane_document.read_lane_document(document, now=moment)
+    published_gate = _as_mapping(_as_mapping(document).get("router_generation_gate"))
+    slots = _number(load.get("worker_slots"))
+    if slots is None:
+        slots = _number(load.get("headroom"))
+    if gate["state"] == "paused" or published_gate.get("paused") is True:
+        admission = "paused"
+    elif (
+        gate["state"] == "unreadable"
+        or reading["stale"]
+        or (
+            candidates is not None
+            and local_backend
+            and not any(c.local for c in candidates)
+        )
+    ):
+        admission = "unavailable"
+    elif reading["admission_verdict"] in {"full", "congested"} or (
+        slots is not None and slots <= 0
+    ):
+        admission = "full"
+    elif slots is not None and slots > 0:
+        admission = "admitting"
+    else:
+        admission = "unavailable"
     return {
+        "admission": admission,
+        "expected_wait_s": _expected_wait(
+            project=project,
+            records=records,
+            local_backend=local_backend,
+            now=moment,
+        ),
         "running": load.get("running"),
         "waiting": load.get("waiting"),
         "headroom": load.get("headroom"),
@@ -273,6 +386,12 @@ def build(
             config=config,
             now=moment,
         ),
-        "local_lane": local_lane(),
+        "local_lane": local_lane(
+            config=config,
+            candidates=candidates,
+            project=project,
+            records=records,
+            now=moment,
+        ),
         "read_at": moment.isoformat(),
     }
