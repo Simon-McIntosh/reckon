@@ -1,11 +1,34 @@
 """Bind the reviewed consolidation ranking to measured source copies."""
 
+import json
+from pathlib import Path
+
+
+def reviewed_pins():
+    """Repository to commit map recorded by the reviewed ranking itself.
+
+    The ranking is reviewed prose whose cited copy counts belong to the pin it
+    was reviewed at. A later pin must not rebind it, because a concept it ranks
+    disappears from the reimplementation census as soon as consolidation takes
+    its copies below the detector threshold.
+    """
+    record = Path(__file__).with_name("consolidation.json")
+    if not record.exists():
+        return {}
+    return {row["repository"]: row["commit"] for row in json.loads(record.read_text())}
+
 
 def ranked_candidates(data):
-    latest = {
-        repo: next(s for s in reversed(data["snapshots"]) if s["repository"] == repo)
-        for repo in ("reckon", "nova")
-    }
+    reviewed = reviewed_pins()
+
+    def bound(repo):
+        snapshots = [s for s in data["snapshots"] if s["repository"] == repo]
+        for snapshot in snapshots:
+            if snapshot["commit"] == reviewed.get(repo):
+                return snapshot
+        return snapshots[-1]
+
+    latest = {repo: bound(repo) for repo in ("reckon", "nova")}
 
     def copies(repo, kind, concept):
         census = latest[repo]["scopes"][repo + "/"]["reimplementation_census"]
