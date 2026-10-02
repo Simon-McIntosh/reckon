@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="19">
+<meta name="plan-version" content="20">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -152,6 +152,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-otmp-s2-reserve-refusal" data-who="s25-picker" data-when="2026-10-02T11:17:00Z">
     <div class="r-comment-body"><p><strong>Measured: the bookend reserve refuses non-review codex dispatch on this account.</strong> At 11:16Z, dispatching <code>picker-reuse-map</code> (role documentation, backend codex) was refused before any worktree existed: "the window's utilisation could not be read (the 'codex' lane's five-hour clock reports state 'unknown'), and an unreadable window is not an empty one: the documentation role's dispatch is refused against the 20% the window keeps for review and verify roles". At the same moment the account surface read the primary window at 0% used, with a 10,080-minute period resetting 2026-10-09T10:39Z. <code>_refuse_against_the_bookend_reserve</code> in <code>reckon/crew/dispatch.py</code> reads only the <code>five_hour</code> clock, so on an account without one, every non-bookend role is refused. The wave-1 codex dispatches therefore carry <code>--set backends.codex.budget_group=null</code>, recorded on each run, which skips the group reserve; per-backend budget checks still apply. §7's <code>codex-window-pacing</code> node owns the fix: the reserve reads the window the provider reports.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261002T111727761881-picker-reuse-map" data-who="reckon-build" data-when="2026-10-02T11:28:37Z">
+    <div class="r-comment-body"><p>Mapped 28 base-revision functions/classes and 2,060 recent ledger rows; the existing gates are reusable through one candidate-snapshot wrapper, with one picker call and one persisted typed selection block still to add.</p></div>
 </div>
 </section>
 </main>
