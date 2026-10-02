@@ -32,16 +32,15 @@
   so the figure can be non-zero. A fixture whose picked model's observation reads
   <code>refused</code> shows a count of one.</p>
 
-  <p><strong>Not produced: the live replay arm.</strong> The live replay refused
-  to run under this worker's fence:
-  <code>unshare --read-only</code> makes the serving probe's lock file
-  <code>~/.config/reckon/crew/recovery/lane-probes/reckon/claude.lock</code>
-  unwritable, so <code>crew pick --replay</code> stops before the first row with
-  <code>Error: [Errno 30] Read-only file system</code> and exit 1
+  <p><strong>Done-when item (4) is not met in this node, deferred by the
+  coordinator.</strong> The live replay arm could not run here: the serving
+  probe writes a lane-probe lock under <code>~/.config</code>, which the worker
+  fence mounts read-only, so <code>crew pick --replay</code> stops before the
+  first row with <code>Error: [Errno 30] Read-only file system</code> and exit 1
   (<code>replay-after.log</code>). Both the after arm and the base-revision arm
-  need the same probe, so neither the after median nor the base median for the
-  same twenty nodes could be recorded here. The correctness measures above are
-  unaffected and pass. A coordinator running outside the fence, or with
-  <code>--no-fence</code>, can reproduce from the JSON
-  <code>crew pick --replay 20</code> per-node medians.
+  need that probe, so neither the per-pick median nor the maximum for the same
+  twenty nodes is recorded here. The coordinator has deferred item (4) to a
+  separate unfenced measurement node (<code>picker-replay-measure</code>), which
+  will record the per-pick medians and the maximum through the combined code
+  after this node merges. The correctness measures above are unaffected and pass.
 </article>
