@@ -40,6 +40,11 @@
     <p><code>picker-in-dispatch</code> (gpt-6-sol, review 92, zero added failures; base 163 → head 175 passed) landed as merge <code>0d2c375d1</code>. Every dispatch asks the picker in shadow mode under a 5 s bound, using cached serving observations, and records the selection on the live run and as <code>picker_selection</code> on every ledger row, null when not asked. <code>--route picker</code> lets the selection name the backend, with <code>--comment</code> passed verbatim; a null selection refuses and a fallback is recorded. First live record: <code>r-20261002T190701226087-picker-fast-on-dispatch-path</code> carries <code>action: fallback</code>, <code>fallback_reason: timeout</code> at 5,000 ms, because a cached pick still takes about 15 s. Profiled cost: about 10 s scanning every plan's HTML to estimate hours, and about 4.5 s recomputing the budget view. <code>picker-fast-on-dispatch-path</code> (§8) removes both.</p>
   </section>
 
+  <section id="s2">
+    <h2>§2 — codex-spark and the reserve: closed</h2>
+    <p><code>codex-spark</code> is retired, on the lead's decision of 2026-10-02: the account refuses <code>gpt-5.3-codex-spark</code> and the provider's model list omits it. It is removed from the host layer (dotfiles <code>8390913</code>) and from the project layer (merge <code>d7e1a0fe2</code>). The bookend reserve on an account with no five-hour window was measured refusing a documentation-role codex dispatch at 11:16Z. After the §7 merges, the reserve reads the provider-reported primary window. The close-out page (<code>reserve-without-five-hour-window.html</code>, review 84) quotes a dry run as the after-measure, but a dry run never reaches the reserve check, so that quote is not evidence. The admitted evidence is real: routed dispatch <code>r-20261002T212009757157-picker-holds-for-local</code> went to codex-astra (implement role) at 21:20Z on the same account and was admitted.</p>
+  </section>
+
 </main>
 </body>
 </html>

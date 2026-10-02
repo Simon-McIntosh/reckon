@@ -25,8 +25,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="68">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="69">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -43,23 +43,12 @@
     <p>The lead's direction (2026-10-02): one lane per provider (claude, clive, codex), and a router that picks both the <strong>family and the model</strong> for every dispatch and handles the whole choice. The orchestrator does not pick. It may write a free-form comment, which the router passes on to the model making the judgment. That model is <strong>Jev</strong>, TypeSafe's flagship and first System One model, which returns typed answers with probabilities rather than generated text. Code keeps every hard constraint; Jev supplies the semantic judgment of which family and model fit the node. This is a significant redesign. The typesafe-ai skill and the live TypeSafe docs guide it; the skill was installed on 2026-10-02 as a Claude Code plugin and is invoked as <code>/typesafe:typesafe-ai</code>. The router is prototyped and dogfooded on reckon's own dispatches before it becomes anyone's default (§6).</p>
     <p>It overlaps <code>the-local-lane-is-the-default</code> (route by backend and model, local by default), <code>a-window-paces-the-lane</code> and <code>advise-the-lane-never-force-it</code>. This plan is sequenced after the first and is meant to absorb the routing parts of all three, which the design section reconciles explicitly.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-02</span>
     <h2 id="s2">§2 — Why the codex account refuses its configured models</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p>Establish which codex models this account serves now that the lead reports it is back on the pro plan. On 2026-10-01 the account reported <code>plan_type</code> <code>free</code>. <code>gpt-5.6-sol</code> and <code>gpt-6-astra</code> were refused and only <code>gpt-5.6-terra</code> served. On 2026-10-02 at 10:37Z, a one-line probe of <code>gpt-5.6-sol</code> returned HTTP 401 <code>token_invalidated</code> ("Your authentication token has been invalidated. Please try signing in again.") on every request, including the model-list refresh. The stored login was invalidated, which fits a plan change.</p>
-    <p><strong>Measured after the lead's fresh <code>codex login</code> (2026-10-02, 10:39Z), one one-line probe per model:</strong></p>
-    <table>
-      <thead><tr><th>backend</th><th>model</th><th>verdict</th></tr></thead>
-      <tbody>
-        <tr><td><code>codex</code></td><td><code>gpt-5.6-sol</code></td><td>serves</td></tr>
-        <tr><td><code>codex-astra</code></td><td><code>gpt-6-astra</code></td><td>serves</td></tr>
-        <tr><td><code>codex-terra</code></td><td><code>gpt-5.6-terra</code></td><td>serves</td></tr>
-        <tr><td><code>codex-luna</code></td><td><code>gpt-5.6-luna</code></td><td>serves</td></tr>
-        <tr><td><code>codex-spark</code></td><td><code>gpt-5.3-codex-spark</code></td><td>refused: "not supported when using Codex with a ChatGPT account", and the CLI has no metadata for it</td></tr>
-      </tbody>
-    </table>
-    <p>The session records report <code>plan_type: pro</code>, with one primary window of 10,080 minutes (seven days) at 0% used, no secondary window, and no five-hour window. A preflight of the five codex backends at 10:4xZ read 0% and closed all five holds opened on 2026-10-01 at 20:42:48Z. It also marked <code>codex-spark</code> clear, although the provider refuses that model. A budget reading says nothing about whether a model serves, and §4's candidate filter has to close that gap.</p>
-    <p><strong>What remains in this section:</strong> decide <code>codex-spark</code>'s disposition (retired, or a separate subscription that needs its own login). Then measure with one real non-review codex dispatch whether the bookend reserve in <code>reckon/crew/reserve.py</code> admits it on a seven-day-only account, or refuses it as an unreadable window as it did on the free plan. Recommend the reserve's behaviour for any account without a five-hour window.</p>
-    <p><strong>Done when:</strong> <code>codex-spark</code> has a recorded disposition with its evidence; one real non-review codex dispatch shows from its own run record whether the bookend reserve admitted or refused it; and a report recommends one reserve behaviour for an account with no five-hour window, naming the window the reserve reads instead.</p>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">codex-spark is retired (account refuses it, provider list omits it; dotfiles 8390913, merge d7e1a0fe2). On an account with no five-hour window the reserve reads the provider-reported primary window; a real implement-role codex-astra dispatch was admitted at 21:20Z. Merge fd83fd8ae. <a href="s2">full record</a></p>
+</section>
 
     <h2 id="s3">§3 — Which model is current for each provider</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
