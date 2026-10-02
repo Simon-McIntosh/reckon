@@ -982,6 +982,83 @@ def _flight_default_backend_override(flight_module, config, overrides):
     return str(config.get("default_backend") or "").strip() or None
 
 
+def _config_value_at(config, path: str):
+    """Return the value a dotted flight-config path holds; None when unset."""
+    node = config
+    for segment in (part for part in path.split(".") if part):
+        if not isinstance(node, Mapping) or segment not in node:
+            return None
+        node = node[segment]
+    return node
+
+
+def _require_configured_override_path(flight_module, path: str, base) -> None:
+    """Refuse a --set path naming a backend or role no layer defines.
+
+    An override under a keyed map the configuration does not carry — a
+    misspelled backend or role name — merges into a section nothing routes to,
+    so a dry run that echoed it would confirm an override that can change
+    nothing. The refusal names the path and the defined names, matching the
+    resolution already applied to ``default_backend`` and ``local_backend``.
+    """
+    from reckon.crew.refusals import format_refusal
+
+    segments = [part for part in path.split(".") if part]
+    for index in range(len(segments) - 1):
+        if segments[index] not in flight_module._KEYED_MAPS:
+            continue
+        container = base.get(segments[index])
+        name = segments[index + 1]
+        if isinstance(container, Mapping) and name in container:
+            continue
+        defined = (
+            ", ".join(sorted(str(entry) for entry in container))
+            if isinstance(container, Mapping)
+            else "none"
+        )
+        raise click.ClickException(
+            format_refusal(
+                "D06",
+                f"--set path {path!r} names {name!r} under "
+                f"{segments[index]!r}, which no config layer defines "
+                f"(defined {segments[index]}: {defined}); override a path the "
+                "configuration knows",
+            )
+        )
+
+
+def _dispatch_override_resolution(
+    flight_module, project, checkout_path, overrides, resolved, *, local: bool
+) -> dict:
+    """Report how each --set override resolved against the config layers.
+
+    A dry run exists to confirm an override before a real dispatch spends a
+    run, so every --set path is echoed with the value the resolved flight
+    configuration holds there — null included, so an override to null is
+    distinct from one that never applied — beside the value the layers
+    beneath it held without it.
+    """
+    from reckon.crew.refusals import format_refusal
+
+    if not overrides:
+        return {}
+    try:
+        base = flight_module.resolve(project, checkout_path=checkout_path).config
+        if local:
+            base = flight_module.select_local_backend(base)
+    except flight_module.FlightConfigError as exc:
+        raise click.ClickException(format_refusal("D06", str(exc))) from exc
+    resolution: dict[str, dict[str, Any]] = {}
+    for pair in overrides:
+        path = pair.partition("=")[0].strip()
+        _require_configured_override_path(flight_module, path, base)
+        resolution[path] = {
+            "before": _config_value_at(base, path),
+            "resolved": _config_value_at(resolved, path),
+        }
+    return resolution
+
+
 def _model_availability_refusal(crew_module, flight_module, config, node):
     """Return a typed refusal when the selected backend does not serve its model."""
     backend_name, backend = crew_module.resolve_role(config, node.role, node.spec_level)
@@ -1575,6 +1652,29 @@ def crew_dispatch(
 
     if dry_run:
         try:
+            override_resolution = _dispatch_override_resolution(
+                flight_module,
+                project,
+                checkout_path,
+                overrides,
+                config,
+                local=local,
+            )
+        except click.ClickException as exc:
+            # A --set path the configuration does not know is a request error
+            # on the same channel every other dry-run refusal answers on, so a
+            # caller keying on ``error`` reads a refusal rather than a preview.
+            _emit(
+                {
+                    "ok": False,
+                    "dry_run": True,
+                    "error": "request-error",
+                    "detail": str(exc),
+                },
+                pretty,
+            )
+            raise click.exceptions.Exit(1) from exc
+        try:
             resolution = crew_module.plan_dispatch(
                 node=node,
                 config=config,
@@ -1701,10 +1801,10 @@ def crew_dispatch(
                 pretty,
             )
             raise click.exceptions.Exit(75)
-        _emit(
-            {"ok": True, "dry_run": True, **resolution.as_dict()},
-            pretty,
-        )
+        payload = {"ok": True, "dry_run": True, **resolution.as_dict()}
+        if override_resolution:
+            payload["overrides"] = override_resolution
+        _emit(payload, pretty)
         raise click.exceptions.Exit(0)
 
     try:

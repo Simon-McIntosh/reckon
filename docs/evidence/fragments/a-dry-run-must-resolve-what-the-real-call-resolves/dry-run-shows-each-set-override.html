@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-dry-run-must-resolve-what-the-real-call-resolves">
+  <meta name="plan-verifies" content="reckon:a-dry-run-must-resolve-what-the-real-call-resolves#s6">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-02">
+  <title>Each --set override resolves in the dispatch dry run | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="dry-run-shows-each-set-override">
+  <h2>Each --set override resolves in the dispatch dry run</h2>
+  <p><code>reckon crew dispatch --dry-run</code> now echoes every <code>--set</code> path as
+  <code>overrides.&lt;path&gt;.before</code> beside <code>overrides.&lt;path&gt;.resolved</code>, the
+  value the resolved flight configuration holds there (null included) against the value the layers
+  beneath the null carried without it, so <code>backends.codex.budget_group=null</code> is visibly
+  a null rather than a silent no-op. A <code>--set</code> path naming a backend or role no config
+  layer defines is refused, with the path and the defined names in the refusal, rather than echoed
+  as an override that could change nothing.</p>
+  <p>Reproduction against the base tree (a326205d5, this node's test run unchanged against it):
+  <strong>2 failed, 1 passed</strong>. The override case dies on <code>KeyError: 'overrides'</code>
+  — the base dry run emits no key naming a <code>--set</code> path at all — and the unknown-path
+  case finds the base returning <code>"ok": true</code> (exit 0) for
+  <code>--set backends.ghost.budget_group=null</code>, a path no layer defines. Measured after, in
+  a temporary <code>RECKON_HOME</code> and temporary repository: the override case asserts
+  <code>{"before": "waves", "resolved": null}</code> and <code>{"before": 2, "resolved": 4}</code>
+  for the two <code>--set</code> paths; the git-archive base arm (521 passed, 1 skipped) and the
+  head arm (524 passed, 1 skipped, no added failure id) both ended EXIT=0. The negative control —
+  the resolution block dropped from the dry-run output — fails 1 (KeyError: 'overrides') against
+  2 passed, EXIT=1.</p>
+</section>
+</main>
+</body>
+</html>
