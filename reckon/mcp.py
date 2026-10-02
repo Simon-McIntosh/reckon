@@ -1021,8 +1021,10 @@ def _read_plan_tool(
     ``view`` names the response shape for a typed resource read: ``'summary'``
     (the default), ``'detail'``, ``'history'``, ``'version'``, ``'raw'``,
     ``'schema'`` and ``'section'``. For a plan, ``view='section'`` returns one
-    authored h2 section selected by its ``section`` argument (the section id),
-    and refuses with ``section_not_found`` when that id is absent. A cumulative
+    authored section selected by its ``section`` argument — the id carried on
+    its h2 or on the ``<section>`` element wrapping it — and refuses with
+    ``section_not_found`` when that id is absent, listing the available
+    section identities. A cumulative
     evidence record is served whole rather than section by section: it returns
     the record's composed text, or the record's own bytes with a warning on the
     response when composition failed, and a ``section`` argument on a record is
@@ -1706,7 +1708,7 @@ _OP_VOCAB = {
     "fail": "{op:'fail', id, evidence} — closes a declared gate as failed while preserving negative evidence.",
     "retire_prose": "{op:'retire_prose', preimage:'<exact authored HTML>'} — removes one authored fragment outside every section[data-reckon], atomically with the batch's structured ops.",
     "insert_section": "{op:'insert_section', id, title, body, effort_hours, capability, links} — writes a new h2 with its typed section record; effort_hours, capability and links are required.",
-    "collapse_section": "{op:'collapse_section', section, summary, evidence_anchor} — replaces the authored body under section's h2 with the landed card (✓ landed badge, summary, evidence link), keeps the heading and its id, and sets the section's declaration to done.",
+    "collapse_section": "{op:'collapse_section', section, summary, evidence_anchor} — replaces the authored body under the section's heading with the landed card (✓ landed badge, summary, evidence link), keeps the heading and its id, and sets the section's declaration to done.",
     "append_evidence": "{op:'append_evidence', plan, anchor, title, body} — appends one <section id=anchor> to that plan's cumulative landing record docs/evidence/archive/<plan>-landed.html, creating the record when absent and refusing an anchor that already exists.",
     "move": "{op:'move', target:'sprint_item', slug, to, to_version} — selected source sprint; checks both versions, preserves item metadata.",
     "push": "{op:'push'} — marks the selected sprint active (pushed) in one versioned write and leaves every other sprint's status untouched.",
