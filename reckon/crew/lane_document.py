@@ -112,6 +112,28 @@ GATE_KEY = "router_generation_gate"
 ADMISSION_KEY = "admission"
 _GATE_FIELDS = ("width", "in_flight", "waiting")
 
+# The admission block's capacity arithmetic, as the router publishes it. The
+# router owns every one of these figures -- the fair share it computes, the
+# borrowing it does between sessions and the ratio it averages over its own
+# window -- so they are read here verbatim and no caller recomputes them.
+ADMISSION_WORKER_SLOTS_KEY = "worker_slots"
+ADMISSION_NEW_SESSION_WORKER_SLOTS_KEY = "new_session_worker_slots"
+ADMISSION_SESSIONS_KEY = "sessions"
+ADMISSION_OBSERVED_SECONDS_KEY = "observed_seconds"
+_ADMISSION_FIELDS = (
+    ADMISSION_WORKER_SLOTS_KEY,
+    ADMISSION_NEW_SESSION_WORKER_SLOTS_KEY,
+    "active_sessions",
+    "fair_share",
+    "borrow_reserve",
+    "requests_per_run",
+    "live_runs",
+    ADMISSION_OBSERVED_SECONDS_KEY,
+)
+SESSION_LIVE_RUNS_KEY = "live_runs"
+SESSION_WORKER_SLOTS_KEY = "worker_slots"
+_SESSION_FIELDS = (SESSION_LIVE_RUNS_KEY, SESSION_WORKER_SLOTS_KEY)
+
 # The block describing the rate the lane's generating population achieved. Its
 # figures are read together with the vintage and the denominator that make a
 # derived rate interpretable; a block carrying none of them still says the lane
@@ -417,6 +439,69 @@ def read_lane_counts(document: object) -> dict[str, Any]:
         "generating": _resolved_count(document, _GENERATING_KEYS),
         "waiting": _resolved_count(document, _WAITING_KEYS),
     }
+
+
+def read_lane_admission(document: object) -> dict[str, Any]:
+    """Resolve the router's admission block, one field at a time.
+
+    The block is the router's own capacity arithmetic: ``worker_slots``, the
+    extra workers the gate can carry; ``new_session_worker_slots``, the share
+    offered to a coordinator session the router has not admitted before; and
+    ``sessions``, the per-session fair shares, each naming the session's
+    ``live_runs`` and ``worker_slots``. Beside them sit the figures the
+    arithmetic was derived from -- ``requests_per_run``, ``live_runs``,
+    ``active_sessions``, ``fair_share``, ``borrow_reserve`` -- and
+    ``observed_seconds``, the observation window the ratio was averaged over.
+
+    Every field degrades on its own, and a figure the router nulls is not zero:
+    ``worker_slots`` stays null while the router has too little history to
+    divide, so an absent figure reads ``unknown`` rather than a capacity of
+    none. ``present`` and ``sessions_present`` state the block's shape
+    separately, because a router that published no block and a router that
+    published one without a session map are different answers for a caller
+    choosing where its allowance comes from. A document that is not an object
+    or carries no admission block reports every field ``unknown`` with the
+    reason, and the function never raises.
+    """
+    report: dict[str, Any] = {
+        "present": False,
+        "state": "unknown",
+        "sessions_present": False,
+        "sessions": {},
+        "detail": "",
+    }
+    for name in _ADMISSION_FIELDS:
+        report[name] = UNKNOWN
+    if not isinstance(document, Mapping):
+        report["detail"] = (
+            f"lane document is {type(document).__name__}, not a JSON object"
+        )
+        return report
+    admission = document.get(ADMISSION_KEY)
+    if not isinstance(admission, Mapping):
+        report["detail"] = "lane document publishes no admission block"
+        return report
+    report["present"] = True
+    report["state"] = "measured"
+    for name in _ADMISSION_FIELDS:
+        value = _number(admission.get(name))
+        report[name] = UNKNOWN if value is None else value
+    sessions = admission.get(ADMISSION_SESSIONS_KEY)
+    if isinstance(sessions, Mapping):
+        report["sessions_present"] = True
+        resolved: dict[str, dict[str, Any]] = {}
+        for session, row in sessions.items():
+            session_id = _text(session)
+            if session_id is None or not isinstance(row, Mapping):
+                continue
+            resolved[session_id] = {
+                name: (
+                    value if (value := _number(row.get(name))) is not None else UNKNOWN
+                )
+                for name in _SESSION_FIELDS
+            }
+        report["sessions"] = resolved
+    return report
 
 
 # The document's name for the constraint it observed binding. Read here so a
