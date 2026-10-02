@@ -70,18 +70,33 @@ STOP_GRACE_SECONDS = 1.0
 # The mutation's stop grace: far larger than the case ceiling, so a supervisor
 # that does not escalate waits on the worker's own exit instead.
 MUTATION_STOP_GRACE_SECONDS = 600.0
-# The stub worker's own sleep. It outlives the case ceiling, so an exit
-# observed inside the ceiling can only be the supervisor's escalation, never
-# the worker ending. This is the value that tells the bounded behaviour from
-# the unbounded wait: a supervisor with no escalation ends only when the worker
-# does, at this sleep or, under the mutation's grace, later still.
+# The stub worker's own sleep. It outlives the case ceiling, so the bounded
+# wait (the supervisor's pid is gone) cannot be satisfied by a supervisor that
+# merely waits the worker out: a supervisor that never escalates is still
+# holding the worker when the wait ceiling expires, and the case fails there.
 WORKER_SLEEP_SECONDS = 120.0
 # The ceiling the cases wait under. It is a bounded wait on the observed
 # condition (the supervisor's pid is gone) rather than a raw wall-clock budget,
 # and it is generous for a loaded fleet node while staying under the worker's
-# own sleep, so it cannot be satisfied by a supervisor that merely waits the
-# worker out.
+# own sleep.
 CEILING_SECONDS = 90.0
+# How often the supervisor rechecks its stop flag and its worker. It is a poll
+# loop, so the drain after a stop is a whole number of these polls and the
+# case's elapsed bound is computed from it rather than guessed.
+SUPERVISOR_POLL_SECONDS = dispatch_module._WORKER_MANIFEST_POLL_SECONDS
+# The supervisor's drain after a recorded stop, in poll intervals: one to notice
+# the stop and signal the worker, the stop grace for the worker to flush, one to
+# escalate to SIGKILL when the worker ignores the grace, and one to reap the
+# killed worker.
+SUPERVISOR_STOP_DRAIN_SECONDS = 3 * SUPERVISOR_POLL_SECONDS + STOP_GRACE_SECONDS
+# The drain when the worker ends on the group stop itself: one poll to notice
+# the stop and one to reap the already-dead worker, with no escalation to run.
+SUPERVISOR_PROMPT_DRAIN_SECONDS = 2 * SUPERVISOR_POLL_SECONDS
+# A margin over the derived drain for a loaded fleet node: scheduling delay,
+# signal delivery and process teardown. The elapsed bounds stay strictly under
+# CEILING_SECONDS, so a supervisor that overruns its drain fails the case on
+# this bound rather than passing the wait and being reported healthy.
+LOAD_MARGIN_SECONDS = 30.0
 
 
 def _stop_grace_environment() -> str:
@@ -266,11 +281,14 @@ def test_the_supervisor_exits_within_the_bound_after_a_stop(
             detail="the supervisor's exit",
         )
         elapsed = time.monotonic() - started
-        # The separate discriminator: a supervisor with no escalation would end
-        # only when the worker itself did, at WORKER_SLEEP_SECONDS or later. An
-        # exit well before that is the supervisor's own escalation, not the
-        # worker finishing.
-        assert elapsed < WORKER_SLEEP_SECONDS, elapsed
+        # The discriminator: the worker ignores the stop, so only the
+        # supervisor's escalation can end it. That drain is bounded -- a poll to
+        # notice the stop, the stop grace, a poll to escalate to SIGKILL and a
+        # poll to reap -- plus a load margin. The bound is derived from those
+        # timings and sits strictly under the wait ceiling, so a supervisor that
+        # overruns it fails here; a bound set from the worker's own sleep could
+        # never be reached before the ceiling, so it would assert nothing.
+        assert elapsed < SUPERVISOR_STOP_DRAIN_SECONDS + LOAD_MARGIN_SECONDS, elapsed
         assert not _running(_worker_pid(fixture["run_id"]))
         assert (fixture["directory"] / dispatch_module.EXIT_RECORD_NAME).is_file()
         # The end was attributable: the run's own directory names the kill.
@@ -293,10 +311,13 @@ def test_a_worker_that_ends_on_the_stop_ends_the_supervisor_promptly(
             timeout=CEILING_SECONDS,
             detail="the supervisor's exit",
         )
-        # Bounded: the supervisor ends without the escalation, well before the
-        # worker's own sleep would end it.
+        # Bounded: the worker ends on the group stop, so the supervisor only
+        # notices the stop and reaps it -- one poll each, no escalation -- and
+        # the same load margin. The bound is derived from those timings and sits
+        # strictly under the wait ceiling, so it can fail where a bound set from
+        # the worker's own sleep could not.
         elapsed = time.monotonic() - started
-        assert elapsed < WORKER_SLEEP_SECONDS, elapsed
+        assert elapsed < SUPERVISOR_PROMPT_DRAIN_SECONDS + LOAD_MARGIN_SECONDS, elapsed
         # The worker ended on the group stop, so no escalation was warranted.
         assert "worker-ignored-the-stop-grace-signal" not in _sender_reasons(
             fixture["directory"]
