@@ -1186,6 +1186,113 @@ def _require_gate_log_agrees(
         )
 
 
+def _head_arm_log_failure_ids(gate_check: Mapping[str, Any] | None) -> set[str] | None:
+    """The failing ids the head arm's log reports, or ``None`` when it is unreadable.
+
+    The head arm of a gated measurement is the run's own check, so its log is
+    the one the promotion cites: the ids are read from that log's own
+    ``FAILED``/``ERROR`` summary lines, canonicalised the way every other arm
+    reader canonicalises them. A citation that names no path, or one that
+    cannot be read from here, reports ``None`` rather than an empty set — an
+    unread log is not a log that failed nothing, and a comparison taken over an
+    empty set would claim exactly that.
+    """
+    if not isinstance(gate_check, Mapping):
+        return None
+    raw = str(gate_check.get("log_path") or "").strip()
+    if not raw:
+        return None
+    try:
+        log_text = Path(raw).expanduser().read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    return _control_failure_ids(log_text)
+
+
+def _zero_added_against_a_red_base(
+    record: Mapping[str, Any], gate_check: Mapping[str, Any] | None
+) -> bool:
+    """Whether the run's own manifest shows a red base the head did not worsen.
+
+    A gate is judged here by its delta against its base, so a nonzero exit
+    beside a passing verdict is admitted only when the manifest records a
+    baseline observation that is itself red — a nonzero exit status — and whose
+    recorded failure ids include every id the head arm's log reports. That is
+    zero added against a red base, which is what the passing verdict then
+    states; anything less is refused by the caller.
+
+    Every condition is asked of the run's own records, never inferred: a
+    manifest that records no baseline, a baseline with no readable status or no
+    readable list of failure ids, and a head log that cannot be read each leave
+    the delta unmeasured, and an unmeasured delta cannot license the pair.
+    """
+    manifest = _fresh_manifest(record)
+    if manifest is None:
+        return False
+    baseline = manifest.get("baseline_suite")
+    if not isinstance(baseline, Mapping):
+        return False
+    base_exit = baseline.get("exit_status")
+    if isinstance(base_exit, bool) or not isinstance(base_exit, int) or base_exit == 0:
+        return False
+    base_ids = baseline.get("failure_ids")
+    if not isinstance(base_ids, list) or any(
+        not isinstance(test_id, str) or not test_id.strip() for test_id in base_ids
+    ):
+        return False
+    canonical_base = {
+        review_module.canonical_node_id(test_id.strip()) for test_id in base_ids
+    }
+    head_ids = _head_arm_log_failure_ids(gate_check)
+    if head_ids is None:
+        return False
+    return head_ids <= canonical_base
+
+
+def _require_verdict_matches_exit_status(
+    run_id: str,
+    record: Mapping[str, Any],
+    gate_check: Mapping[str, Any] | None,
+    *,
+    verdict: str,
+) -> None:
+    """Refuse a passing verdict recorded beside a nonzero exit status.
+
+    The verdict and the exit status are two statements about one run, and a
+    check that reads only the log's terminal ``EXIT=<n>`` record cannot compare
+    them: a log whose command wrote no such line records no status at all, so
+    the comparison short-circuits on the missing record and a passing verdict
+    sits beside a nonzero status unreported. The asserted status is therefore
+    compared with the verdict directly, whether or not the log carries an exit
+    record of its own.
+
+    The one pair admitted is the repository's own delta rule: an armed run
+    whose manifest records a red baseline covering every id the head arm's log
+    reports measures zero added against that base, so its passing verdict is
+    the delta verdict and not a contradiction. The admission is read from the
+    run's records by ``_zero_added_against_a_red_base``; everything else
+    refuses, naming both the verdict and the status.
+    """
+    if verdict != "passed" or not isinstance(gate_check, Mapping):
+        return
+    asserted = gate_check.get("exit_status")
+    if isinstance(asserted, bool) or not isinstance(asserted, int) or asserted == 0:
+        return
+    if _zero_added_against_a_red_base(record, gate_check):
+        return
+    raise CrewError(
+        f"run {run_id!r} asserts gate 'passed' beside exit status {asserted}: a "
+        "passed verdict states the check succeeded and a nonzero exit status "
+        "states it did not, so the row would record two contradictory readings "
+        "of one run. Found: gate 'passed' with a nonzero exit status, "
+        f"'{asserted}'. Re-promote with the verdict the evidence shows, or — "
+        "when the base this check measures against is itself red and the head "
+        "adds no failure to it — record the baseline_suite observation in the "
+        "manifest so the zero added against that base is what the passing "
+        "verdict states"
+    )
+
+
 def _promoted_worker_exit(run_id: str) -> dict[str, Any] | None:
     """The worker's exit record, read verbatim from the run directory.
 
@@ -5109,6 +5216,7 @@ def complete(
             commit_list_shortfall,
             _commits_beyond_base,
             _gate_log_agrees,
+            _verdict_matches_exit_status,
             _runnable_gate_command,
             review_waived,
             _standing_suite,
@@ -5142,6 +5250,14 @@ def complete(
                 # unwind.
                 lambda: _require_commits_beyond_base(run_id, record, commit_list),
                 lambda: _require_gate_log_agrees(run_id, gate_check, verdict=verdict),
+                # The verdict and the asserted status are two statements about
+                # one run: a passing verdict beside a nonzero exit status is
+                # refused from those two facts alone, whether or not the log
+                # carries a terminal EXIT record of its own for the comparison
+                # above to read.
+                lambda: _require_verdict_matches_exit_status(
+                    run_id, record, gate_check, verdict=verdict
+                ),
                 # The recorded command is what the integration re-run executes,
                 # so a text that describes the check must be refused here rather
                 # than land on a row that later reports a failure the merge did
