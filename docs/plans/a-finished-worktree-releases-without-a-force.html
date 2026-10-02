@@ -23,9 +23,9 @@
   <title>A Finished Worktree Releases Without a Force | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 </head>
 <body>
   <main class="plan-doc">
@@ -156,6 +156,11 @@
 <section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
 <p><strong>From the §6 review (89, zero added failures).</strong> <code>_inspect_workspace</code> in reckon/crew/routing.py measures a worktree's commits beyond the integration head only when <code>release_residue</code> is true. Every other caller still gets a row with <code>non_equivalent_commits: []</code> and <code>patch_equivalent_commits: []</code>. The promotion audit row is one of them (promotion.py, default <code>release_residue=False</code>). For a divergent dirty tree it reports an empty list of non-equivalent commits, so an unmeasured absence reads as a measured zero.</p>
 <p><strong>Done when.</strong> A row whose commits were not measured carries <code>null</code> in both fields, with a field naming why. A measured row keeps the lists. A test inspects one divergent dirty worktree both ways and asserts null in one case and a list in the other. Existing gc and residue tests keep passing.</p>
+
+    <h2 id="s8">§8 — gc names its subject and reports what it already did</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<p><strong>Reported 2026-10-02 at about 23:14Z</strong> by nova-f5, and confirmed in the code by s25-coord. <code>reckon crew gc --repo ~/Code/nova --project nova --apply</code> stopped mid-sweep with <code>Error: git rev-parse HEAD failed: fatal: not a git repository …</code> and named no path. It had already removed <code>…/s21-nova/fsri-krylov-capacity-scan-symbol-name</code>, and nothing reported that. There are two defects. First, <code>_git</code> in reckon/crew/routing.py raises <code>CrewError</code> naming the command but not the directory it ran in. Second, <code>crew_gc</code> in reckon/cli.py turns that error into a <code>ClickException</code> before its report is emitted, so the removed and refused lists of the steps already applied are lost. A gc that has already deleted something must always say so.</p>
+<p><strong>Done when</strong> three things hold. A <code>_git</code> failure names the directory it ran in. A worktree that is not a git repository is reported as a row naming its path and the reason, and the sweep continues past it. Any other mid-sweep failure emits the partial report, with the removed and refused lists and the failing path, before exiting nonzero. A test in a temporary repository and RECKON_HOME registers one worktree whose directory is not a repository, beside one that gc releases, and asserts four things: the release is reported, the broken tree's row names its path, the exit status is stated, and no other worktree is touched. The negative control restores the abort, and the release then goes unreported.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
