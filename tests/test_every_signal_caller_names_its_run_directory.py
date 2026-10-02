@@ -145,3 +145,28 @@ def test_recovery_watchdog_names_the_run_directory(
     recovery._apply_budget_watchdog(record, config)
 
     _assert_ends_with_refusal(live_run, reason="budget-watchdog")
+
+
+def test_recovery_delivered_review_stop_names_the_run_directory(
+    live_run: _LiveRun, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The delivered-review stop records its refusal in the review's run directory."""
+    pointer = {
+        "run_id": live_run.run_id,
+        "pid": live_run.process.pid,
+        "pid_start_time": STALE_START_TIME,
+        "phase": "active",
+        "log_path": str(live_run.run_dir / "stream.jsonl"),
+        "manifest_path": str(live_run.run_dir / "manifest.md"),
+    }
+    monkeypatch.setattr(
+        recovery,
+        "review_delivered",
+        lambda record: {"delivered_at": 0.0, "record_path": "", "manifest_path": ""},
+    )
+    monkeypatch.setattr(recovery, "_run_stream_mtime", lambda record: 1000.0)
+
+    stopped = recovery._stop_delivered_reviews([pointer], grace_seconds=1.0)
+
+    assert stopped == []
+    _assert_ends_with_refusal(live_run, reason="delivered-review-outlived-grace")
