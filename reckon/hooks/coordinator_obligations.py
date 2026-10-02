@@ -16,16 +16,23 @@ Two modes, selected by ``--hook``:
   snapshot module is loaded by file path and the derivation modules are never
   imported, so a turn's opening costs one stat, one small JSON read and a
   formatting pass. A snapshot that is not fresh is answered by one line naming
-  the reason and the remedy, and the hook never writes the snapshot itself.
+  the reason and the remedy -- except while a producer reload is in progress,
+  which shows the last snapshot's checklist headed by its age and the words
+  ``producer reloading`` with no remedy, because the replacement is already on
+  its way and cycling the seat would be the wrong thing to do. The hook never
+  writes the snapshot itself.
   It speaks when the duties *change* and stays quiet otherwise: a checklist
   repeated at the open of every turn is one a coordinator learns to skip. The
   session's last-injected set of ``(kind, run_id)`` pairs is kept beside that
   session's follower registration, and an injection happens only when a duty
-  has appeared or gone since the last one. An age that moved without the set
-  moving is not a change worth saying again. A list that empties clears that
-  record, because emptying is the one change a comparison cannot record: a
-  duty that went away and returned would otherwise match the set left behind
-  and never be spoken again.
+  has appeared or gone since the last one, or when the reload state under the
+  list has changed -- entering a reload and coming back from one are each
+  said once, because the sentence over the duties changed even though the set
+  did not. An age that moved without either moving is not a change worth
+  saying again. A list that empties clears that record, because emptying is
+  the one change a comparison cannot record: a duty that went away and
+  returned would otherwise match the set left behind and never be spoken
+  again.
 - ``stop`` — wired as Stop. Prints ``{"decision": "block", "reason": ...}``
   while duties remain, so the turn cannot end into forgotten work. It derives
   from state at the moment of the stop. The block fires at most once per list:
@@ -331,14 +338,21 @@ def digest_path(project: str, session: str) -> Path:
     return lock.with_suffix(_DIGEST_SUFFIX)
 
 
-def duty_digest(items: Sequence[Mapping[str, Any]]) -> str:
-    """A digest over the ``(kind, run_id)`` pairs and nothing else."""
+def duty_digest(items: Sequence[Mapping[str, Any]], *, reloading: bool = False) -> str:
+    """A digest over the ``(kind, run_id)`` pairs, tagged with the reload state.
+
+    The pairs alone would silence a reloading producer's list, because it is
+    the same list the session was already shown. The tag makes entering a
+    reload and coming back from one each read as the change they are, while
+    two turns inside one reload, and two ordinary turns, stay equal.
+    """
     pairs = sorted(
         (str(item.get("kind") or ""), str(item.get("run_id") or "")) for item in items
     )
-    return hashlib.sha256(
-        "\n".join(f"{kind}\t{run_id}" for kind, run_id in pairs).encode()
-    ).hexdigest()
+    body = "\n".join(f"{kind}\t{run_id}" for kind, run_id in pairs)
+    if reloading:
+        body = f"reloading\n{body}"
+    return hashlib.sha256(body.encode()).hexdigest()
 
 
 def _read_digest(path: Path) -> str:
@@ -463,14 +477,20 @@ def _work_lines(items: Sequence[Mapping[str, Any]]) -> list[str]:
     return lines
 
 
-def format_checklist(payload: dict[str, Any]) -> str:
-    """Render one obligations payload as the checklist the hook emits."""
+def format_checklist(payload: dict[str, Any], *, note: str = "") -> str:
+    """Render one obligations payload as the checklist the hook emits.
+
+    ``note`` is the state the list is shown under, placed in the header before
+    the counts: a reload shows the last snapshot's list with the words
+    ``producer reloading`` and its age there, in place of any remedy.
+    """
     items = payload.get("obligations") or ()
     summary = payload.get("summary") or {}
     project = str(payload.get("project") or "")
     session = str(payload.get("session") or "")
     header = (
         f"reckon obligations for session {session} (project {project}): "
+        f"{note + '; ' if note else ''}"
         f"{summary.get('count', len(items))} outstanding, "
         f"oldest {_format_age(int(summary.get('oldest_age_seconds') or 0))}"
     )
@@ -520,15 +540,14 @@ def not_fresh_line(
 ) -> str:
     """One line naming why the session's snapshot is not fresh, and the remedy.
 
-    The reason is one of the module's three not-fresh states, said in words a
-    coordinator reads at the open of a turn: no producer, a producer running
-    older code, or the age of the snapshot. The remedy is the one command that
+    The reason is one of the two not-fresh states a remedy answers, said in
+    words a coordinator reads at the open of a turn: no producer, or the age
+    of a snapshot whose producer is alive but silent. Neither is a reload the
+    producer is expected to finish, so the remedy is the one command that
     publishes a snapshot again.
     """
     module = snapshot_module()
-    if state == module.STALE_CODE:
-        reason = "the producer is running older code"
-    elif state == module.STALE_SNAPSHOT:
+    if state == module.STALE_SNAPSHOT:
         age = module.snapshot_age_seconds(document)
         reason = (
             "the snapshot is stamped with no readable age"
@@ -569,14 +588,59 @@ def emit(mode: str, payload: dict[str, Any], obligations: dict[str, Any]) -> Non
     inject(payload, checklist)
 
 
+def _inject_list(
+    payload: dict[str, Any],
+    *,
+    project: str,
+    session: str,
+    obligations: dict[str, Any],
+    reloading: bool,
+    note: str = "",
+) -> None:
+    """Inject a list once per change, staying silent when there is no news.
+
+    The fresh reading and the reloading reading of the same snapshot go
+    through here, so both carry the lane rewrite and the same change record;
+    only the header's note and the tag on the recorded digest differ. An empty
+    list on an ordinary turn has nothing to say -- but an empty list under a
+    reload is the news that the producer is reloading, so it is spoken once
+    like any other change. The fresh empty turn is the one change the digest
+    cannot record by comparison: there is nothing to compare it with, so the
+    set that was last injected has to be cleared instead. Left in place, it
+    makes the same duties *returning* read as a repeat of what the session was
+    already shown, and the duty that emptied and came back is never spoken
+    again.
+    """
+    for item in obligations.get("obligations") or ():
+        if isinstance(item, dict):
+            item["next_command"] = follow_local_lane(
+                str(item.get("next_command") or ""), project=project
+            )
+    items = obligations.get("obligations") or ()
+    digest_file = digest_path(project, session)
+    if not items and not reloading:
+        if _read_digest(digest_file):
+            _store_digest(digest_file, "")
+        return
+    digest = duty_digest(items, reloading=reloading)
+    if _read_digest(digest_file) == digest:
+        return
+    inject(payload, format_checklist(obligations, note=note))
+    _store_digest(digest_file, digest)
+
+
 def _prompt(payload: dict[str, Any]) -> int:
     """Answer one prompt turn from the session's published snapshot.
 
     The snapshot is read, never written: a fresh one is formatted and injected
-    exactly as a derivation would have been, and a not-fresh one is answered by
-    one line saying why and how to publish it again. Everything this function
-    imports is loaded before the read -- the snapshot module by file path --
-    so no derivation module reaches a turn's opening.
+    exactly as a derivation would have been; a not-fresh one whose producer is
+    plausibly mid-reload is answered with the last snapshot's own list, headed
+    by the snapshot's age and the words ``producer reloading`` and carrying no
+    remedy, because the replacement is on its way and cycling the seat would
+    be the wrong thing to do; and any other not-fresh one is answered by one
+    line saying why and how to publish a snapshot again. Everything this
+    function imports is loaded before the read -- the snapshot module by file
+    path -- so no derivation module reaches a turn's opening.
     """
     cwd = Path(
         str(payload.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
@@ -594,35 +658,34 @@ def _prompt(payload: dict[str, Any]) -> int:
     module = snapshot_module()
     document = module.read_snapshot(project, session)
     state = module.freshness(document)
-    if state != module.FRESH:
-        inject(
+    if state == module.FRESH:
+        _inject_list(
             payload,
-            not_fresh_line(state, project=project, session=session, document=document),
+            project=project,
+            session=session,
+            obligations=module.live_payload(document),
+            reloading=False,
         )
         return 0
-    obligations = module.live_payload(document)
-    for item in obligations.get("obligations") or ():
-        if isinstance(item, dict):
-            item["next_command"] = follow_local_lane(
-                str(item.get("next_command") or ""), project=project
-            )
-    items = obligations.get("obligations") or ()
-    digest_file = digest_path(project, session)
-    if not items:
-        # An empty list is the one change the digest cannot record by
-        # comparison: there is nothing to compare it with, so the set that was
-        # last injected has to be cleared instead. Left in place, it makes the
-        # same duties *returning* read as a repeat of what the session was
-        # already shown, and the duty that emptied and came back is never
-        # spoken again.
-        if _read_digest(digest_file):
-            _store_digest(digest_file, "")
+    if document is not None and module.reload_in_progress(
+        document,
+        state=state,
+        reload_started_at=module.watch_reload_started_at(project),
+    ):
+        age = module.snapshot_age_seconds(document) or 0
+        _inject_list(
+            payload,
+            project=project,
+            session=session,
+            obligations=module.live_payload(document),
+            reloading=True,
+            note=f"producer reloading, last snapshot {_format_age(age)} old",
+        )
         return 0
-    digest = duty_digest(items)
-    if _read_digest(digest_file) == digest:
-        return 0
-    inject(payload, format_checklist(obligations))
-    _store_digest(digest_file, digest)
+    inject(
+        payload,
+        not_fresh_line(state, project=project, session=session, document=document),
+    )
     return 0
 
 

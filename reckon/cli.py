@@ -2265,7 +2265,8 @@ _FOLLOWER_RELOAD_PROBE = (
     "import reckon.cli, reckon.crew.dispatch, reckon.crew.runs\n"
 )
 
-_FOLLOWER_RELOAD_PROBE_TIMEOUT = 30.0
+# The probe timeout is bound beside the shared reload window further down,
+# because the same figure is one input to it.
 
 
 class _FollowerReloader:
@@ -2514,21 +2515,37 @@ FOLLOWER_FORMAT_EVENT = "follower-format-changed"
 # it travels as its own event and is never rendered as a run's row.
 FOLLOWER_STALE_PRODUCER_EVENT = "stale-producer"
 
-# A producer re-executes in place when its code stamp moves, and the two things
-# that bound how long a healthy reload takes are the throwaway import proof it
-# runs before the exec (``_FOLLOWER_RELOAD_PROBE_TIMEOUT``) and the slowest gap
-# between its wake-ups, which is the producer's idle poll interval cap. The
-# window a mismatch is deferred for must exceed both plus a scheduling margin,
-# or a slow reload would still trip the cycle advice. The cap is mirrored from
-# ``reckon.crew.recovery.IDLE_POLL_INTERVAL_CAP_SECONDS`` because that module is
-# imported lazily; a test asserts the two figures agree so this cannot drift.
-PRODUCER_POLL_INTERVAL_CAP_SECONDS = 30.0
-PRODUCER_RELOAD_WINDOW_MARGIN_SECONDS = 5.0
-PRODUCER_RELOAD_WINDOW_SECONDS = (
-    _FOLLOWER_RELOAD_PROBE_TIMEOUT
-    + PRODUCER_POLL_INTERVAL_CAP_SECONDS
-    + PRODUCER_RELOAD_WINDOW_MARGIN_SECONDS
-)
+
+# A producer re-executes in place when its code stamp moves, and the window a
+# mismatch is deferred for is the window the prompt hook reads to show a
+# reloading producer's last snapshot instead of a remedy. It is defined beside
+# the snapshot reader, which the hook loads by file path because it must load
+# no derivation module; it is loaded the same way here so this module's import
+# stays free of the crew facade, which every crew import in this file defers
+# for the same reason. The window exceeds a healthy reload's worst case -- the
+# throwaway import proof plus the producer's idle poll interval cap, plus a
+# scheduling margin -- or a slow reload would still trip the cycle advice.
+def _snapshot_module() -> Any:
+    """The snapshot reader, loaded by file path when nothing has imported it."""
+    loaded = sys.modules.get("reckon.crew.obligation_snapshot")
+    if loaded is not None:
+        return loaded
+    from importlib.util import module_from_spec, spec_from_file_location
+
+    path = Path(__file__).resolve().parent / "crew" / "obligation_snapshot.py"
+    specification = spec_from_file_location("reckon.crew.obligation_snapshot", path)
+    if specification is None or specification.loader is None:
+        raise ImportError(f"cannot load the snapshot reader from {path}")
+    module = module_from_spec(specification)
+    sys.modules[specification.name] = module
+    specification.loader.exec_module(module)
+    return module
+
+
+_SNAPSHOT_READER = _snapshot_module()
+_FOLLOWER_RELOAD_PROBE_TIMEOUT = _SNAPSHOT_READER.FOLLOWER_RELOAD_PROBE_TIMEOUT_SECONDS
+PRODUCER_POLL_INTERVAL_CAP_SECONDS = _SNAPSHOT_READER.PRODUCER_POLL_INTERVAL_CAP_SECONDS
+PRODUCER_RELOAD_WINDOW_SECONDS = _SNAPSHOT_READER.PRODUCER_RELOAD_WINDOW_SECONDS
 FOLLOWER_PRODUCER_RELOADING_EVENT = "producer-reloading"
 FOLLOWER_PRODUCER_RELOAD_FAILED_EVENT = "producer-reload-failed"
 FOLLOWER_PRODUCER_STOPPED_EVENT = "producer-stopped"

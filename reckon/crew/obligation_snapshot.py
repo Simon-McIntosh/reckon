@@ -22,6 +22,11 @@ it reads as one of three fixed words: ``no-producer`` when no snapshot was
 published or its producer is not running, ``producer-stale-code`` when the
 producer runs source other than what a restarted one would run, and
 ``stale-snapshot`` when the snapshot is older than the window.
+
+A not-fresh snapshot whose producer is plausibly mid-reload is a fourth
+reading, outside :func:`freshness`'s fixed words: :func:`reload_in_progress`
+answers it from the shared reload window, so a reader can show the last
+snapshot instead of the remedy a genuinely absent producer earns.
 """
 
 from __future__ import annotations
@@ -52,6 +57,27 @@ STALE_CODE = "producer-stale-code"
 STALE_SNAPSHOT = "stale-snapshot"
 
 STAT_IDENTITY_INTERVAL_SECONDS = 10.0
+
+# A producer re-executes in place when the source stamp it runs moves. Two
+# bounds make a healthy reload slow: the throwaway import proof the reloader
+# runs before the exec, and the producer's idle poll interval cap, the longest
+# it may sleep between noticing the stamp and acting on it. A window exceeding
+# both plus a scheduling margin is what a stale code stamp and a silent
+# producer are read against: inside it the seat reads as reloading, outside it
+# the seat is a producer to cycle or none at all. The prompt hook and the
+# follower in ``reckon.cli`` obtain the window from here -- the hook by loading
+# this file directly, the follower importing it -- so the two agree on when a
+# producer is stale. The cap is mirrored from
+# ``reckon.crew.recovery.IDLE_POLL_INTERVAL_CAP_SECONDS`` because that module
+# is imported lazily; a test asserts the two figures agree so this cannot drift.
+FOLLOWER_RELOAD_PROBE_TIMEOUT_SECONDS = 30.0
+PRODUCER_POLL_INTERVAL_CAP_SECONDS = 30.0
+PRODUCER_RELOAD_WINDOW_MARGIN_SECONDS = 5.0
+PRODUCER_RELOAD_WINDOW_SECONDS = (
+    FOLLOWER_RELOAD_PROBE_TIMEOUT_SECONDS
+    + PRODUCER_POLL_INTERVAL_CAP_SECONDS
+    + PRODUCER_RELOAD_WINDOW_MARGIN_SECONDS
+)
 
 # A state directory's ``runs`` subtree changes on every run event, and those
 # changes reach the producer as pointer transitions, so the sweep does not walk
@@ -329,6 +355,66 @@ def snapshot_age_seconds(
         return None
     instant = _utc_now() if now is None else now
     return max(0, int((instant - computed).total_seconds()))
+
+
+# ── Reload window ───────────────────────────────────────────────────────────
+
+
+def producer_reload_window_seconds() -> float:
+    """The window a stale or silent producer reads as a reload in progress."""
+    return PRODUCER_RELOAD_WINDOW_SECONDS
+
+
+def watch_reload_started_at(project: str) -> str | None:
+    """The instant the project's watch seat recorded for its reload, or None.
+
+    The seat writes the key as it begins an in-place replacement, and the
+    replacement clears it by rewriting the record, so its presence marks a
+    reload the seat itself declared. The record is read here as plain JSON
+    because the prompt hook resolves it without the crew facade, whose
+    ``watch_producer_identity`` reads the same file; an unreadable or
+    malformed record resolves to None, exactly as that reader treats it.
+    """
+    path = crew_home() / "watch" / f"{_lock_stem(project, 'project')}.lock"
+    try:
+        record = json.loads(path.read_text(encoding="utf-8") or "{}")
+    except (OSError, ValueError):
+        return None
+    if not isinstance(record, dict):
+        return None
+    value = record.get("reload_started_at")
+    return str(value) if value else None
+
+
+def reload_in_progress(
+    document: Mapping[str, Any] | None,
+    *,
+    state: str,
+    reload_started_at: Any = None,
+    now: datetime | None = None,
+) -> bool:
+    """Whether a producer reload reads as in progress rather than an absence.
+
+    Any of three signals means a reload: the seat recorded a reload intent
+    within the window; the snapshot's producer is alive and its code stamp is
+    older than the source, so it has not caught up yet; or its last
+    publication is within the window although no producer is live, which is
+    the gap between the old image exiting and the replacement publishing.
+    Outside every signal, a caller answers with its not-fresh line, and the
+    remedy that line carries is right because nothing is coming.
+    """
+    instant = _utc_now() if now is None else now
+    window = producer_reload_window_seconds()
+    intent = _parse_instant(reload_started_at)
+    intent_age = None if intent is None else (instant - intent).total_seconds()
+    if intent_age is not None and intent_age <= window:
+        return True
+    if state == STALE_CODE:
+        return True
+    if state != NO_PRODUCER:
+        return False
+    age = snapshot_age_seconds(document, now=instant)
+    return age is not None and age <= window
 
 
 # ── Ages ────────────────────────────────────────────────────────────────────
