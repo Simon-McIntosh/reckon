@@ -42,9 +42,10 @@
     background work off the orchestrator lane gates its own default on this figure:
     <em>closing the escape hatch while the locally served lane still dies nine times a day
     converts a degraded review loop into no review loop.</em> Until the review-reliability
-    repair lands and an after-rate exists, that plan's fence warns and records rather than
-    the plan refuses. This page states the before-rate and says plainly that the after-rate
-    does not yet exist.</p>
+    repair lands and a post-repair after-rate exists, that plan's fence warns and records rather than
+    the plan refuses. This page states the before-rate, the after window the effort move
+    has since produced, and says plainly that the post-repair after-rate does not yet
+    exist.</p>
 
     <section id="s1" data-reckon="section">
       <h2>§1 — What was measured, and where the answer comes from</h2>
@@ -168,6 +169,44 @@
       alternative it sends that work to is measured, and this is that measurement at the
       effort the review reflex uses. It is not a claim about any other lane, and it is not a
       claim about why the deaths happen — that belongs to the review-reliability work.</p>
+
+      <p><strong>The after block — the review reflex at effort high, since the move.</strong>
+      Local-lane reviews moved from <code>xhigh</code> to <code>high</code> at dotfiles
+      f3f653a, about 18:36Z on 2026-09-30. Over the window that opens there — the scan of
+      2026-10-02T12:15Z, 41.7 hours — 17 of 343 local-lane review attempts at
+      <code>high</code> died mid-turn: <strong>5.0%</strong>, with a 95% Wilson interval of
+      3.1% to 7.8%, against the <strong>29.4% before-rate</strong> the plan states for
+      reviews at <code>xhigh</code> (392 deaths in 1333 attempts). The window is past the
+      60-attempt floor the plan sets for stating a rate, so the rate is stated rather than
+      the window deferred. Thirteen of the 17 deaths carry a supervisor exit record, all
+      thirteen <code>SIGKILL</code>.</p>
+
+      <p><strong>Three readings of one population, and the difference between them is the
+      corpus, not the rate.</strong> The table above carries the committed scan of
+      2026-09-30 to 14:37Z: 392 in 1324, 29.6%. The plan states the before-rate as 392 in
+      1333, 29.4%. Re-read over the whole history at this scan, the <code>xhigh</code> cell
+      holds 393 in 1343 — the same population seen later; it still grows slowly through
+      attempts of pre-move runs resumed after the move, one of which died, and the rate is
+      unmoved by it at 29.3%. No reading of the cell changes the comparison: whatever the
+      boundary, roughly three in ten <code>xhigh</code> reviews died, and roughly one in
+      twenty of the moved reviews has.</p>
+
+      <p><strong>The filter's two axes are checkable from the same scan.</strong> All 343
+      in-window attempts carry their own stream timestamps — none was dated by a file
+      mtime, so none landed in the window by a touched file — and none was unreadable. Of
+      the 389 review attempts at <code>high</code> in the whole history, the 46 that started
+      before the window are counted just outside it, and zero review attempts at any other
+      effort, and zero at <code>xhigh</code>, started inside it: the window separates the
+      moved review reflex from both the pre-move population and any review still declared
+      at the old effort.</p>
+
+      <p><strong>This compares two configurations of the review reflex, not an isolated
+      effort effect.</strong> The lane's endpoint ignores thinking budgets, so
+      <code>high</code> and <code>xhigh</code> are dispatch declarations, and the move was
+      accompanied by whatever else changed on the lane at the same time. Read it as a
+      natural before-and-after: the review reflex's configuration since the move dies far
+      less often — 5.0% against 29.4% — and that after window is now the baseline §9's
+      repair would be measured against.</p>
     </section>
 
     <p><strong>Note on the effort axis.</strong> Effort is recorded, not effective, on this
@@ -331,16 +370,16 @@
     </section>
 
     <section id="s5" data-reckon="section">
-      <h2>§5 — The after-rate does not exist yet</h2>
+      <h2>§5 — The post-repair after-rate does not exist yet</h2>
 
-      <p><strong>Only a before block is reported, because the repair it would measure has
-      not landed.</strong> The work that is to fix this is
+      <p><strong>No post-repair after-rate is stated, because the repair it would measure
+      has not landed.</strong> The work that is to fix this is
       <em>a-review-dies-where-nobody-is-looking</em> §9, which takes one reading of a review
       dying mid-turn and makes the worker compact and continue instead. That section is
       declared <code>implementable</code> and its driving followup is open. There is no
-      post-repair window in the corpus to measure, so no after block is stated: a second
-      number with no repair behind it would be a fiction with the same shape as a
-      measurement.</p>
+      post-repair window in the corpus to measure. The after block §2 carries is the window
+      the effort move created — the review reflex's configuration since 2026-09-30 — and is
+      not evidence about the repair.</p>
 
       <p><strong>What the fence should do until then, stated as the plan states it.</strong>
       The orchestrator-lane fence warns and records rather than refuses. It still records the
@@ -348,14 +387,13 @@
       and the reviews still need somewhere to go, because a lane that kills three in ten
       review attempts is not a lane to send them back to until the rate moves.</p>
 
-      <p><strong>What makes the after-rate measurable.</strong> Once the repair lands, the
-      same scanner run again produces the after block with no code change: it reads
-      whatever attempts exist when it is run, and it groups them by the effort each run
-      declared. The comparison needs a window that begins after the repair's first
-      successful review, and enough attempts in it to distinguish a drop from noise — at
-      roughly 100 review attempts a day on this lane (727 in the trailing seven days, 243 of
-      them deaths), the trailing-seven-day figure is the
-      smallest window that carries a rate worth gating on.</p>
+      <p><strong>What makes the post-repair rate measurable.</strong> Once the repair lands,
+      the same scanner given an after-window start produces the block: it reads whatever
+      attempts exist when it is run, and it groups them by the effort each run declared.
+      The comparison needs a window that begins after the repair's first successful review,
+      and enough attempts in it to distinguish a drop from noise — the moved review reflex
+      ran 343 attempts in 41.7 hours, so a post-repair window of comparable length carries a
+      rate worth gating on.</p>
     </section>
 
     <section id="s6" data-reckon="section">

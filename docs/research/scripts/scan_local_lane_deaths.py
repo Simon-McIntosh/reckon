@@ -35,6 +35,15 @@ Usage (bounded by the caller; the corpus parses at roughly 55 MB/s):
 
     timeout 1200 <venv>/bin/python docs/research/scripts/scan_local_lane_deaths.py \
         --out docs/research/data/local-lane-deaths.json
+
+Passing ``--since`` additionally states the after window: the review role at the
+effort the lane declares after reviews moved off ``xhigh``, over attempts whose
+own first recorded instant is at or after the after-window start. A window
+holding fewer than ``MIN_WINDOW_REVIEWS`` attempts is reported as not yet
+measurable, with its count, rather than as a rate:
+
+    timeout 1200 <venv>/bin/python docs/research/scripts/scan_local_lane_deaths.py \
+        --out <out.json> --since 2026-09-30T18:36:00Z
 """
 
 from __future__ import annotations
@@ -42,6 +51,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import re
 import signal
 import subprocess
@@ -57,6 +67,13 @@ LOCAL_BACKEND = "clive"
 # count is the review role at this effort, so the figure a reader checks
 # against the effort cell is the figure the cell holds.
 REVIEW_EFFORT = "xhigh"
+# The effort the review reflex declares after local-lane reviews moved off
+# xhigh. The after window counts the review role at this effort, so the move's
+# effect is read against the xhigh cell the headline states.
+AFTER_REVIEW_EFFORT = "high"
+# Below this many attempts a window carries no rate: a share computed over a
+# handful of attempts is noise wearing the shape of a measurement.
+MIN_WINDOW_REVIEWS = 60
 # Where this script is committed, recorded in the output so the file names the
 # revision-controlled script that produced it.
 MEASUREMENT_SCRIPT = "docs/research/scripts/scan_local_lane_deaths.py"
@@ -369,6 +386,147 @@ def rate(dead: int, size: int) -> float | None:
     return round(dead / size, 4) if size else None
 
 
+def instant(stamp: str | None) -> datetime | None:
+    """Parse one recorded instant, or None when it does not read as one.
+
+    Attempt times come from a stream's own timestamp fields or, where a stream
+    carries none, from the file's mtime. Both shapes parse here; an unreadable
+    stamp is returned as None so it can be counted and left out of a window
+    rather than silently assigned to one.
+    """
+    if not stamp:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(stamp).strip())
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=UTC)
+
+
+def wilson_interval(dead: int, size: int, z: float = 1.96) -> dict | None:
+    """The 95% score (Wilson) interval for a binomial proportion."""
+    if not size:
+        return None
+    share = dead / size
+    denominator = 1.0 + z * z / size
+    centre = (share + z * z / (2 * size)) / denominator
+    half = (
+        z
+        * math.sqrt(share * (1 - share) / size + z * z / (4 * size * size))
+        / denominator
+    )
+    return {
+        "method": "wilson_score",
+        "z": z,
+        "low": round(max(0.0, centre - half), 4),
+        "high": round(min(1.0, centre + half), 4),
+    }
+
+
+def build_after_block(
+    attempts: list[dict], *, since: str, until: str, scan_time: str
+) -> dict:
+    """The review reflex's own configuration over a window that starts at ``since``.
+
+    The population is the review role at the effort the lane declares after
+    reviews moved off xhigh, limited to attempts whose own start falls in the
+    half-open window [since, until). Counts that sit outside the window are
+    reported beside it — the same effort started before it and other efforts
+    inside it — so the filter's two axes can be checked from the block rather
+    than taken on faith. Below ``MIN_WINDOW_REVIEWS`` attempts the window is
+    stated as not yet measurable, with its count rather than a rate.
+    """
+    since_at = instant(since)
+    until_at = instant(until)
+    if since_at is None or until_at is None:
+        raise SystemExit("the after window's bounds must both be ISO-8601 instants")
+    own_effort = [
+        row
+        for row in attempts
+        if str(row["role"]) == "review" and str(row["effort"]) == AFTER_REVIEW_EFFORT
+    ]
+    window: list[dict] = []
+    before_window = 0
+    unreadable_starts = 0
+    for row in own_effort:
+        started = instant(row.get("started_at"))
+        if started is None:
+            unreadable_starts += 1
+        elif started < since_at:
+            before_window += 1
+        elif started < until_at:
+            window.append(row)
+    other_efforts_in_window = 0
+    for row in attempts:
+        if str(row["role"]) != "review":
+            continue
+        if str(row["effort"]) == AFTER_REVIEW_EFFORT:
+            continue
+        started = instant(row.get("started_at"))
+        if started is not None and since_at <= started < until_at:
+            other_efforts_in_window += 1
+
+    reviews = len(window)
+    deaths = sum(1 for row in window if row["classification"] == "dead")
+    measurable = reviews >= MIN_WINDOW_REVIEWS
+    return {
+        "scan_time_utc": scan_time,
+        "window": {
+            "start": since,
+            "end": until,
+            "inclusion": (
+                "review attempts whose own first recorded instant is at or after "
+                "the start and before the end"
+            ),
+            "start_source": (
+                "the attempt stream's first timestamp, or the file mtime where "
+                "a stream carries none; unreadable starts are counted and excluded"
+            ),
+        },
+        "population": (
+            "review role at the effort this lane declares after reviews moved off xhigh"
+        ),
+        "role": "review",
+        "effort": AFTER_REVIEW_EFFORT,
+        "reviews": reviews,
+        "completed": sum(1 for row in window if row["classification"] == "completed"),
+        "deaths": deaths,
+        "running": sum(1 for row in window if row["classification"] == "running"),
+        "unreadable": sum(1 for row in window if row["classification"] == "unreadable"),
+        "rate": rate(deaths, reviews) if measurable else None,
+        "rate_ci95": wilson_interval(deaths, reviews) if measurable else None,
+        "measurable": measurable,
+        "min_reviews_for_a_rate": MIN_WINDOW_REVIEWS,
+        "not_measurable_reason": (
+            None
+            if measurable
+            else (
+                f"{reviews} review attempts started in the window; a rate needs "
+                f"at least {MIN_WINDOW_REVIEWS}"
+            )
+        ),
+        "time_source": dict(
+            sorted(Counter(str(row["time_source"]) for row in window).items())
+        ),
+        "unreadable_start_stamps": unreadable_starts,
+        "discrimination": {
+            "this_effort_started_before_the_window": before_window,
+            "other_efforts_in_the_window": other_efforts_in_window,
+        },
+        "exit_records": render_exit_records(
+            fold_rows_exit_records(window), attempts=reviews, deaths=deaths
+        ),
+    }
+
+
+def fold_rows_exit_records(rows: list[dict]) -> dict:
+    """The exit-record counters for one population of attempt rows."""
+    counters = exit_record_counters()
+    for row in rows:
+        fold_exit_record(counters, row)
+    return counters
+
+
 def script_revision() -> dict:
     """Which revision of this scanner produced the file it wrote.
 
@@ -413,7 +571,30 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--live-dir", default=str(LIVE_DIR))
     parser.add_argument("--store", default=None)
     parser.add_argument("--control-run", default=CONTROL_RUN_ID)
+    parser.add_argument(
+        "--since",
+        default=None,
+        help=(
+            "ISO-8601 instant; the after window's start. With it the scan also "
+            "states the review role at the effort this lane declares after "
+            "reviews moved off xhigh, over attempts started at or after it"
+        ),
+    )
+    parser.add_argument(
+        "--until",
+        default=None,
+        help=(
+            "ISO-8601 instant; the after window's exclusive end "
+            "(default: the moment of this scan)"
+        ),
+    )
     args = parser.parse_args(argv)
+    if args.until and not args.since:
+        parser.error("--until defines the end of a window --since must open")
+    if args.since and instant(args.since) is None:
+        parser.error(f"--since {args.since!r} does not read as an ISO-8601 instant")
+    if args.until and instant(args.until) is None:
+        parser.error(f"--until {args.until!r} does not read as an ISO-8601 instant")
 
     write_context: dict = {}
     try:
@@ -588,6 +769,15 @@ def main(argv: list[str] | None = None) -> int:
     }
     scan_time = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     revision = script_revision()
+
+    after = None
+    if args.since:
+        after = build_after_block(
+            attempts,
+            since=args.since,
+            until=args.until or scan_time,
+            scan_time=scan_time,
+        )
 
     # ── controls ────────────────────────────────────────────────────────────
     # A census of deaths is only as good as its reader's ability to see the
@@ -764,26 +954,50 @@ def main(argv: list[str] | None = None) -> int:
             "role_attribution_disagreements": roles_disagree,
             "review_deaths_all_efforts": deaths,
         },
-        "after": None,
-        "after_state": "not_produced",
+        "after": after,
+        "after_state": (
+            "not_produced"
+            if after is None
+            else ("measured" if after["measurable"] else "not_measurable")
+        ),
         "after_unavailable_reason": (
-            "the repair that would create a post-repair window has not landed: "
-            "the review-reliability work that owns it is declared implementable "
-            "with its driving followup still open, so no attempt in the corpus "
-            "ran against a repaired lane."
+            None
+            if after is not None
+            else (
+                "the repair that would create a post-repair window has not landed: "
+                "the review-reliability work that owns it is declared implementable "
+                "with its driving followup still open, so no attempt in the corpus "
+                "ran against a repaired lane."
+            )
         ),
     }
     if review_cell is not None:
         payload["before"]["review_cell"] = review_cell
 
+    if after is not None:
+        payload["method"]["after_window_invocation"] = (
+            f"timeout 1200 <venv>/bin/python {MEASUREMENT_SCRIPT} "
+            f"--out <out.json> --since {args.since}"
+            + (f" --until {args.until}" if args.until else "")
+        )
+
     Path(args.out).write_text(
         json.dumps(payload, indent=2, sort_keys=False) + "\n", encoding="utf-8"
     )
     size = Path(args.out).stat().st_size
-    print(
+    summary = (
         f"wrote {args.out} ({size} bytes) attempts={len(attempts)} "
         f"review_dead={review_dead}/{review_attempts} all_dead={total_dead}"
     )
+    if after is not None:
+        summary += (
+            f" after_window_reviews={after['reviews']}"
+            f" after_window_deaths={after['deaths']}"
+            f" after_window_rate={after['rate']}"
+            f" after_window_ci95={after['rate_ci95']}"
+            f" after_window_measurable={after['measurable']}"
+        )
+    print(summary)
     return 0
 
 
