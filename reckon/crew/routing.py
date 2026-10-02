@@ -663,6 +663,7 @@ def _inspect_workspace(
     shadow_record: Mapping[str, Any] | None = None,
     *,
     raise_on_unavailable: bool = True,
+    release_residue: bool = False,
 ) -> dict[str, Any]:
     state = _tree_state(path)
     if not state.get("available"):
@@ -705,7 +706,9 @@ def _inspect_workspace(
     elif shadow_record is not None and _shadow_patch_retained(shadow_record):
         classification = "disposable"
     elif dirty:
-        classification = "dirty-integrated" if reachable else "dirty"
+        classification = (
+            "dirty-integrated" if reachable and release_residue else "dirty"
+        )
     elif reachable:
         classification = "integrated"
     else:
@@ -1159,6 +1162,7 @@ def garbage_collect(
             claims.get(path.resolve(), ()),
             shadow_records.get(path.resolve()),
             raise_on_unavailable=False,
+            release_residue=True,
         )
         for path in sorted(candidates)
     ]
@@ -1181,7 +1185,12 @@ def garbage_collect(
                 continue
             if item["classification"] == "dirty-integrated":
                 current = _inspect_workspace(
-                    repo_root, path, integrated_into, (), raise_on_unavailable=False
+                    repo_root,
+                    path,
+                    integrated_into,
+                    (),
+                    raise_on_unavailable=False,
+                    release_residue=True,
                 )
                 if (
                     current["classification"] != "dirty-integrated"
