@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<title>A refused promotion leaves the worktree, the pointer and the ledger as they were</title>
+</head>
+<body>
+<main class="doc">
+
+<section id="measure">
+<h2>What this node measures</h2>
+<p>A promotion refused on an accept-path claim conflict — a live peer run claiming a
+path the promoted run accepted — must be refused <em>before</em> anything touches the
+run's worktree, its live pointer or the project ledger. The observable checked here is
+that after such a refusal all three are byte-for-byte as they were: the worktree
+directory still exists, the pointer file is unchanged, and no row was appended.</p>
+<p>This is a regression guard on an ordering that holds at the base revision, and the
+negative control below shows it can fail: moving the workspace release above the
+refusal makes the guard red because the worktree is gone when the refusal is read.
+</p>
+</section>
+
+<section id="order">
+<h2>The order established in <code>complete()</code> (committed blob, base revision)</h2>
+<p>Line numbers are from the committed blob at base; the promoted file is unchanged by
+this node.</p>
+<ol>
+<li><code>complete()</code> (promotion.py:4989) takes the pointer lock (5034) and reads
+the record (5035).</li>
+<li>The refusal sweep <code>_require_independently([...])</code> (5226-5280) runs every
+check and raises a combined refusal. The accept-path claim conflict is inside its last
+entry, <code>_landing_gate</code> (5278) → <code>_landing_preconditions</code> (5193,
+6953) → <code>_landing_scope_products</code> (7039) →
+<code>_accepted_scope_exceptions</code> (2575), refused at 2663 with
+&ldquo;cannot accept&rdquo;. <strong>This refusal is reached before any side
+effect.</strong></li>
+<li><code>_evaluate_suite_delta</code> (5281, body 5336) can write a
+<code>suite_delta_refusal</code> record onto the live pointer and then raise
+<code>_write_json(pointer_path(run_id), updated)</code> before the raise at 5416-5423,
+with the same pattern at 5452-5460 and 5472-5478. This is the one refusal reached
+after a pointer side effect at the base revision.</li>
+<li><code>_complete_locked</code> (5286 call; definition 7138) then runs the
+accepting path: <code>_require_committable_checkout</code> (7208) and
+<code>_refuse_unrelated_plan_edit</code> (7216) refuse before anything is written;
+<code>ledger.append_run</code> (7699) writes the row; <code>_commit_landing_writes</code>
+(7741) commits the stores and rolls the row back if it fails; only then does the live
+pointer get unlinked (7760) and the worktree released
+(<code>_release_after_promotion</code>, 7761, which reclaims only trees classified
+&ldquo;integrated&rdquo;, &ldquo;disposable&rdquo; or &ldquo;d&hellip;&rdquo; —
+<code>_release_run_workspace</code>, 5738) and the release recorded
+(<code>_record_release_on_ledger</code>, 7768).</li>
+</ol>
+<p>So in the accepting path the workspace release and the pointer removal happen only
+after the ledger row has been written and committed, and every refusal of the claim
+conflict family is reached before all three.</p>
+</section>
+
+<section id="deviation">
+<h2>Deviation from the instruction to reorder</h2>
+<p>The instruction expected a reorder. The order established above shows the accept-path
+claim conflict is already raised before every workspace, pointer and ledger side effect,
+so no reorder of the accepting path is required and none was made. The single refusal
+reached after a pointer write is the suite-delta family above, which writes the refusal's
+own record onto the pointer before raising; that behaviour is pinned by existing tests
+(tests/test_crew_test_role.py:453, tests/test_gate_evidence.py), so moving it would
+break the pass contract "existing tests that call complete() keep passing". Recorded
+as a follow-on rather than repaired here.</p>
+</section>
+
+<section id="control">
+<h2>Negative control</h2>
+<p>The declared control was applied: the workspace release was called before the
+accept-path refusal in <code>complete()</code>. Under that mutation
+<code>tests/test_refused_promotion_leaves_the_worktree.py</code> fails because the
+worktree is gone after the refused promotion (the fixture's worktree path no longer
+exists when the test asserts it does). Exit code 1, the failing id named in
+<code>test-logs/negative-control.log</code>. The mutation was reverted and
+<code>git status --porcelain</code> over the promoted file reports no modification.</p>
+</section>
+
+<section id="arms">
+<h2>Gate arms</h2>
+<p>Both arms ran with pytest-xdist (<code>-n 8 --timeout=300</code>), each from its own
+basetemp outside any repository, each to its own log naming its revision on the first
+line and ending with a bare <code>EXIT=</code> line.</p>
+<ul>
+<li>Base arm (git-archive extraction of the base revision under /tmp): 164 passed,
+EXIT=0.</li>
+<li>Head arm (worktree at the same revision plus the new test): 165 passed, EXIT=0.</li>
+<li>Head adds no failure id; the only added test is the new guard.</li>
+</ul>
+</section>
+
+</main>
+</body>
+</html>
