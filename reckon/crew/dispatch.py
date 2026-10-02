@@ -8633,6 +8633,19 @@ _WORKER_MANIFEST_POLL_SECONDS = 3.0
 # How long a worker gets to end on the grace signal before the supervisor
 # escalates to SIGKILL, so a worker ignoring SIGTERM cannot hold the slot.
 _WORKER_GRACE_KILL_SECONDS = 10.0
+# A manifest's mtime must rest for this long before its terminal status counts
+# as a delivery. A worker writes its manifest line by line, so it passes through
+# states where the status line already reads terminal while the list fields
+# below it are still being written; signalling on such a read is what cut a
+# manifest off mid-path near the deadline — wrote complete, then kept writing,
+# and the grace expired against the half-written file.
+_WORKER_MANIFEST_QUIET_SECONDS = 3.0
+# The overall ceiling on deferring a signal. A whole terminal manifest that
+# will not rest — its mtime keeps advancing, so the quiet period is never met —
+# may defer its signal for at most this long; past it the whole read the
+# supervisor holds is taken as the delivery. An incomplete manifest is never
+# signalled on, at the ceiling or before it.
+_WORKER_MANIFEST_CEILING_SECONDS = 600.0
 
 
 def _terminal_manifest_grace_seconds() -> float:
@@ -8688,6 +8701,42 @@ def _worker_manifest_done_status(manifest_path: Path) -> str:
     if not status or manifest_status_is_template(status):
         return ""
     return status if status in _WORKER_DONE_MANIFEST_STATUSES else ""
+
+
+def _worker_manifest_is_whole(manifest_path: Path) -> bool:
+    """Whether every list field on the manifest closes its bracket.
+
+    The tolerant reader accepts a value and splits it, so a ``changed_paths:
+    [a, b, c`` line cut off mid-path still parses to a done manifest with a
+    plausible list — the shape a worker at its pen passes through. A list field
+    whose raw value opens a ``[`` must close it before the manifest counts as
+    delivered; an unbalanced bracket is a write in progress, not a delivery.
+
+    A field written in the block form (a bare key over ``- item`` lines) carries
+    no bracket to check; the quiet period, not this check, is what covers it.
+    """
+    from reckon.crew.reports import _MANIFEST_LIST_KEYS
+
+    keys = frozenset((*_MANIFEST_LIST_KEYS, "orientation_write_paths"))
+    try:
+        text = manifest_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    for raw in text.splitlines():
+        line = raw.strip()
+        match = re.match(
+            r"^(?:[-*]\s+)?(?:\*\*)?(?P<key>[a-z][a-z0-9_-]*)\s*:\s*(?P<value>.*)$",
+            line,
+            re.IGNORECASE,
+        )
+        if not match:
+            continue
+        if match.group("key").lower().replace("-", "_") not in keys:
+            continue
+        value = match.group("value").strip().strip("*").strip()
+        if "[" in value and value.count("[") != value.count("]"):
+            return False
+    return True
 
 
 def _iso_stamp_to_ns(stamp: str) -> int | None:
@@ -8766,25 +8815,39 @@ def _reap_worker_on_its_terminal_manifest(
     grace_seconds: float,
     baseline_ns: int,
 ) -> int | None:
-    """Collect a worker's exit, ending it once its manifest says it is done.
+    """Collect a worker's exit, ending it once its manifest is delivered.
 
-    A worker that wrote a complete (or failed) manifest and then kept running
-    holds its run's slot long after its work was delivered. The supervisor
-    notices the manifest, gives the worker the grace period to exit on its own,
-    and then ends its process — writing the sender record before it signals, so
-    the signal is attributable to the run's own directory. A worker whose
-    manifest is non-terminal, or blocked (kept for resume), is waited on as
-    before, and so is a worker that rewrites a done manifest back to a non-done
-    status: withdrawing the delivery clears the deadline it had set. Returns the
-    wait status, or ``None`` when the child was already reaped elsewhere.
+    A worker that delivered (a complete or failed manifest) and then kept
+    running holds its run's slot long after its work was finished. The
+    supervisor notices the delivery, gives the worker the grace period to exit
+    on its own, and then ends its process — writing the sender record before it
+    signals, so the signal is attributable to the run's own directory.
 
-    The manifest is stat'd each poll and read for its status only when its
-    mtime has advanced past the attempt's baseline and changed since the last
-    read, so an unchanged manifest is never reparsed and a manifest left by a
-    previous attempt — a resumed run's own complete record — is not mistaken
-    for this attempt's delivery.
+    A delivery is a manifest this attempt wrote that reads as a done status,
+    parses in full with every list field closed, and has rested without a write
+    for the quiet period. A manifest that is still being written — its mtime
+    advancing, or a list field whose bracket is not yet closed — is a worker at
+    its pen, and the supervisor defers to the next poll rather than signal a
+    half-written record. A manifest that reads non-terminal, or blocked (kept
+    for resume), is waited on as before, and so is a worker that rewrites a done
+    manifest back to a non-done status: withdrawing the delivery clears the
+    deadline it had set. A done manifest that reads whole but will not rest
+    cannot defer its signal forever: past the overall ceiling the supervisor
+    takes the whole read it holds as the delivery. An incomplete manifest is
+    never signalled on, at the ceiling or before it. Returns the wait status, or
+    ``None`` when the child was already reaped elsewhere.
+
+    The manifest is stat'd each poll; its status and wholeness are read only
+    when its mtime has advanced past the attempt's baseline and changed since
+    the last read, so an unchanged manifest is never reparsed and a manifest
+    left by a previous attempt — a resumed run's own complete record — is not
+    mistaken for this attempt's delivery.
     """
     seen_mtime_ns: int | None = None
+    written_at: float | None = None
+    terminal_at: float | None = None
+    is_done = False
+    is_whole = False
     deadline: float | None = None
     signalled_at: float | None = None
     while True:
@@ -8801,22 +8864,48 @@ def _reap_worker_on_its_terminal_manifest(
             mtime_ns = None
         if mtime_ns is not None and mtime_ns != seen_mtime_ns:
             seen_mtime_ns = mtime_ns
-            if mtime_ns > baseline_ns and _worker_manifest_done_status(
-                manifest_path
-            ):
-                # The grace is measured from the manifest's own write time, so
-                # a delivery noticed late still ends on schedule. The age is
-                # subtracted unclamped: once it reaches the grace the deadline
-                # is already in the past and the worker is ended at once.
-                age = time.time() - (mtime_ns / 1_000_000_000)
-                deadline = now + grace_seconds - age
+            written_at = now
+            fresh = mtime_ns > baseline_ns
+            is_done = fresh and bool(_worker_manifest_done_status(manifest_path))
+            is_whole = is_done and _worker_manifest_is_whole(manifest_path)
+            if is_done:
+                if terminal_at is None:
+                    terminal_at = now
             else:
-                # The manifest was rewritten to a non-done status: the delivery
-                # is withdrawn — the worker is working again, or has declared a
-                # wait for resume — so a deadline an earlier done read set is
-                # cleared and the worker is waited on as before rather than ended
-                # on the withdrawn delivery's clock.
-                deadline = None
+                terminal_at = None
+        # Delivered: a done manifest this attempt wrote, whole, and rested past
+        # the quiet period. The grace is measured from the manifest's own write,
+        # so a delivery noticed late still ends on schedule; the age is
+        # subtracted unclamped, so once it reaches the grace the deadline is
+        # already in the past and the worker is ended at once.
+        settled = (
+            mtime_ns is not None
+            and is_done
+            and is_whole
+            and written_at is not None
+            and now - written_at >= _WORKER_MANIFEST_QUIET_SECONDS
+        )
+        # A whole done manifest that will not rest cannot defer its signal past
+        # the overall ceiling: the whole read the supervisor holds is the
+        # delivery. An unwhole manifest never reaches this branch.
+        ceiling_due = (
+            mtime_ns is not None
+            and is_done
+            and is_whole
+            and terminal_at is not None
+            and now - terminal_at >= _WORKER_MANIFEST_CEILING_SECONDS
+        )
+        if settled or ceiling_due:
+            age = time.time() - (mtime_ns / 1_000_000_000)
+            deadline = now + grace_seconds - age
+        else:
+            # Nothing whole, quiet and terminal is on disk: either the delivery
+            # was withdrawn (the worker is working again, or has declared a wait
+            # for resume) or a done manifest is still being written, so any
+            # deadline an earlier read set is cleared and the worker is waited
+            # on as before rather than ended on a withdrawn or half-written
+            # delivery's clock.
+            deadline = None
         if deadline is not None and signalled_at is None and now >= deadline:
             signal_worker(
                 pid,
