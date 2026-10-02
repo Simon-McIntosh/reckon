@@ -14,7 +14,16 @@ from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
-from reckon import _backends, _store, capabilities, clones, flight, ledger, review_tiers
+from reckon import (
+    _backends,
+    _plan_html,
+    _store,
+    capabilities,
+    clones,
+    flight,
+    ledger,
+    review_tiers,
+)
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew import review as review_module
 from reckon.crew import rollout
@@ -3239,6 +3248,116 @@ def _path_differs_from_head(checkout: Path, path: Path) -> bool:
         return True
     diff = _git(checkout, "diff", "--quiet", "HEAD", "--", relative, check=False)
     return diff.returncode != 0
+
+
+def _plan_differs_only_by_the_stores_own_writes(
+    checkout: Path, plan_file: Path
+) -> bool:
+    """Whether the plan file's working copy differs from HEAD only by writes
+    the plan store itself makes.
+
+    The store's own writes are an appended landing comment, the version and
+    modified stamps every versioned write moves, and its canonical
+    re-encoding of the reckon-owned meta and sections. Both sides are rendered
+    through the store's own writer and then read as parsed HTML, so a
+    re-encoded entity — in authored prose as much as in a rendered section —
+    does not read as an authored change. A comment element the working copy
+    holds and HEAD does not is a landing record the store appended and is
+    dropped before comparing; a comment HEAD already carries survives on both
+    sides, so an edit to it is still caught. Authored prose outside the
+    reckon-owned sections is carried through the render from each side, so an
+    added paragraph refuses. Any other difference — a scalar, a section record,
+    a decision — refuses.
+    """
+    from bs4 import BeautifulSoup
+
+    try:
+        relative = plan_file.resolve().relative_to(checkout.resolve()).as_posix()
+    except ValueError:
+        return False
+    head = _git(checkout, "show", f"HEAD:{relative}", check=False)
+    if head.returncode != 0:
+        return False
+    try:
+        head_text = head.stdout
+        disk_text = plan_file.read_text(encoding="utf-8", errors="replace")
+        head_state = _plan_html.read_state(head_text)
+        disk_state = _plan_html.read_state(disk_text)
+    except Exception:  # noqa: BLE001 - an unreadable plan is not provably clean
+        return False
+    head_ids = {
+        str(item.get("id") or "")
+        for items in (head_state.get("comments") or {}).values()
+        for item in items
+    }
+    try:
+        head_render = _plan_html.write_state(head_text, head_state)
+        disk_render = _plan_html.write_state(disk_text, disk_state)
+    except Exception:  # noqa: BLE001 - a plan that cannot be rebuilt is not clean
+        return False
+    head_soup = BeautifulSoup(head_render, "html.parser")
+    disk_soup = BeautifulSoup(disk_render, "html.parser")
+    # The versioned write always moves both stamps; they are not authorship, so
+    # drop them from both sides rather than comparing one working copy's stamps
+    # against the other's.
+    for soup in (head_soup, disk_soup):
+        for meta in soup.find_all(
+            "meta", attrs={"name": ["plan-version", "plan-modified"]}
+        ):
+            meta.decompose()
+    # A landing comment the store appended is not an authored change, so drop
+    # every comment element HEAD does not already carry, then any comments
+    # section left holding none of them.
+    for element in disk_soup.select(".r-comment"):
+        if str(element.get("data-id") or "") not in head_ids:
+            element.decompose()
+    for section in disk_soup.select('section[data-reckon="comments"]'):
+        if not section.select(".r-comment"):
+            section.decompose()
+    # Removing the store's appended records leaves the whitespace between the
+    # tags that held them, which is not authorship either side carried. Collapse
+    # whitespace between adjacent tags so the removed section does not read as a
+    # change; text inside a tag is untouched, so prose edits still differ.
+    left = _collapse_inter_tag(str(head_soup))
+    right = _collapse_inter_tag(str(disk_soup))
+    return left == right
+
+
+def _collapse_inter_tag(text: str) -> str:
+    """Drop whitespace that sits directly between a closing and an opening tag."""
+    return re.sub(r"(?<=>)\s+(?=<)", "", text)
+
+
+def _refuse_unrelated_plan_edit(
+    *,
+    project: str,
+    plan: str,
+    root: str | Path | None,
+    checkout: Path,
+) -> None:
+    """Refuse a landing while the plan file carries an unrelated uncommitted
+    change that the landing commit would sweep in.
+
+    Runs before the landing writes either store, so a refused promotion leaves
+    neither a ledger row nor a plan comment for the next promotion to read as
+    an unrelated edit. A plan whose working copy matches HEAD, or differs only
+    by the store's own writes, passes untouched.
+    """
+    if not str(plan):
+        return
+    plan_file = _store._resolve_html_file(
+        project, str(plan), root, artifact_type="plan"
+    )
+    if plan_file is None or not _path_differs_from_head(checkout, plan_file):
+        return
+    if _plan_differs_only_by_the_stores_own_writes(checkout, plan_file):
+        return
+    raise CrewError(
+        f"the plan file {plan_file} carries an uncommitted change that is not a "
+        "write the plan store made (an appended landing comment, a version "
+        "stamp or its own re-encoding); refusing to sweep it into the landing "
+        "commit. Commit or discard the unrelated edit, then re-promote."
+    )
 
 
 def _plan_comment_store_path(
@@ -6812,6 +6931,17 @@ def _complete_locked(
     _require_committable_checkout(checkout, run_id)
     worktree = Path(str(record.get("worktree") or ""))
     tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
+    # A landing that will carry the plan file must not sweep an unrelated
+    # uncommitted edit into its commit. The check runs here, before either
+    # store is written, so a refusal leaves no ledger row and no plan comment
+    # for the next promotion to read as an unrelated edit.
+    if not shadow:
+        _refuse_unrelated_plan_edit(
+            project=project,
+            plan=str(node.get("plan") or ""),
+            root=ledger_root,
+            checkout=checkout,
+        )
     ledger_data, ledger_version = ledger.load(project, root=ledger_root)
     existing = next(
         (
