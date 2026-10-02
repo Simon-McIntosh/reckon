@@ -8216,9 +8216,10 @@ def fleet_transitions(
     its slot, which is the order a reader infers from the numbers. A manifest
     rewrite that leaves the state unchanged is folded after the state changes of
     the same observation: its classification word did not move, so nothing else
-    about the run could have either. A promoted run whose live pointer remains
-    is not a departure: its slot is held while the pointer lives, so the landing
-    is announced once rather than re-read as a fresh dispatch each tick.
+    about the fold could have either. A run worded promoted from its terminal
+    ledger row settles there: the landing is announced once, a later pointer
+    reading cannot move it back to ``dispatched``, and the pointer's own
+    disappearance — a gc reap included — emits nothing further for the run.
     """
     if ledger_run_ids is None:
         # The published-stream fold supplies no ledger reader: it is the tick
@@ -8258,6 +8259,14 @@ def fleet_transitions(
     else:
         recorded = set()
     for run_id in departures:
+        if str(known[run_id].get("state") or "") == "promoted":
+            # The run already settled on its terminal ledger row: the landing
+            # was announced once, so the pointer's later disappearance — a gc
+            # reap included — is not news and emits nothing for the run. The
+            # slot is still given up, so a genuine re-dispatch of the same id
+            # is read as an arrival rather than suppressed by a stale memory.
+            running.pop(run_id, None)
+            continue
         # A departure is its own fact and inherits no clause or marker from the
         # state it left. Carrying one forward reports a block on the line
         # announcing that the block is over.
@@ -8281,6 +8290,14 @@ def fleet_transitions(
     for run_id in (item for item in current if item in known):
         previous = str(known[run_id]["state"])
         state = str(current[run_id]["state"])
+        if previous == "promoted":
+            # A terminal ledger row settles the run: once worded promoted, the
+            # run stays promoted whatever the live pointer later reads. The
+            # landing was announced once, when the row was written, so a stale
+            # or superseded pointer that reads ``dispatched`` is not news and
+            # cannot drive the row back — holding the promoted word is what
+            # stops the row flapping between the two.
+            continue
         previous_recovery = str(
             known[run_id].get("recovery_classification") or previous
         )
@@ -8302,15 +8319,20 @@ def fleet_transitions(
         run_id = str(snapshot.get("run_id") or "")
         # A run present in the fleet is remembered, so the next observation
         # compares it against itself rather than reading it as an arrival. A
-        # run absent from the fleet has departed and gives up its slot. The
-        # one state that needs the distinction drawn explicitly is promoted:
-        # promotion writes the ledger row before it removes the live pointer,
-        # so a promoted run is still observed while its pointer lives. Held in
-        # the fleet rather than dropped, it is not read as an arrival the fold
-        # would word ``dispatched`` — the landing re-announced every tick until
-        # the pointer goes; it leaves only on its own pointer's disappearance.
+        # run absent from the fleet has departed and gives up its slot. A run
+        # whose terminal ledger row has worded it promoted keeps that word in
+        # the memory too: the landing was announced once, and a later pointer
+        # reading must not replace it, so the row cannot flap back to
+        # ``dispatched`` while the pointer lingers.
         if run_id not in current:
             running.pop(run_id, None)
+        elif (
+            run_id in running
+            and str(running[run_id].get("state") or "") == "promoted"
+        ):
+            # Settled on its terminal ledger row: hold the promoted memory
+            # rather than adopting a later pointer reading.
+            pass
         elif not snapshot.get("manifest_rewritten"):
             running[run_id] = dict(snapshot)
         events.append((dict(snapshot), previous, state, _fleet_counts(running)))
