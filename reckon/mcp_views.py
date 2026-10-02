@@ -1742,20 +1742,48 @@ def authored_plan_text(html_text: str) -> str:
     return " ".join(scope.stripped_strings)
 
 
-def _authored_headings(soup: BeautifulSoup) -> list[Tag]:
-    """Return section headings outside Reckon's structured collections."""
+def _inside_structured_region(element: Tag) -> bool:
+    """Whether an element sits inside one of Reckon's structured collections."""
 
-    headings = []
-    for heading in soup.select("h2[id]"):
-        if any(
-            isinstance(parent, Tag)
-            and parent.name == "section"
-            and parent.get("data-reckon") not in (None, "section")
-            for parent in heading.parents
-        ):
+    return any(
+        isinstance(parent, Tag)
+        and parent.name == "section"
+        and parent.get("data-reckon") not in (None, "section")
+        for parent in element.parents
+    )
+
+
+def _authored_section_headings(soup: BeautifulSoup) -> list[tuple[str, Tag]]:
+    """Authored plan sections as ``(identity, heading)``, in document order.
+
+    A section's identity sits on its h2, or — for a plan that wraps each
+    section in a ``<section id=...>`` element — on that wrapper, and then it
+    resolves to the wrapper's heading. A wrapper is only admitted when it is
+    not one of Reckon's structured collections and its heading carries no
+    identity of its own, so each section is listed exactly once.
+    """
+
+    sections: list[tuple[str, Tag]] = []
+    claimed: set[str] = set()
+    for element in soup.select("h2[id], section[id]"):
+        identity = element.get("id")
+        if not identity or identity in claimed:
             continue
-        headings.append(heading)
-    return headings
+        if element.name == "h2":
+            if _inside_structured_region(element):
+                continue
+            heading = element
+        else:
+            if element.get("data-reckon") not in (None, "section"):
+                continue
+            heading = element.find("h2")
+            if heading is None or heading.get("id"):
+                continue
+            if _inside_structured_region(heading):
+                continue
+        claimed.add(identity)
+        sections.append((identity, heading))
+    return sections
 
 
 def _record_text_response(
@@ -1829,7 +1857,7 @@ def _section_response(
     section: str | None,
     html_text: str | None,
 ) -> dict[str, Any]:
-    """Select one authored h2 section and attach its typed plan context."""
+    """Select one authored section and attach its typed plan context."""
 
     if selector.type != "plan":
         raise ViewRequestError(
@@ -1841,7 +1869,8 @@ def _section_response(
         raise ViewRequestError(
             "section_required",
             "view='section' requires a non-empty section identity.",
-            "Pass section='<h2 id>'.",
+            "Pass the id of an authored section heading or its wrapping "
+            "section element.",
         )
     identity = section.strip()
     if (
@@ -1854,12 +1883,12 @@ def _section_response(
             "section must be one safe heading identity.",
         )
     soup = BeautifulSoup(html_text or "", "html.parser")
-    headings = _authored_headings(soup)
+    authored = _authored_section_headings(soup)
     selected = next(
-        (heading for heading in headings if heading.get("id") == identity),
+        (heading for section_id, heading in authored if section_id == identity),
         None,
     )
-    available = [str(heading.get("id")) for heading in headings]
+    available = [section_id for section_id, _ in authored]
     if selected is None:
         available_text = ", ".join(available) or "none"
         raise ViewRequestError(

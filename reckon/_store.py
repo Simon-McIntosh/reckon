@@ -823,11 +823,71 @@ def _is_structural_boundary(open_tag: str) -> bool:
     return _attr(open_tag, "data-reckon") not in (None, "section")
 
 
-def _section_heading(html_text: str, section_id: str) -> tuple[str, str, int, str]:
-    """The authored h2 for one id: its open tag, inner HTML and source offsets.
+def _heading_open_tag_with_id(open_tag: str, section_id: str) -> str:
+    """A heading open tag that carries the section identity.
 
-    Returns ``(open_tag, inner_html, open_start, inner_end)``. ``inner_end`` is
-    the offset just past the closing ``</h2>``, where the section's body begins.
+    A section addressed by an id on its wrapping element keeps that identity
+    when a collapse consumes the wrapper, so the heading the card keeps gains
+    the id when it does not already carry one.
+    """
+    if _element_id(open_tag) is not None:
+        return open_tag
+    from html import escape
+
+    close = open_tag.rfind(">")
+    return f'{open_tag[:close]} id="{escape(section_id, quote=True)}"{open_tag[close:]}'
+
+
+def _wrapper_section_heading(
+    html_text: str, section_id: str
+) -> tuple[str, str, int, int, tuple[int, int]] | None:
+    """The authored h2 inside a ``<section id=...>`` wrapper, or None.
+
+    Returns the h2's ``(open_tag, inner_html, open_start, inner_end)`` plus the
+    wrapper's ``(open_start, close_end)``, which is the extent a collapse
+    replaces. Only a wrapper whose ``data-reckon`` is absent or ``section``
+    qualifies, so a structured-state region can never be addressed this way.
+    """
+    for candidate in _SECTION_OPEN_RE.finditer(html_text):
+        if _element_id(candidate.group()) != section_id:
+            continue
+        if _attr(candidate.group(), "data-reckon") not in (None, "section"):
+            continue
+        close_end = _matching_section_close(html_text, candidate.end())
+        if close_end is None:
+            raise OpError(
+                f"collapse_section: the section carrying id {section_id!r} "
+                "has no closing </section>"
+            )
+        heading = _H2_OPEN_RE.search(html_text, candidate.end(), close_end)
+        if heading is None:
+            continue
+        inner_end = html_text.find("</h2>", heading.end(), close_end)
+        if inner_end == -1:
+            raise OpError(
+                f"collapse_section: heading id {section_id!r} has no closing </h2>"
+            )
+        return (
+            _heading_open_tag_with_id(heading.group(), section_id),
+            html_text[heading.end() : inner_end],
+            heading.start(),
+            inner_end + len("</h2>"),
+            (candidate.start(), close_end),
+        )
+    return None
+
+
+def _section_heading(
+    html_text: str, section_id: str
+) -> tuple[str, str, int, int, tuple[int, int] | None]:
+    """The authored heading for one id and the extent the section occupies.
+
+    Returns ``(open_tag, inner_html, open_start, inner_end, wrapper_span)``.
+    ``inner_end`` is the offset just past the closing ``</h2>``, where the
+    section's body begins. ``wrapper_span`` is the enclosing section element's
+    ``(open_start, close_end)`` when the id sits on a wrapping ``<section>``
+    element rather than on the h2, and None when the h2 carries the id and
+    defines the extent itself.
     """
     for candidate in _H2_OPEN_RE.finditer(html_text):
         if _element_id(candidate.group()) != section_id:
@@ -842,7 +902,11 @@ def _section_heading(html_text: str, section_id: str) -> tuple[str, str, int, st
             html_text[candidate.end() : inner_end],
             candidate.start(),
             inner_end + len("</h2>"),
+            None,
         )
+    wrapped = _wrapper_section_heading(html_text, section_id)
+    if wrapped is not None:
+        return wrapped
     raise OpError(f"collapse_section: no section with id {section_id!r} in the plan")
 
 
@@ -952,19 +1016,28 @@ def _collapse_authored_section(html_text: str, request: dict[str, str]) -> str:
     """Replace one section's rendered extent with its landed card.
 
     An authored section runs from its h2 to the next heading, landed card or
-    structured-state region, or ``</main>``. A section already rendered as a
-    landed card runs from that card's opening tag to its matching close, so a
-    repeat collapse refreshes the card in place: the heading and its id are
-    kept and there is exactly one card and one closing tag.
+    structured-state region, or ``</main>``. A section whose id sits on a
+    wrapping ``<section>`` element runs from that wrapper's opening tag to its
+    matching close, and the card keeps the identity by carrying it on the
+    heading. A section already rendered as a landed card runs from that card's
+    opening tag to its matching close, so a repeat collapse refreshes the card
+    in place: the heading and its id are kept and there is exactly one card and
+    one closing tag.
     """
-    open_tag, inner_html, open_start, body_start = _section_heading(
+    open_tag, inner_html, open_start, body_start, wrapper_span = _section_heading(
         html_text, request["section"]
     )
-    card_span = _landed_card_span(html_text, open_start, request["section"])
-    if card_span is None:
-        extent_start, extent_end = open_start, _section_body_end(html_text, body_start)
+    if wrapper_span is not None:
+        extent_start, extent_end = wrapper_span
     else:
-        extent_start, extent_end = card_span
+        card_span = _landed_card_span(html_text, open_start, request["section"])
+        if card_span is None:
+            extent_start, extent_end = (
+                open_start,
+                _section_body_end(html_text, body_start),
+            )
+        else:
+            extent_start, extent_end = card_span
     replaced = html_text[extent_start:extent_end]
     trailing = re.search(r"\s*\Z", replaced)
     card = _landed_card_html(open_tag, inner_html, request)
