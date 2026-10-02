@@ -56,11 +56,14 @@ and logged — <em>restore the original read: derive the follower's owner from
 (<code>logs/neg-1.log</code>, EXIT=1,
 <code>2 failed, 3 passed</code>, the reload case among them). Prescribed
 reproduction arm: ten <code>-n&nbsp;8</code> runs of this file with
-<code>tests/test_crew.py</code>, logged <code>logs/repro-1.log</code>&hellip;
-<code>logs/repro-4.log</code> (211 passed each; the target branch did not
-reproduce on an unloaded 28-core node, so the load arm above is the reproduction:
-the sibling bound branch was captured instead, which the traces attribute to
-the same transient window).</p>
+<code>tests/test_crew.py</code>. The logs hold seven attempts: six runs
+completed at 211 passed each (<code>logs/repro-1.log</code>&hellip;<code>
+logs/repro-6.log</code>, runs 1&ndash;6 in <code>logs/repro-summary.txt</code>),
+a seventh was cut off mid-run (<code>logs/repro-7.log</code>, no summary line),
+and runs 8&ndash;10 did not run. The target branch did not reproduce on an
+unloaded 28-core node, so the load arm above is the reproduction: the sibling
+bound branch was captured instead, which the traces attribute to the same
+transient window.</p>
 
 <p><strong>Follow-ons.</strong> None in this node's scope. The exit-bound flake
 (<code>still running 3.0s</code>) is removed by the same change; no product

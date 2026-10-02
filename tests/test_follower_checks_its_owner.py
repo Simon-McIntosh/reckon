@@ -612,12 +612,14 @@ def _observe_reload(pid: int, *, tag: str) -> None:
 def _wait_until_left_after_reload(pid: int, *, tag: str) -> float:
     """Wait for the replacement image to leave; return how long it took.
 
-    The window carries the replacement's own interpreter and package import
-    cost, which the owner-exit bound is not about, so it is measured and bounded
-    on its own. Never killed to make it so: the property under measure is that a
-    dead owner ends the replacement, and a killed process would answer a
-    different question. The clock starts once the caller has observed the
-    owner's death.
+    The caller kills the armed owner before this runs, so the clock opens after
+    the replacement image is already live and its own interpreter and package
+    import cost is paid. The window therefore carries only the replacement's next
+    owner check and its teardown, which is what the bound is about and why it is
+    measured on its own rather than against the owner-exit bound. Never killed to
+    make it so: the property under measure is that the replacement ends when the
+    owner it resolved dies, and a killed process would answer a different
+    question.
     """
     started = time.monotonic()
     while time.monotonic() - started < RELOAD_EXIT_WITHIN_SECONDS:
