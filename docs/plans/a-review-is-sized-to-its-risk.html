@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <meta name="plan-blocks" content="a-small-change-is-a-small-node">
   <title>A Review Is Sized To Its Risk | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="130">
+<meta name="plan-modified" content="2026-10-03">
+<meta name="plan-version" content="131">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.95">
@@ -152,17 +152,11 @@
   <p class="landed-summary">Landed 2026-10-02 (merge <code>ecdd531ca</code>), scoped by the lead to merged runs. A stored review at 90/100 or above with no finding promotes the run with <code>promoted_by: review-acceptance</code>, once its commits are on the primary branch and its gate passes there. Acceptance never merges or pushes. Four named tests; 0 added failures across 316 test files. <a href="s4-a-clean-review-promotes-a-merged-run">full record</a></p>
 </section>
 
-    <h2 id="s5">§5 — The reflex reviews a settled head, and re-reviews only what changed</h2>
-    <p><strong>Deliverable.</strong> The reflex dispatches a review only for a run that is terminal and has not been
-      resumed in the last five minutes. A resume withdraws a review still queued for the superseded head; a review
-      already running when a resume lands finishes, and its verdict applies to the new head only under the rule that
-      follows. When a reviewed run gains commits, the stored review carries forward if those commits change no runtime
-      source path; if they do, the reflex dispatches a light review of those commits alone rather than a second full
-      review of the run. The carry-forward is written to the run's record as satisfying the review requirement, never
-      left as a silent absence.</p>
-    <p><strong>Done when</strong> tests show: a resumed run's queued review is withdrawn; a data-file relocation after
-      a review writes a carried-forward record and raises no review-missing obligation; and a later runtime-source
-      commit dispatches a light review scoped to that commit.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-02</span>
+    <h2 id="s5">§5 — The reflex reviews a settled head, and re-reviews only what changed</h2></header>
+  <p class="landed-summary">Landed. A stored review carries forward over a head move that changes no runtime source and is re-stored at the new head. A runtime-source move earns a light re-review of those commits. A resume withdraws only a review that never launched; a launched one finishes. Merged at <code>2f7df7952</code> and <code>ceecfaae2</code>, with 0 added failures across the recovery, review and obligations population. <a href="s5-the-reflex-reviews-a-settled-head">full record</a></p>
+</section>
 
     <h2 id="s6">§6 — The project's own suite is a standing gate</h2>
     <p><strong>Why.</strong> Per-node gates run the tests a node's brief names. In nova the default test command stopped
