@@ -1,0 +1,1096 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="repair-round-census">
+<meta name="plan-title" content="Repair-round census for the last seven days — landed evidence">
+<meta name="plan-summary" content="A read-only census of the last seven days of the reckon ledger: how many reviews were dispatched, how many carried findings, the repair rounds each finding-bearing review drew, and how each finding was answered with a commit or declined with a reason.">
+<meta name="plan-evidence-for" content="reckon:a-review-is-sized-to-its-risk">
+<meta name="plan-verifies" content="reckon:a-review-is-sized-to-its-risk#s3">
+<meta name="plan-recorded-at" content="2026-10-02">
+<meta name="plan-verdict" content="informational">
+<meta name="plan-environment" content="Linux compute node; Python 3.12; census run from a detached worktree against the root environment interpreter with PYTHONPATH at the worktree">
+<meta name="plan-artifacts" content="docs/evidence/fragments/a-review-is-sized-to-its-risk/repair-round-census.html">
+<title>Repair-round census 2026-09-25 .. 2026-10-02</title>
+</head>
+<body>
+<main class="plan-doc">
+<header class="plan-header">
+<h1>Repair-round census, 2026-09-25T12:43Z to 2026-10-02T12:43Z</h1>
+<p>Read-only census of the last seven days of the reckon ledger: for every review whose ledger row falls in the window, its repair rounds and where each finding was answered with a commit or declined at a reason.</p>
+</header>
+<section id="method">
+<h2>Method</h2>
+<ul>
+<li><strong>Population.</strong> The committed ledger rows under <code>docs/state/reckon/runs/</code> whose node name begins <code>review-of-</code> and whose completed_at (fallback dispatched_at) falls inside the window. A review is counted once per ledger row.</li>
+<li><strong>Findings.</strong> Read from the stored review record the row joins (by the script set review_run_id, falling back to the reviewed node name). Finding ids are minted by <code>reckon.crew.repair.finding_id</code> — the census imports the code's own composer rather than re-deriving the ids.</li>
+<li><strong>A repair round</strong> is identified as <code>repair_round_id</code> (the reviewed run and the head the review read). The census counts evidence of a round from three durable records: the reviewed run's live pointer (<code>repair_rounds</code>/<code>repair_dispatch</code>, written by the reflex), a <code>resume-*-advice.txt</code> in the reviewed run's own directory whose text names that round's blocking finding ids, and a ledger row whose node id equals the composed repair node id <code>repair-of-&lt;node&gt;-&lt;head12&gt;</code>.</li>
+<li><strong>An answer</strong> is read from the reviewed run's manifest: a line <code>acted &lt;finding-id&gt;: &lt;commit&gt;</code> or <code>declined &lt;finding-id&gt;: &lt;reason&gt;</code>. A finding with no such line and a declared follow-on severity is recorded as declined (the reviewer's own severity is the decline); a finding with no line at all is recorded as unanswered.</li>
+<li><strong>Known-present control.</strong> The census was checked against the repair loop s21 reported on <code>a-served-thread-leaves-no-memo-behind</code>: the three reviews of 2026-09-30/10-01 that resumed a repair round each show one round with the advice file naming their own finding ids, so the round detector is seen firing on a case known to have produced one.</li>
+<li><strong>Re-run.</strong> The census script is embedded below; the machine-readable output (<code>census.json</code>) and the full per-finding print (<code>census-run2.log</code>) are in the run directory <code>~/.config/reckon/crew/runs/r-20261002T124243900311-repair-round-census/</code>.</li>
+</ul>
+<details><summary>Census command (embedded script)</summary><pre><code>
+#!/usr/bin/env python3
+&quot;&quot;&quot;Weekly census of repair rounds per finding-bearing review, read from the ledger.
+
+Reads, for one project (default ``reckon``):
+
+* the committed ledger rows          ``&lt;repo&gt;/docs/state/reckon/runs/*.json``
+* the live run pointers              ``~/.config/reckon/crew/live/*.json``
+* the stored review records          ``~/.config/reckon/crew/reviews/&lt;project&gt;/*.json``
+* the run directories                ``~/.config/reckon/crew/runs/&lt;run-id&gt;/``
+  (repair resume advice and the reviewed run&#x27;s manifest)
+
+and reports, over the last seven days: how many reviews were dispatched,
+how many carried findings, the repair rounds of each finding-bearing review,
+and, per finding, whether it was answered with a commit or declined with a
+reason. Read-only: nothing is written.
+
+Run from the repository root with the project&#x27;s environment:
+
+    cd &lt;checkout&gt;
+    PYTHONPATH=&quot;$PWD&quot; .venv/bin/python &lt;this-script&gt; [--end ISO8601]
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import sys
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+
+from reckon.crew import repair as repair_module
+
+# Marker the reflex writes at the head of a composed repair resume. It names
+# the blocking findings the round carries, so an advice file that repeats the
+# ids was written for that round and counts as an attempt of it.
+_REPAIR_ADVICE = re.compile(r&quot;An independent review of this run found (\d+) blocking finding&quot;)
+
+# Answer lines the repair&#x27;s own contract puts in the reviewed run&#x27;s manifest:
+# ``acted &lt;finding-id&gt;: &lt;commit&gt;`` or ``declined &lt;finding-id&gt;: &lt;reason&gt;``.
+_ACTED = re.compile(r&quot;^\s*acted\s+(f[0-9a-f]{8,}):\s*(\S.*)$&quot;, re.MULTILINE)
+_DECLINED = re.compile(r&quot;^\s*declined\s+(f[0-9a-f]{8,}):\s*(\S.*)$&quot;, re.MULTILINE)
+
+ANSWER_LINE = re.compile(r&quot;^\s*(acted|declined)\s+(f[0-9a-f]{8,})\s*:\s*(.*)$&quot;, re.MULTILINE)
+
+
+def parse_utc(text: str | None) -&gt; datetime | None:
+    if not text:
+        return None
+    try:
+        moment = datetime.fromisoformat(str(text).replace(&quot;Z&quot;, &quot;+00:00&quot;))
+    except ValueError:
+        return None
+    return moment if moment.tzinfo else moment.replace(tzinfo=UTC)
+
+
+def deadline_of(row: dict) -&gt; datetime | None:
+    return parse_utc(row.get(&quot;completed_at&quot;)) or parse_utc(row.get(&quot;dispatched_at&quot;))
+
+
+def load_rows(root: Path) -&gt; dict[str, dict]:
+    result: dict[str, dict] = {}
+    directory = Path(root)
+    if not directory.is_dir():
+        return result
+    for path in directory.glob(&quot;*.json&quot;):
+        try:
+            row = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        run_id = str(row.get(&quot;run_id&quot;) or path.stem)
+        row[&quot;_path&quot;] = str(path)
+        result[run_id] = row
+    return result
+
+
+def load_reviews(root: Path) -&gt; list[dict]:
+    records: list[dict] = []
+    directory = Path(root)
+    if not directory.is_dir():
+        return records
+    for path in directory.glob(&quot;*.json&quot;):
+        try:
+            record = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        record[&quot;_path&quot;] = str(path)
+        records.append(record)
+    return records
+
+
+def review_moment(record: dict, path: Path) -&gt; datetime:
+    stated = parse_utc(record.get(&quot;timestamp&quot;))
+    if stated:
+        return stated
+    return datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
+
+
+def round_evidence(review: dict, reviewed_run_id: str, run_dirs: Path, ledger: dict[str, dict]) -&gt; dict:
+    &quot;&quot;&quot;Rounds observed for one review, from every record the crew keeps.&quot;&quot;&quot;
+    round_id = repair_module.repair_round_id(review, reviewed_run_id=reviewed_run_id)
+    head = round_id.split(&quot;@&quot;)[-1] if &quot;@&quot; in round_id else &quot;&quot;
+    evidence: dict = {&quot;round_id&quot;: round_id, &quot;rounds&quot;: 0, &quot;sources&quot;: [], &quot;attempts&quot;: 0, &quot;records&quot;: []}
+
+    pointer_path = Path(run_dirs).parent / &quot;live&quot; / f&quot;{reviewed_run_id}.json&quot;
+    pointer: dict = {}
+    if pointer_path.exists():
+        try:
+            pointer = json.loads(pointer_path.read_text())
+        except (OSError, ValueError):
+            pointer = {}
+    opened = pointer.get(&quot;repair_rounds&quot;) if isinstance(pointer.get(&quot;repair_rounds&quot;), dict) else None
+    dispatch = pointer.get(&quot;repair_dispatch&quot;) if isinstance(pointer.get(&quot;repair_dispatch&quot;), dict) else None
+    if opened:
+        evidence[&quot;rounds&quot;] = int(opened.get(&quot;count&quot;) or 0)
+        evidence[&quot;attempts&quot;] = int(opened.get(&quot;attempts&quot;) or 0)
+        evidence[&quot;sources&quot;].append(&quot;live-pointer repair_rounds&quot;)
+        if str(opened.get(&quot;round_id&quot;) or &quot;&quot;) != round_id:
+            evidence[&quot;sources&quot;].append(&quot;live-pointer carries a DIFFERENT round&quot;)
+    if dispatch:
+        evidence[&quot;records&quot;].append(
+            {&quot;at&quot;: dispatch.get(&quot;at&quot;), &quot;status&quot;: dispatch.get(&quot;status&quot;), &quot;reason&quot;: dispatch.get(&quot;reason&quot;)}
+        )
+        evidence[&quot;sources&quot;].append(&quot;live-pointer repair_dispatch&quot;)
+
+    # Advice files: a reflex resume writes the composed repair into the reviewed
+    # run&#x27;s own directory. The composed advice names the round&#x27;s own blocking
+    # finding ids, so an advice file counts for this round only when every id
+    # this review&#x27;s round carries appears in it — two reviews of one run at two
+    # heads write two advices, and each belongs to its own round.
+    blocking_ids = [
+        repair_module.finding_id(finding)
+        for finding in repair_module.review_findings(review)
+        if repair_module._finding_kind(finding) == &quot;blocking&quot;
+    ]
+    advice_dir = Path(run_dirs) / reviewed_run_id
+    advice_rounds: set[str] = set()
+    if advice_dir.is_dir() and blocking_ids:
+        for advice in sorted(advice_dir.glob(&quot;resume-*-advice.txt&quot;)):
+            try:
+                text = advice.read_text(errors=&quot;replace&quot;)
+            except OSError:
+                continue
+            match = _REPAIR_ADVICE.search(text)
+            if match and all(fid in text for fid in blocking_ids):
+                advice_rounds.add(advice.name)
+                evidence[&quot;sources&quot;].append(f&quot;advice:{advice.name}&quot;)
+    if advice_rounds and evidence[&quot;rounds&quot;] == 0:
+        evidence[&quot;rounds&quot;] = 1
+        evidence[&quot;sources&quot;].append(&quot;advice-only round&quot;)
+
+    # A dispatch of the composed node leaves its own ledger row.
+    source_node = &quot;&quot;
+    reviewed_row = ledger.get(reviewed_run_id) or {}
+    if reviewed_row:
+        source_node = str(reviewed_row.get(&quot;node&quot;) or &quot;&quot;)
+    if head and source_node:
+        node_id = repair_module.repair_node_id(review, reviewed_run_id=reviewed_run_id, source_node=source_node)
+        for run_id, row in ledger.items():
+            if str(row.get(&quot;node&quot;) or &quot;&quot;) == node_id:
+                evidence[&quot;records&quot;].append(
+                    {&quot;run_id&quot;: run_id, &quot;node&quot;: node_id, &quot;at&quot;: row.get(&quot;completed_at&quot;) or row.get(&quot;dispatched_at&quot;)}
+                )
+                evidence[&quot;sources&quot;].append(f&quot;ledger row {run_id}&quot;)
+                evidence[&quot;rounds&quot;] = max(evidence[&quot;rounds&quot;], 1)
+    return evidence
+
+
+def manifest_of(reviewed_run_id: str, folder: Path, ledger: dict[str, dict]) -&gt; Path | None:
+    row = ledger.get(reviewed_run_id)
+    if row and row.get(&quot;manifest_path&quot;):
+        candidate = Path(str(row[&quot;manifest_path&quot;]))
+        if candidate.exists():
+            return candidate
+    candidate = Path(folder) / reviewed_run_id / &quot;manifest.md&quot;
+    return candidate if candidate.exists() else None
+
+
+def answers_from(text: str) -&gt; dict[str, dict]:
+    out: dict[str, dict] = {}
+    for kind, fid, rest in ANSWER_LINE.findall(text):
+        out.setdefault(fid, {&quot;action&quot;: kind, &quot;rest&quot;: rest.strip()})
+    return out
+
+
+def main() -&gt; int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(&quot;--repo&quot;, default=&quot;.&quot;)
+    parser.add_argument(&quot;--project&quot;, default=&quot;reckon&quot;)
+    parser.add_argument(&quot;--crew-home&quot;, default=str(Path.home() / &quot;.config&quot; / &quot;reckon&quot; / &quot;crew&quot;))
+    parser.add_argument(&quot;--end&quot;, default=None, help=&quot;window end (UTC ISO8601); default now&quot;)
+    parser.add_argument(&quot;--days&quot;, type=int, default=7)
+    parser.add_argument(&quot;--json&quot;, default=None, help=&quot;write the census as JSON here&quot;)
+    args = parser.parse_args()
+
+    end = parse_utc(args.end) or datetime.now(tz=UTC)
+    start = end - timedelta(days=args.days)
+    repo = Path(args.repo).resolve()
+    crew_home = Path(args.crew_home)
+    ledger = load_rows(repo / &quot;docs&quot; / &quot;state&quot; / args.project / &quot;runs&quot;)
+    live = load_rows(crew_home / &quot;live&quot;)
+    reviews = load_reviews(crew_home / &quot;reviews&quot; / args.project)
+
+    by_review_run = {str(r.get(&quot;review_run_id&quot;) or &quot;&quot;): r for r in reviews if r.get(&quot;review_run_id&quot;)}
+
+    # The population: review ledger rows dispatched or completed inside the window.
+    review_rows = {
+        run_id: row
+        for run_id, row in ledger.items()
+        if str(row.get(&quot;node&quot;) or &quot;&quot;).startswith(&quot;review-of-&quot;)
+        and (deadline_of(row) is not None and start &lt;= deadline_of(row) &lt;= end)
+    }
+
+    counted: list[dict] = []
+    for run_id, row in sorted(review_rows.items(), key=lambda kv: str(deadline_of(kv[1]))):
+        record = by_review_run.get(run_id)
+        if record is None:
+            # Fall back to the reviewed node the run&#x27;s own name declares: a
+            # record stored by an older writer carries no review_run_id, but its
+            # reviewed_run_id still resolves to the ledger row named after it.
+            source_node = str(row.get(&quot;node&quot;) or &quot;&quot;).removeprefix(&quot;review-of-&quot;)
+            for candidate_run, candidate_row in ledger.items():
+                if str(candidate_row.get(&quot;node&quot;) or &quot;&quot;) == source_node:
+                    found = next(
+                        (r for r in reviews if str(r.get(&quot;reviewed_run_id&quot;) or &quot;&quot;) == candidate_run),
+                        None,
+                    )
+                    if found is not None:
+                        record = found
+                    break
+        findings = repair_module.review_findings(record) if record else []
+        reviewed_run_id = str((record or {}).get(&quot;reviewed_run_id&quot;) or &quot;&quot;)
+        entry: dict = {
+            &quot;review_run_id&quot;: run_id,
+            &quot;when&quot;: str(deadline_of(row)),
+            &quot;node&quot;: row.get(&quot;node&quot;),
+            &quot;score&quot;: (record or {}).get(&quot;total&quot;),
+            &quot;reviewed_run_id&quot;: reviewed_run_id,
+            &quot;findings&quot;: [],
+            &quot;rounds&quot;: 0,
+            &quot;round_sources&quot;: [],
+        }
+        if findings:
+            evidence = round_evidence(record, reviewed_run_id, crew_home / &quot;runs&quot;, {**ledger, **live})
+            entry[&quot;rounds&quot;] = evidence[&quot;rounds&quot;]
+            entry[&quot;round_sources&quot;] = evidence[&quot;sources&quot;]
+            entry[&quot;round_records&quot;] = evidence[&quot;records&quot;]
+            entry[&quot;round_id&quot;] = evidence[&quot;round_id&quot;]
+            folder = manifest_dir = crew_home / &quot;runs&quot;
+            manifest_path = manifest_of(reviewed_run_id, folder, {**ledger, **live})
+            answers: dict[str, dict] = {}
+            if manifest_path is not None:
+                try:
+                    answers = answers_from(manifest_path.read_text(errors=&quot;replace&quot;))
+                except OSError:
+                    answers = {}
+            for finding in findings:
+                fid = repair_module.finding_id(finding)
+                kind = repair_module._finding_kind(finding)
+                answer = answers.get(fid)
+                if answer:
+                    disposition = f&quot;{answer[&#x27;action&#x27;]}: {answer[&#x27;rest&#x27;]}&quot;
+                elif kind == &quot;follow-on&quot;:
+                    disposition = &quot;declined: follow-on, recorded on the review and not repaired&quot;
+                else:
+                    disposition = &quot;unanswered&quot;
+                entry[&quot;findings&quot;].append(
+                    {
+                        &quot;id&quot;: fid,
+                        &quot;kind&quot;: kind,
+                        &quot;severity&quot;: finding.get(&quot;severity&quot;),
+                        &quot;file&quot;: finding.get(&quot;file&quot;),
+                        &quot;line&quot;: finding.get(&quot;line&quot;),
+                        &quot;disposition&quot;: disposition,
+                    }
+                )
+        counted.append(entry)
+
+    finding_bearing = [e for e in counted if e[&quot;findings&quot;]]
+    payload = {
+        &quot;project&quot;: args.project,
+        &quot;window_start&quot;: start.isoformat(),
+        &quot;window_end&quot;: end.isoformat(),
+        &quot;review_rows_in_window&quot;: len(counted),
+        &quot;review_rows_without_a_stored_record&quot;: sum(1 for e in counted if not e[&quot;reviewed_run_id&quot;]),
+        &quot;finding_bearing_reviews&quot;: len(finding_bearing),
+        &quot;findings_total&quot;: sum(len(e[&quot;findings&quot;]) for e in finding_bearing),
+        &quot;reviews_with_more_than_one_round&quot;: [
+            e[&quot;review_run_id&quot;] for e in finding_bearing if e[&quot;rounds&quot;] &gt; 1
+        ],
+        &quot;reviews_by_rounds&quot;: {
+            str(n): sum(1 for e in finding_bearing if e[&quot;rounds&quot;] == n)
+            for n in sorted({e[&quot;rounds&quot;] for e in finding_bearing})
+        },
+        &quot;dispositions&quot;: {},
+        &quot;reviews&quot;: counted,
+    }
+    tally: dict[str, int] = {}
+    for entry in finding_bearing:
+        for finding in entry[&quot;findings&quot;]:
+            head = finding[&quot;disposition&quot;].split(&quot;:&quot;, 1)[0]
+            tally[head] = tally.get(head, 0) + 1
+    payload[&quot;dispositions&quot;] = tally
+
+    if args.json:
+        Path(args.json).write_text(json.dumps(payload, indent=2))
+
+    print(f&quot;window {payload[&#x27;window_start&#x27;]} .. {payload[&#x27;window_end&#x27;]}&quot;)
+    print(f&quot;reviews counted (ledger rows): {payload[&#x27;review_rows_in_window&#x27;]}&quot;)
+    print(f&quot;  with no stored record joined: {payload[&#x27;review_rows_without_a_stored_record&#x27;]}&quot;)
+    print(f&quot;finding-bearing reviews: {payload[&#x27;finding_bearing_reviews&#x27;]}&quot;)
+    print(f&quot;findings: {payload[&#x27;findings_total&#x27;]}  dispositions: {payload[&#x27;dispositions&#x27;]}&quot;)
+    print(&quot;rounds distribution:&quot;, payload[&quot;reviews_by_rounds&quot;])
+    print(&quot;reviews with &gt;1 round:&quot;, payload[&quot;reviews_with_more_than_one_round&quot;] or &quot;none&quot;)
+    for entry in finding_bearing:
+        print(
+            f&quot;  {entry[&#x27;review_run_id&#x27;]} score={entry[&#x27;score&#x27;]} rounds={entry[&#x27;rounds&#x27;]} &quot;
+            f&quot;findings={len(entry[&#x27;findings&#x27;])} sources={entry[&#x27;round_sources&#x27;]}&quot;
+        )
+        for finding in entry[&quot;findings&quot;]:
+            print(f&quot;      {finding[&#x27;id&#x27;]} [{finding[&#x27;kind&#x27;]}] {finding[&#x27;file&#x27;]}:{finding[&#x27;line&#x27;]} -&gt; {finding[&#x27;disposition&#x27;]}&quot;)
+    return 0
+
+
+if __name__ == &quot;__main__&quot;:
+    sys.exit(main())
+</code></pre></details>
+</section>
+<section id="summary">
+<h2>Summary</h2>
+<table><tbody>
+<tr><th>Window start</th><td>2026-09-25T12:43:09+00:00</td></tr>
+<tr><th>Window end</th><td>2026-10-02T12:43:09+00:00</td></tr>
+<tr><th>Reviews counted</th><td>734</td></tr>
+<tr><th>Reviews whose ledger row joined no stored record</th><td>20</td></tr>
+<tr><th>Reviews carrying at least one finding</th><td>664</td></tr>
+<tr><th>Findings across those reviews</th><td>1404</td></tr>
+<tr><th>Reviews with more than one repair round</th><td>none</td></tr>
+<tr><th>Finding dispositions</th><td>{&#x27;unanswered&#x27;: 988, &#x27;acted&#x27;: 36, &#x27;declined&#x27;: 380}</td></tr>
+</tbody></table>
+</section>
+<section id="rounds">
+<h2>Reviews that drew a repair round</h2>
+<p>41 finding-bearing review(s) in the window drew at least one repair round; each is listed with its round evidence and every finding's answer.</p>
+<table><thead><tr><th>review run</th><th>score</th><th>rounds</th><th>round evidence</th><th>finding</th><th>answer</th></tr></thead><tbody>
+<tr><td>r-20260929T135446343085-review-of-reflex-dispatches-one-repair</td><td>95</td><td>1</td><td>ledger row r-20260929T144439686007-repair-of-reflex-dispatches-one-repair-1fb5dd192591</td><td><code>fe7d3225570</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T122557001648-reflex-dispatches-one-repair/manifest.md:10</td><td>unanswered</td></tr>
+<tr><td>r-20260929T141740507490-review-of-direct-resume-needs-an-observed-death</td><td>94</td><td>1</td><td>ledger row r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e</td><td><code>ff72960759b</code> [blocking] reckon/crew/dispatch.py:8253</td><td>unanswered</td></tr>
+<tr><td>r-20260929T142230790369-review-of-head-arm-without-completed-is-unreadable</td><td>94</td><td>1</td><td>ledger row r-20260929T145500577980-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5</td><td><code>f569d6850d1</code> [blocking] reckon/crew/promotion.py:5046</td><td>unanswered</td></tr>
+<tr><td>r-20260929T151804927069-review-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5</td><td>96</td><td>1</td><td>ledger row r-20260929T160908518777-repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8</td><td><code>f41b92f9022</code> [blocking] reckon/crew/promotion.py:5074</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fda7083456c</code> [blocking] tests/test_control_gate_checks_facts.py:90</td><td>unanswered</td></tr>
+<tr><td>r-20260929T161201154274-review-of-strict-arms-refusal-impact</td><td>90</td><td>1</td><td>ledger row r-20260929T162400736424-repair-of-strict-arms-refusal-impact-1af8e33fd252</td><td><code>fbd864b260e</code> [blocking] report.md:13</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f9a0f21b1bd</code> [blocking] report.md:46</td><td>unanswered</td></tr>
+<tr><td>r-20260929T160851716741-review-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e</td><td>86</td><td>1</td><td>ledger row r-20260929T163935832766-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d</td><td><code>f311ba67963</code> [blocking] tests/test_direct_resume_needs_an_observed_death.py:367</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f0ef70d92e2</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e/logs/lane-fixture-base.log:222</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f3f5de4e268</code> [blocking] reckon/crew/dispatch.py:8245</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>ffa2a3c52b4</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T144906489940-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e/manifest.md:18</td><td>unanswered</td></tr>
+<tr><td>r-20260929T164936742734-review-of-template-says-what-completed-holds</td><td>93</td><td>1</td><td>ledger row r-20260929T171030404641-repair-of-template-says-what-completed-holds-fe9140e26a53</td><td><code>fb3fce2735c</code> [blocking] reckon/crew/prompts.py:572</td><td>unanswered</td></tr>
+<tr><td>r-20260929T171631048409-review-of-scratch-arm-ids-reduce</td><td>95</td><td>1</td><td>ledger row r-20260929T173036038126-repair-of-scratch-arm-ids-reduce-444a37379542</td><td><code>f39c0126866</code> [blocking] reckon/crew/review.py:562</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f986bf2cef1</code> [blocking] reckon/crew/review.py:1087</td><td>unanswered</td></tr>
+<tr><td>r-20260929T171053676869-review-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d</td><td>88</td><td>1</td><td>ledger row r-20260929T173511258865-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0</td><td><code>f8b8e35fa84</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163935832766-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d/population-after.log:1</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fa21e2b286c</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163935832766-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d/lint-figures.log:1</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f0926f01a4d</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T163935832766-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d/lint-figures.log:2</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f5a4a99b892</code> [blocking] reckon/crew/dispatch.py:8251</td><td>unanswered</td></tr>
+<tr><td>r-20260929T172632268303-review-of-repair-of-template-says-what-completed-holds-fe9140e26a53</td><td>95</td><td>1</td><td>ledger row r-20260929T174059831082-repair-of-repair-of-template-says-what-completed-holds-fe9140e26a53-5447c7f1ee54</td><td><code>f330aaf3c72</code> [blocking] docs/evidence/fragments/crew-runtime-positive-controls/repair-of-template-says-what-completed-holds-fe9140e26a53.html:29</td><td>unanswered</td></tr>
+<tr><td>r-20260929T174901412242-review-of-repair-of-scratch-arm-ids-reduce-444a37379542</td><td>93</td><td>1</td><td>ledger row r-20260929T180434536033-repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5</td><td><code>ff04e98cfa4</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260929T173036038126-repair-of-scratch-arm-ids-reduce-444a37379542/logs/gate-fix.log:1</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fd2973ff2c8</code> [blocking] docs/evidence/fragments/scoring-should-stop-a-promotion/repair-of-scratch-arm-ids-reduce-444a37379542.html:1</td><td>unanswered</td></tr>
+<tr><td>r-20260929T182239608885-review-of-session-resume-cases-fail-at-main</td><td>96</td><td>1</td><td>ledger row r-20260929T184129687107-repair-of-session-resume-cases-fail-at-main-f61f41b7aa63</td><td><code>fcf0f57e1b0</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/session-resume-cases-fail-at-main/measure.sh:19</td><td>unanswered</td></tr>
+<tr><td>r-20260929T183129605024-review-of-repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5</td><td>87</td><td>1</td><td>ledger row r-20260929T190538501885-repair-of-repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5-1fb77e19ed3b</td><td><code>f360db1a4ee</code> [blocking] tests/test_scratch_arm_ids_reduce.py:265</td><td>unanswered</td></tr>
+<tr><td>r-20260929T182947887166-review-of-five-ledger-cases-turned-red</td><td>92</td><td>1</td><td>ledger row r-20260929T190237823257-repair-of-five-ledger-cases-turned-red-f61f41b7aa63</td><td><code>f55dd7471d1</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/report.md:28</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fc11d3caa1f</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/five-ledger-cases-turned-red/run_five.sh:22</td><td>unanswered</td></tr>
+<tr><td>r-20260930T081215755566-review-of-repair-starts-at-the-reviewed-head</td><td>94</td><td>1</td><td>ledger row r-20260930T090940013995-repair-of-repair-starts-at-the-reviewed-head-91acbe6a72f6</td><td><code>f19e704be3b</code> [blocking] tests/test_reflex_dispatches_one_repair.py:407</td><td>unanswered</td></tr>
+<tr><td>r-20260930T151822984592-review-of-a-review-never-runs-in-harness</td><td>92</td><td>1</td><td>ledger row r-20260930T152913120658-repair-of-a-review-never-runs-in-harness-20035bcc2a8d</td><td><code>fbe05943601</code> [blocking] reckon/crew/recovery.py:1198</td><td>unanswered</td></tr>
+<tr><td>r-20260930T161615742147-review-of-a-repair-hold-names-its-cause</td><td>95</td><td>1</td><td>ledger row r-20260930T162756415715-repair-of-a-repair-hold-names-its-cause-3b945ad92e12</td><td><code>fe48db9ffed</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T155953437797-a-repair-hold-names-its-cause/manifest.md:11</td><td>unanswered</td></tr>
+<tr><td>r-20260930T163156258746-review-of-a-review-promotes-what-it-passed</td><td>92</td><td>1</td><td>ledger row r-20260930T164620132498-repair-of-a-review-promotes-what-it-passed-b3683d8e6840</td><td><code>f2749b9b11f</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T154556201330-a-review-promotes-what-it-passed/manifest.md:18</td><td>unanswered</td></tr>
+<tr><td>r-20260930T164711730826-review-of-hook-tests-pin-their-harness</td><td>93</td><td>1</td><td>ledger row r-20260930T170220223668-repair-of-hook-tests-pin-their-harness-a7219b131d65</td><td><code>f25306429f5</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T163600050453-hook-tests-pin-their-harness/head-gate.log:1</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fc315d2dea3</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T163600050453-hook-tests-pin-their-harness/manifest.md:14</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f7a5753e6b8</code> [blocking] tests/test_coordinator_obligations_hook.py:330</td><td>unanswered</td></tr>
+<tr><td>r-20260930T182152738589-review-of-load-sensitive-ids-hold-under-load</td><td>92</td><td>1</td><td>advice:resume-2-advice.txt; advice-only round</td><td><code>f34c8ce13e9</code> [blocking] tests/test_follower_checks_its_owner.py:103</td><td>acted: 6861c2c55edcb27e4061c15fe8c6c66de11edb21</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fd0b247ef92</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T085417180232-load-sensitive-ids-hold-under-load/logical/negative-control.log:109</td><td>acted: 6861c2c55edcb27e4061c15fe8c6c66de11edb21</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f4a7493472a</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T085417180232-load-sensitive-ids-hold-under-load/logs/head/test_follower_checks_its_owner.run1.log:1</td><td>acted: 6861c2c55edcb27e4061c15fe8c6c66de11edb21</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fec8ddee048</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T085417180232-load-sensitive-ids-hold-under-load/logical/negative-control.log:6</td><td>acted: 6861c2c55edcb27e4061c15fe8c6c66de11edb21</td></tr>
+<tr><td>r-20260930T182319489254-review-of-a-rollback-keeps-its-cause</td><td>93</td><td>1</td><td>ledger row r-20260930T193022707126-repair-of-a-rollback-keeps-its-cause-153767e488bd</td><td><code>f2653dc4cc9</code> [blocking] reckon/crew/dispatch.py:5388</td><td>unanswered</td></tr>
+<tr><td>r-20260930T185506277122-review-of-dropped-lane-means-a-launched-attempt</td><td>84</td><td>1</td><td>ledger row r-20260930T192113720146-repair-of-dropped-lane-means-a-launched-attempt-334f272bc2c0</td><td><code>f71f08bd4f0</code> [blocking] reckon/crew/recovery.py:1094</td><td>unanswered</td></tr>
+<tr><td>r-20260930T185521932342-review-of-reflex-skips-tier-none-reviews</td><td>95</td><td>1</td><td>ledger row r-20260930T192157705801-repair-of-reflex-skips-tier-none-reviews-f48deb9e0ca8</td><td><code>f1bd63aae2a</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T182922411100-reflex-skips-tier-none-reviews/manifest.md:14</td><td>unanswered</td></tr>
+<tr><td>r-20260930T193509840877-review-of-the-fleet-allocation-is-adopted</td><td>94</td><td>1</td><td>ledger row r-20260930T194409410059-repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159</td><td><code>f52548ef35a</code> [blocking] docs/evidence/fragments/the-fleet-shares-one-allocation/the-fleet-allocation-is-adopted.html:24</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f1c8d42239a</code> [blocking] reckon/crew/placement.py:491</td><td>unanswered</td></tr>
+<tr><td>r-20260930T194926006582-review-of-a-served-thread-leaves-no-memo-behind</td><td>83</td><td>1</td><td>advice:resume-2-advice.txt; advice-only round</td><td><code>fb210bcb721</code> [blocking] tests/test_server_listens_before_it_watches.py:212</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f326e0efed2</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183005741612-a-served-thread-leaves-no-memo-behind/logs/base-orderA-1.log:1</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f242beec5f2</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T183005741612-a-served-thread-leaves-no-memo-behind/manifest.md:34</td><td>unanswered</td></tr>
+<tr><td>r-20260930T195014807206-review-of-load-sensitive-ids-hold-under-load</td><td>92</td><td>1</td><td>advice:resume-2-advice.txt; advice-only round</td><td><code>f34c8ce13e9</code> [blocking] tests/test_follower_checks_its_owner.py:103</td><td>acted: 6861c2c55edcb27e4061c15fe8c6c66de11edb21</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fd0b247ef92</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T085417180232-load-sensitive-ids-hold-under-load/logical/negative-control.log:109</td><td>acted: 6861c2c55edcb27e4061c15fe8c6c66de11edb21</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f4a7493472a</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T085417180232-load-sensitive-ids-hold-under-load/logs/head/test_follower_checks_its_owner.run1.log:1</td><td>acted: 6861c2c55edcb27e4061c15fe8c6c66de11edb21</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fec8ddee048</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T085417180232-load-sensitive-ids-hold-under-load/logical/negative-control.log:6</td><td>acted: 6861c2c55edcb27e4061c15fe8c6c66de11edb21</td></tr>
+<tr><td>r-20260930T200507741009-review-of-stored-review-reads-the-recorded-head</td><td>93</td><td>1</td><td>ledger row r-20260930T202335170379-repair-of-stored-review-reads-the-recorded-head-a8422de3d81c</td><td><code>fc3fe4c1d3a</code> [blocking] reckon/crew/recovery.py:579</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>ff7606782a6</code> [blocking] reckon/crew/recovery.py:1112</td><td>unanswered</td></tr>
+<tr><td>r-20260930T201307113692-review-of-directory-claim-sees-uncreated-dirs</td><td>95</td><td>1</td><td>ledger row r-20260930T203755534764-repair-of-directory-claim-sees-uncreated-dirs-3129f05e8a6d</td><td><code>fbb06230e03</code> [blocking] reckon/crew/dispatch.py:1711</td><td>unanswered</td></tr>
+<tr><td>r-20260930T201435209219-review-of-repair-carries-the-suite-pair</td><td>93</td><td>1</td><td>ledger row r-20260930T203825582012-repair-of-repair-carries-the-suite-pair-6f17d5c4b5b4</td><td><code>f97d4b6ab9d</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T195433561538-repair-carries-the-suite-pair/manifest.md:15</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f60a0ba4b91</code> [blocking] reckon/crew/recovery.py:1769</td><td>unanswered</td></tr>
+<tr><td>r-20260930T213909434432-review-of-metadata-index-survives-restart</td><td>91</td><td>1</td><td>ledger row r-20260930T215545877861-repair-of-metadata-index-survives-restart-2bc3b8ca3152</td><td><code>f5cfa64ecda</code> [blocking] reckon/metadata_index.py:274</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f0b9a6ce8a4</code> [blocking] reckon/serve.py:297</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f4adbddeeed</code> [blocking] reckon/metadata_index.py:158</td><td>unanswered</td></tr>
+<tr><td>r-20260930T220147648992-review-of-a-control-log-is-judged-at-write</td><td>92</td><td>1</td><td>ledger row r-20260930T221224529449-repair-of-a-control-log-is-judged-at-write-ef7fd092a5c8</td><td><code>f1002b13f91</code> [blocking] tests/test_a_control_log_is_judged_at_write.py:0</td><td>unanswered</td></tr>
+<tr><td>r-20260930T221155214949-review-of-a-review-waits-for-a-saturated-lane</td><td>93</td><td>1</td><td>ledger row r-20260930T222845255523-repair-of-a-review-waits-for-a-saturated-lane-4027b1c368ed</td><td><code>f35b48d790f</code> [blocking] reckon/crew/recovery.py:544</td><td>unanswered</td></tr>
+<tr><td>r-20261001T011206767933-review-of-an-unchanged-worktree-is-proved-not-assumed</td><td>97</td><td>1</td><td>ledger row r-20261001T013737868326-repair-of-an-unchanged-worktree-is-proved-not-assumed-f485bbdc05b7</td><td><code>f10b9546abe</code> [blocking] reckon/crew/promotion.py:654</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fbae063e677</code> [blocking] reckon/crew/promotion.py:612</td><td>unanswered</td></tr>
+<tr><td>r-20261001T042010271241-review-of-section-routing-reaches-dispatch</td><td>96</td><td>1</td><td>advice:resume-1-advice.txt; advice-only round</td><td><code>fc47c17aa23</code> [blocking] manifest.md:21</td><td>acted: ebd212e9a (record and measurement; no revertible code change) the after-arm is re-measured at this head (148 passed, 2 skipped; logs/head-gate-repaired.log), replacing the arm tied to 4fba21b2a, and the record names the reviewer&#x27;s own reproduction at 970126656</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f3acb45deec</code> [blocking] manifest.md:25</td><td>acted: ebd212e9a the wider crew-dispatch regression set is now measured: head 15 failed/240 passed at ebd212e9a (logs/head-dispatch-regression-repaired.log), matched base 17 failed/238 passed at 33c5e761d (logs/base-dispatch-regression.log), head-only failure ids none — the 15 head ids all fail at base too, and the 2 base-only ids are watcher-arming tests that flip with the live fleet&#x27;s watcher state</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fff29b70179</code> [blocking] manifest.md:24</td><td>acted: ebd212e9a (record; no revertible code change) the landing line and evidence_inputs now state the caveat where a plan reader meets it — no host layer declares by_capability_class, so live dispatches resolve exactly what role routing resolved until one does</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fc735350ffd</code> [blocking] reckon/crew/dispatch.py:294</td><td>acted: ebd212e9a then b534dcd47 the section id lookup admits both authored anchor spellings (dotted s5.1 and hyphenated s5-1) plus the raw reference at both authored-HTML sites, which now draw one candidate set (routing.section_id_candidates) so they cannot drift; each site is pinned by a case whose heading omits the reference (logs/negative-control-repair.log and logs/negative-control-guard.log each revert a site and fail its case)</td></tr>
+<tr><td>r-20261001T043927930189-review-of-the-suite-cannot-reach-a-real-scheduler</td><td>93</td><td>1</td><td>advice:resume-1-advice.txt; advice-only round</td><td><code>fe3e9425961</code> [blocking] manifest.md:13</td><td>acted: manifest baseline_suite and its arm are now the whole suite at 9457ce8af vs 008a18f12, like-for-like; added failure ids 0</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fc294077605</code> [blocking] manifest.md:14</td><td>acted: aa1ce2bab/9457ce8af - after_suite.revision is the repaired head and its command is the literal run command including --timeout=300</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f16d304d107</code> [blocking] manifest.md:9</td><td>acted: 9457ce8af - the tests field and after_suite.command carry the literal head command, absolute paths, no placeholder</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f1e6a0babc8</code> [blocking] tests/conftest.py:363</td><td>acted: aa1ce2bab - the committed check test_a_test_that_reaches_an_allocation_verb_it_did_not_provide_is_failed goes red when the session stub is disabled</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>ffa8e93335d</code> [blocking] tests/conftest.py:388</td><td>acted: aa1ce2bab - the guard now fails only the allocation verbs, so test_crew_placed_liveness passes at head</td></tr>
+<tr><td>r-20261001T045430043828-review-of-lane-counts-parity</td><td>97</td><td>1</td><td>advice:resume-1-advice.txt; advice-only round</td><td><code>f69ee7cf605</code> [blocking] manifest.md:17</td><td>acted: 56fac2155591251323b8365a81fefbf641df0561</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f2012021485</code> [blocking] manifest.md:20</td><td>acted: 56fac2155591251323b8365a81fefbf641df0561</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f71e7b93df0</code> [blocking] reckon/crew/lane_document.py:462</td><td>acted: 56fac2155591251323b8365a81fefbf641df0561</td></tr>
+<tr><td>r-20261001T052705313363-review-of-section-routing-reaches-dispatch</td><td>98</td><td>1</td><td>advice:resume-3-advice.txt; advice-only round</td><td><code>f3dc0714ddd</code> [blocking] reckon/crew/routing.py:1247</td><td>acted: b534dcd47 the section guard draws its candidate id set from routing.section_id_candidates, the same derivation dispatch.py&#x27;s _plan_section_text uses, so a plan authored under the dotted anchor (id=&quot;s5.1&quot;) resolves for the s5-1 and §5.1 spellings even when the heading text omits the reference; pinned by test_a_dotted_anchor_is_visible_to_the_section_guard, logs/negative-control-guard.log reverts the answering commit&#x27;s guard-site hunk to the old narrow pair where that case fails (assert False is True, 1 failed 1 passed, EXIT=1), and the four-file gate at the final head 6f64b448a reports 149 passed, 2 skipped (logs/head-gate-final.log)</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fa5b1a3a2a7</code> [blocking] manifest.md:25</td><td>acted: 6f64b448a (record; no revertible code change) the follow_ons no longer says routing.py sat outside any scope — reckon/crew/routing.py is one of this node&#x27;s declared write paths, and the narrowing there is repaired in b534dcd47; the follow_ons now names only what genuinely remains (the §-form normalize_section pair and the host-layer raise)</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fff573f5d91</code> [blocking] manifest.md:13</td><td>acted: 6f64b448a (record; no revertible code change) the landing line and evidence_inputs bound the gate&#x27;s meaning: the four-file gate passes on fixture configs that declare by_capability_class while the live host flight.yaml declares none, so the gate evidences the wiring and not a live raise on this workstation</td></tr>
+<tr><td>r-20261001T052213776957-review-of-load-sensitive-ids-hold-under-load</td><td>92</td><td>1</td><td>advice:resume-2-advice.txt; advice-only round</td><td><code>f34c8ce13e9</code> [blocking] tests/test_follower_checks_its_owner.py:103</td><td>acted: 6861c2c55edcb27e4061c15fe8c6c66de11edb21</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fd0b247ef92</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T085417180232-load-sensitive-ids-hold-under-load/logical/negative-control.log:109</td><td>acted: 6861c2c55edcb27e4061c15fe8c6c66de11edb21</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>f4a7493472a</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T085417180232-load-sensitive-ids-hold-under-load/logs/head/test_follower_checks_its_owner.run1.log:1</td><td>acted: 6861c2c55edcb27e4061c15fe8c6c66de11edb21</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fec8ddee048</code> [blocking] /home/ITER/mcintos/.config/reckon/crew/runs/r-20260930T085417180232-load-sensitive-ids-hold-under-load/logical/negative-control.log:6</td><td>acted: 6861c2c55edcb27e4061c15fe8c6c66de11edb21</td></tr>
+<tr><td>r-20261001T063736046289-review-of-section-routing-reaches-dispatch</td><td>98</td><td>1</td><td>advice:resume-3-advice.txt; advice-only round</td><td><code>f3dc0714ddd</code> [blocking] reckon/crew/routing.py:1247</td><td>acted: b534dcd47 the section guard draws its candidate id set from routing.section_id_candidates, the same derivation dispatch.py&#x27;s _plan_section_text uses, so a plan authored under the dotted anchor (id=&quot;s5.1&quot;) resolves for the s5-1 and §5.1 spellings even when the heading text omits the reference; pinned by test_a_dotted_anchor_is_visible_to_the_section_guard, logs/negative-control-guard.log reverts the answering commit&#x27;s guard-site hunk to the old narrow pair where that case fails (assert False is True, 1 failed 1 passed, EXIT=1), and the four-file gate at the final head 6f64b448a reports 149 passed, 2 skipped (logs/head-gate-final.log)</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fa5b1a3a2a7</code> [blocking] manifest.md:25</td><td>acted: 6f64b448a (record; no revertible code change) the follow_ons no longer says routing.py sat outside any scope — reckon/crew/routing.py is one of this node&#x27;s declared write paths, and the narrowing there is repaired in b534dcd47; the follow_ons now names only what genuinely remains (the §-form normalize_section pair and the host-layer raise)</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fff573f5d91</code> [blocking] manifest.md:13</td><td>acted: 6f64b448a (record; no revertible code change) the landing line and evidence_inputs bound the gate&#x27;s meaning: the four-file gate passes on fixture configs that declare by_capability_class while the live host flight.yaml declares none, so the gate evidences the wiring and not a live raise on this workstation</td></tr>
+<tr><td>r-20261001T190330772578-review-of-held-worktrees-read-run-files</td><td>82</td><td>1</td><td>advice:resume-1-advice.txt; advice-only round</td><td><code>fd7fed79e5f</code> [blocking] reckon/crew/obligations.py:336</td><td>acted: 44139f82ee9efae1ff3b27c26d13c60cec4caf9c</td></tr>
+<tr><td>r-20261002T022425437685-review-of-every-signal-caller-names-its-run-directory</td><td>80</td><td>1</td><td>advice:resume-1-advice.txt; advice-only round</td><td><code>f4c46556eaf</code> [blocking] reckon/crew/recovery.py:867</td><td>unanswered</td></tr>
+<tr><td></td><td></td><td></td><td></td><td><code>fef10e89323</code> [follow-on] reckon/crew/recovery.py:7434</td><td>declined: follow-on, recorded on the review and not repaired</td></tr>
+</tbody></table>
+</section>
+<section id="zero">
+<h2>Finding-bearing reviews with no round</h2>
+<p>623 finding-bearing reviews drew no repair round in the window. Each is listed with its score and the disposition tally of its findings; the per-finding ids and dispositions of the whole census are in the machine output at the path named under Method.</p>
+<table><thead><tr><th>review run</th><th>score</th><th>findings</th><th>dispositions</th></tr></thead><tbody>
+<tr><td>r-20260925T120325813331-review-of-shared-claims-reach-the-live-check</td><td>82</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T122746943672-review-of-installer-carries-the-worker-stop-hook</td><td>98</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T120750452870-review-of-headroom-publishes-real-readings</td><td>81</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260925T122641982064-review-of-append-run-writes-one-run-file</td><td>87</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T132307892763-review-of-parse-plan-reads-each-file-once</td><td>94</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T132804824009-review-of-worker-digest-generator</td><td>69</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260925T130110800830-review-of-local-headroom-counts-the-gate</td><td>82</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T130604142479-review-of-sprint-liveness-reads-the-recorded-fleet</td><td>91</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T132229465859-review-of-window-groups-declare-one-wallet</td><td>85</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T132846016817-review-of-producer-shares-the-classifier-verdict</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T141847159746-review-of-read-state-and-live-runs-reuse</td><td>86</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T135518658682-review-of-follower-signal-audit</td><td>83</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T141830041817-review-of-ticker-row-is-one-aligned-transition</td><td>86</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260925T143025627422-review-of-active-sprint-follows-the-live-crew</td><td>89</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T144205927839-review-of-lane-readers-share-the-gate-aware-headroom</td><td>89</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T143008598335-review-of-follower-rearm-continues-the-stream</td><td>81</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260925T141814125429-review-of-worker-env-carries-its-run</td><td>88</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260925T144225237095-review-of-recorded-liveness-has-an-age-bound</td><td>95</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T150458489995-review-of-ticker-row-drops-the-attention-mark</td><td>83</td><td>5</td><td>{&#x27;unanswered&#x27;: 5}</td></tr>
+<tr><td>r-20260925T150452123974-review-of-fenced-resume-reaches-its-harness</td><td>90</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T153933397927-review-of-review-in-flight-recognises-any-review-node</td><td>88</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T155148566006-review-of-follower-signal-audit-census-reproduces</td><td>85</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T155606833065-review-of-read-pairs-state-and-text-from-one-read</td><td>90</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260925T160621131916-review-of-mcp-validation-reads-through-memo</td><td>96</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T162117683718-review-of-follower-reloads-only-into-importable-changed-code</td><td>90</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260925T162939852914-review-of-fleet-counters-records-match-the-code</td><td>84</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T164456737623-review-of-installer-runs-the-hook-with-reckons-python</td><td>92</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T164348770607-review-of-obligations-checklist-stays-short</td><td>84</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T170308733318-review-of-worker-digest-generator</td><td>82</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260925T170405763940-review-of-stall-clock-starts-at-the-attempt</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T163720529021-review-of-ticker-row-prints-only-real-transitions</td><td>95</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T170351236569-review-of-plan-review-dispatch-gate</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T173737336701-review-of-promotion-tests-find-the-commit-by-its-sha</td><td>90</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T173724624119-review-of-promotion-never-amends-its-commit</td><td>88</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T175838878803-review-of-promotion-scope-counts-only-the-runs-commits</td><td>92</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260925T181217885574-review-of-watcher-seat-survives-other-hosts</td><td>87</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T183102728203-review-of-checklist-collapses-only-housekeeping</td><td>88</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T183428236086-review-of-member-tests-follow-disposable-identity</td><td>91</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260925T183457617084-review-of-no-member-dispatch-runs-alone-local</td><td>94</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T190242743907-review-of-obligations-hook-speaks-only-on-change</td><td>89</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T201640746842-review-of-context-estimate-reads-declared-files</td><td>81</td><td>5</td><td>{&#x27;unanswered&#x27;: 5}</td></tr>
+<tr><td>r-20260925T203208565337-review-of-harness-home-carries-the-operator-config</td><td>87</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T202640826084-review-of-fence-tests-opt-into-the-fence</td><td>95</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T203219335305-review-of-watch-suite-green-after-departures</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T204814737569-review-of-promotion-refuses-a-base-commit</td><td>92</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T214049011099-review-of-worker-git-stays-in-its-worktree</td><td>88</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260925T213155307357-review-of-reason-room-geometry-lands-whole</td><td>88</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260925T213844315821-review-of-plan-write-stays-in-the-worktree</td><td>91</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260925T222619747931-review-of-worker-git-stays-in-its-worktree</td><td>91</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260925T224131493716-review-of-plan-write-stays-in-the-worktree</td><td>90</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T061149822837-review-of-context-estimate-tests-assert-fixed-figures</td><td>94</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T061203657419-review-of-a-fenced-worker-can-commit</td><td>94</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T061120309605-review-of-a-discard-never-reads-promoted</td><td>94</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T061136564334-review-of-unmeasured-horizon-never-refuses-finish</td><td>91</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T075223272946-review-of-git-shim-checks-the-resolved-repo</td><td>85</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T075130130362-review-of-follower-keeps-memory-and-idles-quietly</td><td>85</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T080137962905-review-of-fence-never-grants-a-main-git-dir</td><td>89</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T075408191810-review-of-plan-reads-stay-in-the-worktree</td><td>87</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T075424797415-review-of-unmanaged-producer-keeps-a-log</td><td>86</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T091620797858-review-of-git-shim-checks-the-resolved-repo</td><td>81</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T092819229022-review-of-launch-path-reports-plan-review-missing</td><td>96</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T095207224636-review-of-window-plan-currency-audit</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T093425180689-review-of-follow-watch-suite-green-on-main</td><td>87</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T094231938305-review-of-plan-reads-stay-in-the-worktree</td><td>90</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T103945566003-review-of-git-shim-checks-the-resolved-repo</td><td>89</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T105423525068-review-of-roadmap-docstring-names-the-focus-home</td><td>79</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T105232024296-review-of-session-resolution-is-the-resumability-authority</td><td>86</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T100703095102-review-of-a-fence-refuses-a-protected-worktree</td><td>90</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T112824274062-review-of-velocity-census</td><td>83</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T112840698788-review-of-nova-flapping-history</td><td>88</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T104055321448-review-of-unmanaged-producer-log-covers-every-arming</td><td>94</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260926T112938635538-review-of-follower-rewrites-a-deleted-checkpoint</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T111435145932-review-of-wallet-clock-case-pins-its-constants</td><td>98</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T112224099705-review-of-code-depth-reuse-census</td><td>87</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T120335697662-review-of-crew-discard-reads-discarded</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T120443698666-review-of-review-recognition-figure-as-text</td><td>85</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T124128753770-review-of-complete-refuses-a-live-run</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T131624965930-review-of-new-work-gets-a-new-worker-currency-audit</td><td>80</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T122004598781-review-of-a-worker-is-charged-to-a-job-currency-audit</td><td>79</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T133020576148-review-of-pace-keys-are-declarable</td><td>96</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T134722899784-review-of-coordinator-overhead-census</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T141819057783-review-of-fence-is-on-again</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T121805165287-review-of-the-ledger-is-one-file-per-run-currency-audit</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T140535589201-review-of-a-stalled-row-says-whether-the-worker-lives-currency-audit</td><td>87</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T123754674978-review-of-section-contract-and-computed-impl-currency-audit</td><td>94</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T140559747789-review-of-landing-tests-measure-the-landing</td><td>95</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T140805853803-review-of-git-shim-checks-the-resolved-repo</td><td>88</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T144419857403-review-of-rename-member-tests-by-what-they-assert</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T143427093254-review-of-stale-reading-requery-reaches-lanes-view</td><td>79</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260926T151240302370-review-of-producer-takes-new-code</td><td>88</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T144400607045-review-of-promotion-charged-its-own-net-churn</td><td>87</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T144959107327-review-of-split-existing-runs-into-files</td><td>95</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T152552384858-review-of-fenced-worker-smoke-after-reenable</td><td>89</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T151440645322-review-of-counter-cells-keep-their-counts-apart</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T160521199125-review-of-discard-releases-a-clean-worktree</td><td>92</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T163426237277-review-of-git-shim-checks-the-resolved-repo</td><td>86</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T162130202095-review-of-integrated-pace-gate-attribution</td><td>88</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T163931753540-review-of-stalled-row-names-liveness</td><td>89</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T171349394642-review-of-harness-home-carries-mcp-servers</td><td>89</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T170035930616-review-of-producer-takes-new-code</td><td>88</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T165621790269-review-of-fence-creates-a-missing-write-parent</td><td>92</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T173006300483-review-of-fenced-launch-resolves-the-backend</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T173046225726-review-of-counter-cells-keep-their-counts-apart</td><td>92</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T173220233785-review-of-a-launch-is-not-its-own-conflict</td><td>94</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T175622403654-review-of-stalled-row-names-liveness</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T180425726815-review-of-dispatch-records-the-pace-row</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T181908855321-review-of-producer-takes-new-code</td><td>88</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T184633618058-review-of-codex-fenced-home-probe</td><td>91</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T184006050148-review-of-stale-reading-requery-reaches-lanes-view</td><td>90</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T185645270593-review-of-review-counts-added-failures-by-id</td><td>89</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260926T185422142542-review-of-a-launch-is-not-its-own-conflict</td><td>94</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T193548240312-review-of-follower-survives-a-config-change</td><td>86</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T193259670455-review-of-review-counts-added-failures-by-id</td><td>88</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T192348155133-review-of-fleet-spawn-and-the-cancelled-step</td><td>87</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260926T193949077718-review-of-producer-loop-survives-a-config-change</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T200232513791-review-of-impl-is-computed-from-section-records</td><td>87</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T200011644611-review-of-dispatch-records-the-pace-row</td><td>98</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T200724515273-review-of-integrated-launch-claim-attribution</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T202642257246-review-of-follower-survives-a-config-change</td><td>96</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T203548366947-review-of-resume-offer-waits-while-the-worker-lives</td><td>88</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T210659299521-review-of-pace-rows-replay-the-week</td><td>89</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T211958284067-review-of-s25-reuse-map-dispatch-surface</td><td>88</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T204104256915-review-of-impl-is-computed-from-section-records</td><td>87</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T212804712013-review-of-s25-reuse-map-review-and-velocity</td><td>90</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T213225641082-review-of-s25-reuse-map-record-and-promotion</td><td>78</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T214805211445-review-of-a-run-in-motion-is-not-unwritten</td><td>90</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T215525224281-review-of-pace-rows-replay-the-week</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T214257278233-review-of-resume-is-aged-from-its-own-start</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T224342921228-review-of-obligations-do-not-mislead</td><td>92</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T222725224782-review-of-capability-raises-with-section-attempts</td><td>79</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T224939001636-review-of-pace-rows-replay-the-week</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260926T220603121564-review-of-evidence-record-is-composed-at-read-time</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T223109829064-review-of-goal-lint-refuses-placeholders-not-punctuation</td><td>89</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T221122612277-review-of-gate-command-must-be-runnable</td><td>94</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T231814014755-review-of-a-run-in-motion-is-not-unwritten</td><td>92</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T225516235617-review-of-a-finished-run-never-reads-dispatched</td><td>94</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T232022357260-review-of-a-promotion-never-reads-unpromoted</td><td>87</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260926T233356140375-review-of-velocity-view-is-a-package-module</td><td>94</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260926T234110874765-review-of-pace-rows-replay-the-week</td><td>94</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260927T191622355385-review-of-a-promotion-never-reads-unpromoted</td><td>96</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260927T192835108442-review-of-served-and-audited-records-are-composed</td><td>93</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260927T192328875979-review-of-reserve-reaches-the-refusal-boundary</td><td>94</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T044354195664-review-of-capability-raises-with-section-attempts</td><td>85</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T045210055748-review-of-obligations-view-test-matches-the-derivation</td><td>90</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T044354744785-review-of-reflex-keys-on-reviewed-run-and-head</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T045654201732-review-of-dispatch-accepts-a-brief</td><td>91</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260927T192413655851-review-of-added-failures-compare-canonical-node-ids</td><td>94</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T051840709345-review-of-served-and-audited-records-are-composed</td><td>97</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T052741130452-review-of-follower-survives-a-host-change</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T053333641249-review-of-dispatch-accepts-a-brief</td><td>91</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T051925840382-review-of-coordinator-cost-per-landed-node</td><td>88</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T060936173592-review-of-review-tier-resolver</td><td>91</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T063231222971-review-of-fenced-codex-can-persist-its-login</td><td>91</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T070905311765-review-of-state-the-local-lane-death-rate</td><td>92</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T070305974626-review-of-help-census-counts-split-runs</td><td>99</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T070504584210-review-of-state-the-burn-after-the-fix</td><td>95</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T073855724869-review-of-host-change-test-asserts-its-baseline</td><td>90</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T072452695077-review-of-concurrency-bound-refuses-by-name</td><td>93</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T073209533893-review-of-the-project-watch-test-terminates</td><td>93</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T063305266502-review-of-read-plan-reads-the-composed-record</td><td>90</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T072053543313-review-of-canonical-id-keeps-distinct-prefixes</td><td>92</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T074452636884-review-of-replay-guards-every-row-read</td><td>88</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T073255728045-review-of-the-control-gate-checks-facts-not-words</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T084252387755-review-of-canonical-id-keeps-distinct-prefixes</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T083620795025-review-of-source-section-depends-edges</td><td>84</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T084904375867-review-of-follower-prints-only-policy-rows</td><td>84</td><td>6</td><td>{&#x27;unanswered&#x27;: 6}</td></tr>
+<tr><td>r-20260928T084312753606-review-of-state-the-local-lane-death-rate</td><td>92</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T083019129591-review-of-pin-the-unreadable-word-in-its-reason</td><td>94</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T081346288376-review-of-out-of-repo-claim-is-not-its-own-conflict</td><td>83</td><td>5</td><td>{&#x27;unanswered&#x27;: 5}</td></tr>
+<tr><td>r-20260928T085704718958-review-of-rearm-shows-nothing-twice</td><td>72</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T094229910477-review-of-source-section-depends-edges</td><td>86</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T095234064930-review-of-rearm-shows-nothing-twice</td><td>90</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T095130618163-review-of-follower-prints-only-policy-rows</td><td>90</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T100756215192-review-of-coordinator-cost-per-landed-node</td><td>92</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T104746638927-review-of-read-plan-reads-the-composed-record</td><td>94</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T105043679225-review-of-section-edge-stays-off-plan-blocking</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T105748972956-review-of-expired-follower-keeps-dispatching</td><td>90</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T103341579982-review-of-promotion-writes-the-landing-line</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T105419231597-review-of-review-refusal-continuation-reachable</td><td>89</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260928T110303524434-review-of-malformed-section-map-is-named</td><td>98</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T105207754335-review-of-reserve-refusal-reads-for-every-role</td><td>96</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T105701215830-review-of-pace-gate-green-at-main</td><td>86</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260928T112519598949-review-of-expired-follower-keeps-dispatching</td><td>91</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T114331759926-review-of-hyphenated-noun-is-not-an-action</td><td>98</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T114739070644-review-of-read-plan-says-when-a-record-is-uncomposed</td><td>92</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260928T115555224623-review-of-work-in-progress-is-visible</td><td>90</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T114813176869-review-of-the-control-gate-checks-facts-not-words</td><td>89</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T121811310907-review-of-read-plan-says-when-a-record-is-uncomposed</td><td>88</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T121211195642-review-of-promotion-bookkeeping-follows-the-run</td><td>79</td><td>5</td><td>{&#x27;unanswered&#x27;: 5}</td></tr>
+<tr><td>r-20260928T121726739411-review-of-default-scope-is-the-nodes-own-fragment</td><td>84</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260928T123959840205-review-of-name-the-ended-turn-in-its-reason</td><td>91</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T125125845682-review-of-a-sub-floor-dimension-is-an-obligation</td><td>94</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T123523691459-review-of-triage-pending-plans-first-batch</td><td>76</td><td>5</td><td>{&#x27;unanswered&#x27;: 5}</td></tr>
+<tr><td>r-20260928T133424996930-review-of-live-run-test-attribution</td><td>86</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T132030737403-review-of-s25-reuse-map-quota-runway</td><td>89</td><td>5</td><td>{&#x27;unanswered&#x27;: 5}</td></tr>
+<tr><td>r-20260928T131231553223-review-of-default-scope-is-the-nodes-own-fragment</td><td>85</td><td>7</td><td>{&#x27;unanswered&#x27;: 7}</td></tr>
+<tr><td>r-20260928T132309057581-review-of-promotion-bookkeeping-follows-the-run</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T142158788659-review-of-section-scoped-decision-blocks</td><td>94</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T141325959096-review-of-session-continuity-share-per-lane-day</td><td>90</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T143404219008-review-of-run-store-queries-by-backend</td><td>96</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T144021179481-review-of-dry-run-reaches-the-admission-judgement</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T145015606771-review-of-harness-home-lands-in-the-run-directory</td><td>89</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260928T145013782239-review-of-resumed-burn-prices-to-rollout</td><td>86</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T145144527589-review-of-triage-pending-plans-first-batch</td><td>81</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260928T152724236012-review-of-rearm-test-comment-matches-the-code</td><td>84</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T155749276138-review-of-worker-scratch-lives-with-its-run</td><td>94</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T153427492445-review-of-six-study-commits-merge-without-conflict</td><td>87</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T151856436073-review-of-preflight-reports-runs-remaining</td><td>67</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T153420386555-review-of-lane-reading-carries-generating-and-waiting</td><td>90</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T161103427071-review-of-commitless-review-promotes</td><td>93</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T154521191804-review-of-triage-pending-plans-second-batch</td><td>87</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T161259049027-review-of-rearm-test-comment-matches-the-code</td><td>84</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T155332636559-review-of-triage-pending-plans-third-batch</td><td>85</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260928T152625499713-review-of-promotion-reads-the-review-tier</td><td>89</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T155046916737-review-of-triage-pending-plans-fourth-batch</td><td>88</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T161435115153-review-of-resumed-burn-prices-to-rollout</td><td>90</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T171036653688-review-of-preflight-reports-runs-remaining</td><td>88</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T165333469491-review-of-ledger-suite-green-at-head</td><td>94</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T170653454196-review-of-worker-scratch-lives-with-its-run</td><td>96</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T171602084778-review-of-commitless-review-promotes</td><td>91</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T171844551736-review-of-typed-discovery-skips-evidence-fragments</td><td>89</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T171859933076-review-of-harness-home-lands-in-the-run-directory</td><td>90</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T174922131591-review-of-worker-scratch-lives-with-its-run</td><td>99</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T180502659922-review-of-commitless-review-promotes</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T180707688785-review-of-preflight-reports-runs-remaining</td><td>95</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T181740479459-review-of-attach-shows-each-live-run</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T183652323933-review-of-scratch-docstring-states-the-refusal</td><td>98</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T183315021270-review-of-replayed-gate-runs-at-the-checkout-with-its-output</td><td>91</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T184316290074-review-of-s21-score-reader-decomposition</td><td>78</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T183144364821-review-of-dispatch-declares-the-run-it-repairs</td><td>94</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T185730081157-review-of-commitless-boundary-is-any-non-word</td><td>92</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T184517217068-review-of-the-roadmap-reads-the-checkout-it-inventoried</td><td>91</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260928T190250456155-review-of-replayed-gate-merged-tree-delta</td><td>86</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T191539246946-review-of-stall-window-respects-a-live-child</td><td>90</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T191137074264-review-of-dispatch-declares-the-run-it-repairs</td><td>92</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T193833198237-review-of-s25-reuse-map-review-reflex</td><td>87</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260928T195034464501-review-of-review-findings-compose-one-repair</td><td>86</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T201342483600-review-of-ledger-declares-the-review-tier</td><td>89</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T200639659711-review-of-receipt-rollback-classification-red</td><td>91</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T200341896314-review-of-review-tier-suite-fallout</td><td>5</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T200656002135-review-of-a-sub-floor-disposition-is-written-by-a-command</td><td>91</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T201322442804-review-of-derive-the-row-phase-from-the-stream</td><td>90</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260928T204049281647-review-of-review-tier-suite-fallout</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T205935086744-review-of-directory-row-reads-the-derived-phase</td><td>97</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T211312507119-review-of-classify-rules-in-sprint-orchestration</td><td>88</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T211512424239-review-of-a-sub-floor-disposition-is-written-by-a-command</td><td>91</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T211157790477-review-of-classify-rules-in-the-skill</td><td>84</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260928T212246044156-review-of-classify-rules-in-the-other-references</td><td>85</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T215415651449-review-of-classify-rules-in-the-other-references</td><td>85</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T220604805142-review-of-one-timestamp-parser</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T221420462479-review-of-one-atomic-writer-and-one-number-decoder</td><td>86</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T222425016867-review-of-classify-rules-in-sprint-orchestration</td><td>88</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T221333665911-review-of-a-sub-floor-disposition-is-written-by-a-command</td><td>91</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T222406605114-review-of-classify-rules-in-the-skill</td><td>81</td><td>5</td><td>{&#x27;unanswered&#x27;: 5}</td></tr>
+<tr><td>r-20260928T232418863394-review-of-one-atomic-writer-and-one-number-decoder</td><td>86</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T225457714670-review-of-one-timestamp-parser</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T233349299191-review-of-classify-rules-in-sprint-orchestration</td><td>88</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260928T233552756785-review-of-the-suite-is-declared-and-recorded</td><td>90</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260928T234845911808-review-of-classify-rules-in-the-skill</td><td>84</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260928T233751179446-review-of-velocity-view-is-served-over-mcp</td><td>85</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T003054062308-review-of-the-suite-is-declared-and-recorded</td><td>90</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T005422993496-review-of-orientation-stub-is-not-unwritten</td><td>88</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T013323653629-review-of-velocity-view-is-served-over-mcp</td><td>97</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T014642260830-review-of-live-worker-read-dead-still-reproduces</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T014503461665-review-of-timestamp-callers-batch-a</td><td>88</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T015042515928-review-of-writer-callers-first-wave</td><td>94</td><td>5</td><td>{&#x27;unanswered&#x27;: 5}</td></tr>
+<tr><td>r-20260929T014527254826-review-of-timestamp-callers-batch-b</td><td>91</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T022836384204-review-of-timestamp-callers-batch-a</td><td>88</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T023155132858-review-of-writer-callers-first-wave</td><td>94</td><td>5</td><td>{&#x27;unanswered&#x27;: 5}</td></tr>
+<tr><td>r-20260929T023326528743-review-of-timestamp-callers-batch-b</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T034156838338-review-of-writer-callers-second-wave</td><td>91</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T034111754126-review-of-a-foreign-pid-never-reads-dead</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T035411047011-review-of-timestamp-callers-batch-d</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T035009445631-review-of-timestamp-callers-batch-c</td><td>94</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T041605729152-review-of-shared-helper-edges-hold</td><td>98</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T043953043725-review-of-control-is-compared-with-the-head-arm</td><td>97</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T045252949019-review-of-coordinator-commit-table</td><td>79</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T045653191673-review-of-small-node-prompt-rule</td><td>91</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T050019972975-review-of-velocity-view-is-served-on-the-cli</td><td>95</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T044605002380-review-of-crew-contract-token-baseline</td><td>85</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T050044810579-review-of-a-foreign-pid-never-reads-dead</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T045642762418-review-of-lane-counts-read-through-the-lane-document</td><td>97</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T051421596387-review-of-zone-guards-read-tzinfo</td><td>94</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T052223319139-review-of-rearm-replays-the-fleet-with-recorded-times</td><td>84</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T053738387505-review-of-small-node-prompt-rule</td><td>91</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T045051551142-review-of-triage-pending-plans-reconciled</td><td>81</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T054735839750-review-of-commitless-changed-paths-reads-the-declaration</td><td>84</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T055321097273-review-of-crew-contract-token-baseline</td><td>85</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T060550970177-review-of-fragment-scope-for-landing-roles-only</td><td>97</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T063401348219-review-of-a-score-is-queryable-from-committed-state</td><td>96</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T064749255857-review-of-the-suite-holds-light-promotions</td><td>5</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T065449890323-review-of-pending-plan-limit-at-creation</td><td>91</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T070551906736-review-of-rollup-isolates-a-project</td><td>94</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T070921196727-review-of-commitless-changed-paths-reads-the-declaration</td><td>89</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T072658415878-review-of-velocity-view-answers-within-its-deadline</td><td>94</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T080358131764-review-of-pending-plan-limit-warns</td><td>95</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T071650132500-review-of-fleet-lane-carries-the-dispatch-environment</td><td>97</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T083730288714-review-of-drain-view-reads-the-host-gated-liveness</td><td>97</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T081720872017-review-of-rearm-replays-the-fleet-with-recorded-times</td><td>84</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T083422457612-review-of-fence-protects-the-worktree-pool</td><td>92</td><td>5</td><td>{&#x27;unanswered&#x27;: 5}</td></tr>
+<tr><td>r-20260929T083022380674-review-of-evidence-citations-resolve</td><td>96</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T085619610059-review-of-velocity-view-in-the-spa</td><td>87</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260929T092554650278-review-of-red-ids-root-cause</td><td>95</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260929T095737201409-review-of-schema-mirrors-impl-source</td><td>96</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T093834684275-review-of-reservation-is-shared-across-projects</td><td>95</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T092917840201-review-of-commitless-changed-paths-reads-the-declaration</td><td>88</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T094729272377-review-of-met-wait-classification-red-ids</td><td>94</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T103042157390-review-of-fence-pool-test-follows-the-naming-rules</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T103335072549-review-of-velocity-window-test-pins-fourteen-days</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T111514940942-review-of-worker-prompt-states-the-fence-rule</td><td>91</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T112614918262-review-of-follow-boundary-snaps-to-a-line</td><td>86</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260929T114952924591-review-of-live-view-rechecks-a-killed-worker</td><td>98</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T114628806656-review-of-shared-reservation-integration</td><td>95</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260929T113513239316-review-of-direct-resume-two-arm-delta</td><td>83</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260929T122222061725-review-of-commitless-changed-paths-reads-the-declaration</td><td>91</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T125250840358-review-of-shadow-cli-population-failure</td><td>89</td><td>6</td><td>{&#x27;unanswered&#x27;: 6}</td></tr>
+<tr><td>r-20260929T132120460206-review-of-runs-pointer-writer-reuses-the-store</td><td>94</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T135120663109-review-of-ensure-holds-one-reservation</td><td>99</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T135330043757-review-of-promotion-timestamps-reuse-the-parser</td><td>94</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T141545083893-review-of-test-terminal-record-settle-at-the-merge</td><td>88</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T142629861932-review-of-boundary-check-reads-two-trees</td><td>100</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T144852410095-review-of-supervisor-write-reuses-the-store</td><td>96</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T150247289441-review-of-a-resumed-run-counts-as-working</td><td>97</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T150602234973-review-of-follow-reads-whole-lines</td><td>90</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T152112213957-review-of-dispatch-timestamps-reuse-the-parser</td><td>91</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260929T161624682607-review-of-a-resumed-run-counts-as-working</td><td>97</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T163739248062-review-of-resume-baseline-flake-before-the-replay</td><td>92</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260929T175101477706-review-of-repair-of-repair-of-repair-of-direct-resume-needs-an-observed-death-d6dcefb34b0e-f86b93f4b71d-eaf5497f92f0</td><td>89</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260929T180341823789-review-of-resume-on-a-replaced-stream-draws-its-rows</td><td>93</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T190457342172-review-of-repair-of-session-resume-cases-fail-at-main-f61f41b7aa63</td><td>90</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T193250144358-review-of-cli-settings-writer-delegates-the-replace</td><td>92</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T195220702338-review-of-direct-resume-teardown-reads-its-own-home</td><td>91</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T194149534579-review-of-collapse-section-op-lands-a-section</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T194017784379-review-of-repair-of-five-ledger-cases-turned-red-f61f41b7aa63</td><td>88</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T191939567381-review-of-repair-of-repair-of-repair-of-scratch-arm-ids-reduce-444a37379542-08fdc5e23cc5-1fb77e19ed3b</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T195226593093-review-of-follow-lifetime-case-across-whole-lines</td><td>94</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T195906221317-review-of-a-live-worker-still-owes-its-review</td><td>94</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260929T192830297904-review-of-boundary-check-reads-two-trees</td><td>100</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T195927507772-review-of-template-states-the-exit-line</td><td>94</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T203125982758-review-of-recovery-timestamps-reuse-the-parser</td><td>90</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T204413623898-review-of-follow-lifetime-reads-only-its-own-traces</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T203535328300-review-of-test-crew-follows-the-shipped-contracts</td><td>91</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T203327349263-review-of-eight-red-ids-root-cause</td><td>91</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260929T204546889250-review-of-collapse-section-op-lands-a-section</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260929T205856231237-review-of-skill-landing-sentence-follows-the-prompt</td><td>93</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260929T210417105152-review-of-transition-and-lifetime-tests-follow-the-product</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T210415138333-review-of-reflex-repairs-only-idle-implement-runs</td><td>94</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T211615512452-review-of-dispatch-returns-at-merged-main</td><td>84</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260929T211816801666-review-of-dispatch-places-into-the-shared-reservation</td><td>89</td><td>5</td><td>{&#x27;unanswered&#x27;: 5}</td></tr>
+<tr><td>r-20260929T212907518895-review-of-summaries-list-live-and-recent-sprints</td><td>70</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260929T212919167409-review-of-collapse-ambiguous-span-refusal-is-tested</td><td>96</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T065416284783-review-of-stream-enumeration-reuses-metering</td><td>85</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T071601207600-review-of-follow-lifetime-reads-only-its-own-traces</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T071542420719-review-of-skill-landing-sentence-follows-the-prompt</td><td>93</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260930T072433250911-review-of-a-stale-manifest-does-not-license-promotion</td><td>61</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T075129024672-review-of-collapse-ambiguous-span-refusal-is-tested</td><td>96</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T075821852108-review-of-skill-contracts-red-ids-root-cause</td><td>87</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T075802241655-review-of-supervisor-survives-the-two-tree-snapshot</td><td>73</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260930T080724144935-review-of-summaries-list-live-and-recent-sprints</td><td>87</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T081922538909-review-of-placement-wiring-integration</td><td>96</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T081733815636-review-of-velocity-counts-the-interface</td><td>91</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T083707685252-review-of-composed-record-takes-fragment-bodies</td><td>95</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T084005242902-review-of-supervisor-survives-the-two-tree-snapshot</td><td>73</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260930T085329529482-review-of-discovery-reads-the-roadmap-sprint-window</td><td>93</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T090116807272-review-of-composed-record-takes-fragment-bodies</td><td>95</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T085651080799-review-of-obligations-view-is-the-inbox</td><td>89</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T085332719971-review-of-audit-flags-duplicate-composed-ids</td><td>89</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T092113244151-review-of-repair-of-repair-starts-at-the-reviewed-head-91acbe6a72f6</td><td>98</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T092410105277-review-of-obligations-view-is-the-inbox</td><td>89</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T094701589723-review-of-a-stale-manifest-does-not-license-promotion</td><td>80</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T094558428290-review-of-directory-claim-asks-first</td><td>87</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T095025768281-review-of-harness-install-names-no-host-path</td><td>92</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T095447676990-review-of-skills-name-the-landing-beat-ops</td><td>92</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260930T100359404469-review-of-rereview-keeps-its-lane</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T095358631893-review-of-promotion-reports-private-copies</td><td>88</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T102123464251-review-of-skills-name-the-landing-beat-ops</td><td>92</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260930T102924649277-review-of-rereview-keeps-its-lane</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T103414416235-review-of-promotion-reports-private-copies</td><td>88</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T104735293203-review-of-hooks-install-is-a-command</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T105457692031-review-of-rereview-keeps-its-lane</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T110242427523-review-of-hooks-install-is-a-command</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T113229341934-review-of-a-stale-manifest-does-not-license-promotion</td><td>91</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T120735241656-review-of-stale-manifest-guard-at-merged-main</td><td>89</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T122631739123-review-of-promotion-records-a-brief-runs-owner</td><td>86</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T124159484530-review-of-stale-manifest-guard-cli-callers</td><td>90</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T130537747420-review-of-worker-death-currency</td><td>92</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T131549183077-review-of-the-skill-names-when-a-brief-fits</td><td>85</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T132709633671-review-of-a-killed-worker-resumes-to-completion</td><td>89</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T133305959978-review-of-the-skill-names-when-a-brief-fits</td><td>89</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T134636379463-review-of-a-killed-worker-resumes-to-completion</td><td>89</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T140837184712-review-of-review-dies-currency</td><td>92</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T145849313886-review-of-death-shape-correlation</td><td>95</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T151422410260-review-of-a-review-manifest-passes-its-own-check</td><td>89</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T153507871358-review-of-a-review-manifest-passes-its-own-check</td><td>94</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T164353857049-review-of-repair-of-a-repair-hold-names-its-cause-3b945ad92e12</td><td>85</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T170421750014-review-of-repair-of-a-review-promotes-what-it-passed-b3683d8e6840</td><td>85</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T172709153365-review-of-effective-window-slot</td><td>94</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T173109849654-review-of-review-effort-confounders</td><td>87</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T182335963430-review-of-local-session-carryover</td><td>91</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T184453601750-review-of-skill-contracts-follow-the-shipped-surface</td><td>87</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T182351783992-review-of-reflex-tests-environment</td><td>91</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T190204517766-review-of-a-live-worker-never-reads-gone-after-its-first-commit</td><td>91</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260930T190349683183-review-of-repair-skips-out-of-repo-findings</td><td>95</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T191008454940-review-of-a-served-thread-leaves-no-memo-behind</td><td>82</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T193911413878-review-of-the-fence-fails-closed</td><td>90</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T194116283407-review-of-repair-of-dropped-lane-means-a-launched-attempt-334f272bc2c0</td><td>91</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T194410210092-review-of-repair-of-a-rollback-keeps-its-cause-153767e488bd</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T200702958356-review-of-velocity-counts-clone-matches</td><td>91</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T200844964740-review-of-clone-report-sees-modified-functions</td><td>94</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T201044592455-review-of-repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159</td><td>90</td><td>3</td><td>{&#x27;unanswered&#x27;: 3}</td></tr>
+<tr><td>r-20260930T202748671313-review-of-velocity-counts-clone-matches</td><td>95</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T204226484953-review-of-repair-of-stored-review-reads-the-recorded-head-a8422de3d81c</td><td>92</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T205344021602-review-of-repair-of-repair-carries-the-suite-pair-6f17d5c4b5b4</td><td>94</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T210355696537-review-of-rollback-population</td><td>89</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T213509227438-review-of-scoring-currency</td><td>78</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T214426463463-review-of-currency-crew-observability-truth</td><td>75</td><td>4</td><td>{&#x27;unanswered&#x27;: 4}</td></tr>
+<tr><td>r-20260930T214115163988-review-of-crpc-currency</td><td>92</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T214513011071-review-of-currency-the-ledger-is-one-file-per-run</td><td>80</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20260930T214922841378-review-of-currency-a-follower-outlives-its-monitor</td><td>90</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T221427948179-review-of-repair-of-metadata-index-survives-restart-2bc3b8ca3152</td><td>93</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20260930T222641936260-review-of-repair-answers-only-blocking-findings</td><td>94</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20260930T223448297192-review-of-supervisor-outlives-its-launcher</td><td>90</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20260930T224454095792-review-of-worker-scratch-is-not-dirt</td><td>95</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20260930T225711164108-review-of-supervisor-outlives-its-launcher</td><td>89</td><td>5</td><td>{&#x27;declined&#x27;: 5}</td></tr>
+<tr><td>r-20260930T225039845371-review-of-repair-of-a-review-waits-for-a-saturated-lane-4027b1c368ed</td><td>93</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20260930T225935953588-review-of-the-prompt-teaches-the-rule-the-gate-applies</td><td>93</td><td>2</td><td>{&#x27;declined&#x27;: 1, &#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20260930T231717547048-review-of-repair-arming-follows-its-run</td><td>90</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20260930T232033268914-review-of-the-prompt-teaches-the-rule-the-gate-applies</td><td>93</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20260930T225738040125-review-of-an-unchanged-run-needs-no-suite-pair</td><td>91</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20260930T231847384048-review-of-supervisor-outlives-its-launcher</td><td>87</td><td>4</td><td>{&#x27;declined&#x27;: 4}</td></tr>
+<tr><td>r-20260930T232826463886-review-of-wave-population</td><td>92</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20260930T233500551244-review-of-supervisor-outlives-its-launcher</td><td>91</td><td>5</td><td>{&#x27;declined&#x27;: 5}</td></tr>
+<tr><td>r-20260930T234003133267-review-of-supervisor-outlives-its-launcher</td><td>91</td><td>5</td><td>{&#x27;declined&#x27;: 5}</td></tr>
+<tr><td>r-20260930T235353165786-review-of-the-refusal-case-discriminates</td><td>93</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T000528475752-review-of-suite-arms-use-the-armed-command</td><td>95</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T001253310488-review-of-agent-readers-use-the-index</td><td>89</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20261001T002106519575-review-of-currency-new-work-gets-a-new-worker</td><td>74</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20261001T002305218614-review-of-page-paints-from-the-index</td><td>95</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20261001T002953354488-review-of-currency-the-orchestrator-lane-is-not-a-worker-lane</td><td>75</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T002911289922-review-of-currency-section-contract-and-computed-impl</td><td>77</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20261001T002931425896-review-of-currency-a-worker-is-charged-to-a-job</td><td>74</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T003426278787-review-of-agent-readers-use-the-index</td><td>90</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20261001T004805648576-review-of-page-paints-from-the-index</td><td>95</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20261001T010810622682-review-of-unwired-plan-message-names-its-population</td><td>99</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T010817987548-review-of-an-all-follow-on-round-says-so</td><td>94</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T011314182599-review-of-admitted-shell-forms-are-tested</td><td>95</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T011020040888-review-of-split-test-watches-only-its-own-rows</td><td>95</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T012746674434-review-of-doccheck-section-ref-warning</td><td>89</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T014839610734-review-of-repair-of-an-unchanged-worktree-is-proved-not-assumed-f485bbdc05b7</td><td>98</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T021542694886-review-of-the-worker-record-guard-has-a-driving-case</td><td>96</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T021948051014-review-of-the-reflex-resumes-an-unpromoted-run</td><td>78</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T023336918910-review-of-the-watch-spy-takes-the-stamp</td><td>97</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T024920092944-review-of-the-reflex-resumes-an-unpromoted-run</td><td>78</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T030949708232-review-of-the-reflex-resumes-an-unpromoted-run</td><td>78</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T030308294978-review-of-figure-thumbnails</td><td>99</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T025911277091-review-of-a-dead-worker-record-leads-to-a-resume</td><td>96</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T031950485794-review-of-the-reflex-resumes-an-unpromoted-run</td><td>78</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T032753026340-review-of-one-of-two-racing-reviews-survives</td><td>97</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T035822062453-review-of-member-friction</td><td>96</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T040114942083-review-of-the-reflex-resumes-an-unpromoted-run</td><td>78</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T041110451351-review-of-one-of-two-racing-reviews-survives</td><td>94</td><td>5</td><td>{&#x27;declined&#x27;: 5}</td></tr>
+<tr><td>r-20261001T043034671935-review-of-the-fence-fails-closed</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20261001T043318569464-review-of-follower-bounds-its-lifetime</td><td>97</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T042800900953-review-of-control-gate-repairs</td><td>88</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T043757014594-review-of-scoring-triage</td><td>90</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T050846786530-review-of-repair-of-the-fleet-allocation-is-adopted-7e9a4e94d159</td><td>94</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T051238857380-review-of-section-routing-population</td><td>93</td><td>2</td><td>{&#x27;unanswered&#x27;: 2}</td></tr>
+<tr><td>r-20261001T051821569694-review-of-a-served-thread-leaves-no-memo-behind</td><td>83</td><td>6</td><td>{&#x27;acted&#x27;: 5, &#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20261001T054030894070-review-of-canonical-id-controls</td><td>92</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T060145234271-review-of-a-wait-ages-on-its-stream</td><td>92</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T061531776073-review-of-host-placement-block-is-composed</td><td>88</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T062452403284-review-of-review-store-reads</td><td>93</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T062054826104-review-of-one-automatic-repair-round-per-run</td><td>96</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T063124364339-review-of-a-runs-scratch-ends-with-the-run</td><td>92</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T063129170778-review-of-follower-bounds-its-lifetime</td><td>97</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T064007610406-review-of-the-roster-counts-live-placed-workers</td><td>93</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T064022587878-review-of-the-suite-cannot-reach-a-real-scheduler</td><td>89</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T065707814375-review-of-an-unmarked-finding-is-refused-at-write</td><td>92</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T065734857379-review-of-section-body-records-are-read</td><td>93</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T065917791299-review-of-presented-refusal-keeps-its-wording</td><td>94</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T070936900606-review-of-a-run-can-always-be-reconciled</td><td>94</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T071527067283-review-of-racing-claims-order-by-parsed-time</td><td>96</td><td>5</td><td>{&#x27;declined&#x27;: 5}</td></tr>
+<tr><td>r-20261001T070850374667-review-of-one-refusal-population</td><td>83</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20261001T072143893818-review-of-one-refusal-lists-every-precondition</td><td>91</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T073602235150-review-of-an-unmarked-finding-is-reported-not-repaired</td><td>93</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T074805101620-review-of-the-cores-bound-reads-the-reservation</td><td>86</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T075606493794-review-of-the-two-tree-saving-is-measured</td><td>88</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T075827894620-review-of-an-unmarked-finding-is-reported-not-repaired</td><td>93</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T080820440206-review-of-the-protected-set-is-declared</td><td>85</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T082338760481-review-of-a-placed-worker-reports-its-step</td><td>95</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T083033161186-review-of-racing-claims-order-by-parsed-time</td><td>94</td><td>5</td><td>{&#x27;declined&#x27;: 5}</td></tr>
+<tr><td>r-20261001T084307952264-review-of-a-shared-basetemp-is-refused</td><td>90</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T090156081166-review-of-a-backend-carries-no-worker-cap</td><td>96</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T090238701710-review-of-a-dispatch-result-matches-its-launch</td><td>5</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T091514314865-review-of-unprotected-paths-reach-every-launch</td><td>96</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T094617173955-review-of-the-basetemp-lock-is-exact</td><td>91</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T101129655367-review-of-the-lane-pause-section-is-read-back</td><td>88</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T104105616989-review-of-the-retired-cap-reads-retired</td><td>87</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T104309280198-review-of-the-fence-followups-are-triaged</td><td>89</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T104356350322-review-of-the-dispatch-followups-are-triaged</td><td>98</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T112109956789-review-of-resume-and-lane-change-follow-their-attempt</td><td>94</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T112036488433-review-of-the-validation-refusal-test-reads-the-key</td><td>98</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T112317224923-review-of-the-smoke-record-cites-its-observables</td><td>90</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T113025154237-review-of-a-raise-failure-is-visible</td><td>95</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T112905240654-review-of-a-promoted-row-names-its-reviewed-revision</td><td>91</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T112947153621-review-of-a-probe-reference-is-resolved</td><td>99</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T112356219237-review-of-a-shared-grant-charges-only-its-holder</td><td>91</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T112828738851-review-of-one-refusal-on-main</td><td>93</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T113354965393-review-of-the-git-shim-admits-a-runs-own-fixture</td><td>90</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T114334468378-review-of-a-dispatch-holds-while-the-lane-is-paused</td><td>95</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T115049718092-review-of-a-shared-grant-charges-only-its-holder</td><td>91</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T120719584448-review-of-misfiled-lookup-is-indexed</td><td>91</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T131410696573-review-of-the-supervisor-starts-without-a-runpy-warning</td><td>95</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T131543921861-review-of-the-skill-runs-a-dispatch-in-the-foreground</td><td>88</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T130810317081-review-of-the-shim-reads-worktree-list-as-a-read</td><td>96</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T131604709825-review-of-tonight-population</td><td>89</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T132847155320-review-of-a-stop-inside-the-spawn-window-spawns-nothing</td><td>95</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T133207724096-review-of-the-waiver-test-reads-the-clock</td><td>96</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T141249924702-review-of-the-ledger-row-names-its-crew-session</td><td>83</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T141822211490-review-of-the-git-guard-shares-the-shim-read-forms</td><td>91</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T142724335847-review-of-the-ledger-row-names-its-crew-session</td><td>83</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T151227297216-review-of-the-ledger-row-names-its-crew-session</td><td>83</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T155713311419-review-of-the-discovery-memo-does-not-leak</td><td>91</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T181816256449-review-of-drain-reads-the-index</td><td>93</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T194659990719-review-of-repromotion-commits-its-recorded-comment</td><td>96</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T194935947912-review-of-skill-rules-say-what-a-session-owns</td><td>79</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T195658523315-review-of-complete-refuses-an-open-merge</td><td>97</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T195934376349-review-of-stored-phase-advances-past-starting</td><td>88</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T195927716047-review-of-held-worktrees-read-run-files</td><td>82</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T201628120600-review-of-producer-holds-a-lease</td><td>81</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T202019711185-review-of-pointer-classification-is-memoised</td><td>90</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T205610034127-review-of-held-worktrees-read-run-files</td><td>82</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T210014618333-review-of-impl-needs-every-section-recorded</td><td>94</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T215152805082-review-of-a-followup-that-hides-work-is-found</td><td>86</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T221437532957-review-of-registration-survives-an-unlink</td><td>80</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T223744958039-review-of-producer-reads-only-what-changed</td><td>83</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261001T223945474080-review-of-capability-cache-reads-run-file-versions</td><td>99</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T223326296751-review-of-a-promoted-live-run-does-not-reannounce</td><td>86</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T230009126756-review-of-capability-cache-reads-run-file-versions</td><td>99</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T230810406150-review-of-complete-refuses-an-open-revert</td><td>93</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T231001209240-review-of-a-third-follower-gets-no-unknown-row</td><td>98</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T231212670652-review-of-a-broken-config-defers-the-producer-tick</td><td>99</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T232822197811-review-of-a-superseded-producer-ends</td><td>98</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T233417850426-review-of-idle-producer-backs-off</td><td>93</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261001T233019350916-review-of-worker-record-liveness-uses-the-record-probe</td><td>97</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261001T235723947675-review-of-stored-phase-covers-a-failed-spawn</td><td>94</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T000325288419-review-of-observe-keeps-a-terminal-stored-phase</td><td>91</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T000020525600-review-of-a-rewritten-stream-is-read-from-zero</td><td>87</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261002T001324515775-review-of-stored-phase-covers-a-failed-spawn</td><td>94</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T001949620014-review-of-arming-guard-knows-a-test-session</td><td>90</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T002018472087-review-of-landing-commit-carries-only-its-own-comment</td><td>91</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T003648572307-review-of-observe-keeps-a-terminal-stored-phase</td><td>91</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T003833350758-review-of-promotion-retires-a-disposable-identity</td><td>91</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T005818516493-review-of-discarded-run-promotes-after-its-commits-land</td><td>89</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T011537207400-review-of-every-signal-leaves-a-sender-record</td><td>86</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261002T012312523662-review-of-landing-guard-tolerates-the-stores-own-writes</td><td>91</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T014117547702-review-of-worker-liveness-fixtures-follow-the-host-gate</td><td>93</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T014803396556-review-of-unwatch-leaves-a-sender-record</td><td>92</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T014729626454-review-of-a-classification-read-creates-no-run-directory</td><td>95</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T014836035032-review-of-a-refused-signal-records-its-refusal</td><td>78</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T022036568785-review-of-a-terminal-worker-exits-within-its-grace</td><td>96</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T022516263918-review-of-an-unknown-departure-reads-departed</td><td>97</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T024254367022-review-of-every-signal-caller-names-its-run-directory</td><td>95</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T024146823723-review-of-an-unknown-departure-reads-departed</td><td>94</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T030242179151-review-of-departure-comments-state-the-departed-rule</td><td>88</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T031153576906-review-of-a-signal-leaves-one-attribution-and-one-outcome</td><td>96</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T033230658134-review-of-lease-renewal-is-counted-by-its-writes</td><td>91</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T034900673621-review-of-lease-renewal-is-counted-by-its-writes</td><td>92</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T040913963766-review-of-suite-remeasure-after-repairs</td><td>90</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T041615043714-review-of-grace-baseline-reuses-the-timestamp-parser</td><td>97</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T043541521798-review-of-signal-fakes-take-the-caller-arguments</td><td>97</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T045315788611-review-of-landing-guard-admits-the-runs-own-plan-state</td><td>96</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T051102381157-review-of-landing-refusal-names-what-it-admits</td><td>95</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T052349347555-review-of-guard-test-docstring-states-the-admitted-writes</td><td>90</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T055856851125-review-of-guard-test-docstring-names-sections-as-examples</td><td>89</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T055949904638-review-of-fenced-claude-carries-its-login</td><td>90</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T055249638844-review-of-the-producer-publishes-the-snapshot</td><td>90</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T055521595063-review-of-suite-final-measure</td><td>91</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T061752726592-review-of-a-vanished-worktree-reads-as-no-referent</td><td>94</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T061717454373-review-of-a-resumed-worker-outlives-its-earlier-delivery</td><td>92</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T065219318014-review-of-dispatch-counts-worker-slots</td><td>93</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261002T065536622662-review-of-landing-guard-admits-every-store-element</td><td>92</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T071141388102-review-of-a-followup-that-hides-work-is-refused</td><td>89</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T070205632287-review-of-producer-cpu-before-and-after-incremental-reads</td><td>77</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20261002T070628834348-review-of-follower-reload-holds-under-load</td><td>92</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T071141966192-review-of-a-withdrawn-run-completes-as-withdrawn</td><td>92</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T073716047349-review-of-promotion-picks-the-descendant-commit</td><td>91</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261002T074714574031-review-of-fleet-supervisor-runs-declared-services</td><td>94</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T075029866672-review-of-a-withdrawn-run-completes-as-withdrawn</td><td>95</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T074643034614-review-of-stale-producer-warning-waits-for-its-reload</td><td>95</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T074830041084-review-of-a-stopped-run-ends-its-supervisor</td><td>87</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T074750586249-review-of-a-time-fence-names-its-clock</td><td>91</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261002T081042567920-review-of-crew-complete-time-is-attributed</td><td>90</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T081013402487-review-of-the-live-producer-reads-only-what-changed</td><td>87</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T083055811250-review-of-migration-dispositions</td><td>93</td><td>1</td><td>{&#x27;unanswered&#x27;: 1}</td></tr>
+<tr><td>r-20261002T083744406205-review-of-stale-producer-warning-waits-for-its-reload</td><td>95</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T085347760539-review-of-the-grace-never-cuts-a-manifest-write</td><td>94</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T090234660917-review-of-a-stopped-run-ends-its-supervisor</td><td>89</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261002T091523623566-review-of-the-metadata-index-reuses-unchanged-plans</td><td>96</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T092301014468-review-of-the-clone-scan-reads-only-the-promoted-diff</td><td>90</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T092727403582-review-of-stale-warning-wiring-is-tested-end-to-end</td><td>97</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T092656510580-review-of-a-promotion-reads-only-the-fleet-fields-it-records</td><td>91</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T100241202020-review-of-the-clone-scan-reads-only-the-promoted-diff</td><td>92</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T100138260846-review-of-a-stopped-run-ends-its-supervisor</td><td>96</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T100841220627-review-of-a-promotion-reads-only-the-fleet-fields-it-records</td><td>92</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T102953416372-review-of-the-producer-publishes-the-snapshot</td><td>88</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T104446124741-review-of-the-clone-cache-stays-bounded</td><td>95</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T103447367546-review-of-review-obligation-reads-the-head</td><td>90</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T104735239064-review-of-landing-patch-refuses-a-hiding-followup</td><td>98</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T104709470570-review-of-the-stop-bound-test-states-its-discriminator</td><td>96</td><td>4</td><td>{&#x27;declined&#x27;: 4}</td></tr>
+<tr><td>r-20261002T110417942086-review-of-worker-slot-hold-is-tested-where-it-acts</td><td>96</td><td>4</td><td>{&#x27;declined&#x27;: 4}</td></tr>
+<tr><td>r-20261002T111002338408-review-of-crew-complete-time-after-the-bounds</td><td>91</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261002T111317913444-review-of-a-partial-scan-keeps-the-whole-cache</td><td>97</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T111250251506-review-of-check-manifest-resolves-named-commits</td><td>94</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T110839853404-review-of-the-stop-bound-has-its-own-control</td><td>97</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261002T110254565404-review-of-impl-stays-authorable-while-records-are-partial</td><td>94</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+<tr><td>r-20261002T112914987413-review-of-picker-reuse-map</td><td>87</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T113026267059-review-of-jev-call-probe</td><td>77</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T114634790552-review-of-codex-window-pacing</td><td>91</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T114448713404-review-of-a-removed-file-leaves-the-clone-cache</td><td>97</td><td>1</td><td>{&#x27;declined&#x27;: 1}</td></tr>
+<tr><td>r-20261002T114703880019-review-of-model-currency</td><td>75</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T121433914559-review-of-the-producer-publishes-the-snapshot</td><td>88</td><td>2</td><td>{&#x27;declined&#x27;: 2}</td></tr>
+<tr><td>r-20261002T121007442055-review-of-run-time-profile</td><td>90</td><td>3</td><td>{&#x27;declined&#x27;: 3}</td></tr>
+</tbody></table>
+</section>
+</main></body></html>
