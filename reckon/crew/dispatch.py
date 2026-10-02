@@ -8503,36 +8503,64 @@ def _iso_stamp_to_ns(stamp: str) -> int | None:
     return int(parsed.timestamp() * 1_000_000_000)
 
 
-def _supervisor_manifest_baseline_ns(run_id: str, spec: Mapping[str, Any]) -> int:
-    """The manifest generation an attempt may call its own.
+def _attempt_started_ns(
+    spec: Mapping[str, Any], record: Mapping[str, Any], supervisor_started_at: str
+) -> int | None:
+    """The current attempt's own start, as epoch nanoseconds.
 
-    A resumed run keeps its manifest path, so the previous attempt's terminal
-    manifest is still on disk when the new worker starts, with an old mtime. A
-    delivered manifest is therefore only the one written at or after the
-    attempt began: the pointer's recorded baseline, or the attempt's own start
-    when the pointer carries none, or 0 when the attempt clock is unreadable —
-    in which case a manifest is taken as delivery and the pre-existing bad case
-    cannot be recognised, which is the pre-existing behaviour rather than a
-    regression.
+    The spec is authoritative — it is written by the launch that started this
+    supervisor — and the pointer is the fallback for a spec that omits the
+    field. The supervisor's own launch instant is the last resort before the
+    clock is unreadable.
+    """
+    for stamp in (
+        spec.get("attempt_started_at"),
+        record.get("attempt_started_at"),
+        supervisor_started_at,
+    ):
+        if not stamp:
+            continue
+        parsed = _iso_stamp_to_ns(str(stamp))
+        if parsed is not None:
+            return parsed
+    return None
+
+
+def _supervisor_manifest_baseline_ns(
+    run_id: str, spec: Mapping[str, Any], *, supervisor_started_at: str = ""
+) -> int:
+    """The manifest generation this attempt may call its own.
+
+    A resumed run keeps its manifest path, so the previous attempt's delivered
+    manifest is still on disk when the new worker starts, carrying an mtime from
+    before this attempt began. A generation recorded on the pointer at dispatch
+    time predates that manifest, so honouring it alone would read the stale
+    manifest as this attempt's delivery. The baseline is therefore never earlier
+    than the attempt's own start: a recorded generation counts only when it is
+    at or after that start, which is the floor. A manifest written before this
+    attempt began cannot count as its delivery.
+
+    When the attempt clock is unreadable everywhere, the recorded generation is
+    taken as before — a manifest is then treated as delivery, the pre-existing
+    behaviour rather than a regression.
     """
     try:
         record: Mapping[str, Any] = read_pointer(run_id)
     except CrewError:
         record = {}
-    baseline = record.get("manifest_baseline_mtime_ns")
-    if baseline is not None:
+    baseline: int | None = None
+    recorded = record.get("manifest_baseline_mtime_ns")
+    if recorded is not None:
         try:
-            return int(baseline)
+            baseline = int(recorded)
         except (TypeError, ValueError):
-            pass
-    started = str(
-        spec.get("attempt_started_at") or record.get("attempt_started_at") or ""
-    )
-    if started:
-        parsed = _iso_stamp_to_ns(started)
-        if parsed is not None:
-            return parsed
-    return 0
+            baseline = None
+    started_ns = _attempt_started_ns(spec, record, supervisor_started_at)
+    if started_ns is None:
+        return baseline if baseline is not None else 0
+    if baseline is None:
+        return started_ns
+    return max(baseline, started_ns)
 
 
 def _reap_worker_on_its_terminal_manifest(
@@ -8700,7 +8728,9 @@ def _run_supervisor(spec_path: Path) -> int:
         run_directory=run_directory,
         manifest_path=_supervisor_manifest_path(run_id),
         grace_seconds=_terminal_manifest_grace_seconds(),
-        baseline_ns=_supervisor_manifest_baseline_ns(run_id, spec),
+        baseline_ns=_supervisor_manifest_baseline_ns(
+            run_id, spec, supervisor_started_at=launched_at
+        ),
     )
     exit_record = _supervisor_exit_record(
         run_id=str(spec.get("run_id") or ""),

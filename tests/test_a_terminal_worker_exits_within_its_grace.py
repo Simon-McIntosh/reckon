@@ -23,12 +23,13 @@ import signal
 import sys
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
 import pytest
 
+from reckon import _backends
 from reckon.crew import routing, runs
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
@@ -130,6 +131,35 @@ def _control(monkeypatch: pytest.MonkeyPatch) -> None:
         # is read as this attempt's delivery, so a resumed worker is killed.
         monkeypatch.setattr(
             dispatch_module, "_supervisor_manifest_baseline_ns", lambda *a, **k: 0
+        )
+    elif NEGATIVE_CONTROL == "prefer-pointer-baseline":
+        # Prefer the pointer's recorded generation over the attempt start,
+        # exactly as before the attempt clock became the floor. A pointer still
+        # carrying its dispatch-time baseline predates the earlier attempt's
+        # manifest, so that stale manifest is read as this attempt's delivery
+        # and the resumed worker is ended on its first poll.
+
+        def _prefer_pointer(
+            run_id: str, spec: Mapping[str, Any], **_kwargs: Any
+        ) -> int:
+            try:
+                record: Mapping[str, Any] = dispatch_module.read_pointer(run_id)
+            except dispatch_module.CrewError:
+                record = {}
+            value = record.get("manifest_baseline_mtime_ns")
+            if value is not None:
+                try:
+                    return int(value)
+                except (TypeError, ValueError):
+                    pass
+            started = str(
+                spec.get("attempt_started_at") or record.get("attempt_started_at") or ""
+            )
+            parsed = dispatch_module._iso_stamp_to_ns(started) if started else None
+            return parsed if parsed is not None else 0
+
+        monkeypatch.setattr(
+            dispatch_module, "_supervisor_manifest_baseline_ns", _prefer_pointer
         )
     elif NEGATIVE_CONTROL == "keep-deadline":
         # Leave the deadline set when the manifest turns non-done: every
@@ -496,6 +526,135 @@ def test_a_manifest_left_by_a_previous_attempt_is_not_this_attempts_delivery(
             _kill(pid)
 
     _drive(fixture["spec_path"], driver)
+
+    assert failures == [], failures
+    assert observed == ["kept", "ended"]
+
+
+def test_a_resumed_worker_is_not_ended_by_its_earlier_attempts_baseline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A resumed run is not ended on a baseline that predates its manifest.
+
+    A resume launches its supervisor through the same path a dispatch does, and
+    the supervisor reads the run's pointer for the generation this attempt may
+    claim. There is a window before the resume rewrites the pointer in which it
+    still carries the dispatch-time baseline — written before the earlier
+    attempt's manifest existed. Reading that alone places the baseline before
+    the earlier attempt's terminal manifest, so the stale manifest counts as
+    this attempt's delivery and the new worker is ended on its first poll. Only
+    a manifest written after this attempt began may count, so the delivery
+    baseline is floored at the attempt's own start.
+    """
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    monkeypatch.setenv(dispatch_module.TERMINAL_MANIFEST_GRACE_ENV, str(GRACE_SECONDS))
+    _control(monkeypatch)
+
+    stale_ns = time.time_ns() - 60 * 1_000_000_000
+    trigger = tmp_path / "rewrite"
+    fixture = _stub_run(
+        tmp_path,
+        status="complete",
+        stub=STUB_RESUME,
+        prewrite_mtime_ns=stale_ns,
+        # The pointer still carries the dispatch-time baseline, which predates
+        # the earlier attempt's manifest: the race the resumed launch runs
+        # against before it rewrites the pointer.
+        baseline_ns=0,
+        extra_env={"RECKON_REWRITE_TRIGGER": str(trigger)},
+    )
+    run_id = fixture["run_id"]
+    worktree = tmp_path / "worktree"
+
+    # Resume through the launch the resume path uses. supervised_launch builds
+    # the supervisor spec with this attempt's own start; its spawn is captured
+    # so the supervisor can be run in-process where the driver can observe it.
+    plan = _backends.LaunchPlan(
+        backend="alpha",
+        dialect="claude",
+        argv=[sys.executable, "-c", STUB_RESUME],
+        cwd=str(worktree),
+        stdin_text="",
+        environment={
+            "RECKON_STUB_STATUS": "complete",
+            "RECKON_REWRITE_TRIGGER": str(trigger),
+        },
+        final_message_path=None,
+        resumed_session=None,
+    )
+    captured: dict[str, Path] = {}
+
+    def _capture(spec_path: Path, _run_directory: Path, _run_id: str) -> int:
+        captured["spec_path"] = Path(spec_path)
+        return 0
+
+    monkeypatch.setattr(dispatch_module, "_start_supervisor", _capture)
+    dispatch_module.supervised_launch(
+        plan,
+        run_directory=fixture["directory"],
+        repo_root=worktree,
+        worktree=worktree,
+        log_path=fixture["directory"] / "stream.jsonl",
+        stderr_path=fixture["directory"] / "stderr.log",
+        prompt_path=fixture["directory"] / "prompt.txt",
+    )
+
+    # The resumed launch, not a hand-built fixture spec, wrote the spec: its
+    # attempt kind and its start both name this attempt.
+    spec = json.loads(captured["spec_path"].read_text(encoding="utf-8"))
+    assert spec["attempt"] == 2
+    assert spec["attempt_kind"] == "resume"
+    started_ns = dispatch_module._iso_stamp_to_ns(str(spec["attempt_started_at"]))
+    assert started_ns is not None and started_ns > stale_ns
+
+    failures: list[BaseException] = []
+    observed: list[str] = []
+
+    def driver() -> None:
+        pid: int | None = None
+        try:
+            _wait_until(
+                lambda: _worker_pid(run_id) is not None,
+                timeout=15,
+                detail="the stub worker's record",
+            )
+            pid = _worker_pid(run_id)
+            # The stale complete manifest must not end the worker: wait past
+            # the grace and its coarse poll, then confirm it is still running.
+            time.sleep(GRACE_SECONDS + 6)
+            if not _running(pid):
+                failures.append(
+                    AssertionError(
+                        "a baseline that predates this attempt's own start read "
+                        "the earlier attempt's manifest as its delivery; the "
+                        "resumed worker was killed"
+                    )
+                )
+                return
+            observed.append("kept")
+            # Now the worker rewrites the manifest complete; it must end within
+            # the grace measured from that rewrite.
+            trigger.write_text("go", encoding="utf-8")
+            deadline = time.time() + GRACE_SECONDS + SLACK_SECONDS
+            while time.time() < deadline:
+                if not _running(pid):
+                    observed.append("ended")
+                    return
+                time.sleep(0.05)
+            failures.append(
+                AssertionError(
+                    "the resumed worker was not ended within the grace after it "
+                    "rewrote the manifest complete"
+                )
+            )
+        except BaseException as exc:  # noqa: BLE001 - reported to the main thread
+            failures.append(exc)
+        finally:
+            _kill(pid)
+
+    _drive(captured["spec_path"], driver)
 
     assert failures == [], failures
     assert observed == ["kept", "ended"]
