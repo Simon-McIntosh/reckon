@@ -8,9 +8,11 @@ on the way to the refusal destroys the only copy of anything the worker left
 uncommitted — and, with the tree gone, a later review reads the shared
 checkout's HEAD instead of the run's own.
 
-Two refusals are driven here. The first is a promotion refused because a live
-peer claims a path the run accepted; the second drives the same ordering for a
-refusal the base revision reaches after a side effect.
+One refusal is driven here: a promotion refused because a live peer claims a path
+the run accepted. The order at the base revision also reaches one other refusal
+after a pointer write — the suite-delta refusal records itself on the live
+pointer before it raises, pinned by its own tests — and that write is not the
+defect class this guard covers.
 """
 
 from __future__ import annotations
