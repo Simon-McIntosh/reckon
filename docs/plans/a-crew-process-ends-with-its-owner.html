@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="220">
+<meta name="plan-version" content="221">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -1585,6 +1585,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T024146823723-review-of-an-unknown-departure-reads-departed" data-who="reckon-build" data-when="2026-10-02T02:53:13.385Z">
     <div class="r-comment-body"><p>Reviewed r-20261002T021115444941 at base 8652b7e11..head 82ad91ec5 (parsed record, total 94/100): all four departure words are implemented and each is covered by a case; I reproduced the head gate (67 passed, EXIT=0) and the declared negative control (branch-removed tree fails, EXIT=1). One follow-on finding: the change left two comments in recovery.py documenting the superseded three-word contract, which now contradict the code (fit 17).</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T023036394378-a-withdrawn-delivery-clears-the-grace" data-who="reckon-build" data-when="2026-10-02T02:47:19.396Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-withdrawn-delivery-clears-the-grace.html — _reap_worker_on_its_terminal_manifest now clears the grace deadline when the manifest is rewritten to a non-done status (blocked/in-progress), so a worker that withdraws a complete delivery is waited on as before instead of ended on the withdrawn delivery&#x27;s clock; commit b4879d8b3; gate tests/test_a_terminal_worker_exits_within_its_grace.py 6 passed, EXIT=0, the new rewrite-blocked case among them.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
