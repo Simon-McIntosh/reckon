@@ -7,6 +7,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from reckon.resources import resource_scan_scope
+
 from . import client, prompts, snapshot
 from .types import Candidate, PickRequest, Selection
 
@@ -52,10 +54,15 @@ def pick(
     snapshotter: Callable[..., list[Candidate]] = snapshot.candidates,
     caller: Callable[..., dict[str, Any]] = client.ask,
     records: list[dict[str, Any]] | None = None,
+    verdict_inputs: dict[str, Any] | None = None,
 ) -> Selection:
     """Return one auditable selection; an excluded default cannot bypass gates."""
     started = time.perf_counter()
-    options = snapshotter(request, config, repo, records=records)
+    # One docs-tree scan serves every candidate's plan lookup in this pick.
+    with resource_scan_scope():
+        options = snapshotter(
+            request, config, repo, records=records, verdict_inputs=verdict_inputs
+        )
     offered = [candidate for candidate in options if not candidate.reasons]
     excluded = [candidate.as_dict() for candidate in options if candidate.reasons]
     rendered = prompts.render(

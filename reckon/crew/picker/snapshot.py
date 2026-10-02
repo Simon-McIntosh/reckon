@@ -76,7 +76,12 @@ def _lane(backend: dict[str, Any], session: str) -> tuple[Any, Any, dict[str, An
 
 
 def _fit(
-    request: PickRequest, name: str, backend: dict[str, Any], repo: Path
+    request: PickRequest,
+    name: str,
+    backend: dict[str, Any],
+    repo: Path,
+    *,
+    verdict_inputs: dict[str, Any] | None = None,
 ) -> list[str]:
     execution = capability.assess_execution_fit(
         request.node.done_when,
@@ -98,7 +103,10 @@ def _fit(
     )
     context = routing._context_fit_verdict(resolution=resolution, repo=repo)
     competence = routing._competence_verdict(
-        resolution=resolution, project=request.project, repo=repo
+        resolution=resolution,
+        project=request.project,
+        repo=repo,
+        verdict_inputs=verdict_inputs,
     )
     if context and not context["allowed"]:
         reasons.append("context-fit: " + context["reason"])
@@ -142,10 +150,16 @@ def candidates(
     records: list[dict[str, Any]] | None = None,
     availability_cache: dict[tuple[str, str | None], dict[str, Any]] | None = None,
     budget_snapshot: dict[str, Any] | None = None,
+    verdict_inputs: dict[str, Any] | None = None,
 ) -> list[Candidate]:
     """Read a fresh snapshot; never dispatch or change routing configuration."""
     now = datetime.now(UTC)
     rows = ledger.runs(request.project, root=repo) if records is None else records
+    shared = (
+        verdict_inputs
+        if verdict_inputs is not None
+        else routing.shared_verdict_inputs(request.project, repo)
+    )
     view = (
         budget_snapshot
         if budget_snapshot is not None
@@ -193,7 +207,7 @@ def candidates(
             reasons.append("local-lane-no-worker-slots")
         # Already-excluded candidates need no repository census or serving probe.
         if not reasons:
-            reasons.extend(_fit(request, name, backend, repo))
+            reasons.extend(_fit(request, name, backend, repo, verdict_inputs=shared))
         if reasons:
             availability = "not-probed"
         else:
