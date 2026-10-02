@@ -111,18 +111,11 @@ def _fit(
     return reasons
 
 
-def candidates(
-    request: PickRequest,
-    config: dict[str, Any],
-    repo: Path,
-    *,
-    records: list[dict[str, Any]] | None = None,
-    availability_cache: dict[tuple[str, str | None], dict[str, Any]] | None = None,
-) -> list[Candidate]:
-    """Read a fresh snapshot; never dispatch or change routing configuration."""
-    now = datetime.now(UTC)
-    rows = ledger.runs(request.project, root=repo) if records is None else records
-    windows = budget.recorded_windows(request.project, config, root=repo, records=rows)
+def budget_view(
+    project: str, config: dict[str, Any], repo: Path, records: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Compose one dated live budget view using its existing state and pace readers."""
+    windows = budget.recorded_windows(project, config, root=repo, records=records)
     probeable = [
         name
         for name, settings in config.get("backends", {}).items()
@@ -130,14 +123,33 @@ def candidates(
     ]
     # The budget view composes state_for and group_pace, including the account's
     # operative window. Consuming its verdict keeps every clock in one authority.
-    view = budget.preflight(
-        request.project,
+    return budget.preflight(
+        project,
         config,
         root=repo,
         backends=probeable,
         windows=windows,
-        records=rows,
-        now=now,
+        records=records,
+        now=datetime.now(UTC),
+    )
+
+
+def candidates(
+    request: PickRequest,
+    config: dict[str, Any],
+    repo: Path,
+    *,
+    records: list[dict[str, Any]] | None = None,
+    availability_cache: dict[tuple[str, str | None], dict[str, Any]] | None = None,
+    budget_snapshot: dict[str, Any] | None = None,
+) -> list[Candidate]:
+    """Read a fresh snapshot; never dispatch or change routing configuration."""
+    now = datetime.now(UTC)
+    rows = ledger.runs(request.project, root=repo) if records is None else records
+    view = (
+        budget_snapshot
+        if budget_snapshot is not None
+        else budget_view(request.project, config, repo, rows)
     )
     budget_by_backend = {row["backend"]: row for row in view["backends"]}
     group_by_backend = {
@@ -187,8 +199,13 @@ def candidates(
             cache_key = (name, model)
             observation = (availability_cache or {}).get(cache_key)
             if observation is None:
+                serving_backend = {
+                    **config["backends"][name],
+                    "model": model,
+                    "effort": backend.get("effort"),
+                }
                 observation = resumption.probe_lane_availability(
-                    request.project, name, backend, root=repo
+                    request.project, name, serving_backend, root=repo
                 )
                 if availability_cache is not None:
                     availability_cache[cache_key] = observation
@@ -200,7 +217,11 @@ def candidates(
         except _backends.BackendError:
             family = str(backend.get("launch") or name)
         group_allowance = (group_by_backend.get(name) or {}).get("allowance") or {}
-        budget_facts = {} if state.get("expired") else state
+        budget_facts = (
+            state
+            if state.get("headroom") == "known" and not state.get("expired")
+            else {}
+        )
         result.append(
             Candidate(
                 backend=name,

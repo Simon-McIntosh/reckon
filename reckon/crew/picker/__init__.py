@@ -93,7 +93,9 @@ def pick(
             questions = json.loads(
                 prompts.render("questions.jinja", candidates=offered)
             )
-            payload = caller(json.loads(rendered), questions, env_path=repo / ".env")
+            payload = caller(
+                json.loads(rendered), questions, env_path=client.credential_path()
+            )
             choice, confidence, probabilities = _answer(payload, offered)
             selected = next(c for c in offered if c.backend == choice)
             threshold = LOCAL_CONFIDENCE if selected.local else METERED_CONFIDENCE

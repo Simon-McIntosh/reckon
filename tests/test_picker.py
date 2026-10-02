@@ -448,6 +448,7 @@ def test_replay_sorts_by_dispatch_not_promotion(monkeypatch, tmp_path, config):
         for index in (3, 1, 2)
     ]
     monkeypatch.setattr(module.ledger, "runs", lambda *a, **k: rows)
+    monkeypatch.setattr(module.snapshot, "budget_view", lambda *a, **k: {})
     selection = {
         "backend": "local",
         "model": "local-model",
@@ -495,3 +496,34 @@ def test_expired_budget_is_not_rendered_as_current(
     remote = next(c for c in candidates if c.backend == "remote")
     assert remote.utilisation_pct is None
     assert remote.resets_at is None
+
+
+def test_serving_probe_does_not_inherit_task_sandbox(
+    live_facts, monkeypatch, request_node, config, tmp_path
+):
+    config["roles"]["implement"]["sandbox"] = "read-only"
+    config["backends"]["remote"]["sandbox"] = "exec"
+    probe = Mock(return_value={"status": "served"})
+    monkeypatch.setattr(snapshot.resumption, "probe_lane_availability", probe)
+    snapshot.candidates(request_node, config, tmp_path, records=[])
+    remote = next(
+        call.args[2] for call in probe.call_args_list if call.args[1] == "remote"
+    )
+    assert remote["sandbox"] == "exec"
+    assert remote["model"] == "remote-model"
+
+
+def test_budget_snapshot_is_shared_only_when_explicit(
+    live_facts, monkeypatch, request_node, config, tmp_path
+):
+    view = snapshot.budget_view(request_node.project, config, tmp_path, [])
+    reader = Mock(side_effect=AssertionError("Do not re-read a supplied snapshot"))
+    monkeypatch.setattr(snapshot, "budget_view", reader)
+    candidates = snapshot.candidates(
+        request_node, config, tmp_path, records=[], budget_snapshot=view
+    )
+    assert any(
+        candidate.backend == "remote" and not candidate.reasons
+        for candidate in candidates
+    )
+    reader.assert_not_called()

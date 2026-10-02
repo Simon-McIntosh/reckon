@@ -1,6 +1,7 @@
 """Replay recorded dispatch contracts against current lane conditions."""
 
 import statistics
+import time
 from functools import partial
 from pathlib import Path
 from typing import Any
@@ -32,7 +33,14 @@ def replay(
         )
     rows = []
     availability_cache = {}
-    snapshotter = partial(snapshot.candidates, availability_cache=availability_cache)
+    snapshot_started = time.perf_counter()
+    budget_snapshot = snapshot.budget_view(project, config, repo, records)
+    snapshot_latency_ms = (time.perf_counter() - snapshot_started) * 1000
+    snapshotter = partial(
+        snapshot.candidates,
+        availability_cache=availability_cache,
+        budget_snapshot=budget_snapshot,
+    )
     for record in recent:
         definition = record.get("node_definition") or {}
         node = TaskNode(
@@ -69,11 +77,13 @@ def replay(
         )
     return {
         "project": project,
-        "conditions": "live at replay, not historical lane state; serving observations shared within this cohort",
+        "conditions": "live at replay, not historical lane state; one dated budget snapshot and serving observations shared within this cohort",
+        "budget_snapshot": budget_snapshot,
         "serving_observations": list(availability_cache.values()),
         "rows": rows,
         "summary": {
             "count": len(rows),
+            "budget_snapshot_latency_ms": round(snapshot_latency_ms, 3),
             "agreement_rate": sum(
                 row["actual_backend"] == row["selection"]["backend"] for row in rows
             )

@@ -11,6 +11,11 @@ DECISIONS_URL = "https://openrouter.ai/api/alpha/decisions"
 TIMEOUT_SECONDS = 10
 
 
+def credential_path() -> Path:
+    """Resolve the tool's environment file independently of the target project."""
+    return (Path(__file__).resolve().parents[3] / ".env").resolve()
+
+
 def load_key(env_path: Path) -> str:
     value = os.environ.get("OPENROUTER_API_KEY_RECKON", "").strip()
     if value:
