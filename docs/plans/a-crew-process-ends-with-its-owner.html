@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="223">
+<meta name="plan-version" content="224">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -1594,6 +1594,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T025629689856-departure-comments-state-the-departed-rule" data-who="reckon-build" data-when="2026-10-02T03:01:53.437Z">
     <div class="r-comment-body"><p>Rewrote the four departure-fold comments in reckon/crew/recovery.py — the _watch_snapshot project-field comment, the _departure_recorded_run_ids docstring, and the fleet_transitions departure block — so they state the rule _departure_word follows: promoted from a recorded row, discarded from a discard marker, departed when no ledger resolves and no marker exists, withdrawn when a ledger resolves and records no row; comment-only, no behaviour change. Measure: grep receipt shows no comment in recovery.py still says an unresolvable departure withdraws (0 hits for the four superseded phrases); base and head arms of tests/test_a_live_run_never_reads_dead.py + tests/test_a_discard_never_reads_promoted.py each show 17 passed, EXIT=0, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T030242179151-review-of-departure-comments-state-the-departed-rule" data-who="reckon-build" data-when="2026-10-02T03:07:45.381Z">
+    <div class="r-comment-body"><p>Independent review of departure-comments-state-the-departed-rule at head c4ad902d8: 88/100 (goal_fidelity 20, evidence 15, scope_discipline 20, durability 13, fit 20), zero added failures derived from the run&#x27;s own base/head arms; two follow-on findings on the done-when&#x27;s grep receipt (its superseded-phrase list is empty so its &quot;expect no matches&quot; zero is vacuous, and it stamps the base revision d3cedc615 while its body reflects the head).</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
