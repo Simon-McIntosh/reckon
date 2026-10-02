@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="section-record-moves-between-declarations">
+  <meta name="plan-title" content="A declaration write moves the section record with it">
+  <meta name="plan-summary" content="The whole-map form of set section_declarations assigned the declaration map without moving the typed section records beside it, so the write produced a plan that refused to parse; every entry now moves its record through the same lookup the dotted form uses.">
+  <meta name="plan-evidence-for" content="reckon:plan-writes-are-not-fenced">
+  <meta name="plan-verifies" content="reckon:plan-writes-are-not-fenced#s9">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="plan-write,section-records,declarations">
+  <title>A declaration write moves the section record with it — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="section-record-moves-between-declarations" data-reckon="landed" data-when="2026-10-02">
+  <h2>A declaration write moves the section record with it</h2>
+  <p>The fixture is <a href="/reckon/plans/one-typesafe-model-picker">one-typesafe-model-picker</a> at <code>53a72f8c</code>, the revision that refused every edit path to its section 5 before the session opened two further sections as a workaround. The plan shape the setter missed is the declaration <em>map</em> written whole rather than one dotted id: <code>set section_declarations</code> with the full map reached the generic top-level assignment, so the map moved to <code>implementable</code> while the record beside it stayed <code>deferred</code>, and the write landed a file its own parser then refused. The refusal, reproduced on a temporary copy at the base revision, is <code>sections['s5'].status: 'deferred' disagrees with section declaration 'implementable'</code>. The dotted form <code>set section_declarations.s5</code> already moved the record at the base and is kept as the positive control.</p>
+  <p>Every entry of the whole-map form now carries its record through the same lookup the dotted form uses, so one versioned write moves the declaration and the record together, and a second write moves them back. The plan's own reading is the assertion: records <code>s2</code>–<code>s7</code> are compared before and after, and no record other than the declared one moves.</p>
+  <p>Head gate: <code>pytest -n 8 --timeout=300</code> over the six test files that reach the plan-write path at <code>5ee83e3e0</code>, 125 passed, <code>EXIT=0</code>. Base arm, the same files at <code>ca3a120f8</code>, 3 failed / 122 passed, <code>EXIT=1</code> — the three whole-map cases, and no other failure id. The declared mutation (the setter's old record lookup restored on the whole-map branch) fails those same three ids, 3 failed / 2 passed, <code>EXIT=1</code>. This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>
