@@ -115,6 +115,45 @@ def test_a_finding_with_no_severity_key_is_repaired() -> None:
     assert NO_SEVERITY["file"] in node["write_paths"]
 
 
+# A severity the vocabulary does not name — a word written directly into a
+# record, or an empty value — is not a declaration: the reflex now reads it
+# through the shared predicate and repairs it as blocking, rather than filing it
+# as a follow-on that is never answered.
+OUT_OF_VOCABULARY = {
+    "file": "reckon/crew/typo.py",
+    "line": "5",
+    "text": "a severity word outside the vocabulary",
+    "severity": "minor",
+}
+EMPTY_SEVERITY = {
+    "file": "reckon/crew/blank.py",
+    "line": "6",
+    "text": "an empty severity value",
+    "severity": "",
+}
+
+
+@pytest.mark.parametrize("finding", [OUT_OF_VOCABULARY, EMPTY_SEVERITY])
+def test_an_unreadable_severity_blocks_and_is_repaired(
+    finding: dict[str, str],
+) -> None:
+    node = repair.compose_repair_node(_review([finding]))
+
+    assert node is not None
+    assert _expected_id(finding) in node["brief"]
+    assert finding["file"] in node["write_paths"]
+
+
+def test_only_a_declared_follow_on_composes_no_repair() -> None:
+    """Control: the unreadable-severity repair does not sweep a declared follow-on in.
+
+    A lone declared follow-on still composes no repair, so the rule above cannot
+    pass by treating every finding as blocking.
+    """
+    assert repair.compose_repair_node(_review([FOLLOW_ON])) is None
+    assert repair.compose_repair_node(_review([OUT_OF_VOCABULARY])) is not None
+
+
 def test_review_findings_keeps_the_severity_and_blocking_findings_filters() -> None:
     review = _review([BLOCKING, FOLLOW_ON, NO_SEVERITY])
 

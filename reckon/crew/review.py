@@ -114,6 +114,26 @@ REVIEW_ITEMS: tuple[str, ...] = (
 FINDING_SEVERITIES: tuple[str, ...] = ("blocking", "follow-on")
 BLOCKING_FINDING_SEVERITY = "blocking"
 
+
+def declared_severity(finding: Mapping[str, Any]) -> str | None:
+    """Return the severity a stored finding declares, or ``None``.
+
+    The one reader of a stored finding's severity, so the promotion audit, the
+    repair reflex and the parser cannot disagree about which findings carry a
+    judgement. A finding either states one of :data:`FINDING_SEVERITIES` — in
+    its declared spelling, surrounding whitespace trimmed — or it states
+    nothing: an absent key, an empty string and a word outside the vocabulary
+    all mean the same thing here, no declared severity. A value outside the
+    vocabulary is never guessed at, because a defaulted severity is a judgement
+    nobody made.
+    """
+    value = finding.get("severity")
+    if value is None:
+        return None
+    word = str(value).strip()
+    return word if word in FINDING_SEVERITIES else None
+
+
 # ── The plan rubrics ────────────────────────────────────────────────────────
 # A plan review reads a plan's authored content before it is built; a plan
 # design review reads that plan against the codebase it would extend. Each item
@@ -288,25 +308,22 @@ def _as_int(text: str) -> int | None:
         return None
 
 
-_DECLARED_SEVERITIES = frozenset(FINDING_SEVERITIES)
-
-
 def _stated_severity(text: str) -> str | None:
     """Return the declared severity a finding's text states, or ``None``.
 
     A finding states its severity by opening with one of the declared values
     and a colon. The word is matched case-insensitively and recorded in its
-    declared spelling. A word outside the vocabulary states nothing this parser
-    can read, so it stays where the reviewer wrote it — in the text — and no
-    severity is recorded: a guess would put a judgement in the record that
-    nobody made. The text itself is never rewritten, so a finding parses to the
-    same ``file``, ``line`` and ``text`` it parsed to before this slot existed.
+    declared spelling. The vocabulary decision is :func:`declared_severity`'s,
+    so a word outside the vocabulary states nothing this parser can read: it
+    stays where the reviewer wrote it — in the text — and no severity is
+    recorded, since a guess would put a judgement in the record that nobody
+    made. The text itself is never rewritten, so a finding parses to the same
+    ``file``, ``line`` and ``text`` it parsed to before this slot existed.
     """
     word, separator, _ = text.partition(":")
     if not separator:
         return None
-    word = word.strip().lower()
-    return word if word in _DECLARED_SEVERITIES else None
+    return declared_severity({"severity": word.strip().lower()})
 
 
 def parse_review(

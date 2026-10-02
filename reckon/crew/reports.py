@@ -1169,13 +1169,11 @@ def _severity_stated(finding: dict[str, Any]) -> bool:
 
     The store records a severity in its declared spelling, and only then: a
     finding that states none has no key here. A value outside the vocabulary —
-    one written directly into a record rather than parsed from the emitted
-    form, where the store's wordings have no agreement — is not a severity any
-    gate can read, so it is judged as absent rather than as a declaration.
+    is not a severity any gate can read, so it is judged as absent rather than
+    as a declaration. The vocabulary decision is :func:`declared_severity`'s,
+    so this audit cannot disagree with the repair reflex about a finding.
     """
-    return str(finding.get("severity") or "").strip() in frozenset(
-        review_module.FINDING_SEVERITIES
-    )
+    return review_module.declared_severity(finding) is not None
 
 
 def _unmarked_finding_severity_findings(node: TaskNode | None) -> list[str]:
