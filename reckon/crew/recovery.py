@@ -7950,12 +7950,14 @@ def _snapshot_stat_key(
 ) -> str | None:
     """The stat identity of every file a snapshot is a function of.
 
-    The pointer, manifest, stream and exit record the section names, the run
-    directory's own identity — which moves when a stream or a record is created
-    or removed, so a resumed attempt is seen without listing the directory —
-    and the liveness this host can stand behind. Every element is a stat: the
-    key is computed without opening a file, which is what lets an unchanged
-    poll reuse a snapshot for the cost of a few stats rather than a reread.
+    The pointer, manifest, stream and exit record the section names, plus the
+    run directory's own identity — which moves when a stream or a record is
+    created or removed, so a resumed attempt is seen without listing the
+    directory. Every element is a stat: the key is computed without opening a
+    file, which is what lets an unchanged poll reuse a snapshot for the cost of
+    a few stats rather than a reread. Liveness is deliberately not here — it is
+    not a file, so it is read fresh through the shared host-gated reader on the
+    reuse path itself.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id:
@@ -7972,14 +7974,22 @@ def _snapshot_stat_key(
     parts.append(f"dir={_directory_identity(directory)}")
     if stream_path is not None:
         parts.append(f"stream={_file_identity(stream_path)}")
-    # The liveness the snapshot reports is read from the record, never probed
-    # here: the producer consumes the classifier's verdict and does not take a
-    # second reading of the process table. A local process ending writes the
-    # run's exit record, whose stat is already in the key, so the reading moves
-    # with the evidence rather than with an independent probe.
-    parts.append(
-        f"carried-alive={record.get('process_alive')}:{record.get('pid') or ''}"
-    )
+
+    # The promotion ledger row is part of what a verdict is a function of: the
+    # row's appearance while the pointer still exists is what turns a completed
+    # run into a promoted one, and no other input moves with it.
+    project = str(record.get("project") or "")
+    repo = str(record.get("repo") or "")
+    if project and repo:
+        from reckon import ledger as ledger_module
+
+        try:
+            promote = ledger_module.run_path(project, run_id, repo)
+        except (OSError, ValueError):
+            promote = None
+        parts.append(
+            f"promote={_file_identity(promote) if promote is not None else 'absent'}"
+        )
     return "|".join(parts)
 
 
@@ -8000,6 +8010,29 @@ def _remember_snapshot(run_id: str, key: str, snapshot: dict[str, Any]) -> None:
         cache.pop(next(iter(cache)))
 
 
+def _fresh_liveness(pointer: Mapping[str, Any]) -> tuple[Any, Any, Any]:
+    """The process readings a snapshot reports, taken fresh from the process table.
+
+    The same host-gated reading classify_pointer composes: liveness through
+    ``local_liveness``, and — only where this host issued the pid — whether
+    anything still runs beneath the worker. A signal-0 probe, not a storage
+    read, so a poll over a run whose files have not moved takes it rather than
+    trusting the reading the previous poll happened to observe.
+    """
+    alive, proven = local_liveness(pointer)
+    descendant: Any = None
+    if proven and alive is True:
+        worker_pid = (
+            _worker_record_pid(pointer)
+            if _worker_record_liveness(pointer) is True
+            else None
+        )
+        if worker_pid is None:
+            worker_pid = _int_or_none(pointer.get("pid"))
+        descendant = _live_descendant(worker_pid) if worker_pid is not None else None
+    return (alive, proven, descendant)
+
+
 def _refresh_snapshot(
     snapshot: Mapping[str, Any], *, moment: float
 ) -> dict[str, Any]:
@@ -8008,9 +8041,10 @@ def _refresh_snapshot(
     Everything a snapshot carries was read from files that have not moved, so
     only the silence — the one reading that grows with the clock — is
     recomputed, from the stream instant and the attempt clock already recorded
-    on the snapshot. The state and detail are then re-derived through the same
-    helper the full recompute uses, so a reused snapshot can never disagree
-    with one classified afresh at the same moment.
+    on the snapshot and the moment this poll reports. The state and detail are
+    then re-derived through the same helper the full recompute uses, so a
+    reused snapshot can never disagree with one classified afresh at the same
+    moment.
     """
     refreshed = dict(snapshot)
     stream_seconds = snapshot.get("stall_stream_seconds")
@@ -8105,6 +8139,10 @@ def _compute_watch_snapshot(
         "classification": row["classification"],
         "process_alive": row["process_alive"],
         "liveness_proven": row["liveness_proven"],
+        # The descendant reading the stall window is widened by, carried so a
+        # producer that reuses a snapshot can compare the reading it was built
+        # from with a fresh one and drop the entry when the child ends.
+        "process_descendant_alive": row.get("process_descendant_alive"),
         "recovery_classification": verdict["recovery_classification"],
         "recovery": verdict["recovery"],
         "lifting_condition": verdict.get("lifting_condition"),
@@ -8175,7 +8213,18 @@ def _watch_snapshot(
         pointer, stall_seconds=stall_seconds, stream_path=stream_path
     )
     if run_id and served is not None and key is not None and served[0] == key:
-        return _refresh_snapshot(served[1], moment=moment)
+        stored = served[1]
+        # A snapshot is reused only while the process reading it was built from
+        # still holds. Liveness is not a file: a worker can die, or a child it
+        # was waiting on can end, with every file untouched, and the row must
+        # change on the poll that observes it. The probe is taken every poll,
+        # through the same host-gated reader classify_pointer uses.
+        if _fresh_liveness(pointer) == (
+            stored.get("process_alive"),
+            stored.get("liveness_proven"),
+            stored.get("process_descendant_alive"),
+        ):
+            return _refresh_snapshot(stored, moment=moment)
     snapshot = _compute_watch_snapshot(
         pointer, moment=moment, stall_seconds=stall_seconds
     )
