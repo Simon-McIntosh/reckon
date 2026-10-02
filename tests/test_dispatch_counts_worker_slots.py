@@ -265,6 +265,43 @@ def test_a_stated_window_is_trusted_as_the_router_publishes_it() -> None:
     assert decision["held"] is False
 
 
+def test_a_nonpositive_window_is_read_as_no_history() -> None:
+    """A window of zero or below is no history: the slot figures are not counted.
+
+    The router reports its window from its first reading, so an
+    ``observed_seconds`` of zero states that no window has been averaged rather
+    than an empty history that licenses the figure, and a negative figure is
+    not a window at all. Both are read exactly as a missing window is: the slot
+    figures are not counted and the allowance falls back to headroom.
+    """
+    no_window = _lane_document(
+        admission=_admission(
+            {
+                lane_document.ADMISSION_WORKER_SLOTS_KEY: GLOBAL_SLOTS,
+                lane_document.ADMISSION_NEW_SESSION_WORKER_SLOTS_KEY: NEW_SESSION_SLOTS,
+                lane_document.ADMISSION_SESSIONS_KEY: {
+                    SESSION: {
+                        lane_document.SESSION_LIVE_RUNS_KEY: 5,
+                        lane_document.SESSION_WORKER_SLOTS_KEY: PER_SESSION_SLOTS,
+                    }
+                },
+                "headroom": 2,
+                "verdict": "open",
+            }
+        )
+    )
+
+    for observed in (0, 0.0, -1):
+        document = copy.deepcopy(no_window)
+        document["admission"][lane_document.ADMISSION_OBSERVED_SECONDS_KEY] = observed
+
+        decision = _allowance(document)
+
+        assert decision == _allowance(no_window), observed
+        assert decision["allowance"] == 2, observed
+        assert decision["held"] is False, observed
+
+
 def test_an_unreadable_allowance_never_holds_a_dispatch() -> None:
     """Absence of a signal is not exhaustion: no figure holds nothing."""
     document = _lane_document(headroom=12)
@@ -333,7 +370,9 @@ def test_a_zero_allowance_holds_a_real_dispatch(
     )
     config = copy.deepcopy(backend_tests.CONFIG)
     config["backends"]["beta"]["lane_document"] = str(lane_path)
-    monkeypatch.setattr(cli_module, "_resolved_flight", lambda *_args, **_kwargs: config)
+    monkeypatch.setattr(
+        cli_module, "_resolved_flight", lambda *_args, **_kwargs: config
+    )
     monkeypatch.setattr(
         cli_module, "_model_availability_refusal", lambda *_args, **_kwargs: None
     )
