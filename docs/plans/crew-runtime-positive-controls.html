@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="190">
+<meta name="plan-version" content="191">
 </head>
 <body>
   <main class="plan-doc">
@@ -1599,6 +1599,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-crpc-s32-second-instance" data-who="s22-coord" data-when="2026-10-02">
     <div class="r-comment-body"><p>A second instance, reported by imas-ambix-cb. That producer (pid 2036256) completed a reload at 19:30:30Z, logging <em>started its reload; awaiting replacement</em> and then <em>completed its reload; publishing continues</em>, with the seat at the new code stamp under the same pid. The follower Monitor that printed the reload notice was killed at its 30-minute expiry at 19:38:33Z. By 20:22Z pid 2036256 and its wrapper 2036249 were gone, with no further log line, and the seat still named the dead pid. So in both instances a reload completes and the producer then dies silently some time after a follower that saw the reload has ended. An inherited pipe to that follower is ruled out for the current reckon producer (pid 3801835). Its stdin is /dev/null, its stdout and stderr go to its service log, it holds no pipes, and its detached wrapper (pid 3801727) has stdio on /dev/null.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-crpc-s32-counterexample" data-who="s22-coord" data-when="2026-10-02">
+    <div class="r-comment-body"><p>A counterexample, reported by imas-ambix-cb. The imas-ambix producer pid 3838423, started at 20:23:09Z, reloaded at about 20:30Z and logged <em>completed its reload; publishing continues</em>. Its follower expired at 20:53:3xZ, and the producer was alive at every one-minute check from 20:53:38Z to 20:58:49Z. So a follower ending after a completed reload is not sufficient. In the 19:30Z death the follower ended 8 minutes after the reload; here it ended 23 minutes after. Either the window is short, or something else differs, such as which follower was attached at reload time or whether a delivery was in flight. The root-cause node should test the hypothesis against this case as well as the two deaths.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
