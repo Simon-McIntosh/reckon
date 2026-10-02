@@ -14,7 +14,7 @@ from typing import Any
 
 import pytest
 
-from reckon.crew import promotion, runs
+from reckon.crew import promotion, recovery, runs
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "fleet-read-project"
@@ -69,6 +69,7 @@ def _install(
         [
             ("r-working", "alpha", None),
             ("r-handoff", "beta", {"kind": "handed-off"}),
+            ("r-still", "gamma", {"kind": "still-working"}),
             ("r-blocked", "alpha", None),
         ],
     ],
@@ -128,3 +129,40 @@ def test_the_bounded_reading_does_not_run_the_closure_drain(
     assert reading["unreconciled_runs"] == 1
     assert reading["live_runs"] == len(fleet)
     assert invoked == []
+
+
+def test_a_still_working_disposition_reads_against_its_current_classification(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    # ``closure_disposition_valid`` returns True for ``still-working`` only when
+    # the pointer's current classification is still ``running`` — the one branch
+    # where the excusing verdict turns on a re-derived classification. An
+    # in-harness pointer with no manifest yet classifies as running, so this
+    # fleet exercises its True side; a bounded reading that dropped the
+    # classification would leave the bare equivalence test green, so the case is
+    # asserted directly here.
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    _install(
+        monkeypatch,
+        tmp_path,
+        [
+            _pointer(
+                "r-still",
+                repository,
+                backend="alpha",
+                disposition={"kind": "still-working"},
+            )
+        ],
+    )
+
+    pointers = runs.list_live(project=PROJECT)
+    assert len(pointers) == 1
+    assert recovery.classify_pointer(pointers[0])["classification"] == "running"
+
+    expected = runs.drain(PROJECT)["unreconciled_runs"]
+    reading = promotion._fleet_state_reading(PROJECT)
+
+    assert expected == 0
+    assert reading["unreconciled_runs"] == expected == 0
+    assert reading["live_runs"] == 1
