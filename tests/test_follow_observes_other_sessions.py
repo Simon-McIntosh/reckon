@@ -66,8 +66,45 @@ def _deliver(home: Path, run_id: str, status: str) -> None:
     manifest.write_text(f"node: n\nstatus: {status}\ncommits: HEAD\nblockers: none\n")
 
 
-def _follow(project: str, *, settle: float = 0.15, **kwargs) -> list[dict]:
-    """Collect what a follower delivers, then stop it as a session would."""
+def _any_event(received: list[dict]) -> bool:
+    """The default collector condition: at least one event has arrived."""
+    return bool(received)
+
+
+def _hold_the_window(_received: list[dict]) -> bool:
+    """A negative-continuity predicate: the caller asserts an absence.
+
+    A case whose claim is that nothing extra arrives — a peer session's run
+    must not reach the follower, an own row must not be repeated — has no
+    positive event to wait on, so the read must cover the whole window in
+    which a stray row would appear instead of ending on the first event. The
+    delay is the observation, so it stays a fixed window.
+    """
+    return False
+
+
+def _collect_until(received: list[dict], until, *, bound: float) -> None:
+    """Wait for the expected receipts, bounded, instead of a fixed settle.
+
+    The bound is the window the former sleep always spent; the wait ends as
+    soon as ``until`` holds, so a healthy host pays the delivery latency
+    rather than the whole window, while a follower that delivers nothing still
+    returns to its caller's assertion instead of hanging.
+    """
+    deadline = time.monotonic() + bound
+    while time.monotonic() < deadline and not until(received):
+        time.sleep(0.005)
+
+
+def _follow(
+    project: str, *, settle: float = 0.15, until=_any_event, **kwargs
+) -> list[dict]:
+    """Collect what a follower delivers, then stop it as a session would.
+
+    The read stops on the caller's condition (``until``), bounded by
+    ``settle``, rather than on a fixed delay; a caller that needs more than
+    one event, or that asserts an absence, names its own condition.
+    """
     received: list[dict] = []
     stop = threading.Event()
 
@@ -81,7 +118,7 @@ def _follow(project: str, *, settle: float = 0.15, **kwargs) -> list[dict]:
 
     thread = threading.Thread(target=reader, daemon=True)
     thread.start()
-    time.sleep(settle)
+    _collect_until(received, until, bound=settle)
     stop.set()
     thread.join(timeout=2)
     assert not thread.is_alive(), "a stopped follower must return"
@@ -140,7 +177,12 @@ def test_a_follower_with_an_owning_and_two_observed_sessions_delivers_all_three(
         _deliver(home, "r-old-b", "blocked")
         crew.list_live(project="proj")
 
-        events = _follow("proj", session="mine", observed=("old-a", "old-b"))
+        events = _follow(
+            "proj",
+            session="mine",
+            observed=("old-a", "old-b"),
+            until=lambda received: len(received) >= 3,
+        )
 
     nodes = {event["node"] for event in events}
     assert nodes == {"my-node", "old-a-node", "old-b-node"}, (
@@ -166,7 +208,6 @@ def test_an_observed_session_row_achieves_the_pane_without_falling_out(home) -> 
     thread = threading.Thread(target=reader, daemon=True)
     thread.start()
     try:
-        time.sleep(0.05)
         _write_pointer(home, "r-owned", "owned-node", session="mine", phase="working")
         with runs._project_watch_claim("proj", "1h"):
             crew.list_live(project="proj")
@@ -242,7 +283,9 @@ def test_a_follower_without_observed_sessions_behaves_exactly_as_today(home) -> 
         _deliver(home, "r-mine", "complete")
         _deliver(home, "r-peer", "blocked")
         crew.list_live(project="proj")
-        events = _follow("proj", session="mine")
+        # A negative-continuity read: the assertion below is that the peer's
+        # run does not reach this follower, so the read covers the whole window.
+        events = _follow("proj", session="mine", until=_hold_the_window)
 
     nodes = {event["node"] for event in events}
     assert nodes == {"my-node"}, "a peer session's run must not reach this follower"
@@ -293,7 +336,12 @@ def test_rows_from_an_observed_session_carry_the_foreign_marker_and_own_rows_do_
 
     with runs._project_watch_claim("proj", "1h"):
         crew.list_live(project="proj")
-        events = _follow("proj", session="mine", observed=("old-a",))
+        events = _follow(
+            "proj",
+            session="mine",
+            observed=("old-a",),
+            until=lambda received: len(received) >= 2,
+        )
 
     by_node = {event["node"]: event for event in events}
     own_event = cli._follow_render_event(
@@ -332,7 +380,11 @@ def test_an_observed_session_named_identically_to_the_owning_session_adds_no_dup
 
     with runs._project_watch_claim("proj", "1h"):
         crew.list_live(project="proj")
-        received = _follow("proj", session="mine", observed=("mine",))
+        # A negative-continuity read: the assertion below is that the own row
+        # is delivered exactly once, so the read covers the whole window.
+        received = _follow(
+            "proj", session="mine", observed=("mine",), until=_hold_the_window
+        )
 
     rows = [event for event in received if event["node"] == "my-node"]
     assert len(rows) == 1, "the owning session's row is delivered exactly once"
@@ -385,7 +437,12 @@ def test_the_real_configuration_home_gains_no_file(home) -> None:
         crew.list_live(project="proj")
         with runs.follower_claim("proj", "mine", delivery="stream") as (held, _r):
             assert held is True
-            events = _follow("proj", session="mine", observed=("old-a",))
+            events = _follow(
+                "proj",
+                session="mine",
+                observed=("old-a",),
+                until=lambda received: len(received) >= 2,
+            )
 
     assert {event["node"] for event in events} == {"my-node", "old-node"}
 

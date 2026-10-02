@@ -66,6 +66,9 @@ def test_the_installed_fastmcp_runs_a_synchronous_tool_on_its_event_loop():
     def probe(label: str) -> str:
         order.append(("enter", label))
         if label == "blocked":
+            # The delay is the subject of this measure: the synchronous body
+            # must hold the event loop long enough that a loop-free SDK would
+            # interleave the concurrent call under it. It stays a fixed window.
             time.sleep(0.4)
         order.append(("exit", label))
         return f"{label}-done"
@@ -76,7 +79,12 @@ def test_the_installed_fastmcp_runs_a_synchronous_tool_on_its_event_loop():
         blocked = asyncio.create_task(
             server._tool_manager.call_tool("probe", {"label": "blocked"})
         )
-        await asyncio.sleep(0.05)
+        # Wait, bounded, for the blocked call to have entered. A loop-free SDK
+        # lets this poll observe the entry while the block is still running; a
+        # blocking one holds the loop, so the poll resumes after the block and
+        # finds the entry it was waiting on. Either way the fixed 0.05 s window
+        # is no longer spent when the fact arrives sooner.
+        await _wait_until(lambda: ("enter", "blocked") in order, bound=0.05)
         await server._tool_manager.call_tool("probe", {"label": "free"})
         await blocked
 
@@ -96,12 +104,36 @@ def test_the_installed_fastmcp_runs_a_synchronous_tool_on_its_event_loop():
 # ── The runner: a blocked read is bounded, a concurrent read is not ────────
 
 
-def _blocking_reader(path, release: threading.Event):
+def _blocking_reader(
+    path, release: threading.Event, started: threading.Event | None = None
+):
     def read() -> str:
+        if started is not None:
+            started.set()
         release.wait(BLOCK_BOUND)
         return path.read_text(encoding="utf-8")
 
     return read
+
+
+async def _wait_until(predicate, *, bound: float) -> None:
+    """Wait for a synchronous predicate, bounded, yielding to the event loop.
+
+    The former fixed sleeps stood in for a condition the test then relies on —
+    a call has entered, a landing stat has been attempted. Poll for the
+    condition and stop as soon as it holds, bounded by the window the sleep
+    always spent, so a healthy run pays the condition's latency rather than
+    the whole window. ``await asyncio.sleep`` yields, so a coroutine waiting
+    on a fact a blocked worker thread or a loop-blocking call produces still
+    gets to observe it once that call returns.
+    """
+    deadline = time.monotonic() + bound
+    while True:
+        if predicate():
+            return
+        if time.monotonic() >= deadline:
+            return
+        await asyncio.sleep(0.005)
 
 
 def test_a_blocked_read_returns_storage_slow_within_its_deadline(tmp_path, monkeypatch):
@@ -139,6 +171,7 @@ def test_a_concurrent_read_of_another_path_answers_normally(tmp_path, monkeypatc
     quick.write_text("quick-content", encoding="utf-8")
     monkeypatch.setenv(DEADLINE_ENV, "0.3")
     release = threading.Event()
+    started_read = threading.Event()
 
     async def scenario():
         blocked_at = time.monotonic()
@@ -150,13 +183,15 @@ def test_a_concurrent_read_of_another_path_answers_normally(tmp_path, monkeypatc
         entered: list[float] = []
         blocked = asyncio.create_task(
             mcp_module._run_under_deadline(
-                _blocking_reader(slow, release),
+                _blocking_reader(slow, release, started_read),
                 kind="read",
                 label="read_plan",
                 path=str(slow),
             )
         )
-        await asyncio.sleep(0.05)
+        # Wait, bounded, for the blocked read to have started on its worker
+        # thread rather than spending a fixed 0.05 s window.
+        await _wait_until(started_read.is_set, bound=0.05)
         started = time.monotonic()
         answered = await mcp_module._run_under_deadline(
             quick_body, kind="read", label="read_plan", path=str(quick)
@@ -188,6 +223,9 @@ def test_a_write_that_lands_after_its_deadline_reports_landed(tmp_path, monkeypa
     monkeypatch.setenv(LANDING_GRACE_ENV, "1.5")
 
     def write_late() -> dict[str, object]:
+        # The delay is the subject of this measure: the write must land after
+        # its 0.2 s deadline but within the 1.5 s grace window, so that the
+        # landing is reported from the write that timed out. It stays fixed.
         time.sleep(0.45)
         target.write_text("landed", encoding="utf-8")
         return {"ok": True}
@@ -277,9 +315,10 @@ def test_a_stalled_landing_stat_still_lets_a_concurrent_read_answer(
                 stalled_write, kind="write", label="edit_plan", path=str(slow)
             )
         )
-        # Wait past the write's deadline, so the landing check is the thing
-        # holding the loop at the moment the read is dispatched.
-        await asyncio.sleep(0.25)
+        # Wait, bounded, for the landing stat to have been attempted — that is
+        # the moment the write has timed out and the landing check is the thing
+        # holding the loop — rather than spending a fixed 0.25 s window.
+        await _wait_until(lambda: len(seen) > 1, bound=0.25)
         answered = await mcp_module._run_under_deadline(
             quick_body, kind="read", label="read_plan", path=str(quick)
         )
