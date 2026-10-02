@@ -190,6 +190,54 @@ def test_unneeded_plan_lookup_never_scans_resources(
     scanned.assert_not_called()
 
 
+def test_a_planless_pick_never_scans_the_docs_tree(live_facts, monkeypatch, tmp_path):
+    """A request naming no plan and no hours resolves before touching the tree.
+
+    The estimate is asked for once per candidate, so the scan assertion is not
+    vacuous: each plan-less estimate returns ``unavailable`` at the guard in
+    ``routing._estimated_hours`` rather than resolving a resource, which
+    ``resolve_resource`` would turn into a full resource scan.
+    """
+    routing = importlib.import_module("reckon.crew.routing")
+    request = PickRequest(
+        "example",
+        TaskNode(
+            id="planless",
+            goal="Pick a backend for a node that names no plan",
+            plan="",
+            role="implement",
+            spec_level="guided",
+            done_when="A backend is chosen without reading a plan",
+            estimated_hours=None,
+        ),
+        capability={"class": "general", "requirements": {"verification": "strict"}},
+        estimated_context=32000,
+        comment="",
+    )
+    scanned = Mock(side_effect=AssertionError("resource scan is unnecessary"))
+    monkeypatch.setattr(resources, "iter_resources", scanned)
+    seen_plans: list[str] = []
+    real_estimate = routing._estimated_hours
+
+    def estimate(repo, project, node):
+        seen_plans.append(node.plan)
+        return real_estimate(repo, project, node)
+
+    monkeypatch.setattr(routing, "_estimated_hours", estimate)
+
+    selection = pick(
+        request,
+        nine_candidate_config(),
+        repo=tmp_path,
+        records=[],
+        caller=lambda *a, **k: answer("remote-0"),
+    )
+
+    assert seen_plans and all(plan == "" for plan in seen_plans)
+    scanned.assert_not_called()
+    assert len(selection.offered) == 9
+
+
 def test_dispatch_picker_reuses_its_budget_and_ledger_inputs(
     live_facts, monkeypatch, request_node, tmp_path
 ):
