@@ -1103,6 +1103,90 @@ def _parse_ready_node(statement: str) -> dict[str, Any]:
     return {"name": name.strip(), "group": group.strip(), "score": value}
 
 
+@crew.command(name="pick")
+@click.option(
+    "--project", default=None, help="Project whose flight and ledger are read."
+)
+@click.option("--role", default=None)
+@click.option(
+    "--spec-level", type=click.Choice(["exact", "guided", "open"]), default=None
+)
+@click.option("--goal", default=None)
+@click.option("--done-when", default=None)
+@click.option("--comment", default="", help="Orchestrator context, passed verbatim.")
+@click.option("--estimated-context", type=click.IntRange(min=0), default=0)
+@click.option(
+    "--capability", default="{}", help="Capability requirements as a JSON object."
+)
+@click.option("--session", default="")
+@click.option("--replay", "replay_count", type=click.IntRange(min=1), default=None)
+@click.option("--checkout-path", type=click.Path(path_type=Path), default=None)
+@click.option("--pretty", is_flag=True)
+def crew_pick(
+    project,
+    role,
+    spec_level,
+    goal,
+    done_when,
+    comment,
+    estimated_context,
+    capability,
+    session,
+    replay_count,
+    checkout_path,
+    pretty,
+):
+    """Print a typed backend selection or replay; dispatch no worker."""
+    from reckon.crew.node import TaskNode
+    from reckon.crew.picker import PickRequest, pick
+    from reckon.crew.picker.replay import replay
+
+    if not project:
+        from bs4 import BeautifulSoup
+
+        index = (checkout_path or Path.cwd()) / "docs" / "index.html"
+        metadata = BeautifulSoup(index.read_text(), "html.parser").find(
+            "meta", attrs={"name": "docs-project"}
+        )
+        if metadata is None or not metadata.get("content"):
+            raise click.ClickException(
+                "pass --project: docs/index.html declares no docs-project"
+            )
+        project = str(metadata["content"])
+    _, flight_module = _crew_modules()
+    config = _dispatch_resolved_flight(flight_module, project, checkout_path, ())
+    repo = (checkout_path or Path.cwd()).resolve()
+    try:
+        if replay_count:
+            payload = replay(project, replay_count, config, repo=repo)
+        else:
+            if any(value is None for value in (role, spec_level, goal, done_when)):
+                raise click.ClickException(
+                    "pick requires --role, --spec-level, --goal and --done-when"
+                )
+            requirements = json.loads(capability)
+            if not isinstance(requirements, dict):
+                raise click.ClickException("--capability must be a JSON object")
+            node = TaskNode(
+                id="pick",
+                plan="",
+                role=role,
+                spec_level=spec_level,
+                goal=goal,
+                done_when=done_when,
+            )
+            payload = pick(
+                PickRequest(
+                    project, node, requirements, estimated_context, comment, session
+                ),
+                config,
+                repo=repo,
+            ).as_dict()
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit(payload, pretty)
+
+
 @crew.command(name="preflight")
 @click.option("--project", required=True, help="Project whose run records are read.")
 @click.option(
