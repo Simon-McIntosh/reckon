@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+</head>
+<body>
+<article class="r-note" data-node="codex-pacing-reads-live-window" data-reckon="landed" data-when="2026-10-02">
+  <h2>Group pacing reads the live account window</h2>
+  <p>The account surface is now read beside the recorded receipts and the freshest dated
+  reading of the two speaks for the group, so a dispatch is paced by the window the provider
+  reports now rather than by a receipt from a window that has already reset. Previously a
+  rolled-over weekly receipt paced the whole window (<code>derived 1.0</code>) and admitted an
+  implement dispatch; the fresh account-surface reading paces by its own elapsed fraction.</p>
+
+  <h3>What the change does</h3>
+  <ul>
+    <li>The dispatch pace record (<code>budget.pace_row</code>) merges the account surface with
+    the recorded evidence, keeping the newest dated reading.</li>
+    <li>Any positive provider-reported window length is retained on the account-surface and
+    rollout paths; a 1,440-minute window is no longer dropped and paced by its own elapsed
+    fraction.</li>
+    <li>The bar is drawn from a primary-only account's operative window rather than reading
+    unknown, so an account with no five-hour sibling still fills the bar.</li>
+    <li>A role-aware <code>budget.pace_hold</code> withholds non-bookend dispatch while the
+    window stands above its elapsed allowance, naming utilisation, allowance and reset; the
+    review and verify roles the reserve protects are admitted.</li>
+  </ul>
+
+  <h3>Measure</h3>
+  <p>At the fixture reading (10,080-minute primary window at 3% used, 0.84% elapsed,
+  <code>pace_multiple 1.1</code>) the group derives a <code>0.924%</code> allowance at
+  <code>3.57&times;</code> burn, the bar fills at <code>0.03</code>, an implement dispatch is
+  held and a review dispatch admitted. Two days into a 43,200-minute fixture the allowance is
+  <code>7.33%</code>; a 1,440-minute fixture at 25% elapsed allows
+  <code>0.275</code> rather than being dropped.</p>
+  <p>The gate (tests/test_budget_window_length.py, tests/test_budget.py, tests/test_reserve.py,
+  tests/test_pace.py, tests/test_preflight_pace.py) is 152 passed, exit 0, at commit
+  <code>43ab5d69</code>. The three new cases fail at base <code>f8cb9464d</code> (3 failed,
+  3 passed). The declared negative control — pace_row ignoring the account surface — leaves
+  test (1) the only failure (<code>EXIT=1</code>).</p>
+
+  <h3>Live read</h3>
+  <p>The live <code>crew preflight</code> on this node could not reach the codex account
+  surface: <code>--role implement</code> resolves to the <code>clive</code> backend, and
+  <code>--backend codex-terra</code> returned source <code>ledger</code> with no account-surface
+  reading (the probe was unknown from this compute node). The codex-sub group therefore read its
+  recorded receipt (<code>window 10080, util 0.04, derived 1.0</code>) — the exact stale-receipt
+  behaviour this node's tests pin against the account surface, which is what the code path draws
+  from when the surface answers. Quoted from
+  <code>preflight-backend.log</code>.</p>
+
+  <h3>Commits</h3>
+  <p><code>43ab5d69</code> — implementation and tests. Logs under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T120549875121-codex-pacing-reads-live-window/</code>.</p>
+</article>
+</body>
+</html>
