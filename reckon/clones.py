@@ -44,11 +44,27 @@ DEFINITIONS = (*FUNCTIONS, ast.ClassDef)
 # last used. Because every content a file ever had keeps its entry, and several
 # worktrees at different revisions share one cache root, the cache is pruned to
 # the least recently used once it exceeds a cap derived from the number of
-# corpus files it knows about (see ``_cap_for``); without that bound an entry
-# for every revision ever scanned accumulates and corpus.json grows without
-# limit.
+# corpus files it knows about (see ``_cap_for``).
+#
+# The cap counts a cached path only while a recent scan read it: an entry also
+# records the scan ordinal at which its path was last part of a scan's corpus,
+# and a path no scan has read for ``_STALE_PATH_SCANS`` scans stops counting, so
+# the least-recently-used prune evicts it. Without that expiry a path removed or
+# renamed out of the corpus keeps its own entry in the count, pinning the cap
+# open so neither it nor a superseded revision of a live path is ever evicted,
+# and corpus.json grows with every path ever scanned rather than with the
+# current corpus.
 _CLONE_CACHE_VERSION = 2
 _CORPUS_CACHES: dict[Path, dict[str, Any]] = {}
+
+# How many scans a cached path may go unread before it stops counting toward the
+# cap and becomes eligible for eviction. The span is in scans rather than in
+# seconds so it is exercised without sleeping; it is large enough that the
+# handful of scans between two full scans of one corpus — in which a partial
+# scan reads only a subset — never ages a still-present path out, and small
+# enough that a path removed or renamed out of the corpus is reclaimed within a
+# few scans.
+_STALE_PATH_SCANS = 5
 
 
 def _digest(value: str) -> str:
@@ -251,11 +267,47 @@ def _entry_path(entry: Any) -> str | None:
     return None
 
 
-def _cached_paths(cache: Mapping[str, Any]) -> set[str]:
-    """The distinct corpus paths the cache currently holds entries for."""
-    return {
-        path for entry in cache.values() if (path := _entry_path(entry)) is not None
-    }
+def _seen_at(entry: Any) -> int:
+    """The scan ordinal at which ``entry``'s path was last part of a scan.
+
+    Zero when the entry records none, which sorts it oldest. Entries written
+    before this module counted scans read as never seen and so age out on the
+    first prune.
+    """
+    if isinstance(entry, Mapping):
+        seen = entry.get("seen")
+        if isinstance(seen, int):
+            return seen
+    return 0
+
+
+def _current_scan(cache: Mapping[str, Any]) -> int:
+    """The ordinal of the scan about to run.
+
+    One greater than the highest ordinal any entry records, so it survives the
+    in-memory cache being cleared and the store re-read: the counter is carried
+    by the entries themselves rather than by a separate field the document
+    would have to version. A path read this scan therefore records a strictly
+    newer ordinal than any path not read, and successive scans advance the
+    ordinal even when every file is a cache hit.
+    """
+    return max((_seen_at(entry) for entry in cache.values()), default=0) + 1
+
+
+def _fresh_cached_paths(cache: Mapping[str, Any], scan: int) -> set[str]:
+    """Paths the cache holds that a scan read within the staleness span.
+
+    A path counts toward the cap only while a recent scan read it. Once no scan
+    has read it for ``_STALE_PATH_SCANS`` scans it stops counting, so the
+    least-recently-used prune evicts its entries and a path removed or renamed
+    out of the corpus does not pin the cap open for ever.
+    """
+    fresh: set[str] = set()
+    for entry in cache.values():
+        path = _entry_path(entry)
+        if path is not None and scan - _seen_at(entry) < _STALE_PATH_SCANS:
+            fresh.add(path)
+    return fresh
 
 
 def _cap_for(known_file_count: int) -> int:
@@ -265,8 +317,8 @@ def _cap_for(known_file_count: int) -> int:
     revision's worth of fingerprints is all a scan can use: an entry is keyed by
     path and content digest, so two revisions of the same file are two entries,
     and every entry beyond the known file count is a revision the current scan
-    did not read. The scan's own paths and the paths already in the cache are
-    counted together, so a scan that reads only part of the corpus does not
+    did not read. The scan's own paths and the cached paths a recent scan read
+    are counted together, so a scan that reads only part of the corpus does not
     shrink the cap to that part and evict the warm entries the next full scan
     would reuse. Deriving the cap from the file count rather than a fixed literal
     keeps it correct as the corpus grows, and holding at most one revision's
@@ -300,7 +352,7 @@ def _evict_to_cap(cache: dict[str, Any], cap: int) -> bool:
 
 
 def _cached_functions(
-    source: str, path: str, cache: dict[str, Any], now: float
+    source: str, path: str, cache: dict[str, Any], now: float, scan: int
 ) -> list[_WindowProvider]:
     """Return ``source``'s functions, reusing the cache for unchanged bytes."""
     key = _cache_key(path, source)
@@ -313,12 +365,18 @@ def _cached_functions(
             except (KeyError, TypeError, ValueError):
                 rebuilt = None
             if rebuilt is not None:
-                cache[key] = {"used": now, "path": path, "functions": functions}
+                cache[key] = {
+                    "used": now,
+                    "path": path,
+                    "seen": scan,
+                    "functions": functions,
+                }
                 return rebuilt
     functions = functions_in(source, path)
     cache[key] = {
         "used": now,
         "path": path,
+        "seen": scan,
         "functions": [_function_record(function) for function in functions],
     }
     return functions
@@ -433,11 +491,14 @@ def clone_matches(
 
     Each cache entry records when it was last used, and the cache is pruned to
     the least recently used once it holds more than one entry per known corpus
-    file — the paths this scan read and the paths the cache already holds — so
+    file — the paths this scan read and the cached paths a recent scan read — so
     the entry a scan just read survives, a partial scan does not shrink the cap
-    to the subset it read, and an entry for a superseded revision is dropped.
-    That bound is what keeps ``corpus.json`` from growing with every revision
-    that shares the cache root.
+    to the subset it read, and an entry for a superseded revision is dropped. A
+    cached path no scan has read for ``_STALE_PATH_SCANS`` scans stops counting
+    toward the cap, so an entry for a path removed or renamed out of the corpus
+    is evicted rather than pinning the cap open for ever. That bound is what
+    keeps ``corpus.json`` from growing with every revision or departed path that
+    shares the cache root.
     """
     prefixes = tuple(corpus_prefixes)
     base_sources = dict(base_sources or {})
@@ -445,6 +506,7 @@ def clone_matches(
     root = _cache_root(cache_root)
     cache = _shared_cache(root)
     now = time.time()
+    scan = _current_scan(cache)
     corpus_paths = [
         path
         for path in head_sources
@@ -465,17 +527,20 @@ def clone_matches(
                     cache[_cache_key(path, source)] = {
                         "used": now,
                         "path": path,
+                        "seen": scan,
                         "functions": [
                             _function_record(function) for function in parsed
                         ],
                     }
                     dirty = True
             else:
-                head_functions.extend(_cached_functions(source, path, cache, now))
+                head_functions.extend(
+                    _cached_functions(source, path, cache, now, scan)
+                )
                 dirty = True
         except (SyntaxError, ValueError):
             continue
-    known_paths = set(corpus_paths) | _cached_paths(cache)
+    known_paths = set(corpus_paths) | _fresh_cached_paths(cache, scan)
     evicted = _evict_to_cap(cache, _cap_for(len(known_paths)))
     if dirty or evicted:
         with contextlib.suppress(OSError):
