@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="281">
+<meta name="plan-version" content="282">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -1457,6 +1457,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261002T111120682093-a-promotion-walks-the-docs-tree-once" data-who="reckon-build" data-when="2026-10-02T12:58:32.360Z">
     <div class="r-comment-body"><p>Reuse the docs-tree scan for an unchanged tree, gated by each resource-bearing HTML file's own stat identity (size, mtime_ns, ctime_ns), so an in-place rewrite of a document's slug or type is re-identified rather than served from the prior scan; a promotion makes 3 fresh scans (one per tree) against 8, and resolve_resource's guarantees hold (duplicate still raises, archived still resolves, added file and in-place rewrite both seen; signature-mutation control fails the in-place case EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T130407321130-resource-identity-reads-the-digest-index" data-who="reckon-build" data-when="2026-10-02T13:55:29.038Z">
+    <div class="r-comment-body"><p>identify_resource&#x27;s metadata read is memoised on the file&#x27;s sha256 content digest instead of its path, so docs trees holding byte-identical content share one parse while changed bytes re-parse; warm promotion profile at head 20.52 s wall, resolve_resource 8 calls 10.95 s and read_state 54 calls 8.81 s beside the 23.53 s / 20.0 s / 104-call baseline; new test 5 passed, negative control red (3 ids), base/head arms zero added failures.</p></div>
 </div>
 </section>
 </main>
