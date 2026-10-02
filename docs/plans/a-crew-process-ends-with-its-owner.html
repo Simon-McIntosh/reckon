@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="261">
+<meta name="plan-version" content="262">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -1330,7 +1330,7 @@
     <div class="r-comment-body"><p>a stopped run's supervisor is now bounded - dispatch.py's reap loop consults the recorded crew-stop and, if the worker has not ended within the stop grace (default 10s, RECKON_WORKER_STOP_GRACE_SECONDS), SIGKILLs it before writing the exit record; the same loop signals a lingering worker only on a done manifest that reads whole and has rested for the quiet period, within main's 600s ceiling; the head arm over the stopped-run, terminal-grace, supervisor-outlives-launcher and worker-signal-reach modules is 22 passed at the merged head, and the test's mutation withholds the escalation so the bounded wait fails.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T100138260846-review-of-a-stopped-run-ends-its-supervisor" data-who="reckon-build" data-when="2026-10-02T10:27:51.549Z">
-    <div class="r-comment-body"><p>Reviewed r-20261002T062658036346-a-stopped-run-ends-its-supervisor at merged head 798f3d107 against base e89a94bde: the stop-grace escalation is present in dispatch.py at head, the node&#x27;s own change is dispatch.py (+67/-1) and the new test module (+305) inside its declared paths, and all four gate arms were independently reproduced in scratch trees (gate 3 passed, base 16 passed, four-module head arm 22 passed, negative control 1 failed/2 passed), giving zero added failures; the repair also closed the prior review&#x27;s after_suite placeholder and its untested production-stop-grace gap. Score 96.</p></div>
+    <div class="r-comment-body"><p>Reviewed r-20261002T062658036346-a-stopped-run-ends-its-supervisor at merged head 798f3d107 against base e89a94bde: the stop-grace escalation is present in dispatch.py at head, the node's own change is dispatch.py (+67/-1) and the new test module (+305) inside its declared paths, and all four gate arms were independently reproduced in scratch trees (gate 3 passed, base 16 passed, four-module head arm 22 passed, negative control 1 failed/2 passed), giving zero added failures; the repair also closed the prior review's after_suite placeholder and its untested production-stop-grace gap. Score 96.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
@@ -1397,6 +1397,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261002T100241202020-review-of-the-clone-scan-reads-only-the-promoted-diff" data-who="reckon-build" data-when="2026-10-02T10:21:25.741Z">
     <div class="r-comment-body"><p>Stored a parsed review of r-20261002T083614262845-the-clone-scan-reads-only-the-promoted-diff at head 6e7c645a (base 57dfae03): total 92/100 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 17), zero added failures from the run's own gate logs, two follow-on findings (the corpus cache is never pruned; head_functions/_index are typed Any/_Function while now holding _CachedFunction) and no blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T100841220627-review-of-a-promotion-reads-only-the-fleet-fields-it-records" data-who="reckon-build" data-when="2026-10-02T10:40:02.391Z">
+    <div class="r-comment-body"><p>review attached to run r-20261002T083717645045-a-promotion-reads-only-the-fleet-fields-it-records at head af59c36403a5f24a8709404c15de1f782a0c9f84 (base 57dfae0345a5d8ecee9377da3706e8b1ea5dee3b): total 92 (goal_fidelity 20, evidence 17, scope_discipline 19, durability 19, fit 17), added_failure_count 0, two follow-on findings</p></div>
 </div>
 </section>
 </main>
