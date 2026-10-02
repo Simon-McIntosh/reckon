@@ -36,13 +36,17 @@ does not test it. Reloading while the owner is alive leaves the parent unchanged
 — ``execve`` does not re-parent — so a replacement that read ``os.getppid()``
 would read the owner either way and the case would pass with the carry removed.
 The owner's *identity* must therefore be read while the parent is something
-other than the owner: the arming stub dies, the follower is adopted by a live
-child subreaper, and only then is it reloaded. Resolved from the carried owner
-the replacement leaves; resolved from the parent it would run on forever.
+other than the owner: the follower is armed with an owner of its own, its arming
+stub dies, it is adopted by a live child subreaper, and only then is it reloaded.
+That armed owner is kept alive until the reload is seen, so the replacement runs
+until the case ends the owner rather than for only as long as its own imports
+take — the reload stays observable however loaded the node is. Resolved from the
+carried owner the replacement leaves when that owner dies; resolved from the
+parent it keeps running with the live subreaper and never leaves.
 
-The gate declares one negative control, executed and logged: restoring the early
-return in ``_check_consumer`` for a non-holder, and making ``acquire()`` record
-``os.getppid()`` again, must fail this file.
+The gate declares one negative control, executed and logged: restoring the
+original read — deriving the follower's owner from ``os.getppid()`` rather than
+the recorded environment — must fail this file.
 """
 
 from __future__ import annotations
@@ -112,18 +116,21 @@ FRESHNESS_SECONDS = 1.0
 SETTLE_SECONDS = FRESHNESS_SECONDS + 0.4
 SIGSTOP = 19
 SIGCONT = 18
-# The replacement image is watched tightly: its command line is what shows the
-# reload, and it lives only as long as its own imports take, so a sample per
-# wait-pass would risk missing it entirely.
+# The replacement image is watched for its command line, which is what shows the
+# reload. The cases that force one keep its owner alive until the reload is seen,
+# so the replacement runs until the case ends that owner rather than for only as
+# long as its own imports take.
 SAMPLE_SECONDS = 0.005
-# From the replacement image becoming live to the process leaving. That window
-# carries the replacement's interpreter and package import cost, which the
-# owner-exit bound above is not about, so it is measured and bounded on its own:
-# 1.193, 1.220 and 1.240 s over three runs, and three seconds is 2.4x the
-# slowest. The failing direction this bound has to catch is unbounded — without
-# the carried owner the replacement reads a live parent and never leaves — so
-# the bound separates a follower that left from one that never will.
-RELOAD_EXIT_WITHIN_SECONDS = 3.0
+# From the armed owner's death to the replacement image leaving. That window
+# carries the replacement's own owner-check cadence and its teardown, which the
+# owner-exit bound above is not about. The failing direction this bound has to
+# catch is unbounded — a replacement that re-derived its owner from the parent
+# reads the live subreaper and never leaves — so the bound only has to separate
+# a follower that left from one that never will, and it is generous rather than
+# tight: a starved process can wait many passes, and the direction it must catch
+# cannot be starved into leaving. Its clock starts when the caller has killed the
+# owner, so the replacement's import cost is not charged against it.
+RELOAD_EXIT_WITHIN_SECONDS = 20.0
 
 # The replacement image is launched with a launcher that inserts its import root
 # on ``sys.path`` before entering the command. That string is absent from the
@@ -177,6 +184,13 @@ if os.environ.get("FOLLOWER_TEST_PASS_LOG"):
 root, out_path, err_path, pid_path = sys.argv[1:5]
 out = open(out_path, "w", encoding="utf-8")
 err = open(err_path, "w", encoding="utf-8")
+# A case that wants the follower's owner to be some process other than this
+# stub — so the stub passes it on rather than the follower deriving its parent.
+_env = None
+_owner = os.environ.get("FOLLOWER_TEST_OWNER")
+if _owner:
+    _env = dict(os.environ)
+    _env["RECKON_FOLLOWER_OWNER"] = _owner
 proc = subprocess.Popen(
     [
         sys.executable,
@@ -193,6 +207,7 @@ proc = subprocess.Popen(
     stdout=out,
     stderr=err,
     cwd=root,
+    env=_env,
 )
 with open(pid_path, "w", encoding="utf-8") as handle:
     handle.write(str(proc.pid))
@@ -294,19 +309,24 @@ def _start_stub(
 
 
 def _start_subreaper_stub(
-    home: Path, workdir: Path, tag: str
+    home: Path, workdir: Path, tag: str, *, owner_env: str | None = None
 ) -> tuple[subprocess.Popen, Path, Path]:
     """Start an owner stub whose own parent outlives it.
 
     Returns the subreaper process, the path its stub's pid lands in, and the
     path the stub's follower's pid lands in. Killing the stub hands the follower
-    to the subreaper rather than to init, which is the state a follower is left
-    in when its arming session dies under a live process that reaps orphans.
+    to the stub's own subreaper parent rather than to init, which is the state a
+    follower is left in when its arming session dies under a live process that
+    reaps orphans. ``owner_env`` makes the stub arm the follower with an explicit
+    owner instead of the parent it derives: a case that needs the follower's
+    owner to outlive the re-parent supplies one whose death it can time.
     """
     stub_pid_path = workdir / f"{tag}.stub.pid"
     pid_path = workdir / f"{tag}.pid"
     environment = _stub_env(home)
     environment["FOLLOWER_TEST_PROJECT"] = PROJECT
+    if owner_env is not None:
+        environment["FOLLOWER_TEST_OWNER"] = owner_env
     process = subprocess.Popen(
         [
             sys.executable,
@@ -361,19 +381,6 @@ def _wait_until_gone(pid: int, *, tag: str) -> None:
             return
         time.sleep(POLL_SECONDS)
     pytest.fail(f"{tag}: the process was still alive after it was killed")
-
-
-def _wait_until_reloaded_then_exited(pid: int, *, tag: str) -> tuple[bool, float]:
-    """Wait for the replacement image, then for the process to leave.
-
-    The reload and the exit are two states of one pid, so each is waited for by
-    the helper that owns it. The clock for the exit starts when the launcher
-    appears, so the replacement's own import cost is not charged against the
-    owner-exit bound. Returns whether the replacement was seen and how long it
-    took to leave after that.
-    """
-    _observe_reload(pid, tag=tag)
-    return True, _wait_until_left_after_reload(pid, tag=tag)
 
 
 def _arm(home: Path, owner: tuple[int, str] | None) -> subprocess.Popen:
@@ -841,23 +848,31 @@ def test_a_reloaded_follower_still_leaves_when_the_original_owner_dies(home) -> 
 def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
     """A follower re-parented to a live process still leaves on its dead owner.
 
-    This is the case that sees the carried owner. The arming stub is killed, so
-    the follower is handed to a live child subreaper — the process a follower is
-    left hanging from whenever its session dies under something that reaps
-    orphans. The follower is held still across that, so nothing has looked at
-    the owner yet, and then its source stamp is advanced and it is resumed.
+    This is the case that sees the carried owner. The follower is armed with an
+    owner that is neither its parent nor its parent's parent — a process this
+    case starts and can end on its own — and the arming stub that is its parent
+    is then killed, so the follower is handed to a live child subreaper: the
+    process a follower is left hanging from whenever its session dies under
+    something that reaps orphans. The follower is held still across that, so
+    nothing has looked at the owner yet, and then its source stamp is advanced
+    and it is resumed.
 
     On its first pass after resuming it replaces its image, and the replacement
     resolves the process it reports to. Resolved from ``os.getppid()`` that is
-    the live subreaper, and the replacement would then run on with an owner that
-    never died — which is why the original reload case cannot see this: there
-    the reload happens while the owner is alive, so the parent it would read is
-    the owner either way. Resolved from the carried ``RECKON_FOLLOWER_OWNER`` it
-    is the dead stub, and the replacement leaves.
+    the live subreaper, and killing the armed owner would leave the replacement
+    running on — which is why the original reload case cannot see this: there
+    the reload happens while the parent is the owner, so a process a replacement
+    derived the parent from would be the owner either way. Resolved from the
+    carried ``RECKON_FOLLOWER_OWNER`` it is the process this case armed it with,
+    and killing that process ends the replacement.
 
-    The adoption is asserted, not assumed: the follower's parent must be the
-    subreaper before it is resumed, so a run in which the kill left it under
-    init cannot pass by measuring the wrong tree.
+    The armed owner outlives the re-parent and the reload, which keeps the
+    reload observable: the replacement runs until this case ends its owner, so
+    watching for the replacement is a wait on a live process rather than a race
+    against an image a loaded node may close between two reads. The adoption is
+    asserted, not assumed: the follower's parent must be the subreaper before it
+    is resumed, so a run in which the kill left it under init cannot pass by
+    measuring the wrong tree.
     """
     real_dir = _real_follower_dir(PROJECT)
     before = _tree(real_dir)
@@ -865,11 +880,17 @@ def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
     subreaper: subprocess.Popen | None = None
     follower_pid: int | None = None
     stub_pid: int | None = None
+    owner: subprocess.Popen | None = None
     restore: tuple[bytes, int, int] | None = None
     with _source_mutation_window():
         try:
+            owner = _start_owner_process()
+            owner_identity = _owner_identity(owner)
             subreaper, stub_pid_path, pid_path = _start_subreaper_stub(
-                home, home, "orphan"
+                home,
+                home,
+                "orphan",
+                owner_env=runs._format_follower_owner(owner_identity),
             )
             follower_pid = _follower_pid(pid_path, subreaper, "orphan")
             _wait_until_holder(
@@ -903,8 +924,16 @@ def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
             time.sleep(SETTLE_SECONDS)
 
             os.kill(follower_pid, SIGCONT)
-            saw_reload, elapsed = _wait_until_reloaded_then_exited(
-                follower_pid, tag="re-parented follower"
+            _observe_reload(follower_pid, tag="re-parented follower")
+            # The replacement is running on the owner this case armed it with,
+            # not the subreaper it is parented to. Ending that owner is what
+            # proves which process the replacement resolved: the armed owner's
+            # death leaves a replacement that carried it, while the subreaper it
+            # would otherwise have read stays alive.
+            _kill_and_reap(owner)
+            owner = None
+            elapsed = _wait_until_left_after_reload(
+                follower_pid, tag="reloaded follower"
             )
         finally:
             if follower_pid is not None and not _exited(follower_pid):
@@ -914,6 +943,7 @@ def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
                 with contextlib.suppress(ProcessLookupError):
                     os.kill(stub_pid, 9)
             _kill(subreaper)
+            _kill(owner)
             if restore is not None:
                 _restore_source_bytes(restore)
 
@@ -921,7 +951,6 @@ def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
         "a follower pointed at a temporary home must leave the real follower "
         "directory untouched"
     )
-    assert saw_reload, "the case must observe the reload it depends on"
     assert elapsed <= RELOAD_EXIT_WITHIN_SECONDS
 
 
