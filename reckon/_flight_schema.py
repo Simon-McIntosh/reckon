@@ -69,6 +69,20 @@ class LinkMLMeta(RootModel):
 
 linkml_meta = None
 
+class PickerMode(str, Enum):
+    """
+    Whether the recorded picker selection controls dispatch.
+    """
+    shadow = "shadow"
+    """
+    Record the selection and use deterministic routing.
+    """
+    route = "route"
+    """
+    Route dispatch by the picker selection.
+    """
+
+
 class LaunchMode(str, Enum):
     """
     How a worker process for a backend is started.
@@ -195,6 +209,7 @@ class FlightConfig(ConfiguredBaseModel):
     unprotected_paths: list[str] | None = Field(default=None, description="""Defaults the fence's protected set carries that a host or project layer leaves writable. A layer removes a default only by naming it here, so a reduction of the protected set is a deliberate, named act rather than a side effect of editing `protected_paths`. Each entry names a default as the fence would resolve it — home-relative or absolute — and an entry that names no default is ignored. Every run whose fence leaves out a named default carries the list on its run record.""")
     backends: dict[str, BackendConfig] | None = Field(default=None, description="""Available worker backends, keyed by a name chosen by whoever writes the configuration. The schema fixes no backend names.""")
     roles: dict[str, RoleConfig] | None = Field(default=None, description="""Per-role routing overlays, keyed by role name. A role overrides only the keys it names; everything else falls through to its backend.""")
+    routing: RoutingConfig | None = Field(default=None, description="""How dispatch selects its worker backend.""")
     gates: GateConfig | None = Field(default=None)
     review: ReviewConfig | None = Field(default=None)
     budget: BudgetConfig | None = Field(default=None)
@@ -203,6 +218,13 @@ class FlightConfig(ConfiguredBaseModel):
     worktree: WorktreeConfig | None = Field(default=None)
     summary: SummaryConfig | None = Field(default=None)
     ticker: TickerConfig | None = Field(default=None, description="""The follower pane's own memory of what it has rendered. A reader tracking a fleet across re-arms wants the rows it just saw restored rather than an empty pane; these bounds decide how much of the view comes back.""")
+
+
+class RoutingConfig(ConfiguredBaseModel):
+    """
+    Dispatch routing policy, overridable per dispatch.
+    """
+    picker: PickerMode | None = Field(default=None, description="""Record the picker selection in shadow mode, or route dispatch by it. A per-dispatch route override takes precedence over this layered value.""")
 
 
 class ReviewConfig(ConfiguredBaseModel):
@@ -541,6 +563,7 @@ class TickerConfig(ConfiguredBaseModel):
 # Model rebuild
 # see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
 FlightConfig.model_rebuild()
+RoutingConfig.model_rebuild()
 ReviewConfig.model_rebuild()
 ReviewSuite.model_rebuild()
 ReviewTiers.model_rebuild()
