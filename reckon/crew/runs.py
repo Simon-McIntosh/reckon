@@ -1575,6 +1575,7 @@ def _publish_obligation_snapshots(project: str, *, transition_fired: bool) -> li
     floor tick and the file-identity trigger are judged against.
     """
     from reckon.crew import obligation_snapshot
+    from reckon.flight import FlightConfigError
 
     sessions = [
         str(row.get("session") or "")
@@ -1586,14 +1587,25 @@ def _publish_obligation_snapshots(project: str, *, transition_fired: bool) -> li
         if row.get("live")
     ]
     docs = _docs_dir_for_project(project)
-    written = obligation_snapshot.sweep(
-        project,
-        sessions=[session for session in sessions if session],
-        producer=_producer_snapshot_identity(project),
-        stream_offset=line_boundary(watch_stream_path(project)),
-        transition_fired=transition_fired,
-        state_dirs=[docs / "state" / project, docs / "plans"] if docs else [],
-    )
+    try:
+        written = obligation_snapshot.sweep(
+            project,
+            sessions=[session for session in sessions if session],
+            producer=_producer_snapshot_identity(project),
+            stream_offset=line_boundary(watch_stream_path(project)),
+            transition_fired=transition_fired,
+            state_dirs=[docs / "state" / project, docs / "plans"] if docs else [],
+        )
+    except FlightConfigError as exc:
+        # A tick whose config does not load has no fleet state to derive from,
+        # so it defers exactly as the stream transition fold does: the snapshots
+        # already at rest age out of freshness until a later tick resolves the
+        # config, and the seat stays up meanwhile.
+        producer = _WATCH_STREAM_PRODUCERS.get(project)
+        if producer is not None and not producer.tick_deferred:
+            producer.tick_deferred = True
+            _announce_watch_tick_deferral(exc)
+        return []
     return [str(path) for path in written]
 
 
