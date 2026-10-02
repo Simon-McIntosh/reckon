@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="The unreconciled count has one composition">
+  <meta name="plan-summary" content="A promotion's fleet reading and the closure drain count unreconciled live pointers through one per-pointer function in reckon/crew/runs.py, so a change to the host-gated liveness or the disposition predicate reaches both.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s13">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,promotion,drain,closure">
+  <title>The unreconciled count has one composition — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-unreconciled-count-has-one-composition" data-reckon="landed" data-when="2026-10-02">
+  <h2>The unreconciled count has one composition</h2>
+  <p>The closure drain derives each live pointer's row with <code>runs._drain_row</code>: the host-gated <code>local_liveness</code>, the classification over it, and the recorded disposition's validity. A promotion's fleet reading recomputed that same step in a parallel copy, so a change to one would not reach the other. <code>promotion._unreconciled_live_runs</code> now classifies each pointer with <code>runs._drain_row</code> — the same function <code>runs.drain</code> builds its rows from — so the two agree by construction and neither keeps its own copy. The drain's plan inventory is still not read; only the row's <code>unreconciled</code> verdict is consumed.</p>
+  <p>The node test holds the drain and the fleet reading to the same <code>unreconciled_runs</code> over every pointer shape the fleet-fields equivalence test enumerates, plus a <code>still-working</code> disposition over a terminal manifest whose stored liveness is not this host's to vouch for — the one branch where a copy that skipped the host gate would disagree. It also pins both call sites to the one shared function.</p>
+  <p>The declared mutation — the promotion counter given its own copy that skips the host-gated liveness — leaves the still-working case reading <code>0</code> against the drain's <code>1</code> (<code>EXIT=1</code>, <code>test_a_still_working_disposition_over_a_terminal_manifest_counts_unreconciled</code> failed, which the head arm does not fail). Head gate at the stated revision: 6 passed in the node test, and 70 passed <code>EXIT=0</code> across the node test and the four named suites. Base arm at <code>a08a2bab</code>: the four named suites <code>EXIT=0</code>. This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>
