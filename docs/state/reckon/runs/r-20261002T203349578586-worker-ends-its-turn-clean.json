@@ -1,0 +1,704 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "50b92333897d973bf2193d66231f896620e30b2f",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 13313453,
+      "input_tokens_cumulative": 13313453,
+      "output_tokens": 141089,
+      "output_tokens_cumulative": 141089,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 467,
+    "files": 3,
+    "removed": 59
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 292,
+        "name": "_manifest_status",
+        "path": "reckon/crew/death_census.py"
+      },
+      "run_function": {
+        "line": 239,
+        "name": "read_status",
+        "path": "reckon/hooks/worker_stop.py"
+      },
+      "window_line": 249
+    },
+    {
+      "existing_function": {
+        "line": 167,
+        "name": "main",
+        "path": "reckon/hooks/native_agent_guard.py"
+      },
+      "run_function": {
+        "line": 469,
+        "name": "main",
+        "path": "reckon/hooks/worker_stop.py"
+      },
+      "window_line": 469
+    },
+    {
+      "existing_function": {
+        "line": 545,
+        "name": "main",
+        "path": "reckon/hooks/worker_git_guard.py"
+      },
+      "run_function": {
+        "line": 469,
+        "name": "main",
+        "path": "reckon/hooks/worker_stop.py"
+      },
+      "window_line": 469
+    },
+    {
+      "existing_function": {
+        "line": 181,
+        "name": "main",
+        "path": "reckon/hooks/worker_message_guard.py"
+      },
+      "run_function": {
+        "line": 469,
+        "name": "main",
+        "path": "reckon/hooks/worker_stop.py"
+      },
+      "window_line": 469
+    },
+    {
+      "existing_function": {
+        "line": 159,
+        "name": "test_the_run_directory_inside_the_tree_is_exempt",
+        "path": "tests/test_worker_ends_its_turn_clean.py"
+      },
+      "run_function": {
+        "line": 136,
+        "name": "test_the_provisioning_links_are_exempt",
+        "path": "tests/test_worker_ends_its_turn_clean.py"
+      },
+      "window_line": 143
+    },
+    {
+      "existing_function": {
+        "line": 136,
+        "name": "test_the_provisioning_links_are_exempt",
+        "path": "tests/test_worker_ends_its_turn_clean.py"
+      },
+      "run_function": {
+        "line": 159,
+        "name": "test_the_run_directory_inside_the_tree_is_exempt",
+        "path": "tests/test_worker_ends_its_turn_clean.py"
+      },
+      "window_line": 165
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "2f8af5601607913e5b14b92df324c2efa6f0ce91",
+    "1c78656754239ee3af0bcf71e52ab9b2d54211f9"
+  ],
+  "completed_at": "2026-10-02T21:34:59.481Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-02T20:34:28Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=/home/ITER/mcintos/Code/reckon /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_worker_ends_its_turn_clean.py tests/test_worker_stop_hook.py tests/test_run_state_reads_what_the_worker_reached.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T203349578586-worker-ends-its-turn-clean/gate-head.log"
+  },
+  "impl_move": {
+    "at_complete": 0.7333333333333333,
+    "at_dispatch": 0.16666666666666666,
+    "plan": "a-finished-worktree-releases-without-a-force",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-02T21:33:52.859098+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-02T20:33:52Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 18,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 15,
+    "headroom": 2,
+    "mean_context": 120000,
+    "observed_at": "2026-10-02T20:33:34Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-02T21:34:59.481Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T203349578586-worker-ends-its-turn-clean/manifest.md",
+  "member": "disposable-r-20261002T203349578586-worker-ends-its-turn-clean",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_worker_ends_its_turn_clean.py::test_a_blocked_end_that_names_its_paths_may_end_dirty",
+      "tests/test_worker_ends_its_turn_clean.py::test_a_dirty_end_is_refused_and_names_every_path",
+      "tests/test_worker_ends_its_turn_clean.py::test_the_provisioning_links_are_exempt",
+      "tests/test_worker_ends_its_turn_clean.py::test_the_run_directory_inside_the_tree_is_exempt"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_worker_ends_its_turn_clean.py::test_a_blocked_end_that_names_its_paths_may_end_dirty",
+      "tests/test_worker_ends_its_turn_clean.py::test_a_dirty_end_is_refused_and_names_every_path",
+      "tests/test_worker_ends_its_turn_clean.py::test_the_provisioning_links_are_exempt",
+      "tests/test_worker_ends_its_turn_clean.py::test_the_run_directory_inside_the_tree_is_exempt"
+    ],
+    "declaration": "remove the cleanliness check from the stop hook; the dirty-end case then stops without a refusal and fails",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T203349578586-worker-ends-its-turn-clean/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T203349578586-worker-ends-its-turn-clean/negative-control.log",
+    "test_paths": [
+      "tests/test_run_state_reads_what_the_worker_reached.py",
+      "tests/test_worker_ends_its_turn_clean.py",
+      "tests/test_worker_stop_hook.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "worker-ends-its-turn-clean",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1543,
+          "cached_input_tokens": 838773,
+          "input_tokens": 840318,
+          "output_tokens": 271,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 840589,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "Read section 2 of a-finished-worktree-releases-without-a-force first. reckon/hooks/worker_stop.py refuses a worker's turn end while its worktree holds an uncommitted change to a tracked file, or an untracked file that is not ignored, outside the run directory. The refusal names each path and says to commit it or discard it. The .venv and .env provisioning links are exempt. A worker whose status is blocked or failed may end dirty, but only after its manifest names every uncommitted path. tests/test_worker_ends_its_turn_clean.py covers a clean end, a dirty end refused, a blocked end that names its paths and is allowed, and the provisioning exemption, each in a temporary repository and run directory. Existing cases in tests/test_worker_stop_hook.py and tests/test_run_state_reads_what_the_worker_reached.py keep passing; a case whose fixture ends its turn with an uncommitted change is changed so the fixture commits or discards that change, or names its paths in the manifest, and no case is deleted. Run `date -u` first and treat that instant as your start; your deadline is 60 minutes later. Write your manifest before starting any long command. Run both gate arms with pytest-xdist (-n 8 --timeout=300), never serially. Run the base arm, from a `git archive` extraction of your base under /tmp in a directory named for this run, and then the head arm, each in the foreground: a background command dies when your turn ends. Keep the gate to the test files that reach your change, tens of files rather than hundreds. Each arm uses its own basetemp outside any repository and writes to its own new log path, which it never overwrites. Each arm is recorded as JSON carrying completed true and a literal command with absolute paths and no angle-bracket placeholder. Each log names its revision on the first line and ends with a bare line reading EXIT= followed by the exit code. The head arm adds no failure id; any added id means status blocked, naming each id. ruff check and ruff format --check over the changed Python paths report no finding the base did not. Scratch goes under /tmp in a directory named for this run and is deleted before status complete. The turn ends once the manifest reads complete or blocked.",
+    "estimated_hours": null,
+    "goal": "Refuse a worker's turn end while its worktree holds uncommitted changes, as a-finished-worktree-releases-without-a-force §2 states.",
+    "id": "worker-ends-its-turn-clean",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-02T20:33:52Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 18,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 15,
+      "headroom": 2,
+      "mean_context": 120000,
+      "observed_at": "2026-10-02T20:33:34Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T203349578586-worker-ends-its-turn-clean/manifest.md",
+    "negative_control": "remove the cleanliness check from the stop hook; the dirty-end case then stops without a refusal and fails",
+    "plan": "a-finished-worktree-releases-without-a-force",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/hooks/worker_stop.py",
+      "tests/test_worker_ends_its_turn_clean.py",
+      "tests/test_worker_stop_hook.py",
+      "tests/test_run_state_reads_what_the_worker_reached.py",
+      "docs/evidence/fragments/a-finished-worktree-releases-without-a-force/worker-ends-its-turn-clean.html",
+      "docs/figures/a-finished-worktree-releases-without-a-force/worker-ends-its-turn-clean"
+    ]
+  },
+  "orientation_input_tokens": 4432982.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "worker-ends-its-turn-clean",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-02T20:34:08.318018+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "route",
+    "answering_model": "typesafe/jev-1.13-20260917",
+    "backend": "clive",
+    "comment": "",
+    "confidence": 0.51,
+    "decision_source": "jev",
+    "effort": "xhigh",
+    "excluded": [
+      {
+        "availability": "unavailable",
+        "backend": "claude",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": 1.3932424081828705,
+        "effort": "xhigh",
+        "family": "claude",
+        "local": false,
+        "model": "claude-sonnet-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "availability: unavailable"
+        ],
+        "resets_at": "2026-10-04T06:00:00Z",
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unavailable",
+        "backend": "claude-haiku",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "claude",
+        "local": false,
+        "model": "claude-haiku-4-5-20251001",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "availability: unavailable"
+        ],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unavailable",
+        "backend": "claude-opus",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "claude",
+        "local": false,
+        "model": "claude-opus-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "availability: unavailable"
+        ],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unavailable",
+        "backend": "native",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "in-harness",
+        "local": false,
+        "model": null,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "availability: unavailable"
+        ],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "fallback_reason": null,
+    "family": "local",
+    "jev_latency_ms": 518.186,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 4846.473,
+    "model": "deepseek-v4.1-flash",
+    "offered": [
+      {
+        "availability": "served",
+        "backend": "clive",
+        "burn_multiple": null,
+        "congestion": {
+          "admission_verdict": "open",
+          "running": 15,
+          "slots_state": "measured",
+          "stale": false,
+          "waiting": 0
+        },
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "local",
+        "local": true,
+        "model": "deepseek-v4.1-flash",
+        "outcomes": {
+          "failed": 8,
+          "not-run": 16,
+          "passed": 512,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": 2
+      },
+      {
+        "availability": "served",
+        "backend": "codex",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-sol",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "codex-astra",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-astra",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 1,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "codex-luna",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-luna",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "codex-terra",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-5.6-terra",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "probabilities": {
+      "clive": 0.58,
+      "codex": 0.25,
+      "codex-astra": 0.03,
+      "codex-luna": 0.03,
+      "codex-terra": 0.01,
+      "hold": 0.1
+    },
+    "rendered_token_estimate": 1218,
+    "usage": {
+      "cost": 0.000112434,
+      "input_tokens": 2677,
+      "output_tokens": 71
+    }
+  },
+  "plan": "a-finished-worktree-releases-without-a-force",
+  "plan_impl_at_dispatch": 0.16666666666666666,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "1c78656754239ee3af0bcf71e52ab9b2d54211f9",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "50b92333897d973bf2193d66231f896620e30b2f",
+    "reviewed_head_sha": "1c78656754239ee3af0bcf71e52ab9b2d54211f9",
+    "scores": {
+      "durability": 17,
+      "evidence": 18,
+      "fit": 19,
+      "goal_fidelity": 19,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 92
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20261002T203349578586-worker-ends-its-turn-clean",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session": "s22-coord",
+  "session_harness": "claude",
+  "session_id": "640a601b-26ad-4ba1-bdb9-8820472dca6d",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 13510588,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 3620.347,
+    "generated_tokens": 153210,
+    "generation_seconds": 3449.615,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 85.1,
+    "machine_seconds": 170.732,
+    "peak_input_tokens": 195835,
+    "tokens_per_second": 44.41,
+    "wall_tokens_per_second": 42.32
+  },
+  "time_budget": "60m",
+  "tool_steps": 99.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 3631,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-02T21:35:03Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-02T20:34:32Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261002T203349578586-worker-ends-its-turn-clean",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 38802,
+    "worker_pid": 4025433
+  },
+  "worker_seconds": 3597,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
