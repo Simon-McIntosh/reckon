@@ -123,7 +123,15 @@ def test_a_landing_with_no_continuation_is_refused(setup) -> None:
 
 def test_a_landing_that_appends_the_next_invocation_is_accepted(setup) -> None:
     docs_dir, _, project = setup
-    _plan_html(docs_dir, "plan-a", {"version": 0, "followups": [_followup("f1")]})
+    _plan_html(
+        docs_dir,
+        "plan-a",
+        {
+            "version": 0,
+            "followups": [_followup("f1")],
+            "section_declarations": {"s3": "implementable"},
+        },
+    )
 
     result = mcp_module._edit_plan(
         project,
@@ -493,7 +501,12 @@ def test_the_chain_stays_intact_from_worker_to_sprint(setup) -> None:
     _plan_html(
         docs_dir,
         "plan-a",
-        {"version": 0, "sprint": "S1", "followups": [_followup("f1")]},
+        {
+            "version": 0,
+            "sprint": "S1",
+            "followups": [_followup("f1")],
+            "section_declarations": {"s3": "implementable"},
+        },
     )
 
     manifest = (

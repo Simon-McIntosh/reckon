@@ -28,6 +28,7 @@ import reckon.mcp as mcp_module
 PROJECT = "temp-followup-refusal-project"
 HOST_DECLARATIONS = {"s1": "done", "s2": "implementable"}
 REMEDY = "add the work as a section of this plan"
+DECISION_REMEDY = "recorded as an open decision"
 
 
 def _write_plan(
@@ -41,12 +42,11 @@ def _write_plan(
     """Write one plan HTML into ``docs_dir/plans`` in the store's own layout."""
 
     path = docs_dir / "plans" / f"{slug}.html"
-    path.parent.mkdir(parents=True, exist_ok=True) if False else path.parent.mkdir if False else None
     path.parent.mkdir(parents=True, exist_ok=True)
     metas = [
         ("docs-project", PROJECT),
         ("reckon-type", "plan"),
-        ("plan-slug-placeholder", slug),
+        ("plan-slug", slug),
         ("plan-status", status),
         ("plan-modified", "2026-10-02"),
         (
@@ -54,7 +54,6 @@ def _write_plan(
             html.escape(json.dumps(declarations or {}, separators=(",", ":"))),
         ),
     ]
-    metas[2] = ("plan-slug", slug)
     head = "".join(f'<meta name="{name}" content="{value}">' for name, value in metas)
     articles = "".join(
         f'<article class="r-fu" data-id="{fid}" data-status="open"'
@@ -80,7 +79,6 @@ def _write_plan(
 @pytest.fixture()
 def setup(tmp_path, monkeypatch):
     docs_dir = tmp_path / "docs"
-    docs_dir.mkdir(parents=True, exist_ok=True) if False else None
     docs_dir.mkdir()
     state_root = tmp_path / "state"
     state_root.mkdir()
@@ -153,6 +151,7 @@ def test_a_followup_naming_a_done_section_is_refused(setup) -> None:
     assert result["error"] == "op_error"
     assert "section-not-implementable" in result["detail"]
     assert REMEDY in result["detail"]
+    assert DECISION_REMEDY in result["detail"]
     assert _plan_ids("host") == []
 
 
@@ -165,11 +164,12 @@ def test_a_followup_naming_no_section_is_refused(setup) -> None:
     assert result["error"] == "op_error"
     assert "no-section" in result["detail"]
     assert REMEDY in result["detail"]
+    assert DECISION_REMEDY in result["detail"]
     assert _plan_ids("host") == []
 
 
 def test_a_followup_on_a_shipped_plan_is_refused(setup) -> None:
-    _write_plan(setup, "omega", status="shipped", declarations=HOST_DECLARATIONS if False else {"s1": "implementable"})
+    _write_plan(setup, "omega", status="shipped", declarations={"s1": "implementable"})
 
     result = _append("omega", "f5", "/reckon-build omega §1", 0)
 

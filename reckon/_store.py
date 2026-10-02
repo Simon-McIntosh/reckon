@@ -2897,8 +2897,9 @@ def _refuse_hiding_followup(
     raise OpError(
         f"followup {ident!r} hides work ({verdict.reason}): its invocation "
         "names no work the roadmap can dispatch — add the work as a section "
-        "of this plan, or create a new plan when this one is complete, and "
-        "point the followup at it"
+        "of this plan, or create a new plan when this one is complete and "
+        "point the followup at it; a step that needs authority is recorded "
+        "as an open decision instead"
     )
 
 
