@@ -2214,6 +2214,23 @@ def _find_by_id(lst: list, ident: str, id_field: str = "id") -> tuple[int, dict]
     return None
 
 
+def _move_section_record(working: dict, section_id: str, status: Any) -> None:
+    """Move the typed record a declaration must agree with.
+
+    A declaration and the record beside it are one statement copied into the
+    map and into the markup, so a write that moves one and not the other lands
+    a plan whose records contradict its declaration map — and the parse on the
+    way back in refuses the file the write just produced. A declaration with no
+    record yet (a section whose record is not authored) has nothing to move.
+    """
+    sections = working.get("sections")
+    if isinstance(sections, list):
+        for section in sections:
+            if isinstance(section, dict) and section.get("id") == section_id:
+                section["status"] = status
+                break
+
+
 def _check_north_star_ids(entries: Any, warnings: list[str]) -> None:
     """Refuse duplicate direction ids and report the advisory collection cap."""
     if not isinstance(entries, list):
@@ -2420,12 +2437,17 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         if not isinstance(declarations, dict):
             raise OpError("plan has no section declarations map")
         declarations[section_id] = value
-        sections = working.get("sections")
-        if isinstance(sections, list):
-            for section in sections:
-                if isinstance(section, dict) and section.get("id") == section_id:
-                    section["status"] = value
-                    break
+        _move_section_record(working, section_id, value)
+        return
+    if head == "section_declarations" and len(parts) == 1:
+        # The whole map writes the same statement the dotted form writes one
+        # entry at a time, so every entry carries its record with it. Assigning
+        # the map alone left the records contradicting it, and the plan refused
+        # the file that write produced on the way back in.
+        if isinstance(value, dict):
+            for declared_id, declared_status in value.items():
+                _move_section_record(working, declared_id, declared_status)
+        working[head] = value
         return
     if head == "decisions" and len(parts) >= 3:
         decisions = working.setdefault("decisions", {})
