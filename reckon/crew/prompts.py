@@ -7,6 +7,7 @@ from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from reckon._timestamps import parse_iso
 from reckon.crew.node import (
     NEEDS_HELP_MARKER,
     TaskNode,
@@ -376,7 +377,9 @@ def time_fence_statement(*, time_budget: str, launch_instant: str) -> str:
     elapsed time from a stated instant rather than estimating it from the work
     it has done.
     """
-    launch = datetime.fromisoformat(launch_instant)
+    launch = parse_iso(launch_instant)
+    if launch is None:
+        raise ValueError(f"Invalid isoformat string: {launch_instant!r}")
     deadline = _utc_instant(launch + timedelta(seconds=parse_duration(time_budget)))
     return (
         f"Launched {launch_instant} UTC; deadline {deadline} — {time_budget} from "

@@ -32,6 +32,7 @@ from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from typing import Any
 
+from reckon._timestamps import parse_iso
 from reckon.crew import review as review_module
 from reckon.crew.plan_review import RESPONSE_ACTIONS
 
@@ -151,14 +152,8 @@ def _parsed_moment(value: str) -> datetime | None:
     alike. An unparseable or absent value yields ``None`` rather than raising,
     because the caller decides what an undateable record means.
     """
-    text = str(value or "").strip()
-    if not text:
-        return None
-    if text.endswith("Z"):
-        text = text[:-1] + "+00:00"
-    try:
-        moment = datetime.fromisoformat(text)
-    except ValueError:
+    moment = parse_iso(str(value or ""))
+    if moment is None:
         return None
     if moment.tzinfo is None:
         moment = moment.replace(tzinfo=UTC)
