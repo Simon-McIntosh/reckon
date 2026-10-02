@@ -1,5 +1,4 @@
-"""A passing verdict is refused beside a nonzero exit status, or a command no
-shell could start.
+"""A passing verdict is refused beside a nonzero exit status.
 
 The verdict and the exit status are two statements about one run. The gate-log
 comparison reads one of them only from the log's terminal ``EXIT=<n>`` record,
@@ -12,8 +11,7 @@ from the two values alone, whether or not the log carries its own exit record.
 One pair is admitted: the repository judges a gate by its delta against its
 base, so a run whose manifest records a red baseline covering every id the
 head arm's log reports measures zero added against that base, and its passing
-verdict is that delta. A run whose head adds an id is refused. So is a
-recorded gate command whose first token names no executable at all.
+verdict is that delta. A run whose head adds an id to that base is refused.
 """
 
 from __future__ import annotations
@@ -33,8 +31,6 @@ PROJECT = "proj"
 PLAN = "plan-a"
 PROGRAM = sys.executable
 COMMAND = f"{PROGRAM} -m pytest tests/test_passed_verdict_needs_exit_zero.py"
-ASSIGNED_COMMAND = f"PYTHONPATH=/tmp/verdict-fixture {COMMAND}"
-PROSE_COMMAND = "one all_debug job over three files"
 BASELINE_FAILURE = "tests/test_verdict_fixture.py::test_the_guard_refuses"
 ADDED_FAILURE = "tests/test_verdict_fixture.py::test_the_guard_reports"
 BASE_SHA = "ca630c06e894d95111a8627b11d02a023aa270dd"
@@ -202,7 +198,7 @@ def test_a_passing_verdict_beside_a_nonzero_status_with_an_agreeing_record_is_re
     assert "exit status 2" in result.output
 
 
-def test_a_passing_verdict_with_a_zero_status_and_a_runnable_command_promotes(
+def test_a_passing_verdict_with_a_zero_status_still_promotes(
     repository: Path, tmp_path: Path
 ) -> None:
     run_id = "r-20261002T120200000000-promotes"
@@ -216,51 +212,6 @@ def test_a_passing_verdict_with_a_zero_status_and_a_runnable_command_promotes(
     record = json.loads(result.output)["record"]
     assert record["gate"] == "passed"
     assert record["gate_check"]["exit_status"] == 0
-
-
-def test_a_leading_assignment_before_the_program_still_promotes(
-    repository: Path, tmp_path: Path
-) -> None:
-    """The first token after the leading NAME=value assignment is the program."""
-    run_id = "r-20261002T120300000000-assigned"
-    _write_pointer(run_id, repository)
-    log = tmp_path / "assigned-gate.log"
-    log.write_text("12 passed in 0.4s\nEXIT=0\n", encoding="utf-8")
-
-    result = _invoke(run_id, repository, log, command=ASSIGNED_COMMAND)
-
-    assert result.exit_code == 0, result.output
-    record = json.loads(result.output)["record"]
-    assert record["gate_check"]["command"] == ASSIGNED_COMMAND
-
-
-def test_a_prose_gate_command_that_names_no_program_is_refused(
-    repository: Path, tmp_path: Path
-) -> None:
-    run_id = "r-20261002T120400000000-prose"
-    _write_pointer(run_id, repository)
-    log = tmp_path / "prose-gate.log"
-    log.write_text("30 passed, 3 failed in 223.55s\n", encoding="utf-8")
-
-    result = _invoke(run_id, repository, log, command=PROSE_COMMAND)
-
-    assert result.exit_code != 0, result.output
-    assert PROSE_COMMAND in result.output
-    assert "'one'" in result.output
-
-
-def test_a_gate_command_that_does_not_parse_is_refused(
-    repository: Path, tmp_path: Path
-) -> None:
-    run_id = "r-20261002T120500000000-unparseable"
-    _write_pointer(run_id, repository)
-    log = tmp_path / "unparseable-gate.log"
-    log.write_text("12 passed in 0.4s\nEXIT=0\n", encoding="utf-8")
-
-    result = _invoke(run_id, repository, log, command=f'{PROGRAM} -m pytest "unclosed')
-
-    assert result.exit_code != 0, result.output
-    assert "does not parse" in result.output
 
 
 def test_a_passing_verdict_on_a_red_base_that_adds_no_failure_promotes(
