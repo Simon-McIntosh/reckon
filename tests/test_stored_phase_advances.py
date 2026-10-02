@@ -217,3 +217,119 @@ def test_stored_phase_advances_from_starting_to_working_to_complete(
     assert observed == ["working", "complete"]
     assert fixture["manifest"].is_file()
     assert _read_phase(run_id) == "complete"
+
+
+def test_a_spawn_failure_leaves_the_stored_phase_at_launch_failed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The spawn-failure branch publishes the phase before it returns.
+
+    A launch whose worker never spawned reached no model, so its stored phase
+    is ``launch-failed`` rather than the pre-spawn ``starting`` the launcher
+    wrote. Without the branch's own publish the phase stays at ``starting`` and
+    the run reads as if a worker were still being placed.
+    """
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+
+    fixture = _stub_run(tmp_path)
+    run_id = fixture["run_id"]
+
+    def explode(_spec: Any) -> int:
+        raise OSError("worker executable not found")
+
+    monkeypatch.setattr(dispatch_module, "_supervisor_spawn_worker", explode)
+
+    assert _read_phase(run_id) == "starting"
+    previous = {sig: signal.getsignal(sig) for sig in (signal.SIGTERM, signal.SIGHUP)}
+    try:
+        dispatch_module._run_supervisor(fixture["spec_path"])
+    finally:
+        for sig, handler in previous.items():
+            signal.signal(sig, handler)
+    for sig, handler in previous.items():
+        assert signal.getsignal(sig) == handler
+    assert _read_phase(run_id) == "launch-failed"
+
+
+def test_an_abandoned_launch_leaves_the_stored_phase_at_launch_failed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A stop that abandons the launch before the worker exists publishes too.
+
+    No worker was spawned, so the run's own evidence is the launch-failure
+    record; the stored phase advances to ``launch-failed`` from the same writer
+    the normal life uses rather than staying at ``starting``.
+    """
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+
+    fixture = _stub_run(tmp_path)
+    run_id = fixture["run_id"]
+
+    stopped = threading.Event()
+    stopped.set()
+    monkeypatch.setattr(dispatch_module, "_record_stop_before_spawn", lambda: stopped)
+
+    assert _read_phase(run_id) == "starting"
+    previous = {sig: signal.getsignal(sig) for sig in (signal.SIGTERM, signal.SIGHUP)}
+    try:
+        dispatch_module._run_supervisor(fixture["spec_path"])
+    finally:
+        for sig, handler in previous.items():
+            signal.signal(sig, handler)
+    for sig, handler in previous.items():
+        assert signal.getsignal(sig) == handler
+    assert _read_phase(run_id) == "launch-failed"
+
+
+def test_an_exit_record_from_another_attempt_does_not_move_the_stored_phase(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The writer only advances the pointer of the attempt it supervises.
+
+    A supervisor outliving its attempt must not rewrite a successor's pointer
+    from a stale exit record, so a spec whose attempt differs leaves the phase
+    exactly as the successor wrote it.
+    """
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+
+    fixture = _stub_run(tmp_path)
+    run_id = fixture["run_id"]
+    spec = json.loads(fixture["spec_path"].read_text(encoding="utf-8"))
+    spec["attempt"] = 2
+
+    dispatch_module._publish_stored_phase(
+        spec, ended=True, exit_record={"ended_during": "launch"}
+    )
+
+    assert _read_phase(run_id) == "starting"
+
+
+def test_a_pointer_discarded_mid_run_is_not_recreated_by_the_writer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A discard removes the pointer and the writer leaves it removed.
+
+    The writer rewrites a live pointer from the run's evidence; a pointer that
+    is gone stays gone rather than being recreated from a run directory that
+    outlives it.
+    """
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+
+    fixture = _stub_run(tmp_path)
+    run_id = fixture["run_id"]
+    spec = json.loads(fixture["spec_path"].read_text(encoding="utf-8"))
+    runs.pointer_path(run_id).unlink()
+
+    dispatch_module._publish_stored_phase(
+        spec, ended=True, exit_record={"ended_during": "launch"}
+    )
+
+    assert not runs.pointer_path(run_id).exists()
