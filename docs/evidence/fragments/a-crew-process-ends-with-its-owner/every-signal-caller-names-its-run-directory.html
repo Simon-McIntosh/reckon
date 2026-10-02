@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="every signalling caller names its run directory">
+  <meta name="plan-summary" content="Dispatch, promotion and the recovery budget watchdog each pass their sender-record directory and reason into _signal_process_group, so the guard's refused outcome lands in the run's own senders.jsonl; the unwatch record names its project because it lands in a shared watch directory.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,signal,sender-record,attribution">
+  <title>every signalling caller names its run directory — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="every-signal-caller-names-its-run-directory" data-reckon="landed" data-when="2026-10-02">
+  <h2>every signalling caller names its run directory</h2>
+  <p>The six run-bearing callers of <code>_signal_process_group</code> — <code>dispatch.py</code> dispatch-rollback, lane-change and run-stop, <code>promotion.py</code> promotion-settle and promotion-release, and <code>recovery.py</code> budget-watchdog — now pass <code>run_dir</code> and <code>reason</code> matching the attribution record they pre-write, so a guard refusal writes its refused outcome into the run's own <code>senders.jsonl</code>. The unwatch record, which lands in the shared watch directory rather than a run directory, now names the watcher's project. <code>tests/test_every_signal_caller_names_its_run_directory.py</code> drives one caller from each module against a live process whose recorded start time does not match and asserts the run's sender file ends with a refused outcome — <strong>3 passed</strong>, <code>EXIT=0</code>. The declared mutation (drop <code>run_dir</code> from the promotion caller) fails the promotion case with no outcome line, <code>EXIT=1</code>. Base and head arms of <code>tests/test_every_signal_leaves_a_sender_record.py</code>, <code>tests/test_unwatch_leaves_a_sender_record.py</code>, <code>tests/test_worker_signal_reach.py</code> and <code>tests/test_promotion_release.py</code> each report <strong>17 passed</strong> with <strong>zero added failures</strong>.</p>
+</article>
+</body>
+</html>

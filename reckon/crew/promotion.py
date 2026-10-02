@@ -3792,7 +3792,12 @@ def _end_live_writer_for_settle(record: Mapping[str, Any]) -> bool:
             target_pid=int(pid),
             reason="promotion-settle",
         )
-        _signal_process_group(int(pid), record.get("pid_start_time"))
+        _signal_process_group(
+            int(pid),
+            record.get("pid_start_time"),
+            run_dir=run_directory_of(record),
+            reason="promotion-settle",
+        )
     except (ProcessLookupError, PermissionError, OSError, CrewError):
         return False
     return True
@@ -5575,7 +5580,12 @@ def _release_run_workspace(
                 target_pid=int(pid),
                 reason="promotion-release",
             )
-            _signal_process_group(int(pid), record.get("pid_start_time"))
+            _signal_process_group(
+                int(pid),
+                record.get("pid_start_time"),
+                run_dir=run_directory_of(record),
+                reason="promotion-release",
+            )
         except (ProcessLookupError, PermissionError, OSError, CrewError) as exc:
             result["process_withheld"] = f"could not signal pid {pid} — {exc}"
         else:

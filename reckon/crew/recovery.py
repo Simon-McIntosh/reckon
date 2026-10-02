@@ -831,7 +831,7 @@ def _stop_delivered_reviews(
     pointers: Sequence[Mapping[str, Any]],
     *,
     grace_seconds: float = DELIVERED_REVIEW_GRACE_SECONDS,
-    signal_run: Callable[[int, str | None], None] | None = None,
+    signal_run: Callable[..., None] | None = None,
 ) -> list[dict[str, Any]]:
     """Stop each review whose stream has outlived its delivery by the grace.
 
@@ -844,7 +844,6 @@ def _stop_delivered_reviews(
     rather than recorded as one, because a record claiming a stopped process
     that is still running is worse than no record at all.
     """
-    signal_run = signal_run or _signal_process_group
     stopped: list[dict[str, Any]] = []
     for pointer in pointers:
         delivered = review_delivered(pointer)
@@ -864,7 +863,15 @@ def _stop_delivered_reviews(
                 target_pid=int(pid),
                 reason="delivered-review-outlived-grace",
             )
-            signal_run(int(pid), pointer.get("pid_start_time"))
+            if signal_run is None:
+                _signal_process_group(
+                    int(pid),
+                    pointer.get("pid_start_time"),
+                    run_dir=_run_directory(pointer),
+                    reason="delivered-review-outlived-grace",
+                )
+            else:
+                signal_run(int(pid), pointer.get("pid_start_time"))
         except (
             CrewError,
             ProcessLookupError,
@@ -3042,7 +3049,12 @@ def _apply_budget_watchdog(
             target_pid=int(pid),
             reason="budget-watchdog",
         )
-        _signal_process_group(int(pid), record.get("pid_start_time"))
+        _signal_process_group(
+            int(pid),
+            record.get("pid_start_time"),
+            run_dir=_run_directory(record),
+            reason="budget-watchdog",
+        )
     except (
         CrewError,
         ProcessLookupError,
@@ -7419,7 +7431,12 @@ def unwatch(project: str) -> dict[str, Any]:
             # ordered after it would have nothing on disk to attribute the stop
             # to. The record names the watcher pid, so a stop that could not be
             # delivered is still readable as this command's attempt.
-            _write_sender_record(path.parent, target_pid=pid, reason="unwatch")
+            _write_sender_record(
+                path.parent,
+                target_pid=pid,
+                reason="unwatch",
+                detail=f"watcher for project {project}",
+            )
             try:
                 _signal_process_group(pid, watcher.get("pid_start_time"))
             except ProcessLookupError:
@@ -8540,7 +8557,7 @@ def watch_ticker(
     stall_window: str = DEFAULT_WATCH_STALL_WINDOW,
     poll_interval: float = 1.0,
     sleeper: Callable[[float], None] = time.sleep,
-    signal_run: Callable[[int, str | None], None] | None = None,
+    signal_run: Callable[..., None] | None = None,
 ) -> Iterator[dict[str, Any]]:
     """Yield a baseline and then every observed fleet state transition.
 

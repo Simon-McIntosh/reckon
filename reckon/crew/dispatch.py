@@ -6220,7 +6220,12 @@ def dispatch(
                         target_pid=int(spawned_pid),
                         reason="dispatch-rollback",
                     )
-                    _signal_process_group(spawned_pid, spawned_start_time)
+                    _signal_process_group(
+                        spawned_pid,
+                        spawned_start_time,
+                        run_dir=run_dir(run_id),
+                        reason="dispatch-rollback",
+                    )
                 except (CrewError, OSError):
                     pass
             # The pointer goes first. The worktree remover refuses a worktree
@@ -10089,7 +10094,12 @@ def change_lane(
             target_pid=int(record["pid"]),
             reason="lane-change",
         )
-        _signal_process_group(int(record["pid"]), record.get("pid_start_time"))
+        _signal_process_group(
+            int(record["pid"]),
+            record.get("pid_start_time"),
+            run_dir=directory,
+            reason="lane-change",
+        )
 
     directory.mkdir(parents=True, exist_ok=True)
     prompt_path.write_text(prompt, encoding="utf-8")
@@ -10215,7 +10225,12 @@ def terminate(run_id: str) -> dict[str, Any]:
             raise CrewError(f"run {run_id!r} has no process to stop")
         try:
             _write_sender_record(run_dir(run_id), target_pid=int(pid), reason="run-stop")
-            _signal_process_group(int(pid), record.get("pid_start_time"))
+            _signal_process_group(
+                int(pid),
+                record.get("pid_start_time"),
+                run_dir=run_dir(run_id),
+                reason="run-stop",
+            )
         except (ProcessLookupError, PermissionError, OSError) as exc:
             record["detail"] = f"could not signal pid {pid} — {exc}"
         else:
