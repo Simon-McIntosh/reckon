@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;}">
 </head>
 <body>
@@ -237,6 +237,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-pwnf-s9-landed" data-who="s22-coord" data-when="2026-10-03">
     <div class="r-comment-body"><p>Landed at 72990cf1e (run r-20261002T213705240861-section-record-moves-between-declarations, reviewed at 91, zero added failures). The write that refused was the whole-map form, <code>{"op":"set","path":"section_declarations","value":{...}}</code>, which reached the generic assignment and moved the declaration map without the typed records beside it. The dotted form <code>section_declarations.&lt;id&gt;</code> already moved the record at the base and is the test's positive control. So this section's original done-when, which named the dotted form, was a check that already passed at the base. The fixture is one-typesafe-model-picker at 53a72f8c: section 5 now moves between deferred and implementable in one versioned write each way. Record: <code>docs/evidence/fragments/plan-writes-are-not-fenced/section-record-moves-between-declarations.html</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261002T213705240861-section-record-moves-between-declarations" data-who="reckon-build" data-when="2026-10-02T22:03:29.757Z">
+    <div class="r-comment-body"><p>A declaration-map write now moves the typed section record beside it, whether the write names one id or the whole map: the fixture (one-typesafe-model-picker at 53a72f8c, the revision that refused every path to its section 5) moves section 5 between deferred and implementable in one versioned write each way — focused plan-write cohort 3 failed / 122 passed at the base against 125 passed at the head, EXIT=0, zero added failure ids.</p></div>
 </div>
 </section>
 </main>
