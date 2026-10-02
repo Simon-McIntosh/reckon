@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="116">
+<meta name="plan-version" content="117">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.99">
@@ -1902,6 +1902,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261001T110534672466-resume-and-lane-change-follow-their-attempt" data-who="reckon-build" data-when="2026-10-01T11:19:13.532Z">
     <div class="r-comment-body"><p>resume_plan and change_lane now pass run_dir(run_id) to the fence as the primary dispatch does and set the pointer's fenced field from the attempt's own composed plan; FENCE_WORKERS names every worker launch and the deliberately-unfenced lane-availability probe. Measure: tests/test_resume_and_lane_change_follow_their_own_attempt.py 3 passed, EXIT=0; two declared negative controls redden cases 1-2 and case 3 respectively, each EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261002T052247067962-fenced-claude-carries-its-login" data-who="reckon-build" data-when="2026-10-02T05:58:30.323Z">
+    <div class="r-comment-body"><p>A fenced claude launch now binds the operator&#x27;s ~/.claude/.credentials.json read-write at &lt;run&gt;/harness/.credentials.json for any dialect declaring subscription_login (the claude subscription lanes), while the clive lane binds none and an absent operator file binds none with the fence still built; new tests/test_fenced_claude_carries_its_login.py passes 4/4 and the four fence/harness-home modules add 0 failures against base 861d62efc (each run in its own fresh process).</p></div>
 </div>
 </section>
 </main>
