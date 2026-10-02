@@ -77,7 +77,6 @@ from reckon.crew.routing import (
     _repository_tree_snapshot,
     _signal_process_group,
     _workspace_roots,
-    _write_sender_record,
     mounted_repository_projects,
     reap_idle_session_members,
     require_plan_reviewed,
@@ -6215,11 +6214,6 @@ def dispatch(
             _unwire_peer_channels(run_id, wired_peer_run_ids)
             if spawned_pid is not None:
                 try:
-                    _write_sender_record(
-                        run_dir(run_id),
-                        target_pid=int(spawned_pid),
-                        reason="dispatch-rollback",
-                    )
                     _signal_process_group(
                         spawned_pid,
                         spawned_start_time,
@@ -10089,11 +10083,6 @@ def change_lane(
         return preview
 
     if source_process_alive:
-        _write_sender_record(
-            directory,
-            target_pid=int(record["pid"]),
-            reason="lane-change",
-        )
         _signal_process_group(
             int(record["pid"]),
             record.get("pid_start_time"),
@@ -10224,7 +10213,6 @@ def terminate(run_id: str) -> dict[str, Any]:
         if not pid:
             raise CrewError(f"run {run_id!r} has no process to stop")
         try:
-            _write_sender_record(run_dir(run_id), target_pid=int(pid), reason="run-stop")
             _signal_process_group(
                 int(pid),
                 record.get("pid_start_time"),

@@ -111,46 +111,91 @@ def test_unwatch_writes_a_sender_record_before_it_signals(
 ) -> None:
     """The record is on disk, and names the live producer, when the signal goes out.
 
-    The signal home is wrapped so the two orderings are read at the instant of
-    signalling: the record must already exist and the producer must still be
-    alive. A write ordered after the signal could satisfy neither.
+    The delivery call is wrapped so the ordering is read at the instant the
+    process is signalled: the attribution record must already exist and the
+    producer must still be alive. A write ordered after the signal could
+    satisfy neither. The complete signal then leaves one attribution record and
+    one delivered outcome, both carrying the watched project in its own field.
     """
     observed: dict = {}
-    real = recovery._signal_process_group
+    real_killpg = routing.os.killpg
 
-    def spy(pid, start_time, **kwargs):
-        observed["pid"] = pid
+    def spy_killpg(pgid, sig):
+        observed["pgid"] = pgid
         observed["records_at_signal"] = _sender_records(PROJECT)
         observed["alive_at_signal"] = producer.poll() is None
-        return real(pid, start_time, **kwargs)
+        return real_killpg(pgid, sig)
 
-    monkeypatch.setattr(recovery, "_signal_process_group", spy)
+    monkeypatch.setattr(routing.os, "killpg", spy_killpg)
 
     result = recovery.unwatch(PROJECT)
     assert result["stopped"] is True, result
 
-    assert observed["pid"] == producer.pid
-    assert observed["records_at_signal"], (
-        "no sender record on disk when unwatch signalled the producer"
+    assert observed["pgid"] == producer.pid
+    at_signal = observed["records_at_signal"]
+    assert len(at_signal) == 1, (
+        f"expected one attribution on disk when unwatch signalled: {at_signal!r}"
     )
+    assert "outcome" not in at_signal[0]
     assert observed["alive_at_signal"] is True, (
         "the producer had already exited before unwatch signalled it"
     )
 
     records = _sender_records(PROJECT)
-    assert len(records) == 1
-    record = records[0]
-    assert record["target_pid"] == producer.pid
-    assert record["reason"] == "unwatch"
-    assert record["sender_pid"] == os.getpid()
-    assert record["signal"] == "SIGTERM"
-    assert record["time"]
+    attributions = [record for record in records if "outcome" not in record]
+    outcomes = [record for record in records if record.get("outcome") == "delivered"]
+    assert len(attributions) == 1, (
+        f"unwatch left {len(attributions)} attribution records, expected one: {records!r}"
+    )
+    assert len(outcomes) == 1, (
+        f"unwatch left {len(outcomes)} delivered outcomes, expected one: {records!r}"
+    )
+    attribution = attributions[0]
+    assert attribution["target_pid"] == producer.pid
+    assert attribution["reason"] == "unwatch"
+    assert attribution["sender_pid"] == os.getpid()
+    assert attribution["signal"] == "SIGTERM"
+    assert attribution["time"]
+    assert attribution["project"] == PROJECT
+    assert outcomes[0]["target_pid"] == producer.pid
+    assert outcomes[0]["reason"] == "unwatch"
+    assert outcomes[0]["project"] == PROJECT
 
     _await(
         lambda: producer.poll() is not None,
         timeout=10.0,
         message="the producer outlived the unwatch that stopped it",
     )
+
+
+def test_unwatch_refusal_leaves_one_refused_record(
+    producer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A refused unwatch records its refusal in the watch directory, once.
+
+    The recorded start time is forced stale so the identity guard refuses a
+    live producer. The refusal must still land in the shared watch directory,
+    carrying the watched project in its own field, and must be the only record
+    the attempt leaves.
+    """
+    real = recovery._signal_process_group
+
+    def stale(pid, start_time, **kwargs):
+        return real(pid, "0", **kwargs)
+
+    monkeypatch.setattr(recovery, "_signal_process_group", stale)
+
+    with pytest.raises(routing.CrewError):
+        recovery.unwatch(PROJECT)
+
+    records = _sender_records(PROJECT)
+    refused = [record for record in records if record.get("outcome") == "refused"]
+    assert len(records) == 1, f"expected one refused record, got {records!r}"
+    assert len(refused) == 1
+    assert refused[0]["target_pid"] == producer.pid
+    assert refused[0]["reason"] == "unwatch"
+    assert refused[0]["project"] == PROJECT
+    assert not [record for record in records if record.get("outcome") == "delivered"]
 
 
 def test_unwatch_with_nothing_to_stop_leaves_no_record(home: Path) -> None:

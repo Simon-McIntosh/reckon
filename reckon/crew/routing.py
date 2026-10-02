@@ -1394,14 +1394,16 @@ def _write_sender_record(
     target_pgid: int | None = None,
     outcome: str | None = None,
     detail: str | None = None,
+    project: str | None = None,
 ) -> Path | None:
     """Append one sender record into the target run's directory.
 
     This is the one writer every signalling path funnels through, so the next
     unattributed SIGTERM is read from the run's own directory rather than
-    reconstructed from the survivors. The attribution record is written BEFORE
-    the signal is delivered: a signal that ends the sender too must still leave
-    the attribution behind, which a write ordered after the signal cannot
+    reconstructed from the survivors. A signal leaves exactly one attribution
+    record and one outcome record: the attribution record is written BEFORE the
+    signal is delivered, because a signal that ends the sender too must still
+    leave the attribution behind, which a write ordered after the signal cannot
     promise. The outcome of the attempt is appended as a second record once the
     attempt returns, because before it runs the outcome is unknowable and a
     record that names a SIGTERM that was never sent is worse than none.
@@ -1409,6 +1411,12 @@ def _write_sender_record(
     ``outcome`` is ``"delivered"``, ``"refused"`` or ``"failed"``; ``detail``
     carries the guard's reason for a refusal or the operating system's message
     for a failure. A record written before the attempt leaves both unset.
+
+    ``project`` is the watched project a sender record's target belongs to. It
+    is written as its own field rather than folded into ``detail`` so a reader
+    can act on the project without parsing a free-text message; a watcher's
+    record, which lands in a shared watch directory rather than a run
+    directory, is the case it exists for.
 
     The target's process group is recorded as well as its pid, because the two
     answer different questions — a group signal that reached unrelated work is
@@ -1448,6 +1456,8 @@ def _write_sender_record(
         record["outcome"] = str(outcome)
     if detail is not None:
         record["outcome_detail"] = str(detail)
+    if project is not None:
+        record["project"] = str(project)
     path = Path(run_dir) / SENDER_RECORD_NAME
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -1464,6 +1474,7 @@ def signal_worker(
     *,
     reason: str = "",
     run_dir: str | Path | None = None,
+    project: str | None = None,
 ) -> bool:
     """Signal one spawned process, never a group it does not lead.
 
@@ -1485,8 +1496,9 @@ def signal_worker(
     This is the only function in the crew that calls ``os.kill`` or
     ``os.killpg``, so the attribution scan has one home to point at. A caller
     that names the target's run directory gets a sender record written before
-    the signal goes out; a caller signalling something that is not a run passes
-    no directory and writes nothing.
+    the signal goes out, and a matching outcome record after; a caller
+    signalling something that is not a run passes no directory and writes
+    nothing.
     """
     try:
         group = os.getpgid(pid)
@@ -1496,7 +1508,12 @@ def signal_worker(
     signalled_as_group = target_is_own_group_leader and group != os.getpgid(0)
     if run_dir is not None:
         _write_sender_record(
-            run_dir, target_pid=pid, target_pgid=group, reason=reason, sig=sig
+            run_dir,
+            target_pid=pid,
+            target_pgid=group,
+            reason=reason,
+            sig=sig,
+            project=project,
         )
     try:
         if signalled_as_group:
@@ -1513,6 +1530,7 @@ def signal_worker(
                 sig=sig,
                 outcome="failed",
                 detail=str(exc) or type(exc).__name__,
+                project=project,
             )
         return False
     if run_dir is not None:
@@ -1523,6 +1541,7 @@ def signal_worker(
             reason=reason,
             sig=sig,
             outcome="delivered",
+            project=project,
         )
     return True
 
@@ -1533,6 +1552,7 @@ def _signal_process_group(
     *,
     reason: str = "",
     run_dir: str | Path | None = None,
+    project: str | None = None,
 ) -> None:
     """Signal a worker only while its pid still names the spawned process.
 
@@ -1543,9 +1563,12 @@ def _signal_process_group(
     signalling one's own group takes the caller down with it. Refuse before
     that lookup rather than let the OS enforce it as a self-inflicted SIGTERM.
 
-    A caller that names the target's run directory and reason gets a sender
-    record written before the signal, so a kill read from that run's own
-    directory names the caller rather than only the victim.
+    A caller that names the target's run directory and reason gets its
+    attribution and outcome records written by this one writer through
+    :func:`signal_worker`, so a kill read from that run's own directory names
+    the caller rather than only the victim. Callers do not write an attribution
+    of their own: a pre-write beside this one would leave two attribution
+    records for one signal.
 
     A guard that refuses the signal writes its own record carrying the
     ``refused`` outcome and the guard's reason, so a refusal is not read later
@@ -1565,6 +1588,7 @@ def _signal_process_group(
             sig=signal.SIGTERM,
             outcome="refused",
             detail=detail,
+            project=project,
         )
         raise CrewError(detail)
     actual_start_time = _process_start_time(pid)
@@ -1580,9 +1604,10 @@ def _signal_process_group(
             sig=signal.SIGTERM,
             outcome="refused",
             detail=detail,
+            project=project,
         )
         raise CrewError(detail)
-    signal_worker(pid, signal.SIGTERM, reason=reason, run_dir=run_dir)
+    signal_worker(pid, signal.SIGTERM, reason=reason, run_dir=run_dir, project=project)
 
 
 def _base_commit(repo: Path, base: str) -> str:
