@@ -1,0 +1,8 @@
+Corrected description (the recorded subject and the opening of the body are garbled):
+
+perf(crew): gate snapshot reuse on a fresh liveness reading
+
+Reuse a snapshot only while both the file stat identity and a fresh liveness
+reading hold. The liveness comes from the same host-gated reader that
+classify_pointer uses, taken every poll. The poll's own moment supplies the
+clock-derived fields, so a patched clock reaches them.
