@@ -571,14 +571,32 @@ def test_a_vanished_run_without_a_ledger_row_is_not_called_promoted(
     with _control(monkeypatch, "ledger-row-check"):
         assert _departure_word(use_ledger=True) == "promoted"
         ledger_ids.clear()
-        assert _departure_word(use_ledger=True) != "promoted"
+        # A ledger that resolves and does not record the run is the vanished
+        # case: the departure withdraws rather than landing.
+        assert _departure_word(use_ledger=True) == "withdrawn"
 
 
-def test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word() -> None:
-    # A caller that supplies no ledger cannot tell a promotion from a vanish,
-    # so the reading is qualified rather than asserted: the word stays
-    # promoted, and no reader is told a run was withdrawn on no evidence.
-    assert _departure_word(use_ledger=False) == "promoted"
+def test_a_departure_with_no_ledger_evidence_reads_departed() -> None:
+    # Neither a landing nor a withdrawal is honest when the ledger cannot be
+    # resolved at all, so the departure reads its own word. `departed` promises
+    # only that the run has left the fleet: it does not claim the work landed
+    # (which no row records) and it does not claim the run was withdrawn (which
+    # no evidence shows).
+    assert _departure_word(use_ledger=False) == "departed"
+
+
+def test_a_discard_marker_outranks_an_unresolvable_ledger() -> None:
+    # A deliberate discard is a fact the run's own directory records, so it
+    # names the departure discarded even when the ledger cannot be resolved to
+    # confirm it. The unresolvable-ledger word applies only where no such
+    # evidence exists.
+    from reckon.crew.promotion import discard_record_path
+
+    marker = discard_record_path("r-departure")
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text('{"discarded_at": "2026-10-02T00:00:00Z"}', encoding="utf-8")
+
+    assert _departure_word(use_ledger=False) == "discarded"
 
 
 # ── Case 7: every emitted word falls in exactly one bucket ────────────────

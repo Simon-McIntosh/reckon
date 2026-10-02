@@ -114,12 +114,14 @@ def test_a_pointer_that_vanishes_without_a_row_reads_withdrawn(home) -> None:
     assert folded[0][2] == "withdrawn"
 
 
-def test_an_unknown_record_withdraws_rather_than_promoting() -> None:
-    """A departure whose ledger cannot be resolved never asserts a promotion.
+def test_an_unknown_record_reads_departed() -> None:
+    """A departure whose ledger cannot be resolved reads its own word.
 
     A snapshot naming no project, folded with no reader, leaves the record
-    unknown. Unknown is answered by withdrawal: choosing promoted there promises
-    a landing no reader established, which is the defect this node closes.
+    unknown. Unknown is answered by departed, a word that promises neither a
+    landing nor a withdrawal: choosing promoted there promises a landing no
+    reader established, and choosing withdrawn there asserts a withdrawal no
+    evidence holds. Departed claims only that the run has left the fleet.
     """
     known = {
         "r-1": {
@@ -133,4 +135,4 @@ def test_an_unknown_record_withdraws_rather_than_promoting() -> None:
 
     folded, _ = recovery.fleet_transitions(known, {})
 
-    assert folded[0][2] == "withdrawn"
+    assert folded[0][2] == "departed"
