@@ -8560,10 +8560,13 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
                 not stopped
                 and data["phase"] in ("starting", "working")
                 and record["process_alive"] is False
+                and not _terminal_phase_survives(stored_phase, "orphaned")
             ):
                 # A dead process with no terminal event is a recoverable orphan,
                 # not a finished run. An empty log counts because argument
-                # failures can exit before the first event is written.
+                # failures can exit before the first event is written. A run the
+                # supervisor already finished is neither: its terminal stored
+                # phase stands and a spent pid does not reopen it.
                 record["phase"] = "orphaned"
                 record["detail"] = (
                     "process exited without a terminal event in its log; "
