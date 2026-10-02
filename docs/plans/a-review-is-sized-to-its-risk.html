@@ -20,13 +20,13 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <meta name="plan-blocks" content="a-small-change-is-a-small-node">
   <title>A Review Is Sized To Its Risk | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="122">
+<meta name="plan-version" content="123">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.95">
@@ -146,16 +146,11 @@
       repair dispatch naming all three; and over a week of ledger rows every finding-bearing review has exactly one
       repair round, and no finding is left without either a repair commit or a declined-with-reason answer.</p>
 
-    <h2 id="s4">§4 — A clean review promotes without a coordinator</h2>
-    <p><strong>Deliverable.</strong> When a review run completes with a stored record whose five-dimension total is at
-      least 90 of 100 and which carries no finding, the review's completion handler promotes the reviewed run itself:
-      it confirms the run's recorded gate passed, runs <code>verify-gate</code> against the primary branch's current
-      head with the run merged, and on both passing promotes with <code>promoted_by: review-acceptance</code> on the
-      ledger row. Anything short of that returns to the coordinator exactly as today. This adds an accepting branch to
-      the refusal <code>scoring-should-stop-a-promotion</code> landed; it is not a bypass of it.</p>
-    <p><strong>Done when</strong> a synthesised repository takes a clean run from its implement dispatch to promotion
-      with no coordinator command in between; a run whose review carries one finding is not promoted; and a run whose
-      integrated gate fails at the merged head is not promoted — three named tests.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-02</span>
+    <h2 id="s4">§4 — A clean review promotes without a coordinator</h2></header>
+  <p class="landed-summary">Landed 2026-10-02 (merge <code>ecdd531ca</code>), scoped by the lead to merged runs. A stored review at 90/100 or above with no finding promotes the run with <code>promoted_by: review-acceptance</code>, once its commits are on the primary branch and its gate passes there. Acceptance never merges or pushes. Four named tests; 0 added failures across 316 test files. <a href="s4-a-clean-review-promotes-a-merged-run">full record</a></p>
+</section>
 
     <h2 id="s5">§5 — The reflex reviews a settled head, and re-reviews only what changed</h2>
     <p><strong>Deliverable.</strong> The reflex dispatches a review only for a run that is terminal and has not been
