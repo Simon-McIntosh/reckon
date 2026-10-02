@@ -1,0 +1,45 @@
+<section id="landing-guard-admits-the-runs-own-plan-state">
+  <h2>The landing guard admits a plan-state write the store made</h2>
+
+  <p><strong>Decision.</strong> A plan-state change the plan store wrote — an
+  <code>impl</code> or <code>status</code> move, a resolved followup — is the
+  run's own bookkeeping, and the landing guard must admit it. The shipped
+  change (<code>fc83a491a</code>) was wrong, not the fixtures. It compared the
+  two plan documents whole, so a difference confined to a <code>plan-*</code>
+  scalar or a reckon-owned section refused as an "unrelated plan edit". That
+  breaks the ordinary sequence the impl-move check depends on: the store
+  advances the plan's impl, then the run promotes. Every one of the fourteen
+  attributed ids writes the plan's state through the store and then promotes,
+  and each was refused before reaching that check.</p>
+
+  <p><strong>Repair.</strong> The comparison now reads each side as parsed HTML
+  and keeps only the authored content outside the store-owned regions: the
+  <code>plan-*</code> scalars, the section records and the reckon-owned
+  sections are detached from both sides before comparing. A difference confined
+  to them is admitted; an authored prose edit, which the store never
+  regenerates, survives on both sides and is the only thing that refuses. A
+  body-resident comment the working copy holds and HEAD does not is still
+  dropped as an appended landing record. <code>reckon/crew/promotion.py</code>
+  is the only product file changed; the fourteen fixtures are correct as
+  written and were not edited.</p>
+
+  <p><strong>Evidence.</strong> The fourteen named ids reproduce at base
+  <code>825bf5bc</code> (14 failed, 21 passed, exit 1) and pass at head
+  <code>c0618c13</code>, where the three files and the guard's own file report
+  40 passed, exit 0. The guard's own tests keep their refusal of an authored,
+  unrelated edit (<code>test_an_unrelated_edit_to_the_plan_refuses_before_committing</code>)
+  and gain a case showing a store-written impl move lands
+  (<code>test_a_store_written_impl_move_lands_as_the_runs_own_bookkeeping</code>).
+  The adjacent gate files (<code>test_landing_commit_carries_only_its_own_comment.py</code>,
+  <code>test_repromotion_commits_its_recorded_comment.py</code>,
+  <code>test_crew_promotion.py</code>) show zero added failures: base 56 passed,
+  exit 0; head 57 passed, exit 0, the one added test being the new case. No test
+  is skipped, xfailed, deleted or weakened.</p>
+
+  <p><strong>Negative control.</strong> Declared mutation: <em>revert the chosen
+  change, to the guard or to the fixtures; every named id fails again</em>.
+  Reverting <code>reckon/crew/promotion.py</code> to base while keeping the head
+  tests makes exactly the fourteen named ids fail again (14 failed, 21 passed,
+  exit 1), recorded in the run's <code>negative-control.log</code>. The
+  worktree was restored to <code>c0618c13</code> afterwards.</p>
+</section>
