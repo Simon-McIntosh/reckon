@@ -25,8 +25,8 @@
   <title>A Worker Reuses Before It Writes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="69">
+<meta name="plan-modified" content="2026-10-03">
+<meta name="plan-version" content="70">
 <meta name="plan-impl" content="0.95">
 </head>
 <body>
@@ -179,6 +179,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261002T171336188879-timestamp-callers-use-parse-utc" data-who="reckon-build" data-when="2026-10-02T18:05:17.128Z">
     <div class="r-comment-body"><p>migrated the last three timestamp callers (reckon/crew/prompts.py:time_fence_statement, reckon/crew/repair.py:_parsed_moment, reckon/served_code.py:_summary) onto reckon._timestamps; six-row base-recorded table matched 36/36 cells by tests/test_timestamp_callers_use_parse_utc.py; caller-suite arms base 328 passed vs head 348 passed with no added failing id</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261002T202341535715-census-pin-after-migration" data-who="reckon-build" data-when="2026-10-02T21:59:39.541Z">
+    <div class="r-comment-body"><p>re-pinned the code-depth census at reckon e6cfdeea0bd7bd3a6a959c243dcdd3a2ff416eef (nova unchanged 16287918db2f90d0088c1786ec45965cd90e6652): fromisoformat direct callers 44 -&gt; 7, all seven named against the bound of three; atomic JSON writer 14 -&gt; 2, below the three-definition grouping floor, both named with their statements; stream enumeration 3 with two function-local delegates; numeric decoder group gone, one shared home; fragment docs/evidence/fragments/a-worker-reuses-before-it-writes/census-pin-after-migration.html</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T221420462479-review-of-one-atomic-writer-and-one-number-decoder" data-who="reckon-build" data-when="2026-09-28T23:04:52.771Z">
     <div class="r-comment-body"><p>review of run r-20260928T215645482298-one-atomic-writer-and-one-number-decoder stored under the crew review store as a parsed record (goal_fidelity 16, evidence 15, scope_discipline 20, durability 16, fit 19; total 86) with three findings</p></div>
