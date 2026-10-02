@@ -893,6 +893,13 @@ def test_a_reload_under_a_live_subreaper_keeps_the_dead_owner(home) -> None:
             )
 
             restore = _force_source_change()
+            # Kept as a fixed dwell, its bound not relaxable: the follower's
+            # reload check is rate-limited to one poll per
+            # ``runs.FOLLOWER_FRESHNESS_SECONDS``. The change must be older
+            # than that window before the follower is resumed, or the first
+            # pass after resume is rate-limited past it. While the follower is
+            # stopped there is no state to observe, so the window is the
+            # condition and it cannot be tightened below the freshness window.
             time.sleep(SETTLE_SECONDS)
 
             os.kill(follower_pid, SIGCONT)

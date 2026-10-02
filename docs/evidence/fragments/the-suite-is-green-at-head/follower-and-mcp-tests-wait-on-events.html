@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="Follower and MCP deadline tests wait on their observed conditions">
+  <meta name="plan-summary" content="The fixed waits in three follower and MCP deadline test files become bounded waits on their observed conditions, two negative-continuity reads and two subject delays are kept with a comment naming why, and one startup dwell with no observable condition is removed.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s3">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,tests,evidence">
+  <title>Follower and MCP deadline tests wait on their observed conditions | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="follower-and-mcp-tests-wait-on-events" data-reckon="landed" data-when="2026-10-02">
+  <h2>Follower and MCP deadline tests wait on their observed conditions</h2>
+  <p>The fixed waits the scout named in three files now wait on the condition each was
+  standing in for, bounded by the window the sleep always spent. In
+  <code>tests/test_follow_observes_other_sessions.py</code> the shared collector
+  <code>_follow</code> stops on a caller's condition instead of a fixed settle: the cases that
+  expect a known number of deliveries pass <code>until</code> (three and two events) and end as
+  soon as those arrivals land. Two cases whose claim is an <em>absence</em> — a peer session's run
+  must not reach the follower, and an own row must not be repeated — keep the whole window as a
+  negative-continuity read (<code>_hold_the_window</code>), because there is no positive event to
+  wait on. A startup dwell in the observed-session row case had no observable condition and is
+  removed outright, the tightest bound available. In
+  <code>tests/test_mcp_reads_have_deadlines.py</code> the three waits for an entered call
+  (the loop-blocking probe), a started worker read, and an attempted landing stat now poll for
+  that fact and end as soon as it holds; the two delays that are the subject of their measure —
+  the probe that must hold the loop, and the write that must land inside its grace window — are
+  kept fixed and now carry a comment. In <code>tests/test_follower_checks_its_owner.py</code> the
+  single fixed wait, the subreaper reload dwell at line 896, keeps its window: the follower's
+  reload check is rate-limited to one poll per <code>FOLLOWER_FRESHNESS_SECONDS</code>, the
+  follower is stopped so it exposes no state to observe, and the delay is the condition, so its
+  bound cannot be tightened below the freshness window. No test is skipped, xfailed, deleted or
+  weakened; no product file is touched.</p>
+  <p><strong>Measured.</strong> Three consecutive <code>-n&nbsp;4</code> runs of the three files
+  at head <code>68000b0b</code>: <strong>24 passed</strong> each
+  (<code>head-run1.log</code>, <code>head-run2.log</code>, <code>head-run3.log</code>), and the
+  base arm at <code>8a71686c</code> runs the three files at their pre-change revisions in the same
+  tree: <strong>24 passed</strong> (<code>base-run.log</code>), so the change adds zero failures.
+  The declared negative control restores the collector's bounded wait as a fixed
+  <code>time.sleep(0.001)</code>, shorter than the delivery condition takes under load: the bounded
+  wait passes (24 passed) while the fixed delay fails on two ids
+  (<code>test_rows_from_an_observed_session_carry_the_foreign_marker_and_own_rows_do_not</code>,
+  <code>test_the_real_configuration_home_gains_no_file</code>) with arm&nbsp;2
+  <code>EXIT=1</code>, logged both ways in <code>negative-control.log</code>.</p>
+</article>
+</body>
+</html>
