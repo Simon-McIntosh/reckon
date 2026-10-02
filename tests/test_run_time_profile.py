@@ -6,8 +6,7 @@ fixture file. That is deliberate: a test that read the live ledger would pass
 when written and drift as runs accumulate, and it would measure the machine
 rather than the module.
 
-Four properties are exercised, one per case, each chosen because its opposite
-was a plausible bug:
+Each case exists because its opposite was a plausible bug:
 
 * **The 10-row percentile fixture** pins the median and the 90th percentile to
   hand-computed members of a known sample, with the two deliberately unequal so
@@ -18,6 +17,13 @@ was a plausible bug:
 * **Both size-bucket keys** are covered separately: a row that recorded a time
   budget buckets by it, and a row that recorded none falls back to output
   tokens, with the key named on each result.
+* **The window's upper bound** drops a row completing after ``until``, so a
+  promotion landing after the window closes cannot be counted.
+* **A size bucket** counts every member row in ``runs`` and its timed subset in
+  ``timed_runs``, and a backend whose rows all lack a wall time still appears
+  against a null median rather than being dropped.
+* **The module identity** is checked to resolve inside the checkout under test,
+  so a stale copy from a shared environment or another tree is refused.
 * **A missing lane document** yields ``None`` for every load field, proven
   against a present document that resolves its figures, so the absence check is
   shown to see something where something exists.
@@ -48,6 +54,7 @@ def _row(
     output_tokens: int | None = None,
     gate: str = "passed",
     time_budget: str | None = None,
+    completed_at: str | None = None,
 ) -> dict:
     """Build one synthetic ledger row with only the fields under test."""
 
@@ -64,6 +71,8 @@ def _row(
         row["budget"] = {"tokens": {"output_tokens": output_tokens}}
     if time_budget is not None:
         row["time_budget"] = time_budget
+    if completed_at is not None:
+        row["completed_at"] = completed_at
     return row
 
 
@@ -206,6 +215,87 @@ def test_a_missing_lane_document_yields_nulls(tmp_path, monkeypatch):
 
 
 def test_the_module_is_the_one_under_test():
-    """Guard against importing a stale installed copy from a shared environment."""
+    """Guard against importing a stale installed copy from a shared environment.
 
-    assert profile_module.__file__ is not None
+    The module must resolve inside the repository root of the checkout under
+    test. An import that lands in a shared environment or another tree's
+    checkout would otherwise pass a mere ``__file__ is not None`` check while
+    running code from a different revision.
+    """
+
+    repo_root = Path(__file__).resolve().parents[1]
+    module_path = Path(profile_module.__file__ or "").resolve()
+    assert module_path.is_relative_to(repo_root), (
+        f"run_time_profile imported from {module_path}, outside {repo_root}"
+    )
+
+
+def test_a_row_completing_after_the_window_is_excluded(install_rows):
+    """A completion stamp after ``until`` keeps the row out of every table.
+
+    ``now`` is fixed, so the window is deterministic; the only difference
+    between the two rows is that the second completed after the bound.
+    """
+
+    install_rows(
+        [
+            _row(
+                backend="clive",
+                wall_seconds=100,
+                time_budget="10m",
+                completed_at="2026-10-02T11:00:00Z",
+            ),
+            _row(
+                backend="clive",
+                wall_seconds=200,
+                time_budget="10m",
+                completed_at="2026-10-02T12:30:00Z",
+            ),
+        ]
+    )
+
+    report = run_time_profile("reckon", days=14, now=FIXED_NOW)
+
+    assert report["rows"] == 1
+    assert len(report["groups"]) == 1
+    assert report["groups"][0]["runs"] == 1
+    assert report["groups"][0]["wall_seconds_median"] == 100
+    bucket = report["size_buckets"][0]["buckets"]["up_to_30m"]
+    assert bucket["runs"] == 1
+    assert bucket["timed_runs"] == 1
+    assert bucket["wall_seconds_median"] == 100
+
+
+def test_size_buckets_count_runs_and_timed_runs(install_rows):
+    """A bucket counts every member row, and its timed subset separately.
+
+    ``clive`` has one timed and one untimed row in the same bucket, so its
+    ``runs`` is two and its ``timed_runs`` one; ``codex`` has only untimed
+    rows, so it still appears with a null median rather than being dropped.
+    """
+
+    install_rows(
+        [
+            _row(backend="clive", wall_seconds=600, time_budget="10m"),
+            _row(backend="clive", wall_seconds=None, time_budget="10m"),
+            _row(backend="codex", wall_seconds=None, time_budget="10m"),
+        ]
+    )
+
+    report = run_time_profile("reckon", days=14, now=FIXED_NOW)
+    buckets = {entry["backend"]: entry for entry in report["size_buckets"]}
+
+    clive = buckets["clive"]["buckets"]["up_to_30m"]
+    assert clive["runs"] == 2
+    assert clive["timed_runs"] == 1
+    assert clive["wall_seconds_median"] == 600
+
+    codex = buckets["codex"]["buckets"]["up_to_30m"]
+    assert codex["runs"] == 1
+    assert codex["timed_runs"] == 0
+    assert codex["wall_seconds_median"] is None
+
+    # The bucket ``runs`` now means what the group table's ``runs`` means.
+    by_group = {group["backend"]: group for group in report["groups"]}
+    assert by_group["clive"]["runs"] == 2
+    assert by_group["codex"]["runs"] == 1

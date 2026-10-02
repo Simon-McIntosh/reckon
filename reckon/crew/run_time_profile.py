@@ -6,12 +6,18 @@ and how loaded the local lane is right now. This module derives both.
 
 :func:`run_time_profile` reads completed ledger rows over a trailing window and
 groups them by the four fields that describe a node's shape -- serving backend,
-effort, role and specification level. For each group it reports how many runs
-the group held, the median and 90th-percentile wall time, the median output
-tokens, and the fraction of that group's closed gate verdicts that passed. It
-reports the same wall time by node size for each backend, bucketed first on the
-declared time budget the row recorded and on output tokens only where no budget
-was recorded; the bucket key it used is named beside the buckets.
+effort, role and specification level. The window is closed at both ends: a row
+whose completion stamp falls before ``since`` or after the profile's ``until``
+is in no group and no bucket, so a row promoted after the window closes cannot
+leak into either table. For each group it reports how many runs the group held,
+the median and 90th-percentile wall time, the median output tokens, and the
+fraction of that group's closed gate verdicts that passed. It reports the same
+wall time by node size for each backend, bucketed first on the declared time
+budget the row recorded and on output tokens only where no budget was recorded;
+the bucket key it used is named beside the buckets. Each size bucket reports
+``runs`` -- every row it classified, matching the group table's ``runs`` -- and
+``timed_runs``, the subset carrying a wall time, because a row with no wall time
+still classifies and still counts.
 
 :func:`local_lane_load` reads the local serving document and reports the lane's
 load: nodes running, nodes waiting, remaining headroom, the worker slots the
@@ -205,6 +211,29 @@ def _wall_seconds(row: Mapping[str, Any]) -> float | None:
     return _number(row.get("wall_seconds"))
 
 
+def _completed_after(row: Mapping[str, Any], reference: datetime) -> bool:
+    """True when the row's completion stamp is readable and after ``reference``.
+
+    A stamp the parser cannot read is not evidence that the row falls outside
+    the window, so it is left in rather than dropped; the ledger's own ``since``
+    filter has already refused a row with no usable completion stamp.
+    """
+
+    value = row.get("completed_at")
+    if not isinstance(value, str):
+        return False
+    text = value.strip()
+    if not text:
+        return False
+    try:
+        stamp = datetime.fromisoformat(text)
+    except ValueError:
+        return False
+    if stamp.tzinfo is None:
+        stamp = stamp.replace(tzinfo=UTC)
+    return stamp > reference
+
+
 def _group_rows(rows: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
     """Build the per-shape group table from the selected rows."""
 
@@ -245,11 +274,18 @@ def _group_rows(rows: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _size_table(rows: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
-    """Build the per-backend size-bucket table from the selected rows."""
+    """Build the per-backend size-bucket table from the selected rows.
 
-    per_backend: dict[str, dict[str, list[float]]] = defaultdict(
-        lambda: defaultdict(list)
-    )
+    A bucket counts every row it classified in ``runs`` -- the same quantity
+    the group table reports -- and the subset carrying a wall time in
+    ``timed_runs``. The wall-time median is taken over the timed subset and is
+    ``None`` when that subset is empty. A backend whose rows all lack a wall
+    time still appears, with its bucket counts and null medians, rather than
+    being dropped as if it had never run.
+    """
+
+    members: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    walls: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
     keys_used: dict[str, set[str]] = {}
     for row in rows:
         if not isinstance(row, Mapping):
@@ -262,12 +298,13 @@ def _size_table(rows: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
         if key is None or label is None:
             continue
         keys_used.setdefault(backend, set()).add(key)
+        members[backend][label] += 1
         wall = _wall_seconds(row)
         if wall is not None:
-            per_backend[backend][label].append(wall)
+            walls[backend][label].append(wall)
 
     table: list[dict[str, Any]] = []
-    for backend in sorted(per_backend):
+    for backend in sorted(members):
         used = keys_used.get(backend, set())
         if used == {BUDGET_KEY}:
             key_name = BUDGET_KEY
@@ -280,8 +317,9 @@ def _size_table(rows: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
             labels = BUDGET_BUCKETS + TOKEN_BUCKETS
         buckets = {
             label: {
-                "runs": len(per_backend[backend].get(label, [])),
-                "wall_seconds_median": _median(per_backend[backend].get(label, [])),
+                "runs": members[backend].get(label, 0),
+                "timed_runs": len(walls[backend].get(label, [])),
+                "wall_seconds_median": _median(walls[backend].get(label, [])),
             }
             for label in labels
         }
@@ -298,8 +336,12 @@ def run_time_profile(
 
     ``project`` names the ledger to read, ``days`` the trailing window length,
     and ``now`` the window's end (defaulting to the current UTC instant). The
-    rows are read through :func:`reckon.ledger.runs`, filtered to those whose
-    completion stamp falls inside the window.
+    rows are read through :func:`reckon.ledger.runs` with the window's ``since``
+    floor, then any row whose completion stamp falls after ``until`` is dropped
+    here, so the returned figure is bounded at both ends: ``ledger.runs``
+    applies ``since`` only, and a row promoted after the window closes would
+    otherwise be counted. A row carrying no readable completion stamp is kept,
+    because the ledger's own ``since`` filter has already refused one.
 
     Returns the window boundaries it used, the number of rows it read, the
     per-shape ``groups`` table and the per-backend ``size_buckets`` table. Every
@@ -311,7 +353,11 @@ def run_time_profile(
         reference = reference.replace(tzinfo=UTC)
     since = reference - timedelta(days=days)
     rows = ledger.runs(project, since=since.isoformat())
-    selected = [row for row in rows if isinstance(row, Mapping)]
+    selected = [
+        row
+        for row in rows
+        if isinstance(row, Mapping) and not _completed_after(row, reference)
+    ]
     return {
         "project": project,
         "days": days,
