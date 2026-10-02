@@ -1,0 +1,59 @@
+<!doctype html>
+<html><head>
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+<meta name="plan" content="crew-runtime-positive-controls">
+<meta name="node" content="protected-bind-waits-for-its-source">
+<title>protected-bind-waits-for-its-source</title>
+</head><body>
+
+<h2 id="landing">A protected file being rewritten no longer abandons a launch</h2>
+
+<p>Landed at <code>926a9dcde281b5640cc454aabc4f92a8f5ab5785</code> on
+<code>reckon/_backends.py</code> and
+<code>tests/test_protected_bind_waits_for_its_source.py</code>.</p>
+
+<p>The fence now composes from the <em>declared</em> protected set, waits
+together for every absent source (<code>PROTECTED_BIND_WAIT_ATTEMPTS = 10</code>,
+<code>PROTECTED_BIND_WAIT_INTERVAL_SECONDS = 0.05</code>), binds the ones that
+appears read-only, refuses the launch — early, naming the path — when a path a
+layer declared stays absent past the bound, and leaves out a shipped default
+this machine does not have rather than refusing every launch on a host without
+it (this workstation has no <code>~/.netrc</code>).</p>
+
+<h3 id="reproduction">The recorded defect, reproduced in the base tree</h3>
+
+<p>Probe run against the base revision with temporary paths only
+(<code>repro-incident.txt</code> beside the gate logs): a declared protected
+path absent at composition was bound <strong>not</strong> read-only
+(<code>absent-at-composition declared path bound read-only: False</code> — the
+path would have run writable), and a source that vanished after the check died
+in the fence with <code>vanish-after-check exit: 1</code>,
+<code>bwrap: Can't find source path .../.claude.json: No such file or
+directory</code> — the launch-killing window this node closes for absence at
+composition.</p>
+
+<h3 id="gate">Gate</h3>
+
+<p>Both arms, <code>pytest -n 8 --timeout=300</code>. Base (git archive of
+<code>9fe5d8204634a1fe3db5f118df8c83e4eee7b0dd</code> under the run's scratch
+tree): 167 passed, exit 0. Head (worktree, <code>926a9dcd</code>): 170 passed,
+exit 0. Added failures: none.</p>
+
+<p>Negative control — the bounded retry removed, the delayed-file case then
+must fail: <code>1 failed, 2 passed</code>, <code>EXIT=1</code>, failing id
+<code>tests/test_protected_bind_waits_for_its_source.py::test_a_protected_file_that_appears_after_a_delay_is_bound</code>.</p>
+
+<h3 id="unmet">Unmet within this node's write scope</h3>
+
+<p>The source can still vanish <em>after</em> composition and before the
+sandbox starts: the worker's argv is spawned by
+<code>subprocess.Popen(plan.argv)</code> in <code>reckon/crew/dispatch.py</code>
+(<code>_spawn_detached_worker</code>, <code>_supervisor_spawn_worker</code>),
+which is outside this node's granted write paths (held by a concurrent node).
+Retrying that spawn on the fence's bind error — or slipping the composition
+itself to the spawn — belongs there; recorded as a follow-on. Within
+<code>_backends.py</code> the only other lever is the bind source shape, which
+existing tests pin at <code>--ro-bind &lt;path&gt; &lt;path&gt;</code>.</p>
+
+</body></html>
