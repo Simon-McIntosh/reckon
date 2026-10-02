@@ -1,0 +1,102 @@
+<article class="landed-report" data-run-id="r-20261002T111727761881-picker-reuse-map" data-node="picker-reuse-map">
+  <h3>Typed picker reuse map</h3>
+  <p>
+    <strong>Base inspected:</strong>
+    <code>3b06162b5ae5eac7ad7aa3de166721f455df9713</code>. A base-revision
+    <code>git grep</code> resolved 28 named definitions used below (25 in the
+    primary scan and three supporting definitions). The implementation can
+    reuse the existing gates and measurements; it needs one candidate-snapshot
+    adapter, one picker call, and one persisted selection block.
+  </p>
+
+  <h4>Resolution and injection point</h4>
+  <table>
+    <thead><tr><th>existing binding</th><th>picker use</th><th>reason</th></tr></thead>
+    <tbody>
+      <tr><td><code>reckon/crew/dispatch.py — plan_dispatch</code></td><td><strong>wrap</strong></td><td>This is the side-effect-free decision boundary. Today it derives <code>requested_backend</code>, then calls <code>resolve_role_override</code> for an explicit lane or <code>resolve_section_routing</code>/<code>resolve_role</code> for the configured lane. Invoke the picker after node and section inputs are available and before that branch; feed the chosen existing backend name through <code>resolve_role_override</code>.</td></tr>
+      <tr><td><code>reckon/crew/routing.py — resolve_role</code>, <code>resolve_role_override</code>, <code>resolve_section_routing</code></td><td><strong>reuse as-is</strong></td><td>They already merge role, specification-level and capability-class overlays into effective backend settings. The picker chooses a candidate; these functions remain the configuration authority.</td></tr>
+      <tr><td><code>reckon/crew/dispatch.py — DispatchPlan</code>, <code>dispatch</code></td><td><strong>add then reuse</strong></td><td>Add a typed picker-selection field to <code>DispatchPlan</code>; <code>dispatch</code> already consumes <code>resolution.backend</code> for budget, gate, allowance, worktree and launch decisions, so no second routing path is needed.</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Inputs already computed</h4>
+  <table>
+    <thead><tr><th>router input</th><th>source path and symbol</th><th>disposition</th><th>reason</th></tr></thead>
+    <tbody>
+      <tr><td>Serving availability</td><td><code>reckon/crew/resumption.py — probe_lane_availability</code></td><td><strong>wrap</strong></td><td>It serialises and caches a minimal live request as <code>served</code>, <code>refused</code> or <code>unavailable</code>. A picker adapter must call it for every candidate, not only during recovery, and preserve the observation time and detail.</td></tr>
+      <tr><td>Per-backend budget utilisation and reset</td><td><code>reckon/budget.py — latest_recorded</code>, <code>state_for</code>, <code>decide</code></td><td><strong>reuse as-is</strong></td><td>These join live pointers, ledger history and the account probe, producing utilisation, reset, headroom and hold evidence without treating an unreadable probe as exhaustion.</td></tr>
+      <tr><td>Burn multiple</td><td><code>reckon/budget.py — _burn_multiple</code></td><td><strong>reuse through BudgetState</strong></td><td>The calculation already relates utilisation to elapsed window fraction. Consume the value emitted by <code>state_for</code>; do not duplicate the private formula in the picker.</td></tr>
+      <tr><td>Per-group utilisation, allowance and reset clocks</td><td><code>reckon/budget.py — recorded_windows</code>, <code>group_pace</code>, <code>pace_row</code>; <code>reckon/crew/budget_group.py — group_figures</code></td><td><strong>wrap</strong></td><td>The functions already ensure one shared wallet is measured once and carry observed clocks, allowance and pacing. Build one concise group snapshot and reference it from member candidates rather than cloning the wallet figures per backend.</td></tr>
+      <tr><td>Local-lane congestion</td><td><code>reckon/crew/lane_document.py — read_lane_document</code>; <code>reckon/crew/dispatch.py — _dispatch_lane_reading</code></td><td><strong>reuse as-is</strong></td><td>The strict reader carries headroom, generating, waiting, gate counts, freshness and unknowns independently; it keeps missing distinct from zero.</td></tr>
+      <tr><td>Local-lane worker slots</td><td><code>reckon/crew/lane_document.py — read_lane_admission</code>; <code>reckon/crew/dispatch.py — _lane_worker_allowance</code></td><td><strong>wrap</strong></td><td>Selection order is already session share, new-session share, global slots, then request headroom. Expose the resulting allowance and source in each local candidate snapshot before launch.</td></tr>
+      <tr><td>Paused or mismatched lane gate</td><td><code>reckon/crew/dispatch.py — _dispatch_lane_gate</code></td><td><strong>reuse as-is</strong></td><td>It fail-closes unreadable pauses and validates the declared gate path against the lane document. Filter a candidate on this verdict before showing it to Jev.</td></tr>
+      <tr><td>Context-fit refusal</td><td><code>reckon/crew/routing.py — _context_fit_verdict</code></td><td><strong>wrap/refactor</strong></td><td>The calculation is complete but accepts a single <code>DispatchPlan</code>. Factor or adapt it so every candidate is checked against its declared and observed effective input windows before the Choice options are built.</td></tr>
+      <tr><td>Competence refusal</td><td><code>reckon/crew/routing.py — _competence_verdict</code></td><td><strong>wrap/refactor</strong></td><td>It compares neutral estimated hours with the measured agent-configuration horizon and nests context fit. Evaluate it per candidate; a refusal is a hard filter, not Jev state.</td></tr>
+      <tr><td>Capability requirements</td><td><code>reckon/crew/routing.py — resolve_section_routing</code>; <code>reckon/capability.py — assess_execution_fit</code></td><td><strong>reuse as-is</strong></td><td>The typed section record already supplies capability class and requirements, including attempt-based raises; execution-fit already rejects a role unable to produce the done-when.</td></tr>
+      <tr><td>Role and specification level</td><td><code>reckon/crew/node.py — TaskNode</code>; <code>reckon/crew/routing.py — resolve_role</code></td><td><strong>reuse as-is</strong></td><td><code>TaskNode.role</code> and <code>TaskNode.spec_level</code> are stable typed inputs, while role resolution proves which configured candidates can serve that combination.</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Ledger reuse and 14-day population</h4>
+  <p>
+    <code>reckon/crew/routing.py — _agent_configuration</code> stamps backend and
+    model; <code>reckon/crew/promotion.py — complete</code> supplies role,
+    specification level, gate and compact review data to
+    <code>reckon/ledger.py — build_record</code>. The row therefore already
+    records <code>backend</code>, <code>agent.model</code>, <code>role</code>,
+    <code>spec_level</code>, <code>gate</code> and <code>review</code>;
+    <code>review_scores</code> exposes the per-dimension scores. <strong>Add</strong>
+    one nullable typed picker-selection block to every row; do not infer a past
+    selection from the actual backend.
+  </p>
+  <p>
+    Population check at the base revision: <code>ledger.runs("reckon")</code>
+    saw 3,132 rows in total and 2,060 rows completed or dispatched from
+    2026-09-18T11:19:19Z through 2026-10-02T11:19:19Z; the newest row was
+    2026-10-02T10:58:48.740Z. All 2,060 carry backend, role, spec level and gate;
+    2,057 carry <code>agent.model</code>, and 814 carry a review. Here “outcome”
+    is the closed gate verdict, not the free-form outcome sentence.
+  </p>
+  <table>
+    <thead><tr><th>backend</th><th>passed</th><th>failed</th><th>not-run</th><th>total</th></tr></thead>
+    <tbody>
+      <tr><td>claude</td><td>1</td><td>0</td><td>5</td><td>6</td></tr>
+      <tr><td>clive</td><td>870</td><td>27</td><td>1,065</td><td>1,962</td></tr>
+      <tr><td>codex</td><td>25</td><td>0</td><td>3</td><td>28</td></tr>
+      <tr><td>codex-astra</td><td>22</td><td>1</td><td>1</td><td>24</td></tr>
+      <tr><td>codex-luna</td><td>16</td><td>0</td><td>6</td><td>22</td></tr>
+      <tr><td>codex-terra</td><td>15</td><td>0</td><td>0</td><td>15</td></tr>
+      <tr><td>native</td><td>0</td><td>3</td><td>0</td><td>3</td></tr>
+      <tr><th>all</th><th>949</th><th>31</th><th>1,080</th><th>2,060</th></tr>
+    </tbody>
+  </table>
+
+  <h4>Jinja prompt precedent</h4>
+  <p>
+    <code>/home/ITER/mcintos/Code/imas-codex/imas_codex/llm/prompt_loader.py</code>
+    binds <code>PROMPTS_DIR</code> to <code>Path(__file__).parent / "prompts"</code>.
+    <code>_get_jinja_env</code> uses a custom <code>PromptsLoader</code> that
+    searches <code>prompts/shared/</code> then <code>prompts/</code>;
+    <code>render_prompt</code> calls <code>env.from_string(prompt_def.content)</code>
+    and <code>template.render(full_context)</code>. Its stricter path,
+    <code>_strict_jinja_env</code>/<code>render_prompt_strict</code>, uses
+    <code>ChoiceLoader(FileSystemLoader(shared), FileSystemLoader(root))</code>,
+    <code>StrictUndefined</code>, rejects unknown or missing context keys, and
+    renders with <code>env.from_string(...).render(full_context)</code>.
+    <strong>Reuse the strict pattern</strong> for picker prompts so a missing live
+    fact cannot silently become an empty string.
+  </p>
+  <p>
+    <strong>Dependency gap:</strong> <code>jinja2</code> is absent from reckon's
+    <code>pyproject.toml</code> dependencies. It appears in <code>uv.lock</code>
+    only transitively, so the router must add it as a direct project dependency
+    before importing it.
+  </p>
+
+  <h4>Minimal new seam</h4>
+  <ol>
+    <li><strong>Add</strong> a candidate-snapshot builder that iterates configured candidates, reusing the functions above and excluding hard refusals before Jev sees options.</li>
+    <li><strong>Add</strong> the strict Jinja template plus the typed Jev/OpenRouter call; return the selected existing backend name, probabilities, confidence, pinned model version and fallback reason.</li>
+    <li><strong>Wrap</strong> <code>plan_dispatch</code> once, pass the selection through <code>resolve_role_override</code>, and persist the same nullable selection on the live run and ledger row. Existing budget, pause, slot and launch gates remain authoritative after selection.</li>
+  </ol>
+</article>
