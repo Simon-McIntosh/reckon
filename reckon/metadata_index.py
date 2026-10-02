@@ -1,4 +1,4 @@
-"""A persisted per-project metadata index, keyed by each file's stat identity.
+"""A persisted per-project metadata index, keyed by each file's content digest.
 
 A page's first paint needs one row per document and figure — slug, href, type,
 title, status, sprint, archive marker, stamps and figure dimensions — and
@@ -7,20 +7,21 @@ tree on every cold process, so a restart re-read the whole project from the
 shared filesystem before it could answer.
 
 The index keeps one row per file on disk under the configuration home's cache
-directory, together with the stat identity of the file the row came from. A
-rebuild walks the tree, stats each file and re-parses only the ones whose
-identity moved, so a restart costs stat calls rather than reads. The change
+directory, together with a content digest of the file the row came from. A
+rebuild walks the tree, hashes each file and re-parses only the ones whose
+bytes changed, so a rebuild costs a hash per file rather than a parse; the hash
+is an order of magnitude cheaper than the parse it stands in for. The change
 watch drops a tree's in-process rows when the kernel reports a change to it,
-and the next read re-stats that tree and rebuilds the rows that moved. A
-reader with no watch revalidates by stat on every call instead — see
+and the next read rehashes that tree and rebuilds the rows that moved. A
+reader with no watch revalidates by digest on every call instead — see
 ``index_rows(..., revalidate=True)`` — so a long-lived process still sees a
 later edit.
 
 A plan's row also carries the two figures that cannot be read from a document's
 ``<meta>`` head: its open-followup count and its implementable-section count.
-They are derived once, when the row is built, and reused until the file's stat
-identity moves, so a reader that answers from the index — the drain's plan
-remainder, :func:`plan_derivations` — never parses a plan it has already seen.
+They are derived once, when the row is built, and reused until the file's bytes
+change, so a reader that answers from the index — the drain's plan remainder,
+:func:`plan_derivations` — never parses a plan it has already seen.
 """
 
 from __future__ import annotations
@@ -48,7 +49,7 @@ StampFn = Callable[[Path, list[int]], tuple[int, str]]
 LOGGER = logging.getLogger("reckon.metadata_index")
 
 #: The fields a served row may carry, and the whole of what ``/_index``
-#: returns. The stat identity that keys the persisted index is deliberately
+#: returns. The content digest that keys the persisted index is deliberately
 #: not one of them: it is bookkeeping, not something a list renders.
 ROW_FIELDS = (
     "slug",
@@ -67,7 +68,7 @@ ROW_FIELDS = (
 _SCHEMA = "reckon.metadata-index"
 #: Bumped when an entry gains a field, so an index written by the previous
 #: shape is rebuilt rather than reused with the new field absent.
-_VERSION = 2
+_VERSION = 3
 _FIGURE_DIR = "figures"
 _FIGURE_SUFFIXES = (".png", ".svg", ".gif")
 #: The types discovery keeps in an inventory, so the index answers with the
@@ -130,8 +131,8 @@ def index_rows(
     whose stamps use the same source the served discovery payload uses, so a
     reader merging the two never sees a document's timestamps move.
 
-    ``revalidate`` re-stats every covered file before answering and re-parses
-    only the ones whose identity moved — the cost a restart already pays. A
+    ``revalidate`` rehashes every covered file before answering and re-parses
+    only the ones whose bytes changed — the cost a restart already pays. A
     caller the change watch serves gets that for free through
     :func:`invalidate_tree` and leaves the flag alone; a caller without a watch
     (the MCP and CLI processes) would otherwise answer from the first build it
@@ -167,8 +168,8 @@ def plan_derivations(docs_dir: Path, project: str) -> list[dict]:
     title, stamps — reads :func:`index_rows` instead; these figures are
     deliberately outside ``ROW_FIELDS``.
 
-    Every call re-stats each covered file, so a caller in a long-lived process
-    sees a later edit, and only a file whose identity moved is parsed again.
+    Every call rehashes each covered file, so a caller in a long-lived process
+    sees a later edit, and only a file whose bytes changed is parsed again.
     """
 
     build = _build_and_cache(
@@ -211,7 +212,7 @@ def build_index(
     git_first: Mapping[str, int] | None = None,
     git_last: Mapping[str, int] | None = None,
 ) -> IndexBuild:
-    """Build one project's rows, re-parsing only what its stat identity moved."""
+    """Build one project's rows, re-parsing only what its bytes changed."""
 
     docs_dir = Path(docs_dir)
     stamp = _make_stamp(repo_dir, git_first, git_last)
@@ -223,15 +224,17 @@ def build_index(
     for relative, path in _covered_files(docs_dir):
         seen.add(relative)
         try:
-            signature = list(file_signature(path))
+            digest = _content_digest(path)
         except OSError:
-            # A file that vanished mid-walk is not a row; the next build sees
-            # whatever replaced it.
-            continue
+            # A file that cannot be read is still a row, built below with its
+            # parse left unknown; a vanished one drops out and the next build
+            # sees whatever replaced it.
+            digest = None
         entry = known.get(relative)
         if (
             entry is not None
-            and _same_file(entry.get("stat"), signature)
+            and digest is not None
+            and entry.get("digest") == digest
             and _row_is_complete(entry)
         ):
             build.reused += 1
@@ -241,12 +244,18 @@ def build_index(
             if isinstance(entry.get("plan"), Mapping):
                 build.plans.append({"path": relative, **entry["plan"]})
             continue
+        try:
+            signature = list(file_signature(path))
+        except OSError:
+            # The file went away between the hash and this stat; the next build
+            # sees whatever replaced it.
+            continue
         if entry is None:
             build.added += 1
         else:
             build.rebuilt.append(relative)
         fields, plan = _row_for(path, relative, docs_dir, project, signature, stamp)
-        entry = {"path": relative, "stat": signature}
+        entry = {"path": relative, "digest": digest}
         if fields is None:
             entry["skip"] = True
         else:
@@ -282,23 +291,19 @@ def _row_is_complete(entry: Mapping) -> bool:
     return isinstance(entry.get("plan"), Mapping)
 
 
-def _same_file(stored: object, signature: list[int]) -> bool:
-    """Return whether a persisted row was built from the file now on disk.
+def _content_digest(path: Path) -> str:
+    """Return the digest that changes exactly when ``path``'s bytes change.
 
-    The device number is left out of the comparison. A shared filesystem
-    reports a different one for the same file on each host (measured 41 on a
-    compute node and 65 on a login node) while the inode, size and both
-    nanosecond timestamps agree, and the served process and the readers on
-    other hosts share one persisted index. Compared whole, every row read as
-    changed on the other host, so each reader re-parsed the whole project and
-    rewrote the index.
+    The row is keyed on the file's bytes rather than its stat identity: a
+    rewrite that restores the same bytes — a checkout or a rebuild that only
+    touches the mtime — reuses the parsed row, while any byte change re-parses
+    it. A shared filesystem also reports a different device number for the same
+    file on each host, which a byte digest is blind to, so the served process
+    and the readers on other hosts share one persisted index instead of each
+    re-parsing the whole project.
     """
 
-    return (
-        isinstance(stored, list)
-        and len(stored) == len(signature)
-        and stored[1:] == signature[1:]
-    )
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _cache_key(docs_dir: Path, project: str, with_git: bool) -> tuple[str, str, bool]:
