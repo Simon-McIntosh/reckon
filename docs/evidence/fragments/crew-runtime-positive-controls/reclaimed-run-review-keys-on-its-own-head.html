@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="A reclaimed run&#x27;s review keys on its own head">
+  <meta name="plan-summary" content="An abbreviated commits: entry now resolves to its full id through the run&#x27;s repository, so a reclaimed run whose manifest cites its commits by nine-character id keys its review on the commit the run reached. A reclaimed run whose record names no resolvable head composes no review, records the missing head as the reason, and never borrows the shared checkout&#x27;s HEAD. Base arm: 168 passed, EXIT=0. Head arm: 169 passed, 1 failed, 1 error &mdash; the one added failure is a pre-existing case pinning the superseded repository-HEAD fallback for evidence selection, the reading this section&#x27;s done-when forbids, and it is outside this node&#x27;s write scope, so the run reports blocked and names it. Negative control (the abbreviation lookup removed): the nine-character case red, EXIT=1.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="fail">
+  <title>A reclaimed run&#x27;s review keys on its own head &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A reclaimed run&#x27;s review keys on its own head</h1>
+  <p>The review reflex keyed on the shared checkout&#x27;s HEAD whenever a run&#x27;s worktree had been reclaimed: the manifest cited its commits by nine-character id, the pointer carried no <code>head</code>, <code>_record_carried_head</code> accepted only full object ids, and <code>_reviewed_run_head</code> then fell through to the run&#x27;s repository &mdash; the main checkout. Each review&#x27;s own promotion commit moved that HEAD, so the next sweep found the stored review stale and dispatched another, five reviews in half an hour. Two readings now close that loop. <code>_record_carried_head</code> resolves an abbreviated <code>commits:</code> entry of seven or more hex characters to its full commit id through the run&#x27;s repository, which shares the object store its worktree wrote into, by running <code>git rev-parse --verify</code> on the entry with <code>^{commit}</code> appended, and still skips an entry git cannot resolve unambiguously. And <code>_review_head_and_tree</code> returns an empty head, not the repository HEAD, for a run whose worktree path no longer exists and whose record names no resolvable head; the reflex then composes no review for that run and records the missing head as the reason.</p>
+  <section id="measure">
+    <h2>The measure</h2>
+    <ul>
+      <li><strong>Base arm</strong> (18d9e07b0, extracted from the repository under scratch): <code>168 passed, 1 skipped in 93.25s</code>, <code>EXIT=0</code>, no failure id, <code>logs/base-gate.log</code>.</li>
+      <li><strong>Head arm</strong> (12d47494d, the worktree): <code>1 failed, 169 passed, 1 skipped, 1 error in 125.93s</code>, <code>EXIT=1</code>. The failure is <code>tests/test_rereview_keeps_its_lane.py::test_a_reclaimed_worktree_with_no_recorded_head_does_not_accept_the_newest</code> (line 486, <code>assert stored is None</code>), argued below. The teardown error is the pre-existing <code>crew watch</code> producer-reaper race in <code>tests/conftest.py</code>, reproduced at base in the same isolated configuration (<code>logs/diag-scoring-alone-base.log</code>: <code>4 passed, 2 errors, EXIT=1</code>; <code>logs/diag-sibling-alone-base.log</code>: <code>12 passed, 3 errors, EXIT=1</code>), so it is not chargeable to this change, <code>logs/head-gate.log</code>.</li>
+      <li><strong>Negative control</strong> (the abbreviation resolution branch removed from <code>_record_carried_head</code> in a scratch copy of the head tree): <code>1 failed, 1 passed</code>, <code>EXIT=1</code> &mdash; <code>test_an_abbreviated_commit_entry_keys_the_review_on_the_run_head</code> red, an id the head arm does not fail, <code>logs/negative-control.log</code>.</li>
+    </ul>
+  </section>
+  <section id="blocking-pin">
+    <h2>The pre-existing pin this done-when collides with</h2>
+    <p><code>test_a_reclaimed_worktree_with_no_recorded_head_does_not_accept_the_newest</code> (from 08a8a7d2f, 2026-09-30, two days before this section&#x27;s observation) asserts both halves of the superseded reading at the evidence-selection surface: with a reclaimed worktree and an unresolvable manifest commit, <code>recovery._stored_review</code> must return <code>None</code> when only an earlier-head review is stored, and must return the review when it is at the repository HEAD. Its docstring states it plainly: the repository fallback resolves the head, and a review of it stands. This section&#x27;s done-when requires the opposite &mdash; the archived run must never resolve to the shared checkout&#x27;s HEAD &mdash; and its fence states the empty head is returned by <code>_review_head_and_tree</code> itself, the one source <code>_stored_review</code> reads. No implementation of that function can satisfy both texts, and the pin is outside this node&#x27;s write scope (<code>reckon/crew/recovery.py</code> and the new test file). The implementation therefore stands as specified, its own two cases pass, and this run reports blocked naming the failure rather than editing a peer&#x27;s file or bending the reading. Resolving it is a scope decision for the coordinator: either the pin is updated to the new reading in its own node &mdash; dropping the repository-HEAD half; and with an empty head the newest-head selection for an empty head&#x27;s record needs settling, which is where the first assertion lands &mdash; or the done-when is amended.</p>
+  </section>
+ </main>
+</body>
+</html>
