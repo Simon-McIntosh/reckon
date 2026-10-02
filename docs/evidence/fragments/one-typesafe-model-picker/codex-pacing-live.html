@@ -43,14 +43,31 @@
   test (1) the only failure (<code>EXIT=1</code>).</p>
 
   <h3>Live read</h3>
-  <p>The live <code>crew preflight</code> on this node could not reach the codex account
-  surface: <code>--role implement</code> resolves to the <code>clive</code> backend, and
-  <code>--backend codex-terra</code> returned source <code>ledger</code> with no account-surface
-  reading (the probe was unknown from this compute node). The codex-sub group therefore read its
-  recorded receipt (<code>window 10080, util 0.04, derived 1.0</code>) — the exact stale-receipt
-  behaviour this node's tests pin against the account surface, which is what the code path draws
-  from when the surface answers. Quoted from
-  <code>preflight-backend.log</code>.</p>
+  <p>This node's own codex account-surface probe returns unknown from its compute node, so the
+  coordinator took the live read from this worktree's code on a node where the surface answers
+  (<code>reckon.__file__</code> resolved inside this worktree) at 2026-10-02T13:1xZ:</p>
+  <pre><code>PYTHONPATH=&lt;this worktree&gt; /home/ITER/mcintos/Code/reckon/.venv/bin/reckon \
+  crew preflight --project reckon --backend codex --role implement</code></pre>
+  <p>Exit 3, <code>held: true</code>. The <code>codex-sub</code> group reads source
+  <code>account-surface</code> (member <code>codex</code>):</p>
+  <table>
+    <thead><tr><th>source</th><th>window</th><th>elapsed</th><th>utilisation</th><th>burn</th><th>allowance</th><th>limited_by</th><th>held</th></tr></thead>
+    <tbody><tr>
+      <td><code>account-surface</code></td>
+      <td>10,080 min</td>
+      <td>2.63 h</td>
+      <td>5%</td>
+      <td>3.19&times;</td>
+      <td>1.7238%</td>
+      <td><code>allowance</code></td>
+      <td>yes</td>
+    </tr></tbody>
+  </table>
+  <p>The group's <code>pace_hold</code> for the <code>implement</code> role is
+  <code>held: true</code>, naming utilisation <code>5%</code>, a <code>3.19068&times;</code>
+  burn against the <code>1.1&times;</code> pace multiple, the <code>1.72377%</code> allowance,
+  and the reset at <code>2026-10-09T10:39:36Z</code>. The read is recorded at
+  <code>coordinator-live-read.json</code>.</p>
 
   <h3>Commits</h3>
   <p><code>43ab5d69</code> — implementation and tests. Logs under
