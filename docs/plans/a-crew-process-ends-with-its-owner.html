@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="295">
+<meta name="plan-version" content="296">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;}">
 </head>
@@ -1363,6 +1363,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261002T201851790456-the-unreconciled-count-has-one-composition" data-who="reckon-build" data-when="2026-10-02T20:49:20.453Z">
     <div class="r-comment-body"><p>promotion._unreconciled_live_runs now counts unreconciled live pointers through runs._drain_row, the same per-pointer composition drain() builds its rows from (classified row plus disposition plus validity), so a change to the host-gated liveness or the disposition predicate reaches both; node test 6 passed, head arm 70 passed EXIT=0, base arm 64 passed EXIT=0, negative control 1 failed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T205101023910-review-of-the-unreconciled-count-has-one-composition" data-who="reckon-build" data-when="2026-10-02T21:10:34.020Z">
+    <div class="r-comment-body"><p>Attached an independent review to r-20261002T201851790456-the-unreconciled-count-has-one-composition; the parsed record scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 19 (total 92), records reviewed base a08a2baae993a98d6b7172b403a103110bb1e012 and reviewed head 43247c08aa556a8f748e841245b19cbf907b460d, carries added_failure_count 0 with empty added_failure_ids derived from the run&#x27;s own base-arm.log and head-arm.log gate logs, and carries one follow-on finding (the reviewed manifest declares no after_suite field).</p></div>
 </div>
 </section>
 </main>
