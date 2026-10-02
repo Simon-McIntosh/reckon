@@ -66,7 +66,9 @@ def config():
 
 
 @pytest.fixture
-def live_facts(monkeypatch):
+def live_facts(monkeypatch, tmp_path):
+    monkeypatch.setenv("RECKON_LOCAL_LANE_DOCUMENT", str(tmp_path / "lane.json"))
+    monkeypatch.setattr(snapshot.routing, "shared_verdict_inputs", lambda *a: {})
     monkeypatch.setattr(
         snapshot.budget,
         "latest_recorded",
@@ -107,7 +109,7 @@ def answer(choice="remote", confidence=0.9):
             "route": {
                 "choice": choice,
                 "confidence": confidence,
-                "probabilities": {"local": 0.2, "remote": 0.8},
+                "probabilities": {"local": 0.2, "remote": 0.7, "hold": 0.1},
             }
         },
     }
@@ -159,8 +161,7 @@ def test_refusal_and_serving_both_come_from_the_observation(
 @pytest.mark.parametrize(
     "kind,reason",
     [
-        ("budget", "budget-held"),
-        ("burn", "burn-exceeds-pace-multiple"),
+        ("budget", "budget-ceiling"),
         ("context", "context-fit"),
         ("competence", "competence"),
         ("availability", "availability"),
@@ -173,19 +174,10 @@ def test_hard_exclusions(
     if kind == "budget":
         monkeypatch.setattr(
             snapshot.budget,
-            "decide",
-            lambda state, *a, **k: {
-                "held": True,
-                "reason": "exhausted",
-                "backend": state.backend,
-                "state": state.as_dict(),
-            },
-        )
-    elif kind == "burn":
-        monkeypatch.setattr(
-            snapshot.budget,
             "state_for",
-            lambda name, *a, **k: budget.BudgetState(name, burn_multiple=1.2),
+            lambda name, *a, **k: budget.BudgetState(
+                name, headroom="known", utilisation_pct=100
+            ),
         )
     elif kind == "context":
         monkeypatch.setattr(
@@ -218,15 +210,15 @@ def test_hard_exclusions(
     assert any(value.startswith(reason) for value in remote.reasons)
 
 
-def test_exact_routes_local_without_jev(live_facts, request_node, config, tmp_path):
+def test_exact_calls_jev(live_facts, request_node, config, tmp_path):
     request_node.node.spec_level = "exact"
-    caller = Mock(side_effect=AssertionError("Jev must not be called"))
+    caller = Mock(return_value=answer())
     selection = run_pick(request_node, config, tmp_path, caller)
-    assert selection.backend == "local"
-    assert selection.decision_source == "exact-local-rule"
-    assert selection.confidence is None
+    assert selection.backend == "remote"
+    assert selection.decision_source == "jev"
+    assert selection.confidence == 0.9
     assert selection.jev_model == client.JEV_MODEL
-    caller.assert_not_called()
+    caller.assert_called_once()
 
 
 def test_exact_without_slots_asks_jev(
@@ -286,25 +278,18 @@ def test_missing_live_fact_raises(request_node):
         )
 
 
-@pytest.mark.parametrize(
-    "choice,confidence,falls_back",
-    [
-        ("remote", 0.59, True),
-        ("remote", 0.6, False),
-        ("local", 0.39, True),
-        ("local", 0.4, False),
-    ],
-)
-def test_confidence_thresholds(
-    live_facts, request_node, config, tmp_path, choice, confidence, falls_back
+@pytest.mark.parametrize("choice,confidence", [("remote", 0.1), ("local", 0.1)])
+def test_confidence_is_jevs_judgment(
+    live_facts, request_node, config, tmp_path, choice, confidence
 ):
     selection = run_pick(
         request_node, config, tmp_path, lambda *a, **k: answer(choice, confidence)
     )
-    assert (selection.fallback_reason is not None) == falls_back
-    assert selection.backend == ("local" if falls_back else choice)
+    assert selection.fallback_reason is None
+    assert selection.backend == choice
+    assert selection.action == "route"
     assert selection.confidence == confidence
-    assert selection.probabilities == {"local": 0.2, "remote": 0.8}
+    assert selection.probabilities == {"local": 0.2, "remote": 0.7, "hold": 0.1}
 
 
 def test_unreachable_jev_has_explicit_fallback(
@@ -315,6 +300,7 @@ def test_unreachable_jev_has_explicit_fallback(
 
     selection = run_pick(request_node, config, tmp_path, unreachable)
     assert selection.backend == "local"
+    assert selection.action == "fallback"
     assert selection.fallback_reason == "jev-error: TimeoutError"
     assert "sensitive" not in json.dumps(selection.as_dict())
 
@@ -323,10 +309,9 @@ def test_fallback_cannot_select_refused_default(
     live_facts, request_node, config, tmp_path
 ):
     config["default_backend"] = "codex-spark"
-    selection = run_pick(
-        request_node, config, tmp_path, lambda *a, **k: answer(confidence=0.1)
-    )
+    selection = run_pick(request_node, config, tmp_path, lambda *a, **k: {})
     assert selection.backend is None
+    assert selection.action == "refuse"
     assert selection.fallback_reason.endswith("default-backend-ineligible")
 
 
@@ -428,6 +413,7 @@ def test_cli_emits_one_selection_without_dispatch(
 
     monkeypatch.setattr(cli, "_dispatch_resolved_flight", lambda *a: config)
     monkeypatch.setattr(picker.snapshot.ledger, "runs", lambda *a, **k: [])
+    monkeypatch.setattr(client, "load_key", Mock(side_effect=TimeoutError))
     result = CliRunner().invoke(
         main,
         [
@@ -557,9 +543,11 @@ def test_account_and_budget_exclusions_skip_repository_census(
     monkeypatch.setattr(
         snapshot.budget,
         "state_for",
-        lambda name, *a, **k: budget.BudgetState(name, burn_multiple=2),
+        lambda name, *a, **k: budget.BudgetState(
+            name, headroom="known", utilisation_pct=100 if name == "remote" else 0
+        ),
     )
     fit = Mock(return_value=[])
     monkeypatch.setattr(snapshot, "_fit", fit)
     snapshot.candidates(request_node, config, tmp_path, records=[])
-    assert [call.args[1] for call in fit.call_args_list] == ["local"]
+    assert [call.args[1] for call in fit.call_args_list] == ["local", "codex-spark"]

@@ -49,6 +49,7 @@ def render(name: str, **context: Any) -> str:
             node=context.get("node"),
             candidates=context.get("candidates") or [],
             project=context.get("project"),
+            records=context.get("records"),
             budget_snapshot=context.get("budget_snapshot"),
             config=context.get("config"),
             now=context.get("now"),

@@ -1,7 +1,7 @@
 """Typed inputs and auditable decisions for backend selection."""
 
 from dataclasses import asdict, dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 from reckon.crew.node import TaskNode
 
@@ -14,6 +14,7 @@ class PickRequest:
     estimated_context: int = 0
     comment: str = ""
     session: str = ""
+    attempts: int | None = None
 
 
 @dataclass
@@ -32,6 +33,7 @@ class Candidate:
     congestion: dict[str, Any] | None
     outcomes: dict[str, int]
     reasons: list[str] = field(default_factory=list)
+    days_to_reset: float | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -53,6 +55,7 @@ class Selection:
     latency_ms: float
     decision_source: str
     comment: str
+    action: Literal["route", "hold", "fallback", "refuse"] = "route"
     jev_latency_ms: float = 0.0
     answering_model: str | None = None
     usage: dict[str, Any] = field(default_factory=dict)

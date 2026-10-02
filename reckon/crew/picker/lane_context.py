@@ -23,7 +23,7 @@ would let the router weigh a lane it never heard from.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from reckon import budget
@@ -32,6 +32,8 @@ from reckon.crew.run_time_profile import (
     BUDGET_BUCKETS,
     TOKEN_BUCKETS,
     _budget_minutes,
+    _group_rows,
+    _size_class,
     local_lane_load,
     run_time_profile,
 )
@@ -231,6 +233,7 @@ def build(
     node: Any,
     candidates: Sequence[Any],
     project: str | None = None,
+    records: Sequence[Mapping[str, Any]] | None = None,
     budget_snapshot: Mapping[str, Any] | None = None,
     config: Mapping[str, Any] | None = None,
     now: datetime | None = None,
@@ -246,7 +249,20 @@ def build(
 
     moment = now if now is not None else datetime.now(UTC)
     profile: Mapping[str, Any] = {}
-    if project:
+    if records is not None:
+        size = _bucket(_budget_minutes(getattr(node, "time_budget", "")), None)
+        selected = []
+        for row in records:
+            stamp = parse_utc(
+                str(row.get("completed_at") or row.get("dispatched_at") or "")
+            )
+            if stamp is None or not moment - timedelta(days=14) <= stamp <= moment:
+                continue
+            if size[0] is not None and _size_class(row) != size:
+                continue
+            selected.append(row)
+        profile = {"groups": _group_rows(selected)}
+    elif project:
         profile = run_time_profile(project, now=moment)
     return {
         "return_times": return_times(

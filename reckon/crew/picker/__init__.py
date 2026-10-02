@@ -13,8 +13,6 @@ from . import client, prompts, snapshot
 from .types import Candidate, PickRequest, Selection
 
 __all__ = ["Candidate", "PickRequest", "Selection", "pick"]
-LOCAL_CONFIDENCE = 0.4
-METERED_CONFIDENCE = 0.6
 
 
 def _answer(
@@ -22,7 +20,7 @@ def _answer(
 ) -> tuple[str, float, dict[str, float]]:
     answer = payload["answers"]["route"]
     choice = answer["choice"]
-    keys = {candidate.backend for candidate in offered}
+    keys = {candidate.backend for candidate in offered} | {"hold"}
     confidence = answer["confidence"]
     probabilities = answer["probabilities"]
     if (
@@ -55,13 +53,31 @@ def pick(
     caller: Callable[..., dict[str, Any]] = client.ask,
     records: list[dict[str, Any]] | None = None,
     verdict_inputs: dict[str, Any] | None = None,
+    budget_snapshot: dict[str, Any] | None = None,
+    cached_only: bool = False,
 ) -> Selection:
     """Return one auditable selection; an excluded default cannot bypass gates."""
     started = time.perf_counter()
+    rows = (
+        snapshot.ledger.runs(request.project, root=repo) if records is None else records
+    )
+    view = (
+        budget_snapshot
+        if budget_snapshot is not None
+        else snapshot.budget_view(
+            request.project, config, repo, rows, cached_only=cached_only
+        )
+    )
     # One docs-tree scan serves every candidate's plan lookup in this pick.
     with resource_scan_scope():
         options = snapshotter(
-            request, config, repo, records=records, verdict_inputs=verdict_inputs
+            request,
+            config,
+            repo,
+            records=rows,
+            verdict_inputs=verdict_inputs,
+            budget_snapshot=view,
+            cached_only=cached_only,
         )
     offered = [candidate for candidate in options if not candidate.reasons]
     excluded = [candidate.as_dict() for candidate in options if candidate.reasons]
@@ -72,6 +88,16 @@ def pick(
         estimated_context=request.estimated_context,
         comment=request.comment,
         candidates=offered,
+        project=request.project,
+        records=rows,
+        budget_snapshot=view,
+        config=config,
+        attempts=request.attempts
+        if request.attempts is not None
+        else sum(
+            row.get("node") == request.node.id and row.get("plan") == request.node.plan
+            for row in rows
+        ),
     )
     token_estimate = math.ceil(len(rendered) / 4)
     probabilities: dict[str, float] = {}
@@ -81,18 +107,8 @@ def pick(
     source = "jev"
     payload: dict[str, Any] = {}
     jev_ms = 0.0
-    local = next(
-        (
-            c
-            for c in offered
-            if c.local and c.worker_slots is not None and c.worker_slots >= 1
-        ),
-        None,
-    )
-    if request.node.spec_level == "exact" and local is not None:
-        selected = local
-        source = "exact-local-rule"
-    elif not offered:
+    action = "route"
+    if not offered:
         fallback_reason = "no-eligible-candidates"
     else:
         call_started = time.perf_counter()
@@ -104,12 +120,10 @@ def pick(
                 json.loads(rendered), questions, env_path=client.credential_path()
             )
             choice, confidence, probabilities = _answer(payload, offered)
-            selected = next(c for c in offered if c.backend == choice)
-            threshold = LOCAL_CONFIDENCE if selected.local else METERED_CONFIDENCE
-            if confidence < threshold:
-                fallback_reason = (
-                    f"low-confidence: {confidence:g} below {threshold:g} for {choice}"
-                )
+            if choice == "hold":
+                action = "hold"
+            else:
+                selected = next(c for c in offered if c.backend == choice)
         except Exception as exc:  # noqa: BLE001 - every Jev failure must produce a recorded fallback
             # Exception text may contain provider content or credentials; record its type only.
             fallback_reason = f"jev-error: {type(exc).__name__}"
@@ -117,13 +131,16 @@ def pick(
             jev_ms = (time.perf_counter() - call_started) * 1000
     if fallback_reason:
         source = "flight-default"
+        action = "fallback"
         selected = next(
             (c for c in offered if c.backend == config.get("default_backend")), None
         )
         if selected is None:
             fallback_reason += "; default-backend-ineligible"
             source = "refused"
+            action = "refuse"
     return Selection(
+        action=action,
         backend=selected.backend if selected else None,
         family=selected.family if selected else None,
         model=selected.model if selected else None,
