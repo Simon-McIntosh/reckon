@@ -21,9 +21,9 @@
   <title>An Orchestrator Is Bound By Its Inbox | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-25">
-<meta name="plan-version" content="43">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;}">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="44">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.6">
 </head>
 <body>
@@ -247,6 +247,10 @@
     <code>work-does-not-fall-to-the-coordinator</code>. The distinction is that
     that plan retires hand-work which should not exist; this one automates duties
     which should exist and currently depend on memory.</p>
+
+    <h2 id="s7">§7 — A finishing worker reaches its orchestrator</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>Run state is pull-only. A worker that finishes, blocks, or dies changes a file and nothing else happens; the orchestrator learns of it exactly when it next thinks to look. Every visibility defect recorded against this plan shares that root: the information was on disk and correct, and no one was told. A blocked node sat unnoticed for ten minutes in this session, and a launch that died in one second was discovered fifteen minutes later.</p><p>The gap is not that polling is unimplemented but that the design has no push edge at all, while the surrounding harness does. A dispatched CLI worker is a process the orchestrator could be notified about on exit; the manifest is a file whose creation is watchable. Neither is wired, so every orchestrator invents its own waiting loop, and those loops test file existence - which cannot distinguish a delivered success from a delivered surrender, and cannot notice at all when the run it waits on died before writing anything.</p><p>Give dispatch an optional completion signal the orchestrator can wait on, carrying the finishing classification rather than the bare fact of exit, so waiting costs nothing and a blocked or launch-failed run announces itself. Pair it with the manifest-aware classification in the sibling followup: a push edge that reports "completed" for a surrender only moves the wrong answer faster.</p><p><strong>Done when</strong> completion/blocking delivers to the orchestrator rather than waiting to be polled.</p><p>Moved from followup f-crl-007 on crew-run-ledger by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): host <code>shipped</code>; the push edge is inbox/notification work, owned by <code>an-orchestrator-is-bound-by-its-inbox</code> (active, S22, impl 0.6)</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>

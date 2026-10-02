@@ -21,8 +21,8 @@
   <title>Derived Gate State | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="43">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="44">
 <meta name="plan-impl" content="0.99">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
@@ -345,6 +345,11 @@ effective_status('active',  [])        -&gt; 'active'</pre>
       </p>
     <p class="r-dec-rat">The gate does real work once an orchestrator can dispatch unattended, so deleting it trades a safety signal for convenience. But an unalarmed default decays, as the four rotted drafts demonstrate. Deriving the checkable half and alarming the deliberate half keeps the signal and removes the decay.</p>
     </div>
+<div class="r-dec" data-key="d-dgs-008" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">does the lead dispatch sessions into imas-ambix/nova/imas-efit/hanney/imas-standard-names to clear their rows against a fresh census, or narrow the gate&#x27;s measure to the owning repository with the narrowing recorded?</p>
+    <p class="r-dec-ctx">Raised as followup f-dgs-008; recorded as an open decision by work-is-a-section-not-a-followup §4. Evidence against main: plan `active` impl 0.99; the sweep-complete gate spans five other repositories and cannot close from this host; the followup says explicitly this needs a lead decision, not scheduling</p>
+    <p class="r-dec-rat"></p>
+    </div>
 </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -391,10 +396,11 @@ effective_status('active',  [])        -&gt; 'active'</pre>
     <pre class="r-fu-prompt">/reckon-build derived-gate-state</pre>
     <p class="r-fu-outcome">The rescan happened and the reckon row is clear; the sweep is NOT closed, and the reason is an authority boundary rather than remaining work here. What this followup asked for in two parts: (a) a fresh census, not a reused count — done, and the instrument was rebuilt rather than re-read: a new census reproduces the mounted-project figures exactly (reckon 0, ambix 41, nova 4) and the census commit is an ancestor of the node's base. (b) run the remaining sweep — not done, and cannot be from this host. RESULT FOR RECKON: verify-and-land rather than a change. The eight item-level lifecycle fields the section was written against were removed in ea82ad93 on 2026-08-12; the live index carries zero, docs/state/reckon/index.json required no edit and was verified not rewritten. Durability was proven rather than assumed — the write guard refuses re-persistence (tests/test_project_state.py::test_typed_sprint_legacy_status_reads_derived_but_is_rejected_on_write passes), reckon audit is clean against a recorded baseline of 32 pre-existing findings with none added, and a roadmap payload built with the eight statuses restored is byte-identical after canonicalisation to one without them, which establishes the fields were inert rather than merely absent. Commit 7a402509530e9b9e4eebc44ebd3381152318897c, merged. A COORDINATOR CORRECTION WORTH KEEPING: I read the live index, found 8 sprint-level status keys beside 0 item-level fields, and diagnosed the section as conflating the two levels. It does not. The pre-removal index carried 8 item-level fields against 4 sprint-level ones; the current index carries 0 against 8. Two different quantities that happen to share a value, and the coincidence made a wrong diagnosis feel confirmed. The section was stale, not confused. WHAT REMAINS: the sweep-complete gate measures the portfolio, and the portfolio rows are in other repositories — imas-ambix 41 item statuses, nova 4, imas-efit one blocked doc, hanney and imas-standard-names one error finding each. Carried by f-dgs-008.</p>
     </article>
-<article class="r-fu" data-id="f-dgs-008" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship" data-written-at="2026-09-15" data-recommends-skill="/reckon-build derived-gate-state" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-dgs-008" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship" data-written-at="2026-09-15" data-recommends-skill="/reckon-build derived-gate-state" data-resolved-at="2026-10-02T08:45:48+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Authority required: the sweep gate cannot close from this host</h4>
     <div class="r-fu-body"><p><strong>This plan cannot reach 1.0 from this repository, and no amount of work here changes that.</strong> The <code>sweep-complete</code> gate carries no verdict, and an unverdicted gate blocks the whole plan rather than one section — so <code>derived-gate-state</code> reads <code>blocked</code> at impl 0.99 with its reckon row fully clear.</p><p>The remaining rows are in other repositories and are undispatchable across the host permission boundary: <strong>imas-ambix 41 persisted item statuses, nova 4, imas-efit one blocked doc, hanney and imas-standard-names one error finding each</strong>. Reckon itself is at zero and verified.</p><p><strong>This needs a lead decision rather than scheduling.</strong> Either sessions run in those repositories and clear their rows against the 2026-09-15 census, or the gate's measure is deliberately narrowed to the owning repository with that narrowing recorded as a choice. <strong>Do not narrow it silently to let the plan close</strong> — a gate rewritten to fit what was achieved is precisely the defect this plan exists to prevent, one level up from the state it derives. And do not reuse the old host-permission workaround or any frozen repository counts; the census is current and must stay the basis.</p><p><strong>Done when</strong> either the portfolio rows read zero against a census taken at closure time, or the gate's scope is amended with a stated rationale and a named decider.</p></div>
     <pre class="r-fu-prompt">/reckon-build derived-gate-state</pre>
+    <p class="r-fu-outcome">Recorded as the open decision d-dgs-008, which the roadmap reads and gates on (work-is-a-section-not-a-followup §4).</p>
     </article>
 </section>
 

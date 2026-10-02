@@ -16,14 +16,15 @@
 <meta name="plan-effort" content="M">
 <meta name="plan-milestone" content="">
 <meta name="plan-owner" content="Simon McIntosh">
-<meta name="plan-modified" content="2026-09-24">
+<meta name="plan-modified" content="2026-10-02">
 <meta name="plan-depends-on" content="">
 <meta name="plan-blocks" content="">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-informs" content="plan-lifecycle-hygiene">
+<meta name="plan-section-declarations" content="{&quot;s10&quot;:&quot;implementable&quot;}">
 </head>
 <body>
 <main class="plan-doc">
@@ -265,6 +266,10 @@ version mismatch never blocks progress.</li>
 one). If the authoring experience hurts here, fix it here first.</li>
 </ul>
 
+<h2 id="s10">§10 — Close the milestone-tooling gap</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+Sprints have add/move/update tools; milestones have none and the data was lost in a migration. Add add_milestone/update_milestone (or document index.json milestone editing) so milestone rollups aren't read-only-and-empty.<p><strong>Done when</strong> a milestone create/update path exists and the imas-ambix milestones repopulate as a test.</p><p>Moved from followup f-apa-milestone-tools on agent-plan-authoring by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>draft</code>, live; no <code>add_milestone</code>/<code>update_milestone</code> op exists in <code>reckon/mcp.py</code> (grep found none)</p>
+
 <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="tool-mediation" data-choice="prompt-first-mcp-optional" data-by="Simon McIntosh" data-when="2026-05-27T00:00:00Z">
@@ -295,7 +300,7 @@ one). If the authoring experience hurts here, fix it here first.</li>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-apa-prompt" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-edit agent-plan-authoring" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-apa-prompt" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-edit agent-plan-authoring" data-resolved-at="2026-10-02T08:45:31+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Write the canonical authoring prompt + in-repo exemplar plan</h4>
     <div class="r-fu-body">Distil §3–§5 into a single agent-facing authoring prompt and a fully-annotated docs/_exemplar-plan.html that agents copy. Fold the prompt into reckon-create/reckon-edit SKILL.md so it's the first thing an agent reads.</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -307,6 +312,7 @@ Done-when
   2. A &quot;Authoring prompt&quot; block added to reckon-create + reckon-edit SKILL.md
      (templates + dos/don&#x27;ts + the reasoning table from §3).
   3. This followup resolved; followup written for the CI round-trip test.</pre>
+    <p class="r-fu-outcome">Already met on main: `docs/_exemplar-plan.html` exists (added `b5012383a`, 2026-08-24) and both `skills/reckon-create/SKILL.md:32-35` and `skills/reckon-edit/SKILL.md:26-29` point to it as the canonical annotated authoring exemplar (work-is-a-section-not-a-followup §4).</p>
     </article>
 <article class="r-fu" data-id="f-apa-roundtrip" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-build reckon" data-resolved-at="2026-05-29T14:09:08+00:00" data-resolved-by="agent/opus">
     <h4 class="r-fu-title">Add the render/parse round-trip parity test to reckon CI</h4>
@@ -320,7 +326,7 @@ Done-when
   3. Wired into the reckon test run; this followup resolved.</pre>
     <p class="r-fu-outcome">DONE via the schema work (commit cf5fb2b) — the canonical round-trip parity test landed in tests/test_schema.py (test_state_round_trip + the model_dump-shape == read_state and to_html∘from_html == write_state∘read_state byte-identity assertions). Deliberate improvement on the original done-when: the byte-equality render(parse(html))==html invariant is fragile (write_state normalises whitespace/attr-order, so it flags every hand-authored plan); replaced by the robust STATE-LEVEL invariant parse(render(state))==state PLUS byte-identity of the regenerated reckon-owned sections. Covers the 2026-05-27 symmetry regressions: choice-vs-chosen (chosen is now derived, never stored) and followup/question status←resolved_at (derived in both parser and model). Wired into the standard reckon run (uv run --with pytest pytest tests/ -q); 702 passed.</p>
     </article>
-<article class="r-fu" data-id="f-apa-milestone-tools" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-edit agent-plan-authoring" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-apa-milestone-tools" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="Simon McIntosh" data-written-at="2026-05-27" data-recommends-skill="/reckon-edit agent-plan-authoring" data-resolved-at="2026-10-02T08:45:31+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Close the milestone-tooling gap</h4>
     <div class="r-fu-body">Sprints have add/move/update tools; milestones have none and the data was lost in a migration. Add add_milestone/update_milestone (or document index.json milestone editing) so milestone rollups aren't read-only-and-empty.</div>
     <pre class="r-fu-prompt">Project: reckon
@@ -330,6 +336,7 @@ Done-when
   1. Milestone create/update path (MCP tool or documented index.json edit).
   2. imas-ambix M0–M3/PS milestones repopulated as a test case.
   3. This followup resolved.</pre>
+    <p class="r-fu-outcome">Moved into §10 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
 <article class="r-fu" data-id="f-apa-section-guard-pair" data-status="resolved" data-written-by="agent/opus" data-written-at="2026-09-05" data-recommends-skill="/reckon-build agent-plan-authoring" data-resolved-at="2026-09-05T18:52:00+00:00" data-resolved-by="agent/opus">
     <h4 class="r-fu-title">The unrecognised-section guard pair is complete: the write refuses, the read warns</h4>

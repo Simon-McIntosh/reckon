@@ -17,11 +17,12 @@
   <title>Execution and Orchestration Hardening | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="26">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="27">
 <meta name="plan-impl" content="0.8">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
+<meta name="plan-section-declarations" content="{&quot;s5&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -79,6 +80,10 @@
       tests.
       <a href="../evidence/archive/execution-orchestration-hardening-landed.html">Read the evidence record.</a>
     </aside>
+
+    <h2 id="s5">§5 — Finish the unresolved promotion-truth repairs</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+Keep the still-open repairs that distinguish committed, merged and content-surviving outcomes. Do not repeat the already-landed session attachment or first promotion repair.<p><strong>Done when</strong> the outstanding distinctions are asserted, without rebuilding what landed.</p><p>Moved from followup f-eoh-promotion-truth-remaining on execution-orchestration-hardening by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.8; body: keep the still-open committed/merged/content-surviving repairs, do not repeat the landed session-attachment or first-promotion repairs</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -155,10 +160,11 @@ Done-when
     <pre class="r-fu-prompt">/reckon-build execution-orchestration-hardening</pre>
     <p class="r-fu-outcome">Already landed, verified by existence rather than by prose, and this session dispatched nothing for it. The work is 1908947f feat(worktree-fleet): provision env links on worktree create. Evidence, each check against the followup's own stated measure: the followup measured 14 of 14 live worktrees at venv=none, and all 7 live worktrees under this session's fleet root now report venv=/home/ITER/mcintos/Code/reckon/.venv with 0 holding a real .venv directory; tests/test_worktree_provisioning.py carries five cases covering the link, the absent-source skip, .env linking independently of .venv, the gitignore interaction and the neither-source-exists case; the paired detail the followup flagged is done, with .gitignore carrying a bare .venv on line 7 beside .venv/ on line 6 and .env on line 8; and a freshly provisioned worktree reports clean under git status --porcelain, which is the symptom the bare-.venv entry exists to prevent. env=missing across all 7 is consistent with the repository having no .env to link and with the code's documented skip, not with a provisioning failure.</p>
     </article>
-<article class="r-fu" data-id="f-eoh-promotion-truth-remaining" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="agent" data-written-at="2026-09-04 10:00" data-recommends-skill="/reckon-build execution-orchestration-hardening" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-eoh-promotion-truth-remaining" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="agent" data-written-at="2026-09-04 10:00" data-recommends-skill="/reckon-build execution-orchestration-hardening" data-resolved-at="2026-10-02T08:45:51+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Finish the unresolved promotion-truth repairs</h4>
     <div class="r-fu-body">Keep the still-open repairs that distinguish committed, merged and content-surviving outcomes. Do not repeat the already-landed session attachment or first promotion repair.</div>
     <pre class="r-fu-prompt">/reckon-build execution-orchestration-hardening</pre>
+    <p class="r-fu-outcome">Moved into §5 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
 <article class="r-fu" data-id="f-eoh-merge-gate-call-site" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-ship" data-written-at="2026-09-15" data-recommends-skill="/reckon-build execution-orchestration-hardening" data-resolved-at="2026-09-15T15:50:29+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Give the merge-time gate re-run a caller, so the mechanism actually runs</h4>

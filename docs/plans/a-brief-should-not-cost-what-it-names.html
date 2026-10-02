@@ -23,8 +23,9 @@
   <title>A Brief Should Not Cost What It Names | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="2">
+<meta name="plan-section-declarations" content="{&quot;s8&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -205,6 +206,10 @@
     node on a plan whose figures directory does not yet exist is asserted to receive the grant
     anyway, because the first illustrated node is exactly the one that would otherwise be refused.</p>
 
+    <h2 id="s8">§8 — Report the per-file term breakdown beside the total</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+Section 2 comes first and is nearly free: the per-file breakdown is already computed and already present in the dry-run payload, and only the total is reported. It converts a guessing game into a decision without changing what the estimator charges. Section 3 is the behaviour change and needs its decision settled on what a mention costs. Section 4 follows section 3, since an opt-out is only meaningful once a mention is cheap enough that the opt-out is about certainty rather than about cost. Section 5 is independent of all three and could run in the same wave as section 2. Note that the estimator lives in <code>reckon/crew/routing.py</code>, which was unclaimed when this plan was written, while <code>reckon/crew/dispatch.py</code> was held — check both before scoping.<p><strong>Done when</strong> the dry-run payload reports the per-file contribution beside the call and the section.</p><p>Moved from followup f-bcn-001 on a-brief-should-not-cost-what-it-names by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>draft</code>, live; the per-file term breakdown is not in the estimator — grep for <code>per_file</code>/<code>per-file</code> in <code>reckon/crew/routing.py</code> found none</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="reference-cost" data-choice="" data-by="" data-when="">
@@ -228,10 +233,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-bcn-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-21" data-recommends-skill="/reckon-build a-brief-should-not-cost-what-it-names §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-bcn-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-written-by="reckon-create" data-written-at="2026-09-21" data-recommends-skill="/reckon-build a-brief-should-not-cost-what-it-names §2" data-resolved-at="2026-10-02T08:45:03+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Name the dominant term first — it is most of the value for one line of payload</h4>
     <div class="r-fu-body">Section 2 comes first and is nearly free: the per-file breakdown is already computed and already present in the dry-run payload, and only the total is reported. It converts a guessing game into a decision without changing what the estimator charges. Section 3 is the behaviour change and needs its decision settled on what a mention costs. Section 4 follows section 3, since an opt-out is only meaningful once a mention is cheap enough that the opt-out is about certainty rather than about cost. Section 5 is independent of all three and could run in the same wave as section 2. Note that the estimator lives in <code>reckon/crew/routing.py</code>, which was unclaimed when this plan was written, while <code>reckon/crew/dispatch.py</code> was held — check both before scoping.</div>
     <pre class="r-fu-prompt">/reckon-build a-brief-should-not-cost-what-it-names §2</pre>
+    <p class="r-fu-outcome">Moved into §8 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
 </section>
 
