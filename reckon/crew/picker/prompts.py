@@ -13,6 +13,8 @@ from jinja2 import (
     Undefined,
 )
 
+from . import lane_context
+
 TEMPLATES_DIR = Path(__file__).parent / "templates"
 
 
@@ -39,4 +41,16 @@ def environment() -> Environment:
 
 
 def render(name: str, **context: Any) -> str:
+    if name == "state.jinja":
+        # The lane context is built here so every caller of the state render
+        # carries the return-time and local-lane blocks without duplicating the
+        # derivation. A caller that supplies no project gets null figures.
+        context["lane"] = lane_context.build(
+            node=context.get("node"),
+            candidates=context.get("candidates") or [],
+            project=context.get("project"),
+            budget_snapshot=context.get("budget_snapshot"),
+            config=context.get("config"),
+            now=context.get("now"),
+        )
     return environment().get_template(name).render(**context).strip()

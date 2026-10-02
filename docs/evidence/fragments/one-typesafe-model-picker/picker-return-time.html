@@ -1,0 +1,78 @@
+<article class="landed-report" data-node="picker-return-time">
+<h3>Return time and live lane load in the picker state</h3>
+<p>A new module <code>reckon/crew/picker/lane_context.py</code> renders, per
+offered candidate, the recorded return time for a job of this node's shape and
+the local lane's live load. The state template carries both blocks so Jev can
+weigh how soon a job would return on each lane.</p>
+<h4>What landed</h4>
+<ul>
+<li><code>return_times(profile, node,
+candidates)</code> reads <code>run_time_profile</code> and, per candidate,
+reports the median (<code>p50_s</code>) and 90th-percentile (<code>p90_s</code>)
+<code>wall_seconds</code> for runs matching the node's <code>role</code> and
+<code>spec_level</code> on that backend, the <code>runs</code> behind them, and
+the node's size <code>size_key</code>/<code>size_bucket</code> (declared
+<code>time_budget</code> preferred, output tokens otherwise).</li>
+<li>Each block carries the budget reading's <code>budget_source</code>
+(<code>account-surface</code>, <code>ledger</code> or null) and
+<code>budget_age_s</code>, with <code>stale</code> true when a ledger-only
+reading is older than <code>budget.evidence_shelf_life_minutes</code>.</li>
+<li><code>local_lane()</code> reports <code>running</code>, <code>waiting</code>,
+<code>headroom</code>, <code>worker_slots</code>, <code>tokens_per_second</code>
+and <code>read_at</code>, every unpublished field null.</li>
+<li><code>prompts.render</code> builds the blocks so every state caller carries
+them; <code>state.jinja</code> renders both, and <code>questions.jinja</code>
+states that expected return time and the local lane's current load are criteria
+beside fit, burn and recent outcomes.</li>
+</ul>
+<h4>Checks that could have failed</h4>
+<p><code>tests/test_picker_return_time.py</code> synthesises ledger rows and a
+lane document in a temporary directory and passes all 8 tests: the
+nearest-rank <code>p50</code>/<code>p90</code> figures and the size bucket,
+group selection by role and specification level, a ledger reading past its shelf
+life marked stale, a fresh ledger reading and an account-surface reading not
+stale, a missing lane document yielding nulls, a published lane document read,
+and a representative nine-candidate state at <strong>2296 characters</strong>,
+or <strong>574 tokens</strong> at four characters per token, below the 1,500
+bound with a real five-key congestion block (<code>running</code>,
+<code>waiting</code>, <code>admission_verdict</code>, <code>stale</code>,
+<code>slots_state</code>). The state also keeps each candidate's established
+eight keys, so the added blocks do not disturb the existing contract.</p>
+<p><strong>Declared mutation</strong> — swap <code>p50_s</code> and
+<code>p90_s</code> in <code>return_times</code> — produced
+<code>assert 400 == 250.0</code> and exit 1 at
+<code>tests/test_picker_return_time.py::test_return_time_figures_and_size_bucket</code>,
+while the unmutated head passes. Log: <code>negative_control.log</code>.</p>
+<h4>Live lane context</h4>
+<p>Read at <code>2026-10-02T13:55:03Z</code> from the real ledger (2,102 rows,
+44 groups) and the live lane document. A backend with no matching group renders
+nulls, not zeros: <code>claude</code> has no <code>implement</code>/<code>guided</code>
+cohort, so its figures are null.</p>
+<table><thead><tr><th>backend</th><th>p50 [s]</th><th>p90 [s]</th><th>runs</th><th>size key</th><th>size bucket</th></tr></thead><tbody>
+<tr><td><code>clive</code></td><td>3,806.5</td><td>11,468</td><td>230</td><td>time_budget</td><td>30m_to_60m</td></tr>
+<tr><td><code>codex-luna</code></td><td>1,274</td><td>3,958</td><td>3</td><td>time_budget</td><td>30m_to_60m</td></tr>
+<tr><td><code>codex-terra</code></td><td>891.5</td><td>3,689</td><td>8</td><td>time_budget</td><td>30m_to_60m</td></tr>
+<tr><td><code>claude</code></td><td>—</td><td>—</td><td>—</td><td>time_budget</td><td>30m_to_60m</td></tr>
+</tbody></table>
+<p>Local lane: <code>running</code> 16, <code>waiting</code> 0,
+<code>headroom</code> -2, <code>worker_slots</code> 0,
+<code>tokens_per_second</code> null, read at
+<code>2026-10-02T13:55:03.878949+00:00</code>.</p>
+<h4>One rendered state, verbatim</h4>
+<pre>{"node":{"role":"implement","spec_level":"guided","capability":{"class":"general"},"goal":"give Jev each lane's expected return time","done_when":"d","estimated_context":0},"orchestrator_comment":"routing context","candidates":{
+"clive":{"availability":"served",...,"congestion":{"running":16,"waiting":0,"admission_verdict":"congested","stale":false,"slots_state":"congested"},"outcomes_14_days":{"passed":0,"failed":0,"not-run":0,"unknown":0}},
+"codex-luna":{...},"codex-terra":{...},"claude":{...}},"return_times":{"clive":{"p50_s":3806.5,"p90_s":11468,"runs":230,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false},"codex-luna":{"p50_s":1274,"p90_s":3958,"runs":3,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false},"codex-terra":{"p50_s":891.5,"p90_s":3689,"runs":8,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false},"claude":{"p50_s":null,"p90_s":null,"runs":null,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false}},"local_lane":{"running":16,"waiting":0,"headroom":-2,"worker_slots":0,"tokens_per_second":null,"read_at":"2026-10-02T13:55:03.878949+00:00"}}</pre>
+<h4>Replay measure: not met, deferred by the coordinator</h4>
+<p>Done-when item (5), the live replay of 20, is <strong>not met in this
+node</strong>. The coordinator has deferred it to a separate unfenced
+measurement node, <code>picker-replay-measure</code>, which will run after
+<code>picker-latency</code> lands and replay through the combined code.</p>
+<p>The deferral is because the availability probe path times out inside the
+worker fence. <code>reckon crew pick --replay 20</code> was attempted against
+live state under a shadow config home with a writable probe cache and timed out
+at 540 s with no rows; a bounded <code>--replay 3</code> also timed out at 170 s.
+The picks, agreement with the backend actually used, fallback count and
+refused-model counts are therefore unavailable from this node, and no claim
+about them is made here. No work outside this node's declared scope was
+triaged.</p>
+</article>
