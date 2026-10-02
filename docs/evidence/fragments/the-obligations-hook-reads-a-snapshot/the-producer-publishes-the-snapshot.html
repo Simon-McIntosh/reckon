@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-verifies" content="reckon:the-obligations-hook-reads-a-snapshot#s2">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-02">
+  <meta name="evidence-commit" content="2f04353a9">
+  <title>The producer publishes each session's obligations snapshot | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="the-producer-publishes-the-snapshot">
+  <h2>The producer publishes each session's obligations snapshot</h2>
+  <p>The watch producer now recomputes every registered session's
+  <code>obligations()</code> payload and writes it to
+  <code>&lt;config-home&gt;/crew/obligations/&lt;project&gt;/&lt;session&gt;.json</code>, by a
+  temporary file renamed over the old one, so the prompt hook that reads it does one stat and one
+  small JSON read instead of deriving. A new module
+  (<code>obligation_snapshot.py</code>) carries the atomic writer, the reader, the freshness rule and
+  the three triggers — a pointer transition the producer already detects, a per-file stat change
+  under the project's state and plan directories, and a sixty-second floor tick. Ages are stored as
+  the instant each is measured from rather than a count of seconds, so a snapshot never shows a
+  frozen age; the reader recomputes them at read time.</p>
+
+  <p>The derivation reads live pointers through the same <code>list_live</code> that publishes, so
+  the first case written against the wiring met a <code>RecursionError</code>: every sweep with a
+  registered session re-entered itself. The producer now records that it is inside a sweep and lets
+  the reads it performs report to their caller. Producer identity — pid, process start time and the
+  code stamp of the running source — is read from the lease registration, with the stamp written
+  back when the registration does not already carry the one this process computes, so a producer
+  that took the seat over from a stale one is not reported as stale. The freshness check also asks
+  whether the recorded process is still running, so a producer that exited and has not been reaped
+  no longer holds a snapshot fresh.</p>
+
+  <p>The sweep is bounded to what the fleet is owed. Only registrations
+  <code>list_followers</code> marks live are published for — two of fifty on the real fleet while
+  this measurement ran — and the fleet-wide derivation (classified rows, acknowledgements in
+  force, the resolved configuration, each run's review in flight) is computed once per sweep and
+  then sliced per session. The per-file stat trigger is evaluated at most every ten seconds and no
+  longer walks a state directory's <code>runs/</code> subtree, whose changes arrive as pointer
+  transitions already.</p>
+
+  <p>Warm against the real fleet the slice was still the expensive part: <code>payload_for</code> cost
+  about <strong>7 s</strong> for one live session and <strong>14–15 s</strong> for two, because
+  each slice re-selected every run's review (subprocesses against the run's tree), re-read the
+  ledger for the held-worktree scan, and re-classified every live pointer for the closure drain —
+  once per session. Each of those derivations is now the fleet's: computed once per sweep and
+  sliced per session. Measured warm, read-only against the real fleet, in
+  <code>sweep-profile.log</code>: <code>payload_for</code> is under <strong>0.01 s</strong> and
+  <code>fleet_state</code>, now carrying the whole derivation, takes about <strong>18 s</strong>
+  once per sweep — which is why the sweep itself runs on its own thread. A transition is written
+  the moment it is detected and never waits on the derivation, at most one sweep is in flight, and
+  a trigger arriving while one runs is skipped rather than queued.</p>
+
+  <h3>Gate — the 57-file surface, both arms, eight workers each</h3>
+  <p>The gate is this node's new test file and main's held-worktree file plus every
+  <code>tests/</code> file naming <code>runs.watch</code>, <code>watch_registration</code>,
+  <code>obligations(</code> or <code>crew watch</code>, found by a text search: 56 files at the
+  merged base and 57 at the head, run under <code>pytest -n 8 --timeout=300</code> with a
+  private basetemp outside any repository. The head arm adds <strong>no</strong> failure id:
+  both arms carry the one configuration-home error below and nothing else, and the head passes
+  eleven tests beyond the base — this node's new cases.</p>
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th><th>failure ids</th><th>log</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>4256153f2</code></td><td>675 passed, 1 skipped, 1 error in 258.43 s</td><td>1 — the configuration-home error</td><td><code>gate/base-xdist7.log</code></td></tr>
+      <tr><td>head</td><td><code>2f04353a9</code></td><td>686 passed, 1 skipped, 2 warnings, 1 error in 239.79 s</td><td>the same single id</td><td><code>gate/head-xdist7.log</code></td></tr>
+    </tbody>
+  </table>
+  <p>The one id is <code>conftest.py::test_temp_config_home</code> (error), an environment-side
+  configuration-home case both arms carry in the same shape. The failures the earlier arms of
+  this gate carried — the watch-arming, ticker, follower, monitor and producer-loop cases —
+  now pass on the merged base and at this head; the head adds none of its own.</p>
+
+  <p>Two changes separate the earlier arms from this pair. The head merges main's held-worktree
+  change; the conflict was this node's rename of <code>_held_worktrees</code>, resolved so the
+  once-per-sweep derivation keeps main's per-run-file resolution and its fallback rules exactly,
+  with this node's per-session grouping around them. And the first arm at the merge head added
+  one id: the sub-floor derivation resolved a live run's tree head before asking whether the run
+  had any stored review at all, launching one git process per live run per sweep — visible to
+  main's incremental-read contract, which counts every git launch inside a poll's window. The
+  head is now resolved only when a review exists, so a sweep over runs with no stored review
+  launches no git; the arms above are at the fixed head. Earlier still, the node's first arm at
+  <code>a2a8f5f0d</code> had added its own claim-path regression — the sweep now defers a flight
+  config that does not load, exactly as the stream fold does — which cleared before the
+  pre-merge arms.</p>
+
+  <h3>The eleven cases the new file adds</h3>
+  <ul>
+    <li>a pointer transition is visible in the session's snapshot by the end of the first sweep
+    after it, with the sweep driven explicitly and the stream offset advanced;</li>
+    <li>the stored snapshot equals <code>obligations()</code> over the same unmodified files — the
+    parity case — with both derivations read at one instant and compared at the snapshot's own
+    <code>computed_at</code>, so the ages are compared too;</li>
+    <li>a writer stopped between its temporary file and the rename leaves the previous snapshot
+    whole, readable, and its temporary behind;</li>
+    <li>each freshness outcome for its case — <code>fresh</code>, <code>no-producer</code>,
+    <code>producer-stale-code</code>, <code>stale-snapshot</code> — including a pid that is alive
+    but carries a different start time, which is the reused-pid case;</li>
+    <li>the file-stat trigger — on its ten-second cadence, so a change just after a sweep is not
+    looked for until the cadence passes — and the floor tick each republish, while an inert sweep
+    leaves the snapshot alone;</li>
+    <li>a fresh subprocess importing the module pulls in no derivation module;</li>
+    <li>only a live registration is published for — a released registration left in place gets no
+    snapshot while the live session does;</li>
+    <li>a slice equals <code>obligations()</code> over the same files, field for field, which is
+    the parity case for the derive-once slice;</li>
+    <li>the stat walk skips a state directory's <code>runs/</code> subtree and still walks a file
+    beside it;</li>
+    <li>a producer that exited and has not been reaped does not hold a snapshot fresh;</li>
+    <li>a sweep in flight is skipped over: a delay injected into the sweep, and the next transition
+    is still written while it runs — the slow-sweep case.</li>
+  </ul>
+  <p>The import case loads the file by path, because importing it through
+  <code>reckon/crew.py</code> runs the facade, which eagerly imports every concern module and would
+  report the derivations whatever this module itself reaches. The module's own imports are stdlib
+  only — <code>__future__</code>, <code>hashlib</code>, <code>json</code>, <code>os</code>,
+  <code>re</code>, <code>time</code>, <code>collections.abc</code>, <code>dataclasses</code>,
+  <code>datetime</code>, <code>pathlib</code>, <code>typing</code> — naming no reckon module at all,
+  and the derivation is imported inside <code>sweep()</code> and nowhere else.</p>
+
+  <h3>Negative control</h3>
+  <p>A module-level <code>import reckon._plan_html</code> added to
+  <code>reckon/crew/obligation_snapshot.py</code> makes the import case fail, with the log showing
+  <code>assert ['reckon._plan_html'] == '[]'</code> and <code>EXIT=1</code>; the mutation was
+  reverted by edit and the module re-verified clean afterwards.</p>
+</section>
+</main>
+</body>
+</html>

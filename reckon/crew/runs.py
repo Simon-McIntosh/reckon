@@ -11,16 +11,17 @@ import socket
 import stat
 import subprocess
 import sys
+import threading
 import time
 from collections.abc import Callable, Iterable, Mapping
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from reckon import __version__
-from reckon._store import _config_home, write_json_atomically
+from reckon._store import _config_home, _docs_dir_for_project, write_json_atomically
 from reckon._timestamps import parse_utc
 from reckon.crew.node import (
     _TERMINAL_RUN_PHASES,
@@ -1066,6 +1067,29 @@ def _project_executable_remainder(project: str) -> tuple[int | None, int | None]
     return (sum(remainders) if remainders else None), uncovered_plans
 
 
+def _drain_row(pointer: Mapping[str, Any]) -> dict[str, Any]:
+    """One live pointer's closure row, the drain's own classification."""
+    from reckon.crew.recovery import (
+        classify_pointer,
+        closure_disposition_valid,
+        local_liveness,
+    )
+
+    alive, proven = local_liveness(pointer)
+    row = classify_pointer({**pointer, "process_alive": alive if proven else None})
+    recorded = pointer.get("closure_disposition")
+    disposition = (
+        str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
+    )
+    valid = closure_disposition_valid(disposition, row["classification"])
+    return {
+        **row,
+        "disposition": dict(recorded) if isinstance(recorded, Mapping) else None,
+        "disposition_valid": valid,
+        "unreconciled": not valid,
+    }
+
+
 def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     """Return the closure drain derived from one project's live pointers.
 
@@ -1078,44 +1102,21 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     malformed, unknown or expired disposition therefore contributes to
     ``unreconciled_runs``.
     """
-    from reckon.crew.recovery import (
-        _partition_session_rows,
-        classify_pointer,
-        closure_disposition_valid,
-        local_liveness,
-    )
+    from reckon.crew.recovery import _partition_session_rows
 
-    rows: list[dict[str, Any]] = []
-    for pointer in list_live(project=project):
-        # ``still-working`` is a current liveness claim, so the classification
-        # rechecks it rather than letting a historical ``process_alive`` field
-        # keep the closure fence open after a terminal manifest arrives. The
-        # recheck is the host-gated reading, and only a reading this host
-        # stands behind counts: this host asks the process table only for a run
-        # it launched, and a pid number it happens to hold from another host's
-        # run belongs to some other process. A local probe here would hand that
-        # foreign run a live reading it never earned — the same borrowed life
-        # the directory row and the retained-work clause refuse — and an
-        # unproven answer is carried no further than the row, because the
-        # closure fence turns on whether the worker lives now rather than on
-        # what a pointer's writer recorded at launch.
-        alive, proven = local_liveness(pointer)
-        row = classify_pointer({**pointer, "process_alive": alive if proven else None})
-        recorded = pointer.get("closure_disposition")
-        disposition = (
-            str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
-        )
-        valid = closure_disposition_valid(disposition, row["classification"])
-        rows.append(
-            {
-                **row,
-                "disposition": dict(recorded)
-                if isinstance(recorded, Mapping)
-                else None,
-                "disposition_valid": valid,
-                "unreconciled": not valid,
-            }
-        )
+    # ``still-working`` is a current liveness claim, so the classification
+    # rechecks it rather than letting a historical ``process_alive`` field
+    # keep the closure fence open after a terminal manifest arrives. The
+    # recheck is the host-gated reading, and only a reading this host
+    # stands behind counts: this host asks the process table only for a run
+    # it launched, and a pid number it happens to hold from another host's
+    # run belongs to some other process. A local probe here would hand that
+    # foreign run a live reading it never earned — the same borrowed life
+    # the directory row and the retained-work clause refuse — and an
+    # unproven answer is carried no further than the row, because the
+    # closure fence turns on whether the worker lives now rather than on
+    # what a pointer's writer recorded at launch.
+    rows = [_drain_row(pointer) for pointer in list_live(project=project)]
 
     counted, peers = _partition_session_rows(rows, session)
     unreconciled = sum(1 for row in counted if row["unreconciled"])
@@ -1142,6 +1143,24 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
             }
         )
     return result
+
+
+def drain_unreconciled_by_session(project: str) -> dict[str, int]:
+    """The drain's unreconciled count for every session, derived once.
+
+    A sweep needs the count for each session it publishes for, and deriving the
+    rows once and partitioning them per session keeps that from repeating every
+    pointer's classification for each reader. Rows with no recorded owner count
+    for every session, exactly as :func:`drain` counts them.
+    """
+    from reckon.crew.recovery import _partition_session_rows
+
+    rows = [_drain_row(pointer) for pointer in list_live(project=project)]
+    counts: dict[str, int] = {}
+    for session in {str(row.get("session") or "") for row in rows} | {""}:
+        counted, _peers = _partition_session_rows(rows, session)
+        counts[session] = sum(1 for row in counted if row["unreconciled"])
+    return counts
 
 
 def _read_watch_record(handle) -> dict[str, Any]:
@@ -1254,7 +1273,9 @@ def update_watch_registration(project: str, **fields: Any) -> dict[str, Any]:
     return record
 
 
-def renew_producer_lease(project: str, *, now: float | None = None) -> dict[str, Any] | None:
+def renew_producer_lease(
+    project: str, *, now: float | None = None
+) -> dict[str, Any] | None:
     """A live follower's lease renewal for its project's producer.
 
     Called on the follower's wait pass. It is throttled to half the lease
@@ -1284,6 +1305,14 @@ class _WatchStreamProducer:
     # not load. Held so the deferral is announced once per episode rather than
     # on every retry, and cleared the moment a tick reads the config cleanly.
     tick_deferred: bool = False
+    # The sweep runs off the producer's transition path: a transition is
+    # written the moment it is detected, and the derivation the sessions'
+    # snapshots are sliced from runs behind it. The lock keeps a trigger that
+    # arrives while a sweep is in flight from starting a second one — the
+    # trigger is skipped, not queued — and the thread reference is what a
+    # caller waits on when it needs the published state to have settled.
+    sweep_lock: threading.Lock = field(default_factory=threading.Lock)
+    sweep_thread: threading.Thread | None = None
 
 
 _WATCH_STREAM_PRODUCERS: dict[str, _WatchStreamProducer] = {}
@@ -1441,7 +1470,11 @@ def _stream_transition(
     )
 
 
-def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) -> None:
+def _publish_watch_transitions(
+    project: str,
+    producer: _WatchStreamProducer,
+    records: Iterable[Mapping[str, Any]],
+) -> bool:
     """Append each fleet state transition once for the active producer.
 
     The tick's own read is fallible: composing a transition prices the run
@@ -1451,23 +1484,20 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
     file resolved a moment later costs one fleet observation, not the producer.
     Nothing is committed until the whole tick succeeds, so a deferred tick
     neither advances the fold's memory nor drops the transitions it owes.
-    """
-    producer = _WATCH_STREAM_PRODUCERS.get(project)
-    if producer is None:
-        return
 
+    Reports whether this sweep appended a transition, which is the event the
+    session snapshots republish on.
+    """
     from reckon.crew.recovery import _fleet_counts, fleet_transitions
     from reckon.flight import FlightConfigError
 
     current = _watch_stream_snapshots(records, stall_window=producer.stall_window)
     if not current and not producer.fleet_seen:
-        return
+        return False
 
     try:
         if not producer.fleet_seen:
-            baseline = {
-                run_id: dict(snapshot) for run_id, snapshot in current.items()
-            }
+            baseline = {run_id: dict(snapshot) for run_id, snapshot in current.items()}
             counts = _fleet_counts(current)
             lines = [
                 _stream_transition(
@@ -1483,7 +1513,7 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
             producer.fleet_seen = True
             producer.known = baseline
             producer.tick_deferred = False
-            return
+            return True
 
         # The same fold the seat's own ticker uses, so a follower reading the
         # stream and a reader watching the seat's stdout cannot disagree about
@@ -1502,11 +1532,127 @@ def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) ->
         _append_watch_lines(producer.path, lines)
         producer.known = next_known
         producer.tick_deferred = False
+        return bool(lines)
     except FlightConfigError as exc:
         if producer.tick_deferred:
-            return
+            return False
         producer.tick_deferred = True
         _announce_watch_tick_deferral(exc)
+        return False
+
+
+_SWEEP_LOCAL = threading.local()
+
+
+def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) -> None:
+    """Fold this sweep's fleet state, then publish the sessions' snapshots.
+
+    A sweep publishes the obligations it derives from the same live pointers,
+    and that derivation reads them through :func:`list_live` — one of this
+    function's own callers — so a call made from inside a running sweep is left
+    to that sweep rather than re-entered. The transition write never waits on
+    the derivation: the sweep runs in its own thread, one at a time, and a
+    trigger arriving while one is in flight is skipped.
+    """
+    if getattr(_SWEEP_LOCAL, "in_sweep", False):
+        return
+    producer = _WATCH_STREAM_PRODUCERS.get(project)
+    if producer is None:
+        return
+    transition_fired = _publish_watch_transitions(project, producer, records)
+    if not producer.sweep_lock.acquire(blocking=False):
+        return
+    producer.sweep_thread = threading.Thread(
+        target=_run_obligation_sweep,
+        args=(project, producer, transition_fired),
+        name=f"reckon-obligations-sweep-{project}",
+        daemon=True,
+    )
+    producer.sweep_thread.start()
+
+
+def _run_obligation_sweep(
+    project: str, producer: _WatchStreamProducer, transition_fired: bool
+) -> None:
+    """Run one obligations sweep on the thread its trigger started."""
+    _SWEEP_LOCAL.in_sweep = True
+    try:
+        _publish_obligation_snapshots(project, transition_fired=transition_fired)
+    finally:
+        _SWEEP_LOCAL.in_sweep = False
+        producer.sweep_thread = None
+        producer.sweep_lock.release()
+
+
+def _producer_snapshot_identity(project: str) -> dict[str, Any]:
+    """The producer's pid, start time and code stamp, read from its registration.
+
+    The lease registration is the only place a producer's identity is kept: it
+    is written when the seat is taken, so a reader of a session's snapshot can
+    say which process published it and which source that process runs. A
+    registration written before the stamp existed, or one left by a producer
+    superseded by this one, carries a stamp other than the one this process
+    runs, so the stamp is recorded from the running source rather than assumed.
+    """
+    registration = read_watch_registration(project)
+    stamp = follower_code_stamp()
+    if registration.get("code_stamp") != stamp:
+        registration = update_watch_registration(project, code_stamp=stamp)
+    return {
+        "pid": registration.get("pid"),
+        "pid_start_time": registration.get("pid_start_time"),
+        "started_at": registration.get("started_at"),
+        "code_stamp": registration.get("code_stamp"),
+    }
+
+
+def _publish_obligation_snapshots(project: str, *, transition_fired: bool) -> list[str]:
+    """Republish every live session's obligations snapshot for one sweep.
+
+    The sessions are the ones currently delivering from a follower registration
+    in the project's watch directory — the same registration the hook resolves
+    its own session through. A registration keeps its file after its follower
+    goes, so publishing for every registration the project has ever had would
+    spend the sweep deriving for sessions nobody is coordinating under; a
+    session that never registered a follower gets no snapshot at all.
+
+    The triggers live with the snapshot module; this is the per-project sweep
+    the producer already runs, so its clock and its stat reads are the ones the
+    floor tick and the file-identity trigger are judged against.
+    """
+    from reckon.crew import obligation_snapshot
+    from reckon.flight import FlightConfigError
+
+    sessions = [
+        str(row.get("session") or "")
+        for row in list_followers(project)
+        # Only a registration something is delivering from is a session with
+        # duties to publish: a released registration keeps its file for a later
+        # re-arm, and deriving for every registration the project has ever had
+        # would spend the sweep on sessions nobody is coordinating under.
+        if row.get("live")
+    ]
+    docs = _docs_dir_for_project(project)
+    try:
+        written = obligation_snapshot.sweep(
+            project,
+            sessions=[session for session in sessions if session],
+            producer=_producer_snapshot_identity(project),
+            stream_offset=line_boundary(watch_stream_path(project)),
+            transition_fired=transition_fired,
+            state_dirs=[docs / "state" / project, docs / "plans"] if docs else [],
+        )
+    except FlightConfigError as exc:
+        # A tick whose config does not load has no fleet state to derive from,
+        # so it defers exactly as the stream transition fold does: the snapshots
+        # already at rest age out of freshness until a later tick resolves the
+        # config, and the seat stays up meanwhile.
+        producer = _WATCH_STREAM_PRODUCERS.get(project)
+        if producer is not None and not producer.tick_deferred:
+            producer.tick_deferred = True
+            _announce_watch_tick_deferral(exc)
+        return []
+    return [str(path) for path in written]
 
 
 def _announce_watch_tick_deferral(exc: Exception) -> None:
@@ -1591,9 +1737,8 @@ def watch_producer_identity(project: str) -> dict[str, Any]:
     # case a reader most needs to distinguish.
     current_stamp = follower_code_stamp()
     stale = code_stamp != current_stamp
-    detail = (
-        f"reckon {version or 'unknown'} started {started_at or 'unknown'}"
-        + (", code stale" if stale else "")
+    detail = f"reckon {version or 'unknown'} started {started_at or 'unknown'}" + (
+        ", code stale" if stale else ""
     )
     return {
         "reckon_version": version,
