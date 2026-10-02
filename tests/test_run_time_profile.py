@@ -27,6 +27,10 @@ Each case exists because its opposite was a plausible bug:
 * **A missing lane document** yields ``None`` for every load field, proven
   against a present document that resolves its figures, so the absence check is
   shown to see something where something exists.
+* **The router's observed window** gates worker slots: a zero, negative or
+  absent ``observed_seconds`` carries no slot figure, while a positive one
+  carries the published figure, so a slot allowance resting on no history is
+  not read as a real capacity.
 """
 
 from __future__ import annotations
@@ -197,7 +201,9 @@ def test_a_missing_lane_document_yields_nulls(tmp_path, monkeypatch):
                 "waiting": 2,
                 "headroom": 3,
                 "observed_at": "2026-10-02T11:59:00Z",
-                "admission": {"worker_slots": 5},
+                # A positive observation window is what makes the router's own
+                # slot figure trustworthy; without it the figure reads as absent.
+                "admission": {"worker_slots": 5, "observed_seconds": 600},
                 "throughput": {"mean_tokens_per_second": 42.0},
             }
         ),
@@ -212,6 +218,61 @@ def test_a_missing_lane_document_yields_nulls(tmp_path, monkeypatch):
     assert present_load["worker_slots"] == 5
     assert present_load["mean_tokens_per_second"] == 42.0
     assert present_load["observed_at"] == "2026-10-02T11:59:00Z"
+
+
+@pytest.mark.parametrize(
+    "observed_seconds",
+    [
+        pytest.param(0, id="zero"),
+        pytest.param(-5, id="negative"),
+        pytest.param(None, id="absent"),
+    ],
+)
+def test_worker_slots_rest_on_an_observed_window(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, observed_seconds: int | None
+):
+    """A slot figure resting on no observed window reads as absent, not zero.
+
+    The router averages its slot arithmetic over the window it reports as
+    ``observed_seconds``. A zero, a negative figure and an absent figure each
+    state that no window has been observed, so the published slot figure is not
+    carried: the dispatcher's own allowance reader applies that rule once and
+    falls back to headroom, which needs no history, and the load reading reuses
+    that decision rather than restating the window test. Headroom is unaffected,
+    so the two fields are shown to move independently.
+    """
+
+    admission: dict = {"worker_slots": 5}
+    if observed_seconds is not None:
+        admission["observed_seconds"] = observed_seconds
+    document = {"running": 4, "headroom": 3, "admission": admission}
+    path = tmp_path / "lane.json"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    monkeypatch.setenv("RECKON_LOCAL_LANE_DOCUMENT", str(path))
+
+    load = local_lane_load()
+
+    assert load["worker_slots"] is None
+    assert load["headroom"] == 3
+
+
+def test_a_positive_window_carries_the_published_slots(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """A positive observation window carries the router's published figure."""
+
+    document = {
+        "running": 4,
+        "headroom": 3,
+        "admission": {"worker_slots": 5, "observed_seconds": 600},
+    }
+    path = tmp_path / "lane.json"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    monkeypatch.setenv("RECKON_LOCAL_LANE_DOCUMENT", str(path))
+
+    load = local_lane_load()
+
+    assert load["worker_slots"] == 5
 
 
 def test_the_module_is_the_one_under_test():

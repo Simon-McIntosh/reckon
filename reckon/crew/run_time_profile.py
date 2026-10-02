@@ -50,6 +50,7 @@ from typing import Any
 
 from reckon import ledger
 from reckon.crew import lane_document
+from reckon.crew.dispatch import _lane_worker_allowance
 from reckon.crew.paid_lanes import local_lane_path
 
 #: Bucket labels for a run classified by its declared time budget, ascending.
@@ -387,6 +388,10 @@ def local_lane_load() -> dict[str, Any]:
     worker-slot arithmetic. Returns ``running``, ``waiting``, ``headroom``,
     ``worker_slots`` and ``mean_tokens_per_second`` beside the instant the
     reading was taken (``read_at``) and the lane's own ``observed_at`` stamp.
+    ``worker_slots`` is carried only when the router's arithmetic rests on a
+    positive observed window: a figure averaged over no history is read as
+    absent, the same rule the dispatcher's own allowance reader applies, so the
+    two surfaces cannot disagree about which slot figures to trust.
 
     Every field the document did not publish is ``None`` -- a missing lane
     document is not a lane with zero of anything -- and the function never
@@ -407,6 +412,18 @@ def local_lane_load() -> dict[str, Any]:
 
     reading = lane_document.read_lane_document(document, now=read_at)
     admission = lane_document.read_lane_admission(document)
+    # The dispatcher's allowance reader is the one place the router's window
+    # test is applied: it uses a published slot figure only once the window it
+    # was averaged over is positive, and falls back to headroom otherwise, which
+    # needs no history. Reuse that decision rather than restate the window test
+    # here, so the load reading and the dispatch allowance cannot disagree about
+    # which slot figures rest on observed history.
+    allowance = _lane_worker_allowance(document, session="")
+    worker_slots = (
+        _known(admission.get("worker_slots"))
+        if "worker slots" in str(allowance.get("source") or "")
+        else None
+    )
     throughput = lane_document.read_lane_throughput(
         document,
         reading_stamp=str(reading.get("observed_at") or ""),
@@ -420,7 +437,7 @@ def local_lane_load() -> dict[str, Any]:
         "running": _known(reading.get("running")),
         "waiting": _known(reading.get("waiting")),
         "headroom": _known(reading.get("headroom")),
-        "worker_slots": _known(admission.get("worker_slots")),
+        "worker_slots": worker_slots,
         "mean_tokens_per_second": _known(throughput.get("mean_tokens_per_second")),
         "detail": reading.get("detail") or "",
     }

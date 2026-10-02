@@ -1,0 +1,72 @@
+<article class="landed-report" data-run-id="r-20261002T184258840182-lane-load-honours-observed-window" data-node="lane-load-honours-observed-window">
+  <h3>Local lane load honours the router's observed window</h3>
+  <p>
+    <strong>Base inspected:</strong>
+    <code>2a581fb443537002de44c581f544abc78fac9d3e</code>.
+    <code>local_lane_load</code> in <code>reckon/crew/run_time_profile.py</code>
+    read <code>worker_slots</code> straight from the lane document's admission
+    block, so a slot figure the router had published while its averaging window
+    was still empty read as a real capacity. The router states that window as
+    <code>observed_seconds</code>, and its own dispatch allowance refuses a slot
+    figure resting on no history: a zero, negative or absent window falls back
+    to headroom. The load reading did not apply that rule, so the two surfaces
+    could disagree about the same lane.
+  </p>
+
+  <h4>What changed</h4>
+  <table>
+    <thead><tr><th>path</th><th>change</th><th>why</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>reckon/crew/run_time_profile.py</code></td>
+        <td><code>local_lane_load</code> calls the dispatcher's
+        <code>_lane_worker_allowance</code> and carries the published
+        <code>worker_slots</code> only when that reader chose one of the
+        router's own slot sources; otherwise the field is <code>None</code>.
+        The window test is reused, not restated.</td>
+        <td>A slot figure averaged over no observed history is read as absent,
+        matching the dispatch allowance, so the load surface and the dispatch
+        surface cannot disagree about which slot figures rest on real
+        history.</td>
+      </tr>
+      <tr>
+        <td><code>tests/test_run_time_profile.py</code></td>
+        <td>Adds <code>test_worker_slots_rest_on_an_observed_window</code>
+        (zero, negative and absent <code>observed_seconds</code> each yield
+        <code>None</code>) and
+        <code>test_a_positive_window_carries_the_published_slots</code>; the
+        present-document positive control now states a positive
+        <code>observed_seconds</code> so its <code>worker_slots</code> figure is
+        carried legitimately.</td>
+        <td>Each new guard is exercised by a case whose opposite was the
+        recorded defect: the three window states that must withhold the figure,
+        and the one that must carry it.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>Measure</h4>
+  <p>
+    Gate <code>tests/test_run_time_profile.py</code>: <strong>11 passed</strong>
+    at head, <code>EXIT=0</code>. At the base arm — the head test file run
+    against the base module — <strong>3 failed, 8 passed</strong>, the three
+    failures being exactly the new window cases (each read the ungated figure
+    <code>5</code> where <code>None</code> is required).
+  </p>
+  <table>
+    <thead><tr><th>arm</th><th>result</th><th>log</th></tr></thead>
+    <tbody>
+      <tr><td>head (module + tests)</td><td>11 passed, EXIT=0</td><td><code>logs/head.log</code></td></tr>
+      <tr><td>base module, head tests</td><td>3 failed, 8 passed, EXIT=1</td><td><code>logs/base-arm.log</code></td></tr>
+      <tr><td>negative control (observed-window gate dropped)</td><td>3 failed, 8 passed, EXIT=1</td><td><code>logs/negative-control.log</code></td></tr>
+    </tbody>
+  </table>
+  <p>
+    Logs live under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T184258840182-lane-load-honours-observed-window/logs/</code>.
+    The declared negative control — drop the observed-window gate from
+    <code>local_lane_load</code> — fails exactly the
+    <code>observed_seconds</code>-zero case among the three, at
+    <code>EXIT=1</code>.
+  </p>
+</article>
