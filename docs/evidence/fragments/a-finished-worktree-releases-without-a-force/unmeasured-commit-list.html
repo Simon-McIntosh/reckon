@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-finished-worktree-releases-without-a-force">
+  <meta name="plan-verifies" content="reckon:a-finished-worktree-releases-without-a-force#s7">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-02">
+  <meta name="evidence-commit" content="8f47851d">
+  <title>An unmeasured commit list reads as unmeasured | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="unmeasured-commit-list">
+  <h2>An unmeasured commit list reads as unmeasured</h2>
+  <p><strong>Change (commit <code>8f47851d</code>).</strong> <code>_inspect_workspace</code>
+  (<code>reckon/crew/routing.py</code>) compared a worktree's commits against the integration
+  head only when <code>release_residue</code>, so every other caller — the promotion audit row
+  among them — received <code>non_equivalent_commits: []</code> and
+  <code>patch_equivalent_commits: []</code> for a tree whose commits were never compared. A
+  divergent dirty tree therefore read as carrying no commits of its own, an unmeasured absence
+  indistinguishable from a measured zero. Both fields are now <code>null</code> when the commits
+  beyond the integration head were not measured, and the sibling
+  <code>commits_unmeasured_reason</code> names which of four conditions held: this caller did not
+  ask (<code>release_residue</code> false), the head is an ancestor of the integration head, the
+  tree is clean, or the comparison could not run. A measured row keeps both lists, even when they
+  are empty. <code>_commits_beyond_merge_base</code> now returns <code>None</code> rather than an
+  empty list when <code>git cherry</code> cannot run, so an unreadable tree is still kept for its
+  commits rather than released, and the same null contract reaches the unavailable-tree row.</p>
+
+  <p><strong>Readers.</strong> A grep of <code>reckon/</code> for both field names finds no reader
+  outside the writer: the two gc call sites consume the classification, which is computed from
+  the internal list and is unchanged by the null contract; the promotion call sites read
+  <code>classification</code> and <code>reclaimable</code>. The fields reach readers only through
+  serialized report rows, where null is now the honest value.</p>
+
+  <p><strong>Gate.</strong> Both arms ran under <code>pytest -n 8 --timeout=300</code> from the
+  tree under test, each with its own basetemp under the run's scratch and its own log in the run
+  directory. The base arm (<code>git archive</code> of <code>8c592336</code>; 10 test files)
+  reports <strong>111 passed</strong>, <code>EXIT=0</code>. The head arm at
+  <code>8f47851d</code> (the same 10 files plus
+  <code>tests/test_unmeasured_commit_list.py</code>) reports <strong>114 passed</strong>,
+  <code>EXIT=0</code>; added failure ids: none. The head arm's <code>module.__file__</code> is the
+  worktree's own <code>reckon/crew/routing.py</code>; the base arm's is the scratch extraction's,
+  so neither arm could have been served by the other tree. <code>ruff check</code> over the
+  changed paths reports 9 findings in <code>routing.py</code> — the same nine codes the base copy
+  reports, line numbers shifted — and none in the new test file;
+  <code>ruff format --check</code> passes on both.</p>
+
+  <p><strong>New tests</strong> (<code>tests/test_unmeasured_commit_list.py</code>, each in a
+  temporary repository with <code>RECKON_HOME</code> under <code>tmp_path</code>):</p>
+  <ul>
+    <li>one divergent dirty worktree inspected both ways: with <code>release_residue</code> false
+      both lists are null and the reason names the caller's opt-in; with it true the
+      non-equivalent list names the divergent commit and the equivalent list is empty — the
+      measured-empty case the null contract must not swallow;</li>
+    <li>a dirty tree whose head is an ancestor: null lists, reason names the ancestor;</li>
+    <li>a vanished tree: classification <code>unavailable</code>, null lists, reason names the
+      absent tree.</li>
+  </ul>
+
+  <p><strong>Negative control.</strong> With <code>_inspect_workspace</code> returning empty lists
+  for an unmeasured row (the declared mutation), the new file fails on the null assertion:
+  <code>assert [] is None</code>, <code>EXIT=1</code>, failing ids:
+  <code>test_a_divergent_dirty_worktree_reads_null_unmeasured_and_a_list_measured</code> and
+  <code>test_a_reachable_head_names_the_ancestor_as_the_reason</code>. The head arm does not fail
+  either id. Log:
+  <code>~/.config/reckon/crew/runs/r-20261002T223224404015-unmeasured-commit-list/logs/negative-control-empty-lists-abs.log</code>.</p>
+</section>
+</main>
+</body>
+</html>
