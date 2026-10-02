@@ -24,6 +24,7 @@ import threading
 from pathlib import Path
 
 import pytest
+from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon.crew import runs
@@ -245,4 +246,117 @@ def test_an_empty_checkpoint_reload_still_defers(isolated_home, monkeypatch) -> 
     assert cli_module.FOLLOWER_PRODUCER_RELOADING_EVENT in kinds, kinds
     assert cli_module.FOLLOWER_STALE_PRODUCER_EVENT not in kinds, (
         "an empty-checkpoint reload reported the producer as stale at once"
+    )
+
+
+def _reload_environment(monkeypatch, *, checkpoint=None) -> dict:
+    """Run the reloader's own re-exec hand-off and return the environment it passes.
+
+    A real ``_FollowerReloader`` for a non-seat follower composes the
+    replacement's environment inside ``poll``. The import proof and ``os.execve``
+    are stubbed so that composition runs without replacing this process, and the
+    mapping the reloader would have handed to ``execve`` is returned. The stamp
+    the constructor fixed is moved first, so ``poll`` reads a code gap and
+    proceeds to the hand-off rather than deciding the code is already current.
+    """
+    captured: dict = {}
+    monkeypatch.setattr(
+        cli_module._FollowerReloader, "_replacement_imports", lambda self: (True, "")
+    )
+    monkeypatch.setattr(
+        os, "execve", lambda path, argv, env: captured.update(env=dict(env))
+    )
+    reloader = cli_module._FollowerReloader(PROJECT, None, seat=False)
+    reloader.code_stamp = STALE_STAMP
+    reloader.poll({} if checkpoint is None else checkpoint)
+    assert captured.get("env"), "the reloader never reached the image replacement"
+    return captured["env"]
+
+
+def _pin_follower_to_this_process(monkeypatch) -> None:
+    """Keep the follower alive by naming this live test process as its owner."""
+    monkeypatch.setattr(runs, "producer_live", lambda project: True)
+    monkeypatch.setattr(
+        runs,
+        "follower_owner",
+        lambda: (os.getpid(), runs._process_start_time(os.getpid())),
+    )
+
+
+def _follow_events() -> list[dict]:
+    """Drive the real ``crew follow`` command and return the objects it emits.
+
+    The command is invoked end to end through its click entry point, so the
+    staleness deferral is decided by ``crew_follow`` reading its own environment
+    rather than by a value a test injected. JSON mode is used so each line is one
+    object whose ``event`` field can be inspected.
+    """
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "follow",
+            "--project",
+            PROJECT,
+            "--json",
+            "--lifetime",
+            "1s",
+            "--no-color",
+            "--width",
+            "240",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    return [json.loads(line) for line in result.output.splitlines() if line.strip()]
+
+
+def test_a_reload_handed_through_crew_follow_defers_the_mismatch(
+    isolated_home, monkeypatch
+) -> None:
+    """A reload defers when the deferral is read by crew_follow's own wiring.
+
+    The reloader marks a replacement by putting the checkpoint variable into the
+    environment ``execve`` passes, and ``crew_follow`` reads whether that
+    variable is present before it pops the checkpoint. This case drives the
+    reloader's own hand-off into that computation and through the real command,
+    so the deferral is exercised where it lives rather than by a flag the test
+    handed the loop. The checkpoint it carries is empty, because the deferral
+    keys on the reload having happened, not on the checkpoint's contents.
+    """
+    _plant_seat(code_stamp=STALE_STAMP)
+    _pin_follower_to_this_process(monkeypatch)
+    environment = _reload_environment(monkeypatch)
+    # The replacement image is this process, handed exactly the mapping the
+    # reloader composed for execve; only the checkpoint variable is adopted.
+    monkeypatch.setenv(
+        cli_module._FOLLOWER_CHECKPOINT_ENV,
+        environment[cli_module._FOLLOWER_CHECKPOINT_ENV],
+    )
+
+    kinds = [event.get("event") for event in _follow_events()]
+    assert cli_module.FOLLOWER_PRODUCER_RELOADING_EVENT in kinds, kinds
+    assert cli_module.FOLLOWER_STALE_PRODUCER_EVENT not in kinds, (
+        "crew_follow reported a reloaded follower's mismatch as stale at once"
+    )
+
+
+def test_a_fresh_arming_through_crew_follow_reports_the_mismatch_at_once(
+    isolated_home, monkeypatch
+) -> None:
+    """A fresh arming has no reload to vouch for the mismatch, so it reports it.
+
+    A follower that never replaced an image cannot say the stale producer is
+    merely catching up, so the cycle advice is owed on the first mismatch. This
+    is the opposite arm of the same computation: with no checkpoint variable in
+    the environment, ``crew_follow`` computes a fresh arming and the advice
+    follows at once rather than after a window.
+    """
+    _plant_seat(code_stamp=STALE_STAMP)
+    _pin_follower_to_this_process(monkeypatch)
+    monkeypatch.delenv(cli_module._FOLLOWER_CHECKPOINT_ENV, raising=False)
+
+    kinds = [event.get("event") for event in _follow_events()]
+    assert cli_module.FOLLOWER_STALE_PRODUCER_EVENT in kinds, kinds
+    assert cli_module.FOLLOWER_PRODUCER_RELOADING_EVENT not in kinds, (
+        "a fresh arming carried a reload's deferral"
     )
