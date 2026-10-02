@@ -10,7 +10,7 @@
   <meta name="plan-verifies" content="reckon:the-obligations-hook-reads-a-snapshot#s2">
   <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-10-02">
-  <meta name="evidence-commit" content="b589b9476">
+  <meta name="evidence-commit" content="2f04353a9">
   <title>The producer publishes each session's obligations snapshot | reckon</title>
   <link rel="stylesheet" href="/reckon/_shared/foundation.css">
   <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
@@ -60,40 +60,38 @@
   the moment it is detected and never waits on the derivation, at most one sweep is in flight, and
   a trigger arriving while one runs is skipped rather than queued.</p>
 
-  <h3>Gate — the 51-file surface, both arms, eight workers each</h3>
-  <p>The gate is the new test file plus every <code>tests/</code> file naming
-  <code>runs.watch</code>, <code>watch_registration</code>, <code>obligations(</code> or
-  <code>crew watch</code>, found by a text search: 51 files at the head revision and 50 at the base,
-  run under <code>pytest -n 8 --timeout=300</code> with a private basetemp outside any repository.
-  The head arm adds <strong>no</strong> failure id —
-  its set is the base's minus one, and the twelve tests it passes beyond the base are this node's eleven cases plus one the base arm leaves failing.</p>
+  <h3>Gate — the 57-file surface, both arms, eight workers each</h3>
+  <p>The gate is this node's new test file and main's held-worktree file plus every
+  <code>tests/</code> file naming <code>runs.watch</code>, <code>watch_registration</code>,
+  <code>obligations(</code> or <code>crew watch</code>, found by a text search: 56 files at the
+  merged base and 57 at the head, run under <code>pytest -n 8 --timeout=300</code> with a
+  private basetemp outside any repository. The head arm adds <strong>no</strong> failure id:
+  both arms carry the one configuration-home error below and nothing else, and the head passes
+  eleven tests beyond the base — this node's new cases.</p>
   <table>
     <thead><tr><th>arm</th><th>revision</th><th>result</th><th>failure ids</th><th>log</th></tr></thead>
     <tbody>
-      <tr><td>base</td><td><code>3fadeb60e</code></td><td>8 failed, 637 passed, 1 skipped, 1 error in 392.88 s</td><td>9 — see below</td><td><code>gate/base-xdist5.log</code></td></tr>
-      <tr><td>head</td><td><code>b589b9476</code></td><td>7 failed, 649 passed, 1 skipped, 1 warning, 1 error in 407.26 s</td><td>the base's nine, minus the producer-loop deferral test</td><td><code>gate/head-xdist5.log</code></td></tr>
+      <tr><td>base</td><td><code>4256153f2</code></td><td>675 passed, 1 skipped, 1 error in 258.43 s</td><td>1 — the configuration-home error</td><td><code>gate/base-xdist7.log</code></td></tr>
+      <tr><td>head</td><td><code>2f04353a9</code></td><td>686 passed, 1 skipped, 2 warnings, 1 error in 239.79 s</td><td>the same single id</td><td><code>gate/head-xdist7.log</code></td></tr>
     </tbody>
   </table>
-  <p>These ids recur in both arms; none is added by this node. The list: <code>conftest.py::test_temp_config_home</code> (error),
-  <code>test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once</code>,
-  <code>test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching</code>,
-  <code>test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion</code>,
-  <code>test_follow_observes_other_sessions.py::test_the_real_configuration_home_gains_no_file</code>,
-  <code>test_follower_bounds_its_lifetime.py::test_no_child_of_an_armed_follower_carries_the_hand_off_variables</code>,
-  <code>test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers</code>
-  (the one the head arm clears), and two in <code>test_watch_arming_isolation.py</code>
-  (<code>test_an_opted_in_caller_is_not_refused</code>,
-  <code>test_arming_refuses_a_configuration_home_under_a_test_directory</code>).</p>
+  <p>The one id is <code>conftest.py::test_temp_config_home</code> (error), an environment-side
+  configuration-home case both arms carry in the same shape. The failures the earlier arms of
+  this gate carried — the watch-arming, ticker, follower, monitor and producer-loop cases —
+  now pass on the merged base and at this head; the head adds none of its own.</p>
 
-  <p>The first run of this same gate, at <code>a2a8f5f0d</code>, added two ids and both are
-  resolved at the head revision above. One was this node's own defect: the sweep resolves the
-  flight configuration, so a tick taken while a merged layer was unreadable raised out of
-  <code>_project_watch_claim</code>, where the stream transition fold beside it already deferred
-  the same error. The sweep now defers with it, and
-  <code>test_a_follower_defers_one_tick_and_keeps_delivering_across_a_config_error</code> —
-  deterministic at <code>a2a8f5f0d</code> in three of three serial probes, and passing at the
-  base — passes at the head revision. The other did not reproduce: three serial probes passed at
-  <code>a2a8f5f0d</code> and again at the head, and the final head arm does not carry it.</p>
+  <p>Two changes separate the earlier arms from this pair. The head merges main's held-worktree
+  change; the conflict was this node's rename of <code>_held_worktrees</code>, resolved so the
+  once-per-sweep derivation keeps main's per-run-file resolution and its fallback rules exactly,
+  with this node's per-session grouping around them. And the first arm at the merge head added
+  one id: the sub-floor derivation resolved a live run's tree head before asking whether the run
+  had any stored review at all, launching one git process per live run per sweep — visible to
+  main's incremental-read contract, which counts every git launch inside a poll's window. The
+  head is now resolved only when a review exists, so a sweep over runs with no stored review
+  launches no git; the arms above are at the fixed head. Earlier still, the node's first arm at
+  <code>a2a8f5f0d</code> had added its own claim-path regression — the sweep now defers a flight
+  config that does not load, exactly as the stream fold does — which cleared before the
+  pre-merge arms.</p>
 
   <h3>The eleven cases the new file adds</h3>
   <ul>
