@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="37">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="39">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -77,7 +77,7 @@
     </p>
 
     <h2 id="s2">§2 — The producer publishes each session's obligations</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       The per-project watch producer (<code>runs.watch</code> in <code>reckon/crew/runs.py</code>,
       started by <code>reckon crew watch --ensure</code>) runs continuously and already classifies
@@ -264,10 +264,16 @@
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §4</pre>
     <p class="r-fu-outcome">§4 is done: plan reads from the index, the classification memo and the held-worktrees read have all landed. The next step is §2, whose producer is in its bounding repair. Superseded by f-tohras-003.</p>
     </article>
-<article class="r-fu" data-id="f-tohras-003" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tohras-003" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §2" data-resolved-at="2026-10-02T12:31:28+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land the bounded snapshot producer, then the hook&#x27;s prompt path</h4>
     <div class="r-fu-body"><p>§2 first: the producer publishes for live followers only, deriving once per sweep. Then the prompt path of §3, which loads the snapshot module by file path. Then the stop path of §3, then §5 to §8.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §2</pre>
+    <p class="r-fu-outcome">§2 landed at d53a3fc68 after a review of 88 with no added failures: the producer publishes each live session's obligations snapshot, derived once per sweep off the tick. The hook still derives per call (15.5 s measured on s22-coord after the merge), which §3 replaces.</p>
+    </article>
+<article class="r-fu" data-id="f-tohras-004" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Read the snapshot in the prompt and stop hooks</h4>
+    <div class="r-fu-body"><p>§2's snapshot is published; the hook still derives obligations per call, measured at 15.5 s for s22-coord at d53a3fc68. §3 switches the prompt path, then the stop path, to read the snapshot.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §3</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -284,7 +290,7 @@
     <div class="r-comment-body"><p>independent review of r-20261001T204424733309-the-producer-publishes-the-snapshot at head b9385068f (base 3fadeb60e) scored goal_fidelity 19, evidence 18, scope_discipline 18, durability 19, fit 19, total 93; added_failure_count 0 over the reviewed run's own two gate logs; the two follow-on findings the predecessor review left (dead _process_is_running and a bare marker in the snapshot test) are both repaired at this head.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261002T102953416372-review-of-the-producer-publishes-the-snapshot" data-who="reckon-build" data-when="2026-10-02T10:46:13.086Z">
-    <div class="r-comment-body"><p>review of r-20261001T204424733309-the-producer-publishes-the-snapshot read at base 3fadeb60e5d96c0ec4009c570947145937abbc59 head b63843328a2d65d262c9cd9ccc96fdb75720b997, stored as a parsed record scoring goal_fidelity 19, evidence 17, scope_discipline 15, durability 19, fit 18 -&gt; total 88, with added_failure_count 0 and two follow-on findings; it is a review&#x27;s whole deliverable and lands no repository change.</p></div>
+    <div class="r-comment-body"><p>review of r-20261001T204424733309-the-producer-publishes-the-snapshot read at base 3fadeb60e5d96c0ec4009c570947145937abbc59 head b63843328a2d65d262c9cd9ccc96fdb75720b997, stored as a parsed record scoring goal_fidelity 19, evidence 17, scope_discipline 15, durability 19, fit 18 -&gt; total 88, with added_failure_count 0 and two follow-on findings; it is a review's whole deliverable and lands no repository change.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261001T132307171536-drain-reads-the-index" data-who="reckon-build" data-when="2026-10-01T14:09:37.121Z">
     <div class="r-comment-body"><p>§4 item 1 landed — runs._project_executable_remainder answers from metadata_index.plan_derivations (plan rows gain open_followups and implementable_sections, entry schema 2, served ROW_FIELDS unchanged), base 5.82-5.85 s vs head index-current 0.05-0.35 s at equal remainders, evidence at docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/drain-reads-the-index.html</p></div>
