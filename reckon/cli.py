@@ -919,6 +919,20 @@ def _emit(payload, pretty: bool) -> None:
     click.echo(json.dumps(payload, indent=2 if pretty else None, sort_keys=True))
 
 
+def _emit_dry_run_request_error(pretty: bool, detail: str) -> None:
+    """Answer a request error on the dry run's JSON channel.
+
+    A request error is the same fact whether it came from a leaf key the
+    flight schema refuses or from a keyed-map name no layer defines, so both
+    answer in the same decodable document rather than one in plain text on
+    stderr.
+    """
+    _emit(
+        {"ok": False, "dry_run": True, "error": "request-error", "detail": detail},
+        pretty,
+    )
+
+
 def _validation_detail(validation) -> str:
     """Render a node validation's findings as the detail of a refusal.
 
@@ -1595,7 +1609,19 @@ def crew_dispatch(
             "committed plan section"
         )
 
-    config = _dispatch_resolved_flight(flight_module, project, checkout_path, overrides)
+    try:
+        config = _dispatch_resolved_flight(
+            flight_module, project, checkout_path, overrides
+        )
+    except click.ClickException as exc:
+        if not dry_run:
+            raise
+        # A resolution the prompt layer cannot join — a leaf key the schema
+        # refuses as well as a name no layer defines — is a request error, and
+        # a dry run answers every request error on its JSON channel so a
+        # caller that decodes stdout reads the refusal rather than nothing.
+        _emit_dry_run_request_error(pretty, str(exc))
+        raise click.exceptions.Exit(1) from exc
     flight_backend_override = _flight_default_backend_override(
         flight_module, config, overrides
     )
@@ -1664,15 +1690,7 @@ def crew_dispatch(
             # A --set path the configuration does not know is a request error
             # on the same channel every other dry-run refusal answers on, so a
             # caller keying on ``error`` reads a refusal rather than a preview.
-            _emit(
-                {
-                    "ok": False,
-                    "dry_run": True,
-                    "error": "request-error",
-                    "detail": str(exc),
-                },
-                pretty,
-            )
+            _emit_dry_run_request_error(pretty, str(exc))
             raise click.exceptions.Exit(1) from exc
         try:
             resolution = crew_module.plan_dispatch(
