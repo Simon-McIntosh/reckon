@@ -214,3 +214,16 @@ def test_hold_and_route_both_explain_the_sliding_scale():
             "without a numeric threshold",
         ):
             assert phrase in text
+
+
+def test_published_admission_pause_is_preserved(lane):
+    lane.write_text(
+        json.dumps(
+            {
+                "observed_at": NOW.isoformat(),
+                "headroom": 0,
+                "admission": {"headroom": 0, "verdict": "paused"},
+            }
+        )
+    )
+    assert render()["local_lane"]["admission"] == "paused"

@@ -304,7 +304,11 @@ def local_lane(
     slots = _number(load.get("worker_slots"))
     if slots is None:
         slots = _number(load.get("headroom"))
-    if gate["state"] == "paused" or published_gate.get("paused") is True:
+    if (
+        gate["state"] == "paused"
+        or published_gate.get("paused") is True
+        or reading["admission_verdict"] == "paused"
+    ):
         admission = "paused"
     elif (
         gate["state"] == "unreadable"
