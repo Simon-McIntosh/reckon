@@ -1,0 +1,47 @@
+<article class="r-evidence" data-plan="one-typesafe-model-picker" data-node="picker-latency">
+  <h3>picker-latency — one project read and one budget snapshot per pick</h3>
+
+  <p><strong>What changed.</strong> A pick judges every configured backend. Each
+  candidate's competence verdict called
+  <code>capabilities.project_cache_status</code>, which reloaded the whole project
+  ledger, so a nine-candidate pick paid nine whole-ledger reads, and each
+  candidate's plan lookup scanned the docs tree. The verdicts now accept
+  preloaded inputs: <code>routing.shared_verdict_inputs</code> loads the
+  capability cache and the ledger freshness key once per pick, and
+  <code>snapshot.candidates</code> threads that bundle into every candidate's
+  <code>_competence_verdict</code>. A pick also enters
+  <code>resources.resource_scan_scope()</code>, so the docs tree is scanned once
+  rather than once per candidate.</p>
+
+  <p><strong>Nine-candidate measurement</strong> (fixture with nine eligible
+  backends, <code>tests/test_picker_latency.py</code>): the ledger loader is
+  called <strong>once</strong> per pick; at the base revision it is called
+  <strong>nine</strong> times, one per candidate. The budget view is taken once
+  per pick. The unshared arm of the same fixture reads the ledger nine times and
+  produces the same reason list as the one-read arm, so the sharing does not
+  change any verdict. The declared negative control — restoring a per-candidate
+  the ledger read in the competence check — makes the call-count test read
+  <code>10 == 1</code> and fail, in
+  <code>negative-control.log</code>.</p>
+
+  <p><strong>Replay summary.</strong> The median Jev latency is now taken only
+  over the rows that made a Jev call, with <code>jev_calls</code> naming how many
+  those are; a pick that made no call is no longer counted as a zero-millisecond
+  call. Refused-model picks are derived from each picked backend's serving
+  observation collected at replay time, instead of from a hardcoded model name,
+  so the figure can be non-zero. A fixture whose picked model's observation reads
+  <code>refused</code> shows a count of one.</p>
+
+  <p><strong>Not produced: the live replay arm.</strong> The live replay refused
+  to run under this worker's fence:
+  <code>unshare --read-only</code> makes the serving probe's lock file
+  <code>~/.config/reckon/crew/recovery/lane-probes/reckon/claude.lock</code>
+  unwritable, so <code>crew pick --replay</code> stops before the first row with
+  <code>Error: [Errno 30] Read-only file system</code> and exit 1
+  (<code>replay-after.log</code>). Both the after arm and the base-revision arm
+  need the same probe, so neither the after median nor the base median for the
+  same twenty nodes could be recorded here. The correctness measures above are
+  unaffected and pass. A coordinator running outside the fence, or with
+  <code>--no-fence</code>, can reproduce from the JSON
+  <code>crew pick --replay 20</code> per-node medians.
+</article>
