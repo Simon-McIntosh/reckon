@@ -36,6 +36,25 @@
   head arm (524 passed, 1 skipped, no added failure id) both ended EXIT=0. The negative control —
   the resolution block dropped from the dry-run output — fails 1 (KeyError: 'overrides') against
   2 passed, EXIT=1.</p>
+  <p>Repair round. The launch path now refuses a <code>--set</code> path naming a backend or role
+  no configuration layer defines, exactly as the preview refuses it, so a name defined only through
+  <code>--set</code> can no longer merge on a real dispatch after the preview refused it. Every
+  dry-run refusal document now carries the same override echo a successful preview carries,
+  including the contract refusal (exit 2) and the held-lane refusal (exit 75), so a caller can tell
+  an override that failed to resolve from one that resolved against a held lane. And a
+  <code>--set</code> leaf key the flight schema does not carry answers as a decodable
+  <code>request-error</code> document on the dry-run channel — the channel the keyed-map refusal
+  already used — in place of a plain-text line on stderr. Reproduction against the head above
+  before the repair: <strong>5 failed, 3 passed</strong>; after, the file's 8 cases pass. Reverting
+  each repair in turn restores the failure its check names: the echo repair 2 failed, 6 passed; the
+  launch-parity repair 1 failed, 7 passed; the request-error-channel repair 3 failed, 5 passed;
+  every log ends EXIT=1. Suite arms over the same 31 files plus this node's test file: base
+  <strong>521 passed, 1 skipped</strong> and head <strong>529 passed, 1 skipped</strong>, both
+  EXIT=0, no added failure id. One caveat on how the arms were measured: the session environment
+  carries a <code>RECKON_FOLLOWER_OWNER</code> stamp naming a process that has since exited, which
+  makes eight pre-existing follower-admission tests refuse identically on the untouched base tree
+  and on the head tree; those eight failures are the environment's, and each arm above was run with
+  the stale stamp removed, restoring the condition the tests assume.</p>
 </section>
 </main>
 </body>
