@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-ledger-is-one-file-per-run">
+  <meta name="plan-verifies" content="reckon:the-ledger-is-one-file-per-run#s5">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-02">
+  <meta name="evidence-commit" content="1f8af738c">
+  <title>Measure a merge-only citation through its first parent | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="landing">
+  <h2>The run-only scope measure charges merged content and nets its churn</h2>
+  <p><code>_committed_scope</code> in <code>reckon/crew/promotion.py</code> now measures a
+  citation list of merges alone through each merge's first parent: the merge's changed paths and
+  <code>changed_lines</code> are the content the merge brought, so a run whose work reached the
+  record inside a merge is charged it rather than refused or recorded as zero. Mixed citation
+  lists still read paths from the run's own commits, a trailing merge is still not charged, and
+  <code>changed_lines</code> remains one net diff over the measured commits — confined to
+  <code>tests/test_run_scope_measure_nets_churn.py</code>, where every expectation is the fixture
+  repository's own <code>git diff</code> rather than the citation list the case passes in.</p>
+  <table>
+    <thead>
+      <tr><th>case</th><th>base 11a90cb44</th><th>head 1f8af738c</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>merge-only citation charges first-parent content and paths, add-then-remove nets to zero</td><td>2 failed, 64 passed</td><td>66 passed, 0 failed</td></tr>
+      <tr><td>negative control: per-commit summing restored</td><td>—</td><td>2 failed, 12 passed (EXIT=1)</td></tr>
+    </tbody>
+  </table>
+</section>
+</main>
+</body>
+</html>
