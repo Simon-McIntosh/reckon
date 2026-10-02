@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-supervisor-runs-declared-services-landed">
+  <meta name="plan-title" content="The Fleet Supervisor Runs Declared Services — landed record">
+  <meta name="plan-summary" content="Closure synthesis for The Fleet Supervisor Runs Declared Services: 2 committed run(s), 3 section-anchored comment(s), and 3 landed commit(s).">
+  <meta name="plan-evidence-for" content="the-fleet-supervisor-runs-declared-services">
+  <meta name="plan-verdict" content="qualified">
+  <meta name="plan-recorded-at" content="2026-10-02T08:03:05.258Z">
+  <meta name="plan-commits" content="3ce19a6022d546f0b3991ead03eda41939ef182d,8b2946cb279fe4137a2ef5cce0b62f7a841a86ca,3a27d21428b101e33b42a296d8f7c77918312640">
+  <title>The Fleet Supervisor Runs Declared Services — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The Fleet Supervisor Runs Declared Services — landed record</h1>
+  <p>Closure synthesis for The Fleet Supervisor Runs Declared Services: 2 committed run(s), 3 section-anchored comment(s), and 3 landed commit(s).</p>
+
+  <section id="s1">
+    <h2>§1 — Declared services start once, restart with backoff, and reload</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261002T053135752847-fleet-supervisor-runs-declared-services">
+      <p><small>reckon-build · 2026-10-02T07:47:03.723Z</small></p>
+      <div class="r-comment-body"><p>Declared services land in reckon/crew/fleet_supervisor.py: the batch step reads fleet/services.json from the configuration home and runs each declared service as its own-session child holding a lock in the runtime directory, restarts an exited one with 5 s doubling to a 300 s cap reset after 600 s steady running, appends stdout and stderr to one size-bounded log under the state directory, and on reload starts a newly declared service and stops a removed one by its recorded pid; gate base 52 passed / EXIT=0, head 59 passed / EXIT=0 with no added failure id.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261002T074714574031-review-of-fleet-supervisor-runs-declared-services">
+      <p><small>reckon-build · 2026-10-02T08:03:05.258Z</small></p>
+      <div class="r-comment-body"><p>Independent review of run r-20261002T053135752847-fleet-supervisor-runs-declared-services stored: parsed record, all five dimensions scored in 0..20 (goal_fidelity 20, evidence 17, scope_discipline 19, durability 19, fit 19, total 94), reviewed_base_sha c47424bd75e134cee6fa51e3b30948a11253372d and reviewed_head_sha 3a27d21428b101e33b42a296d8f7c77918312640, added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline_suite/after_suite logs; one follow-on finding (manifest tests: line carries placeholders).</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261002T053135752847-fleet-supervisor-runs-declared-services</code></td>
+        <td>fleet-supervisor-runs-declared-services</td>
+        <td><code>3ce19a6022d546f0b3991ead03eda41939ef182d</code><br><code>8b2946cb279fe4137a2ef5cce0b62f7a841a86ca</code><br><code>3a27d21428b101e33b42a296d8f7c77918312640</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>134m 37s</td>
+        <td><code>{&quot;added&quot;:980,&quot;files&quot;:4,&quot;removed&quot;:10}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261002T074714574031-review-of-fleet-supervisor-runs-declared-services</code></td>
+        <td>review-of-fleet-supervisor-runs-declared-services</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>15m 6s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report" data-run-id="r-20261002T074714574031-review-of-fleet-supervisor-runs-declared-services" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261002T053135752847-fleet-supervisor-runs-declared-services.json">
+      <h3>review-of-fleet-supervisor-runs-declared-services &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261002T053135752847-fleet-supervisor-runs-declared-services.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;added_failure_count&quot;: 0,
+  &quot;added_failure_ids&quot;: [],
+  &quot;base_log_revision&quot;: &quot;c47424bd75e134cee6fa51e3b30948a11253372d&quot;,
+  &quot;call_site_count&quot;: 3,
+  &quot;call_sites&quot;: [
+    &quot;reckon/crew/fleet_supervisor.py:serve&quot;,
+    &quot;reckon/crew/fleet_supervisor.py:handle_line&quot;,
+    &quot;reckon/crew/fleet_supervisor.py:main&quot;
+  ],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T053135752847-fleet-supervisor-runs-declared-services/manifest.md&quot;,
+      &quot;line&quot;: &quot;14&quot;,
+      &quot;severity&quot;: &quot;follow-on&quot;,
+      &quot;text&quot;: &quot;follow-on: the tests: field carries the placeholders &lt;tree&gt; and &lt;gate files&gt;, so it cannot be run verbatim, though the structured baseline_suite and after_suite commands are literal.&quot;
+    }
+  ],
+  &quot;head_log_revision&quot;: &quot;8b2946cb2&quot;,
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;verified 3 production call site(s)&quot;,
+    &quot;diff&quot;: &quot;read revision by revision; 3ce19a602 lands the services; 8b2946cb2 adds the seven cases; 3a27d2142 adds the evidence fragment.&quot;,
+    &quot;done_when&quot;: &quot;the done_when names five properties and every one is asserted in tests/test_fleet_supervisor_runs_declared_services.py between lines 161 and 423.&quot;,
+    &quot;goal&quot;: &quot;the node goal is to generalise the health sampler into config-declared standing services; reckon/crew/fleet_supervisor.py:1109 declared_services reads the config-home fleet/services.json.&quot;,
+    &quot;manifest&quot;: &quot;read; it records base 52 passed EXIT=0 and head 59 passed EXIT=0 with no added failure id, and names a lock-removal negative-control log at EXIT=1.&quot;,
+    &quot;write_paths&quot;: &quot;the declared paths name fleet_supervisor.py, the new test file and the evidence fragment, and every path in the diff is inside them.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;tests/test_fleet_supervisor_runs_declared_services.py:236 proves restart not before the backoff with a hand-driven clock, and the lock-removal negative control reddens the no-second-copy case.&quot;,
+    &quot;evidence&quot;: &quot;the gate logs (base 52 passed and head 59 passed, both EXIT=0) measure the done_when, though the manifest tests: line carries the placeholders &lt;tree&gt; and &lt;gate files&gt;.&quot;,
+    &quot;fit&quot;: &quot;reckon/crew/fleet_supervisor.py:1109 follows the module&#x27;s naming and idiom and introduces no plan label or versioned name.&quot;,
+    &quot;goal_fidelity&quot;: &quot;reckon/crew/fleet_supervisor.py:1109-1213 adds start-once behind a lock, backoff restart, bounded logs and reload-by-recorded-pid, matching plan section one.&quot;,
+    &quot;scope_discipline&quot;: &quot;every path in the diff is inside the declared write paths; the only edit outside the goal is a line-wrap of a pre-existing call at reckon/crew/fleet_supervisor.py:1194.&quot;
+  },
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: the node goal is to generalise the health sampler into config-declared standing services; reckon/crew/fleet_supervisor.py:1109 declared_services reads the config-home fleet/services.json.\nVERDICT done_when: the done_when names five properties and every one is asserted in tests/test_fleet_supervisor_runs_declared_services.py between lines 161 and 423.\nVERDICT write_paths: the declared paths name fleet_supervisor.py, the new test file and the evidence fragment, and every path in the diff is inside them.\nVERDICT manifest: read; it records base 52 passed EXIT=0 and head 59 passed EXIT=0 with no added failure id, and names a lock-removal negative-control log at EXIT=1.\nVERDICT diff: read revision by revision; 3ce19a602 lands the services; 8b2946cb2 adds the seven cases; 3a27d2142 adds the evidence fragment.\nCALL_SITES: reckon/crew/fleet_supervisor.py:serve, reckon/crew/fleet_supervisor.py:handle_line, reckon/crew/fleet_supervisor.py:main\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:1109-1213 adds start-once behind a lock, backoff restart, bounded logs and reload-by-recorded-pid, matching plan section one.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate logs (base 52 passed and head 59 passed, both EXIT=0) measure the done_when, though the manifest tests: line carries the placeholders &lt;tree&gt; and &lt;gate files&gt;.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths; the only edit outside the goal is a line-wrap of a pre-existing call at reckon/crew/fleet_supervisor.py:1194.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_fleet_supervisor_runs_declared_services.py:236 proves restart not before the backoff with a hand-driven clock, and the lock-removal negative control reddens the no-second-copy case.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:1109 follows the module&#x27;s naming and idiom and introduces no plan label or versioned name.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T053135752847-fleet-supervisor-runs-declared-services/manifest.md:14 follow-on: the tests: field carries the placeholders &lt;tree&gt; and &lt;gate files&gt;, so it cannot be run verbatim, though the structured baseline_suite and after_suite commands are literal.&quot;,
+  &quot;review_run_id&quot;: &quot;r-20261002T074714574031-review-of-fleet-supervisor-runs-declared-services&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;c47424bd75e134cee6fa51e3b30948a11253372d&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;3a27d21428b101e33b42a296d8f7c77918312640&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20261002T053135752847-fleet-supervisor-runs-declared-services&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 19,
+    &quot;evidence&quot;: 17,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 20,
+    &quot;scope_discipline&quot;: 19
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-02T08:00:52.743849+00:00&quot;,
+  &quot;total&quot;: 94
+}</pre></div>
+    </article>
+  </section>
+
+  <section id="top">
+    <h2>top</h2>
+    <article class="landed-comment" data-comment-id="c-tfsrds-s1-landed">
+      <p><small>unknown · undated</small></p>
+      <div class="r-comment-body"><p>§1 landed. fleet-supervisor-runs-declared-services was merged at 971ef8450 and promoted. The fleet supervisor reads <code>fleet/services.json</code> from the configuration home and runs each declared service as an own-session child of the batch step, under a per-service lock in the runtime directory. An exited service restarts with backoff from 5 s, doubling to a 300 s cap and resetting after 600 s of steady running, and never on a liveness timeout. stdout and stderr append to a size-bounded log under the state directory. A reload starts newly declared services and stops removed ones by their recorded pid. The gate passed 59 tests at head against 52 at base, with none added, and the review scored 94. The consuming project's coordinator verified the module in a scratch tree and schedules the first live start, ambix-ingest, through a supervisor reload at about 08:15Z on 2026-10-02. The plan ships once that start is reported healthy.</p></div>
+    </article>
+  </section>
+ </main>
+</body>
+</html>
