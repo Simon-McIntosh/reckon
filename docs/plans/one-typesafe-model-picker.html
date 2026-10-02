@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="81">
+<meta name="plan-version" content="82">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -291,7 +291,10 @@
     <div class="r-comment-body"><p>Reviewed r-20261002T212009757157-picker-holds-for-local at base 5b5a14a12ffb462fe177213d2a669eb1c1294e89 / head 18a78500263d52e9fa77739a46f9ec93d4253d64: added_failure_count 0 with added_failure_ids [] derived from the reviewed run's baseline_suite (1 failed/82 passed, id tests/test_picker_return_time.py::test_lane_document_is_read) and after_suite (96 passed, []); scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 19, total 96.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T233112522390-review-of-picker-cached-availability-is-unknown" data-who="reckon-build" data-when="2026-10-02T23:48:57.696Z">
-    <div class="r-comment-body"><p>review-of-picker-cached-availability-is-unknown — independent review of run r-20261002T225036298487 stored as a parsed record scoring goal_fidelity 17, evidence 15, scope_discipline 13, durability 18, fit 18 (total 81), added_failure_count 0; two findings: the declared gate omits tests/test_picker_inputs_never_block_dispatch.py, and the diff edits tests/test_picker_latency.py and tests/test_picker_pressure.py outside the node&#x27;s granted write scope.</p></div>
+    <div class="r-comment-body"><p>review-of-picker-cached-availability-is-unknown — independent review of run r-20261002T225036298487 stored as a parsed record scoring goal_fidelity 17, evidence 15, scope_discipline 13, durability 18, fit 18 (total 81), added_failure_count 0; two findings: the declared gate omits tests/test_picker_inputs_never_block_dispatch.py, and the diff edits tests/test_picker_latency.py and tests/test_picker_pressure.py outside the node's granted write scope.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T225036298487-picker-cached-availability-is-unknown" data-who="reckon-build" data-when="2026-10-02T23:55:47.703Z">
+    <div class="r-comment-body"><p>picker-cached-availability-is-unknown — a cached pick with no fresh serving observation now offers the lane as unknown instead of unavailable; a lane declaring an endpoints document is read from it (clive reads served) and a fresh refusal still excludes; the two shared picker test files this required are edited inside the granted scope (commits 144ee0dd3 revert, 05a08f5a4 re-apply); gate base 92 passed/0 failed, head 96 passed/0 failed, zero added failure ids.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261002T175200268541-picker-in-dispatch" data-who="reckon-build" data-when="2026-10-02T18:41:00Z">
     <div class="r-comment-body"><p>Every dispatch records a bounded cached picker selection and optional picker routing; base 163 passed, final head 175 passed, zero added failure ids; the real dry run printed a fallback selection in 96.897 ms.</p></div>
