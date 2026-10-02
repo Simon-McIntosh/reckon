@@ -53,18 +53,29 @@
         module under test is the scratch tree's <code>reckon/crew/runs.py</code>
         and not the worktree's; each arm's log header names the imported module
         path.</p>
-      <p><strong>Negative control</strong>, declared and executed:
+      <p><strong>Negative control</strong>, declared and swept:
         <em>count throttled returns as renewals; a run with throttled renewals
-        satisfies the old assertion.</em> Applied by mutating a scratch copy of
-        <code>renew_producer_lease</code> so every call is a throttled return —
-        it hands back the existing record and never writes
-        <code>lease_renewed_at</code>. The case then fails,
-        <strong>1 failed in 10.30 s, EXIT=1</strong>: no observed advance ever
-        lands and the producer's own lease lapses, so
-        <code>test_a_renewed_producer_outlives_three_lease_intervals</code> is
-        red. Under the old counting the throttled returns were non-None and the
-        <code>renewals &gt;= 5</code> assertion would have read six; the new
-        count reads zero writes and does not.</p>
+        satisfies the old assertion.</em> A scratch copy of
+        <code>renew_producer_lease</code> was made to write only on a scheduled
+        subset of calls and return the existing record (a throttled no-op) on
+        the rest. The ratios tried were period/keep
+        <code>2/1</code>, <code>3/1</code>, <code>3/2</code>, <code>4/3</code>
+        and <code>5/4</code> — every partial throttle — plus
+        <code>1/1</code> (no throttle) as the positive control. No ratio
+        separates the two counts while keeping the producer alive. Because the
+        producer exits once <code>lease_renewed_at</code> falls one lease
+        interval (3.0 s) behind, and the test calls once per half interval
+        (1.5 s), any skipped write leaves a 3.0 s gap: every partial throttle
+        lapses the lease, and both the base and head arms fail at their
+        <code>thread.is_alive</code> assertion — base at line 110, head at line
+        119 — before either count is reached. Under <code>1/1</code> both arms
+        pass. So the tightened count cannot be isolated by throttling alone in
+        this case: the lease's own liveness requirement already forces at least
+        one write per half interval, which is the very floor
+        <code>renewals &gt;= 5</code> asserts, and the head warning is that a
+        failure to write is caught by the liveness assertion rather than by the
+        count. The test is left unchanged; the ratios tried are recorded in
+        <code>negative-control.log</code>.</p>
     </section>
 
     <section id="lease-renewal-is-counted-by-its-writes-landing">

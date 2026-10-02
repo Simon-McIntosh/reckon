@@ -94,9 +94,13 @@
         <code>363c96b38</code> (head): base <strong>3 passed in 20.20 s,
         EXIT=0</strong>; head <strong>3 passed in 19.05 s, EXIT=0</strong>;
         <strong>added failures: 0</strong>. Negative control, executed and
-        logged: with every renewal throttled to a non-None no-op that never
-        writes, the case fails <strong>1 failed in 10.30 s, EXIT=1</strong>.
-        Detail and logs:
+        logged: a scratch <code>renew_producer_lease</code> was throttled on a
+        subset of calls, and no ratio (period/keep <code>2/1</code>,
+        <code>3/1</code>, <code>3/2</code>, <code>4/3</code>,
+        <code>5/4</code>) separates the counts while keeping the producer
+        alive — every partial throttle lapses the lease and fails both arms at
+        the <code>thread.is_alive</code> assertion, so the tightened count
+        cannot be isolated by throttling alone. Detail and logs:
         <code>docs/evidence/fragments/a-crew-process-ends-with-its-owner/lease-renewal-is-counted-by-its-writes.html</code>.</p>
       <p><strong>Negative control</strong>, executed and logged: with the
         lease-expiry check removed from the producer loop —
