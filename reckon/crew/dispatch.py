@@ -60,7 +60,7 @@ from reckon.crew.node import (
     role_may_write_repository_paths,
     validate_node,
 )
-from reckon.crew.prompts import compose_prompt
+from reckon.crew.prompts import compose_prompt, time_fence_statement
 from reckon.crew.refusals import format_refusal
 from reckon.crew.recovery import REVIEW_NODE_PREFIX, stream_paths_newest_first
 from reckon.crew.reserve import admit as reserve_admit
@@ -1856,6 +1856,7 @@ def _compose_dispatch_prompt(
     run_directory: Path,
     worktree: str,
     working_directory: str,
+    launch_instant: str = "",
     needs_help_after_failures: int,
     peer_scopes: Mapping[str, Iterable[str]] | None = None,
     run_id: str = "",
@@ -1887,6 +1888,7 @@ def _compose_dispatch_prompt(
         writes_landing_fragment=_writes_its_landing_fragment(node, authority=authority),
         manifest_path=node.manifest_path,
         time_budget=node.time_budget,
+        launch_instant=launch_instant,
         needs_help_after_failures=needs_help_after_failures,
         peer_scopes=peer_scopes,
         run_id=run_id,
@@ -5917,6 +5919,10 @@ def dispatch(
                 )
             except _backends.BackendError as exc:
                 raise CrewError(format_refusal("D22", str(exc))) from exc
+        # One read of the clock is both the attempt's recorded launch instant
+        # and the instant its fence states, so the prompt and the record cannot
+        # disagree about when this attempt started.
+        attempt_started_at = _utc_now()
         dispatch_host = _current_host_facts()
         prompt = _compose_dispatch_prompt(
             node=node,
@@ -5927,6 +5933,7 @@ def dispatch(
             run_directory=directory,
             worktree=worktree["path"],
             working_directory=working_directory,
+            launch_instant=attempt_started_at,
             needs_help_after_failures=int(fences.get("needs_help_after_failures", 2)),
             peer_scopes=peers,
             run_id=run_id,
@@ -5976,7 +5983,6 @@ def dispatch(
         # wallet records that no group paced it rather than a wallet nothing
         # read. The row is composed once, above the refusals, so the reading
         # this record carries is the same one the bookend reserve judged.
-        attempt_started_at = _utc_now()
         record: dict[str, Any] = {
             "run_id": run_id,
             "project": project,
@@ -9835,14 +9841,17 @@ def resume_plan(
     )
     attempt_started_at = _utc_now()
     manifest_path = _recorded_manifest_path(record, run_id)
+    resumed_prompt = (
+        _lane_prompt(record, advice, fresh_reason["reason"], continued=False)
+        if fresh_reason
+        else advice
+    )
     plan = resolve_launch_executable(
         _backends.launch_plan(
             backend_name=str(record.get("backend") or ""),
             backend=backend,
-            prompt=(
-                _lane_prompt(record, advice, fresh_reason["reason"], continued=False)
-                if fresh_reason
-                else advice
+            prompt=_restate_time_fence(
+                resumed_prompt, record, attempt_started_at=attempt_started_at
             ),
             worktree=str(record.get("worktree") or "."),
             manifest_path=manifest_path,
@@ -10083,6 +10092,32 @@ def _lane_prompt(
         "COORDINATOR ADVICE (instruction; passed through unchanged)\n"
         f"{continuation}"
     )
+
+
+def _restate_time_fence(
+    prompt: str, record: Mapping[str, Any], *, attempt_started_at: str
+) -> str:
+    """Restate the resumed attempt's own time fence on its launch prompt.
+
+    The prompt a resumed attempt launches with — the same-session advice, or a
+    fresh-start prompt — was composed for the attempt that already ended, so
+    its fence names that attempt's clock. The resumed attempt is given its own
+    launch instant and the deadline the recorded budget puts it under, from the
+    same instant the launch records as this attempt's start.
+    """
+    node = record.get("node")
+    budget = ""
+    if isinstance(node, Mapping):
+        budget = str(node.get("time_budget") or "")
+    if not budget:
+        return prompt
+    statement = time_fence_statement(
+        time_budget=budget, launch_instant=attempt_started_at
+    )
+    fence = f"FENCE — TIME (resumed attempt)\n  {statement}\n"
+    if not prompt.strip():
+        return fence
+    return f"{prompt.rstrip()}\n\n{fence}"
 
 
 def change_lane(

@@ -3743,7 +3743,13 @@ def test_resume_answers_in_the_same_session(home, repo) -> None:
     plan = crew.resume_plan(record["run_id"], "take the second option")
     subcommand = plan.argv.index("resume")
     assert plan.argv[subcommand + 1] == "019ff509-8a60-7723-94fd-65942a6d8faa"
-    assert plan.stdin_text == "take the second option"
+    # The coordinator's advice leads the resumed turn byte for byte; the
+    # attempt's own time fence follows it, restated for this attempt, so the
+    # worker measures elapsed time against the resumed attempt's clock rather
+    # than the one the exhausted attempt ran on.
+    assert plan.stdin_text.startswith("take the second option")
+    restated = plan.stdin_text[len("take the second option") :]
+    assert restated.startswith("\n\nFENCE — TIME (resumed attempt)\n")
     assert crew.read_pointer(record["run_id"])["session_id"] == (
         "019ff509-8a60-7723-94fd-65942a6d8faa"
     )
