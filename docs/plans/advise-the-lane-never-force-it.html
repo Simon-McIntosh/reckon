@@ -23,13 +23,14 @@
   <title>Advise The Lane, Never Force It | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="30">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="31">
 <meta name="plan-graph-handle" content="lane-aware-dispatch">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-informs" content="a-lane-can-say-where-it-stands">
 <meta name="plan-impl" content="0.4">
 <meta name="plan-commits" content="7059a778,b78dcb95,b952879c">
+<meta name="plan-section-declarations" content="{&quot;s8&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -252,6 +253,10 @@
       from a directory that already exists.
     </p>
 
+    <h2 id="s8">§8 — The advisory arrives where the choice is made</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>§3 proved the record survives. §2 is the half that makes the record worth keeping: an advisory a coordinator reads only after the fact advises nobody. §5 stays shut behind its own gate — the local lane's declared context window must be shown to agree with what its endpoint serves before any ceiling curve is drawn against it — so §2 is the ready one.</p><p><strong>Done when</strong> the recorded advisory reaches the coordinator making the lane choice.</p><p>Moved from followup f-20260922T2010-advisory-at-the-choice on advise-the-lane-never-force-it by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.4; §3 proved the record, §2 is the ready half, §5 stays behind its window gate</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="advisory-delivery-point" data-choice="dispatch-and-follower" data-by="Simon McIntosh" data-when="2026-09-14T11:37:20+00:00">
@@ -307,15 +312,17 @@
     <pre class="r-fu-prompt">/reckon-build advise-the-lane-never-force-it §3</pre>
     <p class="r-fu-outcome">§3 closes. The advisory now reaches the live pointer and survives onto the committed ledger row, so the choice is recorded where a later reader asks whether the advice was taken. Landed 33779328, 17401e4d, debba812, merged db19ad17. Node gate 15 passed exit 0; the promotion set measured in one pass went 4 failed 153 passed at base 5ebc9f28 to 4 failed 156 passed at head with identical failing ids and zero head-only failures. Independent review 99 of 100. The insufficient-evidence clause named in this followup's second paragraph landed with the pointer half earlier in the session.</p>
     </article>
-<article class="r-fu" data-id="f-20260922T2010-advisory-at-the-choice" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-22" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-20260922T2010-advisory-at-the-choice" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-09-22" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-02T08:45:29+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The advisory is recorded; next it has to arrive where the choice is made</h4>
     <div class="r-fu-body"><p>§3 proved the record survives. §2 is the half that makes the record worth keeping: an advisory a coordinator reads only after the fact advises nobody. §5 stays shut behind its own gate — the local lane's declared context window must be shown to agree with what its endpoint serves before any ceiling curve is drawn against it — so §2 is the ready one.</p></div>
     <pre class="r-fu-prompt">/reckon-build advise-the-lane-never-force-it §2</pre>
+    <p class="r-fu-outcome">Moved into §8 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
-<article class="r-fu" data-id="f-altnfi-handoff-01" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="ship-s20-20260923" data-written-at="2026-09-24" data-recommends-skill="/reckon-build advise-the-lane-never-force-it" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-altnfi-handoff-01" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="ship-s20-20260923" data-written-at="2026-09-24" data-recommends-skill="/reckon-build advise-the-lane-never-force-it" data-resolved-at="2026-10-02T08:45:29+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Stop blanking the lane carry in dispatch</h4>
     <div class="r-fu-body"><p>Reported by imas-ambix-af, 2026-09-24: <code>reckon/crew/dispatch.py</code> lines 2287 and 2292 (at the handoff head) still blank the whole lane carry, so a dispatch reports no lane state even when the lane document is readable. <strong>Done when</strong> a test with a readable temporary lane document shows the dispatch result carrying the lane's running, headroom and observed_at, and a negative control that restores the blanking fails the test.</p></div>
     <pre class="r-fu-prompt">/reckon-build advise-the-lane-never-force-it</pre>
+    <p class="r-fu-outcome">Already met on main: the blanking is gone in main: `reckon/crew/dispatch.py:3491-3512` reads the lane document and `reckon/crew/dispatch.py:4530-4554` wires the reading into the dispatch result, degrading to `unknown` with a named reason, never to nothing (work-is-a-section-not-a-followup §4).</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">

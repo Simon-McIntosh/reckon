@@ -636,8 +636,16 @@ def _worktree_untracked_paths(tree: Path) -> tuple[str, ...]:
     dispatch rule plants in every worktree is not the run's work and is
     dropped.
     """
+    listed = _worktree_git_paths(tree, "ls-files", "--others", "--exclude-standard")
+    if not listed:
+        # A worktree whose directory is gone yields ``None`` rather than an empty
+        # list, and the honest reading of an unmeasurable tree is the empty set:
+        # a commitless run whose tree has been reclaimed holds no untracked path
+        # this check can see, so it reads as no repository change rather than
+        # raising on the iteration.
+        return ()
     untracked: list[str] = []
-    for line in _worktree_git_paths(tree, "ls-files", "--others", "--exclude-standard"):
+    for line in listed:
         path = line.strip().strip('"')
         if not path:
             continue
@@ -2288,15 +2296,74 @@ def _promoted_revision(run_tree: Path, commit_list: Sequence[str]) -> str:
     branch, so recording the commit the promotion makes instead would make the
     ancestry question true by construction and unable to fail for any reason.
 
-    The worker's cited tip is preferred over the worktree's ``HEAD`` because a
-    shared checkout can advance under other runs between the commit and the
-    promotion, and the cited tip is the revision whose diff promotion already
-    measured.
+    The revision is the presented commit that descends from all the others, so
+    the order a manifest lists its commits in never decides which revision the
+    run's work reached. The cited commits are preferred over the worktree's
+    ``HEAD`` because a shared checkout can advance under other runs between the
+    commit and the promotion, and a cited commit is the revision whose diff
+    promotion already measured.
     """
     if commit_list:
-        return str(commit_list[-1])
+        return _descendant_commit(run_tree, commit_list)
     head = _commit_canonical_id(run_tree, "HEAD")
     return head or ""
+
+
+def _descendant_commit(run_tree: Path, presented: Sequence[str]) -> str:
+    """The presented commit that descends from all the presented commits.
+
+    A run's manifest lists the commits it made in whatever order its worker
+    wrote them, and a promotion that read a position out of that list promoted
+    a revision the run never reached: the newest-first order prints the tip
+    first, so the last position named the run's first commit and a promotion
+    following the printed order was refused against a mis-selected revision.
+
+    Each entry is resolved to the canonical object id its spelling names, so an
+    abbreviation, a full sha and a branch name for one commit collapse to one
+    candidate. An entry naming no commit cannot be placed in the history, so it
+    takes no part in the comparison and is left for the citation check that
+    reports it. The remaining candidates are compared with git, and the one
+    that every other candidate is an ancestor of is the run's tip. A set whose
+    commits have no such single member is refused, naming every presented
+    commit, because the revision the run's work reached cannot be told from the
+    list and any pick would be a guess recorded as the promoted revision.
+    """
+    entries: list[str] = []
+    resolvable: list[str] = []
+    seen: set[str] = set()
+    for entry in presented:
+        text = str(entry).strip()
+        if not text:
+            continue
+        canonical = _commit_canonical_id(run_tree, text)
+        value = canonical or text
+        if value in seen:
+            continue
+        seen.add(value)
+        entries.append(value)
+        if canonical:
+            resolvable.append(value)
+    if len(entries) == 1:
+        return entries[0]
+    if not resolvable:
+        return entries[-1]
+    descendants = [
+        candidate
+        for candidate in resolvable
+        if all(
+            other == candidate or _revision_is_ancestor(run_tree, other, candidate)
+            for other in resolvable
+        )
+    ]
+    if len(descendants) == 1:
+        return descendants[0]
+    listed = ", ".join(entries)
+    raise CrewError(
+        "the commits presented for this promotion have no single descendant: "
+        f"{listed}; none of them descends from all the others, so the revision "
+        "the run's work reached cannot be told from the list. Present the "
+        "commit the run's work ended at"
+    )
 
 
 def _repository_scope_paths(
@@ -3255,15 +3322,19 @@ def _plan_differs_only_by_the_stores_own_writes(
     the plan store itself makes.
 
     The store is the sole writer of a plan's reckon-owned content: the
-    ``plan-*`` scalars (``impl``, ``status``, the version stamps and the rest),
-    the section records, and the gates, decisions, followups, questions,
-    research and comment sections. Every one of those is a plan-state write the
-    store makes, so a change confined to them — an impl or status move, a
-    resolved followup, an appended landing comment, a re-encoded entity — is
-    the run's own bookkeeping and is admitted. The comparison therefore reads
-    each side as parsed HTML and keeps only the authored content outside those
-    store-owned regions; an authored prose edit, which the store never
-    regenerates, survives on both sides and is the only thing that refuses.
+    ``plan-*`` scalars (``impl``, ``status``, the version stamps and the rest)
+    and every element carrying ``data-reckon``. That marker declares the store's
+    own region whatever the tag, so the admitted class is every ``data-reckon``
+    element the store writes — the section records, the sections such as gates,
+    decisions, followups, questions, research and comments, and the landed and
+    landing notes are examples rather than an exhaustive list. Every one of
+    those is a plan-state write the store makes, so a change confined to them —
+    an impl or status move, a resolved followup, an appended landing comment, a
+    collapsed section's landed note, a re-encoded entity — is the run's own
+    bookkeeping and is admitted. The comparison therefore reads each side as
+    parsed HTML and keeps only the authored content outside those store-owned
+    regions; an authored prose edit, which the store never regenerates, survives
+    on both sides and is the only thing that refuses.
 
     Parsing both sides through the same HTML reader also normalises a
     re-encoded entity, so the store's canonical re-encoding does not read as an
@@ -3309,7 +3380,6 @@ def _plan_differs_only_by_the_stores_own_writes(
 
 _RECORD_ATTRIBUTES = frozenset(
     {
-        "data-reckon",
         "data-effort-hours",
         "data-attempts",
         "data-status",
@@ -3321,15 +3391,18 @@ _RECORD_ATTRIBUTES = frozenset(
 def _strip_store_owned_content(soup) -> None:
     """Remove the plan store's regenerate-from-state content in place.
 
-    Leaves only authored prose: the ``plan-*`` scalars, the reckon-owned
-    sections, and the section-record metadata the writer regenerates are all
-    detached, so a difference that survives is one the store does not own.
+    Leaves only authored prose: the ``plan-*`` scalars and every element the
+    store marks as its own region are detached, so a difference that survives
+    is one the store does not own. Every element carrying ``data-reckon`` is
+    such a region, whatever its tag — the section records, the sections such
+    as gates, decisions, followups, questions, research and comments, and the
+    landed and landing notes are examples rather than an exhaustive list.
     """
     for meta in soup.find_all("meta"):
         if (meta.get("name") or "").lower().startswith("plan-"):
             meta.decompose()
-    for section in soup.select("section[data-reckon]"):
-        section.decompose()
+    for element in soup.select("[data-reckon]"):
+        element.decompose()
     for element in soup.find_all(True):
         for attribute in list(element.attrs):
             if attribute in _RECORD_ATTRIBUTES or attribute.startswith(
@@ -4681,6 +4754,49 @@ def _read_pointer_or_rebuild(run_id: str, *, root: str | Path | None) -> dict[st
     return rebuilt
 
 
+def _complete_withdrawn_run(run_id: str, record: Mapping[str, Any]) -> dict[str, Any]:
+    """Report and retire a run that names no project.
+
+    A dispatch refused before a project is resolved leaves a run with an empty
+    project: the pointer never carried one, or the reconstruction of a
+    pointerless run directory finds no supervisor record to read one from.
+    There is no project ledger to append a row to, so ``crew complete`` reports
+    the withdrawal and writes no row rather than failing validation on the empty
+    project name.
+
+    The withdrawal still retires what a promotion retires. A run whose pointer
+    survives is otherwise left reading as in flight, and nothing reconciles it
+    — so the pointer is removed and the workspace released through the same
+    release path a promotion uses, without the ledger row a promotion's release
+    receipt would need a project to hold. The run's own record is returned so a
+    reader sees what survived of the launch; ``status`` and ``withdrawn`` both
+    state the word the fleet vocabulary already uses for a departure that
+    records no landing.
+    """
+    capture = _capture_member_session(record)
+    pointer_existed = pointer_path(run_id).exists()
+    pointer_path(run_id).unlink(missing_ok=True)
+    release = _release_after_promotion(run_id, record)
+    release.update(_retire_disposable_identity(record))
+    return {
+        "run_id": run_id,
+        "project": "",
+        "withdrawn": True,
+        "status": "withdrawn",
+        "promoted": False,
+        "ledger_row_written": False,
+        "pointer_removed": pointer_existed and not pointer_path(run_id).exists(),
+        "reason": (
+            "the run names no project, so its dispatch was refused before a "
+            "project was resolved; the run is withdrawn, its pointer retired "
+            "and its workspace released, and no ledger row is written"
+        ),
+        "release": release,
+        "session_capture": capture,
+        "record": dict(record),
+    }
+
+
 def _manifest_relative_path(value: Any, *, manifest_path: str) -> Path:
     """Resolve one manifest-cited path under the manifest's own directory.
 
@@ -4806,6 +4922,15 @@ def complete(
     commit_list = tuple(str(sha) for sha in commits if str(sha).strip())
     with _pointer_lock(run_id):
         record = _read_pointer_or_rebuild(run_id, root=root)
+        # A dispatch whose launch was refused leaves a run that names no
+        # project: the refusal removed the pointer or never let it carry a
+        # project, and the run directory it left behind holds no supervisor
+        # record either, so reconstruction resolves no project from it. There
+        # is nothing to promote and no project ledger to hold a row, so the run
+        # is reported as the withdrawal it is rather than failing validation on
+        # the empty project name further down.
+        if not str(record.get("project") or "").strip():
+            return _complete_withdrawn_run(run_id, record)
         # A review run's outcome is the review it stored, so the operator's
         # hand is not the only source for a non-passing gate's summary; the
         # refusal below stands for every run with no stored review to read.
@@ -6055,17 +6180,15 @@ def _run_promoted_revision(
 
     The same reading the promoted row records, taken before the review gate
     reads the store so the gate compares against the revision this promotion
-    will name rather than against whatever the store holds newest. The cited tip
-    is canonicalised as the row canonicalises it, so a citation that names the
-    revision symbolically or in abbreviation still matches the full sha a review
-    recorded reading.
+    will name rather than against whatever the store holds newest. Every cited
+    commit is canonicalised as the row canonicalises it, so a citation that
+    names the revision symbolically or in abbreviation still matches the full
+    sha a review recorded reading, and the tip is selected by descent rather
+    than by the position the citation was written in.
     """
     worktree = Path(str(record.get("worktree") or ""))
     tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
-    if commit_list:
-        tip = str(commit_list[-1])
-        return _promoted_revision(tree, [_commit_canonical_id(tree, tip) or tip])
-    return _promoted_revision(tree, [])
+    return _promoted_revision(tree, commit_list)
 
 
 def plan_impl_at(

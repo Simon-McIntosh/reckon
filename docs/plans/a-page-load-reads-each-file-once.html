@@ -18,12 +18,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-sprint" content="S22">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>A Page Load Reads Each File Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="37">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="38">
 <meta name="plan-commits" content="56e13e11,98d99673,f9d08b55,f6529a51,b097918e,26d03b02,267cdb69">
 <meta name="plan-impl" content="0.83">
 <meta name="plan-informs" content="a-follower-outlives-its-monitor">
@@ -393,6 +393,10 @@
     <p>Evidence: <a href="/reckon/evidence/archive/a-page-load-reads-each-file-once-landed#s6-cycle">the landed record</a>.</p>
     </div>
 
+    <h2 id="s8">§8 — A long-running server never serves a mix of old and new modules</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>Measured on 2026-09-29. <code>reckon.service</code> started at 07:31:12 and imported <code>reckon.crew.recovery</code> then. 2eabd341, committed at 06:39 but merged to main after that start, added <code>local_liveness</code> to <code>recovery.py</code> and a lazy import of it in <code>reckon/sprint_liveness.py</code>. The running server later loaded the new <code>sprint_liveness.py</code> from disk against its old in-memory <code>recovery</code>. <code>/_discover/imas-codex</code> answered 500 with <code>cannot import name 'local_liveness'</code>, and <code>/_projects/index.json</code> gave no response, until s21-coord restarted the service at 08:53:40. This is the same class as the MCP servers holding a pre-<code>ec03ba9e</code> reader: any merge that adds a name can break a long-running process lazily, and nothing reports it.</p><p>Done when a running server either reloads onto one consistent revision when its code changes, or refuses with a named, visible <code>stale-code</code> error rather than a mid-request ImportError. A test changes a module on disk under a running server, making a lazily imported name appear, and asserts the server does not answer with an ImportError. A negative control keeps today's behaviour and reproduces the ImportError.</p><p><strong>Done when</strong> a running server either reloads onto one consistent revision or refuses with a named, visible stale-code error instead of a mid-request ImportError.</p><p>Moved from followup f-aplref-server-serves-one-code-version on a-page-load-reads-each-file-once by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.83; followup recommends §5; <code>reckon/serve.py</code> shows no reload or named stale-code refusal on a code change (no <code>reload</code>/revision guard found)</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-aplref-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="/reckon-build a-page-load-reads-each-file-once" data-resolved-at="2026-09-24T12:32:51+00:00" data-resolved-by="">
@@ -430,10 +434,11 @@
     <pre class="r-fu-prompt">/reckon-build imas-codex:migration-project-state</pre>
     <p class="r-fu-outcome">Fixed in imas-codex by imas-codex-39 at 206d305e7, pushed. Each section record now carries data-id sN and sits beside its h2 with id sN, with the schema fields taken from the plan itself. read_state no longer raises, doccheck reports 0 errors, and after reckon.service was restarted at 08:53:40, /_discover/imas-codex answers 200.</p>
     </article>
-<article class="r-fu" data-id="f-aplref-server-serves-one-code-version" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-29T06:58:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-aplref-server-serves-one-code-version" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-29T06:58:00Z" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-02T08:45:16+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A long-running reckon server never serves a mix of old and new modules after a merge</h4>
     <div class="r-fu-body"><p>Measured on 2026-09-29. <code>reckon.service</code> started at 07:31:12 and imported <code>reckon.crew.recovery</code> then. 2eabd341, committed at 06:39 but merged to main after that start, added <code>local_liveness</code> to <code>recovery.py</code> and a lazy import of it in <code>reckon/sprint_liveness.py</code>. The running server later loaded the new <code>sprint_liveness.py</code> from disk against its old in-memory <code>recovery</code>. <code>/_discover/imas-codex</code> answered 500 with <code>cannot import name 'local_liveness'</code>, and <code>/_projects/index.json</code> gave no response, until s21-coord restarted the service at 08:53:40. This is the same class as the MCP servers holding a pre-<code>ec03ba9e</code> reader: any merge that adds a name can break a long-running process lazily, and nothing reports it.</p><p>Done when a running server either reloads onto one consistent revision when its code changes, or refuses with a named, visible <code>stale-code</code> error rather than a mid-request ImportError. A test changes a module on disk under a running server, making a lazily imported name appear, and asserts the server does not answer with an ImportError. A negative control keeps today's behaviour and reproduces the ImportError.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-page-load-reads-each-file-once §5</pre>
+    <p class="r-fu-outcome">Moved into §8 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">

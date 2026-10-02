@@ -303,3 +303,24 @@ def test_a_worker_that_ends_on_the_stop_ends_the_supervisor_promptly(
         )
     finally:
         _kill_group(supervisor_pid)
+
+
+def test_the_stop_grace_reads_its_environment_or_falls_back(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The stop grace is overridably configured; nonsense degrades to the default."""
+    monkeypatch.delenv(dispatch_module.STOP_GRACE_ENV, raising=False)
+    assert (
+        dispatch_module._stop_grace_seconds() == dispatch_module.STOP_GRACE_DEFAULT
+    )
+    monkeypatch.setenv(dispatch_module.STOP_GRACE_ENV, "2.5")
+    assert dispatch_module._stop_grace_seconds() == 2.5
+    # Zero is a valid floor: the worker gets no grace, an immediate end.
+    monkeypatch.setenv(dispatch_module.STOP_GRACE_ENV, "0")
+    assert dispatch_module._stop_grace_seconds() == 0.0
+    # Empty, non-numeric and negative values all fall through to the default.
+    for bad in ("", "   ", "soon", "-1", "-0.5"):
+        monkeypatch.setenv(dispatch_module.STOP_GRACE_ENV, bad)
+        assert (
+            dispatch_module._stop_grace_seconds() == dispatch_module.STOP_GRACE_DEFAULT
+        ), bad

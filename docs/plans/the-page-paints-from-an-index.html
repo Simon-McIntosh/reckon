@@ -19,12 +19,12 @@
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-sprint" content="S22">
   <meta name="plan-standalone" content="Builds on the landed discovery repair of a-page-load-reads-each-file-once; no live plan waits on it and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>The Page Paints From An Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="34">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="35">
 <meta name="plan-impl" content="0.86">
 </head>
 <body>
@@ -216,12 +216,17 @@
     <code>reckon/mcp.py</code>, <code>reckon/mcp_views.py</code> and that test. This section runs
     after &sect;3.</p>
 
+    <h2 id="s9">§9 — Serve metadata first and push changes</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>§2 comes first because it keeps the site reachable across a restart. §3, §5 and §6 run in that order on <code>reckon/serve.py</code>. §4 follows §3, and §5 follows §4 on <code>docs/ui/state-loader.js</code>. §7 waits on the others and on a restart.</p><p><strong>Done when</strong> a refresh is never needed for a state change.</p><p>Moved from followup f-tppfai-001 on the-page-paints-from-an-index by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.86; §2 keeps the site reachable across restarts; §3/§5/§6 in order on <code>serve.py</code>; §4 after §3; §7 waits on a restart</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-tppfai-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="/reckon-build the-page-paints-from-an-index" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tppfai-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="/reckon-build the-page-paints-from-an-index" data-resolved-at="2026-10-02T08:46:07+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Serve metadata first and push changes, so a refresh is never needed</h4>
     <div class="r-fu-body"><p>§2 comes first because it keeps the site reachable across a restart. §3, §5 and §6 run in that order on <code>reckon/serve.py</code>. §4 follows §3, and §5 follows §4 on <code>docs/ui/state-loader.js</code>. §7 waits on the others and on a restart.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-page-paints-from-an-index</pre>
+    <p class="r-fu-outcome">Moved into §9 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -298,7 +303,7 @@
     <div class="r-comment-body"><p>§6 — /_thumb/&lt;project&gt;/&lt;figure path&gt; serves a PNG bounded at 200 px on its long edge (2000×1500 source: 9,013,744 B in, 57 KB-class thumbnail out, under a tenth), rendered once into a cache under the configuration home keyed by the source's stat identity and revalidated there by an ETag derived from the same identity (second request with the ETag: 304, render counter stays 1), SVG passed through unchanged, an unthumbnailable source served as itself rather than 500, and the figure list's image rows derive that URL (loading="lazy" kept); Pillow declared in pyproject.toml and uv.lock; record at docs/evidence/fragments/the-page-paints-from-an-index/figure-thumbnails.html</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261001T030308294978-review-of-figure-thumbnails" data-who="reckon-build" data-when="2026-10-01T03:11:32.601Z">
-    <div class="r-comment-body"><p>§6 review — the reviewed node r-20261001T024141507018-figure-thumbnails scored goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20 (total 99), with added_failure_count 0 over the reviewed run&#x27;s own baseline_suite/after_suite gate logs and one follow-on finding on the unguarded lazy-load attribute</p></div>
+    <div class="r-comment-body"><p>§6 review — the reviewed node r-20261001T024141507018-figure-thumbnails scored goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20 (total 99), with added_failure_count 0 over the reviewed run's own baseline_suite/after_suite gate logs and one follow-on finding on the unguarded lazy-load attribute</p></div>
 </div>
 </section>
 </main>

@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="work-scheduling-surface">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>Section contract and computed impl | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="60">
+<meta name="plan-version" content="61">
 <meta name="plan-impl" content="0.84">
 </head>
 <body>
@@ -478,6 +478,10 @@
 <section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
 <p>Reported on 2026-10-02 by nova's S21 coordinator. <code>collapse_section</code> refused with "no section with id 's2'" on nova-portfolio-replan, although <code>&lt;section id="s2"&gt;&lt;h2&gt;</code> is in the file (plan version 5), and the coordinator had to collapse by text mode. Some plans carry the section id on a wrapping <code>section</code> element rather than on the <code>h2</code>, and a-review-dies-where-nobody-is-looking is one of them. <code>read_plan(view='section')</code> has the same blindness: it reported "available sections: none" for that plan on 2026-10-01.</p><p><strong>Done when</strong> collapse and the section read both resolve an id carried on the wrapper as well as on the <code>h2</code>. Tests over both shapes collapse and read the section. The negative control restores the <code>h2</code>-only lookup, and the wrapper case is then refused.</p>
 
+    <h2 id="s11">§11 — Land §1 and §2 together (the schema and its refusal), then §3, then §4 and §5, then §6</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>The schema without the refusal is a suggestion; the refusal without the schema has nothing to refuse. §3 depends on §1. §5 depends on §4. §6 is documentation and an audit warning and can run beside any of them.</p><p><strong>Done when</strong> the refusal lands with the schema it refuses for.</p><p>Moved from followup f-scci-001 on section-contract-and-computed-impl by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.84; §1+§2 as one node, §3 after §1, §5 after §4, §6 documentation and an audit warning</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="impl-is-computed" data-choice="computed-from-section-effort" data-by="lead" data-when="2026-09-19">
@@ -500,10 +504,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-scci-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-build section-contract-and-computed-impl §1" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-scci-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-build section-contract-and-computed-impl §1" data-resolved-at="2026-10-02T08:46:02+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land §1 and §2 together (the schema and its refusal), then §3, then §4 and §5, then §6</h4>
     <div class="r-fu-body"><p>The schema without the refusal is a suggestion; the refusal without the schema has nothing to refuse. §3 depends on §1. §5 depends on §4. §6 is documentation and an audit warning and can run beside any of them.</p></div>
     <pre class="r-fu-prompt">/reckon-build section-contract-and-computed-impl §1</pre>
+    <p class="r-fu-outcome">Moved into §11 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
 <article class="r-fu" data-id="f-scci-wiring-refusal-findings" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="nova-s19-coordinator" data-written-at="2026-09-19T12:35:00Z" data-recommends-skill="/reckon-build section-contract-and-computed-impl §7" data-resolved-at="2026-09-19T13:26:00+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Close the four review findings on the wiring refusal and register standalone on the write path</h4>

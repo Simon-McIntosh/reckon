@@ -3381,7 +3381,9 @@ def _result_turned_no_tokens(event: Mapping[str, Any]) -> bool:
     return True
 
 
-def _admission_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
+def _admission_refusal(
+    record: Mapping[str, Any], *, memo: dict[str, Any] | None = None
+) -> dict[str, Any] | None:
     """The marks of a run the backend refused before serving its first turn.
 
     A refusal at admission ends the run in three lines: an assistant record
@@ -3399,18 +3401,32 @@ def _admission_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
     None, and an ordinary failed turn — which reports the tokens it spent —
     cannot reach this reading. None means the ordinary dead-process arms
     classify the run, so this gate never widens them.
+
+    The scan's result is memoised against the stream's stat identity, because a
+    producer polls every live run every second and the marks remain the same
+    until the stream moves. A stream that has only grown is read again from the
+    start — the marks can sit anywhere in it — but one nothing has appended to
+    answers from the memo without opening the file, and the bytes a scan does
+    consume are counted so a stat-only poll reads nothing here.
     """
     if record.get("launch") != "cli":
         return None
     log = Path(str(record.get("log_path") or ""))
     if not log.is_file():
         return None
+    ident = _file_identity(log)
+    cached = memo.get("admission") if memo is not None else None
+    if isinstance(cached, Mapping) and str(cached.get("ident") or "") == ident:
+        refusal = cached.get("refusal")
+        return dict(refusal) if isinstance(refusal, Mapping) else None
     refusal_reason = ""
     terminal_reason = ""
     zero_token_error = False
+    consumed = 0
     try:
         with log.open(encoding="utf-8", errors="replace") as handle:
             for line in handle:
+                consumed += len(line.encode("utf-8", errors="replace"))
                 try:
                     event = json.loads(line)
                 except (ValueError, TypeError):
@@ -3435,16 +3451,16 @@ def _admission_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
                         zero_token_error = True
     except OSError:
         return None
-    if (
-        not refusal_reason
-        or terminal_reason != "blocking_limit"
-        or not zero_token_error
-    ):
-        return None
-    return {
-        "reason": refusal_reason,
-        "terminal_reason": terminal_reason,
-    }
+    _count_admission_bytes(consumed)
+    refusal: dict[str, Any] | None = None
+    if refusal_reason and terminal_reason == "blocking_limit" and zero_token_error:
+        refusal = {
+            "reason": refusal_reason,
+            "terminal_reason": terminal_reason,
+        }
+    if memo is not None:
+        memo["admission"] = {"ident": ident, "refusal": refusal}
+    return refusal
 
 
 def _budget_hold_block(
@@ -5586,6 +5602,27 @@ CLASSIFICATION_MEMO_VERSION = 1
 # calls that consult this run's stream and withdrawn when they return.
 _CLASSIFICATION_MEMO_IN_FLIGHT: tuple[str, dict[str, Any]] | None = None
 
+# Bytes of stream records the admission check has consumed since the count was
+# last taken. The admission refusal reads raw events rather than the dialect
+# fold, so it has its own cursor-by-identity cache and its own accounting: a
+# poll that finds every stream unchanged reads nothing here, and a reader can
+# tell a stat-only poll from one that rescanned a stream. A one-element cell so
+# the counter is mutated without a module-level global statement.
+_ADMISSION_STREAM_BYTES = [0]
+
+
+def take_admission_stream_bytes() -> int:
+    """Bytes of stream records the admission check read since last taken, reset."""
+    value = _ADMISSION_STREAM_BYTES[0]
+    _ADMISSION_STREAM_BYTES[0] = 0
+    return value
+
+
+def _count_admission_bytes(count: int) -> None:
+    if count > 0:
+        _ADMISSION_STREAM_BYTES[0] += count
+
+
 # The run directory's records the classification consults, named here so the
 # memo's key covers them: each is a file whose content moves the row.
 _CLASSIFICATION_RUN_RECORDS = (
@@ -6117,11 +6154,19 @@ def classify_pointer(
     # A refusal at admission is read from the stream's own marks, not from the
     # budget block: it is not a spend refusal — nothing was requested — and the
     # block carries no budget to refuse from. It is resolved here so the
-    # dead-process chain consults the stream once for the shape.
+    # dead-process chain consults the stream once for the shape. Only a run whose
+    # process is gone can reach that arm, so the read is taken only when it can
+    # be used: a live run never pays for a scan whose verdict the chain discards.
     admission_refusal = (
         None
-        if (refusal_block or retry_block or exhaustion_block or budget_hold)
-        else _admission_refusal(record)
+        if (
+            refusal_block
+            or retry_block
+            or exhaustion_block
+            or budget_hold
+            or alive is not False
+        )
+        else _admission_refusal(record, memo=memo)
     )
     terminal = phase in ("complete", "failed")
     wait = _manifest_wait(
@@ -8637,10 +8682,13 @@ def watch_ticker(
             # carries what this poll actually parsed. An unchanged fleet
             # resumes from every cursor and parses nothing, which is the value
             # a reader uses to see the poll is stat-only rather than re-reading
-            # the whole of every transcript.
+            # the whole of every transcript. The admission check's own reads are
+            # counted and reset on the same beat, so the two counters describe
+            # one poll each.
             from reckon import _backends
 
             _backends.take_parsed_stream_bytes()
+            take_admission_stream_bytes()
             pointers = list_live(project=project)
             _stop_delivered_reviews(pointers, signal_run=signal_run)
             moment = _utc_seconds()

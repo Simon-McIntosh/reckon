@@ -22,9 +22,10 @@
   <title>The Worker Authors Its Own Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="7">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="8">
 <meta name="plan-impl" content="0.75">
+<meta name="plan-section-declarations" content="{&quot;s5&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -122,6 +123,10 @@
     to the runtime prompt and will be mirrored here in one follow-up edit once its final text
     lands.</p>
 
+    <h2 id="s5">§5 — Mirror the runtime contract into the skill clauses, then the coordinator half</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>§2 and §3 write the same file set and run as one node in section order. Both wait on the runtime prompt's final wording, which the session holding <code>reckon/crew/prompts.py</code> is landing as a narrowing plus two clauses it did not previously carry: the store distinction and the closure-authority limits. Mirror that text rather than composing a second version, so there is one authority for the words and two hands doing the work.</p><p>The measure that matters is not that the prohibitions are gone but that the skill and the prompt say the same thing: assert the skill sentence against the prompt's rather than against a literal, because two copies of one rule drift silently and the test keeps passing. That is the same failure this repository has been finding all week in its gates.</p><p><strong>Done when</strong> the skill's sentence is asserted against the prompt's text (not a literal) and §2/§3 land in order.</p><p>Moved from followup f-waor-001 on worker-authors-its-own-record by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.75; §2/§3 wait on the prompt's final wording (the narrowing plus two clauses); the measure is skill-vs-prompt agreement, not absence of prohibitions</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="skill-wording-source" data-choice="quote-the-prompt" data-by="ship-s16-20260914" data-when="2026-09-15T15:38:36+00:00">
@@ -136,10 +141,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-waor-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-15" data-recommends-skill="/reckon-build worker-authors-its-own-record" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-waor-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-09-15" data-recommends-skill="/reckon-build worker-authors-its-own-record" data-resolved-at="2026-10-02T08:46:09+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Mirror the runtime contract into the four skill clauses, then the coordinator half</h4>
     <div class="r-fu-body"><p>§2 and §3 write the same file set and run as one node in section order. Both wait on the runtime prompt's final wording, which the session holding <code>reckon/crew/prompts.py</code> is landing as a narrowing plus two clauses it did not previously carry: the store distinction and the closure-authority limits. Mirror that text rather than composing a second version, so there is one authority for the words and two hands doing the work.</p><p>The measure that matters is not that the prohibitions are gone but that the skill and the prompt say the same thing: assert the skill sentence against the prompt's rather than against a literal, because two copies of one rule drift silently and the test keeps passing. That is the same failure this repository has been finding all week in its gates.</p></div>
     <pre class="r-fu-prompt">/reckon-build worker-authors-its-own-record</pre>
+    <p class="r-fu-outcome">Moved into §5 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">

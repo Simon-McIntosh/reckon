@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="36">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -258,10 +258,16 @@
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §4</pre>
     <p class="r-fu-outcome">Superseded by f-tohras-002 after two read-backs revised the plan. The order is unchanged, but its wording here predates the revision: the stop path of §3 now waits on §4 item 1, and §2 lands with only the prompt path of §3.</p>
     </article>
-<article class="r-fu" data-id="f-tohras-002" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-01" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §4" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tohras-002" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-01" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §4" data-resolved-at="2026-10-02T07:33:39+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Cut the plan-read term first, then publish the snapshot</h4>
     <div class="r-fu-body"><p>§4 item 1 first: the drain's plan reads and meta parsing are 22.7 s of the 31.4 s, and cutting them speeds every reader. Then §2 and the prompt path of §3 in one merge, then the stop path of §3 and §4 items 2 and 3. Each section carries its own §5 guards.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §4</pre>
+    <p class="r-fu-outcome">§4 is done: plan reads from the index, the classification memo and the held-worktrees read have all landed. The next step is §2, whose producer is in its bounding repair. Superseded by f-tohras-003.</p>
+    </article>
+<article class="r-fu" data-id="f-tohras-003" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the bounded snapshot producer, then the hook&#x27;s prompt path</h4>
+    <div class="r-fu-body"><p>§2 first: the producer publishes for live followers only, deriving once per sweep. Then the prompt path of §3, which loads the snapshot module by file path. Then the stop path of §3, then §5 to §8.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §2</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -272,7 +278,10 @@
     <div class="r-comment-body"><p>Read-back of the-obligations-hook-reads-a-snapshot written to reports/reckon/s22-coord/review-of-the-obligations-hook-reads-a-snapshot-2/report.md; restates intent, both decisions and all six sections' done-whens and lists 24 sentences with two or more readings, each quoted verbatim; no plan state edited.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261002T055249638844-review-of-the-producer-publishes-the-snapshot" data-who="reckon-build" data-when="2026-10-02T06:20:10.235Z">
-    <div class="r-comment-body"><p>review of r-20261001T204424733309-the-producer-publishes-the-snapshot (base 3fadeb60e5d96c0ec4009c570947145937abbc59, head 7790fdcba27985e67ae598f4d4c5176b5134f994) stored as a parsed record scoring goal_fidelity 19, evidence 18, scope_discipline 18, durability 18, fit 17 (total 90), with two follow-on findings and added_failure_count 0; it is a review&#x27;s whole deliverable and lands no repository change.</p></div>
+    <div class="r-comment-body"><p>review of r-20261001T204424733309-the-producer-publishes-the-snapshot (base 3fadeb60e5d96c0ec4009c570947145937abbc59, head 7790fdcba27985e67ae598f4d4c5176b5134f994) stored as a parsed record scoring goal_fidelity 19, evidence 18, scope_discipline 18, durability 18, fit 17 (total 90), with two follow-on findings and added_failure_count 0; it is a review's whole deliverable and lands no repository change.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261002T083703048147-review-of-the-producer-publishes-the-snapshot" data-who="reckon-build" data-when="2026-10-02T09:01:41.227Z">
+    <div class="r-comment-body"><p>independent review of r-20261001T204424733309-the-producer-publishes-the-snapshot at head b9385068f (base 3fadeb60e) scored goal_fidelity 19, evidence 18, scope_discipline 18, durability 19, fit 19, total 93; added_failure_count 0 over the reviewed run&#x27;s own two gate logs; the two follow-on findings the predecessor review left (dead _process_is_running and a bare marker in the snapshot test) are both repaired at this head.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261001T132307171536-drain-reads-the-index" data-who="reckon-build" data-when="2026-10-01T14:09:37.121Z">
     <div class="r-comment-body"><p>§4 item 1 landed — runs._project_executable_remainder answers from metadata_index.plan_derivations (plan rows gain open_followups and implementable_sections, entry schema 2, served ROW_FIELDS unchanged), base 5.82-5.85 s vs head index-current 0.05-0.35 s at equal remainders, evidence at docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/drain-reads-the-index.html</p></div>

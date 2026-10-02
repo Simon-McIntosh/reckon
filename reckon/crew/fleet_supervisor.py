@@ -17,7 +17,9 @@ Requests arrive one per line on a FIFO in that directory:
   ``session <name> [layout]``  start a zellij server for ``<name>`` unless one
                                is already running
   ``reload``                   re-execute this module in place, so a fix to it
-                               takes effect without a new allocation
+                               takes effect without a new allocation; the
+                               declared services are applied first, so a newly
+                               named service starts and a removed one stops
   ``spawn <run-id> <spec>``    run the supervisor spec's argv as this batch
                                step's own detached child, and acknowledge it in
                                the spec's run directory
@@ -32,6 +34,14 @@ resolve the job id rather than anyone remembering it. Both the record directory
 directory (``$FLEET_RUNTIME_DIR``, default ``/tmp/<uid>-fleet``) are overridable
 so a harness can drive this reader against a temporary tree instead of the
 machine's own state.
+
+A user config file, ``<config home>/fleet/services.json``, may declare standing
+services as service names mapped to argv lists. Each declared service is started
+as this batch step's own-session child behind a lock in the runtime directory,
+restarted with backoff when it exits, and stopped on reload by the pid recorded
+for it; each one's output is appended to a bounded log under the state
+directory. The config home follows ``$XDG_CONFIG_HOME`` when the environment
+names one, so a harness can point the configuration at a temporary tree too.
 """
 
 from __future__ import annotations
@@ -51,7 +61,7 @@ import sys
 import termios
 import threading
 import time
-from collections.abc import Mapping, MutableMapping, Sequence
+from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -164,6 +174,36 @@ DEFAULT_HEALTH_SAMPLER = "fleet-health"
 # unaffected.
 FORCE_RUN_ENV = "FLEET_FORCE_RUN_COMMANDS"
 _OFF = frozenset({"0", "false", "no"})
+
+# Services a user config declares, and the mode one copy of a service runs in.
+CONFIG_HOME_ENV = "XDG_CONFIG_HOME"
+CONFIG_DIRECTORY_NAME = "fleet"
+SERVICES_FILE_NAME = "services.json"
+SERVICE_MODE = "service"
+SERVICE_LOG_DIRECTORY_NAME = "services"
+SERVICE_LOCK_SUFFIX = ".lock"
+SERVICE_PID_SUFFIX = ".pid"
+
+# A declared service that exits is restarted after a delay that starts here and
+# doubles to the cap. A run this long is steady, so the sequence starts over
+# rather than waiting out a cap the service earned long ago.
+FIRST_BACKOFF_SECONDS = 5.0
+BACKOFF_CAP_SECONDS = 300.0
+STEADY_RUN_SECONDS = 600.0
+
+# The supervision tick notices an exited service and starts what its backoff has
+# come due. A long tick is the service itself working, never a reason to act:
+# the consuming project measured a cold catch-up tick of 862 s, and a service is
+# restarted only when it exits, never on a liveness timeout.
+SUPERVISION_TICK_SECONDS = 1.0
+SERVICE_STOP_GRACE_SECONDS = 10.0
+SERVICE_POLL_SECONDS = 0.1
+
+# The log lives on the shared filesystem so it survives the node. It is bounded
+# rather than left to grow: past the limit the oldest bytes are dropped and the
+# newest kept, cut at a line boundary, so a later reader still has the last ticks.
+SERVICE_LOG_LIMIT_BYTES = 8 * 1024 * 1024
+SERVICE_LOG_KEEP_BYTES = 4 * 1024 * 1024
 
 ALERTS_NAME = "alerts.log"
 NOTICE_NAME = "notice"
@@ -367,6 +407,430 @@ def start_health_sampler(environ: Mapping[str, str] | None = None) -> int | None
     )
     log(f"node sampler {sampler} started as pid {process.pid}")
     return process.pid
+
+
+def config_directory(environ: Mapping[str, str] | None = None) -> Path:
+    """The user's fleet configuration directory, ``~/.config/fleet``.
+
+    Resolved the way a user configuration home is resolved elsewhere on this
+    machine: ``XDG_CONFIG_HOME`` when the environment names one, otherwise
+    ``~/.config``. A caller that isolates that variable drives the whole
+    configuration path without reaching the operator's own.
+    """
+    environ = os.environ if environ is None else environ
+    base = environ.get(CONFIG_HOME_ENV)
+    root = Path(base).expanduser() if base else Path.home() / ".config"
+    return root / CONFIG_DIRECTORY_NAME
+
+
+def services_config_path(environ: Mapping[str, str] | None = None) -> Path:
+    """The file declaring which services the fleet runs."""
+    return config_directory(environ) / SERVICES_FILE_NAME
+
+
+def service_log_directory(environ: Mapping[str, str] | None = None) -> Path:
+    """Where a declared service's log is appended.
+
+    Under the state directory rather than the config home: the state directory
+    is on the shared filesystem, so a later reader can open the last ticks after
+    the node that ran the service is gone.
+    """
+    return state_directory(environ) / SERVICE_LOG_DIRECTORY_NAME
+
+
+def declared_services(
+    environ: Mapping[str, str] | None = None,
+) -> dict[str, list[str]] | None:
+    """The services the user's config declares, or None if it cannot be read.
+
+    A file that is absent declares nothing. A file that is present but cannot
+    be parsed is refused as a whole, so a caller applies no half-read file: the
+    services already running are left alone rather than stopped on a misread.
+    An entry naming an unsafe name or carrying no argv is refused on its own,
+    and the rest of the file still applies.
+    """
+    path = services_config_path(environ)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return {}
+    except OSError as exc:
+        log(f"services config {path} unreadable: {type(exc).__name__}: {exc}")
+        return None
+    try:
+        raw = json.loads(text)
+    except ValueError as exc:
+        log(f"services config {path} is not JSON: {exc}")
+        return None
+    if not isinstance(raw, Mapping):
+        log(f"services config {path} is {type(raw).__name__}, not a mapping")
+        return None
+    services: dict[str, list[str]] = {}
+    for name, argv in raw.items():
+        if not isinstance(name, str) or not SAFE_NAME.fullmatch(name):
+            log(f"refused service name: {name!r}")
+            continue
+        if (
+            not isinstance(argv, list)
+            or not argv
+            or not all(isinstance(argument, str) for argument in argv)
+        ):
+            log(f"refused service {name}: argv is not a non-empty string list")
+            continue
+        services[name] = list(argv)
+    return services
+
+
+def lock_held(name: str, runtime: Path) -> bool:
+    """Whether a copy of the service holds its lock, i.e. is running.
+
+    The lock is the service's own, taken by the wrapper before it becomes the
+    service and dropped by the kernel when the service ends. It is therefore
+    held for exactly as long as a copy runs, which is what a restart decision
+    and a stop both read.
+    """
+    path = runtime / f"{name}{SERVICE_LOCK_SUFFIX}"
+    try:
+        descriptor = os.open(path, os.O_RDWR)
+    except FileNotFoundError:
+        return False
+    try:
+        try:
+            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return True
+        fcntl.flock(descriptor, fcntl.LOCK_UN)
+        return False
+    finally:
+        os.close(descriptor)
+
+
+def service_pid_path(runtime: Path, name: str) -> Path:
+    """The file recording the pid of the running copy of a service."""
+    return runtime / f"{name}{SERVICE_PID_SUFFIX}"
+
+
+def recorded_service_pid(runtime: Path, name: str) -> int | None:
+    """The pid recorded for a service, or None when none could be read."""
+    try:
+        return int(service_pid_path(runtime, name).read_text(encoding="utf-8").strip())
+    except (OSError, ValueError):
+        return None
+
+
+def next_backoff(delay: float, ran_seconds: float) -> tuple[float, float]:
+    """The delay before a restart, and the one that follows it.
+
+    Five seconds at first, doubling to the cap. A run of steady seconds or more
+    starts the sequence over, so a service that ran steadily and then exited
+    waits five seconds rather than a cap it reached long ago.
+    """
+    if ran_seconds >= STEADY_RUN_SECONDS:
+        delay = FIRST_BACKOFF_SECONDS
+    return delay, min(delay * 2, BACKOFF_CAP_SECONDS)
+
+
+def trim_service_log(path: Path, *, limit: int, keep: int) -> bool:
+    """Bound a service log, keeping its newest bytes and dropping the oldest.
+
+    The service appends to the file directly, so the file is edited in place
+    rather than replaced: the same inode is kept and its newest bytes are moved
+    down to the front, under an open descriptor the running service still writes
+    through. The cut is moved forward to the next line boundary, so the first
+    line a later reader sees is a whole one. An absent log is not a failure.
+    Returns whether anything was trimmed.
+    """
+    try:
+        size = path.stat().st_size
+    except FileNotFoundError:
+        return False
+    if size <= limit:
+        return False
+    keep = min(keep, limit)
+    with open(path, "rb+") as handle:
+        handle.seek(max(size - keep, 0))
+        tail = handle.read()
+        boundary = tail.find(b"\n")
+        if boundary != -1:
+            tail = tail[boundary + 1 :]
+        handle.seek(0)
+        handle.write(tail)
+        handle.truncate()
+    return True
+
+
+def service_wrapper_argv(name: str, argv: Sequence[str]) -> list[str]:
+    """The command that starts one service copy, taking its lock first.
+
+    The copy runs through this module's service mode, so the lock is taken by
+    the same process that becomes the service: it survives the exec and is held
+    for exactly the service's life. The supervisor names no service itself --
+    the argv is whatever the user's config declared.
+    """
+    return [
+        sys.executable,
+        "-m",
+        "reckon.crew.fleet_supervisor",
+        SERVICE_MODE,
+        name,
+        *argv,
+    ]
+
+
+@dataclass
+class _ServiceState:
+    """What the supervisor knows about one declared service."""
+
+    argv: list[str]
+    pid: int | None = None
+    owned: bool = False
+    delay: float = FIRST_BACKOFF_SECONDS
+    next_attempt: float | None = None
+    started_at: float | None = None
+
+
+class DeclaredServices:
+    """The services a user config declares, run as children of the batch step.
+
+    Each copy leads its own session, so it ends with the allocation and with
+    nothing else. Liveness is read from the service's own lock rather than from
+    a keepalive: a long tick is the service working, and only an exit is a
+    reason to restart. A copy that cannot take its lock exits at once, so a
+    reload or a second supervisor never starts a second copy of a service.
+
+    Time enters through ``clock`` so a caller can drive backoff without
+    sleeping; the batch step passes its own monotonic clock by default.
+    """
+
+    def __init__(
+        self,
+        runtime: Path,
+        environ: Mapping[str, str] | None = None,
+        *,
+        clock: Callable[[], float] = time.monotonic,
+        log_limit: int = SERVICE_LOG_LIMIT_BYTES,
+        log_keep: int = SERVICE_LOG_KEEP_BYTES,
+    ) -> None:
+        self._runtime = runtime
+        self._environ = os.environ if environ is None else environ
+        self._clock = clock
+        self._log_limit = log_limit
+        self._log_keep = log_keep
+        self._states: dict[str, _ServiceState] = {}
+        self._guard = threading.Lock()
+
+    def reload(self) -> None:
+        """Apply the declared services: start newly named, stop removed ones.
+
+        Run at startup and on the verb that re-executes the module. A service
+        already running is adopted rather than started again, so an exec does
+        not disturb what it runs. A config that cannot be read changes nothing,
+        so a half-read file never stops every service.
+        """
+        declared = declared_services(self._environ)
+        if declared is None:
+            return
+        with self._guard:
+            for name in list(self._states):
+                if name not in declared:
+                    self._stop_locked(name)
+            for name, argv in declared.items():
+                state = self._states.get(name)
+                if state is None:
+                    state = _ServiceState(argv=list(argv))
+                    self._states[name] = state
+                else:
+                    state.argv = list(argv)
+                if state.pid is not None or state.next_attempt is not None:
+                    continue
+                pid = recorded_service_pid(self._runtime, name)
+                if pid is not None and lock_held(name, self._runtime):
+                    state.pid = pid
+                    state.owned = False
+                    state.started_at = self._clock()
+                    log(f"declared service {name} already running as pid {pid}")
+                    continue
+                service_pid_path(self._runtime, name).unlink(missing_ok=True)
+                self._start_locked(name, state.argv)
+
+    def start(self, name: str, argv: Sequence[str]) -> int | None:
+        """Start one copy of a service through its lock-taking wrapper."""
+        with self._guard:
+            return self._start_locked(name, argv)
+
+    def _start_locked(self, name: str, argv: Sequence[str]) -> int | None:
+        """Spawn the wrapper that takes the lock and becomes the service."""
+        if not SAFE_NAME.fullmatch(name or "") or not argv:
+            log(f"refused service start: {name!r}")
+            return None
+        log_path = service_log_directory(self._environ) / f"{name}.log"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            with open(log_path, "ab") as sink:
+                process = subprocess.Popen(
+                    service_wrapper_argv(name, list(argv)),
+                    env=dict(self._environ),
+                    stdin=subprocess.DEVNULL,
+                    stdout=sink,
+                    stderr=sink,
+                    start_new_session=True,
+                )
+        except OSError as exc:
+            log(f"declared service {name} could not start: {exc}")
+            return None
+        service_pid_path(self._runtime, name).write_text(
+            f"{process.pid}\n", encoding="utf-8"
+        )
+        log(f"declared service {name} started as pid {process.pid}")
+        state = self._states.get(name)
+        if state is None:
+            state = _ServiceState(argv=list(argv))
+            self._states[name] = state
+        state.argv = list(argv)
+        state.pid = process.pid
+        state.owned = True
+        state.started_at = self._clock()
+        state.next_attempt = None
+        return process.pid
+
+    def stop(self, name: str) -> None:
+        """Stop one service by the pid recorded for it, if it is running."""
+        with self._guard:
+            self._stop_locked(name)
+
+    def _stop_locked(self, name: str) -> None:
+        """Signal the recorded pid, and wait for the service to end.
+
+        Nothing is signalled unless the service's lock is held: a recorded pid
+        whose process has already gone names nothing this supervisor started,
+        and the lock frees only when the service ends. A copy that does not
+        end within the grace is killed, still by that pid and never by pattern.
+        """
+        state = self._states.pop(name, None)
+        pid_path = service_pid_path(self._runtime, name)
+        pid = state.pid if state is not None else None
+        if pid is None:
+            pid = recorded_service_pid(self._runtime, name)
+        if not lock_held(name, self._runtime):
+            pid_path.unlink(missing_ok=True)
+            return
+        if pid is None:
+            log(f"declared service {name} runs with no recorded pid; not stopped")
+            return
+        log(f"stopping declared service {name} (pid {pid})")
+        signal_worker(pid, signal.SIGTERM, reason="fleet-service-stop")
+        deadline = time.monotonic() + SERVICE_STOP_GRACE_SECONDS
+        while lock_held(name, self._runtime):
+            if time.monotonic() >= deadline:
+                log(f"declared service {name} did not stop; killing pid {pid}")
+                signal_worker(pid, signal.SIGKILL, reason="fleet-service-stop")
+                break
+            time.sleep(SERVICE_POLL_SECONDS)
+        if state is not None and state.owned:
+            self._collect_locked(pid)
+        pid_path.unlink(missing_ok=True)
+
+    def _collect_locked(self, pid: int) -> None:
+        """Collect a child this image started, so it leaves no dead slot."""
+        for _ in range(20):
+            try:
+                reaped, _status = os.waitpid(pid, os.WNOHANG)
+            except ChildProcessError:
+                return
+            if reaped == pid:
+                return
+            time.sleep(SERVICE_POLL_SECONDS)
+
+    def supervise_once(self, now: float | None = None) -> None:
+        """Re-check every service once: restart what exited, trim its log.
+
+        A service is restarted only once its lock is free, which the kernel
+        arranges when the service ends. Nothing here times a service out: a
+        long tick is the service working, so a service's silence is never a
+        reason to restart it, and only a backoff that has come due starts a
+        new copy.
+        """
+        now = self._clock() if now is None else now
+        with self._guard:
+            for name, state in list(self._states.items()):
+                log_path = service_log_directory(self._environ) / f"{name}.log"
+                trim_service_log(log_path, limit=self._log_limit, keep=self._log_keep)
+                if state.pid is not None and not self._alive(name, state):
+                    ran = (
+                        now - state.started_at if state.started_at is not None else 0.0
+                    )
+                    delay, following = next_backoff(state.delay, ran)
+                    state.delay = following
+                    state.pid = None
+                    state.owned = False
+                    state.started_at = None
+                    state.next_attempt = now + delay
+                    log(f"declared service {name} exited; restart in {delay:.0f}s")
+                if state.next_attempt is not None and now >= state.next_attempt:
+                    state.next_attempt = None
+                    if self._start_locked(name, state.argv) is None:
+                        delay, following = next_backoff(state.delay, 0.0)
+                        state.delay = following
+                        state.next_attempt = now + delay
+
+    def supervise_loop(self, stop: threading.Event) -> None:
+        """Tick until told to stop, so a service that exits comes back."""
+        while not stop.wait(SUPERVISION_TICK_SECONDS):
+            self.supervise_once()
+
+    def _alive(self, name: str, state: _ServiceState) -> bool:
+        """Whether a copy of the service is still running.
+
+        A child this image started is checked by waitpid, which also collects
+        it; the check falls back to the service's lock when another reader has
+        already collected it. The recorded pid alone is never the answer: the
+        lock is what a running copy holds and what the kernel drops when it
+        ends.
+        """
+        pid = state.pid
+        if pid is None:
+            return False
+        if state.owned:
+            try:
+                reaped, _status = os.waitpid(pid, os.WNOHANG)
+            except ChildProcessError:
+                pass
+            else:
+                if reaped == pid:
+                    return False
+                if reaped == 0:
+                    return True
+        return lock_held(name, self._runtime)
+
+
+def run_declared_service(
+    name: str, argv: Sequence[str], environ: Mapping[str, str] | None = None
+) -> int:
+    """Become one copy of a declared service, unless a copy already runs.
+
+    The copy holds an exclusive lock in the runtime directory for its whole
+    life -- the same lock the supervisor probes to know that the service is up.
+    A copy that cannot take it exits at once, so a reload or a second
+    supervisor never starts a second copy. The lock is held on a descriptor
+    that survives the exec, and the kernel drops it when the service ends.
+    """
+    environ = os.environ if environ is None else environ
+    if not SAFE_NAME.fullmatch(name or "") or not argv:
+        log(f"refused declared service: {name!r}")
+        return 2
+    runtime = runtime_directory(environ)
+    runtime.mkdir(parents=True, exist_ok=True)
+    lock_path = runtime / f"{name}{SERVICE_LOCK_SUFFIX}"
+    descriptor = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        log(f"declared service {name} already running; this copy exits")
+        os.close(descriptor)
+        return 1
+    os.set_inheritable(descriptor, True)
+    os.execvp(argv[0], list(argv))  # noqa: S606 - replaces this image, no shell
+    raise AssertionError("execvp returned")
 
 
 def session_running(name: str, environ: Mapping[str, str] | None = None) -> bool:
@@ -732,7 +1196,9 @@ def _run_session_copy(name: str, layout: str, environ: Mapping[str, str] | None)
             process.wait(timeout=DETACH_GRACE_SECONDS * 2)
         except subprocess.TimeoutExpired:
             with suppress(ProcessLookupError):
-                signal_worker(process.pid, signal.SIGKILL, reason="session-start-timeout")
+                signal_worker(
+                    process.pid, signal.SIGKILL, reason="session-start-timeout"
+                )
             process.wait()
         return 1
 
@@ -742,6 +1208,7 @@ def handle_line(
     runtime: Path,
     environ: Mapping[str, str] | None = None,
     exec_: Any = os.execv,
+    services: DeclaredServices | None = None,
 ) -> None:
     """Act on one request line; a line this reader cannot act on is logged only."""
     request = parse_request(line)
@@ -749,6 +1216,8 @@ def handle_line(
         layout = request.fields[1] if len(request.fields) > 1 else ""
         _run_session_copy(request.fields[0] if request.fields else "", layout, environ)
     elif request.verb == "reload":
+        if services is not None:
+            services.reload()
         log("reloading")
         _reexec(exec_)
     elif request.verb == "spawn" and len(request.fields) == 2:
@@ -808,16 +1277,28 @@ def serve(
         f"job {environ.get('SLURM_JOB_ID') or '?'}, runtime {runtime}"
     )
     start_health_sampler(environ)
+    services = DeclaredServices(runtime, environ)
+    services.reload()
+    stopping = threading.Event()
+    threading.Thread(
+        target=services.supervise_loop,
+        args=(stopping,),
+        name="fleet-services",
+        daemon=True,
+    ).start()
     # Opening read-write holds a write end open, so a read between requests
     # blocks for the next line instead of seeing end-of-file.
     descriptor = os.open(fifo, os.O_RDWR)
-    with os.fdopen(descriptor, "r", encoding="utf-8", errors="replace") as stream:
-        while True:
-            _reap_finished_children()
-            line = stream.readline()
-            if not line:
-                continue
-            handle_line(line, runtime, environ, exec_)
+    try:
+        with os.fdopen(descriptor, "r", encoding="utf-8", errors="replace") as stream:
+            while True:
+                _reap_finished_children()
+                line = stream.readline()
+                if not line:
+                    continue
+                handle_line(line, runtime, environ, exec_, services)
+    finally:
+        stopping.set()
     return 0
 
 
@@ -834,6 +1315,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         name = arguments[1] if len(arguments) > 1 else ""
         layout = arguments[2] if len(arguments) > 2 else ""
         return start_session(name, layout, runtime, environ)
+    if arguments and arguments[0] == SERVICE_MODE:
+        name = arguments[1] if len(arguments) > 1 else ""
+        return run_declared_service(name, arguments[2:], environ)
     return serve(environ)
 
 

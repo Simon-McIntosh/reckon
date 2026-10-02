@@ -21,8 +21,8 @@
   <title>Figures Are Allocated By Topic Directory | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="4">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="5">
 <meta name="plan-impl" content="0.9">
 <meta name="plan-informs" content="a-review-can-see-the-figure">
 </head>
@@ -103,6 +103,11 @@
       </p>
     <p class="r-dec-rat"></p>
     </div>
+<div class="r-dec" data-key="d-fabtd-002" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">`sibling-writers-in-one-topic` — may two nodes write different files inside one topic directory? Record the choice; one branch is a behaviour change in dispatch.</p>
+    <p class="r-dec-ctx">Raised as followup f-fabtd-002; recorded as an open decision by work-is-a-section-not-a-followup §4. Evidence against main: plan `active` impl 0.9, deliberately not shipped because the decision would drop out of every open path; both work sections landed</p>
+    <p class="r-dec-rat"></p>
+    </div>
 </section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -113,10 +118,11 @@
     <pre class="r-fu-prompt">/reckon-build figures-are-allocated-by-topic-directory</pre>
     <p class="r-fu-outcome">Both sections landed in the order this followup set. §2 (commit 4437fbf3, merged ea978c6e) did not add enforcement — it found the exclusive-claim enforcement already present in dispatch and pinned it with six refusal cases plus a mutation control: neutering _scopes_overlap flips exactly those six to DID NOT RAISE, so the tests are shown to measure the guard rather than an incidental failure. All three required refusals were demonstrated rather than asserted, including the topic directory absent from disk, and the claim walk reads 3 live claims at refusal. No runtime change; a six-line mechanism comment at the refusal site. §3 (commit 08e9f5b1, merged 1bc348e0) wrote the allocation unit and the never-combined corollary into both surfaces that describe figures — the authoring guidance in reckon-create and section 5 of the ship worker-protocol reference — so a capture node's write path derives from either text without reading dispatch's source. The digit this followup asked for is ZERO, established two independent ways: 16 runs across 12 distinct plans declaring a docs/figures path in the ledger, and 21 figure-adding commits across 20 topic directories in git history, with no topic ever claimed by two plans and no two runs' live windows overlapping on one topic. The concurrency check was the worker's own refinement and is the right one, since the refusal requires a concurrent second declarer rather than merely a second one ever. Coordinator verified the census independently against the ledger: 16 and 12 match exactly.</p>
     </article>
-<article class="r-fu" data-id="f-fabtd-002" data-status="open" data-written-by="ship-s16-20260914" data-written-at="2026-09-15" data-recommends-skill="/reckon-build figures-are-allocated-by-topic-directory" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-fabtd-002" data-status="resolved" data-written-by="ship-s16-20260914" data-written-at="2026-09-15" data-recommends-skill="/reckon-build figures-are-allocated-by-topic-directory" data-resolved-at="2026-10-02T08:45:52+00:00" data-resolved-by="">
     <h4 class="r-fu-title">One decision remains, and it is the lead&#x27;s</h4>
     <div class="r-fu-body"><p>Both work sections have landed and the plan is deliberately <strong>not</strong> shipped, because a plan at <code>impl</code> 1.0 drops out of <code>pending_work</code>, <code>ready_now</code> and every open path — and the one thing still outstanding here is a decision the lead has not made. Shipping it would file that decision somewhere nobody looks, which is the precise failure this repository names in the closure discipline.</p><p><strong><code>sibling-writers-in-one-topic</code>: may two nodes write different files inside one topic directory?</strong> The enforcement as it stands today <em>admits</em> them — each claims a leaf — which was measured rather than assumed in §2. Neither surface written in §3 presupposes an answer, so either choice lands without rewriting the skill.</p><p>What follows from each: <code>yes-if-filenames-are-disjoint</code> confirms current behaviour and needs at most the sibling addendum the §3 worker flagged and deliberately did not author — the <code>worker-protocol</code> sentence about declaring the topic directory rather than a file inside it stays true either way. <code>no-the-topic-is-exclusive</code> is a behaviour change in dispatch and a new node, because the guard would have to refuse a second declarer of a disjoint filename under a claimed topic, which it does not do now.</p><p>No work should be dispatched against this plan until the decision is locked, since one branch changes the rule the other two sections just documented.</p></div>
     <pre class="r-fu-prompt">/reckon-build figures-are-allocated-by-topic-directory</pre>
+    <p class="r-fu-outcome">Recorded as the open decision d-fabtd-002, which the roadmap reads and gates on (work-is-a-section-not-a-followup §4).</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
