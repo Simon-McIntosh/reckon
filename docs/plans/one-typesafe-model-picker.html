@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="57">
+<meta name="plan-version" content="58">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -245,7 +245,10 @@
     <div class="r-comment-body"><p>local_lane_load now carries worker_slots only when the router's observed_seconds window is positive, reusing the dispatcher's _lane_worker_allowance reader; gate tests/test_run_time_profile.py 11 passed at head, base arm 3 failed, declared negative control 3 failed at EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261002T192413480713-review-of-lane-load-honours-observed-window" data-who="reckon-build" data-when="2026-10-02T19:29:58.081Z">
-    <div class="r-comment-body"><p>independent review of r-20261002T184258840182-lane-load-honours-observed-window stored at both write paths; parsed record, all 5 dimensions scored, total 94, reviewed_base_sha 2a581fb443537002de44c581f544abc78fac9d3e, reviewed_head_sha ccf844cd0673df135d58fd6ebe1bd43685cff7af, added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s baseline_suite (3 failures) and after_suite (0 failures).</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261002T184258840182-lane-load-honours-observed-window stored at both write paths; parsed record, all 5 dimensions scored, total 94, reviewed_base_sha 2a581fb443537002de44c581f544abc78fac9d3e, reviewed_head_sha ccf844cd0673df135d58fd6ebe1bd43685cff7af, added_failure_count 0 and added_failure_ids [] derived from the reviewed run's baseline_suite (3 failures) and after_suite (0 failures).</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261002T190701226087-picker-fast-on-dispatch-path" data-who="reckon-build" data-when="2026-10-02T19:28:54Z">
+    <div class="r-comment-body"><p>Dispatch shares records, budget view, and verdict inputs with pick; 10 live cached picks measured 1767.949 ms median, 3018.089 ms maximum, and 351.179 ms Jev median.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T175108967088-picker-judges-pressure" data-who="reckon-build" data-when="2026-10-02T18:13:37Z">
     <div class="r-comment-body"><p>Jev now judges lane pressure with route/hold and unthresholded confidence: burn 3.4x and zero slots stay offered; live size-matched return time is p50 250s/p90 400s; representative state 1165/1500 estimated tokens; assigned gate base 2 failed/109 passed, head 2 failed/124 passed, zero added failure ids; restored burn exclusion fails the pressure test. Evidence: docs/evidence/fragments/one-typesafe-model-picker/picker-judges-pressure.html#picker-judges-pressure.</p></div>
