@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:scoring-should-stop-a-promotion">
+  <meta name="plan-verifies" content="reckon:scoring-should-stop-a-promotion#s9">
+  <meta name="evidence-verdict" content="pass-with-limitation">
+  <meta name="evidence-date" content="2026-10-02">
+  <meta name="evidence-commit" content="0f2700d03">
+  <title>A promotion promotes the presented commit that descends from all others</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="descendant-selection">
+  <h2>The presented commit that descends from all the others is the revision promoted</h2>
+  <p>The promoted revision was the last <code>--commit</code> value, so a manifest
+  listing its commits newest first — the order the promotable obligation prints — asserted
+  the run's first commit and was refused against a review of the tip the run produced.
+  The revision is now selected by descent: every presented commit is resolved to its
+  canonical object id, and the one every other candidate is an ancestor of is promoted.
+  A presentation whose commits have no single descendant is refused, naming every
+  presented commit.</p>
+  <p>Changed: <code>reckon/crew/promotion.py</code> (<code>_promoted_revision</code> and
+  <code>_run_promoted_revision</code> now resolve and compare the whole cited list) and
+  <code>tests/test_promotion_picks_the_descendant_commit.py</code>.</p>
+</section>
+<section id="cases">
+  <h2>Cases, run in a synthesised repository</h2>
+  <p>Four cases pass in the node's focused run (<strong>4 passed</strong>,
+  commit <code>0f2700d03</code>): a presentation with the reviewed head first and its
+  parent last promotes the head; the same commits oldest first promote the same head; two
+  commits on divergent branches are refused with the reason and both shas named; and the
+  obligation's printed remedy line, run as printed with only its documented verdict
+  placeholder filled, promotes the reviewed head.</p>
+</section>
+<section id="negative-control">
+  <h2>Negative control</h2>
+  <p>Restoring last-position selection in a scratch copy of the promoted tree
+  (<code>return str(commit_list[-1])</code> in <code>_promoted_revision</code>) reddens
+  the newest-first case, the divergent-set case and the remedy-line case
+  (3 failed, 1 passed, <code>EXIT=1</code>). The newest-first failure is the incident's
+  own shape, quoting the newest-first remedy line against a review of the tip:
+  <em>the stored review read revision 5b6c09839b3f and this promotion asserts
+  d67a93b77124</em>. Red log:
+  <code>r-20261002T053524312179-promotion-picks-the-descendant-commit/gate-negative-control.log</code>.</p>
+</section>
+<section id="limitation">
+  <h2>Limitation</h2>
+  <p>The two-arm suite gate over the 195 files naming <code>crew.complete</code>,
+  <code>complete_run</code>, <code>promotion</code> or <code>--commit</code> did not
+  complete within the node's time budget — both arms ran far slower than the budget, the
+  base arm was stopped by the harness at its background limit with its progress near
+  40 percent, and the head arm was still running when the budget expired. Their logs are
+  <code>gate-base.log</code> (base <code>233f442b0</code>, extracted under the run's
+  <code>/tmp</code> scratch, revision <code>233f442b0</code>) and <code>gate-head.log</code>
+  (head <code>0f2700d03</code>, <code>-n 8 --timeout=300</code>, separate basetemps).
+  Neither arm reached its summary and neither log carries an <code>EXIT=</code> line, so
+  no failure delta is claimed here; the approval of the change rests on the focused run and
+  the negative control above, not on a suite comparison.</p>
+</section>
+</main>
+</body>
+</html>
