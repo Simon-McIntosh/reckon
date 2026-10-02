@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;}">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="3">
 </head>
 <body>
   <main class="plan-doc">
@@ -85,6 +85,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261002T053135752847-fleet-supervisor-runs-declared-services" data-who="reckon-build" data-when="2026-10-02T07:47:03.723Z">
     <div class="r-comment-body"><p>Declared services land in reckon/crew/fleet_supervisor.py: the batch step reads fleet/services.json from the configuration home and runs each declared service as its own-session child holding a lock in the runtime directory, restarts an exited one with 5 s doubling to a 300 s cap reset after 600 s steady running, appends stdout and stderr to one size-bounded log under the state directory, and on reload starts a newly declared service and stops a removed one by its recorded pid; gate base 52 passed / EXIT=0, head 59 passed / EXIT=0 with no added failure id.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261002T074714574031-review-of-fleet-supervisor-runs-declared-services" data-who="reckon-build" data-when="2026-10-02T08:03:05.258Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261002T053135752847-fleet-supervisor-runs-declared-services stored: parsed record, all five dimensions scored in 0..20 (goal_fidelity 20, evidence 17, scope_discipline 19, durability 19, fit 19, total 94), reviewed_base_sha c47424bd75e134cee6fa51e3b30948a11253372d and reviewed_head_sha 3a27d21428b101e33b42a296d8f7c77918312640, added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite/after_suite logs; one follow-on finding (manifest tests: line carries placeholders).</p></div>
 </div>
 </section>
 </main>
