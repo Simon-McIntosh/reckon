@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="188">
+<meta name="plan-version" content="189">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -1486,7 +1486,7 @@
     <div class="r-comment-body"><p>review-of-stored-phase-covers-a-failed-spawn: independent review of run r-20261001T233204211772 at head 8b9dd16df scored parsed 19/17/19/18/18 = 91 (goal_fidelity/evidence/scope_discipline/durability/fit), zero added failures; one follow-on finding (a new branch test drives the real supervisor and leaves SIGTERM/SIGHUP handlers replaced for the rest of the pytest process).</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T000325288419-review-of-observe-keeps-a-terminal-stored-phase" data-who="reckon-build" data-when="2026-10-02T00:27:51.569Z">
-    <div class="r-comment-body"><p>Independent review of r-20261001T233234436223-observe-keeps-a-terminal-stored-phase stored parsed (total 82): parsed record scores goal_fidelity 13, evidence 15, scope_discipline 20, durability 16, fit 18; reviewed_base_sha c8087d0bc5cf9f821cee71bed4ea006e7ffa9261, reviewed_head_sha eff7c2b9d894284927eee5c5b740ba64a3c795f5; added_failure_count 0 over the reviewed run&#x27;s baseline_suite and after_suite (11 passed each); one blocking finding - observe()&#x27;s orphaned branch at reckon/.../dispatch.py:8567 overwrites a terminal stored phase with orphaned (reproduced: pointer complete + dead pid + live stream yields orphaned), so the node goal does not hold - and one follow-on, the head arm records revision c8087d0bc (the base) rather than eff7c2b9.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261001T233234436223-observe-keeps-a-terminal-stored-phase stored parsed (total 82): parsed record scores goal_fidelity 13, evidence 15, scope_discipline 20, durability 16, fit 18; reviewed_base_sha c8087d0bc5cf9f821cee71bed4ea006e7ffa9261, reviewed_head_sha eff7c2b9d894284927eee5c5b740ba64a3c795f5; added_failure_count 0 over the reviewed run's baseline_suite and after_suite (11 passed each); one blocking finding - observe()'s orphaned branch at reckon/.../dispatch.py:8567 overwrites a terminal stored phase with orphaned (reproduced: pointer complete + dead pid + live stream yields orphaned), so the node goal does not hold - and one follow-on, the head arm records revision c8087d0bc (the base) rather than eff7c2b9.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
@@ -1520,6 +1520,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261001T232140088383-a-rewritten-stream-is-read-from-zero" data-who="reckon-build" data-when="2026-10-01T23:59:56.269Z">
     <div class="r-comment-body"><p>§11 — the producer's cursor records a bounded fingerprint of each stream's opening beside the offset and resumes only while the opening still holds, so a stream replaced at a new inode or rewritten in place re-reads from its first record; gate tests/test_producer_reads_only_what_changed.py 6 passed (3 new), both new cases fail under the declared mutation, base/head arms 25/28 with zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261002T000020525600-review-of-a-rewritten-stream-is-read-from-zero" data-who="reckon-build" data-when="2026-10-02T00:27:58.703Z">
+    <div class="r-comment-body"><p>review of r-20261001T232140088383-a-rewritten-stream-is-read-from-zero stored for base 2a2848b51741c2cd995ac1eaf224a1fc9aa0b480 head 35e69097b32631a1b09b0038c741347c7d6a7a10 — goal_fidelity 19, evidence 16, scope_discipline 19, durability 16, fit 17, total 87; three follow-on findings; added_failure_count 0 over the reviewed run&#x27;s own base/head arms (25 passed base, 28 passed head across three files).</p></div>
 </div>
 </section>
 </main>
