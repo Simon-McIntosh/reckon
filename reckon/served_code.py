@@ -42,6 +42,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
+from reckon._timestamps import parse_iso
 from reckon.file_memo import file_signature
 
 #: The command a reader is told to run; the service owns the restart.
@@ -576,10 +577,11 @@ def _compare(
 def _summary(files: list[str], started_at: str, scope: str) -> str:
     """One sentence a reader can act on, for every surface that shows drift."""
 
-    try:
-        started = datetime.fromisoformat(started_at).strftime("%Y-%m-%d %H:%M UTC")
-    except ValueError:
+    parsed_start = parse_iso(started_at)
+    if parsed_start is None:
         started = started_at or "an unknown time"
+    else:
+        started = parsed_start.strftime("%Y-%m-%d %H:%M UTC")
     count = len(files)
     named = ", ".join(files[:3]) + (f" and {count - 3} more" if count > 3 else "")
     where = (
