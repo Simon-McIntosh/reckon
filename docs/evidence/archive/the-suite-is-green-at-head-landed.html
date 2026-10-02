@@ -2265,6 +2265,11 @@ reckon/crew/dispatch.py:4535: TypeError
       plan's §2 measure "Green at the integrated head" is answered by one full-suite run at the
       merged head after every node lands, which a file-local reading cannot stand in for.</p>
     </section>
-  </main>
+    <section id="s2-regressions-after-the-integrated-measure">
+    <h2>Two regressions found by the integrated measure, repaired at the cause</h2>
+    <p>The integrated measure at b5dbaaa2 found eight ids that had turned red after earlier landings. Two nodes repaired them at the product cause, not in the fixtures.</p><ul><li><b>worker-liveness-fixtures-follow-the-host-gate</b> (merge b6dc82323, worker commit 7eb6fe4fa, review 93, zero added failures). The worker-record host gate in <code>reckon/crew/recovery.py</code> had made two signals depend on one answer. A worker record's presence now advances the observed phase without the host gate, because presence proves the launch happened wherever it ran. Its pid is refused only for a run whose <code>launcher_host</code> names a different machine (<code>_record_is_known_foreign</code>), so a pointer written before that field existed is read as it always was. Gate: 6 failed / 17 passed at base, 23 passed at head; the negative control (base <code>recovery.py</code> with head tests) turns all six named ids red again.</li><li><b>a-classification-read-creates-no-run-directory</b> (merge 2b77d3492, worker commits 371d42bc3 and b1336f1a9, review 95, zero added failures). <code>_write_classification_memo</code> no longer creates a run directory. It writes the memo only into a directory that already holds the run's records, so a read never creates a run's home. Both discard ids and the new no-directory case pass. The one remaining red id in that gate, <code>test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word</code>, fails identically at base and belongs to the departure-word node.</li></ul>
+  </section>
+
+</main>
 </body>
 </html>

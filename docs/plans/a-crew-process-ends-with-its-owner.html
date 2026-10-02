@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="210">
+<meta name="plan-version" content="211">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -1288,6 +1288,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260926T160521199125-review-of-discard-releases-a-clean-worktree" data-who="reckon-build" data-when="2026-09-26T16:59:15.756Z">
     <div class="r-comment-body"><p>review stored at head 5c867c25, total 92; a review is not gated by a suite</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20261002T021008503435" data-who="s21-fin coordinator" data-when="2026-10-02">
+    <div class="r-comment-body">§10 sender-record follow-ons: unwatch-leaves-a-sender-record and a-refused-signal-records-its-refusal landed (evidence anchor s10-sender-record-follow-ons). The refused outcome is not yet reachable in production, so every-signal-caller-names-its-run-directory is in flight to close it. a-terminal-worker-exits-within-its-grace was resumed before review on two defects I found reading the diff. First, the supervisor ignores the pointer's manifest_baseline_mtime_ns, so a resumed run whose earlier attempt wrote complete would have its new worker signalled on the first poll. Second, it reparses manifest.md on GPFS every 0.25 s. f-acpewio-worker-retired-at-acceptance and f-acpewio-every-signal-leaves-a-sender-record stay open until those two nodes land.</div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260924T081323251327-review-of-the-pause-hold-contract" data-who="reckon-ship" data-when="2026-09-24T08:26:05.983Z">
     <div class="r-comment-body"><p>read-back of section 9 found F1 blocking and F3 to F5 material; all applied at f4291476 with imas-ambix-af's two gate guards</p></div>
