@@ -24,9 +24,9 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="50">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
-<meta name="plan-impl" content="0.5">
+<meta name="plan-version" content="52">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="0.6">
 </head>
 <body>
   <main class="plan-doc">
@@ -504,7 +504,7 @@
     </section>
 
     <h2 id="s5">§5 — The run-only scope measure charges merged content and nets its churn</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
 <p>The review of promotion-scope-counts-only-the-runs-commits (score 92) left three residuals in the measure §1 landed. First, a citation list of merge commits alone now measures zero paths, so a run whose content landed inside a merge is charged nothing, silently (<code>reckon/crew/promotion.py</code> near line 147). Second, the recorded <code>changed_lines</code> is now summed per commit. That counts churn the old span diff netted out, which changes a fleet-wide metric (near line 172). Third, the test assertion <code>stored["commits"] == cited</code> echoes its own input.</p><p><strong>Done when</strong> a merges-only citation is either refused or measured through its first parent, <code>changed_lines</code> is netted per run, and the test pins an expectation built independently of the code under test. Each repair has a test that fails before it.</p>
 
     <h2 id="s6">§6 — Read back the third revision, then read, write, split</h2>
