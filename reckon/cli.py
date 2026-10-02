@@ -1006,6 +1006,29 @@ def _config_value_at(config, path: str):
     return node
 
 
+def _layer_flight_config(flight_module, project, checkout_path):
+    """Resolve the file layers alone, without this dispatch's prompt layer."""
+    from reckon.crew.refusals import format_refusal
+
+    try:
+        return flight_module.resolve(project, checkout_path=checkout_path).config
+    except flight_module.FlightConfigError as exc:
+        raise click.ClickException(format_refusal("D06", str(exc))) from exc
+
+
+def _require_configured_override_paths(flight_module, overrides, base) -> None:
+    """Refuse any --set path naming a backend or role no layer defines.
+
+    The preview and the launch apply this one check, so a name no config
+    layer defines cannot be refused by one path and merged into a section
+    nothing routes to by the other.
+    """
+    for pair in overrides:
+        _require_configured_override_path(
+            flight_module, pair.partition("=")[0].strip(), base
+        )
+
+
 def _require_configured_override_path(flight_module, path: str, base) -> None:
     """Refuse a --set path naming a backend or role no layer defines.
 
@@ -1042,7 +1065,7 @@ def _require_configured_override_path(flight_module, path: str, base) -> None:
 
 
 def _dispatch_override_resolution(
-    flight_module, project, checkout_path, overrides, resolved, *, local: bool
+    flight_module, overrides, resolved, base, *, local: bool
 ) -> dict:
     """Report how each --set override resolved against the config layers.
 
@@ -1056,16 +1079,14 @@ def _dispatch_override_resolution(
 
     if not overrides:
         return {}
-    try:
-        base = flight_module.resolve(project, checkout_path=checkout_path).config
-        if local:
+    if local:
+        try:
             base = flight_module.select_local_backend(base)
-    except flight_module.FlightConfigError as exc:
-        raise click.ClickException(format_refusal("D06", str(exc))) from exc
+        except flight_module.FlightConfigError as exc:
+            raise click.ClickException(format_refusal("D06", str(exc))) from exc
     resolution: dict[str, dict[str, Any]] = {}
     for pair in overrides:
         path = pair.partition("=")[0].strip()
-        _require_configured_override_path(flight_module, path, base)
         resolution[path] = {
             "before": _config_value_at(base, path),
             "resolved": _config_value_at(resolved, path),
@@ -1476,7 +1497,8 @@ def crew_preflight(
     help=(
         "Override one flight key after file layers. For routed effort, "
         "roles.<role>.by_spec_level.<level>.effort overlays "
-        "backends.<name>.effort."
+        "backends.<name>.effort. A path naming a backend or role no config "
+        "layer defines is refused."
     ),
 )
 @click.option(
@@ -1609,7 +1631,11 @@ def crew_dispatch(
             "committed plan section"
         )
 
+    base_config = None
     try:
+        if overrides:
+            base_config = _layer_flight_config(flight_module, project, checkout_path)
+            _require_configured_override_paths(flight_module, overrides, base_config)
         config = _dispatch_resolved_flight(
             flight_module, project, checkout_path, overrides
         )
@@ -1679,12 +1705,7 @@ def crew_dispatch(
     if dry_run:
         try:
             override_resolution = _dispatch_override_resolution(
-                flight_module,
-                project,
-                checkout_path,
-                overrides,
-                config,
-                local=local,
+                flight_module, overrides, config, base_config, local=local
             )
         except click.ClickException as exc:
             # A --set path the configuration does not know is a request error
