@@ -2372,11 +2372,13 @@ class _FollowerReloader:
             seat_fd = runs.prepare_watch_seat_reexec(self.project)
             if seat_fd is not None:
                 exec_environment[runs._WATCH_SEAT_ENV] = str(seat_fd)
-        # An interval timer belongs to the process rather than to the image, so
-        # a poll timer still armed here keeps firing in the replacement -- and
-        # does so before that image has installed its own handler, where the
-        # default disposition for the signal is to kill it. Disarming at the
-        # exec leaves the replacement free to arm its own on its own terms.
+        # Ignoring the alarm before disarming drops one that became pending while
+        # the import proof ran. The ignored disposition crosses exec until the
+        # replacement installs its handler; a caught disposition would reset to
+        # the fatal default there.
+        previous_alarm = signal.getsignal(signal.SIGALRM)
+        previous_timer = signal.getitimer(signal.ITIMER_REAL)
+        signal.signal(signal.SIGALRM, signal.SIG_IGN)
         signal.setitimer(signal.ITIMER_REAL, 0)
         try:
             os.execve(  # noqa: S606 - replacement preserves descriptors and stdout
@@ -2390,6 +2392,8 @@ class _FollowerReloader:
                 exec_environment,
             )
         except OSError as exc:
+            signal.signal(signal.SIGALRM, previous_alarm)
+            signal.setitimer(signal.ITIMER_REAL, *previous_timer)
             if self.seat:
                 runs.cancel_watch_seat_reexec(self.project)
             if self.registration is not None:
@@ -2421,7 +2425,14 @@ class _StampPoll:
         self.previous = None
 
     def _tick(self, signum, frame) -> None:
-        self.reloader.poll({})
+        # The import proof may outlast the interval. Disarm before entering it so
+        # the signal handler cannot recursively start another proof forever.
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        try:
+            self.reloader.poll({})
+        finally:
+            if not self.reloader.failed:
+                signal.setitimer(signal.ITIMER_REAL, self.interval, self.interval)
 
     def start(self) -> None:
         self.previous = signal.signal(signal.SIGALRM, self._tick)

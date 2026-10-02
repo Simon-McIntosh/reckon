@@ -1391,7 +1391,7 @@ def renew_producer_lease(
 
     Called on the follower's wait pass. It is throttled to half the lease
     interval so a tight poll loop does not rewrite the shared record on every
-    tick — the plan's own cadence for "at least once per half interval" — and
+    tick — the configured cadence for "at least once per half interval" — and
     it refuses to write when no producer is live, so a follower arming an
     already-exited producer does not resurrect its registration.
     """
@@ -2278,6 +2278,11 @@ def _project_watch_claim(project: str, stall_window: str):
         if unit:
             record["unit"] = str(unit)
         _write_watch_record(handle, record)
+        if inherited is not None:
+            print(
+                "reckon crew watch completed its reload; publishing continues",
+                flush=True,
+            )
         # The lease registration names this producer for as long as it lives and
         # starts its lease clock at the instant it took the seat: a producer
         # nobody renews therefore expires one lease interval from now, while a
