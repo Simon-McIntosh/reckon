@@ -25,8 +25,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="32">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="34">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -66,28 +66,12 @@
     <p>For each provider, list the newest release of every model family it serves to this workstation's accounts, and every configured or pinned id that an older release still shadows. Measured so far from the installed Claude CLI (2.1.287): <code>claude-fable-5-1</code>, <code>claude-opus-5-5</code>, <code>claude-sonnet-5-5</code> and <code>claude-haiku-4-5</code> are current, and no lane offers Fable 5.1. Stale pins found: <code>claude-sonnet-5</code> in <code>dotfiles/copilot/settings.json</code>, and <code>gpt-5.5</code> and <code>gpt-5.6-sol</code> in <code>~/.codex/config.toml</code>. The clive wrapper's <code>behavesAs: claude-sonnet-5</code> is a capability-catalog mapping for the local model, not a routing pin. The codex catalog has not been read.</p>
     <p><strong>Done when:</strong> a table lists, per provider and family, the current id, its source (CLI catalog, provider model list, or live probe), and every location on this workstation that pins an older id.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-02</span>
     <h2 id="s4">§4 — Jev as the router: design the judgments</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p>Design the router's judgments with Jev, following the typesafe-ai skill and the live docs at <a href="https://docs.typesafe.ai/llms.txt">docs.typesafe.ai</a>.</p>
-    <p><strong>What the docs establish (read 2026-10-02).</strong></p>
-    <ul>
-      <li><strong>Model:</strong> Jev 1.13 (<code>jev-1.13.0</code>). The <code>jev-latest</code> alias moves when a release ships, so the router pins the version.</li>
-      <li><strong>API:</strong> one call to <code>POST https://api.typesafe.ai/v1/systemone</code> answers many typed questions over one JSON state.</li>
-      <li><strong>Choice:</strong> takes up to 255 options, and returns the chosen option, the full probability distribution and a confidence.</li>
-      <li><strong>Parallelism:</strong> questions in one request run in parallel and cannot see each other's answers.</li>
-      <li><strong>Limits:</strong> 64k tokens per request, of which 32k is for the state plus the longest question; 40 requests a second.</li>
-      <li><strong>Price:</strong> $0.042 per million tokens, so cost is negligible beside any lane it routes to.</li>
-      <li><strong>Routing patterns:</strong> intent routing, confidence-gated routing, function calling, speculative fan-out, and skill suggestion over a 182-item catalog. All of them keep hard constraints in code and gate actions on confidence.</li>
-    </ul>
-    <p><strong>The starting design this section must settle.</strong></p>
-    <ul>
-      <li><strong>Candidate set.</strong> Code assembles it: every family and model the flight config declares, minus any that is refused, logged out, held on budget, too small for the node's context, or behind a paused gate. Jev cannot choose an option it is not shown, and §2 measured that a budget reading alone admits a refused model.</li>
-      <li><strong>State.</strong> The node contract (role, specification level, capability requirements, goal, done-when, estimated context); the orchestrator's free-form comment, verbatim; and a lane snapshot per candidate. The snapshot carries availability, window utilisation and burn multiple, reset time, local-lane worker slots, and recent outcomes for that model on similar nodes.</li>
-      <li><strong>Questions, in one request.</strong> A family Choice; a speculative model Choice per family, of which code reads only the chosen family's; and whatever gating Nouls the design needs. Compare this with a single Choice over every (family, model) pair.</li>
-      <li><strong>Confidence and fallback.</strong> Code takes the minimum confidence across the answers it consumes, as in the function-calling cookbook. Thresholds are set by consequence: a metered lane needs more than the local lane. Below threshold, the router falls back to the deterministic default, loudly and on the record.</li>
-      <li><strong>Access (settled by the lead, 2026-10-02).</strong> Jev is reached through the lead's OpenRouter account with the key in <code>OPENROUTER_API_KEY_RECKON</code>, read from reckon's gitignored <code>.env</code> and never logged. OpenRouter's public model list (read 2026-10-02) carries one TypeSafe entry, <code>typesafe/jev-router</code>, priced as variable. Its chat-completions surface is not obviously the typed System One API, so the probe in this section must establish which call returns a typed Choice with its probability distribution, and record a redacted request and response for it. If no call through OpenRouter returns a distribution, the probe says so, and the design uses whatever typed answer the surface gives, with confidence derived and labelled as such.</li>
-    </ul>
-    <p><strong>Done when:</strong> a design note names every question with its type, instructions and criteria; the exact state schema, including the orchestrator-comment field; the candidate filter; the confidence threshold for each consequence; the fallback; the pinned Jev version; and the credential path. In addition, a replay of at least 50 recorded dispatches from the ledger through those questions reports Jev's family and model picks with their confidence, beside the lanes those runs actually used and their outcomes.</p>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Designed and prototyped: one Jev Choice over existing backends via OpenRouter Decisions (<code>typesafe/jev-1.13</code>, ~0.3 s, ~$0.00002), strict Jinja state (593 tokens), code-side candidate filter, fallback to the default backend. Replay of 50 ledger dispatches: 74% agreement, 24% fallback, 0 refused-model picks; latency 19.6 s end-to-end, to be cut in §5. Merges 7bc774ce4, 191b54d7f, 65f1b6b73, a78d94752. <a href="s4">full record</a></p>
+</section>
 
     <h2 id="s5">§5 — Build the typed router</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="8.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="deferred" data-links=""></section>
@@ -109,6 +93,14 @@
     <h2 id="s7">§7 — Pace the codex lane by the window it actually reports</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
 <p>The lead reports (2026-10-02) that the codex subscription has moved from a one-week window to a one-month window, and asks that we never spend the lot in a couple of days. What reckon reads today: at 11:09Z the codex account surface reported one primary window of 10,080 minutes resetting 2026-10-09T10:39Z, at 0% used. The <code>codex-sub</code> group's allowance still reads named <code>five_hour</code> and <code>seven_day</code> clocks, and its last <code>seven_day</code> reading dates from 2026-09-26. So either the surface reckon reads is stale, or the move has not reached this account yet. Either way, pacing must not assume a week.</p><p>The work has three parts. Establish from the provider's own usage surface (the CLI status or the usage endpoint the account read already calls) which windows this account has now, with their lengths and reset times, and record a redacted sample. Make the account read and the group allowance derive every figure from the window length the provider reports, so that a 30-day window allows its elapsed fraction times <code>budget.pace_multiple</code>, and a 7-day window keeps today's behaviour. Then expose the operative window, its burn multiple and its allowance in <code>crew(view="budget")</code>, where the router's state builder reads them.</p><p><strong>Done when:</strong> tests with a 43,200-minute fixture and a 10,080-minute fixture show the allowance scaling with each window's elapsed fraction, so that two days into a 30-day window allows about 7.3% at a pace multiple of 1.1. A test shows that an account with no five-hour window is neither held nor reported as unreadable. A live budget read, recorded in the evidence, names the codex group's operative window length, its utilisation, its burn multiple and its allowance.</p>
+
+    <h2 id="s8">§8 — Picker iteration: return time, latency and honest replay figures</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>The §4 prototype picks in 19.6 s end to end, while the Jev call itself takes 350 ms; the rest is the competence and context checks reloading the ledger once per candidate. Its state does not yet carry return time. Two nodes, split by file so they run in parallel. <code>picker-return-time</code> adds <code>reckon/crew/picker/lane_context.py</code>, which renders per candidate the median and 90th-percentile run time for a job of this size from <code>run_time_profile</code>, the budget reading's source and age (a ledger-only reading past its shelf life is marked stale), and the local lane's load from <code>local_lane_load</code>. It also measures the state bound against a real five-key congestion block. <code>picker-latency</code> shares one ledger read and one budget snapshot across all candidates of a pick, with a target median of 3 s or less per pick. It also corrects the replay summary, whose Jev-latency median counts rows that made no call and whose refused-pick count is zero by construction.</p><p>This work sits in a section of its own because §5's record cannot move from <code>deferred</code> to <code>implementable</code> through any edit path: state writes are refused on disagreement, and text writes cannot touch a structured-state region.</p>
+
+    <h2 id="s9">§9 — Shadow recording and routed dispatch</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>Two nodes, after §8. <code>picker-shadow</code> asks the picker on every dispatch, records its selection on the live run, and records one nullable picker-selection key on every ledger row. No lane changes. It is sequenced after the S25 node adding <code>promoted_by</code> to <code>reckon/ledger.py</code>. <code>picker-routes-dispatch</code> adds an opt-in dispatch mode, in which the picker's selection names the backend and the orchestrator's free-form comment reaches Jev verbatim. Below threshold, or when Jev is unreachable, it falls back to the deterministic default and records why. Both wrap <code>plan_dispatch</code> once, as the reuse map recommends, and pass the choice through <code>resolve_role_override</code>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -134,10 +126,11 @@
     
   <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
-<div class="r-gate" data-id="g-otmp-design-note" data-section="s5" data-gated-sections="s5" data-status="open" data-verdict="">
+<div class="r-gate" data-id="g-otmp-design-note" data-section="s5" data-gated-sections="s5" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">the design note names every Jev question, the state schema with the orchestrator-comment field, the candidate filter, the confidence thresholds, the fallback, the pinned Jev version and the credential path, and its replay of at least 50 recorded dispatches is published</h4>
     <p class="r-gate-required-evidence">one-typesafe-model-picker#s4</p>
-    </div>
+    <a class="r-gate-evidence" href="docs/evidence/fragments/one-typesafe-model-picker/picker-prototype.html names the single route Choice with its instructions and criteria, the state schema with orchestrator_comment, the code-side candidate filter, thresholds 0.6 metered and 0.4 local, the fallback to default_backend, the pinned typesafe/jev-1.13 via OpenRouter Decisions and the credential path OPENROUTER_API_KEY_RECKON; its live replay of 50 ledger dispatches gave 74% agreement, 24% fallback and 0 refused-model picks (merge a78d94752, review 90/100).">Evidence</a>
+</div>
 <div class="r-gate" data-id="g-otmp-router-built" data-section="s6" data-gated-sections="s6" data-status="open" data-verdict="">
     <h4 class="r-gate-measure">the router records a typed selection on live dispatch runs and their ledger rows, so shadow mode can run without changing any lane</h4>
     <p class="r-gate-required-evidence">one-typesafe-model-picker#s5</p>
