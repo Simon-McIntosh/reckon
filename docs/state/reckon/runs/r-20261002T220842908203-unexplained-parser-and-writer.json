@@ -1,0 +1,421 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "2877bbb423d923225583a108f835d6e1bf1e1813",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 7425515,
+      "input_tokens_cumulative": 7425515,
+      "output_tokens": 46060,
+      "output_tokens_cumulative": 46060,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 131,
+    "files": 4,
+    "removed": 3
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 2653,
+        "name": "do_GET",
+        "path": "reckon/serve.py"
+      },
+      "run_function": {
+        "line": 3570,
+        "name": "_handle_post",
+        "path": "reckon/serve.py"
+      },
+      "window_line": 3580
+    },
+    {
+      "existing_function": {
+        "line": 3299,
+        "name": "_read_body",
+        "path": "reckon/serve.py"
+      },
+      "run_function": {
+        "line": 3570,
+        "name": "_handle_post",
+        "path": "reckon/serve.py"
+      },
+      "window_line": 3621
+    },
+    {
+      "existing_function": {
+        "line": 3314,
+        "name": "_handle_plan_write",
+        "path": "reckon/serve.py"
+      },
+      "run_function": {
+        "line": 3570,
+        "name": "_handle_post",
+        "path": "reckon/serve.py"
+      },
+      "window_line": 3654
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "e879b7c234fe33085892d71135ad8aefec3a4422"
+  ],
+  "completed_at": "2026-10-02T22:23:50.736Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-02T22:09:33Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest gate",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_unexplained_parser_and_writer.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T220842908203-unexplained-parser-and-writer/gate.log"
+  },
+  "impl_move": {
+    "at_complete": 0.95,
+    "at_dispatch": 0.95,
+    "plan": "a-worker-reuses-before-it-writes",
+    "reason": "section 2 still has two direct timestamp parsers without a stated reason (obligation_snapshot and run_time_profile, held for other runs' claims) and section 3 still counts three stream enumerations, so neither section closes and impl does not move",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-02T22:58:44.131641+00:00",
+    "horizon_seconds": 3000,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-02T22:08:44Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 18,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 3,
+    "headroom": 13,
+    "mean_context": 106667,
+    "observed_at": "2026-10-02T22:08:26Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-02T22:23:50.736Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T220842908203-unexplained-parser-and-writer/manifest.md",
+  "member": "disposable-r-20261002T220842908203-unexplained-parser-and-writer",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_unexplained_parser_and_writer.py::test_serve_post_interrupted_write_leaves_a_whole_envelope"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_unexplained_parser_and_writer.py::test_serve_post_interrupted_write_leaves_a_whole_envelope"
+    ],
+    "declaration": "make Handler._handle_post write the target file in place (open and write, no temporary and rename); the interrupted-write case must fail and its log is recorded",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T220842908203-unexplained-parser-and-writer/negative_control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T220842908203-unexplained-parser-and-writer/negative_control.log",
+    "test_paths": [
+      "tests/test_unexplained_parser_and_writer.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "unexplained-parser-and-writer",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 470,
+          "cached_input_tokens": 483085,
+          "input_tokens": 483557,
+          "output_tokens": 1237,
+          "reasoning_output_tokens": 280,
+          "total_tokens": 484794,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "6f6c5410-a944-473f-8ca9-1f558a522c59",
+      "session_id": "s25-coord"
+    },
+    "done_when": "Per docs/evidence/fragments/a-worker-reuses-before-it-writes/census-pin-after-migration.html: reckon/crew/quota_weight.py _as_date either routes through the shared parser in reckon/_timestamps.py or carries a code comment stating why a calendar-date read is retained; reckon/serve.py Handler._handle_post writes through reckon._store.write_json_atomically keeping its current fsync behaviour, or carries a comment stating why it cannot. tests/test_unexplained_parser_and_writer.py pins _as_date with a base-recorded behaviour table (a datetime.date, a quoted ISO date string, a datetime string, malformed input) that passes at base and at head, and asserts the serve POST write leaves either the old or the new content when the write is interrupted. Under the declared negative control the interrupted-write case fails, and that log is recorded. A focused pytest gate over that file and the existing serve and quota-weight tests records base and head logs with 0 added failures. The manifest reads status: complete.",
+    "estimated_hours": null,
+    "goal": "Route or justify the direct calendar-date parser and the second atomic JSON writer that the post-migration census found carrying no stated reason.",
+    "id": "unexplained-parser-and-writer",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-02T22:08:44Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 18,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 3,
+      "headroom": 13,
+      "mean_context": 106667,
+      "observed_at": "2026-10-02T22:08:26Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T220842908203-unexplained-parser-and-writer/manifest.md",
+    "negative_control": "make Handler._handle_post write the target file in place (open and write, no temporary and rename); the interrupted-write case must fail and its log is recorded",
+    "plan": "a-worker-reuses-before-it-writes",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "exact",
+    "time_budget": "50m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/quota_weight.py",
+      "reckon/serve.py",
+      "tests/test_unexplained_parser_and_writer.py",
+      "docs/evidence/fragments/a-worker-reuses-before-it-writes/unexplained-parser-and-writer.html",
+      "docs/figures/a-worker-reuses-before-it-writes/unexplained-parser-and-writer"
+    ]
+  },
+  "orientation_input_tokens": 2507954.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "unexplained-parser-and-writer",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-02T22:09:11.418557+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5011.267,
+    "model": null,
+    "offered": [],
+    "probabilities": {}
+  },
+  "plan": "a-worker-reuses-before-it-writes",
+  "plan_impl_at_dispatch": 0.95,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "e879b7c234fe33085892d71135ad8aefec3a4422",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "2877bbb423d923225583a108f835d6e1bf1e1813",
+    "reviewed_head_sha": "e879b7c234fe33085892d71135ad8aefec3a4422",
+    "scores": {
+      "durability": 18,
+      "evidence": 18,
+      "fit": 18,
+      "goal_fidelity": 17,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 90
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20261002T220842908203-unexplained-parser-and-writer",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session": "s25-coord",
+  "session_harness": "claude",
+  "session_id": "68c69aff-7451-4bb8-a077-34300a0cd339",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 7425515,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 846.83,
+    "generated_tokens": 46060,
+    "generation_seconds": 617.183,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 73.3,
+    "machine_seconds": 229.647,
+    "peak_input_tokens": 168639,
+    "tokens_per_second": 74.63,
+    "wall_tokens_per_second": 54.39
+  },
+  "time_budget": "50m",
+  "tool_steps": 62.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 857,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-02T22:23:53Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-02T22:09:38Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261002T220842908203-unexplained-parser-and-writer",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 10990,
+    "worker_pid": 1302000
+  },
+  "worker_seconds": 833,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
