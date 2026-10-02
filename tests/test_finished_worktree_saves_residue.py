@@ -121,15 +121,17 @@ def test_run_owned_residue_lands_in_its_run_directory(
     monkeypatch.setenv("RECKON_HOME", str(home))
     root = repository(tmp_path)
     run_id = "run-saved"
-    tree = home / "crew" / "runs" / run_id / "checkouts" / "candidate"
-    tree.parent.mkdir(parents=True)
-    git(root, "worktree", "add", "-q", "--detach", str(tree), "HEAD")
+    tree = worktree(root, "candidate")
     (tree / "source.py").write_text("staged\n")
     git(tree, "add", "source.py")
     ledger.append_run(
         "test",
         ledger.build_record(
-            run_id=run_id, plan="sample", gate="passed", node="candidate"
+            run_id=run_id,
+            plan="sample",
+            gate="passed",
+            node="candidate",
+            session="session",
         ),
         root=root,
     )
