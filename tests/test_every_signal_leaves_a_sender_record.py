@@ -88,14 +88,17 @@ def test_signal_process_group_writes_a_sender_record_naming_the_reason(
         monkey.undo()
 
     records = live_run.records()
-    assert len(records) == 1
-    record = records[0]
-    assert record["reason"] == "delivered-review-outlived-grace"
-    assert record["target_pid"] == live_run.process.pid
-    assert record["target_pgid"] == live_run.process.pid
-    assert record["sender_pid"] == os.getpid()
-    assert record["sender_argv0"] == sys.argv[0]
-    assert record["time"]
+    assert len(records) == 2
+    attribution, outcome = records
+    assert attribution["reason"] == "delivered-review-outlived-grace"
+    assert attribution["target_pid"] == live_run.process.pid
+    assert attribution["target_pgid"] == live_run.process.pid
+    assert attribution["sender_pid"] == os.getpid()
+    assert attribution["sender_argv0"] == sys.argv[0]
+    assert attribution["time"]
+    assert "outcome" not in attribution
+    assert outcome["outcome"] == "delivered"
+    assert outcome["reason"] == "delivered-review-outlived-grace"
     assert delivered, "the signal home was reached"
 
 
@@ -125,9 +128,39 @@ def test_signal_worker_writes_the_record_before_delivering(
         monkey.undo()
 
     assert result is False
-    record = live_run.records()[0]
-    assert record["reason"] == "dispatch-rollback"
-    assert record["target_pid"] == live_run.process.pid
+    records = live_run.records()
+    assert len(records) == 2
+    attribution, outcome = records
+    assert attribution["reason"] == "dispatch-rollback"
+    assert attribution["target_pid"] == live_run.process.pid
+    assert outcome["outcome"] == "failed"
+    assert outcome["outcome_detail"]
+    assert outcome["reason"] == "dispatch-rollback"
+
+
+def test_a_refused_signal_records_its_refusal(live_run: _LiveRun) -> None:
+    """A guard that refuses the signal leaves a record stating the refusal.
+
+    The identity guard raises before the signal home is reached, so the
+    attribution record a caller writes ahead of the call would name a SIGTERM
+    that never went out. The refusal record says so instead, and no record
+    claims the signal was delivered.
+    """
+    with pytest.raises(routing.CrewError):
+        routing._signal_process_group(
+            live_run.process.pid,
+            "not-the-recorded-start-time",
+            reason="delivered-review-outlived-grace",
+            run_dir=live_run.run_dir,
+        )
+
+    records = live_run.records()
+    refused = [record for record in records if record.get("outcome") == "refused"]
+    assert len(refused) == 1
+    assert refused[0]["target_pid"] == live_run.process.pid
+    assert refused[0]["reason"] == "delivered-review-outlived-grace"
+    assert "identity changed" in refused[0]["outcome_detail"]
+    assert not [record for record in records if record.get("outcome") == "delivered"]
 
 
 def test_no_run_directory_leaves_no_record(live_run: _LiveRun) -> None:
