@@ -23,9 +23,9 @@
   <title>Work Is A Section, Not A Followup | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 </head>
 <body>
   <main class="plan-doc">
@@ -109,7 +109,7 @@
     </p>
 
     <h2 id="s3">§3 — The write path refuses a new followup that hides work</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       Appending a followup through <code>edit_plan</code>, or through the HTTP patch path, is
       refused when §2's predicate says the new followup hides work. The refusal names the reason
@@ -167,6 +167,10 @@
       fifteen are converted at once, before §2 lands, because they are known now.
     </p>
 
+    <h2 id="s6">§6 — The HTTP landing patch&#x27;s refusal has a test</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>§3 wired the refusal into <code>validate_landing_patch</code>, and no test passes a followups key through it. Dropping that call, or misreading the ids it stores, would leave the suite green.</p><p><strong>Done when</strong> a test sends a landing patch carrying a followup that hides work and asserts it is refused with the reason word, and the same patch with a pointer followup is accepted. The negative control removes the call from <code>validate_landing_patch</code>, and the refused case must then be accepted.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="scope" data-choice="all-three" data-by="lead" data-when="2026-10-01">
@@ -206,6 +210,9 @@
 <div class="r-comment" data-section="_top" data-id="c-wisnaf-s3-authority-steps-are-decisions" data-who="" data-when="">
     <div class="r-comment-body"><p>From nova's S21 coordinator, 2026-10-02. A followup's prompt must be a /reckon-build line, so an authority-required next step, such as a dissent adjudication or a lead decision, cannot recommend /reckon-edit. On this plan's model that step is a decision, not a followup. An open decision is an element the roadmap reads: it reports it in <code>decision_blockers</code> and holds the sections it names. A followup recommending /reckon-edit would be invisible in the same way work is. §2's predicate therefore rightly calls such a followup hiding work. §3's refusal names two remedies: add the work as a section, or record the authority step as an open decision (<code>{"op":"append","target":"decisions","key":…}</code>, scoped to its sections). If the running §3 node lands without the decision remedy, it is added at merge.</p></div>
 </div>
+<div class="r-comment" data-section="_top" data-id="c-wisnaf-s3-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>§3 landed. a-followup-that-hides-work-is-refused was merged at 700321a7c and promoted. Appending an open followup that hides work is refused on edit_plan's append op, the append tool and the HTTP landing-patch validator, through one refusal built on <code>classify_followup</code>. The refusal names both remedies: add the work as a section, or record an authority step as an open decision. Measured first: the refusal rested on 5 fixtures, three append tests in tests/test_edit_plan.py and two continuation-chain tests in tests/test_continuation.py. Each was repaired to keep its subject. The continuation fixtures now name an implementable section. The gate passed 436 tests and the review scored 89. The S21 and nova coordinators were told the rule is live.</p><p>The review's follow-on is §6 of this plan: no test passes a followups key through <code>validate_landing_patch</code>, so the HTTP path's refusal is unverified.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261001T194951171857-a-followup-that-hides-work-is-found" data-who="reckon-build" data-when="2026-10-01T21:51:26.927Z">
     <div class="r-comment-body"><p>section 2 landed in 0545d84952bc6a3680d3c922d001a75b6e9951fe; 68 of 115 real open followups hide work, beside section 1 record of 102 of 129</p></div>
 </div>
@@ -213,7 +220,7 @@
     <div class="r-comment-body"><p>independent review of run r-20261001T194951171857-a-followup-that-hides-work-is-found stored as a parsed record at both fence paths - five dimensions scored 0..20 (goal_fidelity 18, evidence 15, scope_discipline 18, durability 17, fit 18; total 86), reviewed revision pair 73a6cdc48..7fecea42, added_failure_count 0 and added_failure_ids [] derived through the store's own annotate reader from the reviewed run's own baseline_suite and after_suite logs, one follow-on finding (the real-tree disagreement arm's reconstruction is not retained, so its single-row disagreement list cannot be re-derived); no blocking finding, the change is fit to promote.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261002T053311899319-a-followup-that-hides-work-is-refused" data-who="reckon-build" data-when="2026-10-02T07:11:06.792Z">
-    <div class="r-comment-body"><p>appending an open followup whose invocation hides work is refused on edit_plan&#x27;s append op, the append tool and the HTTP patch validator through one refusal built on classify_followup; measured at base it refused 5 appending tests, each repaired to keep its subject, and the head arm passes with no failure id beyond the base&#x27;s</p></div>
+    <div class="r-comment-body"><p>appending an open followup whose invocation hides work is refused on edit_plan's append op, the append tool and the HTTP patch validator through one refusal built on classify_followup; measured at base it refused 5 appending tests, each repaired to keep its subject, and the head arm passes with no failure id beyond the base's</p></div>
 </div>
 </section>
 </main>
