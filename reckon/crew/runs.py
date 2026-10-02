@@ -1113,9 +1113,7 @@ def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, A
     try:
         original = manifest.read_text(encoding="utf-8")
     except OSError as exc:
-        raise CrewError(
-            f"the manifest at {manifest} could not be read: {exc}"
-        ) from exc
+        raise CrewError(f"the manifest at {manifest} could not be read: {exc}") from exc
     rewritten, previous = _status_line_replaced(original, verdict)
     if rewritten is None:
         raise CrewError(
