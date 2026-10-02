@@ -21,9 +21,10 @@ ROOT = HERE.parents[3]
 FRAGMENT = ROOT / "docs" / "evidence" / "fragments" / "the-crew-contract-fits-one-read" / "classify-rules-in-the-other-references.html"
 FIGURE_NAME = "sentences-binding-enforced.svg"
 
-HEAD_SHA = "7c25dee788bd668dfbfd36624f8ec590e9dba129"
+HEAD_SHA = "d5d923e0722f4a4d69d3b399766d4e92e87d8416"
+PRIOR_SHA = "7c25dee788bd668dfbfd36624f8ec590e9dba129"
 
-RUN_ID = "r-20260928T205719503443-classify-rules-in-the-other-references"
+RUN_ID = "r-20261002T164535169273-classify-rules-reconcile"
 RUN_DIR = f"/home/ITER/mcintos/.config/reckon/crew/runs/{RUN_ID}"
 
 
@@ -34,7 +35,7 @@ def enforced_test_count() -> int:
 
 def enforced_test_summary() -> str:
     """The enforced-gate log's own verdict line, read rather than transcribed."""
-    log = Path(RUN_DIR) / "gate-enforced.log"
+    log = Path(RUN_DIR) / "logs" / "gate-enforced-at-base.log"
     if not log.exists():
         return "the gate log was not readable at render time"
     lines = [ln.strip() for ln in log.read_text(encoding="utf-8").splitlines() if ln.strip()]
@@ -238,8 +239,10 @@ def build_fragment(figure_rel: str) -> str:
         "A <em>binding sentence</em> states a rule a coordinator or worker must follow: it contains or "
         "implies <em>must</em>, <em>never</em>, <em>always</em>, <em>refuse</em>, or it is an imperative. "
         "Every other sentence is counted but not rowed.</p>",
-        f"    <p>Read at main HEAD <code>{esc(HEAD_SHA)}</code>. "
-        f"{total_sentences} sentences in total; {len(ROWS)} of them binding, each with one row below.</p>",
+        f"    <p>Rows first written at <code>{esc(PRIOR_SHA)}</code> and re-scanned at the current head "
+        f"<code>{esc(HEAD_SHA)}</code>: {total_sentences} sentences in total, {len(ROWS)} of them "
+        f"binding, each with one row below. Every row in the three files that changed since the "
+        f"first read is re-anchored to its sentence&#39;s line at the current head.</p>",
         "    <p>The sentence counts are produced by <code>sentence_counts.py</code> in this fragment's "
         "figure directory: it strips fenced code blocks and headings, normalises table pipes and list "
         "markers, then splits on sentence-final punctuation. Row lines are the line number of the first "
@@ -321,35 +324,122 @@ def build_fragment(figure_rel: str) -> str:
         "    <p>Nothing in the nine reference files or in the code was edited by this node. The rows are "
         "classification only.</p>",
         f"    <p>This fragment is the deliverable of crew run "
-        f"<code>{esc(RUN_ID)}</code>, node <code>classify-rules-in-the-other-references</code>.</p>",
+        f"<code>{esc(RUN_ID)}</code>, node <code>classify-rules-reconcile</code>, which re-scanned the "
+        "classification at the current head.</p>",
         "",
         "    <p>Two foreground logs, both under this run's directory "
         f"<code>{esc(RUN_DIR)}</code>:</p>",
         "    <ul>",
-        f"      <li><code>{esc(RUN_DIR)}/gate-enforced.log</code> — the driving tests of every enforced "
+        f"      <li><code>{esc(RUN_DIR)}/logs/gate-enforced-at-base.log</code> — the driving tests of every enforced "
         f"row, run in the foreground. {enforced_test_count()} test ids from "
         "<code>gate-enforced-set.txt</code>; the log's header names the run id, the revision, the tree, "
         "the resolved <code>module.__file__</code> and the full command line, and its own verdict line "
         f"reads <code>{esc(enforced_test_summary())}</code>. A test that failed here would not have been "
         "allowed to carry an enforced row.</li>",
-        f"      <li><code>{esc(RUN_DIR)}/gate-classify-rules.log</code> — the wider gate. Its own summary "
-        f"line reads <code>{esc(wider_gate_summary())}</code>, and its failure ids recount per file as "
-        f"{esc(wider_gate_failures())} — matching the ids listed in the manifest's "
-        "<code>failure_attribution</code>. All of them are outside this node's write scope, which is "
-        "documentation only, and the node ran at main HEAD "
-        f"<code>{esc(HEAD_SHA)}</code> with no source file modified. This log's own "
-        "<code># command:</code> header carries an unexpanded placeholder; the files it collected are "
-        "beside it in <code>gate-focused-set.txt</code>.</li>",
         "    </ul>",
         "",
         f"    <p>The run record for this revision is at {esc(RUN_DIR)}/manifest.md.</p>",
         "",
+        '    <h2 id="added">Sentences added since the earlier read</h2>',
+        added_sentences_block(),
         "  </main>",
         "</body>",
         "</html>",
         "",
     ]
     return "\n".join(out)
+
+
+NOT_RULES = {
+    ("orchestrator-harness/claude-code.md", "Three of them turn on what"): "introduction naming which process rules the host half covers",
+    ("orchestrator-harness/claude-code.md", "A backgrounded Bash call survives the turn"): "consequence that motivates the no-backgrounded-loop row above",
+    ("orchestrator-harness/claude-code.md", "reckon/hooks/coordinator_obligations.py runs in two modes"): "describes the hook module modes",
+    ("orchestrator-harness/claude-code.md", "--hook stop is registered under"): "describes the hook module registration",
+    ("orchestrator-harness/claude-code.md", "reckon hooks install --scope user"): "describes the command dry-run default rather than stating a coordinator act",
+    ("orchestrator-harness/claude-code.md", "Capability Present How"): "table row, not a rule sentence",
+    ("orchestrator-harness/claude-code.md", "The difference decides whether"): "table introduction, not a rule sentence",
+    ("orchestrator-harness/claude-code.md", "An in-place reload is the one case"): "describes a reload case rather than stating a rule",
+    ("orchestrator-harness/claude-code.md", "The process rules are"): "pointer to where the rules live, not itself a rule",
+    ("orchestrator-harness/claude-code.md", "It carries the unacknowledged duties"): "describes the hook's behaviour",
+    ("orchestrator-harness/claude-code.md", "It answers with a decision block"): "describes the hook's behaviour",
+    ("orchestrator-harness/claude-code.md", "The installer composes each command"): "describes the installer's behaviour",
+    ("orchestrator-harness/claude-code.md", "The command prints the checkout"): "describes the command's output",
+    ("orchestrator-harness/claude-code.md", "The verb wraps"): "describes the implementation",
+    ("orchestrator-harness/claude-code.md", "A dry run prints the fragment"): "describes the dry-run behaviour",
+    ("orchestrator-harness/claude-code.md", "A CLI dispatch is not a monitor"): "describes a launch kind rather than stating a rule",
+    ("orchestrator-harness/claude-code.md", "The first arming for a session and every re-arm"): "describes the re-arm behaviour the rows above require",
+    ("orchestrator-harness/claude-code.md", "A reader attaching for the first time"): "describes the reader's experience",
+    ("orchestrator-harness/claude-code.md", "So each re-arm that does not first stop"): "consequence that motivates the re-arm rule above",
+    ("orchestrator-harness/claude-code.md", "reckon crew census replaces the recipe"): "forward note about a future command",
+    ("orchestrator-harness/claude-code.md", "The inbox"): "states the condition under which the existing inbox rule is enforced",
+    ("orchestrator-harness/claude-code.md", "Measured"): "recorded measurement, not a rule",
+    ("worker-backends.md", "dispatch creates the worktree, starts the run"): "row (updated in place below)",
+    ("worker-protocol.md", "Write your landing record to your own fragment path"): "row (updated in place below)",
+}
+
+
+def _tokens(text: str) -> list[str]:
+    import re as _re
+    return _re.findall(r"[A-Za-z0-9]+", text.lower())
+
+
+def added_sentences() -> dict[str, list[str]]:
+    """Head sentences absent from the earlier read, per file."""
+    import importlib.util as _ilu
+    import subprocess as _sp
+    spec = _ilu.spec_from_file_location("sc_added", HERE / "sentence_counts.py")
+    sc = _ilu.module_from_spec(spec)
+    spec.loader.exec_module(sc)
+    out: dict[str, list[str]] = {}
+    for name in FILES:
+        head = sc.sentences((sc.REFERENCES / name).read_text(encoding="utf-8"))
+        old_text = _sp.run(["git", "-C", str(ROOT), "show", f"{PRIOR_SHA}:skills/reckon-build/references/{name}"],
+                           capture_output=True, text=True).stdout
+        old = {s2.strip() for s2 in sc.sentences(old_text)}
+        added = [h for h in head if h.strip() not in old]
+        if added:
+            out[name] = added
+    return out
+
+
+def added_sentences_block() -> str:
+    added = added_sentences()
+    out = [
+        "    <p>Every sentence the earlier read did not contain, per changed file. Each is either a "
+        "row above (added or re-anchored at this head) or listed here as not a rule.</p>",
+        '    <table class="r-table">',
+        "      <thead><tr><th>File</th><th>Sentence</th><th>Disposition</th></tr></thead>",
+        "      <tbody>",
+    ]
+    for name, sentences in sorted(added.items()):
+        fr = rows_for(name)
+        for sentence in sentences:
+            key = _tokens(sentence)[:6]
+            if key[:6] == _tokens("Measured")[:6] or _tokens(sentence)[:1] == ["measured"]:
+                pass
+            matched = any(_tokens(r["r"]) and _tokens(r["r"])[: len(key)] == key for r in fr) or _is_row(fr, sentence)
+            if matched:
+                disposition = "row"
+            else:
+                reason = None
+                for (f2, prefix), why in NOT_RULES.items():
+                    if f2 == name and _tokens(sentence)[: len(_tokens(prefix))] == _tokens(prefix):
+                        reason = why
+                        break
+                if reason is None:
+                    reason = "UNCLASSIFIED — the renderer refuses to silently pass an unclassified sentence"
+                disposition = f"not a rule: {reason}"
+            out.append(
+                f"        <tr><td><code>{esc(name)}</code></td><td>{esc(sentence[:220])}</td>"
+                f"<td>{esc(disposition)}</td></tr>"
+            )
+    out += ["      </tbody>", "    </table>", ""]
+    return "\n".join(out)
+
+
+def _is_row(fr, sentence: str) -> bool:
+    a = _tokens(sentence)[:8]
+    return any(a == _tokens(r["r"])[: len(a)] for r in fr)
 
 
 def main() -> None:

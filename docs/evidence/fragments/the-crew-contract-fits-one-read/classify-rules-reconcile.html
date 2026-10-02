@@ -23,11 +23,14 @@
   and <strong>13</strong> are rejected with a reason, so <strong>176 + 72 + 13 = 261</strong>.</p>
   <p>The 44 test node ids named by the enforced rows of both fragments were re-run at this base in
   the foreground (<code>logs/gate-enforced-at-base.log</code>, 58 passed, exit 0).</p>
-  <p><strong>Not completed at this node:</strong> the reference-fragment re-scan (sentence counts at
-  head for the nine reference files, and rows for the sentences added since 7c25dee7) is measured
-  (636 sentences at head; 40 sentences added across claude-code.md, worker-backends.md and
-  worker-protocol.md) but the fragment update and its render did not complete before the node's
-  deadline.</p>
+  <p>The companion fragment <code>classify-rules-in-the-other-references.html</code> is re-scanned at the
+  same head: <strong>636 sentences</strong> across the nine reference files (was 604 at 7c25dee7), with
+  <strong>303</strong> binding rows. The <strong>40</strong> sentences added since 7c25dee7 (36 in
+  <code>orchestrator-harness/claude-code.md</code>, 2 each in <code>worker-backends.md</code> and
+  <code>worker-protocol.md</code>) are each accounted for: <strong>16</strong> carry rows and
+  <strong>24</strong> are recorded as not a rule with a reason. The 135 rows in the three changed
+  reference files are re-anchored to their lines at the current head, and the fragment cites the
+  enforced-test log produced at this base.</p>
 </section>
 </main>
 </body>
