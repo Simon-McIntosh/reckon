@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:section-contract-and-computed-impl">
+  <meta name="plan-verifies" content="reckon:section-contract-and-computed-impl#s10">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-02">
+  <meta name="evidence-commit" content="6e5371720f5b6e2e12b3b0037e85c43aa699d8fd">
+  <title>A section id on its wrapping element resolves | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="section-id-on-its-wrapper-resolves">
+  <h2>§10 — collapse_section finds a section whose id sits on its wrapper</h2>
+
+  <p><strong>The defect, reproduced at base <code>ca630c06e894</code>.</strong>
+  With a plan whose sections are
+  <code>&lt;section id="w1"&gt;&lt;h2&gt;…&lt;/h2&gt;…&lt;/section&gt;</code> —
+  the shape <code>a-review-dies-where-nobody-is-looking</code> uses —
+  <code>collapse_section</code> refused with
+  <code>collapse_section: no section with id 'w1' in the plan</code> and
+  <code>read_plan(view='section')</code> answered
+  <code>Section 'w1' was not found … available sections: h1</code>. Both
+  surfaces looked only for an <code>h2</code> id.</p>
+
+  <p><strong>The change, at head <code>6e5371720f5b</code>.</strong> In
+  <code>reckon/_store.py</code>, <code>_section_heading</code> falls back to a new
+  <code>_wrapper_section_heading</code>: a <code>&lt;section id=…&gt;</code> whose
+  <code>data-reckon</code> is absent or <code>section</code> and whose heading has
+  no id of its own; the collapse replaces that wrapper with the landed card and
+  carries the id onto the heading the card keeps, so the identity survives the
+  write and a repeat collapse refreshes the card in place. In
+  <code>reckon/mcp_views.py</code>, <code>_authored_section_headings</code>
+  lists those wrapper identities in document order and the section read selects
+  the wrapper's heading, bounded by the wrapper so no neighbouring section's
+  prose leaks in. Structured-state regions (decisions, followups, comments)
+  are not addresses and are excluded.</p>
+
+  <table class="outcomes">
+    <thead><tr><th>Check</th><th>Base <code>ca630c06e894</code></th><th>Head <code>6e5371720f5b</code></th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>tests/test_section_id_on_its_wrapper_resolves.py</code> plus the
+        eight gate files that reach the change (xdist <code>-n 8 --timeout=300</code>)</td>
+        <td>9 failed, 127 passed, <code>EXIT=1</code> — every wrapper case</td>
+        <td>136 passed, 0 failed, <code>EXIT=0</code></td>
+      </tr>
+      <tr>
+        <td>Negative control: h2-only lookup restored in <code>_section_heading</code></td>
+        <td colspan="2">6 failed, 5 passed, <code>EXIT=1</code> — the wrapper
+        collapse cases refused with <code>no section with id …</code> and no
+        head-arm failure id</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>The instrument sees what is known present.</strong> Reading
+  <code>a-review-dies-where-nobody-is-looking</code> (the plan that reported
+  <code>available sections: none</code> on 2026-10-01) now answers
+  <code>available sections: s1, s2, s3, s4, s5, s6, s7, s8, s9, s10</code> and
+  resolves <code>s2</code> to its heading and body. Lint and format over the
+  changed paths report nothing the base did not. Gate logs:
+  <code>logs/base-arm.log</code>, <code>logs/head-arm.log</code>,
+  <code>logs/negative-control.log</code> under the run directory.</p>
+</section>
+</main>
+</body>
+</html>
