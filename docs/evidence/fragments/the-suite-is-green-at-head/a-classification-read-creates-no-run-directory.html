@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s2">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-tags" content="crew,classification,memo,discard">
+  <title>A classification read creates no run directory | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-classification-read-creates-no-run-directory" data-reckon="landed" data-when="2026-10-02">
+  <h2>A classification read creates no run directory</h2>
+  <p><strong>Cause.</strong> The classification memo was moved into each run's own
+  directory and named there <code>classification.json</code>. <code>classify_pointer</code>
+  writes that memo through <code>_write_classification_memo</code>, and the writer created
+  its parent directory unconditionally (<code>path.parent.mkdir(parents=True,
+  exist_ok=True)</code>). Classifying a pointer is documented as a pure read, but it had
+  acquired three effects on disk: a run directory that did not exist was made, an empty
+  one was filled with the memo, and either way the run appeared to have a durable home it
+  never had.</p>
+  <p><strong>Decision, per id.</strong> Both named ids are red because the shipped change
+  is wrong, not because their fixtures are stale — neither test was modified.</p>
+  <ul>
+    <li><code>tests/test_a_discard_never_reads_promoted.py::test_a_discarded_block_never_reads_promoted</code>
+    — the pointer has no run directory. Classification created one, so
+    <code>crew.discard</code> found a directory and wrote its <code>discard.json</code>
+    marker into it, and the departure folded as <em>discarded</em> instead of the
+    <em>withdrawn</em> a pointer that only vanished earns.</li>
+    <li><code>tests/test_crew_discard_reads_discarded.py::test_a_discard_leaves_no_record_when_its_run_directory_is_gone</code>
+    — the fixture makes an empty run directory, classifies (the memo filled it), then
+    <code>rmdir</code>s it. The <code>rmdir</code> found it non-empty.</li>
+  </ul>
+  <p><strong>Fix.</strong> <code>_write_classification_memo</code> now writes only into a
+  run directory that already holds the run's records: if the directory is absent or empty
+  it returns without writing. A read therefore creates or fills no run's home, while a run
+  with records in its directory still keeps its memo. An empty directory has nothing for
+  the memo — the cache of the run's own records — to cache.</p>
+  <p><strong>New case.</strong>
+  <code>tests/test_a_classification_read_creates_no_run_directory.py</code> holds the rule
+  from three sides: a pointer with no run directory is classified and left with none; an
+  existing empty directory is left empty; and the positive control — a directory holding a
+  run record still receives the memo — shows the guard skips an empty home rather than
+  disabling the memo for every run.</p>
+  <p><strong>Measure.</strong> Logs are under the run directory's <code>logs/</code>.
+  Base arm (HEAD <code>53f2c080f</code>, change absent) over the two named files plus
+  <code>tests/test_pointer_classification_is_memoised.py</code> and
+  <code>tests/test_a_live_run_never_reads_dead.py</code>:
+  <code>3 failed, 29 passed</code> — both named ids plus
+  <code>test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word</code>, which fails
+  at base and head alike and is outside this node's scope. Head arm (change present) over
+  the same files plus the new case: <code>1 failed, 34 passed</code> — the same
+  pre-existing departure-word failure; both named ids now pass, and no other id moved from
+  pass to fail. Negative control, the memo written whether or not the run directory exists:
+  <code>4 failed, 1 passed</code>, the new case, both named ids and the empty-home case red.</p>
+</article>
+</body>
+</html>

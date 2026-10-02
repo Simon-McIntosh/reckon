@@ -5662,9 +5662,16 @@ def _read_classification_memo(record: Mapping[str, Any]) -> dict[str, Any]:
 def _write_classification_memo(
     record: Mapping[str, Any], memo: Mapping[str, Any]
 ) -> None:
-    """Persist a memo beside the pointer, atomically and best-effort.
+    """Persist one run's memo in its directory, atomically and best-effort.
 
-    Every reader of the live fleet shares this directory, so the write lands
+    The memo is a cache written by a read, so it never brings a run's home into
+    being: a directory that is absent or empty is not yet the run's home, and a
+    memo written into it would make it one — leaving a run directory behind a
+    pointer that never had any, which a discard then finds a marker's place in,
+    reading a deliberate discard for a pointer that only ever vanished. A
+    directory that already holds the run's records is left to keep its memo.
+
+    Every reader of the live fleet shares these files, so the write lands
     through a rename: a reader either sees the previous memo or this one, never
     half of either. A memo that cannot be written is not an error — it costs
     the next reader a recomputation, which is the state the fleet was in before
@@ -5673,11 +5680,12 @@ def _write_classification_memo(
     path = _classification_memo_path(record)
     if path is None:
         return
+    if not path.parent.is_dir() or not any(path.parent.iterdir()):
+        return
     payload = dict(memo)
     payload["version"] = CLASSIFICATION_MEMO_VERSION
     written: str | None = None
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(
             "w",
             encoding="utf-8",
