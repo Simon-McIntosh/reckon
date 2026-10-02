@@ -20,7 +20,7 @@
   <h2>A classification read creates no run directory</h2>
   <p><strong>Cause.</strong> The classification memo was moved into each run's own
   directory and named there <code>classification.json</code>. <code>classify_pointer</code>
-  writes that memo at <code>reckon/crew/recovery.py:7069</code>, and the writer created
+  writes that memo through <code>_write_classification_memo</code>, and the writer created
   its parent directory unconditionally (<code>path.parent.mkdir(parents=True,
   exist_ok=True)</code>). Classifying a pointer is documented as a pure read, but it had
   acquired three effects on disk: a run directory that did not exist was made, an empty
