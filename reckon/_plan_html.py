@@ -1219,20 +1219,27 @@ def _splice_section(html_text: str, reckon_id: str, rendered: str) -> str:
 
 
 def _impl_is_carried_by_records(state: dict, html_text: str) -> bool:
-    """Whether this plan carries its impl as section records around this write.
+    """Whether this plan's records answer for its impl around this write.
 
-    A state naming records carries it after the write, because the state is what
-    the writer regenerates record elements from. A document holding record
-    elements carries it before the write, and the state's ``impl`` is then the
-    figure those records derived: storing it would author a number the records
-    produced, and a document whose records are being removed would change beyond
-    its record spans. Only a plan record-less on both sides stores its impl as
-    meta, and that is settled by the parser's own selector — a text match would
-    also fire on prose that quotes the record syntax, and a plan documenting the
-    contract would then lose an authored write it must keep.
+    Records carry the figure exactly when the coverage rule answers: a plan
+    whose records cover every declared non-deferred section holds its impl
+    there, and one whose records are partial keeps its authored figure, so the
+    meta write must proceed for it. A state naming no record leaves the
+    question to the document, where the parser's own selector settles it — a
+    text match would also fire on prose that quotes the record syntax, and a
+    plan documenting the contract would then lose an authored write it must
+    keep, and a plan whose records are being removed stays byte-stable beyond
+    the record spans, its state's figure being the one those records derived.
     """
-    if state.get("sections"):
+    if (
+        derive_impl_from_sections(
+            state.get("sections"), state.get("section_declarations")
+        )
+        is not None
+    ):
         return True
+    if state.get("sections"):
+        return False
     return bool(_section_record_elements(BeautifulSoup(html_text or "", "html.parser")))
 
 
