@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="67">
+<meta name="plan-version" content="68">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -163,6 +163,9 @@
 <div class="r-comment" data-section="s2" data-id="c-otmp-s2-reserve-refusal" data-who="s25-picker" data-when="2026-10-02T11:17:00Z">
     <div class="r-comment-body"><p><strong>Measured: the bookend reserve refuses non-review codex dispatch on this account.</strong> At 11:16Z, dispatching <code>picker-reuse-map</code> (role documentation, backend codex) was refused before any worktree existed: "the window's utilisation could not be read (the 'codex' lane's five-hour clock reports state 'unknown'), and an unreadable window is not an empty one: the documentation role's dispatch is refused against the 20% the window keeps for review and verify roles". At the same moment the account surface read the primary window at 0% used, with a 10,080-minute period resetting 2026-10-09T10:39Z. <code>_refuse_against_the_bookend_reserve</code> in <code>reckon/crew/dispatch.py</code> reads only the <code>five_hour</code> clock, so on an account without one, every non-bookend role is refused. The wave-1 codex dispatches therefore carry <code>--set backends.codex.budget_group=null</code>, recorded on each run, which skips the group reserve; per-backend budget checks still apply. §7's <code>codex-window-pacing</code> node owns the fix: the reserve reads the window the provider reports.</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261002T202451106868-reserve-without-five-hour-window" data-who="reckon-build" data-when="2026-10-02T21:00:13.656Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/one-typesafe-model-picker/reserve-without-five-hour-window.html closes §2 — codex-spark retired with resolving shas (dotfiles 839091357d0d15630889c085c283a90b6fb53c3b, reckon merge d7e1a0fe2ebafac65ae68a4421355a06f255c81b); pre-merge refusal at 11:16Z quoted; post-merge dry run of the same codex documentation dispatch (main checkout reckon, adf905314 ancestor) exits 0 with ok:true; recommendation: on a five-hour-less account the reserve reads the provider-reported primary window (10,080 min) as the operative window.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261002T111727761881-picker-reuse-map" data-who="reckon-build" data-when="2026-10-02T11:28:37Z">
     <div class="r-comment-body"><p>Mapped 28 base-revision functions/classes and 2,060 recent ledger rows; the existing gates are reusable through one candidate-snapshot wrapper, with one picker call and one persisted typed selection block still to add.</p></div>
 </div>
@@ -269,7 +272,7 @@
     <div class="r-comment-body"><p>review of lane-slot-gate-reads-a-flag at base e6cfdeea0 head da0984529 — stored the parsed five-dimension record (goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20, total 99; item_aggregate 6, no findings, added_failure_count 0) after independently reproducing the head gate (24 passed EXIT=0), the base arm (2 failed EXIT=1) and the declared negative control (2 failed EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261002T210132480048-review-of-picker-inputs-never-block-dispatch" data-who="reckon-build" data-when="2026-10-02T21:12:38.002Z">
-    <div class="r-comment-body"><p>reviewed run a80dc97c against base 3e32e09ae; the guard is correct — each dispatch-scope picker input is built behind _picker_input, a failure is recorded under the input&#x27;s own name, and dispatch_picker_selection returns a named fallback instead of raising; scores 98/100, added_failure_count 0, no findings.</p></div>
+    <div class="r-comment-body"><p>reviewed run a80dc97c against base 3e32e09ae; the guard is correct — each dispatch-scope picker input is built behind _picker_input, a failure is recorded under the input's own name, and dispatch_picker_selection returns a named fallback instead of raising; scores 98/100, added_failure_count 0, no findings.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T175108967088-picker-judges-pressure" data-who="reckon-build" data-when="2026-10-02T18:13:37Z">
     <div class="r-comment-body"><p>Jev now judges lane pressure with route/hold and unthresholded confidence: burn 3.4x and zero slots stay offered; live size-matched return time is p50 250s/p90 400s; representative state 1165/1500 estimated tokens; assigned gate base 2 failed/109 passed, head 2 failed/124 passed, zero added failure ids; restored burn exclusion fails the pressure test. Evidence: docs/evidence/fragments/one-typesafe-model-picker/picker-judges-pressure.html#picker-judges-pressure.</p></div>
