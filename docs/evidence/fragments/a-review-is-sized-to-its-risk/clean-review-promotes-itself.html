@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en-locale">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-is-sized-to-its-risk">
+  <meta name="plan-title" content="A Review Is Sized To Its Risk — clean review promotes itself">
+  <meta name="plan-summary" content="A clean stored review now promotes the run it read, with no coordinator command, once the run's recorded gate passed and the gate still passes at the merged head.">
+  <meta name="plan-evidence-for" content="a-review-is-sized-to-its-risk">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Review Is Sized To Its Risk — clean review promotes itself | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A clean review promotes itself</h1>
+  <p>The reflex sweep gained an accepting branch beside the promotion refusal that
+    stops a run landing without a review: a promotable run whose stored review
+    reaches the acceptance floor with no finding has its recorded gate confirmed
+    and re-run at the merged head, and on both passing is promoted with
+    <code>promoted_by: review-acceptance</code> on the ledger row. Acceptance
+    never merges: it requires every commit the manifest names to be an ancestor
+    of the branch the checkout carries, and an unmerged run stands down naming
+    the commits it found off the branch.</p>
+
+  <h2>Gate</h2>
+  <p>Four named tests in <code>tests/test_review_acceptance_promotes.py</code>, run
+    in a synthesised repository: a clean run promotes from the sweep with no
+    coordinator command; a review carrying one finding does not promote; a gate
+    failing at the merged head does not promote; and a run whose commit is not on
+    the branch is not promoted. <code>ledger.py</code> declares
+    <code>promoted_by</code> in <code>RECORD_FIELDS</code> and emits it on every row
+    (null when absent).</p>
+
+  <h2>Evidence</h2>
+  <ul>
+    <li>Head arm and negative-control logs: under this run's directory.</li>
+  </ul>
+ </main>
+</body>
+</html>
