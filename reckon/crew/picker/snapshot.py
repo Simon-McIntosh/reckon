@@ -70,6 +70,67 @@ def _lane(backend: dict[str, Any], session: str) -> tuple[Any, Any, dict[str, An
     return slots, congestion, allowance
 
 
+# A serving verdict read from a lane's own endpoints document, translated into
+# the picker's availability vocabulary. A lane the document shows down cannot
+# serve, so its verdict is a hard exclusion; a verdict the reader cannot
+# establish is unknown, never a claim the lane is down.
+_SERVING_AVAILABILITY = {
+    "serving": "served",
+    "not-serving": "unavailable",
+    "mismatch": "unavailable",
+}
+
+
+def _serving_observation(backend: dict[str, Any]) -> dict[str, Any] | None:
+    """A backend's availability read from the document it publishes.
+
+    Only a backend declaring an ``endpoints_document`` answers here. The
+    verdict is read with the same reader ``reckon flight`` reports its serving
+    column with, so a lane declared serving to that surface is served here.
+    The document is a local file and is never read over the network.
+    """
+    if not backend.get("endpoints_document"):
+        return None
+    from reckon import flight
+
+    reading = flight._probe_serving(backend)
+    verdict = str(reading.get("serving") or "unknown")
+    return {
+        "status": _SERVING_AVAILABILITY.get(verdict, "unknown"),
+        "detail": str(reading.get("serving_detail") or ""),
+    }
+
+
+def _cached_observation(
+    project: str,
+    backend_name: str,
+    config: dict[str, Any],
+    *,
+    now: datetime,
+) -> dict[str, Any] | None:
+    """A cached serving observation still within its declared shelf life.
+
+    An absent cache, and one whose age cannot be established or has passed the
+    declared shelf life, return None. None of those is evidence a lane cannot
+    serve, only that nothing has observed it recently — the caller reads that
+    absence as unknown rather than as a refusal.
+    """
+    observation = resumption._read_lane_probe_cache(project, backend_name)
+    if not observation:
+        return None
+    observed = resumption._parse_stamp(observation.get("observed_at"))
+    if observed is None:
+        return None
+    shelf_minutes = float(
+        budget.policy(config).get(
+            "evidence_shelf_life_minutes", budget.DEFAULT_SHELF_LIFE_MINUTES
+        )
+    )
+    if (now - observed).total_seconds() > shelf_minutes * 60.0:
+        return None
+    return observation
+
+
 def _fit(
     request: PickRequest,
     name: str,
@@ -231,21 +292,32 @@ def candidates(
         else:
             cache_key = (name, model)
             observation = (availability_cache or {}).get(cache_key)
-            if observation is None and cached_only:
-                observation = resumption._read_lane_probe_cache(request.project, name)
-                observation = observation or {"status": "unavailable"}
             if observation is None:
-                serving_backend = {
-                    **config["backends"][name],
-                    "model": model,
-                    "effort": backend.get("effort"),
-                }
-                observation = resumption.probe_lane_availability(
-                    request.project, name, serving_backend, root=repo
+                # A lane publishing what it serves answers from that document,
+                # which is authoritative for it and costs no request.
+                observation = _serving_observation(backend)
+            if observation is None and cached_only:
+                observation = _cached_observation(
+                    request.project, name, config, now=now
                 )
-                if availability_cache is not None:
-                    availability_cache[cache_key] = observation
-            availability = str(observation.get("status") or "unavailable")
+            if observation is None:
+                if cached_only:
+                    # A cached pick issues no request. An absent or expired
+                    # observation is unknown, never a claim the lane is down,
+                    # so the candidate stays offered for Jev to weigh.
+                    observation = {"status": "unknown"}
+                else:
+                    serving_backend = {
+                        **config["backends"][name],
+                        "model": model,
+                        "effort": backend.get("effort"),
+                    }
+                    observation = resumption.probe_lane_availability(
+                        request.project, name, serving_backend, root=repo
+                    )
+                    if availability_cache is not None:
+                        availability_cache[cache_key] = observation
+            availability = str(observation.get("status") or "unknown")
             if availability in {"refused", "unavailable", "logged-out"}:
                 reasons.append("availability: " + availability)
         try:

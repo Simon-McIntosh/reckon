@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="A missing cached observation is unknown, not unavailable">
+  <meta name="plan-summary" content="In cached_only mode an absent or expired serving observation is unknown and the candidate stays offered; a lane publishing an endpoints document is read from it; a fresh refusal still excludes.">
+  <meta name="plan-evidence-for" content="one-typesafe-model-picker">
+  <meta name="plan-verifies" content="one-typesafe-model-picker#s10">
+  <meta name="plan-commits" content="e587e3502a35c63b0443dc194be5e9e958530335">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <title>A missing cached observation is unknown, not unavailable | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="picker-cached-availability" data-node="picker-cached-availability-is-unknown" data-reckon="landed">
+      <h2>A cached pick with no fresh observation offers the lane as unknown</h2>
+      <p>A cached pick issues no request, so an absent or expired serving observation is an absence of evidence, not a claim the lane is down. Only a fresh observation reading <code>refused</code>, <code>unavailable</code> or <code>logged-out</code> excludes a candidate who has no endpoints document to read.</p>
+      <h3>Gate</h3>
+      <p>Every <code>tests/test_picker*.py</code> file at base <code>9fe5d8204634a1fe3db5f118df8c83e4eee7b0dd</code> and head <code>e587e3502a35c63b0443dc194be5e9e958530335</code>: base 92 passed / 0 failed, head 96 passed / 0 failed, zero added failure ids.</p>
+      <h3>Live in-process cached_only pick</h3>
+      <p>A documentation node picked in-process with <code>cached_only=True</code>, run from the main checkout's environment with this worktree on <code>PYTHONPATH</code> (<code>module.__file__</code> = this worktree's <code>reckon/crew/picker/snapshot.py</code>). Every candidate is offered; clive is read as <code>served</code> from its declared endpoints document, not excluded.</p>
+      <dl>
+        <dt>Command</dt><dd><code>UV_PROJECT_ENVIRONMENT=/home/ITER/mcintos/Code/reckon/.venv PYTHONPATH=&lt;worktree&gt; /home/ITER/mcintos/Code/reckon/.venv/bin/python &lt;run&gt;/live_pick.py</code></dd>
+        <dt>Source artifact</dt><dd><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T225036298487-picker-cached-availability-is-unknown/live_pick.log</code></dd>
+        <dt>clive <code>endpoints_document</code></dt><dd><code>/home/ITER/mcintos/public/imas-ambix/endpoints.json</code></dd>
+        <dt>Offered</dt><dd>claude, claude-haiku, claude-opus, clive (served), codex, codex-astra, codex-luna, codex-terra, native — each with no reasons</dd>
+        <dt>Excluded</dt><dd>none</dd>
+      </dl>
+    </section>
+  </main>
+</body>
+</html>
