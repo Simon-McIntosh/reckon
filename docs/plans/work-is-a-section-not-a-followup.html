@@ -23,9 +23,9 @@
   <title>Work Is A Section, Not A Followup | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 </head>
 <body>
   <main class="plan-doc">
@@ -168,7 +168,7 @@
     </p>
 
     <h2 id="s6">§6 — The HTTP landing patch&#x27;s refusal has a test</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p>§3 wired the refusal into <code>validate_landing_patch</code>, and no test passes a followups key through it. Dropping that call, or misreading the ids it stores, would leave the suite green.</p><p><strong>Done when</strong> a test sends a landing patch carrying a followup that hides work and asserts it is refused with the reason word, and the same patch with a pointer followup is accepted. The negative control removes the call from <code>validate_landing_patch</code>, and the refused case must then be accepted.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
@@ -224,6 +224,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-wisnaf-s4-applied" data-who="" data-when="">
     <div class="r-comment-body"><p>§4 is applied for everything outside the held rows: f65cc8edf, across 42 plans. The read-only investigation migration-dispositions proposed a disposition for each of the 64 rows, checked against main, and its review scored 93. The proposals were 41 SECTION, 8 MOVE, 9 DECISION, 4 MET, 1 NEW-PLAN and 1 STALE, and one MOVE was a foreign-owned pointer. They were applied through <code>edit_plan</code>, so every write passed the §3 refusal. S21's coordinator approved its rows. Six completed hosts first refused the resolution for leaving no continuation. Two of them gained a pointer to their new section, and four closed their chain with "done — no followup".</p><p>Open followups that hide work fell from 66 to 7, all held deliberately:</p><ul><li>three on S25's plans, awaiting S25's coordinator: f-arist-001, f-ascsn-001 and f-tccfor-001;</li><li>three authority steps on shipped plans, put to the lead rather than recorded on plans the roadmap no longer reads: f-ifv-002 and f-nso-002, the shared-service restart, and f-pcg-002, the suite command;</li><li>one that needs a new plan: f-ascocw-003.</li></ul></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-wisnaf-s6-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>§6 landed. landing-patch-refuses-a-hiding-followup was merged at 4acd4e28e and promoted. Four cases drive <code>validate_landing_patch</code>. An appended followup that hides work is refused with its reason word: no-section, or section-not-implementable when it is appended beside a stored one. A pointer at the plan's implementable section is accepted. A resend of an already stored hiding followup is not mistaken for an append. Removing the classification call fails exactly the two hiding cases. The 3-file gate passed 30 tests at base and at head, and the review scored 98.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261001T194951171857-a-followup-that-hides-work-is-found" data-who="reckon-build" data-when="2026-10-01T21:51:26.927Z">
     <div class="r-comment-body"><p>section 2 landed in 0545d84952bc6a3680d3c922d001a75b6e9951fe; 68 of 115 real open followups hide work, beside section 1 record of 102 of 129</p></div>
