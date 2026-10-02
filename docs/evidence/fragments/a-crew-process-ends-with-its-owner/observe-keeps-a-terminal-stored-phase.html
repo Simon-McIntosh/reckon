@@ -32,17 +32,22 @@
         run as still running.</p>
       <ul>
         <li><code>reckon/crew/dispatch.py</code> gains
-          <code>_terminal_phase_survives</code>, consulted at both phase-write
-          sites in <code>observe()</code>. When the stored phase is terminal
-          (<code>complete</code>, <code>failed</code>, <code>stopped</code>,
-          <code>interrupted</code>) and the observation is not, the stored phase
-          is kept. The deliberate resume override that reopens a live resumed
-          attempt is untouched.</li>
+          <code>_terminal_phase_survives</code>, consulted at every phase-write
+          site in <code>observe()</code>: the cli stream fold, the in-harness
+          manifest fold, and the orphaned branch that writes <code>orphaned</code>
+          from the raw stream phase and process liveness. When the stored phase
+          is terminal (<code>complete</code>, <code>failed</code>,
+          <code>stopped</code>, <code>interrupted</code>) and the observation is
+          not, the stored phase is kept. The deliberate resume override that
+          reopens a live resumed attempt is untouched.</li>
         <li><code>tests/test_terminal_stored_phase_has_one_writer.py</code> writes
           the terminal phase through
           <code>_publish_stored_phase(..., ended=True)</code> as the supervisor
-          does, then observes a live stream and asserts the phase is unchanged;
-          a second case shows a non-terminal stored phase still advances.</li>
+          does, then observes a live stream and asserts the phase is unchanged; a
+          second case shows a non-terminal stored phase still advances; a third
+          reproduces the orphaned branch's shape &mdash; a pointer at
+          <code>complete</code>, a spent recorded pid and one live event &mdash;
+          and asserts the finished phase stands.</li>
       </ul>
     </section>
 
@@ -50,13 +55,14 @@
       <h2>Evidence</h2>
       <p><strong>Reproduced</strong> at base <code>c8087d0bc</code>: a pointer
         whose stored phase is <code>complete</code> and whose stream carries one
-        live event yields <code>observe()</code> phase <code>working</code>,
-        overwriting the stored <code>complete</code>. After the guard, the same
-        run yields <code>complete</code>.</p>
+        live event yields <code>observed["phase"] == "working"</code>,
+        overwriting the stored <code>complete</code>. A second shape &mdash; the
+        same pointer with a spent recorded pid &mdash; yielded
+        <code>observed["phase"] == "orphaned"</code>, the defect the review
+        found. After the guard every shape yields <code>complete</code>.</p>
       <p><strong>Gate</strong> &mdash;
         <code>tests/test_terminal_stored_phase_has_one_writer.py</code>:
-        <strong>2 passed, EXIT=0</strong> at head <code>c8087d0bc</code> + the
-        node change.</p>
+        <strong>3 passed, EXIT=0</strong> at the head revision recorded below.</p>
       <p><strong>Arms</strong>, one invocation over
         <code>tests/test_stored_phase_advances.py</code> and
         <code>tests/test_crew_interrupted_phase.py</code>:</p>
@@ -64,18 +70,21 @@
         <li><strong>Base</strong>, revision <code>c8087d0bc</code>
           (<code>git archive</code> extraction in a scratch tree):
           <strong>11 passed, EXIT=0</strong>.</li>
-        <li><strong>Head</strong>, same files, worktree at
-          <strong>11 passed, EXIT=0</strong>.</li>
+        <li><strong>Head</strong>, same files, worktree at the head revision recorded
+          below: <strong>11 passed, EXIT=0</strong>.</li>
         <li><strong>Added failures: 0.</strong></li>
       </ul>
-      <p><strong>Negative control</strong> &mdash; with
-        <code>_terminal_phase_survives</code> forced to <code>False</code> the
-        live stream overwrites the terminal phase:
-        <strong>1 failed, 1 passed, EXIT=1</strong>, failing
+      <p><strong>Negative control</strong> &mdash; with the guard removed at the
+        orphaned write site alone, a dead pid orphans the finished run:
+        <strong>1 failed, 2 passed, EXIT=1</strong>, failing
+        <code>test_a_dead_pid_does_not_orphan_a_finished_run</code>. With the
+        guard removed everywhere the stream fold overwrites the terminal phase:
+        <strong>1 failed, 2 passed, EXIT=1</strong>, failing
         <code>test_a_late_observe_keeps_the_terminal_stored_phase</code>.</p>
       <p>Logs: <code>logs/gate-new-test.log</code>,
         <code>logs/base-arm.log</code>, <code>logs/head-arm.log</code>,
-        <code>logs/negative-control.log</code>.</p>
+        <code>logs/negative-control.log</code>,
+        <code>logs/negative-control-orphan.log</code>.</p>
     </section>
   </main>
 </body>
