@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -167,6 +167,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261002T114913948587-run-time-profile" data-who="reckon-build" data-when="2026-10-02T12:09:54.743Z">
     <div class="r-comment-body"><p>run-time-profile: added reckon/crew/run_time_profile.py with run_time_profile() (per-group median/p90 wall_seconds, median output tokens, passed fraction; per-backend size buckets keyed on time_budget with output_tokens fallback, key named) and local_lane_load() (running, waiting, headroom, worker_slots, mean_tokens_per_second, read time, missing→null); gate tests/test_run_time_profile.py 5 passed; negative control (p90 as median) fails the percentile test at EXIT=1; live fragment shows 2075 rows / 44 groups over 14 days and a lane reading with running 12, headroom 4, worker_slots 5</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261002T121007442055-review-of-run-time-profile" data-who="reckon-build" data-when="2026-10-02T12:32:49.134Z">
+    <div class="r-comment-body"><p>reviewed r-20261002T114913948587-run-time-profile at base 0da2431e head c367e5afa; scores goal_fidelity 18 evidence 17 scope_discipline 20 durability 16 fit 19 total 90, zero added failures (base 28 passed, after 33 passed) and three follow-on findings: the window&#x27;s `until` does not bound the rows ledger.runs returns, the module-identity test only asserts __file__ is not None, and size-bucket `runs` counts differently from group `runs`.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261002T111923019366-codex-window-pacing" data-who="reckon-build" data-when="2026-10-02T11:46:27Z">
     <div class="r-comment-body"><p>codex-window-pacing landed — provider-reported primary windows now pace codex-sub by their own elapsed fraction; the live 10,080-minute window reads 1% utilised, 1.969x burn and 0.5586% allowance, while the 43,200-minute two-day fixture allows 7.33% and a primary-only account remains admissible.</p></div>
