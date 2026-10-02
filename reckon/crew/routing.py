@@ -201,11 +201,9 @@ _SECTION_IDENTITY = re.compile(
 def section_record_id(section: Any) -> str:
     """Return the one identity every spelling of a plan section addresses.
 
-    One section is authored as a hyphenated anchor (``s5-1``), printed as
-    ``§5.1`` and spelled in prose as ``s5.1``. Its typed record, its element
-    ids and its comment anchors each carry one of those spellings, so a caller
-    deriving its own would address a record another caller's spelling never
-    finds. Every caller resolves the reference through this derivation instead.
+    A section may use a hyphenated anchor, a section-sign display, or prose
+    numbering. Its typed record, element ids, and comment anchors preserve the
+    same identity, so callers resolve every spelling through this derivation.
     """
     text = re.sub(r"\s+", " ", str(section or "").strip())
     numbered = _SECTION_IDENTITY.fullmatch(text)
@@ -1932,7 +1930,7 @@ def resolve_dispatch_authority(project: str, repo: str | Path) -> dict[str, Any]
             "Either register its project with `reckon sync` before dispatching "
             "writes, or — when carrying Reckon's scaffolding there is "
             "inappropriate — hand-compose the delegation per reckon-build "
-            "references/sprint-orchestration.md §6, which keeps the worktree, "
+            "references/sprint-orchestration.md, whose orchestration contract keeps the worktree, "
             "write fence, manifest and ledger record that a bare subagent has "
             "none of"
         )
@@ -2547,6 +2545,9 @@ def _estimated_hours(
         node_hours = 0.0
     if math.isfinite(node_hours) and node_hours > 0:
         return node_hours, "node"
+
+    if not node.plan.strip():
+        return None, "unavailable"
 
     from reckon.resources import resolve_resource
 

@@ -8,6 +8,7 @@ import dataclasses
 import errno
 import fcntl
 import hashlib
+import inspect
 import json
 import os
 import re
@@ -92,6 +93,7 @@ from reckon.crew.routing import (
     resolved_time_ceiling,
     section_id_candidates,
     shadow_worktree_session,
+    shared_verdict_inputs,
     signal_worker,
 )
 from reckon.crew.runs import (
@@ -4149,6 +4151,9 @@ def dispatch_picker_selection(
     repo: Path,
     session: str = "",
     comment: str = "",
+    records: list[dict[str, Any]] | None = None,
+    verdict_inputs: Mapping[str, Any] | None = None,
+    budget_snapshot: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Ask the picker without letting its latency or failure stop dispatch."""
     finished = threading.Event()
@@ -4159,11 +4164,23 @@ def dispatch_picker_selection(
         try:
             from reckon.crew.picker import PickRequest, pick
 
+            inputs = {
+                "records": records,
+                "verdict_inputs": verdict_inputs,
+                "budget_snapshot": budget_snapshot,
+            }
+            parameters = inspect.signature(pick).parameters.values()
+            if not any(item.kind is item.VAR_KEYWORD for item in parameters):
+                accepted = {item.name for item in parameters}
+                inputs = {
+                    key: value for key, value in inputs.items() if key in accepted
+                }
             selection = pick(
                 PickRequest(project, node, comment=comment, session=session),
                 dict(config),
                 repo=repo,
                 cached_only=True,
+                **inputs,
             )
             result["selection"] = selection.as_dict()
         except Exception as exc:  # noqa: BLE001 - shadow routing cannot block dispatch
@@ -5527,6 +5544,13 @@ def dispatch(
     # asked for rather than carrying the held backend's defaults forward.
     caller_time_budget = node.time_budget
     caller_write_paths = list(node.write_paths)
+    from reckon.crew.picker import snapshot as picker_snapshot
+
+    picker_records = ledger.runs(project, root=ledger_root)
+    picker_inputs = shared_verdict_inputs(project, repo_root)
+    picker_budget = picker_snapshot.budget_view(
+        project, dict(config), repo_root, picker_records, cached_only=True
+    )
     picker_selection = dispatch_picker_selection(
         node=node,
         config=config,
@@ -5534,6 +5558,9 @@ def dispatch(
         repo=repo_root,
         session=session,
         comment=comment,
+        records=picker_records,
+        verdict_inputs=picker_inputs,
+        budget_snapshot=picker_budget,
     )
     resolution = plan_dispatch(
         node=node,

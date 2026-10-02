@@ -1,13 +1,16 @@
 """One project read and one budget snapshot serve every candidate of a pick."""
 
+import importlib
 from unittest.mock import Mock
 
 import pytest
 
-from reckon import budget, ledger
+from reckon import budget, ledger, resources
 from reckon.crew.node import TaskNode
 from reckon.crew.picker import PickRequest, pick, snapshot
 from reckon.crew.picker.replay import _summary
+
+dispatch = importlib.import_module("reckon.crew.dispatch")
 
 
 @pytest.fixture
@@ -171,6 +174,43 @@ def test_shared_read_does_not_change_verdicts(
     assert len(shared_reasons) == 9
     # The unshared arm reads the ledger once per candidate; the shared arm adds none.
     assert loads.call_count - unshared_reads == 9
+
+
+@pytest.mark.parametrize(("plan", "hours"), [("", None), ("named", 0.5)])
+def test_unneeded_plan_lookup_never_scans_resources(
+    live_facts, monkeypatch, request_node, tmp_path, plan, hours
+):
+    request_node.node.plan = plan
+    request_node.node.estimated_hours = hours
+    scanned = Mock(side_effect=AssertionError("resource scan is unnecessary"))
+    monkeypatch.setattr(resources, "iter_resources", scanned)
+
+    snapshot.candidates(request_node, nine_candidate_config(), tmp_path, records=[])
+
+    scanned.assert_not_called()
+
+
+def test_dispatch_picker_reuses_its_budget_and_ledger_inputs(
+    live_facts, monkeypatch, request_node, tmp_path
+):
+    preflight = Mock(side_effect=AssertionError("pick must reuse budget input"))
+    runs = Mock(side_effect=AssertionError("pick must reuse ledger input"))
+    monkeypatch.setattr(snapshot.budget, "preflight", preflight)
+    monkeypatch.setattr(snapshot.ledger, "runs", runs)
+
+    selection = dispatch.dispatch_picker_selection(
+        node=request_node.node,
+        config=nine_candidate_config(),
+        project=request_node.project,
+        repo=tmp_path,
+        records=[],
+        verdict_inputs={"capability_cache": {}, "cache_status": "fresh"},
+        budget_snapshot={"backends": [], "groups": []},
+    )
+
+    assert selection["action"] == "refuse"
+    preflight.assert_not_called()
+    runs.assert_not_called()
 
 
 def _row(backend, model, jev_latency_ms, latency_ms=100.0):
