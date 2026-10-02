@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="46">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="47">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -228,7 +228,7 @@
 <p>The review of held-worktrees-read-run-files (score 82, head 93c328388) left three follow-ons. First, the fast path admits a per-run file only when the node token in its run id equals the worktree's directory name (<code>_run_id_names_node</code> in <code>reckon/crew/obligations.py</code>). So a record whose node id differs from its retained tree's directory name is reached only through the whole-ledger fallback. A tree that another record also names can then resolve in the fast path to a different run than the merged reader would pick. The five generated mixed states do not cover this shape. Second, the manifest's <code>baseline_suite</code> failure ids name a test file that does not exist, so <code>ledger.added_failure_ids</code> over the JSON fields reads one spurious added failure where the log reads none. Third, the named <code>negative_control_log</code> records a different mutation from the declared one.</p><p><strong>Done when</strong> the parity test gains a case where a node's id differs from its tree's directory name and another record names the same tree, and <code>_held_worktrees</code> equals the whole-ledger reader there. The case must fail at 93c328388. The landed record's failure ids and control log are corrected to match their logs.</p>
 
     <h2 id="s9">§9 — The snapshot&#x27;s review duties match the derivation&#x27;s</h2>
-<section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
 <p>The snapshot producer (§2, merged at d53a3fc68) and the head-reading review obligation (scoring-should-stop-a-promotion §10, merged at 4095a2b0d) were each green on their own gates. At the combined head the gate replay of §2 fails two parity cases in <code>tests/test_obligations_snapshot_is_published.py</code>: <code>test_the_snapshot_carries_the_derivation_over_unmodified_files</code> and <code>test_a_slice_equals_the_derivation_over_the_same_files</code>. The derivation's <code>_review_duty_item</code> in <code>reckon/crew/obligations.py</code> now keys a review duty to the run's current worktree head and carries <code>head</code> (and the reviewed head when they differ), while <code>payload_for</code> in <code>reckon/crew/obligation_snapshot.py</code> builds its duties by its own path, so the snapshot's review-missing item no longer equals the derivation's. Replay log: <code>~/.config/reckon/crew/runs/r-20261001T204424733309-the-producer-publishes-the-snapshot/verify-gate.log</code>.</p><p><strong>Done when</strong> the snapshot's duties are built through the same review-duty function the derivation uses, so both parity cases pass at the merged head, with a case where the run's head has moved past its stored review asserting the snapshot and the derivation name the same two heads. The negative control restores the snapshot's own duty path, and the moved-head case then fails.</p>
 
     <h2 id="s10">§10 — A reload shows the last snapshot, not a remedy</h2>
@@ -288,10 +288,16 @@
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §3</pre>
     <p class="r-fu-outcome">§3's prompt path landed at a6e637292 after a review of 93: the prompt hook reads the published snapshot and never derives, measured at a median of 95.5 ms and a second-slowest of 112.7 ms over 20 fresh processes against a 250 ms target, from 15.5 s before. The stop path still derives. During a producer reload the prompt hook reported no producer for a few seconds, then the full list at 0.27 s.</p>
     </article>
-<article class="r-fu" data-id="f-tohras-005" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §9" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tohras-005" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §9" data-resolved-at="2026-10-02T17:45:14+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Repair snapshot parity, then move the stop path onto the snapshot</h4>
     <div class="r-fu-body"><p>§9 first: the snapshot's review duties must match the derivation's before the stop path, which gates turn ends, reads them. Then §3's stop path. Note for §3: a producer reload leaves a window of a few seconds in which the hook reads no producer; the stop path must not block a turn on that reading alone.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §9</pre>
+    <p class="r-fu-outcome">§9 landed at de1377a66 after a review of 95: the snapshot builds review duties through the derivation's own function, and both parity cases pass again. The reload-window finding this followup carried is now §10, and the stop-path note is folded into §3 and §11.</p>
+    </article>
+<article class="r-fu" data-id="f-tohras-006" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §10" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Fix the reload window, then move the stop path onto the snapshot</h4>
+    <div class="r-fu-body"><p>§10 first, because the prompt path shows the wrong remedy for a minute on every reload. Then §3's stop path together with §11, so the stop hook reads the snapshot and stops blocking on duties the lane has refused.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §10</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
