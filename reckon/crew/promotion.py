@@ -4681,6 +4681,35 @@ def _read_pointer_or_rebuild(run_id: str, *, root: str | Path | None) -> dict[st
     return rebuilt
 
 
+def _withdrawn_run_payload(run_id: str, record: Mapping[str, Any]) -> dict[str, Any]:
+    """Report a run that names no project as the withdrawal it is.
+
+    A dispatch refused before a project is resolved leaves a run with an empty
+    project: the pointer never carried one, or the reconstruction of a
+    pointerless run directory finds no supervisor record to read one from.
+    There is no project ledger to append a row to, so ``crew complete`` reports
+    the withdrawal and writes nothing rather than failing validation on the
+    empty project name. The run's own record is returned so the caller can see
+    what survived of the launch, and the payload's ``status`` and ``withdrawn``
+    keys both state the word the fleet vocabulary already uses for a departure
+    that records no landing.
+    """
+    return {
+        "run_id": run_id,
+        "project": "",
+        "withdrawn": True,
+        "status": "withdrawn",
+        "promoted": False,
+        "ledger_row_written": False,
+        "reason": (
+            "the run names no project, so its dispatch was refused before a "
+            "project was resolved; there is nothing to promote and no ledger "
+            "row is written"
+        ),
+        "record": dict(record),
+    }
+
+
 def _manifest_relative_path(value: Any, *, manifest_path: str) -> Path:
     """Resolve one manifest-cited path under the manifest's own directory.
 
@@ -4806,6 +4835,15 @@ def complete(
     commit_list = tuple(str(sha) for sha in commits if str(sha).strip())
     with _pointer_lock(run_id):
         record = _read_pointer_or_rebuild(run_id, root=root)
+        # A dispatch whose launch was refused leaves a run that names no
+        # project: the refusal removed the pointer or never let it carry a
+        # project, and the run directory it left behind holds no supervisor
+        # record either, so reconstruction resolves no project from it. There
+        # is nothing to promote and no project ledger to hold a row, so the run
+        # is reported as the withdrawal it is rather than failing validation on
+        # the empty project name further down.
+        if not str(record.get("project") or "").strip():
+            return _withdrawn_run_payload(run_id, record)
         # A review run's outcome is the review it stored, so the operator's
         # hand is not the only source for a non-passing gate's summary; the
         # refusal below stands for every run with no stored review to read.
