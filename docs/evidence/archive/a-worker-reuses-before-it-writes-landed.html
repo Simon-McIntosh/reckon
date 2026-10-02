@@ -25,6 +25,11 @@
     <p>Confirmed landed by the S25 currency audit (run <code>r-20261002T115340812142-s25-currency-audit</code>, base <code>0da2431ed</code>). <code>reckon/clones.py</code> matches a promoted run's new functions against main. Promotion records <code>clone_matches</code>, and keeps the unmeasured marker distinct from an empty list (<code>reckon/ledger.py</code> <code>_clone_report</code>). The velocity view adds a weekly clone block (<code>reckon/velocity.py</code> <code>_clone_week_cells</code>). Tests: <code>tests/test_promotion_reports_clones.py</code> covers a private copy reported with its source, a modified function becoming a copy, nothing matching giving an empty list, and unmeasured differing from empty; also <code>tests/test_velocity_clone_matches.py</code>. Landings <code>b4683397</code>, <code>512414af</code>, <code>9c31c44c</code>.</p>
   </section>
 
+  <section id="s5-the-interface-has-a-budget">
+    <h2>§5 — the interface has a budget</h2>
+    <p>Both halves of the done-when now hold. The counts: <code>reckon/interface_counts.py</code> measures four families (<code>public_definitions</code>, <code>cli_options</code>, <code>mcp_views</code>, <code>refusal_families</code>), and the velocity view carries them as a weekly <code>interfaces</code> block. Tests are <code>tests/test_velocity_interface_counts.py</code>, including parity with the census at head; the currency audit confirmed them at <code>0da2431ed</code>. The rubric: commit <code>11e895c11</code> makes the plan-review rubric of <code>a-plan-is-reviewed-before-it-is-built</code> §3 (v17) cite the current week's four counts. A section that adds to any of them must name what it retires or merges, or why nothing can be; otherwise it receives a finding. A reviewer can check that from the section text alone.</p>
+  </section>
+
 </main>
 </body>
 </html>

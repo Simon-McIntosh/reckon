@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="a-review-is-sized-to-its-risk,a-refusal-is-about-the-work,a-landing-record-never-conflicts,the-fleet-reports-its-velocity">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>A Worker Reuses Before It Writes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="66">
+<meta name="plan-version" content="67">
 <meta name="plan-impl" content="0.95">
 </head>
 <body>
@@ -71,13 +71,11 @@
   <p class="landed-summary">Landed: promotion records <code>clone_matches</code> from <code>reckon/clones.py</code>, keeping an unmeasured result distinct from an empty one, and velocity reports a weekly clone block. Covered by <code>tests/test_promotion_reports_clones.py</code> and <code>tests/test_velocity_clone_matches.py</code> (landings <code>b4683397</code>, <code>512414af</code>, <code>9c31c44c</code>). <a href="s4-a-copy-is-visible-at-promotion">full record</a></p>
 </section>
 
-    <h2 id="s5">§5 — The interface has a budget</h2>
-    <p><strong>Deliverable.</strong> The velocity view reports, for the <code>reckon/</code> package, the level at each
-      week's end and the weekly change of public definitions, CLI options, MCP views and coded refusal families, using the
-      census's definitions. A plan section that adds any of them names what it retires or merges, or states why the
-      surface must grow. The plan-review rubric of <code>a-plan-is-reviewed-before-it-is-built</code>, which already
-      favours deep modules, reads these counts.</p>
-    <p><strong>Done when</strong> the weekly counts are in the view and the rubric cites them.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-02</span>
+    <h2 id="s5">§5 — The interface has a budget</h2></header>
+  <p class="landed-summary">Landed: velocity publishes weekly counts in four interface families (<code>reckon/interface_counts.py</code>, <code>tests/test_velocity_interface_counts.py</code>). The plan-review rubric now cites them, and a section adding surface must name what it retires or merges (<code>a-plan-is-reviewed-before-it-is-built</code> §3, commit <code>11e895c11</code>). <a href="s5-the-interface-has-a-budget">full record</a></p>
+</section>
 
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
@@ -102,10 +100,11 @@
     <pre class="r-fu-prompt">/reckon-build a-worker-reuses-before-it-writes §4</pre>
     <p class="r-fu-outcome">Two of three pieces landed. velocity.report now carries a weekly clones block (runs with a match, total matches, runs measured with none, runs unmeasured, and runs whose ledger row predates the clone report, each counted apart); review 91 then 95 after one repair round, merged at 512414af. A test proves promotion reports a clone when a run rewrites an existing function in a base-carried file into a copy of parse_utc; the detector already handled it (review 94, merged at 9c31c44c). The plan-review rubric citation remains, carried by f-awrbiw-003.</p>
     </article>
-<article class="r-fu" data-id="f-awrbiw-003" data-status="open" data-written-by="s25-coord" data-written-at="2026-09-30" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-awrbiw-003" data-status="resolved" data-written-by="s25-coord" data-written-at="2026-09-30" data-recommends-skill="reckon-build" data-resolved-at="2026-10-02T12:45:53+00:00" data-resolved-by="s25-coord">
     <h4 class="r-fu-title">Cite the interface counts in the plan-review rubric</h4>
     <div class="r-fu-body"><p>Section 5's done-when asks that the plan-review rubric of a-plan-is-reviewed-before-it-is-built cite the weekly interface counts that velocity.report now carries. It is the last open piece of this plan.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-worker-reuses-before-it-writes §5</pre>
+    <p class="r-fu-outcome">The plan-review rubric of a-plan-is-reviewed-before-it-is-built §3 now cites the four weekly interface counts and requires a surface-adding section to name what it retires or merges (commit 11e895c11, that plan at v17). §5 is collapsed. What remains of this plan is §2 and §3: three timestamp callers to route through parse_utc, then a census re-pin. Both are recorded as nodes in comment c-awrbiw-currency-audit and dispatched from S25.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
