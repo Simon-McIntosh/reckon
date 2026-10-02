@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="The stop bound has its own control">
+  <meta name="plan-summary" content="A second declared control mutation, through the same stop-grace hook as the ceiling control, sets a mid-window grace (derived from the resolved elapsed bound and the wait ceiling, 56 s; the supervisor drains about 65 s) so the ignored-stop case clears the 90 s bounded wait and fails on the elapsed bound itself. The ceiling control, by contrast, dies in the wait and never reaches the bound.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,supervisor,stop,bound,control">
+  <title>The stop bound has its own control &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The stop bound has its own control</h1>
+    <p><code>landing: tests/test_a_stopped_run_ends_its_supervisor.py adds a second declared control mutation through the stop-grace hook — a mid-window grace derived from the elapsed bound and the wait ceiling (56 s; supervisor drains ~65 s) — so the ignored-stop case clears the 90 s wait and fails on the elapsed bound (62.7 s vs 40 s); unmutated 3 passed, ceiling control fails at the 90 s ceiling, mid-window control fails at the bound.</code></p>
+  </main>
+</body>
+</html>
