@@ -323,7 +323,9 @@ def test_an_all_follow_on_round_names_its_cause_and_the_follow_on_count(
     round the reflex considered is not indistinguishable from one it never saw.
     The count is read from this file's own finding list, so a reason naming no
     figure — or the re-read-differs reason the same branch otherwise covers —
-    fails here.
+    fails here. A finding with no readable severity blocks, so a round reaching
+    this branch carries no unmarked finding; the reason must state no unmarked
+    count, which could only ever read zero.
     """
     config_home, repo, head_sha = dispatch_project
     record = _reviewed_pointer(config_home, repo)
@@ -335,6 +337,7 @@ def test_an_all_follow_on_round_names_its_cause_and_the_follow_on_count(
     assert calls == []
     assert "the review round carried no blocking finding" in report["reason"]
     assert "1 follow-on" in report["reason"]
+    assert "unmarked" not in report["reason"]
 
     recorded = runs.read_pointer(RUN_ID)["repair_dispatch"]
     assert recorded["status"] == "decline-only"

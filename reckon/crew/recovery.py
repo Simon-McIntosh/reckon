@@ -2290,24 +2290,22 @@ def dispatch_repair_for_run(
     if composed is None:
         # The composer returns None for a finding-bearing record in two cases,
         # told apart from the findings already read here so the recorded reason
-        # names the cause rather than one string standing for both. A round
-        # whose findings are all follow-ons or all unmarked has nothing that
-        # blocks to answer, so it composes no repair and the reason names both
-        # counts — a declared follow-on and a finding that reached the store
-        # without a severity after the audit are different causes, and a reader
-        # must be able to tell them apart. The unmarked findings are listed by
-        # file and line so the record names what was reported rather than
-        # repaired. The record is left on the reviewed run as the round's
-        # outcome. Otherwise the record the composer re-read differs from the
-        # one selected here, and the round is left for a coordinator rather
-        # than dispatched from a stale parse.
+        # names the follow-on count rather than one string standing for both. A
+        # round whose findings are all follow-ons has nothing that blocks to
+        # answer, so it composes no repair. A finding with no readable severity
+        # blocks, so such a round carries no unmarked finding to count; the
+        # unmarked list below stays for the record and is empty here, and any it
+        # did name would be listed by file and line so the record names what was
+        # reported rather than repaired. The record is left on the reviewed run
+        # as the round's outcome. Otherwise the record the composer re-read
+        # differs from the one selected here, and the round is left for a
+        # coordinator rather than dispatched from a stale parse.
         if not repair_module.blocking_findings(review):
             follow_ons = repair_module.follow_on_findings(review)
             unmarked = repair_module.unmarked_findings(review)
             reason = (
                 "the review round carried no blocking finding "
-                f"({len(follow_ons)} follow-on finding(s), "
-                f"{len(unmarked)} unmarked finding(s))"
+                f"({len(follow_ons)} follow-on finding(s))"
             )
             _record_repair_dispatch(
                 run_id,
