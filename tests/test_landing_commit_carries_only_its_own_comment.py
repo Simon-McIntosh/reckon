@@ -8,14 +8,15 @@ an unrelated uncommitted edit to the plan was swept into the landing commit.
 Promotion now parses each side as HTML and keeps only the authored content
 outside the store-owned regions. The admitted class is any change confined to
 those regions — the ``plan-*`` scalars (impl, status, the version stamps and
-the rest), the section records, and the gates, decisions, followups, questions,
-research and comment sections, every one of which the store is the sole writer
-of. A change confined to them is the run's own bookkeeping and is carried into
-the landing commit, as is the store's own re-encoding, which parsing
-normalises. Only authored content outside those store-owned regions refuses,
-and it refuses before either store is written, so a refused promotion leaves
-neither a ledger row nor a comment for the next promotion to read as an
-unrelated edit.
+the rest), the section records, and every ``data-reckon`` section the store
+writes, such as gates, decisions, followups, questions, research, comments,
+landed notes, sprint items and evidence. The store is the sole writer of every
+one of those regions. A change confined to them is the run's own bookkeeping
+and is carried into the landing commit, as is the store's own re-encoding,
+which parsing normalises. Only authored content outside those store-owned
+regions refuses, and it refuses before either store is written, so a refused
+promotion leaves neither a ledger row nor a comment for the next promotion to
+read as an unrelated edit.
 
 These tests synthesise a fixture repository and crew home per case and assert
 the real plan and crew directories are untouched, because an isolated read
