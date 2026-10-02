@@ -21,13 +21,17 @@
     stops a run landing without a review: a promotable run whose stored review
     reaches the acceptance floor with no finding has its recorded gate confirmed
     and re-run at the merged head, and on both passing is promoted with
-    <code>promoted_by: review-acceptance</code> on the ledger row.</p>
+    <code>promoted_by: review-acceptance</code> on the ledger row. Acceptance
+    never merges: it requires every commit the manifest names to be an ancestor
+    of the branch the checkout carries, and an unmerged run stands down naming
+    the commits it found off the branch.</p>
 
   <h2>Gate</h2>
-  <p>Three named tests in <code>tests/test_review_acceptance_promotes.py</code>, run in a
-    synthesised repository: a clean run promotes from the sweep with no coordinator
-    command; a review carrying one finding does not promote; a gate failing at the
-    merged head does not promote. <code>ledger.py</code> declares
+  <p>Four named tests in <code>tests/test_review_acceptance_promotes.py</code>, run
+    in a synthesised repository: a clean run promotes from the sweep with no
+    coordinator command; a review carrying one finding does not promote; a gate
+    failing at the merged head does not promote; and a run whose commit is not on
+    the branch is not promoted. <code>ledger.py</code> declares
     <code>promoted_by</code> in <code>RECORD_FIELDS</code> and emits it on every row
     (null when absent).</p>
 
