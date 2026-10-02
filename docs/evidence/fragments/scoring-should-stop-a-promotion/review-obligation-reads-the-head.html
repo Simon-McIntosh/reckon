@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:scoring-should-stop-a-promotion">
+  <meta name="plan-verifies" content="reckon:scoring-should-stop-a-promotion#s10">
+  <meta name="evidence-verdict" content="pass-with-limitation">
+  <meta name="evidence-date" content="2026-10-02">
+  <meta name="evidence-commit" content="8de4ca55b">
+  <title>A review obligation reads the review of the run's own head</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="review-obligation-reads-the-head">
+  <h2>A review obligation names the review of the run's own head</h2>
+  <p>The <code>review-ready</code> and <code>review-missing</code> duties were projected
+  from the classifier's reading alone. A run whose stored review described a revision its
+  worktree had moved past could therefore read <code>review-ready</code>, offering
+  <code>crew complete</code> against the new head — landing unreviewed repair commits.</p>
+  <p>Both kinds are now read against the selection the promotion gate uses,
+  <code>select_review_for_head</code>, for the revision the run's tree carries now
+  (<code>reckon/crew/obligations.py</code>, <code>_review_duty_item</code>). A complete
+  review stored at the current head reads <code>review-ready</code>; a stored record
+  describing another revision reads <code>review-missing</code> and carries both heads on
+  the duty (<code>head</code> and <code>reviewed_head</code>), so the reader sees which two
+  revisions disagree. With no stored record at all the classifier's own reading stands.</p>
+  <h3>Cases, run on a synthesised repository and a temporary configuration home</h3>
+  <p>Two cases pass in the node's focused run (2 passed, commit 8de4ca55b): a stored review
+  at an earlier head with the worktree advanced past it reads <code>review-missing</code>
+  naming both heads; a review stored at the current head reads <code>review-ready</code>.
+  The moved-head case fails at the base revision, quoting the missing naming; the
+  current-head case already passed at base — the base classifier's own head-aware reading
+  reported the moved head correctly but named neither revision on the duty.</p>
+  <h3>Negative control</h3>
+  <p>Making the obligation read any stored review regardless of its head (the head argument
+  forced to the empty string in <code>reckon/crew/obligations.py</code>) reddens the
+  moved-head case, which then reads <code>review-ready</code> (1 failed, 1 passed, EXIT=1).
+  Red log: <code>gate-negative-control.log</code> in the node's run directory.</p>
+  <h3>Gate</h3>
+  <p>The new file plus every test file under <code>tests/</code> naming
+  <code>review-ready</code>, <code>review-missing</code>, <code>obligations(</code> or
+  <code>select_review_for_head</code> — 18 files. Head arm at 8de4ca55b: 149 passed, no
+  added failure id. Base arm at 4d0c843ec, from a <code>git archive</code> extraction: the
+  new case's moved-head failure plus 148 passed (EXIT=1).</p>
+</section>
+</main>
+</body>
+</html>
