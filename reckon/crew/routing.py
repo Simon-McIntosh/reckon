@@ -1392,14 +1392,23 @@ def _write_sender_record(
     reason: str,
     sig: int | None = None,
     target_pgid: int | None = None,
+    outcome: str | None = None,
+    detail: str | None = None,
 ) -> Path | None:
     """Append one sender record into the target run's directory.
 
     This is the one writer every signalling path funnels through, so the next
     unattributed SIGTERM is read from the run's own directory rather than
-    reconstructed from the survivors. The record is written BEFORE the signal
-    is delivered: a signal that ends the sender too must still leave the
-    attribution behind, which a write ordered after the signal cannot promise.
+    reconstructed from the survivors. The attribution record is written BEFORE
+    the signal is delivered: a signal that ends the sender too must still leave
+    the attribution behind, which a write ordered after the signal cannot
+    promise. The outcome of the attempt is appended as a second record once the
+    attempt returns, because before it runs the outcome is unknowable and a
+    record that names a SIGTERM that was never sent is worse than none.
+
+    ``outcome`` is ``"delivered"``, ``"refused"`` or ``"failed"``; ``detail``
+    carries the guard's reason for a refusal or the operating system's message
+    for a failure. A record written before the attempt leaves both unset.
 
     The target's process group is recorded as well as its pid, because the two
     answer different questions — a group signal that reached unrelated work is
@@ -1435,6 +1444,10 @@ def _write_sender_record(
         "signal": signal_name,
         "time": now,
     }
+    if outcome is not None:
+        record["outcome"] = str(outcome)
+    if detail is not None:
+        record["outcome_detail"] = str(detail)
     path = Path(run_dir) / SENDER_RECORD_NAME
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -1490,8 +1503,27 @@ def signal_worker(
             os.killpg(group, sig)
         else:
             os.kill(pid, sig)
-    except (ProcessLookupError, PermissionError):
+    except (ProcessLookupError, PermissionError) as exc:
+        if run_dir is not None:
+            _write_sender_record(
+                run_dir,
+                target_pid=pid,
+                target_pgid=group,
+                reason=reason,
+                sig=sig,
+                outcome="failed",
+                detail=str(exc) or type(exc).__name__,
+            )
         return False
+    if run_dir is not None:
+        _write_sender_record(
+            run_dir,
+            target_pid=pid,
+            target_pgid=group,
+            reason=reason,
+            sig=sig,
+            outcome="delivered",
+        )
     return True
 
 
@@ -1514,20 +1546,42 @@ def _signal_process_group(
     A caller that names the target's run directory and reason gets a sender
     record written before the signal, so a kill read from that run's own
     directory names the caller rather than only the victim.
+
+    A guard that refuses the signal writes its own record carrying the
+    ``refused`` outcome and the guard's reason, so a refusal is not read later
+    as a SIGTERM that went out.
     """
     own_pid = os.getpid()
     if pid == own_pid or os.getpgid(pid) == os.getpgid(own_pid):
-        raise CrewError(
+        detail = (
             f"refusing to signal pid {pid}: it is this process's own pid or "
             "shares this process's own process group, and killpg would "
             "terminate the caller doing the releasing"
         )
+        _write_sender_record(
+            run_dir,
+            target_pid=pid,
+            reason=reason,
+            sig=signal.SIGTERM,
+            outcome="refused",
+            detail=detail,
+        )
+        raise CrewError(detail)
     actual_start_time = _process_start_time(pid)
     if not expected_start_time or actual_start_time != expected_start_time:
-        raise CrewError(
+        detail = (
             f"refusing to signal pid {pid}: process identity changed "
             f"from {expected_start_time!r} to {actual_start_time!r}"
         )
+        _write_sender_record(
+            run_dir,
+            target_pid=pid,
+            reason=reason,
+            sig=signal.SIGTERM,
+            outcome="refused",
+            detail=detail,
+        )
+        raise CrewError(detail)
     signal_worker(pid, signal.SIGTERM, reason=reason, run_dir=run_dir)
 
 
