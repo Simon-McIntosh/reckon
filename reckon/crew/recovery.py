@@ -4609,6 +4609,7 @@ def _observed_phase(
     *,
     alive: bool | None,
     worker_alive: bool | None,
+    worker_record_names_pid: bool,
     ended_exit: Mapping[str, Any] | None,
     manifest_status: str,
     commits_beyond_base: int,
@@ -4642,7 +4643,12 @@ def _observed_phase(
     record that names no pid leaves the label standing. Reading the answer as
     proof only while it was ``True`` let the phase fall back to the pre-spawn
     label the moment the worker exited, so a run that had already been reported
-    working was reported dispatched again.
+    working was reported dispatched again. Presence is the launch evidence and
+    is read without the host gate that liveness carries: whether the pid can be
+    probed *here* decides only whether the worker is alive now, while a record
+    sitting in the run's directory proves the launch happened wherever it did,
+    so a run whose launching host is another machine still advances past
+    starting and is never rendered dispatched for it.
 
     An assistant record in the run's newest stream answers the same way, and it
     is the evidence left when nothing else has been written: the phase advances
@@ -4658,7 +4664,7 @@ def _observed_phase(
         return "working" if alive is True else "complete"
     if ended_exit is not None:
         return "complete"
-    if worker_alive is not None or commits_beyond_base:
+    if worker_record_names_pid or commits_beyond_base:
         return "working"
     if stream_shows_work:
         return "working"
@@ -4732,17 +4738,20 @@ def _worker_record_liveness(record: Mapping[str, Any]) -> bool | None:
 
     The worker record carries no host of its own, so its pid is meaningful only
     on the machine that issued it: a number live here is no evidence about a run
-    launched elsewhere, and reading it as one hands a foreign run a life this
-    host cannot support. The run's own launching host governs the read, the same
-    gate ``local_liveness`` applies, so every caller — ``classify_pointer``
-    included — answers on one set of terms. The pid itself is decided by
+    launched *elsewhere*, and reading it as one hands a foreign run a life this
+    host cannot support. The read is therefore refused only for a run whose own
+    launching host names a different machine. An unnamed host is not refused:
+    the resumed-attempt deferral this fact exists for reads a run whose pointer
+    cannot be resolved here, and a pointer written before the launching host was
+    recorded names none, so refusing it would leave exactly the resumed run the
+    deferral was built for with no liveness at all. The pid itself is decided by
     ``runs.record_process_alive``, which owns the start-tick comparison that
     keeps a recycled number from reading as the registered worker.
     """
     data = _worker_record(record)
     if data is None:
         return None
-    if not _launched_on_this_host(record):
+    if _record_is_known_foreign(record):
         return None
     return runs.record_process_alive(data, process_alive)
 
@@ -5211,6 +5220,21 @@ def _launched_on_this_host(record: Mapping[str, Any]) -> bool:
         record.get("launcher_host") is not None
         and str(record.get("launcher_host")) == _reading_host()
     )
+
+
+def _record_is_known_foreign(record: Mapping[str, Any]) -> bool:
+    """Whether the record names a launching host that is a different machine.
+
+    Distinct from :func:`_launched_on_this_host`, which also answers false for
+    an unnamed host. A pointer with no launching host cannot be *shown* to be
+    this host, but neither can it be shown to be another one, so a pid read that
+    is safe to refuse on proof of a foreign machine is left to run on the mere
+    absence of a name: an unnamed pointer predates the field, and its records
+    are read as they always were rather than being refused for a host that was
+    never written down.
+    """
+    host = record.get("launcher_host")
+    return host is not None and str(host) != _reading_host()
 
 
 def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
@@ -6910,6 +6934,7 @@ def classify_pointer(
         phase,
         alive=alive,
         worker_alive=worker_alive,
+        worker_record_names_pid=_worker_record_pid(record) is not None,
         ended_exit=ended_exit,
         manifest_status=manifest_status,
         commits_beyond_base=commits_beyond_base,
