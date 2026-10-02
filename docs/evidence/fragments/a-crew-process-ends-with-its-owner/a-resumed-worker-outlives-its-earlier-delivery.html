@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A resumed worker outlives its earlier delivery">
+  <meta name="plan-summary" content="A resumed run's supervisor read the pointer's recorded manifest generation as the baseline for the attempt's delivery. A pointer that still carried its dispatch-time baseline predates the previous attempt's delivered manifest, so that stale manifest counted as the new attempt's delivery and the supervisor ended the resumed worker on its first poll. The delivery baseline is now floored at the current attempt's own start.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,supervisor,resume,manifest,grace">
+  <title>A resumed worker outlives its earlier delivery &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A resumed worker outlives its earlier delivery</h1>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <p>A resumed run keeps its manifest path, so the previous attempt's
+        delivered manifest is still on disk when the new worker starts. The
+        supervisor decides which manifest is this attempt's delivery from the
+        <em>generation it may claim</em> — the baseline. It read the pointer's
+        <code>manifest_baseline_mtime_ns</code> and treated that alone as the
+        baseline. A pointer that still carried its
+        <strong>dispatch-time</strong> baseline predates the previous attempt's
+        manifest, so the stale complete manifest read as this attempt's
+        delivery and the resumed worker was signalled after the grace on the
+        supervisor's first poll.</p>
+      <p>The baseline is now never earlier than the current attempt's own
+        start. The attempt start is read from the spec, else the pointer, else
+        the supervisor's own launch instant, and a recorded generation counts
+        only when it is at or after that floor. A manifest written before this
+        attempt began cannot count as its delivery.</p>
+      <ul>
+        <li><code>reckon/crew/dispatch.py</code> —
+          <code>_supervisor_manifest_baseline_ns</code> takes the maximum of the
+          pointer's recorded generation and the attempt start;
+          <code>_attempt_started_ns</code> resolves that start; the caller
+          passes the supervisor's launch instant as the last-resort floor.</li>
+        <li><code>tests/test_a_terminal_worker_exits_within_its_grace.py</code> —
+          a case resumes through the same launch the resume path uses, so the
+          spec carries this attempt's real start and the pointer still carries
+          the stale baseline.</li>
+      </ul>
+    </section>
+
+    <section id="measure">
+      <h2>Measure</h2>
+      <p>Head gate over the four named files — the grace test,
+        <code>test_stored_phase_advances.py</code>,
+        <code>test_supervisor_outlives_its_launcher.py</code> and
+        <code>test_dispatch_timestamps_reuse_the_parser.py</code>:
+        <strong>46 passed</strong>, zero added failures against the base
+        revision. The new case alone passes at the head and fails under the
+        declared mutation.</p>
+      <p>The declared negative control restores the pre-fix preference —
+        the pointer's recorded generation over the attempt start. With it
+        applied the resumed worker is killed on the previous attempt's
+        manifest and the new case fails:</p>
+      <ul>
+        <li><code>negative-control.log</code> — <code>EXIT=1</code>, one failing
+          id the head arm does not fail:
+          <code>tests/test_a_terminal_worker_exits_within_its_grace.py::test_a_resumed_worker_is_not_ended_by_its_earlier_attempts_baseline</code>,
+          with the assertion <em>a baseline that predates this attempt's own
+          start read the earlier attempt's manifest as its delivery; the
+          resumed worker was killed</em>.</li>
+      </ul>
+      <p>Ruff delta on the staged paths is zero: dispatch.py 9 findings
+        before and after, the test file 1 before and after; neither file gains
+        a format hunk.</p>
+    </section>
+  </main>
+</body>
+</html>
