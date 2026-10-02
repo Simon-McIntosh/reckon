@@ -11,7 +11,7 @@
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="10.0">
-  <meta name="plan-impl" content="0.58">
+  <meta name="plan-impl" content="0.62">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="66">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="67">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -333,7 +333,7 @@
 <p>Measured across nine dsv4.1-flash/high implement runs in the suite-green-at-head wave on 2026-09-24. Each cost a resume:</p><ul><li><strong>Text-only turn endings.</strong> Four runs ended a turn on a narration line with work unfinished: two on their first turn after 6 turns (<q>Let me read it</q>), one after committing but before writing its manifest, and one after a root-cause line. <code>stop_reason: end_turn</code>, no error.</li><li><strong>Backgrounded work dies with the turn.</strong> One worker backgrounded a pytest run and ended its turn. The harness killed the task and nothing was committed.</li><li><strong>srun inside the fleet allocation.</strong> A worker already on the compute node wrapped its tests in <code>srun</code>, which launched one copy per task (30), so 30 writers interleaved in one log.</li><li><strong>Hallucinated write path.</strong> One orientation manifest listed <code>tests/test_crew_EDIT_PLACEHOLDER.py</code>, a path not in its grant.</li></ul><p>Each was recovered by <code>crew resume --advice</code> naming the fix: foreground only, no srun, keep calling tools until the manifest is written. That text belongs in the worker contract for this lane rather than in per-run advice.</p><p><strong>Done when</strong> a worker that narrates or backgrounds still commits and writes its manifest, measured over a dispatched population.</p><p>Moved from followup f-tllitd-worker-turn-endings on the-local-lane-is-the-default by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code>; measured over nine dsv4.1-flash runs: text-only turn endings, backgrounded work killed, srun fan-out, one hallucinated test path</p>
 
     <h2 id="s15">§15 — Admission trusts only positive router history</h2>
-<section data-reckon="section" data-id="s15" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s15" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p>The review of worker-slot-hold-is-tested-where-it-acts (score 96, merged at 3b06162b5) found that <code>history_is_trusted</code> in <code>reckon/crew/dispatch.py</code> is true for an <code>observed_seconds</code> of 0.0 or below, so a router reporting no history is trusted at face value. The same review found one added ruff-format finding in <code>tests/test_dispatch_counts_worker_slots.py</code>: a <code>monkeypatch.setattr(cli_module, "_resolved_flight", …)</code> line of 89 characters.</p><p><strong>Done when</strong> an <code>observed_seconds</code> of zero or below is read as no history, so dispatch falls through to the next slot figure exactly as it does for a missing value, with a test that fails before the change; and <code>ruff format --check tests/test_dispatch_counts_worker_slots.py</code> reports nothing.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
