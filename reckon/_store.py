@@ -2260,7 +2260,14 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
     if len(parts) != 1 or head not in _PLAN_SET_TOP:
         raise OpError(f"unsupported plan set path {path!r}")
     if head == "impl":
-        if working.get("sections"):
+        from reckon import _plan_html
+
+        if (
+            _plan_html.derive_impl_from_sections(
+                working.get("sections"), working.get("section_declarations")
+            )
+            is not None
+        ):
             raise OpError(
                 "impl is computed from the section records on this plan: the sum of "
                 "effort over sections whose status is done, over that sum plus the "
@@ -2405,6 +2412,12 @@ def _decision_as_stored(item: Any) -> dict:
     return stored
 
 
+_FIRST_SECTION_RECORD_WARNING = (
+    "first section record: impl becomes computed once the records cover "
+    "every declared section"
+)
+
+
 def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
     target = op.get("target")
     if not target or not isinstance(target, str):
@@ -2483,6 +2496,7 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
         record = _new_section_record(working, item)
         sections = working.setdefault("sections", [])
         _refuse_duplicate_id(sections, target, record["id"])
+        first_record = not sections
         # An item carrying no body attaches the typed record to a heading the
         # file already holds and writes nothing else; one carrying a body
         # authors the heading and prose too, which is the create route.
@@ -2493,6 +2507,8 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
                 raise OpError(_section_contract_refusal(str(exc))) from exc
         sections.append(record)
         working.setdefault("section_declarations", {})[record["id"]] = record["status"]
+        if first_record:
+            warnings.append(_FIRST_SECTION_RECORD_WARNING)
         return
     if target == "followups":
         if not isinstance(item, dict):
@@ -2750,8 +2766,12 @@ def _apply_insert_section(
         working, {key: value for key, value in op.items() if key != "op"}
     )
     _queue_authored_section(working, op)
-    working.setdefault("sections", []).append(record)
+    sections = working.setdefault("sections", [])
+    first_record = not sections
+    sections.append(record)
     working.setdefault("section_declarations", {})[record["id"]] = record["status"]
+    if first_record:
+        warnings.append(_FIRST_SECTION_RECORD_WARNING)
 
 
 def _apply_collapse_section(
