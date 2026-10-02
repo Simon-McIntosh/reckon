@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-evidence-for" content="the-crew-contract-fits-one-read">
+  <meta name="plan-verifies" content="the-crew-contract-fits-one-read#s2">
+  <title>Reconciling the rule classification with its scanner | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="classify-rules-reconcile">
+  <h2>Reconciling the rule classification with its scanner</h2>
+  <p>Read at <code>d5d923e072</code>. The SKILL.md fragment's rows were written at 7c25dee7;
+  <code>scan_binding.py</code> reads <strong>539</strong> sentences and <strong>261</strong>
+  candidates at the current head. Re-mapping every row to the candidate whose line span contains its
+  anchor shows the 247 rows serve <strong>176</strong> of the 261 candidates; the remaining
+  <strong>85</strong> were classified at this node: <strong>72</strong> carry new rows 248&#8211;319
+  and <strong>13</strong> are rejected with a reason, so <strong>176 + 72 + 13 = 261</strong>.</p>
+  <p>The 44 test node ids named by the enforced rows of both fragments were re-run at this base in
+  the foreground (<code>logs/gate-enforced-at-base.log</code>, 58 passed, exit 0).</p>
+  <p><strong>Not completed at this node:</strong> the reference-fragment re-scan (sentence counts at
+  head for the nine reference files, and rows for the sentences added since 7c25dee7) is measured
+  (636 sentences at head; 40 sentences added across claude-code.md, worker-backends.md and
+  worker-protocol.md) but the fragment update and its render did not complete before the node's
+  deadline.</p>
+</section>
+</main>
+</body>
+</html>
