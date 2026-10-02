@@ -84,6 +84,25 @@ def armed_projects(root: Path) -> list[str]:
     return projects
 
 
+def _wait_until_no_watcher_survives(
+    root: Path, *, bound: float
+) -> list[tuple[int, str]]:
+    """Wait, bounded, for the child's watcher to be gone, and report survivors.
+
+    The former fixed window allowed that long for teardown to reclaim the
+    producer; the fact itself is observable — the process is gone from
+    ``/proc`` — so poll for it and stop as soon as it holds, bounded by the
+    same window. Whatever is still named on timeout is returned for the
+    assertion to report.
+    """
+    deadline = time.monotonic() + bound
+    survivors = watch_processes_naming(root)
+    while time.monotonic() < deadline and survivors:
+        time.sleep(0.02)
+        survivors = watch_processes_naming(root)
+    return survivors
+
+
 # ── the child that arms and does not clean up after itself ──────────────────
 
 
@@ -192,8 +211,7 @@ def test_a_watcher_armed_by_a_child_session_is_not_left_running(
         "watcher and the reap below measured nothing"
     )
 
-    time.sleep(1.0)
-    survivors = watch_processes_naming(child_base)
+    survivors = _wait_until_no_watcher_survives(child_base, bound=1.0)
     assert survivors == [], (
         f"a watch producer outlived the child pytest session: {survivors}"
     )

@@ -124,6 +124,28 @@ def _capture_stderr(monkeypatch) -> list[str]:
     return writes
 
 
+def _wait_for_the_first_delivery(
+    out_file: Path, err_file: Path, *, bound: float
+) -> None:
+    """Wait, bounded, for the follower's first row and its deprecation notice.
+
+    The former fixed window stood in for the follower's startup cost. Both
+    facts the assertions read are observable in the files the command was
+    given, so wait for them and stop as soon as they are, bounded by the same
+    window rather than always spending it.
+    """
+    deadline = time.monotonic() + bound
+    while time.monotonic() < deadline:
+        try:
+            stream = out_file.read_text(encoding="utf-8")
+            notice = err_file.read_text(encoding="utf-8")
+        except OSError:
+            stream = notice = ""
+        if stream.strip() and ATTENTION_REMOVAL_HORIZON in notice:
+            return
+        time.sleep(0.01)
+
+
 def test_the_removed_flag_reconnects_instead_of_exiting_two(home, monkeypatch) -> None:
     """A follower armed before the removal re-runs its line and survives.
 
@@ -266,7 +288,7 @@ def test_the_deprecation_announcement_reaches_stderr_and_not_the_stream(
             env=env,
         )
         try:
-            time.sleep(1.5)
+            _wait_for_the_first_delivery(out_file, err_file, bound=1.5)
         finally:
             proc.terminate()
             proc.wait(timeout=5)

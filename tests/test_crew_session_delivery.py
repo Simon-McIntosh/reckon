@@ -133,12 +133,37 @@ def test_followers_are_listed_per_project_with_their_liveness(home) -> None:
 # ── Scoping ─────────────────────────────────────────────────────────────────
 
 
-def _follow(project: str, *, settle: float = 0.15, **kwargs) -> list[dict]:
+def _any_event(events: list[dict]) -> bool:
+    """The default collector condition: at least one event has arrived."""
+    return bool(events)
+
+
+def _collect_until(received: list[dict], until, *, bound: float) -> None:
+    """Wait for the expected receipts, bounded, instead of a fixed settle.
+
+    The bound is the window the former sleep always spent; the wait ends as
+    soon as the receipts arrive, so a healthy host pays the delivery latency
+    rather than the whole window, while a follower that delivers nothing still
+    returns to its caller's assertion instead of hanging.
+    """
+    deadline = time.monotonic() + bound
+    while time.monotonic() < deadline and not until(received):
+        time.sleep(0.005)
+
+
+def _follow(
+    project: str,
+    *,
+    settle: float = 0.15,
+    until=_any_event,
+    **kwargs,
+) -> list[dict]:
     """Collect what a follower delivers, then stop it as a session would.
 
     A follower does not end on its own — that is the property under test
     elsewhere in this file — so a bounded read has to stop it, exactly as the
-    harness stops a monitor.
+    harness stops a monitor. The read stops on the caller's condition
+    (``until``), bounded by ``settle``, rather than on a fixed delay.
     """
     received: list[dict] = []
     stop = threading.Event()
@@ -153,15 +178,25 @@ def _follow(project: str, *, settle: float = 0.15, **kwargs) -> list[dict]:
 
     thread = threading.Thread(target=reader, daemon=True)
     thread.start()
-    time.sleep(settle)
+    _collect_until(received, until, bound=settle)
     stop.set()
     thread.join(timeout=2)
     assert not thread.is_alive(), "a stopped follower must return"
     return received
 
 
-def _follow_all(project: str, *, settle: float = 0.15, **kwargs) -> list[dict]:
-    """Collect everything a follower delivers, receipts included."""
+def _follow_all(
+    project: str,
+    *,
+    settle: float = 0.15,
+    until=_any_event,
+    **kwargs,
+) -> list[dict]:
+    """Collect everything a follower delivers, receipts included.
+
+    As ``_follow``, the read is bounded by ``settle`` and ends when ``until``
+    holds rather than after a fixed delay.
+    """
     received: list[dict] = []
     stop = threading.Event()
 
@@ -173,7 +208,7 @@ def _follow_all(project: str, *, settle: float = 0.15, **kwargs) -> list[dict]:
 
     thread = threading.Thread(target=reader, daemon=True)
     thread.start()
-    time.sleep(settle)
+    _collect_until(received, until, bound=settle)
     stop.set()
     thread.join(timeout=2)
     assert not thread.is_alive(), "a stopped follower must return"
@@ -323,6 +358,10 @@ def test_a_follower_waits_for_a_producer_instead_of_refusing(home) -> None:
     thread = threading.Thread(target=reader, daemon=True)
     thread.start()
     try:
+        # A negative-continuity dwell, kept as a fixed window: the assertion is
+        # that nothing arrives, so there is no positive event to wait on — the
+        # delay is the observation window itself, letting the follower run
+        # several passes over an empty fleet before the pointer appears.
         time.sleep(0.05)
         assert received == [], "nothing is live yet, so nothing is reported"
         _write_pointer(home, "r-late", "late-node", session="mine", phase="working")
@@ -357,6 +396,9 @@ def test_a_re_attached_follower_repeats_no_state_it_already_reported(home) -> No
             _wait_for(lambda: len(received) == 1)
         with runs._project_watch_claim("proj", "1h"):
             crew.list_live(project="proj")
+            # A negative-continuity dwell, kept as a fixed window: the claim is
+            # that the re-attached follower emits no repeat, and a repeat would
+            # be the absence of any event, so the window is the observation.
             time.sleep(0.1)
             assert len(received) == 1, "an unchanged run is not news twice"
             _deliver(home, "r-one", "complete")
@@ -449,7 +491,9 @@ def test_an_attaching_follower_reports_its_fleet_as_transitions(home) -> None:
 
     with runs._project_watch_claim("proj", "1h"):
         crew.list_live(project="proj")
-        events = _follow_all("proj", session="mine")
+        events = _follow_all(
+            "proj", session="mine", until=lambda received: len(received) >= 2
+        )
 
     assert [(e["node"], e["to_state"]) for e in events] == [
         ("one-node", "dispatched"),
@@ -673,11 +717,15 @@ def test_a_registration_mid_write_is_not_read_as_unknown_delivery(home) -> None:
     path = runs.follower_lock_path("proj", "mine")
     path.parent.mkdir(parents=True, exist_ok=True)
     settled: list[dict] = []
+    release = threading.Event()
 
     def hold() -> None:
         with runs.follower_claim("proj", "mine", delivery="stream"):
             settled.append(runs.follower_state("proj", "mine"))
-            time.sleep(0.4)
+            # Hold the registration until this reader has finished, so the
+            # observation is bounded on this reader's completion rather than a
+            # fixed window; an unset release at the timeout fails the test.
+            assert release.wait(timeout=WATCHER_LOAD_BOUND_SECONDS)
 
     # An empty file whose lock is held by nobody is not a registration at all.
     path.write_text("")
@@ -694,6 +742,7 @@ def test_a_registration_mid_write_is_not_read_as_unknown_delivery(home) -> None:
         assert observed["delivery_recorded"] == "stream"
         assert observed["follower"].get("pid") == os.getpid()
     finally:
+        release.set()
         thread.join(timeout=2)
 
 

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="Delivery and watcher tests wait on their observed conditions">
+  <meta name="plan-summary" content="Six fixed sleeps in the delivery and watcher test files are replaced by bounded waits on the conditions they were standing in for, two anti-event windows are kept with a comment naming why, and the machine waits end as soon as the condition holds rather than always spending the window.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s3">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,tests,evidence">
+  <title>Delivery and watcher tests wait on their observed conditions | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="session-delivery-waits-on-events" data-reckon="landed" data-when="2026-10-02">
+  <h2>Delivery and watcher tests wait on their observed conditions</h2>
+  <p>Eight fixed waits stood in the four delivery and watcher test files. Six carried an
+  observable condition and became bounded waits on it: the two delivery collectors
+  (<code>tests/test_crew_session_delivery.py</code> <code>_follow</code>/<code>_follow_all</code>)
+  wait for the expected receipts instead of a settle, the mid-write registration holder releases on
+  the reader's completion rather than after <code>0.4&nbsp;s</code>, the cold-watch case polls
+  <code>project_watch_visibility</code> until the seat is live, the removed-flag case waits for the
+  follower's first row and its deprecation notice in the files it was given, and the reaped-watcher
+  measure polls <code>/proc</code> until no survivor remains. Each is bounded by the window the
+  former sleep always spent, so the worst case is unchanged and the typical case pays only the
+  condition's latency. Two sites are negative-continuity anti-event windows — the follower that must
+  report nothing over an empty fleet, and the re-attach that must emit no repeat — where the delay is
+  the observation itself and there is no positive event to wait on; both are kept and now carry a
+  comment naming why.</p>
+  <p>Measured at <code>c8087d0bc5</code> in this worktree: the four files run with
+  <code>-n&nbsp;4</code> report <strong>37 passed, 1 skipped</strong> on three consecutive runs
+  (<code>head-run1.log</code>, <code>head-run2.log</code>, <code>head-run3.log</code>), and the base
+  arm at the same revision reports <em>37 passed, 1 skipped</em> (<code>base-run.log</code>), so the
+  change adds zero failures. The negative control restores the removed-flag site as a fixed
+  <code>time.sleep(0.05)</code>, shorter than the follower's startup: the bounded wait passes while
+  the fixed sleep fails on <code>assert rows</code> (<code>negative-control.log</code>, arm 2
+  <code>EXIT=1</code>).</p>
+</article>
+</body>
+</html>
