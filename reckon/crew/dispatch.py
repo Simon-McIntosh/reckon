@@ -5181,10 +5181,10 @@ def _lane_allowance_unknown(detail: str) -> dict[str, Any]:
 
 # The router averages its slot arithmetic over a window it reports as
 # ``observed_seconds``, and it reports that window from its first reading. A
-# slot figure is therefore used as the router published it; only a block that
-# states no window at all is distrusted, because a figure published without one
-# cannot be shown to rest on any history, and the allowance falls back to
-# headroom, which needs none.
+# slot figure is therefore used only when that window is positive: a zero or
+# negative figure states that no window has been observed, and a figure resting
+# on no history is read exactly as a block that states no window at all, so the
+# allowance falls back to headroom, which needs none.
 def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
     """Choose the extra-worker allowance the lane's router grants this session.
 
@@ -5194,9 +5194,10 @@ def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
     ``new_session_worker_slots`` share when the map is present and does not
     list it; the global ``worker_slots``; and, only when no slot figure is
     published, the request ``headroom`` read as a worker count. A slot figure
-    is used as the router published it once the block states the window it was
-    averaged over; a block that states no window at all cannot be shown to rest
-    on any history, so the allowance falls back to headroom, which needs none.
+    is used as the router published it once the block states a positive window
+    it was averaged over; a window of zero or below is no history, so the
+    allowance falls back to headroom, which needs none, exactly as it does when
+    the block states no window at all.
 
     An allowance of zero or less *holds*: the router has granted no room and
     the reason names the router's own verdict. An allowance that could not be
@@ -5212,8 +5213,10 @@ def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
     session_id = str(session or "").strip()
 
     observed = admission.get(_lane_document.ADMISSION_OBSERVED_SECONDS_KEY)
-    history_is_trusted = isinstance(observed, (int, float)) and not isinstance(
-        observed, bool
+    history_is_trusted = (
+        isinstance(observed, (int, float))
+        and not isinstance(observed, bool)
+        and observed > 0
     )
 
     allowance: int | float | None = None
