@@ -8,9 +8,7 @@ import pytest
 
 from reckon import _backends, crew
 from reckon.flight import FlightConfigError, flight_report, resolve
-from tests.test_crew import CONFIG, _node
-
-pytest_plugins = ("tests.test_crew",)
+from tests.test_crew import CONFIG, _node, home, repo  # noqa: F401
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
@@ -215,7 +213,9 @@ def test_spawn_merges_declared_environment_over_inherited_values(
 
 
 def test_run_record_agent_configuration_excludes_environment(
-    home, repo, monkeypatch: pytest.MonkeyPatch
+    home,  # noqa: F811
+    repo,  # noqa: F811
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # The run owns a harness home only when it is fenced, so the fence is opted
     # into here: without it the plan environment carries the declared entries
