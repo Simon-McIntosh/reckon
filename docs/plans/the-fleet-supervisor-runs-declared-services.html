@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;}">
-<meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -82,6 +82,11 @@
     <pre class="r-fu-prompt">/reckon-build the-fleet-supervisor-runs-declared-services §1</pre>
     </article>
 </section>
-  </main>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261002T053135752847-fleet-supervisor-runs-declared-services" data-who="reckon-build" data-when="2026-10-02T07:47:03.723Z">
+    <div class="r-comment-body"><p>Declared services land in reckon/crew/fleet_supervisor.py: the batch step reads fleet/services.json from the configuration home and runs each declared service as its own-session child holding a lock in the runtime directory, restarts an exited one with 5 s doubling to a 300 s cap reset after 600 s steady running, appends stdout and stderr to one size-bounded log under the state directory, and on reload starts a newly declared service and stops a removed one by its recorded pid; gate base 52 passed / EXIT=0, head 59 passed / EXIT=0 with no added failure id.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
