@@ -2550,11 +2550,28 @@ def _measured_horizon_hours(value: Any) -> float | None:
     return hours if math.isfinite(hours) else None
 
 
+def shared_verdict_inputs(project: str, repo: Path) -> dict[str, Any]:
+    """Load the inputs one pick's verdicts share across every candidate.
+
+    The capability cache and the project's ledger freshness key do not depend on
+    the candidate, but computing the freshness key reloads the whole project
+    ledger. A pick judges every configured backend, so reading it once per pick
+    instead of once per candidate turns a per-candidate ledger read into one.
+    """
+
+    cache = capabilities.load_capabilities()
+    return {
+        "capability_cache": cache,
+        "cache_status": capabilities.project_cache_status(cache, project, root=repo),
+    }
+
+
 def _competence_verdict(
     *,
     resolution: DispatchPlan,
     project: str,
     repo: Path,
+    verdict_inputs: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Compare a neutral node estimate with a neutral-size success horizon."""
 
@@ -2568,8 +2585,12 @@ def _competence_verdict(
     estimated_hours, estimate_provenance = _estimated_hours(
         plan_repo, project, resolution.node
     )
-    cache = capabilities.load_capabilities()
-    cache_status = capabilities.project_cache_status(cache, project, root=repo)
+    if verdict_inputs is None:
+        cache = capabilities.load_capabilities()
+        cache_status = capabilities.project_cache_status(cache, project, root=repo)
+    else:
+        cache = verdict_inputs["capability_cache"]
+        cache_status = verdict_inputs["cache_status"]
     configuration = next(
         (
             item
