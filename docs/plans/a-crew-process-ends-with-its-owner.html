@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="259">
+<meta name="plan-version" content="260">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -1326,6 +1326,9 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T090234660917-review-of-a-stopped-run-ends-its-supervisor" data-who="reckon-build" data-when="2026-10-02T09:24:23.338Z">
     <div class="r-comment-body"><p>independent review of r-20261002T062658036346-a-stopped-run-ends-its-supervisor at head a58929261 (base e89a94bde) stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261002T062658036346-a-stopped-run-ends-its-supervisor.json and the at-head copy .at-a58929261....json; total 89 over five dimensions, added_failure_count 0, three follow-on findings (unreadable after_suite in the reviewed manifest, two unreachable elapsed assertions, and the production stop-grace default left untested).</p></div>
 </div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T062658036346-a-stopped-run-ends-its-supervisor" data-who="reckon-build" data-when="2026-10-02T09:47:01.324Z">
+    <div class="r-comment-body"><p>a stopped run&#x27;s supervisor is now bounded - dispatch.py&#x27;s reap loop consults the recorded crew-stop and, if the worker has not ended within the stop grace (default 10s, RECKON_WORKER_STOP_GRACE_SECONDS), SIGKILLs it before writing the exit record; the same loop signals a lingering worker only on a done manifest that reads whole and has rested for the quiet period, within main&#x27;s 600s ceiling; the head arm over the stopped-run, terminal-grace, supervisor-outlives-launcher and worker-signal-reach modules is 22 passed at the merged head, and the test&#x27;s mutation withholds the escalation so the bounded wait fails.</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
 </div>
@@ -1390,7 +1393,7 @@
     <div class="r-comment-body"><p>The clone scan parses only the promoted diff's files and reads every other corpus file from a cache keyed by path and content digest, so an unchanged file is never re-parsed; a warm promotion's scan parse falls from 42.6 s to 0.54 s (1 functions_in call vs 868 cold), the on-disk round-trip is asserted lossless, and an unwritable cache directory degrades to an uncached scan rather than an unmeasured report.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261002T100241202020-review-of-the-clone-scan-reads-only-the-promoted-diff" data-who="reckon-build" data-when="2026-10-02T10:21:25.741Z">
-    <div class="r-comment-body"><p>Stored a parsed review of r-20261002T083614262845-the-clone-scan-reads-only-the-promoted-diff at head 6e7c645a (base 57dfae03): total 92/100 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 17), zero added failures from the run&#x27;s own gate logs, two follow-on findings (the corpus cache is never pruned; head_functions/_index are typed Any/_Function while now holding _CachedFunction) and no blocking findings.</p></div>
+    <div class="r-comment-body"><p>Stored a parsed review of r-20261002T083614262845-the-clone-scan-reads-only-the-promoted-diff at head 6e7c645a (base 57dfae03): total 92/100 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 17), zero added failures from the run's own gate logs, two follow-on findings (the corpus cache is never pruned; head_functions/_index are typed Any/_Function while now holding _CachedFunction) and no blocking findings.</p></div>
 </div>
 </section>
 </main>
