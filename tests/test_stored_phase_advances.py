@@ -242,7 +242,14 @@ def test_a_spawn_failure_leaves_the_stored_phase_at_launch_failed(
     monkeypatch.setattr(dispatch_module, "_supervisor_spawn_worker", explode)
 
     assert _read_phase(run_id) == "starting"
-    dispatch_module._run_supervisor(fixture["spec_path"])
+    previous = {sig: signal.getsignal(sig) for sig in (signal.SIGTERM, signal.SIGHUP)}
+    try:
+        dispatch_module._run_supervisor(fixture["spec_path"])
+    finally:
+        for sig, handler in previous.items():
+            signal.signal(sig, handler)
+    for sig, handler in previous.items():
+        assert signal.getsignal(sig) == handler
     assert _read_phase(run_id) == "launch-failed"
 
 
@@ -267,7 +274,14 @@ def test_an_abandoned_launch_leaves_the_stored_phase_at_launch_failed(
     monkeypatch.setattr(dispatch_module, "_record_stop_before_spawn", lambda: stopped)
 
     assert _read_phase(run_id) == "starting"
-    dispatch_module._run_supervisor(fixture["spec_path"])
+    previous = {sig: signal.getsignal(sig) for sig in (signal.SIGTERM, signal.SIGHUP)}
+    try:
+        dispatch_module._run_supervisor(fixture["spec_path"])
+    finally:
+        for sig, handler in previous.items():
+            signal.signal(sig, handler)
+    for sig, handler in previous.items():
+        assert signal.getsignal(sig) == handler
     assert _read_phase(run_id) == "launch-failed"
 
 
