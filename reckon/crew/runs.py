@@ -1577,9 +1577,7 @@ def _run_obligation_sweep(
     """Run one obligations sweep on the thread its trigger started."""
     _SWEEP_LOCAL.in_sweep = True
     try:
-        _publish_obligation_snapshots(
-            project, transition_fired=transition_fired
-        )
+        _publish_obligation_snapshots(project, transition_fired=transition_fired)
     finally:
         _SWEEP_LOCAL.in_sweep = False
         producer.sweep_thread = None

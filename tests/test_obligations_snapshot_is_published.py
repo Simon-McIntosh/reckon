@@ -461,7 +461,6 @@ def test_a_zombie_producer_is_not_fresh(fleet: dict[str, Any]) -> None:
         zombie.wait()
 
 
-
 def test_a_slow_sweep_does_not_hold_the_next_transition(
     fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:
