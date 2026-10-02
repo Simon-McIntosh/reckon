@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>the-live-producer-reads-only-what-changed</title>
+<meta name="reckon-type" content="fragment">
+</head>
+<body>
+<section id="the-live-producer-reads-only-what-changed">
+<h3>§11 — the producer's admission check reads only what changed</h3>
+<p>
+The producer's poll called <code>recovery._admission_refusal</code> for every
+live run on every tick. It opened the run's stream and scanned every record to
+EOF with no cursor and no stat gate, so a poll over a fleet whose streams had
+not moved still re-read every transcript, and the per-poll cost grew with
+total stream size rather than with what had been appended. The refusal is
+consumed only where a run's process is gone, so the read is now taken only on
+that arm, and its result is memoised against the stream's stat identity: a
+stream nothing has appended to answers from the memo without opening the file.
+The bytes a scan does consume are counted in their own cell, so a stat-only
+poll reads nothing here and a reader can tell the two apart.
+</p>
+<table>
+<tr><th>measure</th><th>figure</th></tr>
+<tr><td>gate</td><td><code>tests/test_producer_reads_only_what_changed.py tests/test_pointer_classification_is_memoised.py tests/test_backend_observation.py</code> — head 50 passed (EXIT=0), base 49 passed (EXIT=0), zero added failures</td></tr>
+<tr><td>new case</td><td><code>test_a_poll_over_unchanged_runs_reads_no_admission_bytes</code> — unchanged polls read 0 admission bytes, a grown stream reads &gt;0</td></tr>
+<tr><td>negative control</td><td>memo cache-hit removed (whole-stream scan restored) → unchanged poll reads 2682 bytes, the case is red (EXIT=1)</td></tr>
+<tr><td>fleet-node read window</td><td>nine streams growing ≈2 MB each over 60 s: producer rchar 1788 MB → 169 MB; read/appended 90.7× → 8.6×</td></tr>
+<tr><td>fleet-node steady window</td><td>nothing appended: 800 MB → 31 MB (the residue is the bounded 64 KB tail read per run per poll, not a whole-stream scan)</td></tr>
+<tr><td>fleet-node CPU</td><td><code>pidstat -u</code> mean 24.5% → 6.25% (peak 48 → 8)</td></tr>
+<tr><td>registration</td><td>both arms' live registration carries <code>bytes_parsed_last_poll</code>; it reads 0 at arm end, the last poll having parsed nothing after the writers stopped</td></tr>
+</table>
+<p>
+Commit <code>6fd52ac3d</code> (recovery.py sha256 db11bb2f, matching the head
+arm's tree). Measurement driver and arm JSONs are in the run directory
+<code>r-20261002T065704186701-the-live-producer-reads-only-what-changed</code>
+(<code>measure-console.txt</code>, scratch under <code>$TMPDIR/arms/{base,head}</code>).
+</p>
+</section>
+</body>
+</html>

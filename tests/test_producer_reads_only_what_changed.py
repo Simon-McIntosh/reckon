@@ -302,6 +302,43 @@ def test_incremental_transitions_match_the_whole_file_path(
     assert incremental == whole_file
 
 
+def test_a_poll_over_unchanged_runs_reads_no_admission_bytes(fleet) -> None:
+    """The admission path reads nothing when no stream has moved.
+
+    The admission check reads a run's raw stream records rather than the
+    dialect fold, so its reads sit beside the shared stream reads, and a poll
+    over a fleet whose streams are unchanged must read nothing there either.
+    The counter is exercised on growth first, so a zero on the unchanged poll is
+    a reading rather than a meter that never moves.
+    """
+    records = fleet["records"]
+    admission: list[int] = []
+    clock = {"i": 0}
+
+    def sleeper(_interval: float) -> None:
+        index = clock["i"]
+        clock["i"] += 1
+        admission.append(recovery.take_admission_stream_bytes())
+        # The first boundary is over an unchanged fleet; at the second, grow
+        # every stream so the poll after it must rescan the admission path.
+        if index == 1:
+            for record in records:
+                _append(record, chars=PARITY_CHARS, tag=index + 1)
+        if index >= 2:
+            raise _StopTickingError
+
+    generator = recovery.watch_ticker(PROJECT, poll_interval=0.0, sleeper=sleeper)
+    with contextlib.suppress(_StopTickingError):
+        list(generator)
+
+    assert len(admission) >= 3, admission
+    # Both polls over the unchanged fleet read nothing on the admission path.
+    assert admission[0] == 0, admission
+    assert admission[1] == 0, admission
+    # A grown stream is read again, which also proves the counter can be non-zero.
+    assert admission[2] > 0, admission
+
+
 def _terminal_record(run_id: str, *, pad: int) -> str:
     """A stream record that ends the turn, padded so it outgrows a cursor."""
     return (
