@@ -18,8 +18,11 @@ from __future__ import annotations
 
 import ast
 import collections
+import contextlib
 import hashlib
 import io
+import json
+import os
 import subprocess
 import tarfile
 import tokenize
@@ -31,6 +34,14 @@ from typing import Any
 WINDOW_LINES = 6
 FUNCTIONS = (ast.FunctionDef, ast.AsyncFunctionDef)
 DEFINITIONS = (*FUNCTIONS, ast.ClassDef)
+
+# The corpus fingerprint cache is written outside every repository, so the scan
+# of an unchanged file reads its windows instead of re-parsing it. A cache entry
+# is keyed by the file's path and content digest, so a file whose bytes change
+# misses and is parsed again; an entry a newer shape of this module would not
+# write is discarded rather than read as current.
+_CLONE_CACHE_VERSION = 1
+_CORPUS_CACHES: dict[Path, dict[str, Any]] = {}
 
 
 def _digest(value: str) -> str:
@@ -141,6 +152,124 @@ def functions_in(source: str, path: str) -> list[_Function]:
     return result
 
 
+@dataclass(frozen=True)
+class _CachedFunction:
+    """A corpus function rebuilt from its cached windows, without its tokens.
+
+    An unchanged file is never re-parsed: its windows come from the digest-keyed
+    cache and are exactly what ``_Function.windows`` would have produced. Only
+    the windows and the function's reference are held, because a corpus function
+    is compared by fingerprint and named in the report, never token-matched
+    against a base (only a changed file is, and a changed file is parsed again).
+    """
+
+    path: str
+    name: str
+    line: int
+    cached_windows: tuple[tuple[str, int], ...]
+
+    def ref(self) -> dict[str, Any]:
+        return {"path": self.path, "line": self.line, "name": self.name}
+
+    def windows(self) -> list[tuple[str, int]]:
+        return list(self.cached_windows)
+
+
+def _cache_key(path: str, source: str) -> str:
+    """The digest a cached file's windows are stored under.
+
+    The path is folded in with the content so two files carrying identical bytes
+    at different paths cannot share an entry, which would report one path's
+    function as the other's.
+    """
+    return _digest(path + "\0" + source)
+
+
+def _function_record(function: _Function) -> dict[str, Any]:
+    return {
+        "path": function.path,
+        "name": function.name,
+        "line": function.line,
+        "windows": [[fingerprint, line] for fingerprint, line in function.windows()],
+    }
+
+
+def _function_from_record(record: Mapping[str, Any]) -> _CachedFunction:
+    return _CachedFunction(
+        path=str(record["path"]),
+        name=str(record["name"]),
+        line=int(record["line"]),
+        cached_windows=tuple(
+            (str(fingerprint), int(line)) for fingerprint, line in record["windows"]
+        ),
+    )
+
+
+def _cached_functions(source: str, path: str, cache: dict[str, Any]) -> list[Any]:
+    """Return ``source``'s functions, reusing the cache for unchanged bytes."""
+    key = _cache_key(path, source)
+    record = cache.get(key)
+    if isinstance(record, list):
+        try:
+            return [_function_from_record(item) for item in record]
+        except (KeyError, TypeError, ValueError):
+            pass
+    functions = functions_in(source, path)
+    cache[key] = [_function_record(function) for function in functions]
+    return functions
+
+
+def _cache_root(cache_root: str | Path | None = None) -> Path:
+    """The directory the corpus fingerprint cache lives under.
+
+    Outside every repository, so a cache write never dirties a checkout. A
+    caller that isolated its configuration through ``RECKON_HOME`` also isolated
+    its cache. ``RECKON_CLONE_CACHE`` names the location outright when set.
+    """
+    if cache_root is not None:
+        return Path(cache_root)
+    configured = os.environ.get("RECKON_CLONE_CACHE")
+    if configured:
+        return Path(configured).expanduser()
+    cache_home = os.environ.get("XDG_CACHE_HOME")
+    if cache_home:
+        return Path(cache_home) / "reckon" / "clones"
+    reckon_home = os.environ.get("RECKON_HOME")
+    if reckon_home:
+        return Path(reckon_home) / "cache" / "clones"
+    return Path.home() / ".cache" / "reckon" / "clones"
+
+
+def _load_corpus_cache(root: Path) -> dict[str, Any]:
+    try:
+        entry = json.loads((root / "corpus.json").read_text())
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(entry, dict) or entry.get("version") != _CLONE_CACHE_VERSION:
+        return {}
+    files = entry.get("files")
+    return files if isinstance(files, dict) else {}
+
+
+def _store_corpus_cache(root: Path, files: dict[str, Any]) -> None:
+    from reckon._store import write_json_atomically
+
+    write_json_atomically(
+        root / "corpus.json",
+        {"version": _CLONE_CACHE_VERSION, "files": files},
+        fsync=False,
+        indent=None,
+    )
+
+
+def _shared_cache(root: Path) -> dict[str, Any]:
+    cache = _CORPUS_CACHES.get(root)
+    if cache is None:
+        cache = _load_corpus_cache(root)
+        _CORPUS_CACHES[root] = cache
+    return cache
+
+
 def _index(functions: Iterable[_Function]) -> dict[str, list[_Function]]:
     """Map each window fingerprint to the functions that carry it."""
     index: dict[str, list[_Function]] = collections.defaultdict(list)
@@ -173,6 +302,7 @@ def clone_matches(
     changed_paths: Iterable[str],
     base_sources: Mapping[str, str] | None = None,
     corpus_prefixes: Iterable[str] = ("reckon/", "tests/"),
+    cache_root: str | Path | None = None,
 ) -> list[dict[str, Any]]:
     """Report changed functions whose windows duplicate another function.
 
@@ -182,17 +312,42 @@ def clone_matches(
     the base does not carry (an added file) marks all its functions changed.
     Only functions under ``corpus_prefixes`` form the corpus a changed function
     can match against, and a changed function never matches itself.
+
+    A changed file is parsed from the head bytes it is given; every other file
+    under ``corpus_prefixes`` is read from a cache keyed by its path and content
+    digest, so an unchanged file is never re-parsed. A file outside the corpus
+    that did not change contributes nothing and is not read at all.
     """
     prefixes = tuple(corpus_prefixes)
     base_sources = dict(base_sources or {})
-    head_functions: list[_Function] = []
+    changed = frozenset(changed_paths)
+    root = _cache_root(cache_root)
+    cache = _shared_cache(root)
+    before = len(cache)
+    head_functions: list[Any] = []
     for path, source in head_sources.items():
         if not path.endswith(".py"):
             continue
+        if path not in changed and not path.startswith(prefixes):
+            continue
         try:
-            head_functions.extend(functions_in(source, path))
+            if path in changed:
+                parsed = functions_in(source, path)
+                head_functions.extend(parsed)
+                if path.startswith(prefixes):
+                    cache[_cache_key(path, source)] = [
+                        _function_record(function) for function in parsed
+                    ]
+            else:
+                head_functions.extend(_cached_functions(source, path, cache))
         except (SyntaxError, ValueError):
             continue
+    if len(cache) != before:
+        with contextlib.suppress(OSError):
+            # The cache is a speed-up, not a dependency: a directory that
+            # cannot be written leaves the scan reading every file, which still
+            # reports the same matches.
+            _store_corpus_cache(root, cache)
     corpus = [f for f in head_functions if f.path.startswith(prefixes)]
     index = _index(corpus)
     changed_names = _changed_base_names(base_sources, changed_paths)
