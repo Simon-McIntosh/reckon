@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="work-scheduling-surface">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
   <title>Section contract and computed impl | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="64">
+<meta name="plan-version" content="65">
 <meta name="plan-impl" content="0.87">
 </head>
 <body>
@@ -481,6 +481,10 @@
     <h2 id="s11">§11 — Land §1 and §2 together (the schema and its refusal), then §3, then §4 and §5, then §6</h2>
 <section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
 <p>The schema without the refusal is a suggestion; the refusal without the schema has nothing to refuse. §3 depends on §1. §5 depends on §4. §6 is documentation and an audit warning and can run beside any of them.</p><p><strong>Done when</strong> the refusal lands with the schema it refuses for.</p><p>Moved from followup f-scci-001 on section-contract-and-computed-impl by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.84; §1+§2 as one node, §3 after §1, §5 after §4, §6 documentation and an audit warning</p>
+
+    <h2 id="s12">§12 — The insert path&#x27;s first-record warning has a test</h2>
+<section data-reckon="section" data-id="s12" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>§9 (merged at 49fec9bea, review 94) added the warning that a plan's first typed section record makes impl derived from then on, on both the append path and <code>_apply_insert_section</code> in <code>reckon/_store.py</code>. Only the append path is tested, so the insert half could regress unseen.</p><p><strong>Done when</strong> a test inserts the first section record through the insert path on a plan with none, in a temporary docs tree, and asserts the warning; removing the warning from <code>_apply_insert_section</code> makes that test fail.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
