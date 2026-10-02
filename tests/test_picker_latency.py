@@ -1,7 +1,6 @@
 """One project read and one budget snapshot serve every candidate of a pick."""
 
 import importlib
-from datetime import UTC, datetime
 from unittest.mock import Mock
 
 import pytest
@@ -242,12 +241,6 @@ def test_a_planless_pick_never_scans_the_docs_tree(live_facts, monkeypatch, tmp_
 def test_dispatch_picker_reuses_its_budget_and_ledger_inputs(
     live_facts, monkeypatch, request_node, tmp_path
 ):
-    fresh = datetime.now(UTC).isoformat()
-    monkeypatch.setattr(
-        snapshot.resumption,
-        "_read_lane_probe_cache",
-        lambda *a: {"status": "unavailable", "observed_at": fresh},
-    )
     preflight = Mock(side_effect=AssertionError("pick must reuse budget input"))
     runs = Mock(side_effect=AssertionError("pick must reuse ledger input"))
     monkeypatch.setattr(snapshot.budget, "preflight", preflight)
