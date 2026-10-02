@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="248">
+<meta name="plan-version" content="249">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -1310,6 +1310,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T074830041084-review-of-a-stopped-run-ends-its-supervisor" data-who="reckon-build" data-when="2026-10-02T08:09:10.539Z">
     <div class="r-comment-body"><p>review stored for reviewed run r-20261002T062658036346 at base e89a94bde / head e1f64d7a7; scores goal_fidelity 19, evidence 15, scope_discipline 19, durability 15, fit 19 (total 87); added_failure_count 0; gate met — a stopped run's supervisor is now bounded by the stop grace plus the reap poll plus the exit-record write, and the bound case reddens when the escalation is withheld.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T074804768878-the-grace-never-cuts-a-manifest-write" data-who="reckon-build" data-when="2026-10-02T08:52:10.842Z">
+    <div class="r-comment-body"><p>_reap_worker_on_its_terminal_manifest now ends a lingering worker only on a whole, quiet terminal manifest — a done status over an unclosed list field, or a manifest whose mtime keeps advancing, is deferred rather than signalled — with a stated overall ceiling; head arm 19 passed (base 17 passed, zero added failures), negative control 2 failed EXIT=1</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
