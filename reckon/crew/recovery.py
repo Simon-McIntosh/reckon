@@ -3042,7 +3042,12 @@ def _apply_budget_watchdog(
             target_pid=int(pid),
             reason="budget-watchdog",
         )
-        _signal_process_group(int(pid), record.get("pid_start_time"))
+        _signal_process_group(
+            int(pid),
+            record.get("pid_start_time"),
+            run_dir=_run_directory(record),
+            reason="budget-watchdog",
+        )
     except (
         CrewError,
         ProcessLookupError,
@@ -7419,7 +7424,12 @@ def unwatch(project: str) -> dict[str, Any]:
             # ordered after it would have nothing on disk to attribute the stop
             # to. The record names the watcher pid, so a stop that could not be
             # delivered is still readable as this command's attempt.
-            _write_sender_record(path.parent, target_pid=pid, reason="unwatch")
+            _write_sender_record(
+                path.parent,
+                target_pid=pid,
+                reason="unwatch",
+                detail=f"watcher for project {project}",
+            )
             try:
                 _signal_process_group(pid, watcher.get("pid_start_time"))
             except ProcessLookupError:
