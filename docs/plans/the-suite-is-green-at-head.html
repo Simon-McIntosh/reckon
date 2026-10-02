@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="225">
+<meta name="plan-version" content="226">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1866,6 +1866,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261002T070628834348-review-of-follower-reload-holds-under-load" data-who="reckon-build" data-when="2026-10-02T07:42:45.929Z">
     <div class="r-comment-body"><p>Independent review of r-20261002T055452888269-follower-reload-holds-under-load recorded; goal_fidelity 19, evidence 17, scope_discipline 19, durability 19, fit 18 (total 92); reviewed base fd667e1c cf head 4a924835e; added_failure_count 0; two follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261002T055452888269-follower-reload-holds-under-load" data-who="reckon-build" data-when="2026-10-02T07:44:50.326Z">
+    <div class="r-comment-body"><p>The re-parented reload case no longer races a transient replacement image — it arms the follower with an owner of its own that is neither parent nor parent&#x27;s parent, keeps that owner alive until the replacement is observed, then kills it to prove which process the replacement resolved; the file passes 10 of 10 consecutive -n 8 runs. Commit f03d27f92.</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260928T142353317590-s21-audit-placement" data-who="reckon-build" data-when="2026-09-28T15:23:36.908Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-suite-is-green-at-head/s21-audit-placement.html</p></div>
