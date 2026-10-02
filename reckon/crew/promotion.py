@@ -4,6 +4,7 @@ import html
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -1186,6 +1187,113 @@ def _require_gate_log_agrees(
         )
 
 
+def _head_arm_log_failure_ids(gate_check: Mapping[str, Any] | None) -> set[str] | None:
+    """The failing ids the head arm's log reports, or ``None`` when it is unreadable.
+
+    The head arm of a gated measurement is the run's own check, so its log is
+    the one the promotion cites: the ids are read from that log's own
+    ``FAILED``/``ERROR`` summary lines, canonicalised the way every other arm
+    reader canonicalises them. A citation that names no path, or one that
+    cannot be read from here, reports ``None`` rather than an empty set — an
+    unread log is not a log that failed nothing, and a comparison taken over an
+    empty set would claim exactly that.
+    """
+    if not isinstance(gate_check, Mapping):
+        return None
+    raw = str(gate_check.get("log_path") or "").strip()
+    if not raw:
+        return None
+    try:
+        log_text = Path(raw).expanduser().read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    return _control_failure_ids(log_text)
+
+
+def _zero_added_against_a_red_base(
+    record: Mapping[str, Any], gate_check: Mapping[str, Any] | None
+) -> bool:
+    """Whether the run's own manifest shows a red base the head did not worsen.
+
+    A gate is judged here by its delta against its base, so a nonzero exit
+    beside a passing verdict is admitted only when the manifest records a
+    baseline observation that is itself red — a nonzero exit status — and whose
+    recorded failure ids include every id the head arm's log reports. That is
+    zero added against a red base, which is what the passing verdict then
+    states; anything less is refused by the caller.
+
+    Every condition is asked of the run's own records, never inferred: a
+    manifest that records no baseline, a baseline with no readable status or no
+    readable list of failure ids, and a head log that cannot be read each leave
+    the delta unmeasured, and an unmeasured delta cannot license the pair.
+    """
+    manifest = _fresh_manifest(record)
+    if manifest is None:
+        return False
+    baseline = manifest.get("baseline_suite")
+    if not isinstance(baseline, Mapping):
+        return False
+    base_exit = baseline.get("exit_status")
+    if isinstance(base_exit, bool) or not isinstance(base_exit, int) or base_exit == 0:
+        return False
+    base_ids = baseline.get("failure_ids")
+    if not isinstance(base_ids, list) or any(
+        not isinstance(test_id, str) or not test_id.strip() for test_id in base_ids
+    ):
+        return False
+    canonical_base = {
+        review_module.canonical_node_id(test_id.strip()) for test_id in base_ids
+    }
+    head_ids = _head_arm_log_failure_ids(gate_check)
+    if head_ids is None:
+        return False
+    return head_ids <= canonical_base
+
+
+def _require_verdict_matches_exit_status(
+    run_id: str,
+    record: Mapping[str, Any],
+    gate_check: Mapping[str, Any] | None,
+    *,
+    verdict: str,
+) -> None:
+    """Refuse a passing verdict recorded beside a nonzero exit status.
+
+    The verdict and the exit status are two statements about one run, and a
+    check that reads only the log's terminal ``EXIT=<n>`` record cannot compare
+    them: a log whose command wrote no such line records no status at all, so
+    the comparison short-circuits on the missing record and a passing verdict
+    sits beside a nonzero status unreported. The asserted status is therefore
+    compared with the verdict directly, whether or not the log carries an exit
+    record of its own.
+
+    The one pair admitted is the repository's own delta rule: an armed run
+    whose manifest records a red baseline covering every id the head arm's log
+    reports measures zero added against that base, so its passing verdict is
+    the delta verdict and not a contradiction. The admission is read from the
+    run's records by ``_zero_added_against_a_red_base``; everything else
+    refuses, naming both the verdict and the status.
+    """
+    if verdict != "passed" or not isinstance(gate_check, Mapping):
+        return
+    asserted = gate_check.get("exit_status")
+    if isinstance(asserted, bool) or not isinstance(asserted, int) or asserted == 0:
+        return
+    if _zero_added_against_a_red_base(record, gate_check):
+        return
+    raise CrewError(
+        f"run {run_id!r} asserts gate 'passed' beside exit status {asserted}: a "
+        "passed verdict states the check succeeded and a nonzero exit status "
+        "states it did not, so the row would record two contradictory readings "
+        "of one run. Found: gate 'passed' with a nonzero exit status, "
+        f"'{asserted}'. Re-promote with the verdict the evidence shows, or — "
+        "when the base this check measures against is itself red and the head "
+        "adds no failure to it — record the baseline_suite observation in the "
+        "manifest so the zero added against that base is what the passing "
+        "verdict states"
+    )
+
+
 def _promoted_worker_exit(run_id: str) -> dict[str, Any] | None:
     """The worker's exit record, read verbatim from the run directory.
 
@@ -1444,6 +1552,80 @@ def _require_runnable_gate_command(
         "exit non-zero and record a failure the merge did not cause. Record the "
         "command itself — the literal file list, not a description of it — and "
         "put the readable summary in the gate log header or in --outcome"
+    )
+
+
+# A leading ``NAME=value`` token is a shell assignment rather than the program
+# name, so the executable lookup starts at the first token that is not one.
+_SHELL_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+
+
+def _require_executable_gate_command(
+    run_id: str,
+    gate_check: Mapping[str, Any] | None,
+) -> None:
+    """Refuse a recorded gate command whose first token names no executable.
+
+    The recorded command is what the integration re-run executes, so it has to
+    name a program that can start. The command is tokenised the way a shell
+    would tokenise it, leading ``NAME=value`` assignments are skipped, and the
+    first remaining token either carries a path separator — and must then be an
+    existing executable file — or is looked up on ``PATH``. A command written
+    as prose can satisfy every shape check that refuses placeholders, ellipses
+    and prose parentheticals and still name no program at all, so the token
+    itself is resolved here and a promotion recording such a command is refused
+    before the row is written.
+
+    Refusal reaches only a command whose program cannot be resolved from here:
+    the lookup is the same ``PATH`` the promotion process runs under, and a
+    command that resolves still promotes on whatever the other gate checks
+    make of its evidence.
+    """
+    if not isinstance(gate_check, Mapping):
+        return
+    command = str(gate_check.get("command") or "").strip()
+    if not command:
+        return
+    try:
+        argv = shlex.split(command)
+    except ValueError as unparseable:
+        raise CrewError(
+            f"run {run_id!r} records the gate command {command!r}, which does "
+            f"not parse as a shell command ({unparseable}): the integration "
+            "re-run would execute the text a shell cannot tokenise. Found: a "
+            "command that does not parse. Record the literal command that ran, "
+            "quoting its arguments, and put any readable summary in the gate "
+            "log header or in --outcome"
+        ) from unparseable
+    while argv and _SHELL_ASSIGNMENT.match(argv[0]):
+        argv = argv[1:]
+    if not argv:
+        raise CrewError(
+            f"run {run_id!r} records the gate command {command!r}, which names "
+            "no program: it carries only shell variable assignments. Found: a "
+            "command whose first token names no executable. Record the literal "
+            "command that ran, and put any readable summary in the gate log "
+            "header or in --outcome"
+        )
+    program = argv[0]
+    if "/" in program:
+        candidate = Path(program).expanduser()
+        try:
+            runnable = candidate.is_file() and os.access(candidate, os.X_OK)
+        except OSError:
+            runnable = False
+    else:
+        runnable = shutil.which(program) is not None
+    if runnable:
+        return
+    raise CrewError(
+        f"run {run_id!r} records the gate command {command!r}, whose program "
+        f"{program!r} names no executable — it is neither an existing "
+        "executable file nor a command found on PATH, so the integration "
+        "re-run would fail before running the check. Found: a first token that "
+        "names no executable. Record the literal command that ran — the real "
+        "program the check was started with — and put any readable summary in "
+        "the gate log header or in --outcome"
     )
 
 
@@ -5108,7 +5290,9 @@ def complete(
             commit_list_shortfall,
             _commits_beyond_base,
             _gate_log_agrees,
+            _verdict_matches_exit_status,
             _runnable_gate_command,
+            _executable_gate_command,
             review_waived,
             _standing_suite,
             resume_waived,
@@ -5141,11 +5325,20 @@ def complete(
                 # unwind.
                 lambda: _require_commits_beyond_base(run_id, record, commit_list),
                 lambda: _require_gate_log_agrees(run_id, gate_check, verdict=verdict),
+                # The verdict and the asserted status are two statements about
+                # one run: a passing verdict beside a nonzero exit status is
+                # refused from those two facts alone, whether or not the log
+                # carries a terminal EXIT record of its own for the comparison
+                # above to read.
+                lambda: _require_verdict_matches_exit_status(
+                    run_id, record, gate_check, verdict=verdict
+                ),
                 # The recorded command is what the integration re-run executes,
-                # so a text that describes the check must be refused here rather
-                # than land on a row that later reports a failure the merge did
-                # not cause.
+                # so a text that describes the command or names no program must
+                # be refused here rather than land on a row that later reports a
+                # failure the merge did not cause.
                 lambda: _require_runnable_gate_command(run_id, gate_check),
+                lambda: _require_executable_gate_command(run_id, gate_check),
                 _review_gate,
                 # The project's declared suite is the gate that sees the whole
                 # tree, and the lighter promotions wait on it. The tier is the
