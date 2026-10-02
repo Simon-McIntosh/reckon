@@ -19,10 +19,6 @@ from reckon.crew.pace import policy as pace_policy
 
 from .types import Candidate, PickRequest
 
-# Account refusals are eligibility data, independent of a budget reading.
-REFUSED_BACKENDS = frozenset({"codex-spark"})
-REFUSED_MODELS = frozenset({"gpt-5.3-codex-spark"})
-
 
 def recent_outcomes(
     records: list[dict[str, Any]],
@@ -124,11 +120,9 @@ def budget_view(
 ) -> dict[str, Any]:
     """Compose one dated live budget view using its existing state and pace readers."""
     windows = budget.recorded_windows(project, config, root=repo, records=records)
-    probeable = [
-        name
-        for name, settings in config.get("backends", {}).items()
-        if name not in REFUSED_BACKENDS and settings.get("model") not in REFUSED_MODELS
-    ]
+    # Every configured backend is budget-probed; nothing is filtered by name, so a
+    # refusal can only come from a live serving observation, never a fixed list.
+    probeable = list(config.get("backends", {}))
     # The budget view composes state_for and group_pace, including the account's
     # operative window. Consuming its verdict keeps every clock in one authority.
     return budget.preflight(
@@ -181,8 +175,6 @@ def candidates(
         )
         model = backend.get("model")
         reasons = []
-        if name in REFUSED_BACKENDS or model in REFUSED_MODELS:
-            reasons.append("account-refused-model")
         verdict = budget_by_backend.get(name) or {
             "held": False,
             "state": budget.BudgetState(name).as_dict(),
