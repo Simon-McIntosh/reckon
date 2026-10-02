@@ -181,3 +181,34 @@ def test_first_section_record_append_warns_impl_becomes_computed(
     ), result
     written = _plan_html.read_state(path.read_text(encoding="utf-8"))
     assert [record["id"] for record in written["sections"]] == ["s1"]
+
+
+def test_first_section_record_insert_warns_impl_becomes_computed(
+    tmp_path: Path,
+) -> None:
+    checkout = tmp_path / "repo"
+    slug = "first-inserted-record"
+    path = _write_plan(checkout, slug, [])
+
+    result = _edit(
+        checkout,
+        slug,
+        {
+            "op": "insert_section",
+            "id": "s3",
+            "title": "Third section",
+            "body": "<p>Third body.</p>",
+            "effort_hours": 1.0,
+            "capability": deepcopy(CAPABILITY),
+            "links": [],
+        },
+    )
+
+    assert result["ok"] is True, result
+    warnings = " ".join(result.get("warnings") or [])
+    assert (
+        "impl becomes computed once the records cover every declared section"
+        in warnings
+    ), result
+    written = _plan_html.read_state(path.read_text(encoding="utf-8"))
+    assert [record["id"] for record in written["sections"]] == ["s3"]
