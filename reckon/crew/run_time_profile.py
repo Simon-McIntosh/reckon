@@ -417,11 +417,13 @@ def local_lane_load() -> dict[str, Any]:
     # was averaged over is positive, and falls back to headroom otherwise, which
     # needs no history. Reuse that decision rather than restate the window test
     # here, so the load reading and the dispatch allowance cannot disagree about
-    # which slot figures rest on observed history.
+    # which slot figures rest on observed history. The decision is read from the
+    # allowance's own structured window flag, never from its human-readable
+    # source label: rewording the label cannot move the gate.
     allowance = _lane_worker_allowance(document, session="")
     worker_slots = (
         _known(admission.get("worker_slots"))
-        if "worker slots" in str(allowance.get("source") or "")
+        if allowance.get("rests_on_observed_window")
         else None
     )
     throughput = lane_document.read_lane_throughput(

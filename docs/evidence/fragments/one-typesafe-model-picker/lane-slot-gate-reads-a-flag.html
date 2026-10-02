@@ -1,0 +1,86 @@
+<article class="landed-report" data-node="lane-slot-gate-reads-a-flag">
+  <h3>The local lane slot gate reads a structured window flag, not a label substring</h3>
+  <p>
+    <strong>Base inspected:</strong>
+    <code>e6cfdeea0bd7bd3a6a959c243dcdd3a2ff416eef</code>.
+    <code>local_lane_load</code> in <code>reckon/crew/run_time_profile.py</code>
+    decided whether to carry the router's <code>worker_slots</code> by matching
+    the substring <code>"worker slots"</code> against the dispatcher
+    allowance's human-readable <code>source</code> label:
+    <code>"worker slots" in str(allowance.get("source"))</code>. That coupled a
+    machine decision to prose. Reword the label — a legitimate change to a
+    message — and the gate moves with it, and a label that happens to read like
+    a slot figure carries a value that rests on no observed window. The
+    allowance already knows the fact the gate wanted; it simply did not publish
+    it as a field.
+  </p>
+
+  <h4>What changed</h4>
+  <table>
+    <thead><tr><th>path</th><th>change</th><th>why</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>reckon/crew/dispatch.py</code></td>
+        <td><code>_lane_worker_allowance</code> now returns
+        <code>rests_on_observed_window</code> beside its <code>source</code>
+        label — true exactly when the allowance was taken from a router slot
+        figure inside the block that states a positive
+        <code>observed_seconds</code>, and false for the headroom fallback and
+        for the unknown decision.</td>
+        <td>The window test the function already applied is published as a
+        field, so a caller needs no spelling of the label to reuse the
+        decision.</td>
+      </tr>
+      <tr>
+        <td><code>reckon/crew/run_time_profile.py</code></td>
+        <td><code>local_lane_load</code> gates <code>worker_slots</code> on
+        <code>allowance.get("rests_on_observed_window")</code> instead of the
+        <code>"worker slots"</code> substring.</td>
+        <td>The load surface and the dispatch allowance cannot disagree about
+        which slot figures rest on observed history, and the gate no longer
+        moves when a label is reworded.</td>
+      </tr>
+      <tr>
+        <td><code>tests/test_run_time_profile.py</code></td>
+        <td>Adds
+        <code>test_the_slot_gate_reads_the_window_flag_not_the_source_label</code>
+        (every source label reworded to a sentence with no slot wording; the
+        figure is still carried when the flag is true and withheld when it is
+        false) and
+        <code>test_a_slot_labelled_source_without_the_window_flag_carries_nothing</code>
+        (a label reading like the global slot figure with the flag false is
+        still dropped).</td>
+        <td>Each case fails against the substring gate: the reworded label
+        drops a real figure, and the slot-worded label carries an unreal
+        integer <code>5</code> where <code>None</code> is required.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h4>Measure</h4>
+  <p>
+    Gate <code>tests/test_run_time_profile.py</code> and
+    <code>tests/test_dispatch_counts_worker_slots.py</code>:
+    <strong>24 passed</strong> at head, <code>EXIT=0</code>. At the base arm —
+    the head test file run against the base module — the two new cases fail
+    (<strong>2 failed, 11 passed</strong>, <code>EXIT=1</code>). The declared
+    negative control — gate <code>local_lane_load</code> on the label.
+    substring again — fails the same two ids at <code>EXIT=1</code>.
+  </p>
+  <table>
+    <thead><tr><th>arm</th><th>result</th><th>log</th></tr></thead>
+    <tbody>
+      <tr><td>head (module + tests)</td><td>24 passed, EXIT=0</td><td><code>head-gate.log</code></td></tr>
+      <tr><td>base module, head tests</td><td>2 failed, 11 passed, EXIT=1</td><td><code>base-arm.log</code></td></tr>
+      <tr><td>negative control (substring gate restored)</td><td>2 failed, 11 passed, EXIT=1</td><td><code>negative-control.log</code></td></tr>
+    </tbody>
+  </table>
+  <p>
+    Logs live under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T202331013825-lane-slot-gate-reads-a-flag/</code>.
+    Both failing ids are the new cases:
+    <code>test_the_slot_gate_reads_the_window_flag_not_the_source_label</code>
+    and
+    <code>test_a_slot_labelled_source_without_the_window_flag_carries_nothing</code>.
+  </p>
+</article>
