@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:section-contract-and-computed-impl">
+  <meta name="plan-verifies" content="reckon:section-contract-and-computed-impl#s9">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-02">
+  <meta name="evidence-commit" content="56fc71736">
+  <title>The authored impl stays authorable while the records are partial | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="authorable-while-partial">
+  <h2>One coverage rule decides the refusal, the derivation and the write</h2>
+  <p><code>set impl</code> refused on any plan carrying a section record, so a plan whose records do
+  not cover its declared sections kept an authored figure it could no longer change. The refusal in
+  <code>reckon/_store.py</code> now calls <code>derive_impl_from_sections</code> and fires only when
+  it answers, and the page writer's <code>_impl_is_carried_by_records</code> in
+  <code>reckon/_plan_html.py</code> asks the same rule: records carry the figure only when the
+  derivation answers, and a partial plan stores its authored <code>plan-impl</code>. A first section
+  record, through append or insert, carries the warning that impl becomes computed once the records
+  cover every declared section.</p>
+  <p>The writer half is what makes the set land. Measured on a plan declaring s1 <code>done</code>
+  and s2 <code>implementable</code> carrying the s1 record alone, mcp <code>set impl 0.25</code>
+  returned <code>ok True</code> while the file stayed byte-identical and no <code>plan-impl</code>
+  existed afterwards; with the writer gated on the coverage rule the same call writes
+  <code>plan-impl 0.25</code> and reads back <code>impl=0.25</code> with
+  <code>impl_source=authored</code>.</p>
+  <p><strong>Gate.</strong> The new test plus every test file naming <code>set impl</code>,
+  <code>section_declarations</code> or <code>derive_impl_from_sections</code>, and the two files
+  exercising the derivation and the computed-impl refusal — 21 files at base, 22 at head,
+  <code>-n 8 --timeout=300</code> on both arms. Base at <code>4d0c843ec</code>:
+  <strong>2335 passed</strong>, <code>EXIT=0</code>. Head at <code>56fc71736</code>:
+  <strong>2338 passed</strong>, <code>EXIT=0</code> (the three new cases). <strong>No failure id is
+  added.</strong> The base tree is a <code>git archive</code> extraction made repository-shaped with
+  an empty marker commit, so <code>test_well_formed_evidence_record_with_resolving_shas_is_quiet</code>
+  resolves its shas and reads true. Logs: <code>logs/gate-base2.log</code>,
+  <code>logs/gate-head2.log</code>.</p>
+  <p><strong>Negative control.</strong> The declared mutation — restore the refusal on any section
+  record in <code>reckon/_store.py</code> — applied to the head: <strong>1 failed, 2 passed</strong>,
+  <code>EXIT=1</code>, the failure being the partial-records case
+  (<code>test_set_impl_succeeds_while_records_are_partial</code>) refused by the mutated store while
+  the head arm fails no id. Log: <code>logs/negative-control2.log</code>.</p>
+  <p>changed paths: <code>reckon/_store.py</code> (<code>4289e50a3</code>),
+  <code>reckon/_plan_html.py</code> (<code>56fc71736</code>),
+  <code>tests/test_impl_stays_authorable_while_records_are_partial.py</code>
+  (<code>4289e50a3</code>). ruff <code>check</code> and <code>format --check</code> report no finding
+  the base did not (<code>_store.py</code> 16 base/16 head; <code>_plan_html.py</code> 15 base/15
+  head; the test file clean).</p>
+</section>
+</main>
+</body>
+</html>
