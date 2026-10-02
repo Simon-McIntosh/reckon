@@ -10,7 +10,11 @@ however fast it looks.
 The mutating direction is covered too: a snapshot that is not fresh is answered
 by one line naming the reason and the remedy, and the snapshot file is
 byte-identical afterwards, because the hook reads that file and never writes
-it. A fresh snapshot is injected exactly as the derived checklist was, and a
+it. A not-fresh snapshot whose producer is mid-reload is the exception: the
+last snapshot's list is injected under the reloading heading with no remedy
+when a live producer runs older code, when a producer has just gone and the
+publication is within the reload window, or when the seat recorded a reload
+intent within it; only an absence older than that window earns the remedy. A fresh snapshot is injected exactly as the derived checklist was, and a
 fresh snapshot naming a duty the live fleet does not have is injected as it
 stands, which is what shows the list comes from the file rather than a
 derivation.
@@ -277,10 +281,16 @@ def test_the_prompt_path_loads_no_derivation_module(
     )
 
 
-def test_each_not_fresh_reason_emits_one_line_and_leaves_the_snapshot_alone(
+def test_each_not_fresh_reason_speaks_once_and_leaves_the_snapshot_alone(
     repository: Path, tmp_path: Path, follower: None
 ) -> None:
-    """Each reason speaks once, names the remedy, and changes nothing."""
+    """A remedy speaks once and changes nothing; a reload shows the list.
+
+    The absent and aged cases each name their reason and the remedy. The
+    stale-code case is no longer a remedy: a live producer on older code is
+    reloading, so it answers with the last snapshot's list under the reloading
+    heading and withholds the remedy instead.
+    """
     absent = _drive(_prompt_payload(repository), tmp_path=tmp_path)
     path = obligation_snapshot.snapshot_path(PROJECT, SESSION)
     line = _line(absent)
@@ -291,9 +301,11 @@ def test_each_not_fresh_reason_emits_one_line_and_leaves_the_snapshot_alone(
     _publish(obligations_view(PROJECT, SESSION), code_stamp="0" * 64)
     before = path.read_bytes()
     stale_code = _drive(_prompt_payload(repository), tmp_path=tmp_path)
-    line = _line(stale_code)
-    assert "older code" in line
-    assert REMEDY in line
+    text = _injected(stale_code)
+    header = text.splitlines()[0]
+    assert "producer reloading" in header, header
+    assert re.search(r"last snapshot \d+s old", header), header
+    assert REMEDY not in text, "a reloading producer earns no remedy"
     assert path.read_bytes() == before, "a read must not rewrite the snapshot"
 
     document = obligation_snapshot.document_for(
@@ -314,7 +326,14 @@ def test_each_not_fresh_reason_emits_one_line_and_leaves_the_snapshot_alone(
 def test_a_reused_pid_is_not_fresh(
     repository: Path, tmp_path: Path, follower: None
 ) -> None:
-    """The recorded start time is what makes a pid evidence, so reuse fails it."""
+    """The recorded start time is what makes a pid evidence, so reuse fails it.
+
+    The publication is aged past the reload window for the reuse case, so the
+    two readings stay distinguishable: a pid accepted on its start time would
+    leave the snapshot merely stale, while a pid whose start time does not
+    match is no producer at all, and only the latter earns the no-producer
+    line rather than the reloading list.
+    """
     _live_run(repository, tmp_path, run_id=BLOCKED_RUN_ID, node_id=BLOCKED_NODE_ID)
     child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(120)"])
     try:
@@ -325,11 +344,13 @@ def test_a_reused_pid_is_not_fresh(
         accepted = _drive(_prompt_payload(repository), tmp_path=tmp_path)
         assert accepted.stdout, "the true start time must read as fresh"
 
-        _publish(
+        document = obligation_snapshot.document_for(
             obligations_view(PROJECT, SESSION),
-            pid=child.pid,
-            pid_start_time=str(int(start) - 1),
+            computed_at=datetime.now(tz=UTC) - timedelta(seconds=600),
+            stream_offset=0,
+            producer=_producer(pid=child.pid, pid_start_time=str(int(start) - 1)),
         )
+        obligation_snapshot.write_snapshot(PROJECT, SESSION, document)
         reused = _drive(_prompt_payload(repository), tmp_path=tmp_path)
     finally:
         child.kill()
@@ -391,3 +412,131 @@ def test_the_injected_list_is_the_snapshot_not_the_live_fleet(
         "the live blocked run must not appear: the hook read the snapshot, not "
         "the fleet"
     )
+
+
+def test_a_live_producer_on_older_code_shows_the_last_snapshot(
+    repository: Path, tmp_path: Path, follower: None
+) -> None:
+    """A reload in progress shows the list under ``producer reloading``.
+
+    A live producer whose recorded stamp is older than the source has not
+    caught up yet, which is a reload and not a reason to cycle the seat. The
+    first drive shows the fresh list; flipping only the stamp must speak again
+    -- the same duties under a different sentence -- and the heading then
+    carries the snapshot's age and the reloading words with no remedy. A third
+    drive inside the same reload is quiet again, because nothing changed.
+    """
+    _live_run(repository, tmp_path, run_id=BLOCKED_RUN_ID, node_id=BLOCKED_NODE_ID)
+    path = _publish_derived()
+    fresh = _drive(_prompt_payload(repository), tmp_path=tmp_path)
+    assert BLOCKED_RUN_ID in _injected(fresh)
+    assert REMEDY not in _injected(fresh)
+
+    _publish(obligations_view(PROJECT, SESSION), code_stamp="0" * 64)
+    before = path.read_bytes()
+    reloading = _drive(_prompt_payload(repository), tmp_path=tmp_path)
+    text = _injected(reloading)
+    header = text.splitlines()[0]
+    assert BLOCKED_RUN_ID in text, text
+    assert "producer reloading" in header, header
+    assert re.search(r"last snapshot \d+s old", header), header
+    assert REMEDY not in text, "a reloading producer earns no remedy"
+    assert path.read_bytes() == before, "a read must not rewrite the snapshot"
+
+    repeated = _drive(_prompt_payload(repository), tmp_path=tmp_path)
+    assert repeated.stdout == "", "an unchanged list and reload state is not repeated"
+
+
+def test_a_restarting_producer_shows_the_last_snapshot(
+    repository: Path, tmp_path: Path, follower: None
+) -> None:
+    """A producer gone for a moment is reloading, not absent.
+
+    The recorded pid belongs to no process, but the last publication is
+    seconds old -- the gap while a replacement image starts and publishes --
+    so the last list is shown under ``producer reloading`` and the absence
+    remedy is withheld until the reload window passes.
+    """
+    _live_run(repository, tmp_path, run_id=BLOCKED_RUN_ID, node_id=BLOCKED_NODE_ID)
+    _publish(
+        obligations_view(PROJECT, SESSION),
+        pid=_ABSENT_HARNESS_PID,
+        pid_start_time="1",
+    )
+
+    completed = _drive(_prompt_payload(repository), tmp_path=tmp_path)
+
+    text = _injected(completed)
+    header = text.splitlines()[0]
+    assert BLOCKED_RUN_ID in text, text
+    assert "producer reloading" in header, header
+    assert re.search(r"last snapshot \d+s old", header), header
+    assert REMEDY not in text, "a reloading producer earns no remedy"
+
+
+def test_a_recorded_reload_intent_shows_the_last_snapshot(
+    repository: Path, tmp_path: Path, follower: None
+) -> None:
+    """The seat's own reload declaration counts while it is fresh.
+
+    The seat writes ``reload_started_at`` as an in-place replacement begins, so
+    a reload declared moments ago over an older publication still shows that
+    publication's list with its age and no remedy, exactly as a live stale
+    producer does.
+    """
+    _live_run(repository, tmp_path, run_id=BLOCKED_RUN_ID, node_id=BLOCKED_NODE_ID)
+    document = obligation_snapshot.document_for(
+        obligations_view(PROJECT, SESSION),
+        computed_at=datetime.now(tz=UTC) - timedelta(seconds=600),
+        stream_offset=0,
+        producer=_producer(pid=_ABSENT_HARNESS_PID, pid_start_time="1"),
+    )
+    obligation_snapshot.write_snapshot(PROJECT, SESSION, document)
+    seat = runs.watch_lock_path(PROJECT)
+    seat.parent.mkdir(parents=True, exist_ok=True)
+    _write_json(seat, {"reload_started_at": datetime.now(tz=UTC).isoformat()})
+
+    completed = _drive(_prompt_payload(repository), tmp_path=tmp_path)
+
+    text = _injected(completed)
+    header = text.splitlines()[0]
+    assert BLOCKED_RUN_ID in text, text
+    assert "producer reloading" in header, header
+    assert re.search(r"last snapshot \d+[dhms]", header), header
+    assert REMEDY not in text, "a reloading producer earns no remedy"
+
+
+def test_an_absence_past_the_reload_window_names_the_remedy(
+    repository: Path, tmp_path: Path, follower: None
+) -> None:
+    """Past the window, with no live producer, the remedy is the answer.
+
+    No live producer has published for longer than the reload window, so the
+    seat is absent rather than reloading: the no-producer line carries the
+    remedy again. A reload intent older than the window does not hold it back,
+    because a healthy reload does not take that long.
+    """
+    _live_run(repository, tmp_path, run_id=BLOCKED_RUN_ID, node_id=BLOCKED_NODE_ID)
+    document = obligation_snapshot.document_for(
+        obligations_view(PROJECT, SESSION),
+        computed_at=datetime.now(tz=UTC) - timedelta(seconds=600),
+        stream_offset=0,
+        producer=_producer(pid=_ABSENT_HARNESS_PID, pid_start_time="1"),
+    )
+    obligation_snapshot.write_snapshot(PROJECT, SESSION, document)
+    seat = runs.watch_lock_path(PROJECT)
+    seat.parent.mkdir(parents=True, exist_ok=True)
+    _write_json(
+        seat,
+        {
+            "reload_started_at": (
+                datetime.now(tz=UTC) - timedelta(seconds=600)
+            ).isoformat()
+        },
+    )
+
+    completed = _drive(_prompt_payload(repository), tmp_path=tmp_path)
+
+    line = _line(completed)
+    assert "no producer" in line, line
+    assert REMEDY in line, line
