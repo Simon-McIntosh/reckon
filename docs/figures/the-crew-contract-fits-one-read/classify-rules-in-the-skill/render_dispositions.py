@@ -69,7 +69,7 @@ def main() -> int:
         f'<text x="20" y="30" font-family="sans-serif" font-size="16" fill="#111">'
         f'skills/reckon-build/SKILL.md — {total} rows</text>\n'
         f'<text x="20" y="48" font-family="sans-serif" font-size="12" fill="#555">'
-        f'539 sentences, 261 candidates at head d5d923e072; every candidate is a row or a listed reject</text>\n'
+        f'539 sentences, 261 candidates at head 5670458ab; every candidate is a row or a listed reject</text>\n'
         + "\n".join(rows)
         + f'\n<line x1="{left}" y1="54" x2="{left}" y2="{y - 22}" stroke="#ccc"/>\n</svg>\n'
     )
