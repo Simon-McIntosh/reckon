@@ -25,9 +25,9 @@
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-01">
+<meta name="plan-modified" content="2026-10-02">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="167">
+<meta name="plan-version" content="168">
 </head>
 <body>
   <main class="plan-doc">
@@ -1362,6 +1362,11 @@
     <div class="r-fu-body"><p>From the review of control-gate-repairs (88). Promotion now refuses an unresolvable <em>presented</em> commit by value. An unresolvable value in the manifest's <em>declared</em> commits, beside presented commits that do resolve, is still dropped from the shortfall comparison without a word. Two existing tests pin that silence: tests/test_a_short_commit_list_is_reported.py near line 209 (declared first plus a 40-character sha that resolves to nothing, presented first, asserts None) and test_a_declared_revision_that_does_not_resolve_is_not_named_missing. Before any repair, settle which is right. Either an unresolvable declared sha is reported, the way the presented one now is, and those two tests change with the reason stated; or it stays silent, with the reason it differs from the presented case written beside the pinning tests. The repair brief confirms the case still reproduces at main first.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls</pre>
     <p class="r-fu-outcome">Moved into §21, held by the section-scoped decision unresolvable-declared-sha, because the roadmap schedules sections and decisions, never followups (work-is-a-section-not-a-followup §4). This reopens the plan once for a defect in the commit check it landed.</p>
+    </article>
+<article class="r-fu" data-id="f-crpc-a-passed-verdict-agrees-with-its-exit-status" data-status="open" data-written-by="s21-fin coordinator (reported by nova-49, nova S22)" data-written-at="2026-10-02" data-recommends-skill="/reckon-build crew-runtime-positive-controls" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">A passed gate verdict cannot sit beside a nonzero exit status</h4>
+    <div class="r-fu-body"><p><b>Measured defect.</b> A promotion can record <code>gate: passed</code> beside <code>gate_check.exit_status: 1</code>. Instance: nova's <code>docs/state/nova/crew.json</code> <code>data.runs[1508]</code>, run r-20260918T201949355073-nia-limited-boundary-touches-wall-2 (commit 8fdc71ef5). Its <code>gate_check.command</code> is prose ("one all_debug job over the three topology test files (30 passed, 3 failed…)"). Its log ends "3 failed, 30 passed in 223.55s" with no <code>EXIT=</code> line.</p><p><b>Mechanism.</b> <code>_require_gate_log_agrees</code> (reckon/crew/promotion.py, called from the completion path) compares the asserted exit status only with a terminal <code>EXIT=&lt;n&gt;</code> record in the log. When the log carries none, the recorded value is None and the check cannot fire. Nothing compares the verdict with the asserted exit status. <code>_require_gate_check_precondition</code> refuses only a missing gate_check, and no verb amends a committed ledger row.</p><p><b>Done when</b> crew complete refuses a <code>passed</code> verdict whenever the asserted exit status is nonzero, and refuses a gate_check command that does not parse as an executable argv. A test drives both refusals in a temporary RECKON_HOME and shows that a passing verdict with exit status 0 and an executable command still promotes. The negative control removes the verdict and exit-status comparison, and the nonzero case then promotes. Nova is correcting its own row as nova S22 node f-fsa-wall-ledger-gate-integrity-full; this followup owns only the guard.</p></div>
+    <pre class="r-fu-prompt">/reckon-build crew-runtime-positive-controls</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
