@@ -50,8 +50,13 @@ RUN_ID = "r-work"
 NODE_ID = "a-reviewed-node"
 
 
-def _finding(path: str, line: str, text: str) -> dict[str, str]:
-    return {"file": path, "line": line, "text": text}
+def _finding(
+    path: str, line: str, text: str, severity: str | None = None
+) -> dict[str, str]:
+    finding = {"file": path, "line": line, "text": text}
+    if severity is not None:
+        finding["severity"] = severity
+    return finding
 
 
 # The three findings the stored review carries. They name repository source and
@@ -422,16 +427,16 @@ def test_the_resume_is_the_reviewed_run_itself(
     assert all(finding["file"] in resumed[0]["advice"] for finding in FINDINGS)
 
 
-def test_the_repair_keeps_the_reviewed_runs_test_paths(
+def test_the_repair_keeps_the_reviewed_runs_whole_fence(
     isolated_project: tuple[Path, Path, str], monkeypatch
 ) -> None:
-    """A finding citing only source still grants the reviewed run's test paths.
+    """The round's scope carries the reviewed run's whole fence.
 
-    The repair's gate is the reviewed run's own tests. A fence holding two
-    source paths and a test path, with the finding naming only one source, must
-    carry the test path into the round's scope; the source path no finding
-    named must not be carried, so a composer that granted the whole fence would
-    fail this test rather than pass it.
+    The repair answers work on the reviewed run, so it is granted the fence that
+    run already held: its test paths, which are the repair's gate, and the source
+    paths it was dispensed. A finding naming only one of three fence paths must
+    still carry all three into the round's scope, because the run's own grant is
+    what the repair inherits rather than the single finding's citation.
     """
     config_home, repo, head_sha = isolated_project
     reviewed_fence = [
@@ -461,9 +466,50 @@ def test_the_repair_keeps_the_reviewed_runs_test_paths(
     scope = _scope_from_advice(resumed[0]["advice"])
     assert "reckon/crew/thing.py" in scope
     assert "tests/test_reviewed_run.py" in scope
-    # The reviewed fence's uncited source path is not carried, so the round is
-    # not granted a file no finding named.
-    assert "reckon/crew/new_module.py" not in scope
+    assert "reckon/crew/new_module.py" in scope
+    # No run directory, review-store path or absolute path is granted.
+    assert not any(Path(path).is_absolute() or path.startswith("~") for path in scope)
+
+
+def test_an_in_fence_figure_finding_reaches_the_scope(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """A blocking finding under the run's fenced docs/figures subtree is work.
+
+    The reviewed run was itself granted the figures subtree, so a finding under
+    it is repairable however it is spelled; a path under ``docs/figures/`` is
+    the fleet's own record only outside that fence. The composed scope must
+    carry both the fence the run held and the finding beneath it, rather than
+    filtering the finding to nothing and resuming the round with no scope.
+    """
+    config_home, repo, head_sha = isolated_project
+    fence_dir = "docs/figures/multi-unit-limiter-wall/diiid-gate-frame-identity"
+    finding_path = f"{fence_dir}/run.json"
+    _completed_pointer(
+        config_home,
+        repo,
+        node={
+            "id": NODE_ID,
+            "plan": "fixture",
+            "section": "s2",
+            "write_paths": [fence_dir, "docs/evidence/archive/wall-landed.html"],
+        },
+    )
+    _store_review(
+        head_sha,
+        [_finding(finding_path, "212", "the frame identity is wrong", "blocking")],
+    )
+    resumed = _stub_resume(monkeypatch)
+
+    with _armed_fleet():
+        resumption.sweep(PROJECT, config=CONFIG)
+
+    assert len(resumed) == 1
+    scope = _scope_from_advice(resumed[0]["advice"])
+    # The finding itself reaches the scope, and so does the fenced subtree it
+    # lies under — the reviewed run's own grant, not the fleet's own record.
+    assert finding_path in scope
+    assert fence_dir in scope
 
 
 def test_a_second_sweep_while_the_resumed_worker_is_live_resumes_nothing(

@@ -53,8 +53,13 @@ RUN_ID = "r-work"
 NODE_ID = "a-reviewed-node"
 
 
-def _finding(path: str, line: str, text: str) -> dict[str, str]:
-    return {"file": path, "line": line, "text": text}
+def _finding(
+    path: str, line: str, text: str, severity: str | None = None
+) -> dict[str, str]:
+    finding = {"file": path, "line": line, "text": text}
+    if severity is not None:
+        finding["severity"] = severity
+    return finding
 
 
 CONFIG = {
@@ -354,6 +359,104 @@ def test_a_mixed_round_resumes_with_only_the_repository_path(
     assert not any(
         Path(path).is_absolute() or path.startswith("~") for path in scope_paths
     )
+
+
+def test_a_follow_on_source_path_does_not_open_an_empty_scope_round(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """A follow-on citing source does not carry an empty-scope round.
+
+    The scope is composed from the blocking findings alone, so the decline must
+    be read from that same population. A follow-on naming a source path is
+    recorded on the review, not work, so it must not rescue a round whose only
+    blocking finding cites the fleet's own record; the round declines rather
+    than resuming with an empty scope.
+    """
+    config_home, repo, head_sha = isolated_project
+    run_dir = Path(runs.run_dir(RUN_ID))
+    _completed_pointer(config_home, repo)
+    _store_review(
+        head_sha,
+        [
+            _finding(
+                str(run_dir / "manifest.md"),
+                "1",
+                "the manifest reports the wrong count",
+                "blocking",
+            ),
+            _finding(
+                "benchmarks/diiid_gate_frame_identity.py",
+                "1368",
+                "the benchmark citation is stale",
+                "follow-on",
+            ),
+        ],
+    )
+    with _stubbed_resume(monkeypatch) as calls, _armed_fleet():
+        resumption.sweep(PROJECT, config=CONFIG)
+
+    assert calls == []
+    recorded = runs.read_pointer(RUN_ID)["repair_dispatch"]
+    assert recorded["status"] == "decline-only"
+
+
+def test_an_empty_composed_scope_records_a_decline(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """A composed scope that filters to empty is declined, never resumed.
+
+    A blocking finding citing a repository path passes the decline guard, but a
+    composition that yields an all-record scope for it must not resume the round
+    with "Write scope for this round: none". The round is recorded declined
+    instead of resuming with no scope.
+    """
+    config_home, repo, head_sha = isolated_project
+    _completed_pointer(config_home, repo)
+    _store_review(
+        head_sha,
+        [_finding("reckon/crew/recovery.py", "1", "a real source finding", "blocking")],
+    )
+    real_compose = repair.compose_repair_for_run
+
+    def empty_scope(*args, **kwargs):
+        composed = real_compose(*args, **kwargs)
+        assert composed is not None
+        composed["write_paths"] = []
+        return composed
+
+    monkeypatch.setattr(repair, "compose_repair_for_run", empty_scope)
+    with _stubbed_resume(monkeypatch) as calls, _armed_fleet():
+        resumption.sweep(PROJECT, config=CONFIG)
+
+    assert calls == []
+    recorded = runs.read_pointer(RUN_ID)["repair_dispatch"]
+    assert recorded["status"] == "decline-only"
+    assert "filtered to empty" in recorded["reason"]
+
+
+def test_a_review_store_only_finding_declines(
+    isolated_project: tuple[Path, Path, str], monkeypatch
+) -> None:
+    """A round naming only a review-store path still grants no scope and declines."""
+    config_home, repo, head_sha = isolated_project
+    _completed_pointer(config_home, repo)
+    _store_review(
+        head_sha,
+        [
+            _finding(
+                str(review_module.review_path(PROJECT, RUN_ID)),
+                "2",
+                "the review overstates its evidence",
+                "blocking",
+            )
+        ],
+    )
+    with _stubbed_resume(monkeypatch) as calls, _armed_fleet():
+        resumption.sweep(PROJECT, config=CONFIG)
+
+    assert calls == []
+    recorded = runs.read_pointer(RUN_ID)["repair_dispatch"]
+    assert recorded["status"] == "decline-only"
 
 
 def test_the_repair_carries_the_reviewed_runs_suite_command(
