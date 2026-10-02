@@ -1,0 +1,135 @@
+<article class="landed-report" data-node="suite-at-head">
+<h3>Whole-suite measurement at head against the closing-head baseline</h3>
+<p>One whole-suite run at revision <code>a08a2baae993a98d6b7172b403a103110bb1e012</code>, the head of the picker worktree, from that worktree's root with <code>PYTHONPATH</code> set to it:</p>
+<pre>PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-picker/suite-at-head \
+timeout 3600 /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -n 8 \
+  -p no:cacheprovider -q --basetemp=/tmp/suite-at-head-bt-19349 tests/</pre>
+<p><code>import reckon</code> resolved to that worktree's own <code>reckon/__init__.py</code>.
+Result: <strong>12 failed, 10268 passed, 76 skipped, 59 warnings in 1740.83 s (0:29:00)</strong>,
+exit 1, 2026-10-02T21:42:42Z &rarr; 2026-10-02T22:11:47Z. Log:
+<code>suite-at-head-attempt4.log</code> under the run directory
+<code>~/.config/reckon/crew/runs/r-20261002T202015024095-suite-at-head/</code>, ending in its
+<code>EXIT=1</code> line; the log holds no <code>ENOSPC</code> occurrence. An earlier attempt
+on the same revision was invalidated by <code>ENOSPC</code> on the shared <code>/tmp</code>
+(6,334 setup errors; kept as <code>suite-at-head-attempt1-enospc.log</code>) and is not used
+for anything below.</p>
+
+<h4>The twelve failing ids, each re-run alone in its own process</h4>
+<p>Each id was re-run in a fresh single-test process (<code>solo-rerun.log</code> in the same
+run directory). Seven fail alone &mdash; <strong>deterministic</strong>; five pass alone &mdash;
+<strong>load-only</strong> under the eight-worker run.</p>
+<table><thead><tr><th>failing id</th><th>alone</th></tr></thead><tbody>
+<tr><td><code>tests/test_a_brief_points_rather_than_quotes.py::test_a_report_changes_no_other_dry_run_field</code></td><td>fails (deterministic)</td></tr>
+<tr><td><code>tests/test_dispatch_declares_the_run_it_repairs.py::test_an_unreadable_ledger_refuses_with_the_ledger_reason</code></td><td>fails (deterministic)</td></tr>
+<tr><td><code>tests/test_fleet_counter_coverage.py::test_the_blocked_bucket_is_derived_from_the_attention_set</code></td><td>fails (deterministic)</td></tr>
+<tr><td><code>tests/test_schema.py::test_cross_project_conformance[reckon:reserve-without-five-hour-window]</code></td><td>fails (deterministic)</td></tr>
+<tr><td><code>tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code></td><td>fails (deterministic)</td></tr>
+<tr><td><code>tests/test_picker_return_time.py::test_lane_document_is_read</code></td><td>fails (deterministic)</td></tr>
+<tr><td><code>tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition</code></td><td>fails (deterministic)</td></tr>
+<tr><td><code>tests/test_producer_takes_new_code.py::test_the_follow_json_surface_carries_the_stale_producer</code></td><td>passes (load-only)</td></tr>
+<tr><td><code>tests/test_landing_contract_and_gate_agree.py::test_every_default_role_agrees_with_the_promotion_gate</code></td><td>passes (load-only)</td></tr>
+<tr><td><code>tests/test_landing_write_races_every_writer.py::test_each_writer_racing_a_landing_write_commutes_or_is_refused[section-append]</code></td><td>passes (load-only)</td></tr>
+<tr><td><code>tests/test_landing_write_races_every_writer.py::test_each_writer_racing_a_landing_write_commutes_or_is_refused[state-set]</code></td><td>passes (load-only)</td></tr>
+<tr><td><code>tests/test_crew_ephemeral_members.py::test_unnamed_dispatches_are_isolated_and_never_reuse_a_captured_session</code></td><td>passes (load-only)</td></tr>
+</tbody></table>
+
+<h4>Classification against the closing-head baseline</h4>
+<p>The closing-head record at <code>ca630c06e894d95111a8627b11d02a023aa270dd</code> carried 17
+failing ids (14 deterministic, 3 load-only). Against that set the seven deterministic head
+failures split <strong>2 pre-existing</strong> and <strong>5 added</strong>; the five load-only
+ids are neither. The five added ids, each with a candidate commit from <code>git log</code> or
+<code>git log -S</code> over the files the id imports &mdash; a candidate, not an established
+cause:</p>
+<table><thead><tr><th>added id</th><th>candidate</th><th>contact</th></tr></thead><tbody>
+<tr>
+<td><code>tests/test_a_brief_points_rather_than_quotes.py::test_a_report_changes_no_other_dry_run_field</code></td>
+<td><code>aa7f10024</code> perf(crew): reuse picker dispatch inputs</td>
+<td>Two dry runs differing only in the done-when overlap warning produce different
+<code>picker_selection</code> blocks. <code>aa7f10024</code> is the in-range commit that put
+picker input reuse on the dispatch path (<code>git log -S 'picker_records'</code> over
+<code>reckon/crew/dispatch.py</code>); other commits touching that module:
+<code>d85ea6b94</code>, <code>68275e99f</code>, <code>9a25db160</code>.</td>
+</tr>
+<tr>
+<td><code>tests/test_dispatch_declares_the_run_it_repairs.py::test_an_unreadable_ledger_refuses_with_the_ledger_reason</code></td>
+<td><code>aa7f10024</code> perf(crew): reuse picker dispatch inputs</td>
+<td>A damaged ledger envelope refuses as a raw
+<code>reckon._store.CorruptEnvelopeError</code> raised from
+<code>picker_records = ledger.runs(...)</code> at <code>reckon/crew/dispatch.py:5549</code>,
+not the ledger-named <code>CrewError</code> the test expects; <code>aa7f10024</code>
+introduced that read.</td>
+</tr>
+<tr>
+<td><code>tests/test_fleet_counter_coverage.py::test_the_blocked_bucket_is_derived_from_the_attention_set</code></td>
+<td><code>aebb14cee</code> fix(crew): judge a reused snapshot against the caller's stall window</td>
+<td><code>NEEDS_ACTION</code> holds <code>stalled</code>, but the stall verdict is now
+returned by a helper (<code>reckon/crew/recovery.py</code>, <code>return "stalled", &hellip;</code>)
+rather than assigned as <code>state = "stalled"</code> inside <code>_watch_verdict</code>,
+which is the source the test scrapes. Candidates from <code>git log -S 'stalled'</code> over
+the imported files: <code>aebb14cee</code>, <code>e1e700399</code>.</td>
+</tr>
+<tr>
+<td><code>tests/test_schema.py::test_cross_project_conformance[reckon:reserve-without-five-hour-window]</code></td>
+<td><code>f2d20ae5d</code> docs(evidence): record codex-spark retirement and the reserve's window reading</td>
+<td>The failing input is the mounted main checkout's fragment
+<code>docs/evidence/fragments/one-typesafe-model-picker/reserve-without-five-hour-window.html</code>
+(not present in the measured worktree), landed on <code>main</code> before the run. Its landing
+table cites a host commit, 839091357d0d15630889c085c283a90b6fb53c3b &mdash; genuine: it
+resolves in the host dotfiles repository as "chore(reckon): repin codex to gpt-6 releases and
+retire codex-spark" &mdash; which the scan's citation resolution, limited to the mounted docs
+projects' git roots, cannot resolve. Code-side candidates from the import walk:
+<code>ccbe2b369</code>, <code>8ac88e011</code>.</td>
+</tr>
+<tr>
+<td><code>tests/test_picker_return_time.py::test_lane_document_is_read</code></td>
+<td><code>d422ea309</code> feat(picker): let typed judgment weigh lane pressure</td>
+<td><code>local_lane()</code> returns <code>worker_slots</code> null for a document whose
+<code>admission.worker_slots</code> is 4. <code>d422ea309</code> edits
+<code>reckon/crew/picker/lane_context.py</code> (<code>git log -S 'worker_slots'</code>);
+<code>37141fc41</code> introduced that module and this test.</td>
+</tr>
+</tbody></table>
+
+<h4>Pre-existing deterministic failures</h4>
+<ul>
+<li><code>tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code>
+&mdash; alone: "reckon crew repair-status is registered and the skill never names it". In the
+baseline deterministic set.</li>
+<li><code>tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition</code>
+&mdash; alone: 36 registered verbs against 35 help-state entries. In the baseline
+deterministic set.</li>
+</ul>
+
+<h4>Load-only failures</h4>
+<p>Five ids fail only in the eight-worker run and pass alone:
+<code>tests/test_producer_takes_new_code.py::test_the_follow_json_surface_carries_the_stale_producer</code>,
+<code>tests/test_landing_contract_and_gate_agree.py::test_every_default_role_agrees_with_the_promotion_gate</code>,
+both <code>test_landing_write_races_every_writer</code> parametrisations, and
+<code>tests/test_crew_ephemeral_members.py::test_unnamed_dispatches_are_isolated_and_never_reuse_a_captured_session</code>.
+The two landing-write-races parametrisations were already load-only at the
+baseline; the other three were not failing at the baseline under either reading. None is
+counted as added in the measure below.</p>
+
+<h4>Follow-ons</h4>
+<ul>
+<li>The two dispatch-contact failures share a candidate (<code>aa7f10024</code>): the picker's
+ledger read inside <code>dispatch</code> surfaces a raw store error, and its input reuse leaks
+into the dry-run payload. Repair belongs to the dispatch/picker work, not to this measurement
+node.</li>
+<li>The picker lane-document failure (<code>d422ea309</code> candidate): <code>local_lane()</code>
+does not surface <code>admission.worker_slots</code>.</li>
+<li>The fleet-counter failure (<code>aebb14cee</code> candidate): the stall verdict moved into a
+helper, out of the source-literal scrape the test reads; either the scrape or the emitter's
+shape needs reconciling.</li>
+<li>The schema-conformance failure: a genuine host-level citation in a landed fragment that the
+scan's mounted-project resolution cannot see. Either the scan's resolution set should cover the
+host repository, or landing tables should cite within mounted repositories.</li>
+<li>No failure outside this node's scope was repaired here; the worktree holds only this
+fragment.</li>
+</ul>
+
+<h4>Measure</h4>
+<p>Added deterministic failures touching picker, budget, pace, dispatch, ledger, run-time
+profile and flight files: <strong>3</strong> (two on dispatch files, one on picker files) &mdash;
+<strong>not zero, so the pass condition is not met</strong>.</p>
+</article>
