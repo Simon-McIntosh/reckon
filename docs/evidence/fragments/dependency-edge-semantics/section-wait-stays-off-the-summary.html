@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="reckon-type" content="evidence">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="dependency-edge-semantics">
+  <meta name="plan-evidence-for" content="dependency-edge-semantics">
+  <title>Landing: a section edge reports what it holds, and a malformed mapping is named | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; landing record</p>
+      <h1>Landing: a section edge reports what it holds, and a malformed mapping is named</h1>
+    </header>
+
+    <section id="landing-what-landed">
+      <h2>What landed</h2>
+      <ul>
+        <li>Base check: both readings the section names were already repaired at the base revision. A summary of a plan whose only wait is one section edge reported <code>blocking: []</code>, the waiting section under <code>section_blocking</code>, and <code>effective_status: active</code>; an invalid-JSON and a non-object mapping each produced an <code>invalid-section-dependency</code> finding naming the plan and the malformation. Neither defect reproduced.</li>
+        <li><code>reckon/_schema.py</code> &mdash; the finding for an unreadable <code>plan-section-depends-on</code> now also echoes the authored value (bounded at 120 characters), so the reader sees which declaration is at fault, not only how it is malformed.</li>
+        <li><code>tests/test_section_edge_summary_and_malformed_mapping.py</code> (new) &mdash; on a temporary docs tree: the single-section-wait summary case, both malformed shapes (invalid JSON; JSON that is not an object), and a malformed entry left beside a valid one. The two malformed-value cases fail at the base revision.</li>
+        <li><code>skills/reckon-edit/SKILL.md</code>, <code>skills/reckon-create/SKILL.md</code> &mdash; each states that the gate op covers the evidence-shaped case and the <code>plan-section-depends-on</code> edge covers the plan-shaped case.</li>
+      </ul>
+    </section>
+
+    <section id="landing-measure">
+      <h2>Measure</h2>
+      <p>Gate over the section-edge and read-path test files, <code>-n 8 --timeout=300</code>:
+      base <code>3 failed, 2086 passed, EXIT=1</code> (the two malformed-value cases at base, plus
+      one scratch-tree git-resolution artifact outside this node's scope); head
+      <code>2090 passed, EXIT=0</code>. Negative control (mutation re-admitting section-scoped rows
+      to the plan-level blocking list): <code>1 failed, EXIT=1</code>, failing the
+      one-waiting-section summary case.</p>
+    </section>
+
+    <section id="landing-commits">
+      <h2>Commits and records</h2>
+      <p>Code and tests: <code>10082d5a6</code>. Logs in the run directory:
+      <code>gate-base.log</code>, <code>gate-head.log</code>, <code>negative-control.log</code>,
+      <code>gate-base-accounting.log</code>.</p>
+    </section>
+  </main>
+</body>
+</html>

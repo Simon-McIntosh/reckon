@@ -456,12 +456,16 @@ def section_depends_on(html_text: str) -> dict[str, Any] | None:
         raw = unescape(content.group(1)).strip() if content else ""
         if not raw:
             return None
+        # The echo is bounded: findings ride transport-bounded responses, so a
+        # long authored value must not be carried whole.
+        shown = raw if len(raw) <= 120 else f"{raw[:117]}..."
         try:
             value = json.loads(raw)
         except (TypeError, ValueError) as exc:
             return {
                 SECTION_DEPENDS_ON_DEFECT_KEY: (
                     f"{SECTION_DEPENDS_ON_META}: content is not valid JSON: {exc}"
+                    f" — value {shown!r}"
                 )
             }
         if not isinstance(value, dict):
@@ -469,7 +473,7 @@ def section_depends_on(html_text: str) -> dict[str, Any] | None:
                 SECTION_DEPENDS_ON_DEFECT_KEY: (
                     f"{SECTION_DEPENDS_ON_META}: content must be a JSON object "
                     "mapping section identities to plan refs; got "
-                    f"{type(value).__name__}"
+                    f"{type(value).__name__} — value {shown!r}"
                 )
             }
         mapping: dict[str, Any] = {}
@@ -525,8 +529,8 @@ def section_dependency_refusals(
         if raw_section == SECTION_DEPENDS_ON_DEFECT_KEY:
             # The whole declaration is unreadable, so it names no section and
             # holds nothing; the reader carried the defect here instead of
-            # dropping it, and the message already names the meta and the
-            # malformation.
+            # dropping it, and the message already names the meta, the
+            # malformation and the value.
             refuse("invalid-section-dependency", "", None, str(raw_refs))
             continue
         section = str(raw_section or "").strip()

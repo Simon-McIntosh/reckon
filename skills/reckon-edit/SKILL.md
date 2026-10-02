@@ -230,6 +230,11 @@ fill a row per candidate; "it" is the slug in the first column:
   "measure":"<what the section needs>","required_evidence":"<its evidence
   anchor, e.g. other-project:slug#s3>"}`. A plan-level `depends_on` here reports
   the plan blocked from its first section onward, which is false and misleads readers.
+  The `gate` op covers the evidence-shaped case, a section held until another
+  plan's section supplies the anchored evidence, while the
+  `plan-section-depends-on` head meta (`{"s5": ["other-plan#s3"]}`, authored
+  markup a state write leaves untouched) covers the plan-shaped case, a section
+  held until another plan's section lands.
 - **no to all three and it is research or reference this plan reads** →
   `informs`.
 - **no to all three for every candidate and nothing downstream waits on this
