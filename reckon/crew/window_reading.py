@@ -56,6 +56,7 @@ class WindowFigure:
     observed_at: datetime
     age_seconds: float
     resets_at: str | None = None
+    window_minutes: int | None = None
 
 
 @dataclass(frozen=True)
@@ -130,6 +131,7 @@ def _newest_reading(
             observed_at=observed_at,
             age_seconds=(moment - observed_at).total_seconds(),
             resets_at=_reset_text(window),
+            window_minutes=_window_minutes(period, window),
         )
         # The top-level `utilization` beside `rateLimitType` is deliberately
         # absent from this comprehension: only `unifiedWindows` holds a window.
@@ -246,6 +248,16 @@ def _reset_text(window: Mapping[str, Any]) -> str | None:
     if isinstance(moment, (int, float)) and not isinstance(moment, bool):
         return datetime.fromtimestamp(moment, tz=UTC).isoformat()
     return moment if isinstance(moment, str) else None
+
+
+def _window_minutes(period: str, window: Mapping[str, Any]) -> int | None:
+    """Return the provider-reported window length, with named-period fallbacks."""
+    raw = window.get("windowDurationMins", window.get("window_minutes"))
+    if isinstance(raw, (int, float)) and not isinstance(raw, bool):
+        minutes = int(raw)
+        if minutes > 0 and float(raw) == minutes:
+            return minutes
+    return {"five_hour": 300, "seven_day": 10_080}.get(period)
 
 
 def _parse_stamp(value: Any) -> datetime | None:

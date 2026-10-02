@@ -1697,9 +1697,15 @@ def preflight(
         "resume_after_seconds": min(waits) if waits else None,
         "resume_at": _earliest_reset(held),
     }
+    pace_windows = dict(windows) if isinstance(windows, Mapping) else {}
+    for verdict in verdicts:
+        current = _state_window_reading(verdict["state"], moment=moment)
+        if current is not None:
+            pace_windows[str(verdict["backend"])] = current
+            window_sources[str(verdict["backend"])] = "account-surface"
     report["groups"] = group_pace(
         config,
-        windows=windows,
+        windows=pace_windows,
         ready=ready,
         records=_runway_records(project, records, root=root),
         now=moment,
@@ -1716,6 +1722,46 @@ def preflight(
         report["window_sources"] = window_sources
     report["summary"] = summary(report)
     return report
+
+
+def _state_window_reading(
+    state: Mapping[str, Any], *, moment: datetime
+) -> window_reading.WindowReading | None:
+    """Translate a current account-surface state into the group reader's shape."""
+    if state.get("source") != "account-surface":
+        return None
+    raw_minutes = state.get("rate_limit_period_minutes")
+    utilisation = state.get("utilisation_pct")
+    observed = _parse_stamp(state.get("observed_at"))
+    if (
+        isinstance(raw_minutes, bool)
+        or not isinstance(raw_minutes, (int, float))
+        or not float(raw_minutes).is_integer()
+        or raw_minutes <= 0
+        or isinstance(utilisation, bool)
+        or not isinstance(utilisation, (int, float))
+        or observed is None
+    ):
+        return None
+    minutes = int(raw_minutes)
+    period = _clock_for_window(minutes)
+    if period is None:
+        return None
+    figure = window_reading.WindowFigure(
+        period=period,
+        utilisation=float(utilisation) / 100.0,
+        observed_at=observed,
+        age_seconds=max(0.0, (moment - observed).total_seconds()),
+        resets_at=(
+            str(state["resets_at"]) if state.get("resets_at") is not None else None
+        ),
+        window_minutes=minutes,
+    )
+    return window_reading.WindowReading(
+        figures=(figure,),
+        observed_at=observed,
+        age_seconds=figure.age_seconds,
+    )
 
 
 # The metered clocks a served stream carries, paired with the role each plays in
@@ -1774,6 +1820,7 @@ def _clock(reading: window_reading.WindowReading, period: str) -> dict[str, Any]
             "age_seconds": None,
             "observed_at": None,
             "resets_at": None,
+            "window_minutes": None,
         }
     return {
         "period": period,
@@ -1784,6 +1831,7 @@ def _clock(reading: window_reading.WindowReading, period: str) -> dict[str, Any]
         ),
         "observed_at": figure.observed_at.isoformat(),
         "resets_at": figure.resets_at,
+        "window_minutes": figure.window_minutes,
     }
 
 
@@ -1859,6 +1907,11 @@ def _unknown_allowance(
             "provider_ceiling": None,
             "effective_limit": None,
             "limited_by": None,
+            "window_minutes": None,
+            "elapsed_fraction": None,
+            "burn_multiple": None,
+            "observed_at": None,
+            "resets_at": None,
         }
     )
     return allowance
@@ -1866,19 +1919,70 @@ def _unknown_allowance(
 
 def _group_allowance(
     group: str,
+    reading: window_reading.WindowReading,
     clocks: Mapping[str, Mapping[str, Any]],
     config: Mapping[str, Any],
     *,
     moment: datetime,
 ) -> dict[str, Any]:
-    """Derive a group's five-hour allowance from the week it has to last.
+    """Derive a group's allowance from the operative window it reported.
 
-    The weekly clock supplies the fraction already spent and, through its own
-    reset stamp, how far into the week the group stands; those two figures are
-    enough for the derivation. The provider ceiling is left unread because a
-    five-hour window's own capacity is not published as a share of the weekly
-    budget, and a guessed ceiling would silently cap the allowance.
+    A reading with both historical clocks keeps the next-five-hour derivation.
+    A primary-only reading has no shorter burst window to divide through, so its
+    allowance is the elapsed fraction of its own reported period, leaned by the
+    configured pace multiple. Both paths carry the operative length and reset,
+    so a reader can reproduce the choice without knowing a period-name table.
     """
+    operative = _operative_window(reading)
+    if operative is None or operative.window_minutes is None:
+        return _unknown_allowance(
+            group, "the group's operative window was not read, so nothing divides"
+        )
+    reset = _parse_stamp(operative.resets_at)
+    if reset is None:
+        return _unknown_allowance(
+            group,
+            "the group's operative window carries no readable reset, so it cannot "
+            "be placed in its period",
+            utilisation=operative.utilisation,
+        )
+    window_hours = operative.window_minutes / 60.0
+    remaining_hours = (reset - moment).total_seconds() / 3600.0
+    elapsed = max(0.0, window_hours - remaining_hours)
+    elapsed_fraction = min(1.0, elapsed / window_hours)
+    multiple = pace_module.policy(config).pace_multiple
+    burn = (
+        None
+        if elapsed_fraction <= 0
+        else float(operative.utilisation) / elapsed_fraction
+    )
+
+    # Accounts that publish both clocks keep the established next-window
+    # derivation. A primary-only account has no shorter burst ceiling to divide
+    # through, so its safe cumulative limit is the elapsed share of the window.
+    if reading.figure(CLOCK_FIVE_HOUR) is None:
+        derived = min(1.0, elapsed_fraction * float(multiple))
+        return {
+            "group": group,
+            "state": OBSERVED,
+            "reason": None,
+            "utilisation": float(operative.utilisation),
+            "elapsed_hours": elapsed,
+            "drain_hours": window_hours,
+            "remaining_budget": max(0.0, 1.0 - float(operative.utilisation)),
+            "remaining_windows": None,
+            "pace_multiple": float(multiple),
+            "derived": derived,
+            "provider_ceiling": None,
+            "effective_limit": derived,
+            "limited_by": "allowance",
+            "window_minutes": operative.window_minutes,
+            "elapsed_fraction": elapsed_fraction,
+            "burn_multiple": burn,
+            "observed_at": operative.observed_at.isoformat(),
+            "resets_at": operative.resets_at,
+        }
+
     week = clocks[CLOCK_SEVEN_DAY]
     if week["state"] != OBSERVED:
         return _unknown_allowance(
@@ -1897,7 +2001,37 @@ def _group_allowance(
         utilisation=week["utilisation"],
         elapsed_hours=elapsed,
     )
-    return pace_module.allowance_for_group(reading, config=config).as_dict()
+    allowance = pace_module.allowance_for_group(reading, config=config).as_dict()
+    allowance.update(
+        {
+            "state": OBSERVED,
+            "reason": None,
+            "window_minutes": operative.window_minutes,
+            "elapsed_fraction": elapsed_fraction,
+            "burn_multiple": burn,
+            "observed_at": operative.observed_at.isoformat(),
+            "resets_at": operative.resets_at,
+        }
+    )
+    return allowance
+
+
+def _operative_window(
+    reading: window_reading.WindowReading,
+) -> window_reading.WindowFigure | None:
+    """Return the longest provider-reported quota window in one reading."""
+    candidates = [
+        figure
+        for figure in reading.figures
+        if figure.window_minutes is not None and figure.window_minutes > 0
+    ]
+    if candidates:
+        return max(candidates, key=lambda figure: figure.window_minutes or 0)
+    fallback = reading.figure(CLOCK_SEVEN_DAY)
+    if fallback is not None:
+        return replace(fallback, window_minutes=WEEKLY_WINDOW_MINUTES)
+    fallback = reading.figure(CLOCK_FIVE_HOUR)
+    return None if fallback is None else replace(fallback, window_minutes=300)
 
 
 def _runway_records(
@@ -2377,7 +2511,9 @@ def group_pace(
                 "member": member,
                 "state": OBSERVED if freshest is not None else UNKNOWN,
                 "clocks": clocks,
-                "allowance": _group_allowance(group, clocks, config, moment=moment),
+                "allowance": _group_allowance(
+                    group, reading, clocks, config, moment=moment
+                ),
                 "bar": _group_bar(clocks, nodes_by_group[group], runway),
             }
         )
@@ -2479,13 +2615,31 @@ def pace_row(
         )
         if item["group"] == group
     )
+    clocks = dict(entry["clocks"])
+    if clocks[CLOCK_FIVE_HOUR]["state"] != OBSERVED:
+        allowance = entry["allowance"]
+        if allowance.get("state") == OBSERVED:
+            observed = _parse_stamp(allowance.get("observed_at"))
+            clocks[CLOCK_FIVE_HOUR] = {
+                "period": "primary",
+                "state": OBSERVED,
+                "utilisation": allowance["utilisation"],
+                "age_seconds": (
+                    None
+                    if observed is None
+                    else max(0.0, (moment - observed).total_seconds())
+                ),
+                "observed_at": allowance.get("observed_at"),
+                "resets_at": allowance.get("resets_at"),
+                "window_minutes": allowance.get("window_minutes"),
+            }
     row.update(
         {
             "group": group,
             "state": entry["state"],
             "source": WINDOW_SOURCE_RECORDED,
             "member": entry["member"],
-            "clocks": entry["clocks"],
+            "clocks": clocks,
             # The bar's whole judgement of this one node: the fill it was drawn
             # against, the verdict, the bar itself, the margin, and whether the
             # window or prescription decided it. The group's other ready nodes
@@ -2505,6 +2659,15 @@ def pace_row(
 # guessed onto a clock: a window nobody can name is not a reading this reader
 # may place.
 WINDOW_MINUTES_CLOCK = {300: CLOCK_FIVE_HOUR, 10080: CLOCK_SEVEN_DAY}
+
+
+def _clock_for_window(window_minutes: int) -> str | None:
+    """Name known clocks and retain longer provider-reported primary windows."""
+    named = WINDOW_MINUTES_CLOCK.get(window_minutes)
+    if named is not None:
+        return named
+    return "primary" if window_minutes > WEEKLY_WINDOW_MINUTES else None
+
 
 # The weekly window a run's own receipt prices it against. A receipt keys its rows
 # by length in minutes, so this length selects the seven-day row from a committed
@@ -2781,8 +2944,10 @@ def _rollout_reading(
             reason="the session's rollout receipt carried no keyed quotas"
         )
     figures: list[window_reading.WindowFigure] = []
-    for minutes, clock in sorted(WINDOW_MINUTES_CLOCK.items()):
-        row = readings.get(minutes)
+    for minutes, row in sorted(readings.items()):
+        clock = _clock_for_window(minutes)
+        if clock is None:
+            continue
         used = getattr(row, "used_percent", None)
         if isinstance(used, bool) or not isinstance(used, (int, float)):
             continue
@@ -2793,6 +2958,7 @@ def _rollout_reading(
                 observed_at=observed_at,
                 age_seconds=(moment - observed_at).total_seconds(),
                 resets_at=_reset_text(getattr(row, "resets_at", None)),
+                window_minutes=minutes,
             )
         )
     if not figures:
@@ -2864,7 +3030,12 @@ def _receipt_reading(
     for row in windows if isinstance(windows, list) else ():
         if not isinstance(row, Mapping):
             continue
-        period = WINDOW_MINUTES_CLOCK.get(row.get("window_minutes"))
+        raw_minutes = row.get("window_minutes")
+        period = (
+            _clock_for_window(raw_minutes)
+            if isinstance(raw_minutes, int) and not isinstance(raw_minutes, bool)
+            else None
+        )
         if period is None:
             continue
         used = row.get("used_percent")
@@ -2880,6 +3051,7 @@ def _receipt_reading(
                 observed_at=observed,
                 age_seconds=(moment - observed).total_seconds(),
                 resets_at=_instant_text(row.get("resets_at")),
+                window_minutes=raw_minutes,
             )
         )
     if not figures:

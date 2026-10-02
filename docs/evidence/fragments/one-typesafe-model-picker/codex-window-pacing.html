@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="Codex pacing follows the provider window">
+  <meta name="plan-summary" content="A primary-only Codex account is paced from the length, utilisation and reset the provider reports; the budget view exposes the operative window, burn multiple and allowance, and the bookend reserve reads that window instead of refusing a missing five-hour sibling.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s7">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,budget,codex,pacing,evidence">
+  <title>Codex pacing follows the provider window | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="codex-window-pacing" data-reckon="landed" data-when="2026-10-02">
+  <h2>Codex pacing follows the provider window</h2>
+  <p>The account reader now retains a long primary window even when it is neither the historical
+  five-hour nor seven-day period. A primary-only account derives its cumulative allowance from the
+  elapsed fraction of that window multiplied by <code>budget.pace_multiple</code>. Accounts that
+  publish both historical clocks keep the existing next-window derivation. The operative reading is
+  also supplied to the bookend reserve, so a missing five-hour sibling is not described as an
+  unreadable account.</p>
+
+  <h3>Provider response read now</h3>
+  <p>The model-free <code>account/rateLimits/read</code> surface was read at
+  <code>2026-10-02T11:28:41Z</code>. The sample below retains only pacing fields; account identity,
+  credentials and credit details are omitted.</p>
+  <pre><code>{
+  "planType": "pro",
+  "primary": {
+    "usedPercent": 1,
+    "windowDurationMins": 10080,
+    "resetsAt": 1791542376
+  },
+  "secondary": null
+}</code></pre>
+  <p>The response reports one 10,080-minute primary window resetting
+  <code>2026-10-09T10:39:36Z</code>. It does <strong>not</strong> report a 30-day
+  (43,200-minute) window at this observation. The implementation nevertheless accepts that reported
+  length directly, so a later account change needs no period-name or fixed-duration update.</p>
+
+  <h3>Live budget read after the change</h3>
+  <p><code>crew(view="budget")</code> was read at <code>2026-10-02T11:30:46Z</code>. The
+  <code>codex-sub</code> group selected the fresh account-surface reading rather than the expired
+  receipt from 2026-09-26:</p>
+  <table>
+    <thead><tr><th>source</th><th>operative window</th><th>utilisation</th><th>burn</th><th>allowance</th><th>held</th></tr></thead>
+    <tbody><tr>
+      <td><code>account-surface</code></td>
+      <td>10,080 min</td>
+      <td>1.00%</td>
+      <td>1.969&times;</td>
+      <td>0.5586%</td>
+      <td>no</td>
+    </tr></tbody>
+  </table>
+  <p>The allowance records <code>pace_multiple: 1.1</code>, elapsed fraction
+  <code>0.0050785</code>, the window reset, and the observation stamp beside the figure. Two days
+  into a 43,200-minute fixture the same rule returns <code>0.0733</code>; a 10,080-minute fixture at
+  the same elapsed fraction returns the same value.</p>
+
+  <h3>Verification arms</h3>
+  <p>The base arm runs the named five-file gate against <code>41b4c413e</code>: 145 tests pass and
+  four fail. Three failures are the new cases — the month window is discarded, the week result lacks
+  operative-window metadata, and the primary-only group reads unknown. The fourth is the pre-existing
+  <code>test_one_stamp_reader_dates_a_record_for_both_surfaces</code> failure. At the implemented
+  tree, 148 tests pass and only that same pre-existing test fails, so the change adds zero failure ids.
+  The declared control fixes the derivation at 10,080 minutes; the month-window case then fails while
+  the other two pass. Commit <code>9bb5a4c68</code> carries the implementation and tests. Logs are under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T111923019366-codex-window-pacing/</code>.</p>
+</article>
+</body>
+</html>
