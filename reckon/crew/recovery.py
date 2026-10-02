@@ -7910,7 +7910,12 @@ def _watch_snapshot(
 # keeping healthy waits out of both work-in-progress and needs-action figures.
 # Every snapshot belongs to exactly one bucket, so the figures still add up.
 FLEET_WORKING_STATES = ("dispatched", "working", "running")
-FLEET_UNPROMOTED_STATES = ("complete", "completed_unpromoted")
+# ``departed`` is the word a departure with no resolvable ledger carries: the
+# run has gone and no record says whether it landed. It sits with the delivered
+# family here so the state vocabulary names every word the fold can emit, while
+# a departing run is still dropped from the counted fleet before the counts are
+# taken — the word is known, not counted.
+FLEET_UNPROMOTED_STATES = ("complete", "completed_unpromoted", "departed")
 FLEET_WAITING_STATES = tuple(sorted(WAITING_STATES))
 # The blocked bucket is the action set minus the waiting family. The action set
 # is the marker set — every state whose row a reader should look at, an overdue
@@ -8053,13 +8058,19 @@ def _departure_word(run_id: str, recorded: set[str] | None) -> str:
     """The word a departing run's absence carries.
 
     Promotion has first claim, because a recorded ledger row is the fleet's
-    evidence that work landed and a run directory cannot argue with it. Where
-    no row records the run, a marker the run's directory holds from a
-    deliberate discard names the departure for what it was; without one the
-    word stays the bare withdrawal a reaped or hand-removed pointer earns.
+    evidence that work landed and a run directory cannot argue with it. Where no
+    ledger evidence resolves at all — the caller supplies no reader and the run
+    names no project to resolve one from — the departure reads ``departed``: the
+    fleet knows the run left and nothing more, so the word promises neither a
+    landing nor a withdrawal. A ledger that resolves and does not record the run
+    leaves either a marker the run's directory holds from a deliberate discard,
+    which names the departure discarded, or the bare withdrawal a reaped or
+    hand-removed pointer earns.
     """
     if recorded is not None and run_id in recorded:
         return "promoted"
+    if recorded is None:
+        return "departed"
     if _discard_recorded(run_id):
         return "discarded"
     return "withdrawn"
