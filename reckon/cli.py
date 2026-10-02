@@ -996,6 +996,18 @@ def _flight_default_backend_override(flight_module, config, overrides):
     return str(config.get("default_backend") or "").strip() or None
 
 
+def _with_resolved_overrides(payload: dict, override_resolution: dict) -> dict:
+    """Attach each --set path's resolution to a dry-run document.
+
+    Every dry-run document emitted after the resolution carries it, refusal
+    documents included, so a caller reading one can tell an override that
+    resolved from one that never applied.
+    """
+    if override_resolution:
+        payload["overrides"] = override_resolution
+    return payload
+
+
 def _config_value_at(config, path: str):
     """Return the value a dotted flight-config path holds; None when unset."""
     node = config
@@ -1737,7 +1749,10 @@ def crew_dispatch(
             )
         except crew_module.PlanVisibilityError as exc:
             _emit(
-                {"ok": False, "error": "plan-unavailable", "detail": str(exc)},
+                _with_resolved_overrides(
+                    {"ok": False, "error": "plan-unavailable", "detail": str(exc)},
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(4) from exc
@@ -1747,18 +1762,24 @@ def crew_dispatch(
             # diagnosing with --dry-run is pointed at the composed review rather
             # than at mounts.
             _emit(
-                {"ok": False, "error": "plan-review-missing", "detail": str(exc)},
+                _with_resolved_overrides(
+                    {"ok": False, "error": "plan-review-missing", "detail": str(exc)},
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(4) from exc
         except crew_module.CompetenceLimit as exc:
             _emit(
-                {
-                    "ok": False,
-                    "error": "competence-refusal",
-                    "detail": str(exc),
-                    "competence": exc.verdict,
-                },
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "error": "competence-refusal",
+                        "detail": str(exc),
+                        "competence": exc.verdict,
+                    },
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(5) from exc
@@ -1767,40 +1788,49 @@ def crew_dispatch(
             # carries, so a validating caller reaches the admission judgement a
             # real dispatch reaches rather than a generic dispatch refusal.
             _emit(
-                {
-                    "ok": False,
-                    "dry_run": True,
-                    "error": "watcher-required",
-                    "detail": str(exc),
-                    "watch": exc.watch,
-                },
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "dry_run": True,
+                        "error": "watcher-required",
+                        "detail": str(exc),
+                        "watch": exc.watch,
+                    },
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(8) from exc
         except crew_module.CrewError as exc:
             _emit(
-                {
-                    "ok": False,
-                    "dry_run": True,
-                    "error": "dispatch-refused",
-                    "detail": str(exc),
-                },
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "dry_run": True,
+                        "error": "dispatch-refused",
+                        "detail": str(exc),
+                    },
+                    override_resolution,
+                ),
                 pretty,
             )
             click.echo(f"Error: {exc}", err=True)
             raise click.exceptions.Exit(1) from exc
         if resolution.competence and not resolution.competence["allowed"]:
             _emit(
-                {
-                    "ok": False,
-                    "dry_run": True,
-                    "error": "competence-refusal",
-                    "detail": str(
-                        resolution.competence.get("reason")
-                        or "the node exceeds the competence horizon"
-                    ),
-                    "competence": resolution.competence,
-                },
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "dry_run": True,
+                        "error": "competence-refusal",
+                        "detail": str(
+                            resolution.competence.get("reason")
+                            or "the node exceeds the competence horizon"
+                        ),
+                        "competence": resolution.competence,
+                    },
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(5)
@@ -1812,13 +1842,16 @@ def crew_dispatch(
             # promise exists to prevent. The findings stay under ``validation``
             # for a caller that wants them structured.
             _emit(
-                {
-                    "ok": False,
-                    "dry_run": True,
-                    "error": "contract-validation",
-                    "detail": _validation_detail(resolution.validation),
-                    **resolution.as_dict(),
-                },
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "dry_run": True,
+                        "error": "contract-validation",
+                        "detail": _validation_detail(resolution.validation),
+                        **resolution.as_dict(),
+                    },
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(2)
@@ -1829,21 +1862,22 @@ def crew_dispatch(
             # temporary failure a real dispatch would exit on rather than a
             # validation that reads as a go-ahead.
             _emit(
-                {
-                    "ok": False,
-                    "dry_run": True,
-                    "error": "lane-paused",
-                    "detail": _lane_paused_detail(lane_gate),
-                    "reason": lane_gate.get("reason"),
-                    "lane_gate": lane_gate,
-                },
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "dry_run": True,
+                        "error": "lane-paused",
+                        "detail": _lane_paused_detail(lane_gate),
+                        "reason": lane_gate.get("reason"),
+                        "lane_gate": lane_gate,
+                    },
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(75)
         payload = {"ok": True, "dry_run": True, **resolution.as_dict()}
-        if override_resolution:
-            payload["overrides"] = override_resolution
-        _emit(payload, pretty)
+        _emit(_with_resolved_overrides(payload, override_resolution), pretty)
         raise click.exceptions.Exit(0)
 
     try:
