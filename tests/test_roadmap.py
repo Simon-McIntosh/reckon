@@ -39,7 +39,9 @@ def _plan(
         "roi": "high",
         "blocking": [],
         "gates": [{"id": "evidence", "verdict": "passed"}],
-        "followups": [{"id": "next", "status": "open"}],
+        "followups": [
+            {"id": "next", "status": "open", "prompt": "/reckon-build upstream-plan"}
+        ],
     }
     if north_star is not None:
         plan["north_star"] = north_star
