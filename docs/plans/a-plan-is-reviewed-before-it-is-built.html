@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="17">
-<meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="18">
+<meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -93,6 +93,10 @@
     <h2 id="s4">§4 — Build the plan-review loop: PR-1, then PR-3 and PR-4, then PR-2 and PR-5</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
 <p>Per comment c-20260925T1210-design-brief and the design brief it cites. PR-4 writes <code>reckon/crew/dispatch.py</code> and waits for that file to free up.</p><p><strong>Done when</strong> all five PR items land in the order the design brief states.</p><p>Moved from followup f-apirbiib-build on a-plan-is-reviewed-before-it-is-built by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.6; PR-1..PR-5 per comment c-20260925T1210-design-brief</p>
+
+    <h2 id="s5">§5 — The plan-review store test reads frozen plans, not live ones</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p><code>tests/test_plan_review_store.py::test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it</code> reads the live <code>docs/plans/a-plan-is-reviewed-before-it-is-built.html</code> and <code>docs/plans/reckon-mcp-plan.html</code>. Since the followup migration (f65cc8edf) gave the first a complete set of section records, its impl is derived, so the test's <code>plan-impl</code> edit no longer reaches the impl state and the case fails (<code>assert 0.0 != 0.0</code>), found by S21's closing suite at ca630c06e. A test whose outcome moves when a plan is edited is a monitor of the docs tree, not a test of the fingerprint.</p><p><strong>Done when</strong> the test reads committed fixture copies under <code>tests/fixtures/plan_review_store/</code>, one legacy plan without a named effort field and one current plan whose impl is authored, so editing any live plan cannot change its outcome; the case passes; and a second case asserts that on a plan whose impl derives from complete section records, a <code>plan-impl</code> edit leaves both the impl state and the fingerprint unchanged.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
