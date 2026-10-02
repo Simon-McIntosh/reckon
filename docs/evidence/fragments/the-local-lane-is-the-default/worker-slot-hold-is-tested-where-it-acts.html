@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-local-lane-is-the-default">
+  <meta name="plan-verifies" content="reckon:the-local-lane-is-the-default#s12">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-02">
+  <meta name="evidence-commit" content="eb699a969">
+  <title>The worker-slot hold is tested where it acts | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="worker-slot-hold-is-tested-where-it-acts">
+  <h2>The worker-slot hold is tested where it acts</h2>
+  <p>Base <code>853fa75c4</code>, head <code>eb699a969</code>. The <code>LaneHeld</code>
+  raise in <code>reckon/crew/dispatch.py</code> now has a non-dry-run case: a lane document
+  whose admission block publishes <code>worker_slots</code> 0 reaches a real dispatch, which
+  exits 75 with <code>error: lane-paused</code>, the allowance 0 and the router's verdict
+  named. A slot figure is trusted as soon as the block publishes the
+  <code>observed_seconds</code> window it was averaged over, instead of after a
+  dispatch-side fifteen-minute bound; only a block stating no window falls back to
+  <code>headroom</code>. A lane change passes the run's coordinator session when it resolves
+  its destination, so the move is charged that session's share rather than
+  <code>new_session_worker_slots</code>. The doctrine test that only ran dry runs is re-cut
+  to state the hold a real dispatch raises: the zero reading's preview exits 0 while naming
+  the held allowance, and the real dispatch exits 75 on the same document.</p>
+
+  <p><strong>Each item fails before its change.</strong> The head test file run against the
+  base tree: <strong>2 failed, 8 deselected</strong>, <code>EXIT=1</code>, ids
+  <code>test_a_stated_window_is_trusted_as_the_router_publishes_it</code> (allowance 9 from
+  headroom instead of the published 57) and
+  <code>test_a_lane_change_resolves_under_the_runs_coordinator_session</code>
+  (<code>KeyError: 'session'</code> on the destination resolution); log
+  <code>before-change.log</code> in the run directory.</p>
+
+  <p><strong>Gate</strong> (every test file under <code>tests/</code> naming
+  <code>headroom</code>, <code>worker_slots</code>, <code>LaneHeld</code> or
+  <code>change_lane</code>, plus the named file; <code>-n 8 --timeout=300</code>). Base arm
+  (from a <code>git archive</code> extraction of <code>853fa75c4</code> under
+  <code>$TMPDIR</code>): <strong>936 passed</strong>, <code>EXIT=0</code>, module file
+  <code>&lt;base&gt;/reckon/crew/dispatch.py</code>, cwd the base tree; log
+  <code>gate-base.log</code>. Head arm (the node worktree): <strong>938 passed</strong>,
+  <code>EXIT=0</code>, module file the worktree's own
+  <code>reckon/crew/dispatch.py</code>; log <code>gate-head.log</code>. Delta +2 = the two
+  added cases; zero added failure ids.</p>
+
+  <p><strong>Declared negative control</strong>: remove the <code>LaneHeld</code> raise in
+  <code>reckon/crew/dispatch.py</code>; the new non-dry-run zero-allowance case then
+  dispatches and fails. Executed in a scratch tree of head: <code>EXIT=1</code>,
+  <strong>1 failed / 9 passed</strong>, the failing id
+  <code>test_a_zero_allowance_holds_a_real_dispatch</code> (exit 0 instead of 75); log
+  <code>negative-control.log</code>.</p>
+</section>
+</main>
+</body>
+</html>

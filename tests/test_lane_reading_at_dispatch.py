@@ -1,4 +1,4 @@
-"""A dispatch carries the lane's published reading as advisory data, refusing nothing."""
+"""A dispatch carries the lane's published reading, and a reading that grants no room holds it."""
 
 from __future__ import annotations
 
@@ -28,6 +28,8 @@ def _invoke(
     *,
     node: str,
     lane_document: Path | str | None,
+    dry_run: bool = True,
+    extra: list[str] | None = None,
 ):
     config = copy.deepcopy(existing_backend_tests.CONFIG)
     if lane_document is not None:
@@ -41,9 +43,10 @@ def _invoke(
     result = CliRunner().invoke(
         cli_module.main,
         [
-            *existing_backend_tests._arguments(repo, node=node),
+            *existing_backend_tests._arguments(repo, node=node, dry_run=dry_run),
             "--backend",
             "beta",
+            *(extra or []),
         ],
     )
     return existing_backend_tests._payload(result), result
@@ -264,9 +267,17 @@ def test_a_lane_naming_no_binding_constraint_still_reports_its_figures() -> None
     assert missing["binding_observed"] == "unknown"
 
 
-def test_no_dispatch_is_refused_held_or_rerouted_by_any_value_in_the_document(
+def test_a_zero_reading_holds_a_real_dispatch_while_ample_and_absent_proceed(
     dispatch_repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """A real dispatch holds on the zero reading that the preview only reports.
+
+    Every case here ran as a dry run, which reports the allowance without
+    acting on it, so a claim that no value in the document holds a dispatch was
+    only ever true of a preview: the zero document's preview exits clean while
+    naming the hold. A real dispatch acts on that same reading, so the zero
+    document stops it, and the ample reading and an absent document proceed.
+    """
     stamp = datetime.now(UTC).isoformat()
     ample = dispatch_repo.parent / "lane-ample.json"
     ample.write_text(
@@ -298,19 +309,36 @@ def test_no_dispatch_is_refused_held_or_rerouted_by_any_value_in_the_document(
     ample_payload, ample_result = _invoke(
         dispatch_repo, monkeypatch, node="reading-ample", lane_document=ample
     )
+    preview_payload, preview_result = _invoke(
+        dispatch_repo, monkeypatch, node="reading-zero-preview", lane_document=zero
+    )
     zero_payload, zero_result = _invoke(
-        dispatch_repo, monkeypatch, node="reading-zero", lane_document=zero
+        dispatch_repo,
+        monkeypatch,
+        node="reading-zero",
+        lane_document=zero,
+        dry_run=False,
+        extra=["--no-watch"],
     )
     absent_payload, absent_result = _invoke(
         dispatch_repo, monkeypatch, node="reading-absent", lane_document=None
     )
 
-    for result in (ample_result, zero_result, absent_result):
-        assert result.exit_code == 0
-    for payload in (ample_payload, zero_payload, absent_payload):
+    assert ample_result.exit_code == 0
+    assert preview_result.exit_code == 0
+    assert absent_result.exit_code == 0
+    for payload in (ample_payload, absent_payload):
         assert payload["backend"] == "beta"
         assert payload["requested_backend"] == "beta"
         assert payload["validation"]["ok"] is True
     assert ample_payload["lane_reading"]["headroom"] == 122.0
-    assert zero_payload["lane_reading"]["headroom"] == 0.0
     assert absent_payload["lane_reading"]["state"] == "unknown"
+    # The preview reports the held allowance and dispatches anyway: the reading
+    # is advisory there, and the real dispatch below acts on the same document.
+    assert preview_payload["lane_allowance"]["held"] is True
+
+    assert zero_result.exit_code == 75
+    assert zero_payload["error"] == "lane-paused"
+    assert "dry_run" not in zero_payload
+    assert zero_payload["lane_gate"]["allowance"] == 0.0
+    assert "grants 0" in zero_payload["detail"]
