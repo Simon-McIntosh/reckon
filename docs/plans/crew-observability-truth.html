@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="567">
+<meta name="plan-version" content="568">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.57">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -2573,6 +2573,9 @@ resume-2.jsonl           0 bytes   (no parsable record)</pre><p><strong>The refu
 </div>
 <div class="r-comment" data-section="_top" data-id="c-cot-s24-landed" data-who="" data-when="">
     <div class="r-comment-body"><p>§24 landed. a-time-fence-names-its-clock was merged at 857ebb504 and promoted. The dispatch prompt and every resume state the attempt's launch instant and its deadline, launch plus budget in ISO-8601 UTC, and name <code>date -u</code> as the clock. The 67-file prompt and resume gate passed 1,015 tests at head against 1,011 at base, with none added. The negative control failed 3 cases, and the review scored 91. The node also exposed a coordinator error. Its first gate matched 288 files on <code>time_budget</code>, and both arms were started in the background, so they died with the worker's turn. Briefs now keep gates to the files that reach the change, and keep both arms in the foreground. The review's three follow-ons are §27.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-cot-s25-lineage-held" data-who="" data-when="">
+    <div class="r-comment-body"><p>A second case for §25, from nova's S21 coordinator, forwarded by S25 on 2026-10-02. Three promoted-failed nova lineage worktrees hold unmerged commits that a live run builds on. <code>gc --apply</code> correctly refuses to remove them. <code>drain --leave</code> takes only run ids, and the obligations hook has no disposition for a deliberately retained tree, so the stop hook blocks every turn. The code is <code>reckon/crew/obligations.py</code>, around lines 411 to 457.</p><p>Suggested remedy: a retained tree reads as <em>lineage-held</em>, not as an obligation, when its HEAD is an ancestor of a live run's base or tip. Failing that, <code>drain --leave</code> accepts <code>&lt;worktree&gt;=lineage-held</code>, expiring when that run turns terminal. §25's done-when gains one case: a retained tree whose HEAD is an ancestor of a live run's base reads lineage-held, and it returns as an obligation once that run is terminal.</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260903T091121108445-display-cumulative-evidence-record" data-who="doc-evidence" data-when="2026-09-03T09:16:07.351Z">
     <div class="r-comment-body"><p>Cumulative evidence record created with an anchor per landed outcome, a dedicated anchor for each of the three corrections, and an outage-timeline figure; audit-doc clean</p></div>

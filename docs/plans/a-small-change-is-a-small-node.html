@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="a-review-is-sized-to-its-risk,a-refusal-is-about-the-work,a-landing-record-never-conflicts">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>A Small Change Is A Small Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="16">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="17">
 <meta name="plan-impl" content="0.6">
 </head>
 <body>
@@ -90,6 +90,10 @@
       time from the stored review's record time to the repair's promotion.</p>
     <p><strong>Done when</strong> the median is recorded with its sample size, against a target of 30 minutes.</p>
 
+    <h2 id="s7">§7 — Make small changes cheap</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>§3, §4 and §5 are ready now; §2 waits on the brief carrier; §6 measures after the rest.</p><p><strong>Done when</strong> §3–§5 land, §2 after the brief carrier, and §6 measures.</p><p>Moved from followup f-ascsn-001 on a-small-change-is-a-small-node by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.6</p>
+
     <section data-reckon="gates" id="gates" class="r-gates">
 <h2><span class="sec">§</span> Evidence gates</h2>
 <div class="r-gate" data-id="g-ascsn-brief-carrier" data-section="s2" data-gated-sections="s2" data-status="closed" data-verdict="passed">
@@ -106,10 +110,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-ascsn-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ascsn-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-09-26" data-recommends-skill="" data-resolved-at="2026-10-02T09:27:37+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Make small changes cheap</h4>
     <div class="r-fu-body"><p>§3, §4 and §5 are ready now; §2 waits on the brief carrier; §6 measures after the rest.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-small-change-is-a-small-node</pre>
+    <p class="r-fu-outcome">Moved into §7 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
 <article class="r-fu" data-id="f-ascsn-002" data-status="resolved" data-written-by="s25-coord" data-written-at="2026-09-30T10:05:00Z" data-recommends-skill="reckon-build" data-resolved-at="2026-09-30T20:49:16+00:00" data-resolved-by="s25-coord">
     <h4 class="r-fu-title">Warn on a not-yet-created directory inside a live claim</h4>
@@ -156,7 +161,7 @@
     <div class="r-comment-body"><p>reviewed r-20260930T203755534764-repair-of-directory-claim-sees-uncreated-dirs-3129f05e8a6d at base 3129f05e head 4af67bd; stored a parsed review in the review store with scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 19, total 96, no findings, added_failure_count 0 by id, and no dimension absent.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T203755534764-repair-of-directory-claim-sees-uncreated-dirs-3129f05e8a6d" data-who="reckon-build" data-when="2026-09-30T20:51:20.372Z">
-    <div class="r-comment-body"><p>repair-of-directory-claim-sees-uncreated-dirs-3129f05e8a6d answers finding fbb06230e03 — acted fbb06230e03: 4af67bd34eaa249123ebd86779a4f9e9b3e3ff93 — the absent-path arm of _directory_claim_overlaps no longer keys on Path.suffix == &quot;&quot;; _absent_path_names_a_directory reads a final component as a leaf file only when its suffix carries a letter, so docs/evidence/2026.09 inside a live docs/evidence claim warns and requires --accept-directory-claim while notes.html keeps the plain file refusal; tests/test_directory_claim_asks_first.py 12 passed at EXIT=0, declared mutation red at EXIT=1.</p></div>
+    <div class="r-comment-body"><p>repair-of-directory-claim-sees-uncreated-dirs-3129f05e8a6d answers finding fbb06230e03 — acted fbb06230e03: 4af67bd34eaa249123ebd86779a4f9e9b3e3ff93 — the absent-path arm of _directory_claim_overlaps no longer keys on Path.suffix == ""; _absent_path_names_a_directory reads a final component as a leaf file only when its suffix carries a letter, so docs/evidence/2026.09 inside a live docs/evidence claim warns and requires --accept-directory-claim while notes.html keeps the plain file refusal; tests/test_directory_claim_asks_first.py 12 passed at EXIT=0, declared mutation red at EXIT=1.</p></div>
 </div>
 </section>
 </main>
