@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project"   content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="One Typesafe Model Picker">
+  <meta name="plan-summary" content="One lane per provider and one typed picker that chooses a model by capability, availability, burn rate and local-lane room.">
+  <meta name="plan-status" content="draft">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="12.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="elevated">
+  <meta name="plan-sprint" content="S25">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="the-local-lane-is-the-default">
+  <meta name="plan-informs" content="a-window-paces-the-lane,the-local-lane-is-the-default">
+  <title>One Typesafe Model Picker | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="2">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;deferred&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why one picker</h2>
+    <p>Flight config today names a separate backend for every model a provider serves: <code>claude</code>, <code>claude-opus</code> and <code>claude-haiku</code> on one subscription, and <code>codex</code>, <code>codex-astra</code>, <code>codex-luna</code>, <code>codex-terra</code> and <code>codex-spark</code> on the codex accounts. Every coordinator picks one by name, and nothing checks that the name still serves. On 2026-10-01 and 2026-10-02 that cost the fleet three kinds of failure, all measured.</p>
+    <table>
+      <thead><tr><th>failure</th><th>measured</th></tr></thead>
+      <tbody>
+        <tr><td>A configured model is refused by the account</td><td><code>codex</code> maps to <code>gpt-5.6-sol</code> and <code>codex-astra</code> to <code>gpt-6-astra</code>. Both answer HTTP 400 <em>"model is not supported when using Codex with a ChatGPT account"</em>, for example run <code>r-20261001T183117724592-review-of-rank-floor-solve-rail</code>. Probed directly, only <code>gpt-5.6-terra</code> serves.</td></tr>
+        <tr><td>A lane holds every dispatch on a reading it cannot interpret</td><td>The codex account now reports <code>plan_type</code> <code>free</code>, with a single 30-day window and a credits balance. The bookend reserve refuses every non-review codex dispatch because there is no five-hour window to read. One 27-minute run took the 30-day window from 7% to 100%. <code>crew preflight</code> then opened holds on all five codex backends from a 100% reading taken 0.21% into a fresh window.</td></tr>
+        <tr><td>Duplicate lanes drift apart</td><td><code>claude-opus</code> reaches the claude dialect only through a recorded key that no test pins. The claude credential fix (<code>a-worker-cannot-write-your-home</code> §5) had to reason about each variant separately.</td></tr>
+      </tbody>
+    </table>
+    <p>The lead's direction (2026-10-02): one lane per provider (claude, clive, codex). The model inside a lane is chosen by a single system picker that weighs capability, availability, account burn rate and local-lane room, and a coordinator may still name a model explicitly. The picker is typesafe, so a lane, a model and a selection reason are values the code checks, not strings it trusts. This is a significant redesign, and the typesafe skills will guide its development; the design section waits on them.</p>
+    <p>It overlaps <code>the-local-lane-is-the-default</code> (route by backend and model, local by default), <code>a-window-paces-the-lane</code> and <code>advise-the-lane-never-force-it</code>. This plan is sequenced after the first and is meant to absorb the routing parts of all three, which the design section reconciles explicitly.</p>
+
+    <h2 id="s2">§2 — Why the codex account refuses its configured models</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>Establish, from the provider's own responses and the account's recorded rate-limit events, why <code>gpt-5.6-sol</code> and <code>gpt-6-astra</code> are refused while <code>gpt-5.6-terra</code> serves. The leading explanation is that the account's plan changed to <code>free</code>. Confirm or refute it from evidence, never from the credential file's contents. Report which codex models this account can serve today, the window and credit structure it reports, and what the bookend reserve and preflight should do on an account with no five-hour window.</p>
+    <p><strong>Done when:</strong> a report names every configured codex model, each with a served or refused verdict taken from a live response or a recorded stream, plus the account's plan type and window structure with their source records, and one recommended reserve behaviour for an account with no five-hour window.</p>
+
+    <h2 id="s3">§3 — Which model is current for each provider</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>For each provider, list the newest release of every model family it serves to this workstation's accounts, and every configured or pinned id that an older release still shadows. Measured so far from the installed Claude CLI (2.1.287): <code>claude-fable-5-1</code>, <code>claude-opus-5-5</code>, <code>claude-sonnet-5-5</code> and <code>claude-haiku-4-5</code> are current, and no lane offers Fable 5.1. Stale pins found: <code>claude-sonnet-5</code> in <code>dotfiles/copilot/settings.json</code>, and <code>gpt-5.5</code> and <code>gpt-5.6-sol</code> in <code>~/.codex/config.toml</code>. The clive wrapper's <code>behavesAs: claude-sonnet-5</code> is a capability-catalog mapping for the local model, not a routing pin. The codex catalog has not been read.</p>
+    <p><strong>Done when:</strong> a table lists, per provider and family, the current id, its source (CLI catalog, provider model list, or live probe), and every location on this workstation that pins an older id.</p>
+
+    <h2 id="s4">§4 — Selecting models through OpenRouter</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>Investigate using the lead's OpenRouter account to choose a model per task automatically, from availability, capability, account burn rate and local-lane availability. The lead named a component, "jev", that this plan cannot yet resolve; the open question below asks what it refers to. Until it is answered, this section covers what OpenRouter itself publishes: model availability, capability metadata, pricing and the account's usage. It also covers how each of those would feed a picker beside the subscription lanes and the local lane.</p>
+    <p><strong>Done when:</strong> a report names each signal the picker would consume, with its OpenRouter endpoint or field, its refresh rate and its failure mode, and states whether OpenRouter should be a lane, a signal source, or both.</p>
+
+    <h2 id="s5">§5 — The typesafe picker</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="8.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="deferred" data-links=""></section>
+    <p>Design and build one picker that turns a node's declared needs (role, specification level, capability class, context size) and the live state of every lane into one typed selection: lane, model, effort and a recorded reason. It replaces per-model backends with one backend per provider. A coordinator's explicit choice is honoured and recorded as an override. Old backend names resolve, with a warning, for one transition period so that no peer's dispatch breaks mid-flight. This section waits on the typesafe skills the lead will install. Its node shape and done-when are written once those skills define the conventions.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="selection-authority" data-choice="" data-by="" data-when="" data-sections="s5">
+    <p class="r-dec-q">Who decides the model for a dispatch?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="picker-with-override">The picker decides; a coordinator may override, and the override is recorded</button>
+      <button class="r-opt" data-value="picker-only">The picker always decides</button>
+      <button class="r-opt" data-value="coordinator-only">The coordinator names a model; the picker only validates it</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
+
+    <section data-reckon="questions" id="questions" class="r-questions">
+<h2><span class="sec">§</span> Open questions</h2>
+<div class="r-q" data-id="q-jev" data-section="s4" data-status="open" data-opened-by="s25-coord" data-opened-at="2026-10-02" data-resolved-at="" data-resolved-by="">
+    <p class="r-q-body">What is "jev" in "the use of jev via my OpenRouter account"? It might be a tool, a library, an OpenRouter feature such as its automatic router, or a typing slip. §4's scope depends on the answer.</p>
+    </div>
+</section>
+
+    
+  </main>
+</body>
+</html>
