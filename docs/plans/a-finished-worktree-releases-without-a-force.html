@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-finished-worktree-releases-without-a-force">
+  <meta name="plan-title" content="A Finished Worktree Releases Without a Force">
+  <meta name="plan-summary" content="35 of 87 worktrees sit dirty, each needing a forced removal. Stop workers ending dirty, and let a finished worktree save its residue and release.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S22">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-standalone" content="It repairs worktree release and the worker stop hook; no live plan waits on it, and it consumes no plan&#x27;s pending evidence.">
+  <title>A Finished Worktree Releases Without a Force | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="lead">
+        On 2026-10-02 the lead authorised a force removal of one finished worktree and asked
+        for the cause to be fixed, so that the authorisation stops recurring. A census of the
+        project's managed worktrees found the same condition 35 times. Each such worktree is
+        retained because it holds uncommitted changes. <code>crew gc</code> never forces, so
+        every one of them waits for a human, and its worktree-held obligation blocks the
+        coordinator's turn end with a remedy that cannot clear it.
+      </p>
+    </header>
+
+    <h2 id="s1">§1 — Root cause: where the dirt comes from</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
+    <p>
+      <code>reckon crew gc --repo ~/Code/reckon --project reckon</code> on 2026-10-02 at about
+      20:00Z classified 87 managed worktrees: 35 dirty, 32 extraction, 16 unintegrated and
+      4 integrated. A read-only <code>git status --porcelain</code> of each dirty worktree
+      found two causes.
+    </p>
+    <ul>
+      <li><strong>A hand patch applied uncommitted across the fleet (30 of 35).</strong>
+        Thirty worktrees modify <code>tests/test_crew_orphan.py</code>, most of them also
+        <code>tests/conftest.py</code>, with the same <code>_signal_one</code> helper. It replaces an
+        <code>os.killpg(os.getpgid(pid), SIGTERM)</code> that could signal every process the
+        user owns. The worktrees come from the s9, s13, s15, s16, s18 and s20 waves, from
+        2026-08-25 to 2026-09-23. Main fixed the hazard differently at 586a1ac6e (2026-09-20,
+        <em>a worker signal reaches the worker, never the whole account</em>), and
+        <code>_signal_one</code> appears nowhere on main. So the patch was an emergency mitigation,
+        written into live worktrees and never committed or cleaned up. Its content is
+        superseded, but gc cannot tell superseded dirt from unique work.</li>
+      <li><strong>A worker ends its turn with uncommitted edits (5 of 35, and the run that
+        prompted this plan).</strong> Docs and plan edits, untracked figures and logs, one
+        untracked test, and in <code>s13-ship/execution-fit-refusal</code> uncommitted source
+        changes to <code>reckon/capability.py</code> and <code>reckon/crew.py</code>, which may
+        be unique. The run that prompted this plan, <code>passed-verdict-needs-exit-zero</code>, was
+        resumed by the review-repair reflex after its commits were merged. It rewrote a comment,
+        exited without committing, and could not be resumed again: its session needed 232,500
+        input tokens against the lane's new 230,144 cap. On the same day, the impl-stays run left
+        an uncommitted evidence correction behind its review.</li>
+    </ul>
+    <p>
+      Two properties of the system turn both causes into a standing authorisation request.
+      The worker stop hook checks the manifest's status, not the worktree's cleanliness, so a
+      turn can end dirty. And release treats any dirt as unique work. That is the right default,
+      but it has no way to preserve dirt and then release. The worktree-held obligation then names
+      <code>crew gc --apply</code> as its remedy, which never removes a dirty worktree, and a promoted
+      run has no live pointer to acknowledge. The obligation can be cleared only by a human.
+    </p>
+
+    <h2 id="s2">§2 — A worker cannot end its turn with uncommitted changes</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Done when</strong> <code>reckon/hooks/worker_stop.py</code> refuses a worker's turn end
+      while its worktree holds an uncommitted change to a tracked file, or an untracked file that
+      is not ignored, outside the run directory. The refusal names each path and says to commit it
+      or discard it. The <code>.venv</code> and <code>.env</code> provisioning links are exempt. A
+      worker whose status is blocked or failed may still end dirty, but only after its manifest
+      names every uncommitted path. A test covers a clean end, a dirty end refused, a blocked end
+      that names its paths and is allowed, and the provisioning exemption, each in a temporary
+      repository. The negative control removes the cleanliness check, and the dirty end then
+      stops.
+    </p>
+
+    <h2 id="s3">§3 — A finished worktree preserves its residue and releases</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Done when</strong> release of a worktree whose commits are integrated into the
+      integration head saves any residue first: tracked-file changes as a patch, and untracked
+      files as a tar. They go into the run's directory, or for a worktree with no run into
+      <code>~/.config/reckon/crew/worktree-residue/</code>, named for the worktree. Release then removes
+      the worktree. Before removing, it verifies that the saved patch applies cleanly to the
+      worktree's head, which shows nothing was lost, and it prints the residue paths. Each dirty
+      path is classified as one of:
+    </p>
+    <ul>
+      <li><em>subsumed</em>: its working content equals that path at the integration head, or its
+        change is identical to one in another preserved residue;</li>
+      <li><em>superseded</em>: the path is also changed on the integration head since the worktree's
+        base;</li>
+      <li><em>unique</em>: neither of the above.</li>
+    </ul>
+    <p>
+      The classification is written beside the patch. A worktree whose residue includes unique
+      source changes is preserved and released the same way, and is listed in a residue report for
+      a human to read. Nothing is discarded unsaved, so no force authorisation is needed. The
+      worktree-held obligation names this release as its remedy and clears once it runs. A test
+      drives each class in a temporary repository, asserts the patch round-trips and the worktree
+      is gone, and asserts that a worktree still claimed by a live run is untouched. The negative
+      control skips the save, and the round-trip assertion then fails.
+    </p>
+
+    <h2 id="s4">§4 — The standing dirty worktrees are released through §3</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      <strong>Done when</strong> §3's release has run over every dirty worktree that no live run
+      claims, and the residue report lists each with its classes. The report is committed under
+      <code>docs/evidence/</code>, and the dirty count gc reports is zero apart from worktrees a live run
+      claims. The 30 <code>_signal_one</code> worktrees classify as superseded. Any unique source
+      residue, such as <code>s13-ship/execution-fit-refusal</code>'s changes to
+      <code>reckon/capability.py</code> and <code>reckon/crew.py</code>, is named in the report for the
+      lead.
+    </p>
+
+    <h2 id="s5">§5 — The repair reflex does not resume a session the lane cannot hold</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      The review-repair reflex resumed <code>passed-verdict-needs-exit-zero</code> after its commits were
+      merged. It got one useful turn, then two resumes that died at launch on the lane's context cap,
+      which opened attempts that made the delivered manifest read as stale to promotion.
+      <strong>Done when</strong> the reflex, and a manual <code>crew resume</code>, read the session's last
+      recorded input-token count. A session whose count plus the completion reserve exceeds the
+      lane's published window is refused before an attempt opens, naming the count and the window,
+      with a fresh repair node as the remedy. A test covers a session within the window that resumes,
+      and one over it that is refused without a new attempt. The negative control removes the check,
+      and the over-window case then opens an attempt.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-afwrwaf-001" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build a-finished-worktree-releases-without-a-force §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Stop new dirt, then release the standing dirt</h4>
+    <div class="r-fu-body"><p>§2 and §3 are independent, and §5 is independent of both. §4 runs after §3 lands.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-finished-worktree-releases-without-a-force §2</pre>
+</article>
+    </section>
+  </main>
+</body>
+</html>
