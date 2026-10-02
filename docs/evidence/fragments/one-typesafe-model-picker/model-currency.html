@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="Model currency across providers">
+  <meta name="plan-summary" content="One row per provider and model family: the current model id and its exactly named source, every id pinned/refused in the flight config, and every file on the workstation that pins an older id, with path and line from grep.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s3">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="recorded">
+  <meta name="plan-tags" content="crew,flight,model-catalog,currency">
+  <title>Model currency across providers — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="model-currency" data-reckon="landed" data-when="2026-10-02">
+  <h2>Model currency across providers</h2>
+
+  <p><strong>Sources, named exactly,</strong> all read 2026-10-02: the <em>installed CLI's own model catalog</em> for claude is the <code>latest_per_family</code> map embedded in the Claude Code 2.1.287 binary at <code>/home/ITER/mcintos/.local/share/claude/versions/2.1.287</code> (<code>grep -aoE 'latest_per_family:\{[^}]*\}'</code>). The <em>provider's model list</em> for codex is the list cached by codex-cli 0.155.1 at <code>/home/ITER/mcintos/.codex/models_cache.json</code>, <code>fetched_at 2026-10-02T11:19:43Z</code>. For clive the <em>live one-line probe</em> is <code>/work/projects/imas_gpu/agents/clive --list</code>, which resolves the ambix router's global catalog at 98dci4-gpu-0003:18802 and returned exactly one release, <code>deepseek-v4.1-flash@4xh200</code>; corroborated by <code>/home/ITER/mcintos/public/imas-ambix/endpoints.json</code> (<code>model_id</code>) and <code>lane.json</code> (<code>model_id</code>, observed 2026-10-02T11:24:28Z).</p>
+
+  <table>
+    <thead>
+      <tr><th>provider</th><th>family</th><th>current id</th><th>source (named exactly)</th><th>flight backend id(s) — verdict</th><th>older ids pinned elsewhere on this workstation (path:line, grep)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>claude</td><td>sonnet</td>
+        <td><code>claude-sonnet-5-5</code></td>
+        <td>installed Claude CLI 2.1.287 catalog, <code>latest_per_family.sonnet</code></td>
+        <td><code>claude</code> → <code>claude-sonnet-5-5</code> — current</td>
+        <td><code>/home/ITER/mcintos/Code/dotfiles/copilot/settings.json:47</code> <code>"model": "claude-sonnet-5"</code> → replacement <code>claude-sonnet-5-5</code> (the live <code>~/.copilot/settings.json</code> is a symlink to this file); <code>/work/projects/imas_gpu/agents/clive:558</code> <code>"behavesAs": "claude-sonnet-5"</code> — capability-catalog mapping for the local model, not a routing pin; host-layer backups: flight.yaml.bak-091917:294, .bak-09201944:424, .bak-162028:294, .bak-opus55:447, .before-session-reuse-off-20260923:447, .pre-dotfiles-20260923:453 (all under <code>~/.config/reckon/</code>)</td>
+      </tr>
+      <tr>
+        <td>claude</td><td>opus</td>
+        <td><code>claude-opus-5-5</code></td>
+        <td>installed Claude CLI 2.1.287 catalog, <code>latest_per_family.opus</code></td>
+        <td><code>claude-opus</code> → <code>claude-opus-5-5</code> — current</td>
+        <td><code>/home/ITER/mcintos/.claude/settings.json:119</code> <code>modelSettings</code> key <code>claude-opus-5</code> — per-model effort override, not a routing pin; the current key <code>claude-opus-5-5</code> is at :128; host-layer backups: bak-091917:305, .bak-09201944:435, .bak-162028:305, .bak-opus55:458</td>
+      </tr>
+      <tr>
+        <td>claude</td><td>haiku</td>
+        <td><code>claude-haiku-4-5</code></td>
+        <td>installed Claude CLI 2.1.287 catalog, <code>latest_per_family.haiku</code> (first-party form <code>claude-haiku-4-5-20251001</code>)</td>
+        <td><code>claude-haiku</code> → <code>claude-haiku-4-5-20251001</code> — current (the dated first-party form of this release)</td>
+        <td>none found</td>
+      </tr>
+      <tr>
+        <td>claude</td><td>fable</td>
+        <td><code>claude-fable-5-1</code></td>
+        <td>installed Claude CLI 2.1.287 catalog, <code>latest_per_family.fable</code></td>
+        <td>no flight backend pins fable; no lane offers Fable 5.1</td>
+        <td><code>/home/ITER/mcintos/.claude/settings.json:122</code> <code>modelSettings</code> key <code>claude-fable-5</code> — effort override, not a routing pin; the current key <code>claude-fable-5-1</code> is at :125</td>
+      </tr>
+      <tr>
+        <td>claude</td><td>mythos</td>
+        <td><code>claude-mythos-5-1</code></td>
+        <td>installed Claude CLI 2.1.287 catalog (every <code>provider_ids</code> route null — catalog entry with no first-party/bedrock/vertex route)</td>
+        <td>none</td>
+        <td>none found</td>
+      </tr>
+      <tr>
+        <td>codex</td><td>sol</td>
+        <td><code>gpt-6-sol</code> ("Previous generation workhorse model." — newest sol; supersedes 5.6-sol)</td>
+        <td>provider's model list: <code>~/.codex/models_cache.json</code> (codex-cli 0.155.1, fetched 2026-10-02T11:19:43Z)</td>
+        <td><code>codex</code> → <code>gpt-5.6-sol</code> — <strong>stale</strong>; replacement <code>gpt-6-sol</code> (5.6-sol still served per plan §2; the provider labels it "Older generation")</td>
+        <td><code>/home/ITER/mcintos/.config/reckon/flight.yaml:97</code>; its dotfiles source <code>/home/ITER/mcintos/Code/dotfiles/reckon/flight.yaml:97</code>; <code>/home/ITER/mcintos/.codex/config.toml:1</code> <code>model = "gpt-5.6-sol"</code>; host-layer backups: bak-091917:58, .bak-09201944:58, .bak-162028:58, .bak-opus55:59, .before-session-reuse-off-20260923:59, .pre-dotfiles-20260923:65</td>
+      </tr>
+      <tr>
+        <td>codex</td><td>luna</td>
+        <td><code>gpt-6-luna</code> (newest luna; provider labels 5.6-luna "Older fast and efficient model.")</td>
+        <td>provider's model list: <code>~/.codex/models_cache.json</code></td>
+        <td><code>codex-luna</code> → <code>gpt-5.6-luna</code> — <strong>stale</strong>; replacement <code>gpt-6-luna</code></td>
+        <td><code>/home/ITER/mcintos/.config/reckon/flight.yaml:183</code>; <code>/home/ITER/mcintos/Code/dotfiles/reckon/flight.yaml:183</code>; host-layer backups: bak-091917:112, .bak-09201944:112, .bak-162028:112, .bak-opus55:115, .before-session-reuse-off-20260923:115, .pre-dotfiles-20260923:121</td>
+      </tr>
+      <tr>
+        <td>codex</td><td>terra</td>
+        <td><code>gpt-5.6-terra</code> (no newer terra in the provider list)</td>
+        <td>provider's model list: <code>~/.codex/models_cache.json</code></td>
+        <td><code>codex-terra</code> → <code>gpt-5.6-terra</code> — current</td>
+        <td><code>/home/ITER/mcintos/.config/reckon/flight.yaml:221</code>; <code>/home/ITER/mcintos/Code/dotfiles/reckon/flight.yaml:221</code></td>
+      </tr>
+      <tr>
+        <td>codex</td><td>astra</td>
+        <td><code>gpt-6-astra</code> ("Frontier intelligence for the most demanding work.")</td>
+        <td>provider's model list: <code>~/.codex/models_cache.json</code></td>
+        <td><code>codex-astra</code> → <code>gpt-6-astra</code> — current (and serving per plan §2)</td>
+        <td><code>/home/ITER/mcintos/.config/reckon/flight.yaml:267</code>; <code>/home/ITER/mcintos/Code/dotfiles/reckon/flight.yaml:267</code></td>
+      </tr>
+      <tr>
+        <td>codex</td><td>spark</td>
+        <td>none — <code>gpt-5.3-codex-spark</code> is absent from the provider's model list</td>
+        <td>provider's model list: <code>~/.codex/models_cache.json</code> (absence)</td>
+        <td><code>codex-spark</code> → <code>gpt-5.3-codex-spark</code> — <strong>refused by the account</strong>: HTTP 400 "not supported when using Codex with a ChatGPT account", CLI has no metadata for it (plan §2, one-probe-per-model table, 2026-10-02)</td>
+        <td><code>/home/ITER/mcintos/.config/reckon/flight.yaml:149</code>; project layer <code>/home/ITER/mcintos/Code/reckon/docs/state/reckon/flight.yaml:61</code>; host-layer backups: bak-091917:94, .bak-09201944:94, .bak-162028:94, .bak-opus55:96, .before-session-reuse-off-20260923:96, .pre-dotfiles-20260923:102</td>
+      </tr>
+      <tr>
+        <td>codex</td><td>legacy 5.5 line</td>
+        <td><code>gpt-5.5</code> ("Legacy coding model." in the provider list; superseded by the 5.6/6.x lines, current workhorse <code>gpt-6-sol</code>)</td>
+        <td>provider's model list: <code>~/.codex/models_cache.json</code></td>
+        <td>no flight backend</td>
+        <td><code>/home/ITER/mcintos/.codex/config.toml:1367</code> <code>"gpt-5.5" = 4</code> under <code>[tui.model_availability_nux]</code> — a dismissed-notice counter, not a routing pin (also <code>gpt-5.6-sol</code> at :1368)</td>
+      </tr>
+      <tr>
+        <td>clive</td><td>deepseek-v4.1</td>
+        <td><code>deepseek-v4.1-flash</code></td>
+        <td>live one-line probe <code>clive --list</code> (ambix router catalog, single release <code>deepseek-v4.1-flash@4xh200</code>); corroborated by <code>~/public/imas-ambix/endpoints.json</code> and <code>lane.json</code> <code>model_id</code></td>
+        <td><code>clive</code> → <code>deepseek-v4.1-flash</code> — current</td>
+        <td><code>/home/ITER/mcintos/Code/reckon/skills/reckon-build/references/effort-routing.md:69,70,91</code> <code>deepseek-v4-flash</code> (routing-slice reference rows) → replacement <code>deepseek-v4.1-flash</code>; host backup flight.yaml.bak-091917:266; <code>/home/ITER/mcintos/Code/dotfiles/bin/_gpu_watch_test.py:228,244,258</code> (OpenRouter price-matching fixture, not a lane pin)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Coverage note (how "every file" was bounded and re-runnable).</strong> Greps run 2026-10-02 over these roots, with patterns <code>claude-(fable|opus|sonnet|haiku)-[0-9][0-9a-z.-]*</code>, <code>gpt-[0-9][a-z0-9.-]*</code>, <code>deepseek-v[0-9][a-z0-9.-]*</code>: <code>/home/ITER/mcintos/.config/reckon</code> (all layers and backups), <code>/home/ITER/mcintos/Code/dotfiles</code> (entire tree, including the host flight source and both copilot settings forms), <code>/home/ITER/mcintos/Code/reckon</code> (package, schema, skills; run/report/review records excluded as records rather than pins), <code>/home/ITER/mcintos/Code/imas-ambix/docs/state</code>, <code>/home/ITER/mcintos/.codex</code>, <code>/home/ITER/mcintos/.claude</code>, <code>/work/projects/imas_gpu/agents</code>, <code>/home/ITER/mcintos/public/imas-ambix</code>. Checked and naming no model id: <code>/home/ITER/mcintos/Code/reckon/reckon/schema/flight-defaults.yaml</code> (only the prose word "claude-shaped"), <code>reckon/schema/flight.yaml</code> (shipped schema), <code>/home/ITER/mcintos/Code/imas-ambix/docs/state/imas-ambix/flight.yaml</code>, and the whole <code>reckon/</code> Python package. Backup snapshots named above are files under <code>/home/ITER/mcintos/.config/reckon/</code> (<code>flight.yaml.bak-091917</code>, <code>.bak-09201944</code>, <code>.bak-162028</code>, <code>.bak-opus55</code>, <code>.before-session-reuse-off-20260923</code>, <code>.pre-dotfiles-20260923</code>); no live layer reads them. Provider-list entries with no pin anywhere found: <code>gpt-reserve</code>, <code>codex-auto-review</code>.</p>
+</article>
+</body>
+</html>
