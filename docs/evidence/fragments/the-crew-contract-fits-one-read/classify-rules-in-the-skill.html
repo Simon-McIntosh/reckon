@@ -54,10 +54,24 @@
   <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T164535169273-classify-rules-reconcile/logs/gate-enforced-at-base.log</code>
   (58 passed; exit 0).</p>
 
+  <p><strong>Residuals classified at head <code>5670458ab</code>.</strong> Comparing the counter's
+  candidate text against the table found ten candidates the check could not match to a row or a
+  reject, and the cause is the counter's own rendering: it prints a sentence with backticks
+  stripped, so <code>local_backend</code>, <code>pending_work</code>, <code>ready_now</code>,
+  <code>feeds_sprints</code>, <code>edit_plan</code>, <code>read_plan</code> and
+  <code>scripts/worktree_fleet.py</code> reach the check as <code>localbackend</code>,
+  <code>pendingwork</code>, <code>readynow</code>, <code>feedssprints</code>, <code>editplan</code>,
+  <code>readplan</code> and <code>scripts/worktreefleet.py</code>, while the rows quote the source
+  spelling. Nine of the ten are sentences a surviving row already carries; they are now rows
+  320&#8211;323 and 325&#8211;329, each recorded as a merge into that row. The tenth, the
+  <code>ready_now</code> prerequisite check at SKILL.md:308, had no row and is row 324. The counter
+  run beside this fragment's figure reads <strong>candidates 261, rows 329, rejects 13,
+  uncovered 0</strong> at this head: every candidate is a row or a listed reject.</p>
+
   <figure>
     <img src="/reckon/figures/the-crew-contract-fits-one-read/classify-rules-in-the-skill/dispositions.svg"
-         alt="Bar chart of classified-row dispositions: keep 280, merge 13, delete as enforced 26, over 319 rows.">
-    <figcaption>Disposition of the 319 classified rows in
+         alt="Bar chart of classified-row dispositions: keep 281, merge 22, delete as enforced 26, over 329 rows.">
+    <figcaption>Disposition of the 329 classified rows in
     <code>skills/reckon-build/SKILL.md</code>.</figcaption>
   </figure>
 
@@ -2937,6 +2951,96 @@
         <td>yes</td>
         <td>keep</td>
         <td>prose rule re-read at the current head; no code refusal verified at this node</td>
+      </tr>
+    <tr>
+        <td>320</td>
+        <td>The flag selects the backend named by <code>localbackend</code> and refuses when it is unset (the counter drops the underscore; the source reads <code>local_backend</code>).<br><span class="loc">skills/reckon-build/SKILL.md:131</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into row 24 (L131): &quot;The flag selects the backend named by `local_backend` and refuses when it is unset.&quot;</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>321</td>
+        <td>Write path: use <code>editplan</code> to record outcomes atomically: <code>readplan(resource={project,type:"plan",id:slug}, view="raw")</code> → get version (the counter drops the underscores; the source reads <code>edit_plan</code> and <code>read_plan</code>).<br><span class="loc">skills/reckon-build/SKILL.md:150</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into row 27 (L150): &quot;Write path: use `edit_plan` to record outcomes atomically:&quot;</td>
+        <td>restates the same rule as the named surviving row; it adds the atomic read-then-write call that row introduces</td>
+      </tr>
+      <tr>
+        <td>322</td>
+        <td>Trust <code>pendingwork</code> rather than recounting (the counter drops the underscore; the source reads <code>pending_work</code>).<br><span class="loc">skills/reckon-build/SKILL.md:201</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into row 242 (L201): &quot;Trust `pending_work` rather than recounting.&quot;</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>323</td>
+        <td>Test execution is itself a worker node.<br><span class="loc">skills/reckon-build/SKILL.md:214</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into row 16 (L69): &quot;Every implementation, investigation, test execution, operational pipeline run, and corrective repair is a worker node…&quot;</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>324</td>
+        <td>Require the target to be in <code>readynow</code>, or follow its earliest local prerequisite from the returned critical/open path (the counter drops the underscore; the source reads <code>ready_now</code>).<br><span class="loc">skills/reckon-build/SKILL.md:308</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>keep</td>
+        <td>prose rule re-read at the current head; no code refusal verified at this node</td>
+      </tr>
+      <tr>
+        <td>325</td>
+        <td>The flag resolves <code>localbackend</code> as that dispatch's default and refuses when it is unset; role overlays still apply (the counter drops the underscore; the source reads <code>local_backend</code>).<br><span class="loc">skills/reckon-build/SKILL.md:463</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into row 104 (L460): &quot;The flag resolves `local_backend` as that dispatch's default and refuses when it is unset; role overlays still apply.&quot;</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>326</td>
+        <td><code>gates.enforce</code> and <code>gates.onfail</code> in flight config tune strictness; they do not license skipping a gate whose measure simply was not run (the counter drops the underscore; the source reads <code>gates.on_fail</code>).<br><span class="loc">skills/reckon-build/SKILL.md:698</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into row 149 (L694): &quot;`gates.enforce` and `gates.on_fail` in flight config tune strictness; they do not license skipping a gate whose measure simply was not run.&quot;</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>327</td>
+        <td>Never feed same-plan work blindly into <code>crew.followupopsfrommanifest</code>: author it as a section and add its nodes to the live DAG (the counter drops the underscores; the source reads <code>crew.followup_ops_from_manifest</code>).<br><span class="loc">skills/reckon-build/SKILL.md:1030</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into row 187 (L912): &quot;Same-plan follow-on work becomes a section, never a followup…&quot;</td>
+        <td>restates the same rule as the named surviving row, as row 197 already records</td>
+      </tr>
+      <tr>
+        <td>328</td>
+        <td>Report the sprint altitude at close from <code>feedssprints</code> rather than from memory: it is derived, so it cannot go stale the way a written list would, and a sprint that feeds nothing says so instead of staying silent (the counter drops the underscore; the source reads <code>feeds_sprints</code>).<br><span class="loc">skills/reckon-build/SKILL.md:1041</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into row 201 (L988): &quot;Report the sprint altitude at close from `feeds_sprints` rather than from memory…&quot;</td>
+        <td>restates the same rule as the named surviving row</td>
+      </tr>
+      <tr>
+        <td>329</td>
+        <td>Use <code>scripts/worktreefleet.py</code> for deterministic worktree creation, inspection, and cleanup (the counter drops the underscore; the source reads <code>scripts/worktree_fleet.py</code>).<br><span class="loc">skills/reckon-build/SKILL.md:1258</span></td>
+        <td>—</td>
+        <td class="t">—</td>
+        <td>yes</td>
+        <td>merge into row 237 (L1205): &quot;Use `scripts/worktree_fleet.py` for deterministic worktree creation, inspection, and cleanup.&quot;</td>
+        <td>restates the same rule as the named surviving row</td>
       </tr>
     </tbody>
   </table>
