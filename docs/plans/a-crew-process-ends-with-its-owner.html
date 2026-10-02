@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="251">
+<meta name="plan-version" content="252">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -1367,6 +1367,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261002T081013402487-review-of-the-live-producer-reads-only-what-changed" data-who="reckon-build" data-when="2026-10-02T08:34:05.010Z">
     <div class="r-comment-body"><p>independent review of run r-20261002T065704186701-the-live-producer-reads-only-what-changed stored at base 65370f6d04f7b3ed383d6c154375a957f94afd9b head 12bf0903059a2c04c4dc8f48814c1054d208391c: goal_fidelity 18, evidence 16, scope_discipline 19, durability 17, fit 17, total 87; one follow-on finding (the driver arm JSONs carrying the landing's rchar figures live only on node-local scratch); added_failure_count 0 over the reviewed run's own base/head arms (49 passed base, 50 passed head).</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T083645178761-the-metadata-index-reuses-unchanged-plans" data-who="reckon-build" data-when="2026-10-02T09:13:32.961Z">
+    <div class="r-comment-body"><p>The metadata index now keys row reuse on a sha256 content digest of each file instead of its stat identity (reckon/metadata_index.py); a rebuild over an unchanged docs tree re-parses 0 of 16 covered rows, a rebuild after one plan changes re-parses exactly that plan, and a build whose only change is a moved mtime re-parses 0.</p></div>
 </div>
 </section>
 </main>
