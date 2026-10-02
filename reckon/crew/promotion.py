@@ -77,7 +77,7 @@ from reckon.crew.runs import (
     _shared_write_paths,
     _utc_now,
     _write_json,
-    drain,
+    drain,  # noqa: F401 - importable so a caller can substitute the fleet reading's drain
     list_live,
     pointer_path,
     process_alive,
@@ -6085,20 +6085,51 @@ def _harvest_lane_receipt(
     return result
 
 
+def _unreconciled_live_runs(pointers: Iterable[Mapping[str, Any]]) -> int:
+    """Count the live pointers no closure disposition excuses.
+
+    The closure drain derives its ``unreconciled_runs`` by the same predicate
+    over the same pointers, so this agrees with the drain on a given fleet
+    without reading the plan inventory the drain also serves: a promotion stamps
+    a reading on its row and never consumes the drain's closure count or plan
+    remainder. Liveness is taken through the host-gated reading the drain uses,
+    so a pointer whose classification turns on a live process reads the same
+    either way rather than being measured against a stored answer.
+    """
+    from reckon.crew import recovery
+
+    unreconciled = 0
+    for pointer in pointers:
+        alive, proven = recovery.local_liveness(pointer)
+        row = recovery.classify_pointer(
+            {**pointer, "process_alive": alive if proven else None}
+        )
+        recorded = pointer.get("closure_disposition")
+        disposition = (
+            str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
+        )
+        classification = str(
+            row.get("classification") or row.get("recovery_classification") or ""
+        )
+        if not recovery.closure_disposition_valid(disposition, classification):
+            unreconciled += 1
+    return unreconciled
+
+
 def _fleet_state_reading(project: str) -> dict[str, Any]:
     """Return a bounded current reading of the project's fleet state.
 
-    The live-pointer and drain projections own their respective derivations;
-    promotion only composes their already-derived facts into the result that an
-    orchestrator is about to read. The reading deliberately stays outside the
-    ledger because it describes the fleet at this moment, not this run.
+    The live-pointer projection owns the pointer classification, and the
+    unreconciled count is derived from those pointers alone; promotion composes
+    the already-derived facts into the result that an orchestrator is about to
+    read. The reading deliberately stays outside the ledger because it describes
+    the fleet at this moment, not this run.
     """
     observed_at = _utc_now()
     try:
         from reckon.crew import recovery
 
         pointers = list_live(project=project)
-        closure = drain(project)
         classified = [recovery.classify_pointer(pointer) for pointer in pointers]
         actionable = [
             str(row.get("recovery_classification") or "")
@@ -6115,7 +6146,7 @@ def _fleet_state_reading(project: str) -> dict[str, Any]:
             "fleet_state": "measured",
             "observed_at": observed_at,
             "live_runs": len(pointers),
-            "unreconciled_runs": int(closure["unreconciled_runs"]),
+            "unreconciled_runs": _unreconciled_live_runs(pointers),
             "actionable_runs": len(actionable),
             "actionable_classifications": sorted(set(actionable)),
             "occupied_lanes": len(lanes),
