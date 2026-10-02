@@ -80,7 +80,9 @@ def live_facts(monkeypatch):
     monkeypatch.setattr(
         snapshot.resumption,
         "probe_lane_availability",
-        lambda *a, **k: {"status": "served"},
+        lambda project, name, backend, **k: {
+            "status": "refused" if name == "codex-spark" else "served"
+        },
     )
     monkeypatch.setattr(
         snapshot.routing,
@@ -134,7 +136,24 @@ def test_refused_model_is_never_offered_to_jev(
     assert len(seen) == 1 and "remote" in seen[0]
     assert "codex-spark" not in seen[0]
     assert selection.backend == "remote"
-    assert selection.excluded[0]["reasons"] == ["account-refused-model"]
+    assert selection.excluded[0]["reasons"] == ["availability: refused"]
+
+
+def test_refusal_and_serving_both_come_from_the_observation(
+    live_facts, monkeypatch, request_node, config, tmp_path
+):
+    """Eligibility is read from the live serving probe, never a fixed name list."""
+
+    def probe(project, name, backend, **k):
+        return {"status": "refused" if name == "remote" else "served"}
+
+    monkeypatch.setattr(snapshot.resumption, "probe_lane_availability", probe)
+    options = snapshot.candidates(request_node, config, tmp_path, records=[])
+    remote = next(c for c in options if c.backend == "remote")
+    served = next(c for c in options if c.backend == "local")
+    assert remote.reasons == ["availability: refused"]
+    assert served.reasons == []
+    assert served.availability == "served"
 
 
 @pytest.mark.parametrize(
@@ -469,7 +488,10 @@ def test_replay_reuses_one_serving_observation_per_model(
     live_facts, monkeypatch, request_node, config, tmp_path
 ):
     probe = Mock(
-        return_value={"status": "served", "observed_at": "2026-01-20T00:00:00Z"}
+        side_effect=lambda project, name, backend, **k: {
+            "status": "refused" if name == "codex-spark" else "served",
+            "observed_at": "2026-01-20T00:00:00Z",
+        }
     )
     monkeypatch.setattr(snapshot.resumption, "probe_lane_availability", probe)
     observations = {}
@@ -478,8 +500,8 @@ def test_replay_reuses_one_serving_observation_per_model(
             request_node, config, tmp_path, records=[], availability_cache=observations
         )
         assert len([c for c in options if not c.reasons]) == 2
-    assert probe.call_count == 2
-    assert len(observations) == 2
+    assert probe.call_count == 3
+    assert len(observations) == 3
 
 
 def test_expired_budget_is_not_rendered_as_current(

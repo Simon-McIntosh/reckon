@@ -31,6 +31,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("member", "list"): "roster members and reusable sessions",
     ("observe",): "live run record",
     ("path",): "one kind of file",
+    ("pick",): "live routing state",
     ("placement",): "one reservation a project places its workers into",
     ("preflight",): "backend budget state",
     ("recover",): "live pointers left by an interrupted orchestrator",

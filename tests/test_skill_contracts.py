@@ -703,7 +703,13 @@ def test_ship_has_one_advisory_fleet_size_table() -> None:
 # of these into an edit_plan call at the landing beat, so a wrong or partial
 # form returns op_error at exactly the moment there is no time to open the
 # source; a test applies each example verbatim, which is what keeps it correct.
-FIXED_READ_SET_TOKEN_BUDGET = 15_500
+#
+# Raised from 15_500 when the compact CLI inventory gained the pick verb. The
+# inventory is the action surface a coordinator reads to learn which verb answers
+# a decision, and the verb census requires every registered crew command to be
+# named there, so the line is a rule the decision point needs rather than
+# reference that can be read conditionally.
+FIXED_READ_SET_TOKEN_BUDGET = 15_600
 
 
 def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
@@ -1041,6 +1047,15 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "member", "add"): set(),
         ("crew", "member", "list"): {"--project"},
         ("crew", "observe"): {"--run"},
+        ("crew", "pick"): {
+            "--project",
+            "--role",
+            "--spec-level",
+            "--goal",
+            "--done-when",
+            "--replay",
+            "--checkout-path",
+        },
         ("crew", "placement"): {"--ensure", "--session", "--project"},
         ("crew", "preflight"): {"--project", "--role"},
         ("crew", "recover"): set(),
