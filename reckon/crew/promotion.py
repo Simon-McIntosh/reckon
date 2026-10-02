@@ -50,6 +50,7 @@ from reckon.crew.routing import (
     RECLAIMABLE_CLASSES,
     WITHHELD_REASONS,
     _boundary_tree_roots,
+    _disposable_member_id,
     _git,
     _inspect_workspace,
     _repository_tree_snapshot,
@@ -5239,6 +5240,96 @@ def _release_scratch_when_release_raised(record: Mapping[str, Any]) -> dict[str,
         }
 
 
+def _manifest_reads_blocked(record: Mapping[str, Any]) -> bool:
+    """Whether the run's manifest is a blocked delivery kept for resume.
+
+    A blocked run stopped without finishing, so a resume may still continue the
+    work. Its process group and its per-run identity are therefore part of what
+    a resume finds, and the release keeps both rather than reclaiming them. The
+    status is read from the delivered manifest, which is the same source the
+    release already consults to decide whether a writer may be signalled.
+    """
+    manifest = _fresh_manifest(record)
+    return (
+        manifest is not None
+        and str(manifest.get("status") or "").strip().lower() == "blocked"
+    )
+
+
+def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Remove a run's own disposable roster identity once its work is accepted.
+
+    A dispatch that names no member carries a per-run identity and registers no
+    roster row, so the ordinary run retires nothing here: there is no row to
+    remove. The row is removed when one exists — a run hand-registered, or
+    dispatched by an earlier revision — so acceptance leaves no disposable
+    identity standing in the committed roster, which is the same guarantee the
+    dispatch side gives by registering none.
+
+    Only the run's own disposable identity is eligible. A run that names a
+    member explicitly carries no disposable identity, so the release reports
+    nothing about one and adds no key a reader could mistake for a retirement
+    that was considered. A blocked run is kept: it may still be resumed, and its
+    identity is part of what a resume finds.
+
+    The removal runs after the release receipt is committed, so no later write
+    amends a run file and leaves the aggregate behind; the roster write's own
+    union read keeps the run-count guard satisfied and re-encodes every per-run
+    file it copies, so the two copies stay identical.
+    """
+    run_id = str(record.get("run_id") or "")
+    member_id = str(record.get("member") or "").strip()
+    if not member_id or member_id != _disposable_member_id(run_id):
+        return {}
+    if _manifest_reads_blocked(record):
+        return {
+            "identity_retired": False,
+            "identity_withheld": "manifest is blocked; identity kept for resume",
+        }
+    project = str(record.get("project") or "").strip()
+    root = str(record.get("repo") or "").strip() or None
+    if not project:
+        return {
+            "identity_retired": False,
+            "identity_withheld": "the run names no project to retire the identity from",
+        }
+    try:
+        for _attempt in range(8):
+            data, version = ledger.load(project, root)
+            if not any(str(entry.get("id")) == member_id for entry in data["members"]):
+                return {
+                    "identity_retired": False,
+                    "identity_absent": True,
+                    "identity_absent_member": member_id,
+                }
+            data["members"] = [
+                entry
+                for entry in data["members"]
+                if str(entry.get("id")) != member_id
+            ]
+            try:
+                ledger.write(
+                    project,
+                    data,
+                    version,
+                    root=root,
+                    allow_member_removal=True,
+                    commit=True,
+                )
+            except ledger.LedgerError:
+                continue
+            return {"identity_retired": True, "identity_member": member_id}
+    except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
+        return {
+            "identity_retired": False,
+            "identity_withheld": f"identity retirement raised: {exc}",
+        }
+    return {
+        "identity_retired": False,
+        "identity_withheld": "could not retire the disposable identity after retries",
+    }
+
+
 def _release_run_workspace(
     record: Mapping[str, Any],
     retention: Mapping[str, str] | None = None,
@@ -5246,6 +5337,7 @@ def _release_run_workspace(
     process_already_ended: bool = False,
     release_worktree: bool = True,
     worktree_withheld: str = "",
+    keep_process: bool = False,
 ) -> dict[str, Any]:
     """Release a promoted run's own worktree, process, and scratch directory.
 
@@ -5318,7 +5410,13 @@ def _release_run_workspace(
                 result["worktree_released"] = True
 
     pid = record.get("pid")
-    if not _release_terminal_manifest(record):
+    if keep_process:
+        # A blocked run may still be resumed, so its process group is left
+        # standing rather than reclaimed: the resume continues the process the
+        # block interrupted, and signalling it here would end what the resume
+        # was going to continue.
+        result["process_withheld"] = "manifest is blocked; process kept for resume"
+    elif not _release_terminal_manifest(record):
         result["process_withheld"] = "no terminal manifest was delivered"
     elif record_process_alive(record, process_alive) is not True:
         if process_already_ended:
@@ -5336,6 +5434,9 @@ def _release_run_workspace(
             result["process_withheld"] = f"could not signal pid {pid} — {exc}"
         else:
             result["process_signalled"] = True
+            # The pid rides the release result so the record names the process
+            # that was stopped rather than only that some process was signalled.
+            result["process_stopped_pid"] = int(pid)
 
     result["worktree_audit"] = _worktree_audit(record, retention)
     # The scratch directory a run owned dies with it. Both promotion and
@@ -5372,6 +5473,7 @@ def _release_after_promotion(
     report that outcome instead of a process that is merely absent.
     """
     verdict = str(gate).strip().lower()
+    blocked_for_resume = _manifest_reads_blocked(record)
     if verdict in {"blocked", "failed"}:
         try:
             return _release_run_workspace(
@@ -5383,6 +5485,7 @@ def _release_after_promotion(
                     f"gate verdict {verdict!r} is not passing; worktree retained "
                     "for recovery"
                 ),
+                keep_process=blocked_for_resume,
             )
         except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
             fallback = {
@@ -5394,7 +5497,10 @@ def _release_after_promotion(
             return fallback
     try:
         return _release_run_workspace(
-            record, retention, process_already_ended=process_already_ended
+            record,
+            retention,
+            process_already_ended=process_already_ended,
+            keep_process=blocked_for_resume,
         )
     except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
         fallback = {
@@ -6743,6 +6849,7 @@ def _complete_locked(
                 release=release,
                 checkout=checkout,
             )
+            release.update(_retire_disposable_identity(record))
             if recorded is not None:
                 existing = recorded
             result = {
@@ -7230,6 +7337,7 @@ def _complete_locked(
             release=release,
             checkout=checkout,
         )
+        release.update(_retire_disposable_identity(record))
         if recorded is not None:
             written["run"] = recorded
         # This is a bounded fleet reading, not a readiness recommendation: the
