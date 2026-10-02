@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-local-lane-is-the-default">
+  <meta name="plan-verifies" content="reckon:the-local-lane-is-the-default#s15">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-02">
+  <meta name="evidence-commit" content="9a25db160">
+  <title>Admission trusts only positive router history | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="admission-trusts-only-positive-history">
+  <h2>Admission trusts only positive router history</h2>
+  <p>Base <code>89690489f</code>, head <code>9a25db160</code>. The allowance rule in
+  <code>reckon/crew/dispatch.py</code> reads the window the router's slot arithmetic was
+  averaged over, <code>observed_seconds</code>, and counts a published slot figure only
+  when that window is positive. A zero or negative figure states that no window has been
+  observed — the router reports its window from its first reading — so it is read exactly
+  as a block stating no window at all, and the allowance falls through to
+  <code>headroom</code> as it already did for a missing value. The added case
+  <code>test_a_nonpositive_window_is_read_as_no_history</code> drives one document three
+  ways, with the window missing, zero and negative, and requires the nonpositive cases to
+  decide exactly as the missing one. The added ruff-format finding in
+  <code>tests/test_dispatch_counts_worker_slots.py</code> is gone:
+  <code>ruff format --check tests/test_dispatch_counts_worker_slots.py</code> reports
+  <strong>1 file already formatted</strong>, <code>EXIT=0</code>.</p>
+
+  <p><strong>The defect reproduced at base.</strong> Driving
+  <code>_lane_worker_allowance</code> directly with a document whose session share is 4 and
+  whose headroom is 2: <code>observed=0 -&gt; {'allowance': 4, 'source': "the session's
+  own worker slots", 'held': False}</code> and the same for <code>observed=-5</code>: a
+  router reporting no history was trusted at face value and its slot figure displaced the
+  headroom fallback.</p>
+
+  <p><strong>Gate</strong> (six test files reaching the rule: the rule's own file plus the
+  dispatch lane-hold, lane-reading, dry-run admission, gate-aware headroom and local
+  headroom files; <code>-n 8 --timeout=300</code>, one basetemp per arm). Base arm, from a
+  <code>git archive</code> extraction of <code>89690489f</code> under <code>$TMPDIR</code>
+  with the head test file overlaid: <strong>1 failed, 51 passed</strong> in 14.84s,
+  <code>EXIT=1</code>, the sole failing id
+  <code>test_a_nonpositive_window_is_read_as_no_history</code> (the zero case read the
+  per-session figure); module file the base tree's <code>reckon/crew/dispatch.py</code>;
+  log <code>gate-base.log</code>. Head arm, the node worktree at <code>9a25db160</code>:
+  <strong>52 passed</strong> in 27.81s, <code>EXIT=0</code>, module file the worktree's own
+  <code>reckon/crew/dispatch.py</code>; log <code>gate-head.log</code>. Zero added failure
+  ids.</p>
+
+  <p><strong>Declared negative control</strong>: accept a zero <code>observed_seconds</code>
+  as trusted history again (drop the <code>and observed &gt; 0</code> clause); the
+  zero-history case then reads the per-session slot figure and fails. Executed on the head
+  worktree: <code>EXIT=1</code>, <strong>1 failed / 51 passed</strong>, the failing id
+  <code>test_a_nonpositive_window_is_read_as_no_history</code>; log
+  <code>gate-negative-control.log</code>.</p>
+
+  <p><strong>Lint delta.</strong> <code>ruff check</code> over the changed paths: 7 findings
+  at base and 7 at head, all pre-existing in <code>dispatch.py</code>, none in the test
+  file. <code>ruff format --check</code> over the changed paths: base reformats two files
+  (<code>dispatch.py</code>'s ten pre-existing hunks plus the test file's 89-character
+  <code>monkeypatch.setattr</code> line); head reformats only <code>dispatch.py</code>, its
+  hunks unchanged apart from the line-number shift. Logs <code>ruff-base.log</code>,
+  <code>ruff-head.log</code>.</p>
+</section>
+</main>
+</body>
+</html>
