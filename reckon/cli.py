@@ -2372,6 +2372,10 @@ class _FollowerReloader:
             seat_fd = runs.prepare_watch_seat_reexec(self.project)
             if seat_fd is not None:
                 exec_environment[runs._WATCH_SEAT_ENV] = str(seat_fd)
+                _echo_follow_line(
+                    "reckon crew watch started its reload; awaiting replacement",
+                    stream=self.stream,
+                )
         # Ignoring the alarm before disarming drops one that became pending while
         # the import proof ran. The ignored disposition crosses exec until the
         # replacement installs its handler; a caught disposition would reset to
@@ -2482,6 +2486,7 @@ PRODUCER_RELOAD_WINDOW_SECONDS = (
     + PRODUCER_RELOAD_WINDOW_MARGIN_SECONDS
 )
 FOLLOWER_PRODUCER_RELOADING_EVENT = "producer-reloading"
+FOLLOWER_PRODUCER_RELOAD_FAILED_EVENT = "producer-reload-failed"
 
 # The window is granted on the in-place-reload path only: a producer mid-reload
 # is rendered as a note, and only a mismatch that outlasts the window earns the
@@ -3146,6 +3151,7 @@ def _follow_watch_lines(
     producer_stale_since: float | None = None
     producer_reload_deferred = False
     producer_stale_advised = False
+    producer_reload_failure_reported = False
 
     def _producer_stale_event(identity: Mapping[str, Any]) -> dict[str, Any]:
         """Name a producer running old code and the command that cycles it."""
@@ -3241,7 +3247,25 @@ def _follow_watch_lines(
         _echo_follow_line(line)
 
     while not _stopped() and not lifetime_elapsed and not consumer_gone:
+        identity = runs.watch_producer_identity(project)
         if not runs.producer_live(project):
+            if (
+                identity.get("reload_started_at")
+                and not producer_reload_failure_reported
+            ):
+                producer_reload_failure_reported = True
+                yield {
+                    "event": FOLLOWER_PRODUCER_RELOAD_FAILED_EVENT,
+                    "project": project,
+                    "session": session or "",
+                    "run_id": None,
+                    "line": (
+                        f"producer {project} stopped during its reload begun "
+                        f"{identity['reload_started_at']}; last output: "
+                        f"{identity.get('log_path') or 'not recorded'}; re-arm with: "
+                        f"{runs.watcher_ensure_line(project)}"
+                    ),
+                }
             # The sweep runs here rather than at the top of the loop: a pane
             # must show its rows before the recovery sweep's cost is paid,
             # because the sweep is the long call and the rows are what the
@@ -3250,6 +3274,7 @@ def _follow_watch_lines(
             _tick()
             sleeper(poll_interval)
             continue
+        producer_reload_failure_reported = False
 
         try:
             cursor = runs.watch_stream_cursor(project)
@@ -3993,6 +4018,7 @@ def crew_follow(
             if event.get("event") in (
                 FOLLOWER_STALE_PRODUCER_EVENT,
                 FOLLOWER_PRODUCER_RELOADING_EVENT,
+                FOLLOWER_PRODUCER_RELOAD_FAILED_EVENT,
             ):
                 # The seat's producer runs older code than this follower — with
                 # the cycle remedy once it is confirmed stale, or a line saying

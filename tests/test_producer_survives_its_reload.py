@@ -1,5 +1,7 @@
 """A producer reload cannot turn its poll signal into its own death."""
 
+from reckon import cli
+from reckon.crew import runs
 from tests.test_producer_takes_new_code import (
     NODE,
     PROJECT,
@@ -60,3 +62,16 @@ def test_a_producer_keeps_publishing_after_a_slow_reload(tmp_path, monkeypatch) 
         if process.poll() is None:
             process.terminate()
             process.wait(timeout=5)
+
+    monkeypatch.setattr(
+        runs,
+        "watch_producer_identity",
+        lambda project: {
+            "reload_started_at": "2026-10-02T12:58:12Z",
+            "log_path": str(tmp_path / "watch.log"),
+        },
+    )
+    monkeypatch.setattr(runs, "producer_live", lambda project: False)
+    event = next(cli._follow_watch_lines(PROJECT, sleeper=lambda seconds: None))
+    assert event["event"] == cli.FOLLOWER_PRODUCER_RELOAD_FAILED_EVENT
+    assert "stopped during its reload" in event["line"]

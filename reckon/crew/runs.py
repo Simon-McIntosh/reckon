@@ -1855,6 +1855,8 @@ def watch_producer_identity(project: str) -> dict[str, Any]:
         "reckon_version": version,
         "started_at": started_at,
         "code_stamp": code_stamp,
+        "reload_started_at": record.get("reload_started_at"),
+        "log_path": record.get("log_path"),
         # Both sides of the comparison, so a caller that has to say which code
         # the seat is behind does not recompute one of them.
         "current_stamp": current_stamp,
@@ -2180,6 +2182,9 @@ def prepare_watch_seat_reexec(project: str) -> int | None:
     handle = _WATCH_SEAT_HANDLES.get(project)
     if handle is None:
         return None
+    record = _read_watch_record(handle)
+    record["reload_started_at"] = _utc_now()
+    _write_watch_record(handle, record)
     fd = handle.fileno()
     os.set_inheritable(fd, True)
     return fd
@@ -2190,6 +2195,9 @@ def cancel_watch_seat_reexec(project: str) -> None:
     handle = _WATCH_SEAT_HANDLES.get(project)
     if handle is not None:
         os.set_inheritable(handle.fileno(), False)
+        record = _read_watch_record(handle)
+        record.pop("reload_started_at", None)
+        _write_watch_record(handle, record)
 
 
 def _take_watch_seat_fd() -> Any:
