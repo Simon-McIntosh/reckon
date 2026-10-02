@@ -2346,6 +2346,8 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         if not isinstance(decisions, dict):
             raise OpError("plan has no decisions map")
         key = parts[1]
+        if len(parts) == 3 and parts[2] == "sections":
+            value = _normalise_decision_scope(working, key, value)
         dec = dict(decisions.get(key, {}))
         cur = dec
         for p in parts[2:-1]:
@@ -2685,7 +2687,12 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
                 f"decision {key!r} already exists",
                 existing_item=_describe_entry(decisions[key]),
             )
-        decisions[key] = _decision_as_stored(item)
+        stored = _decision_as_stored(item)
+        if stored.get("sections"):
+            stored["sections"] = _normalise_decision_scope(
+                working, key, stored.get("sections")
+            )
+        decisions[key] = stored
         return
     raise OpError(f"unsupported plan append target {target!r}")
 
@@ -2739,6 +2746,64 @@ def _apply_lock(working: dict, op: dict, is_index: bool, warnings: list[str]) ->
         decisions[key] = {**existing, **merged}
     else:
         decisions[key] = merged
+
+
+def _normalise_decision_scope(working: dict, key: str, sections: Any) -> Any:
+    """Refuse a decision scope naming a section this plan does not declare.
+
+    A scoped decision is a wait on the sections it names, so a section that
+    does not exist is a wait that can never be satisfied — the decision would
+    read as a frozen anchor while holding nothing. The refusal names the
+    offending section and the plan's own declared identities, so a typo or a
+    later rename is answered with the set it should have named. The declared
+    set and the refusal codes come from the schema module, so the write
+    boundary and the roadmap reader judge one scope by one rule.
+    """
+    from reckon._schema import decision_section_refusals, declared_section_identities
+
+    value = sections
+    if isinstance(value, str):
+        value = [part.strip() for part in value.split(",") if part.strip()]
+    declared = declared_section_identities(working)
+    refusals = decision_section_refusals({key: value}, declared)
+    if refusals:
+        declared_list = ", ".join(sorted(declared)) or "(none)"
+        raise OpError(
+            f"decision {key!r}: {refusals[0]['message']} — "
+            f"declared sections: {declared_list}"
+        )
+    return value
+
+
+def _apply_accept(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
+    """Accept a decision's stored recommendation as its choice, in one action.
+
+    A recommendation is a proposal, so the choice stays empty until someone
+    accepts it; this op is that acceptance. An absent recommendation is
+    refused rather than locked empty, and a gated decision is held to the same
+    transition verdict a direct lock is.
+    """
+    if is_index:
+        raise OpError("accept op is plan-only")
+    key = op.get("key")
+    if not key:
+        raise OpError("accept op requires a 'key'")
+    decisions = working.setdefault("decisions", {})
+    if not isinstance(decisions, dict):
+        raise OpError("plan has no decisions map")
+    existing = decisions.get(key)
+    if not isinstance(existing, dict):
+        raise OpError(f"decision {key!r} does not exist")
+    recommendation = str(existing.get("recommended") or "").strip()
+    if not recommendation:
+        raise OpError(f"decision {key!r} carries no recommendation to accept")
+    _require_transition_verdict(working, "decision-lockable", decision=key)
+    decisions[key] = {
+        **existing,
+        "choice": recommendation,
+        "when": _utc_ts(),
+        "by": op.get("by", ""),
+    }
 
 
 def _apply_gate(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
@@ -2980,6 +3045,7 @@ _OP_DISPATCH = {
     "append": _apply_append,
     "resolve": _apply_resolve,
     "lock": _apply_lock,
+    "accept": _apply_accept,
     "gate": _apply_gate,
     "pass": _apply_gate_verdict,
     "fail": _apply_gate_verdict,

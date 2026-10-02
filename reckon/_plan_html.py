@@ -638,6 +638,8 @@ def read_state(html_text: str) -> dict:
             "choices": [o["value"] for o in opts],
             "option_labels": {o["value"]: o["label"] for o in opts},
             "choice": dec.get("data-choice", "") or "",
+            "recommended": dec.get("data-recommended", "") or "",
+            "recommended_by": dec.get("data-recommended-by", "") or "",
             "rationale": _txt(dec.select_one(".r-dec-rat")),
             "when": dec.get("data-when", "") or "",
             "by": dec.get("data-by", "") or "",
@@ -915,12 +917,19 @@ def _render_decisions(decisions: dict) -> str:
             if d.get("rationale")
             else '<p class="r-dec-rat"></p>\n    '
         )
+        recommended = str(d.get("recommended") or "")
+        recommended_by = str(d.get("recommended_by") or "")
+        recommendation_attrs = ""
+        if recommended:
+            recommendation_attrs += f' data-recommended="{_esc(recommended)}"'
+        if recommended_by:
+            recommendation_attrs += f' data-recommended-by="{_esc(recommended_by)}"'
         sections = ",".join(d.get("sections") or [])
         sections_attr = f' data-sections="{_esc(sections)}"' if sections else ""
         rows.append(
             f'<div class="r-dec" data-key="{_esc(key)}" data-choice="{_esc(d.get("choice"))}"'
             f' data-by="{_esc(d.get("by"))}" data-when="{_esc(d.get("when"))}"'
-            f"{sections_attr}>\n    "
+            f"{sections_attr}{recommendation_attrs}>\n    "
             f'<p class="r-dec-q">{_esc(d.get("title") or key)}</p>\n    '
             f"{ctx}{opts_block}{rat}</div>"
         )
