@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="265">
+<meta name="plan-version" content="266">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -1332,6 +1332,9 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T100138260846-review-of-a-stopped-run-ends-its-supervisor" data-who="reckon-build" data-when="2026-10-02T10:27:51.549Z">
     <div class="r-comment-body"><p>Reviewed r-20261002T062658036346-a-stopped-run-ends-its-supervisor at merged head 798f3d107 against base e89a94bde: the stop-grace escalation is present in dispatch.py at head, the node's own change is dispatch.py (+67/-1) and the new test module (+305) inside its declared paths, and all four gate arms were independently reproduced in scratch trees (gate 3 passed, base 16 passed, four-module head arm 22 passed, negative control 1 failed/2 passed), giving zero added failures; the repair also closed the prior review's after_suite placeholder and its untested production-stop-grace gap. Score 96.</p></div>
 </div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T102735422467-the-stop-bound-test-states-its-discriminator" data-who="reckon-build" data-when="2026-10-02T10:45:16.507Z">
+    <div class="r-comment-body"><p>tests/test_a_stopped_run_ends_its_supervisor.py — both elapsed upper-bound assertions now derive from the supervisor&#x27;s stop drain (3 supervisor poll intervals + stop grace + 30 s load margin = 40 s for the ignored-stop case; 2 poll intervals + margin = 36 s for the ends-on-stop case), strictly under the 90 s wait ceiling; the previous `elapsed &lt; WORKER_SLEEP_SECONDS` (120 s) could never fail because the wait returns within 90 s; head gate 3 passed, declared mutation fails the ignored-stop case (EXIT=1).</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
 </div>
@@ -1408,7 +1411,7 @@
     <div class="r-comment-body"><p>The clone scan's corpus cache is bounded: reckon/clones.py records each entry's last use and prunes the least recently used once it holds more than one entry per corpus file (cap derived from the corpus's file count, not a fixed literal); the two window providers share a declared _WindowProvider Protocol. New gate tests/test_the_clone_cache_stays_bounded.py 4 passed; related clone suites 13 passed at base and 17 at head with zero added failures; declared negative control EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261002T104446124741-review-of-the-clone-cache-stays-bounded" data-who="reckon-build" data-when="2026-10-02T10:53:32.417Z">
-    <div class="r-comment-body"><p>Review of run r-20261002T102241206863-the-clone-cache-stays-bounded stored at both declared paths: total 95/100 (goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 19), reviewed base f262cad52c28e950c3fb7b8aa991bc550d81a573 / head c6a2f77b2d92fe5fcb4f40a1988791048f9a3ad9, added_failure_count 0 with empty added_failure_ids from the run&#x27;s own base/after gate logs, one follow-on finding (subset head_sources prunes the shared cache to the subset&#x27;s count) and no blocking findings.</p></div>
+    <div class="r-comment-body"><p>Review of run r-20261002T102241206863-the-clone-cache-stays-bounded stored at both declared paths: total 95/100 (goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 19), reviewed base f262cad52c28e950c3fb7b8aa991bc550d81a573 / head c6a2f77b2d92fe5fcb4f40a1988791048f9a3ad9, added_failure_count 0 with empty added_failure_ids from the run's own base/after gate logs, one follow-on finding (subset head_sources prunes the shared cache to the subset's count) and no blocking findings.</p></div>
 </div>
 </section>
 </main>
