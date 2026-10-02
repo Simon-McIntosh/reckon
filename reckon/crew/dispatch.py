@@ -8438,6 +8438,13 @@ _WORKER_MANIFEST_POLL_SECONDS = 3.0
 # How long a worker gets to end on the grace signal before the supervisor
 # escalates to SIGKILL, so a worker ignoring SIGTERM cannot hold the slot.
 _WORKER_GRACE_KILL_SECONDS = 10.0
+# How long a worker gets to end after ``crew stop`` reaches its process group
+# before the supervisor escalates to SIGKILL. The stop signal is already
+# delivered to the worker; the grace only covers the flush between receiving it
+# and exiting. Without a bound here, a worker that ignores the stop holds the
+# supervisor for as long as the worker itself lives.
+STOP_GRACE_ENV = "RECKON_WORKER_STOP_GRACE_SECONDS"
+STOP_GRACE_DEFAULT = _WORKER_GRACE_KILL_SECONDS
 
 
 def _terminal_manifest_grace_seconds() -> float:
@@ -8455,6 +8462,23 @@ def _terminal_manifest_grace_seconds() -> float:
         if value is not None and value >= 0:
             return value
     return TERMINAL_MANIFEST_GRACE_DEFAULT
+
+
+def _stop_grace_seconds() -> float:
+    """The grace a stopped worker is given to exit before it is killed.
+
+    Read from the environment so a test can shorten it, and floored at zero so
+    a nonsensical value degrades to an immediate end rather than to no bound.
+    """
+    raw = os.environ.get(STOP_GRACE_ENV, "").strip()
+    if raw:
+        try:
+            value = float(raw)
+        except ValueError:
+            value = None
+        if value is not None and value >= 0:
+            return value
+    return STOP_GRACE_DEFAULT
 
 
 def _supervisor_manifest_path(run_id: str) -> Path:
@@ -8542,8 +8566,10 @@ def _reap_worker_on_its_terminal_manifest(
     manifest_path: Path,
     grace_seconds: float,
     baseline_ns: int,
+    stop_requested: threading.Event | None = None,
+    stop_grace_seconds: float = 0.0,
 ) -> int | None:
-    """Collect a worker's exit, ending it once its manifest says it is done.
+    """Collect a worker's exit, ending it once it is done or a stop arrives.
 
     A worker that wrote a complete (or failed) manifest and then kept running
     holds its run's slot long after its work was delivered. The supervisor
@@ -8555,6 +8581,13 @@ def _reap_worker_on_its_terminal_manifest(
     status: withdrawing the delivery clears the deadline it had set. Returns the
     wait status, or ``None`` when the child was already reaped elsewhere.
 
+    A recorded stop bounds the wait as well. ``crew stop`` delivers its signal
+    to the worker's whole process group, so the worker has already been asked to
+    end; the supervisor gives it ``stop_grace_seconds`` to do so, then kills it.
+    Without this the supervisor would block on ``waitpid`` for as long as the
+    worker lives, so a worker that ignores the stop would hold the supervisor,
+    and its slot, past any bound.
+
     The manifest is stat'd each poll and read for its status only when its
     mtime has advanced past the attempt's baseline and changed since the last
     read, so an unchanged manifest is never reparsed and a manifest left by a
@@ -8564,6 +8597,8 @@ def _reap_worker_on_its_terminal_manifest(
     seen_mtime_ns: int | None = None
     deadline: float | None = None
     signalled_at: float | None = None
+    stop_deadline: float | None = None
+    stop_killed = False
     while True:
         try:
             waited_pid, status = os.waitpid(pid, os.WNOHANG)
@@ -8572,6 +8607,34 @@ def _reap_worker_on_its_terminal_manifest(
         if waited_pid == pid:
             return status
         now = time.monotonic()
+        if (
+            stop_requested is not None
+            and stop_deadline is None
+            and not stop_killed
+            and stop_requested.is_set()
+        ):
+            # A stop ends the run: the group signal has already reached the
+            # worker, and re-signalling it here names the sender in the run's
+            # worker record. The grace covers only the flush between receiving
+            # the stop and exiting.
+            signal_worker(
+                pid,
+                signal.SIGTERM,
+                reason="run-stop",
+                run_dir=run_directory,
+            )
+            stop_deadline = now + stop_grace_seconds
+        if stop_deadline is not None and now >= stop_deadline:
+            # The worker outlived the stop grace. SIGKILL cannot be ignored, so
+            # the supervisor ends it rather than waiting on it further.
+            signal_worker(
+                pid,
+                signal.SIGKILL,
+                reason="worker-ignored-the-stop-grace-signal",
+                run_dir=run_directory,
+            )
+            stop_deadline = None
+            stop_killed = True
         try:
             mtime_ns = manifest_path.stat().st_mtime_ns
         except OSError:
@@ -8701,6 +8764,8 @@ def _run_supervisor(spec_path: Path) -> int:
         manifest_path=_supervisor_manifest_path(run_id),
         grace_seconds=_terminal_manifest_grace_seconds(),
         baseline_ns=_supervisor_manifest_baseline_ns(run_id, spec),
+        stop_requested=stop_requested,
+        stop_grace_seconds=_stop_grace_seconds(),
     )
     exit_record = _supervisor_exit_record(
         run_id=str(spec.get("run_id") or ""),
