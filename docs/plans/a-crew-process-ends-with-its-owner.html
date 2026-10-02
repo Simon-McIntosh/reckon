@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="278">
+<meta name="plan-version" content="279">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -1447,7 +1447,10 @@
     <div class="r-comment-body"><p>Attached an independent review to r-20261002T112357206741-a-removed-file-leaves-the-clone-cache; the parsed record scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19 (total 97), records reviewed base 5c7f69358 and head e0221456c, carries added_failure_count 0 with empty added_failure_ids derived from the run's own baseline_suite and after_suite gate logs, and carries one follow-on finding.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261002T123548897091-review-of-a-promotion-walks-the-docs-tree-once" data-who="reckon-build" data-when="2026-10-02T12:55:32.379Z">
-    <div class="r-comment-body"><p>Independent review of r-20261002T111120682093-a-promotion-walks-the-docs-tree-once at base 5d35145df / head 4fbe874cd stored: 92 (goal_fidelity 19, evidence 16, scope_discipline 20, durability 19, fit 18), added_failure_count 0 over the run&#x27;s own arms; the prior round&#x27;s blocking in-place-identity finding is repaired and verified (head node test 5 passed EXIT=0; pre-repair 73e10feac and the declared signature mutation both fail the new in-place case EXIT=1); two follow-ons recorded (stale evidence fragment, base-arm artifact note).</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261002T111120682093-a-promotion-walks-the-docs-tree-once at base 5d35145df / head 4fbe874cd stored: 92 (goal_fidelity 19, evidence 16, scope_discipline 20, durability 19, fit 18), added_failure_count 0 over the run's own arms; the prior round's blocking in-place-identity finding is repaired and verified (head node test 5 passed EXIT=0; pre-repair 73e10feac and the declared signature mutation both fail the new in-place case EXIT=1); two follow-ons recorded (stale evidence fragment, base-arm artifact note).</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T111120682093-a-promotion-walks-the-docs-tree-once" data-who="reckon-build" data-when="2026-10-02T12:58:32.360Z">
+    <div class="r-comment-body"><p>Reuse the docs-tree scan for an unchanged tree, gated by each resource-bearing HTML file&#x27;s own stat identity (size, mtime_ns, ctime_ns), so an in-place rewrite of a document&#x27;s slug or type is re-identified rather than served from the prior scan; a promotion makes 3 fresh scans (one per tree) against 8, and resolve_resource&#x27;s guarantees hold (duplicate still raises, archived still resolves, added file and in-place rewrite both seen; signature-mutation control fails the in-place case EXIT=1).</p></div>
 </div>
 </section>
 </main>
