@@ -2100,10 +2100,42 @@ def _collection_label(collection: str) -> str:
     }.get(collection, collection.rstrip("s") or "entry")
 
 
+def _shorten(text: str, limit: int = 72) -> str:
+    text = " ".join(text.split())
+    return text if len(text) <= limit else text[: limit - 3] + "..."
+
+
+def _describe_entry(entry: Any) -> str:
+    """One short phrase naming an existing entry inside a duplicate refusal.
+
+    A section's authored heading and prose live in the plan file rather than in
+    its typed record, so a record with no narrative field is described by the
+    scalar fields it does carry (its id and status).
+    """
+    if isinstance(entry, dict):
+        for field in ("title", "question", "measure", "body", "description", "who"):
+            value = entry.get(field)
+            if isinstance(value, str) and value.strip():
+                return _shorten(f"{field} {value.strip()!r}")
+        scalars = [
+            f"{key}={value!r}"
+            for key, value in entry.items()
+            if isinstance(value, (str, int, float, bool)) and value != ""
+        ]
+        if scalars:
+            return _shorten(", ".join(scalars))
+    return _shorten(str(entry))
+
+
 def _refuse_duplicate_id(entries: list, collection: str, ident: str) -> None:
     """Refuse an append whose id already addresses an existing entry."""
-    if _find_by_id(entries, ident) is not None:
-        raise OpError(f"{_collection_label(collection)} {ident!r} already exists")
+    hit = _find_by_id(entries, ident)
+    if hit is not None:
+        _, existing = hit
+        raise OpError(
+            f"{_collection_label(collection)} {ident!r} already exists: "
+            f"{_describe_entry(existing)}"
+        )
 
 
 def _missing_open_entry_detail(entries: list, collection: str, ident: str) -> str:
@@ -2552,7 +2584,10 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
             raise OpError("append decisions requires a 'key'")
         decisions = working.setdefault("decisions", {})
         if key in decisions:
-            raise OpError(f"decision {key!r} already exists")
+            raise OpError(
+                f"decision {key!r} already exists: "
+                f"{_describe_entry(decisions[key])}"
+            )
         decisions[key] = _decision_as_stored(item)
         return
     raise OpError(f"unsupported plan append target {target!r}")
@@ -2622,8 +2657,9 @@ def _apply_gate(working: dict, op: dict, is_index: bool, warnings: list[str]) ->
     gates = working.setdefault("gates", [])
     if not isinstance(gates, list):
         raise OpError("plan has no gates list")
-    if _find_by_id(gates, ident) is not None:
-        raise OpError(f"gate {ident!r} already exists")
+    hit = _find_by_id(gates, ident)
+    if hit is not None:
+        raise OpError(f"gate {ident!r} already exists: {_describe_entry(hit[1])}")
     gated_sections = op.get("gated_sections", [])
     if not isinstance(gated_sections, list) or not all(
         isinstance(section, str) for section in gated_sections
