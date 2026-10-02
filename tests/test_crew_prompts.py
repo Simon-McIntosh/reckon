@@ -16,7 +16,11 @@ mid-wait is resumable.
 
 from __future__ import annotations
 
-from reckon.crew.node import NEEDS_HELP_MARKER, TaskNode
+from reckon.crew.node import (
+    NEEDS_HELP_MARKER,
+    TaskNode,
+    role_may_write_repository_paths,
+)
 from reckon.crew.prompts import (
     CLOSURE_AUTHORITY_CONTRACT,
     FALSIFIABLE_EVIDENCE_CONTRACT,
@@ -347,8 +351,23 @@ CLOSURE_KNOWS_OWN_NODE = (
 )
 
 
-def test_landing_capable_roles_carry_the_two_closure_limits():
-    for role in ("implement", "test"):
+def test_landing_capable_roles_carry_the_two_closure_limits(tmp_path):
+    """The closure limits travel with the landing contract, for landing roles.
+
+    The role set is the shipped flight configuration's own vocabulary filtered
+    by the predicate the promotion refusal reads, so a role that stops being
+    landing-capable stops being asserted here rather than staying pinned by a
+    literal list. The verifier role fails that predicate, so it is given no
+    landing contract and carries none of the limits beside it.
+    """
+    from reckon.flight import resolve
+
+    absent = tmp_path / "absent-flight.yaml"
+    roles = sorted(resolve(host_path=absent, project_path=absent).config["roles"])
+    landing_roles = [role for role in roles if role_may_write_repository_paths(role)]
+    assert landing_roles, "the shipped configuration declares no landing role"
+
+    for role in landing_roles:
         prompt = _flat(_prompt(role=role))
 
         assert CLOSURE_HEADER in prompt
@@ -357,6 +376,14 @@ def test_landing_capable_roles_carry_the_two_closure_limits():
         assert CLOSURE_TERMINAL_LIMIT in prompt
         assert CLOSURE_REASON in prompt
         assert CLOSURE_KNOWS_OWN_NODE in prompt
+
+    assert not role_may_write_repository_paths("test")
+    verifier = _flat(_prompt(role="test"))
+    assert CLOSURE_HEADER not in verifier
+    assert CLOSURE_NO_SELF_CLOSE not in verifier
+    assert CLOSURE_FOLLOWUP_LIMIT not in verifier
+    assert CLOSURE_TERMINAL_LIMIT not in verifier
+    assert PLAN_LANDING_CONTRACT not in verifier
 
 
 def test_a_readonly_role_receives_no_closure_limits_with_no_landing_clause():
