@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="The landing contract and the promotion gate decide by one criterion">
+  <meta name="plan-summary" content="The landing contract was composed on sandbox writability alone (can_land = can_write_worktree), so the test role, whose sandbox is worktree-full, received a landing contract while promotion refuses every repository path for that role: the worker is told to land a record its own gate rejects. Compose the contract on both facts — the worker can write its assigned worktree, and the role may land repository paths, the same predicate the promotion refusal reads — so a verifier whose fence withholds the landing fragment and whose commits are refused reads no landing contract at all. Base arm: 111 passed, no failure. Head arm: 113 passed, no failure. Negative control (the role limb removed in a scratch copy of the head tree): the two new cases red, exit 1.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="pass">
+  <title>The landing contract and the promotion gate decide by one criterion &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A landing contract a role's own promotion refuses</h1>
+  <p>The landing contract is a named slot in the composed prompt like its siblings, and it decided on one fact: whether the worker can write its assigned worktree. The promotion gate decides on another: whether the role may land repository paths. For the <code>test</code> role the two disagree, because the shipped flight configuration gives it a <code>worktree-full</code> sandbox while the gate refuses every repository path a verifier commit touches. The contract now reads both the writability fact and <code>role_may_write_repository_paths</code>, the predicate the refusal already reads, so the two surfaces decide by one criterion: a role that may not land repository paths is not given the contract, and a role that is given it is not refused for following it. A verifier whose fence withholds the landing fragment therefore reads no landing contract rather than the run-record carrier.</p>
+  <section id="measure">
+    <h2>The measure</h2>
+    <ul>
+      <li><strong>Base arm</strong> (53a72f8c9, the new cases copied into the unfixed tree): <code>111 passed in 21.09s</code>, <code>EXIT=0</code> &mdash; the pre-existing test files that reach the change, no failure id, <code>logs/base-arm-3.txt</code>.</li>
+      <li><strong>Head arm</strong> (bef172dd5, c202587b2, working tree): <code>113 passed in 18.10s</code>, <code>EXIT=0</code> &mdash; the same files plus the new agreement cases, no failure id, <code>logs/head-arm-6.txt</code>.</li>
+      <li><strong>Negative control</strong> (the declared mutation applied in a scratch copy of the head tree: <code>can_land = bool(writable)</code>, the role limb removed, while the promotion gate stays on role): <code>2 failed in 6.43s</code>, <code>EXIT=1</code> &mdash; <code>test_every_default_role_agrees_with_the_promotion_gate</code> and <code>test_a_test_role_with_an_out_of_repository_report_path_gains_no_landing_paths</code> red, neither failing in the head arm, <code>logs/negative-control-2.txt</code>.</li>
+    </ul>
+  </section>
+  <section id="tests-updated">
+    <h2>Two tests that pinned the superseded rule</h2>
+    <table>
+      <thead>
+        <tr><th>Test</th><th>Asserted before</th><th>Asserts now</th><th>Why</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>test_landing_contract_follows_the_grant.py</code></td>
+          <td>A writable verifier reads the run-record carrier: <code>BRIEF_LANDING_CONTRACT</code> present and its run-record sentence present.</td>
+          <td>Neither carrier is present (<code>PLAN</code> and <code>BRIEF</code> both absent, the run-record sentence asserted absent); every grant assertion is kept unchanged: no fragment, no figure, and <code>_writes_its_landing_fragment</code> false.</td>
+          <td>The carrier told a role the gate refuses to land a record. There is no record a carrier could place that the gate would accept, so the contract is not given at all.</td>
+        </tr>
+        <tr>
+          <td><code>test_crew_prompts.py</code>, closure-limits case</td>
+          <td>A literal list (<code>implement</code>, <code>test</code>) carries the closure limits.</td>
+          <td>The role set is the shipped flight configuration's vocabulary filtered by <code>role_may_write_repository_paths</code>; each landing role carries every limit, and the verifier carries none.</td>
+          <td>The closure limits travel with the landing contract, so a role that may not land repository paths carries none; reading the predicate rather than a literal list keeps the two in step.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+ </main>
+</body>
+</html>

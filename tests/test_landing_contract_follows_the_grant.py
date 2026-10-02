@@ -7,9 +7,9 @@ from a verifier, whose sandbox may still write the worktree but whose fence does
 not carry the fragment. A contract composed on worktree writability alone would
 tell that verifier to write a path its fence withholds, so the contract is
 composed on both facts: the worker can write the worktree and the fragment is in
-its write scope. A node whose fence withholds the fragment reads the run-record
-carrier instead — the wording a brief already reads — so its landing line stays
-on the run's own record.
+its write scope. A verifier whose fence withholds the fragment reads no landing
+contract at all, because the promotion gate refuses a commit from that role —
+there is no record a carrier could place that the gate would accept.
 
 These tests compose prompts through the dispatch path: a dry-run plan dispatch
 resolves the node's write scope and its authority, and the same helper dispatch
@@ -200,9 +200,7 @@ def test_an_implement_node_reads_the_plan_contract_and_its_fragment(
 # ── A writable verifier whose fence withholds the fragment reads neither ───
 
 
-def test_a_writable_verifier_reads_the_run_record_carrier_not_the_plan_contract(
-    home: Path, repository: Path
-):
+def test_a_writable_verifier_reads_no_landing_contract(home: Path, repository: Path):
     run_directory = run_dir("r-landing-grant-verifier")
     resolution = crew.plan_dispatch(
         node=_node(
@@ -225,10 +223,10 @@ def test_a_writable_verifier_reads_the_run_record_carrier_not_the_plan_contract(
 
     prompt = _composed_prompt(resolution, repository, run_directory)
     assert PLAN_LANDING_CONTRACT not in prompt
+    assert BRIEF_LANDING_CONTRACT not in prompt
     assert FRAGMENT not in prompt
     assert FIGURE not in prompt
-    assert _flat(RUN_RECORD_SENTENCE) in _flat(prompt)
-    assert BRIEF_LANDING_CONTRACT in prompt
+    assert _flat(RUN_RECORD_SENTENCE) not in _flat(prompt)
 
 
 # ── The decision reads only the resolved scope, not the role ───────────────
