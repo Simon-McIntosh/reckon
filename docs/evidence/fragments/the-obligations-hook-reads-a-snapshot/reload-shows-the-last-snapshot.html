@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-verifies" content="reckon:the-obligations-hook-reads-a-snapshot#s10">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-03">
+  <meta name="evidence-commit" content="651e3969b">
+  <title>A reload shows the last snapshot, not a remedy | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="reload-shows-the-last-snapshot">
+  <h2>A reload shows the last snapshot, not a remedy</h2>
+  <p>The reload window is one definition, <code>PRODUCER_RELOAD_WINDOW_SECONDS</code> in
+  <code>reckon/crew/obligation_snapshot.py</code>: the follower's probe timeout, the producer's
+  idle poll interval cap, and a scheduling margin, 65&nbsp;s in total. The follower in
+  <code>cli.py</code> loads the snapshot reader by file path — the way the hook already does —
+  and reads its three figures from there, so one constant governs both the follower waiting a
+  reload out and the hook presenting one, and neither module pays the crew facade's import.</p>
+
+  <p>The prompt path presents the last snapshot, headed <em>producer reloading, last snapshot
+  N&nbsp;s old</em> and carrying no remedy line, when any of three signals holds: the snapshot's
+  producer is alive and its code stamp is older than the source; the watch seat recorded a reload
+  intent within the window; or no producer is live but its last publication is within the window,
+  which is the seconds before a replacement publishes. Outside every signal the not-current line
+  keeps its remedy, which is right there because nothing is coming. The duty digest carries the
+  reloading state, so entering and leaving a reload each speak once while repeats inside one stay
+  silent.</p>
+
+  <h3>What the new test cases check</h3>
+  <ul>
+    <li><code>test_a_live_producer_on_older_code_shows_the_last_snapshot</code>: a fresh list is
+    injected, then the producer republishes under an older code stamp and the drive shows the
+    last list headed <em>producer reloading</em> with the run id intact, no remedy, and the
+    snapshot bytes unchanged; a third silent drive closes it;</li>
+    <li><code>test_a_restarting_producer_shows_the_last_snapshot</code>: the recorded producer is
+    gone and the last publication is seconds old — the brief-restart gap — and the last list is
+    shown with no remedy;</li>
+    <li><code>test_a_recorded_reload_intent_shows_the_last_snapshot</code>: the watch seat records
+    a reload intent for a snapshot whose producer is gone, and the last list is shown;</li>
+    <li><code>test_an_absence_past_the_reload_window_names_the_remedy</code>: no live producer and
+    a last publication and intent older than the window earn the <em>no producer</em> line and
+    its remedy, which no longer covers a live reloading producer.</li>
+  </ul>
+  <p>Every case runs on the prompt path as a subprocess against a temporary configuration home.
+  The existing cases keep passing; the one that asserted the not-current line for a live producer
+  on older code — the reading this section reverses — now asserts the reloading header, and the
+  reused-pid case ages its publication so it still reads as an absence.</p>
+
+  <h3>Gate — both arms over the two hook test files</h3>
+  <p>The base arm runs from a <code>git archive</code> extraction of <code>f506a3aa</code> under
+  the run's scratch directory; each arm runs under <code>pytest-xdist -n 8 --timeout=300</code>
+  with its own basetemp outside any repository and its own log. The head arm adds
+  <strong>no</strong> failure id: 0 in both arms.</p>
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th><th>failure ids</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>f506a3aa</code></td><td>22 passed in 13.55 s, EXIT=0</td><td>none</td></tr>
+      <tr><td>head</td><td><code>651e3969b</code></td><td>26 passed in 11.92 s, EXIT=0</td><td>none</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Negative control</h3>
+  <p>The declared mutation — restore the not-current line for a live, reloading producer — was
+  applied to <code>coordinator_obligations.py</code> and the test file run:
+  <strong>2 failed, 7 passed, EXIT=1</strong>, the reloading case showing <em>the producer is
+  running older code; run <code>reckon crew watch --ensure</code></em> exactly as before this
+  section. The mutation was reverted by edit, the file verified identical to the committed head,
+  and the file re-ran green (9 passed, EXIT=0). The log is
+  <code>negative-control.log</code> in the run directory.</p>
+
+  <h3>Ruff delta</h3>
+  <p><code>ruff check</code> over the changed paths reports the same four pre-existing
+  <code>cli.py</code> findings at both arms, and one finding fewer at the head: the test file's
+  missing trailing newline is gone. <code>ruff format --check</code> lists only the test file at
+  both arms, and the head's remaining hunks are the base's own unformatted regions.</p>
+</section>
+</main>
+</body>
+</html>
