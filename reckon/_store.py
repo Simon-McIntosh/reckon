@@ -2972,7 +2972,7 @@ def _refuse_appended_hiding_followups(
         _refuse_hiding_followup(state, followup, project=project)
 
 
-def validate_landing_patch(state: dict[str, Any], patch: dict[str, Any]) -> None::
+def validate_landing_patch(state: dict[str, Any], patch: dict[str, Any]) -> None:
     """Refuse a merge patch that lands a plan without naming a continuation.
 
     Deliberately keyed to the *write* rather than to the resulting state. A
