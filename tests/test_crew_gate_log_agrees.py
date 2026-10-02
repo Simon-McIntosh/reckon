@@ -244,30 +244,29 @@ def test_a_recorded_executed_exit_beside_a_quoted_diagnostic_is_accepted(
 ) -> None:
     # A terminal EXIT=<n> capture record is positive evidence the cited command
     # executed, because writing it means the shell returned from the command.
-    # Its value decides: only 126 and 127 assert the shell could not execute the
-    # command at all, so a nonzero status outside that pair — here the check
-    # genuinely failing — still shows a command ran. A quoted diagnostic beside
-    # such a record is fixture text, not proof of non-execution, and the
-    # promotion must be accepted.
+    # A quoted "command not found" diagnostic beside such a record is fixture
+    # text — a test printing the shell's diagnostic into captured output — not
+    # proof the cited command never ran, and a passing verdict beside a zero
+    # status is the pair the record agrees with, so the promotion is accepted.
     run_id = "r-20260919T120300000000-executed-exit"
     _write_pointer(run_id, repository)
     executed_log = tmp_path / "executed-exit-gate.log"
     executed_log.write_text(
         "tests/test_crew_gate_log_agrees.py::test_a_command_that_is_missing\n"
         "bash: line 1: rekon crew frobnicate: command not found\n"
-        "EXIT=1\n",
+        "EXIT=0\n",
         encoding="utf-8",
     )
 
     result = CliRunner().invoke(
         cli_main,
-        _complete_arguments(run_id, repository, str(executed_log), exit_status=1),
+        _complete_arguments(run_id, repository, str(executed_log), exit_status=0),
     )
 
     assert result.exit_code == 0, result.output
     record = json.loads(result.output)["record"]
     assert record["gate"] == "passed"
-    assert record["gate_check"]["exit_status"] == 1
+    assert record["gate_check"]["exit_status"] == 0
     _assert_cites_the_recorded_copy(record, run_id, executed_log)
     # The accepted promotion consumed the pointer as usual.
     assert not pointer_path(run_id).exists()
