@@ -1,0 +1,24 @@
+<article class="r-evidence" data-plan="one-typesafe-model-picker" data-node="retire-codex-spark-project-layer">
+  <h3>retire-codex-spark-project-layer — the project layer names no codex-spark backend</h3>
+  <p>
+    <strong>What changed.</strong> The project flight layer dropped its
+    <code>codex-spark</code> backend entry and its <code>codex-spark</code>
+    item under <code>review_excluded_backends</code>. The diff is exactly
+    those eight deleted lines and nothing else: <code>git diff</code> reports
+    <code>1 file changed, 8 deletions(-)</code>.
+  </p>
+  <p>
+    <strong>Measure.</strong> With the project layer read from this worktree
+    (<code>--checkout-path</code>), the resolved flight config lists backends
+    without <code>codex-spark</code> and
+    <code>review_excluded_backends</code> without it; the listing command exits
+    <code>0</code> and <code>codex-spark in backends</code> prints
+    <code>False</code>.
+  </p>
+  <p>
+    <strong>Gate.</strong> <code>tests/test_backends.py</code> and
+    <code>tests/test_a_review_never_runs_in_harness.py</code> (the only test
+    file grepping flight config for <code>review_excluded_backends</code>):
+    head 47 passed, base 47 passed, zero added failure ids.
+  </p>
+</article>

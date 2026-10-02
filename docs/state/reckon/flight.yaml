@@ -55,13 +55,6 @@ backends:
     session_reuse: false
   codex-terra:
     session_reuse: false
-  codex-spark:
-    launch: cli
-    command: codex
-    model: gpt-5.3-codex-spark
-    sandbox: worktree-full
-    session_reuse: false
-    time_budget: 15m
 
 # Reviews never route to a metered lane, set 2026-09-23 by the lead. That
 # lane runs this workstation's orchestrators; the review reflex fell back to it
@@ -77,7 +70,6 @@ review_excluded_backends:
   - codex
   - codex-astra
   - codex-luna
-  - codex-spark
   - codex-terra
   # An in-harness backend runs only when a coordinator attaches it, so a review
   # the reflex routes there is recorded as dispatched and never executes.
