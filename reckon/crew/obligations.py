@@ -39,6 +39,11 @@ CLASSIFICATION_DUTY_KINDS = {
     "blocked": "blocked",
     INTERRUPTED_RUN_PHASE: "turn-ended-early",
 }
+# The two duty kinds whose evidence is a stored review of the run's own head.
+# Each is read against the review selection — the one promotion uses — so a run
+# whose head moved past the revision its stored review recorded reads
+# review-missing naming both heads, whatever the classifier's own reading said.
+REVIEW_CLASSIFICATION_KINDS = frozenset({"scoring", "promotable"})
 RECOVERY_CLASSIFICATION_DUTY_KINDS = {"needs-help": "needs-help"}
 
 # A duty kind whose evidence is a stored review rather than a live run's state:
@@ -201,6 +206,66 @@ def _live_item(row: Mapping[str, Any], *, kind: str, now: datetime) -> dict[str,
         "age_seconds": _row_age(row, now=now),
         "next_command": str(row.get("next_action") or ""),
     }
+
+
+def _review_duty_item(
+    project: str,
+    row: Mapping[str, Any],
+    pointer: Mapping[str, Any] | None,
+    *,
+    now: datetime,
+    grace: int,
+) -> dict[str, Any]:
+    """One review duty, keyed to the review of the run's current worktree head.
+
+    The kind is decided by the selection promotion uses
+    (:func:`reckon.crew.recovery.select_review_for_head`), read for the
+    revision the run's tree carries now: a complete review stored at that head
+    reads review-ready, and a stored record describing any other revision reads
+    review-missing, naming both heads — the revision the review read and the
+    head the run now carries — so the reader sees which two disagree rather
+    than an absence. With no stored record at all the classifier's own reading
+    stands, there being no other head to name.
+
+    A reviewer run owes no review of itself: the record it wrote is its own
+    deliverable, so its kind stays the classifier's. A row whose live pointer
+    is gone keeps the classifier's reading too, there being no tree left to
+    ask, and a review the store cannot answer for reads missing rather than
+    ready, because the safe direction is to ask for evidence.
+    """
+    age = _row_age(row, now=now)
+    classification = str(row.get("classification") or "")
+
+    def _classification_kind() -> str:
+        return (
+            "promotable-stale"
+            if classification == "promotable" and age > grace
+            else CLASSIFICATION_DUTY_KINDS[classification]
+        )
+
+    if pointer is None or recovery._is_review_run(pointer):
+        # No live tree to ask, or a reviewer whose own record is its
+        # deliverable: the classifier's own reading stands.
+        return _live_item(row, kind=_classification_kind(), now=now)
+    head, tree = recovery._review_head_and_tree(pointer)
+    try:
+        review, reviewed_head = recovery.select_review_for_head(
+            project, str(row.get("run_id") or ""), head, tree=tree
+        )
+    except (OSError, ValueError):
+        review, reviewed_head = None, ""
+    item = _live_item(row, kind=_classification_kind(), now=now)
+    if head:
+        item["head"] = head
+    if review is not None and recovery._review_is_complete(review):
+        item["kind"] = "promotable-stale" if age > grace else "review-ready"
+    elif reviewed_head and not recovery.same_revision(reviewed_head, head):
+        # A stored record describes a revision the run has moved past, so no
+        # review of the head the run carries exists; both revisions travel on
+        # the duty so the reader sees which two disagree.
+        item["kind"] = "review-missing"
+        item["reviewed_head"] = reviewed_head
+    return item
 
 
 def _live_worktrees(project: str) -> set[Path]:
@@ -559,24 +624,33 @@ def obligations(project: str, session: str) -> dict[str, Any]:
     )
     reviews_in_flight = _live_review_runs(project, session)
     items: list[dict[str, Any]] = []
+    pointers = {
+        str(pointer.get("run_id") or ""): pointer
+        for pointer in runs.list_live(project=project)
+    }
     for row in _classified_rows(project):
         if str(row.get("session") or "") != session:
             continue
         classification = str(row.get("classification") or "")
         recovery_classification = str(row.get("recovery_classification") or "")
         kind = ""
-        if classification == "scoring":
-            if str(row.get("run_id") or "") in reviews_in_flight:
+        if classification in REVIEW_CLASSIFICATION_KINDS:
+            if (
+                classification == "scoring"
+                and str(row.get("run_id") or "") in reviews_in_flight
+            ):
                 continue
-            kind = CLASSIFICATION_DUTY_KINDS[classification]
-        elif classification == "promotable":
-            age = _row_age(row, now=now)
-            kind = (
-                "promotable-stale"
-                if age > grace
-                else CLASSIFICATION_DUTY_KINDS[classification]
+            items.append(
+                _review_duty_item(
+                    project,
+                    row,
+                    pointers.get(str(row.get("run_id") or "")),
+                    now=now,
+                    grace=grace,
+                )
             )
-        elif recovery_classification in RECOVERY_CLASSIFICATION_DUTY_KINDS:
+            continue
+        if recovery_classification in RECOVERY_CLASSIFICATION_DUTY_KINDS:
             kind = RECOVERY_CLASSIFICATION_DUTY_KINDS[recovery_classification]
         else:
             kind = CLASSIFICATION_DUTY_KINDS.get(classification, "")
