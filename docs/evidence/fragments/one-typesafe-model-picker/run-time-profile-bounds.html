@@ -1,0 +1,48 @@
+<article class="landed-report" data-run-id="r-20261002T123641270881-run-time-profile-bounds" data-node="run-time-profile-bounds">
+  <h3>Run-time profile window bound and consistent bucket counts</h3>
+  <p>
+    <strong>Base inspected:</strong>
+    <code>d77ed0ad373847663d48198b1f2a1982726c00c1</code>. A review of the
+    node <code>run-time-profile</code> found three follow-on findings in
+    <code>reckon/crew/run_time_profile.py</code>: the window's <code>until</code>
+    did not bound the rows <code>ledger.runs</code> returns (that reader applies
+    <code>since</code> only), the module-identity test asserted only that
+    <code>__file__ is not None</code>, and a size bucket's <code>runs</code>
+    counted only rows carrying a wall time while the group table's
+    <code>runs</code> counted every member row.
+  </p>
+
+  <h4>What changed</h4>
+  <table>
+    <thead><tr><th>path</th><th>change</th><th>why</th></tr></thead>
+    <tbody>
+      <tr><td><code>reckon/crew/run_time_profile.py</code></td><td><code>run_time_profile</code> now drops any row whose completion stamp parses and falls after <code>until</code> (a new <code>_completed_after</code> guard); a row with no readable stamp is kept because <code>ledger.runs</code> has already refused one.</td><td>Bounds the profile to its window at both ends, so a promotion landing after the window closes cannot be counted.</td></tr>
+      <tr><td><code>reckon/crew/run_time_profile.py</code></td><td><code>_size_table</code> reports <code>runs</code> (every member row, matching the group table) and <code>timed_runs</code> (rows carrying <code>wall_seconds</code>); the median is over the timed subset; a backend whose rows all lack a wall time still appears with null medians.</td><td>Makes the two <code>runs</code> fields mean the same thing and stops a backend being dropped when it never recorded a wall time.</td></tr>
+      <tr><td><code>tests/test_run_time_profile.py</code></td><td>Adds <code>test_a_row_completing_after_the_window_is_excluded</code> and <code>test_size_buckets_count_runs_and_timed_runs</code>; replaces <code>test_the_module_is_the_one_under_test</code> with a check that <code>reckon.crew.run_time_profile.__file__</code> resolves inside the checkout under test.</td><td>Each new guard is exercised by a case whose opposite was the recorded defect.</td></tr>
+    </tbody>
+  </table>
+
+  <h4>Measure</h4>
+  <p>
+    Gate <code>tests/test_run_time_profile.py</code>: <strong>7 passed</strong>
+    at head (base revision <code>d77ed0ad</code>). At the base arm — head test
+    file against the base module — <strong>2 failed, 5 passed</strong> (the
+    window-exclusion and bucket-count tests). The declared negative control
+    (drop the <code>until</code> filter) fails exactly the window-exclusion
+    test at <code>EXIT=1</code>. Importing the module from a second tree makes
+    the identity test fail, showing the guard fires on the defect it names.
+  </p>
+  <table>
+    <thead><tr><th>arm</th><th>result</th><th>log</th></tr></thead>
+    <tbody>
+      <tr><td>head (module + tests)</td><td>7 passed, EXIT=0</td><td><code>logs/head.log</code></td></tr>
+      <tr><td>base module, head tests</td><td>2 failed, 5 passed, EXIT=1</td><td><code>logs/base-arm.log</code></td></tr>
+      <tr><td>negative control (until filter dropped)</td><td>1 failed, 6 passed, EXIT=1</td><td><code>logs/negative-control.log</code></td></tr>
+      <tr><td>module imported from another tree</td><td>1 failed, EXIT=1</td><td><code>logs/module-identity-refusal.log</code></td></tr>
+    </tbody>
+  </table>
+  <p>
+    Logs are held in the run directory
+    <code>r-20261002T123641270881-run-time-profile-bounds/logs/</code>.
+  </p>
+</article>
