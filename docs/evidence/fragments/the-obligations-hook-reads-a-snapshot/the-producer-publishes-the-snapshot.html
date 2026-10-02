@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-verifies" content="reckon:the-obligations-hook-reads-a-snapshot#s2">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-02">
+  <meta name="evidence-commit" content="615933def">
+  <title>The producer publishes each session's obligations snapshot | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="the-producer-publishes-the-snapshot">
+  <h2>The producer publishes each session's obligations snapshot</h2>
+  <p>The watch producer now recomputes every registered session's
+  <code>obligations()</code> payload and writes it to
+  <code>&lt;config-home&gt;/crew/obligations/&lt;project&gt;/&lt;session&gt;.json</code>, by a
+  temporary file renamed over the old one, so the prompt hook that reads it does one stat and one
+  small JSON read instead of deriving. A new module
+  (<code>obligation_snapshot.py</code>) carries the atomic writer, the reader, the freshness rule and
+  the three triggers — a pointer transition the producer already detects, a per-file stat change
+  under the project's state and plan directories, and a sixty-second floor tick. Ages are stored as
+  the instant each is measured from rather than a count of seconds, so a snapshot never shows a
+  frozen age; the reader recomputes them at read time.</p>
+
+  <p>The derivation reads live pointers through the same <code>list_live</code> that publishes, so
+  the first case written against the wiring met a <code>RecursionError</code>: every sweep with a
+  registered session re-entered itself. The producer now records that it is inside a sweep and lets
+  the reads it performs report to their caller. Producer identity — pid, process start time and the
+  code stamp of the running source — is read from the lease registration, with the stamp written
+  back when the registration does not already carry the one this process computes, so a producer
+  that took the seat over from a stale one is not reported as stale.</p>
+
+  <h3>Gate — the 51-file surface, both arms, eight workers each</h3>
+  <p>The gate is the new test file plus every <code>tests/</code> file naming
+  <code>runs.watch</code>, <code>watch_registration</code>, <code>obligations(</code> or
+  <code>crew watch</code>, found by a text search: <strong>51</strong> files, run at each revision
+  under <code>pytest -n 8 --timeout=300</code> with a private basetemp outside any repository. The
+  head arm adds <strong>no</strong> failure id: the two arms' id sets are identical, and the head
+  arm runs six more tests to completion, which are this node's six cases.</p>
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th><th>failure ids</th><th>log</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>3fadeb60e</code></td><td>8 failed, 637 passed, 1 skipped, 1 error in 400.99 s</td><td>9 — see below</td><td><code>gate/base-xdist.log</code></td></tr>
+      <tr><td>head</td><td><code>615933def</code></td><td>8 failed, 643 passed, 1 skipped, 1 error in 406.71 s</td><td>the same 9</td><td><code>gate/head-xdist.log</code></td></tr>
+    </tbody>
+  </table>
+  <p>The nine ids are identical in both arms, so none is added by this node, and none is touched by
+  it: <code>conftest.py::test_temp_config_home</code> (error),
+  <code>test_crew_monitor_output.py::test_three_followers_receive_each_subsequent_transition_once</code>,
+  <code>test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching</code>,
+  <code>test_crew_ticker.py::test_ticker_emits_only_changes_and_ends_after_the_last_promotion</code>,
+  <code>test_follow_observes_other_sessions.py::test_the_real_configuration_home_gains_no_file</code>,
+  <code>test_follower_bounds_its_lifetime.py::test_no_child_of_an_armed_follower_carries_the_hand_off_variables</code>,
+  <code>test_producer_loop_survives_a_config_change.py::test_the_producer_defers_a_broken_config_and_recovers</code>,
+  and two in <code>test_watch_arming_isolation.py</code> (<code>test_an_opted_in_caller_is_not_refused</code>,
+  <code>test_arming_refuses_a_configuration_home_under_a_test_directory</code>).</p>
+
+  <h3>The six cases the new file adds</h3>
+  <ul>
+    <li>a pointer transition is visible in the session's snapshot by the end of the first sweep
+    after it, with the sweep driven explicitly and the stream offset advanced;</li>
+    <li>the stored snapshot equals <code>obligations()</code> over the same unmodified files — the
+    parity case — with both derivations read at one instant and compared at the snapshot's own
+    <code>computed_at</code>, so the ages are compared too;</li>
+    <li>a writer stopped between its temporary file and the rename leaves the previous snapshot
+    whole, readable, and its temporary behind;</li>
+    <li>each freshness outcome for its case — <code>fresh</code>, <code>no-producer</code>,
+    <code>producer-stale-code</code>, <code>stale-snapshot</code> — including a pid that is alive
+    but carries a different start time, which is the reused-pid case;</li>
+    <li>the file-stat trigger and the floor tick each republish while an inert sweep leaves the
+    snapshot alone;</li>
+    <li>a fresh subprocess importing the module pulls in no derivation module.</li>
+  </ul>
+  <p>The import case loads the file by path, because importing it through
+  <code>reckon/crew.py</code> runs the facade, which eagerly imports every concern module and would
+  report the derivations whatever this module itself reaches. The module's own imports are stdlib
+  only — <code>__future__</code>, <code>hashlib</code>, <code>json</code>, <code>os</code>,
+  <code>re</code>, <code>time</code>, <code>collections.abc</code>, <code>dataclasses</code>,
+  <code>datetime</code>, <code>pathlib</code>, <code>typing</code> — naming no reckon module at all,
+  and the derivation is imported inside <code>sweep()</code> and nowhere else.</p>
+
+  <h3>Negative control</h3>
+  <p>A module-level <code>import reckon._plan_html</code> added to
+  <code>reckon/crew/obligation_snapshot.py</code> makes the import case fail, with the log showing
+  <code>assert ['reckon._plan_html'] == '[]'</code> and <code>EXIT=1</code>; the mutation was
+  reverted by edit and the module re-verified clean afterwards.</p>
+</section>
+</main>
+</body>
+</html>
