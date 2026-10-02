@@ -183,8 +183,11 @@ def test_hard_ceiling_refuses_even_when_serving_is_recorded(
 def test_cached_serving_refusal_is_still_a_hard_gate(
     live_facts, monkeypatch, request_node, config, tmp_path, status
 ):
+    fresh = datetime.now(UTC).isoformat()
     monkeypatch.setattr(
-        snapshot.resumption, "_read_lane_probe_cache", lambda *a: {"status": status}
+        snapshot.resumption,
+        "_read_lane_probe_cache",
+        lambda *a: {"status": status, "observed_at": fresh},
     )
     probe = Mock(side_effect=AssertionError("Cached picks must never probe"))
     monkeypatch.setattr(snapshot.resumption, "probe_lane_availability", probe)
@@ -199,13 +202,12 @@ def test_cached_only_reads_the_existing_cache_without_writing(
     live_facts, monkeypatch, request_node, config, tmp_path, cache_state
 ):
     monkeypatch.setattr(snapshot.resumption, "crew_home", lambda: tmp_path / "crew")
+    fresh = datetime.now(UTC).isoformat()
     for name in config["backends"]:
         path = snapshot.resumption.lane_probe_cache_path(request_node.project, name)
         path.parent.mkdir(parents=True, exist_ok=True)
         if cache_state == "served":
-            path.write_text(
-                json.dumps({"status": "served", "observed_at": "2020-01-01"})
-            )
+            path.write_text(json.dumps({"status": "served", "observed_at": fresh}))
         elif cache_state == "corrupt":
             path.write_text("{")
     before = {p: p.read_bytes() for p in (tmp_path / "crew").rglob("*") if p.is_file()}
@@ -219,8 +221,14 @@ def test_cached_only_reads_the_existing_cache_without_writing(
         cached_only=True,
         caller=lambda state, *a, **k: _answer("remote", state["candidates"]),
     )
-    assert selection.action == ("route" if cache_state == "served" else "refuse")
-    assert selection.backend == ("remote" if cache_state == "served" else None)
+    # A served observation is offered as served; an absent or unreadable cache
+    # is an absence of evidence, so the candidate is offered as unknown.
+    by_backend = {c["backend"]: c for c in selection.offered}
+    assert selection.action == "route"
+    assert selection.backend == "remote"
+    assert by_backend["remote"]["availability"] == (
+        "served" if cache_state == "served" else "unknown"
+    )
     after = {p: p.read_bytes() for p in (tmp_path / "crew").rglob("*") if p.is_file()}
     assert before == after
     probe.assert_not_called()
