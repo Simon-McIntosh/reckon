@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="picker-holds-for-local">
+<meta name="plan-title" content="Local admission and hold choices">
+<meta name="plan-summary" content="Two live cached-only picks, admission-state tests and the baseline-to-head failure delta">
+<meta name="plan-evidence-for" content="one-typesafe-model-picker">
+<meta name="plan-verifies" content="one-typesafe-model-picker#s10">
+<meta name="plan-commits" content="1f2d326ea495f8f29a63d1cef8d5c5ac1c821ec2,eb7a72c54bcecfe5691e0b6757823abdff2204e6">
+<meta name="plan-recorded-at" content="2026-10-02">
+<meta name="plan-verdict" content="passed">
+<meta name="plan-environment" content="Main checkout virtualenv with worker worktree on PYTHONPATH">
+<meta name="plan-tags" content="crew,testing">
+<title>Local admission and hold choices | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body><main class="plan-doc">
+<h1>Local admission and hold choices</h1>
+<section id="picker-holds-for-local">
+<h2>Live in-process selections</h2>
+<table><thead><tr><th>Node</th><th>Specification and risk</th><th>Fixture admission</th><th>Expected wait [s]</th><th>Action</th><th>Backend</th><th>Probabilities</th><th>Confidence</th></tr></thead><tbody>
+<tr><td>routine-documentation</td><td>exact / routine / low risk</td><td>paused</td><td>2008.25</td><td>hold</td><td>None</td><td>{&quot;codex&quot;: 0, &quot;codex-astra&quot;: 0.02, &quot;codex-luna&quot;: 0.04, &quot;codex-terra&quot;: 0, &quot;hold&quot;: 0.94}</td><td>0.93</td></tr>
+<tr><td>open-design</td><td>open / deep reasoning / elevated risk</td><td>paused</td><td>2008.25</td><td>route</td><td>codex-astra</td><td>{&quot;codex&quot;: 0.02, &quot;codex-astra&quot;: 0.8, &quot;codex-luna&quot;: 0.01, &quot;codex-terra&quot;: 0.01, &quot;hold&quot;: 0.16}</td><td>0.76</td></tr>
+</tbody></table>
+<h2>Provenance</h2><table><thead><tr><th>Reading</th><th>Value</th></tr></thead><tbody>
+<tr><th>Measured code revision</th><td><code>eb7a72c54bcecfe5691e0b6757823abdff2204e6</code></td></tr>
+<tr><th>Environment</th><td><code>/home/ITER/mcintos/Code/reckon/.venv/bin/python</code></td></tr>
+<tr><th>Source and working directory</th><td><code>/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-picker/picker-holds-for-local</code></td></tr>
+<tr><th>Call</th><td><code>pick(request, config, repo=worktree, cached_only=True, caller=client.ask wrapper recording inputs)</code></td></tr>
+<tr><th>Fixture</th><td><code>Local lane document and gate are paused; running=8, waiting=2, headroom=0, worker_slots=0, observed_seconds=900. Other candidates use live cached availability and budget readings.</code></td></tr>
+<tr><th>Expected wait meaning</th><td><code>Median of matching historical wall-time medians, one per currently live local worker; profile groups come from run_time_profile. Unknown groups are omitted and an empty measured population gives null. This estimates total duration, not remaining time until the next slot opens.</code></td></tr>
+<tr><th>Observation times</th><td><code>2026-10-02T21:34:35.115179+00:00; 2026-10-02T21:34:48.702056+00:00</code></td></tr>
+<tr><th>Answering model</th><td><code>typesafe/jev-1.13-20260917</code></td></tr>
+<tr><th>Selected metered budget readings</th><td><code>Utilisation, burn and pace are null in this cached snapshot; these picks demonstrate hold-versus-route judgment with unknown metered pressure, not a measured-pressure comparison.</code></td></tr>
+<tr><th>Live receipt</th><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T212009757157-picker-holds-for-local/live-picks.json</code></td></tr>
+<tr><th>Live command</th><td><code>PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-picker/picker-holds-for-local /home/ITER/mcintos/Code/reckon/.venv/bin/python /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T212009757157-picker-holds-for-local/live_picks.py</code></td></tr>
+<tr><th>Inputs</th><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T212009757157-picker-holds-for-local/routine-documentation-input.json; /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T212009757157-picker-holds-for-local/open-design-input.json</code></td></tr>
+<tr><th>Reported cost for these two calls</th><td><code>0.00016821000000000002</code></td></tr>
+</tbody></table>
+<h2>Verification</h2><table><thead><tr><th>Arm</th><th>Revision</th><th>Summary</th><th>Failure IDs</th><th>Log</th></tr></thead><tbody>
+<tr><td><code>Baseline</code></td><td><code>5b5a14a12ffb462fe177213d2a669eb1c1294e89</code></td><td><code>1 failed, 82 passed in 75.31s (0:01:15)</code></td><td><code>[&quot;tests/test_picker_return_time.py::test_lane_document_is_read&quot;]</code></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T212009757157-picker-holds-for-local/base-gate.log</code></td></tr>
+<tr><td><code>Head</code></td><td><code>eb7a72c54bcecfe5691e0b6757823abdff2204e6</code></td><td><code>96 passed in 83.99s (0:01:23)</code></td><td><code>[]</code></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T212009757157-picker-holds-for-local/head-gate.log</code></td></tr>
+<tr><td><code>Admission field removed</code></td><td><code>eb7a72c54bcecfe5691e0b6757823abdff2204e6</code></td><td><code>9 failed, 4 passed in 0.65s</code></td><td><code>[&quot;tests/test_picker_holds.py::test_rendered_local_admission[3-5-False-admitting]&quot;, &quot;tests/test_picker_holds.py::test_rendered_local_admission[0-5-False-full]&quot;, &quot;tests/test_picker_holds.py::test_rendered_local_admission[3-5-True-paused]&quot;, &quot;tests/test_picker_holds.py::test_rendered_local_admission[None-None-False-unavailable]&quot;, &quot;tests/test_picker_holds.py::test_missing_lane_is_unavailable&quot;, &quot;tests/test_picker_holds.py::test_stale_lane_is_unavailable&quot;, &quot;tests/test_picker_holds.py::test_filtered_local_backend_is_unavailable&quot;, &quot;tests/test_picker_holds.py::test_gate_pause_survives_local_candidate_exclusion&quot;, &quot;tests/test_picker_holds.py::test_published_admission_pause_is_preserved&quot;]</code></td><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T212009757157-picker-holds-for-local/negative-gate.log</code></td></tr>
+</tbody></table>
+<table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+<tr><th>Added failure IDs</th><td><code>[]; zero added failures</code></td></tr>
+<tr><th>Baseline fixture reproduction</th><td><code>tests/test_picker_return_time.py::test_lane_document_is_read: assert None == 4; observed_seconds absent. Head supplies observed_seconds=300 and retains the production observed-window guard.</code></td></tr>
+<tr><th>Import-based gate</th><td><code>All tests/test_picker*.py plus all matching import users. Search found only test_picker.py, test_picker_pressure.py, test_picker_return_time.py and test_picker_holds.py; all are in the picker gate. Search receipt: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T212009757157-picker-holds-for-local/import-gate.txt</code></td></tr>
+<tr><th>Negative control</th><td><code>Remove the local lane admission state from the rendered state. Nine state-field tests fail with KeyError: admission; four other tests pass; EXIT=1.</code></td></tr>
+<tr><th>Baseline command</th><td><code>PYTHONPATH=/tmp/picker-holds-base-65dw66kr /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --timeout=60 --basetemp=/tmp/picker-holds-gate-base /tmp/picker-holds-base-65dw66kr/tests/test_picker.py /tmp/picker-holds-base-65dw66kr/tests/test_picker_in_dispatch.py /tmp/picker-holds-base-65dw66kr/tests/test_picker_inputs_never_block_dispatch.py /tmp/picker-holds-base-65dw66kr/tests/test_picker_latency.py /tmp/picker-holds-base-65dw66kr/tests/test_picker_pressure.py /tmp/picker-holds-base-65dw66kr/tests/test_picker_return_time.py</code></td></tr>
+<tr><th>Head command</th><td><code>PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-picker/picker-holds-for-local /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --timeout=60 --basetemp=/tmp/picker-holds-gate-head /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-picker/picker-holds-for-local/tests/test_picker.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-picker/picker-holds-for-local/tests/test_picker_holds.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-picker/picker-holds-for-local/tests/test_picker_in_dispatch.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-picker/picker-holds-for-local/tests/test_picker_inputs_never_block_dispatch.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-picker/picker-holds-for-local/tests/test_picker_latency.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-picker/picker-holds-for-local/tests/test_picker_pressure.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-picker/picker-holds-for-local/tests/test_picker_return_time.py</code></td></tr>
+<tr><th>Negative command</th><td><code>PYTHONPATH=/tmp/picker-holds-negative-5_p4ghhh /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q --timeout=60 --basetemp=/tmp/picker-holds-gate-negative /tmp/picker-holds-negative-5_p4ghhh/tests/test_picker_holds.py</code></td></tr>
+<tr><th>Changed source</th><td><code>reckon/crew/picker/lane_context.py; reckon/crew/picker/templates/questions.jinja</code></td></tr>
+<tr><th>Changed tests</th><td><code>tests/test_picker_return_time.py; tests/test_picker_holds.py</code></td></tr>
+</tbody></table>
+</section></main></body></html>
