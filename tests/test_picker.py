@@ -527,3 +527,17 @@ def test_budget_snapshot_is_shared_only_when_explicit(
         for candidate in candidates
     )
     reader.assert_not_called()
+
+
+def test_account_and_budget_exclusions_skip_repository_census(
+    live_facts, monkeypatch, request_node, config, tmp_path
+):
+    monkeypatch.setattr(
+        snapshot.budget,
+        "state_for",
+        lambda name, *a, **k: budget.BudgetState(name, burn_multiple=2),
+    )
+    fit = Mock(return_value=[])
+    monkeypatch.setattr(snapshot, "_fit", fit)
+    snapshot.candidates(request_node, config, tmp_path, records=[])
+    assert [call.args[1] for call in fit.call_args_list] == ["local"]

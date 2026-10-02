@@ -186,13 +186,14 @@ def candidates(
         gate = _dispatch_lane_gate(backend)
         if gate["state"] in {"paused", "unreadable"}:
             reasons.append("lane-gate: " + gate["state"])
-        reasons.extend(_fit(request, name, backend, repo))
         slots, congestion, allowance = (
             _lane(backend, request.session) if local else (None, None, {})
         )
         if local and allowance.get("held"):
             reasons.append("local-lane-no-worker-slots")
-        # A known refusal must not spend a serving probe on the refused model.
+        # Already-excluded candidates need no repository census or serving probe.
+        if not reasons:
+            reasons.extend(_fit(request, name, backend, repo))
         if reasons:
             availability = "not-probed"
         else:
