@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="work-is-a-section-not-a-followup">
+<title>a-followup-that-hides-work-is-refused — landing record</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="a-followup-that-hides-work-is-refused">Landing record — a followup that hides work is refused</h2>
+<p>Appending an open followup whose invocation hides work is refused on every append route: edit_plan's state ops, the HTTP plan patch path, and the append tool. The HTTP path compares the patched list against the stored one, so a resolution that resends the list is untouched. One refusal built on classify_followup names the reason word and both remedies: add the work as a section of this plan, or create a new plan when this one is complete and point the followup at it; a step that needs authority is recorded as an open decision instead. Resolving, superseding and reading a followup are never refused.</p>
+<h3>Measured population</h3>
+<p>Measured by flipping the refusal on in a scratch tree at base 233f442b0: 5 failed, 425 passed over the files the fence-named searches found (tests/test_edit_plan.py, tests/test_continuation.py, tests/test_mcp_store.py, tests/test_crew.py, tests/test_crew_recovery.py). The refused callers were the followups those fixtures appended. Repairs, each named in the manifest: three append tests in tests/test_edit_plan.py now append a pointer to another plan; two chain tests in tests/test_continuation.py declare the fixture plan's next section implementable so the appended invocation stays a pointer. No assertion was weakened.</p>
+<h3>Gate</h3>
+<p>Base arm 233f442b0 (git archive with the head test files overlaid): 3 failed (the three refusal cases of the new test file), 433 passed. Head arm 9136d128b: 436 passed, no failure id beyond the base's. Negative control (refusal removed from the append path): 3 failed including the declared no-section case, EXIT=1. Logs live in the run directory: measurement-scratch-flip.log, baseline-suite.log, after-suite-2.log, negative-control.log.</p>
+</main>
+</body>
+</html>
