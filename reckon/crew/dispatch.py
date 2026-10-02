@@ -93,6 +93,7 @@ from reckon.crew.routing import (
     resolved_time_ceiling,
     section_id_candidates,
     shadow_worktree_session,
+    signal_worker,
 )
 from reckon.crew.runs import (
     _expanded_scope_paths,
@@ -8416,6 +8417,200 @@ def _publish_stored_phase(
         return
 
 
+# A worker whose manifest reaches one of these has delivered its verdict and
+# will do no more work, so the supervisor stops waiting for it and ends it. The
+# terminal ``blocked`` is excluded on purpose: a blocked run is resumed in
+# place, and its process and disposable identity are kept for that resume.
+# ``in-progress`` is non-terminal and is waited on as before.
+_WORKER_DONE_MANIFEST_STATUSES = frozenset({"complete", "failed"})
+
+# The env var a test (or an operator) shortens the grace with. The default
+# bounds how long a finished worker may hold its slot before the supervisor
+# ends it; a worker whose manifest is complete or failed should exit at once,
+# so the grace covers only the flush between the manifest write and the exit.
+TERMINAL_MANIFEST_GRACE_ENV = "RECKON_WORKER_TERMINAL_GRACE_SECONDS"
+TERMINAL_MANIFEST_GRACE_DEFAULT = 300.0
+# How often the supervisor rechecks a manifest while it waits for the worker.
+# Coarse on purpose: the file lives on shared storage, and a manifest the
+# worker has not written again cannot have changed its status, so poll often
+# enough to notice a delivery against a multi-minute grace without reading the
+# manifest across the whole life of every worker.
+_WORKER_MANIFEST_POLL_SECONDS = 3.0
+# How long a worker gets to end on the grace signal before the supervisor
+# escalates to SIGKILL, so a worker ignoring SIGTERM cannot hold the slot.
+_WORKER_GRACE_KILL_SECONDS = 10.0
+
+
+def _terminal_manifest_grace_seconds() -> float:
+    """The grace a finished worker is given to exit on its own, in seconds.
+
+    Read from the environment so a test can shorten it, and floored at zero so
+    a nonsensical value degrades to an immediate end rather than to no bound.
+    """
+    raw = os.environ.get(TERMINAL_MANIFEST_GRACE_ENV, "").strip()
+    if raw:
+        try:
+            value = float(raw)
+        except ValueError:
+            value = None
+        if value is not None and value >= 0:
+            return value
+    return TERMINAL_MANIFEST_GRACE_DEFAULT
+
+
+def _supervisor_manifest_path(run_id: str) -> Path:
+    """The manifest the supervisor watches for its run's terminal verdict.
+
+    Read from the live pointer, whose manifest path the launcher wrote; a
+    pointer already gone (a discard took it) falls back to the run directory,
+    so the watch names a path rather than raising.
+    """
+    try:
+        record: Mapping[str, Any] = read_pointer(run_id)
+    except CrewError:
+        record = {}
+    return Path(_recorded_manifest_path(record, run_id))
+
+
+def _worker_manifest_done_status(manifest_path: Path) -> str:
+    """The done status a delivered manifest carries, or "" for none yet.
+
+    A manifest that is absent, unreadable, still carries the dispatch
+    template's placeholder or names a status the supervisor waits on all read
+    as "" — the worker is still working, or has declared a wait, and is left
+    to its own exit.
+    """
+    from reckon.crew.reports import manifest_status_is_template, parse_manifest
+
+    try:
+        text = manifest_path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    try:
+        status = str(parse_manifest(text, path=str(manifest_path)).get("status") or "")
+    except ValueError:
+        return ""
+    status = status.strip().lower()
+    if not status or manifest_status_is_template(status):
+        return ""
+    return status if status in _WORKER_DONE_MANIFEST_STATUSES else ""
+
+
+def _iso_stamp_to_ns(stamp: str) -> int | None:
+    """An ISO-8601 instant as epoch nanoseconds, or None for an unreadable one."""
+    try:
+        parsed = datetime.fromisoformat(str(stamp))
+    except (TypeError, ValueError):
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return int(parsed.timestamp() * 1_000_000_000)
+
+
+def _supervisor_manifest_baseline_ns(run_id: str, spec: Mapping[str, Any]) -> int:
+    """The manifest generation an attempt may call its own.
+
+    A resumed run keeps its manifest path, so the previous attempt's terminal
+    manifest is still on disk when the new worker starts, with an old mtime. A
+    delivered manifest is therefore only the one written at or after the
+    attempt began: the pointer's recorded baseline, or the attempt's own start
+    when the pointer carries none, or 0 when the attempt clock is unreadable —
+    in which case a manifest is taken as delivery and the pre-existing bad case
+    cannot be recognised, which is the pre-existing behaviour rather than a
+    regression.
+    """
+    try:
+        record: Mapping[str, Any] = read_pointer(run_id)
+    except CrewError:
+        record = {}
+    baseline = record.get("manifest_baseline_mtime_ns")
+    if baseline is not None:
+        try:
+            return int(baseline)
+        except (TypeError, ValueError):
+            pass
+    started = str(
+        spec.get("attempt_started_at") or record.get("attempt_started_at") or ""
+    )
+    if started:
+        parsed = _iso_stamp_to_ns(started)
+        if parsed is not None:
+            return parsed
+    return 0
+
+
+def _reap_worker_on_its_terminal_manifest(
+    pid: int,
+    *,
+    run_directory: Path,
+    manifest_path: Path,
+    grace_seconds: float,
+    baseline_ns: int,
+) -> int | None:
+    """Collect a worker's exit, ending it once its manifest says it is done.
+
+    A worker that wrote a complete (or failed) manifest and then kept running
+    holds its run's slot long after its work was delivered. The supervisor
+    notices the manifest, gives the worker the grace period to exit on its own,
+    and then ends its process — writing the sender record before it signals, so
+    the signal is attributable to the run's own directory. A worker whose
+    manifest is non-terminal, or blocked (kept for resume), is waited on as
+    before. Returns the wait status, or ``None`` when the child was already
+    reaped elsewhere.
+
+    The manifest is stat'd each poll and read for its status only when its
+    mtime has advanced past the attempt's baseline and changed since the last
+    read, so an unchanged manifest is never reparsed and a manifest left by a
+    previous attempt — a resumed run's own complete record — is not mistaken
+    for this attempt's delivery.
+    """
+    seen_mtime_ns: int | None = None
+    deadline: float | None = None
+    signalled_at: float | None = None
+    while True:
+        try:
+            waited_pid, status = os.waitpid(pid, os.WNOHANG)
+        except (ChildProcessError, OSError):
+            return None
+        if waited_pid == pid:
+            return status
+        now = time.monotonic()
+        try:
+            mtime_ns = manifest_path.stat().st_mtime_ns
+        except OSError:
+            mtime_ns = None
+        if mtime_ns is not None and mtime_ns != seen_mtime_ns:
+            seen_mtime_ns = mtime_ns
+            if mtime_ns > baseline_ns and _worker_manifest_done_status(
+                manifest_path
+            ):
+                # The grace is measured from the manifest's own write time, so
+                # a delivery noticed late still ends on schedule. The age is
+                # subtracted unclamped: once it reaches the grace the deadline
+                # is already in the past and the worker is ended at once.
+                age = time.time() - (mtime_ns / 1_000_000_000)
+                deadline = now + grace_seconds - age
+        if deadline is not None and signalled_at is None and now >= deadline:
+            signal_worker(
+                pid,
+                signal.SIGTERM,
+                reason="worker-lingered-after-terminal-manifest",
+                run_dir=run_directory,
+            )
+            signalled_at = now
+        elif signalled_at is not None and now - signalled_at >= _WORKER_GRACE_KILL_SECONDS:
+            # The worker ignored the grace signal. SIGKILL cannot be ignored,
+            # and the record names this second, harder signal.
+            signal_worker(
+                pid,
+                signal.SIGKILL,
+                reason="worker-ignored-the-terminal-grace-signal",
+                run_dir=run_directory,
+            )
+            signalled_at = now
+        time.sleep(_WORKER_MANIFEST_POLL_SECONDS)
+
+
 def _run_supervisor(spec_path: Path) -> int:
     """Take the snapshot, launch the worker, collect its exit, and stop.
 
@@ -8433,6 +8628,7 @@ def _run_supervisor(spec_path: Path) -> int:
     if not isinstance(spec, Mapping):
         return 0
     run_directory = Path(str(spec.get("run_directory") or ""))
+    run_id = str(spec.get("run_id") or "")
     try:
         attempt = int(spec.get("attempt") or 1)
     except (TypeError, ValueError):
@@ -8495,12 +8691,13 @@ def _run_supervisor(spec_path: Path) -> int:
         attempt=attempt,
     )
     _publish_stored_phase(spec, ended=False)
-    try:
-        _, status = os.waitpid(pid, 0)
-    except ChildProcessError:
-        status = None
-    except OSError:
-        status = None
+    status = _reap_worker_on_its_terminal_manifest(
+        pid,
+        run_directory=run_directory,
+        manifest_path=_supervisor_manifest_path(run_id),
+        grace_seconds=_terminal_manifest_grace_seconds(),
+        baseline_ns=_supervisor_manifest_baseline_ns(run_id, spec),
+    )
     exit_record = _supervisor_exit_record(
         run_id=str(spec.get("run_id") or ""),
         attempt=attempt,

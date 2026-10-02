@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A worker whose manifest turns complete exits within its grace">
+  <meta name="plan-summary" content="The per-run supervisor watches the worker's manifest, and once it reads a complete (or failed) status it gives the worker a bounded, env-shortened grace to exit on its own, then ends the worker's process after writing a sender record; a blocked (kept for resume) or in-progress worker is waited on as before.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,supervisor,grace,process,manifest">
+  <title>A terminal worker exits within its grace &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A worker whose manifest turns complete exits within its grace</h1>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <p>The supervisor no longer waits indefinitely for a worker that has
+        already delivered its verdict and then lingers, holding its run's slot.
+        It watches the run's manifest; once the manifest reads a done status
+        that belongs to this attempt it gives the worker the grace period to
+        exit on its own, then ends its process. The signal is attributable
+        because the sender record is written first, through the shared signal
+        home.</p>
+      <ul>
+        <li><code>reckon/crew/dispatch.py</code>: <code>_run_supervisor</code>
+          collects the worker's exit through
+          <code>_reap_worker_on_its_terminal_manifest</code> instead of a
+          blocking <code>os.waitpid</code>. The helper polls (WNOHANG) on a
+          coarse interval and reads the manifest's status only when its mtime
+          has advanced past the attempt's baseline and changed since the last
+          read, so an unchanged manifest is never reparsed and shared storage
+          is not read across the whole life of every worker. A done manifest's
+          deadline is its own write time plus
+          <code>TERMINAL_MANIFEST_GRACE_ENV</code>
+          (<code>RECKON_WORKER_TERMINAL_GRACE_SECONDS</code>, default 300 s,
+          shortenable by a test); once it passes the worker is signalled
+          through <code>signal_worker</code> (sender record first) with a
+          SIGKILL escalation if ignored. The done set is <code>complete</code>
+          and <code>failed</code>; <code>blocked</code> is terminal but kept
+          for resume, and <code>in-progress</code> is non-terminal.</li>
+        <li><code>reckon/crew/dispatch.py</code>:
+          <code>_supervisor_manifest_baseline_ns</code> is the generation this
+          attempt may claim — the pointer's <code>manifest_baseline_mtime_ns</code>,
+          or the attempt's own start when the pointer carries none. A resumed
+          run keeps its manifest path, so without this the previous attempt's
+          complete manifest reads as this attempt's delivery and the new worker
+          is killed on the first poll.</li>
+        <li><code>tests/test_a_terminal_worker_exits_within_its_grace.py</code>:
+          a stub worker writes its manifest and then sleeps far past the grace,
+          so its exit can only be the supervisor's act. Cases: a complete
+          manifest ends the worker within the grace and leaves a sender record;
+          a blocked and an in-progress manifest keep the worker running; a
+          manifest left by a previous attempt (a resumed run) does not end the
+          worker until the worker rewrites it complete; and the done-status set
+          excludes blocked and non-terminal spellings.</li>
+      </ul>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <p><strong>Gate</strong> &mdash;
+        <code>tests/test_a_terminal_worker_exits_within_its_grace.py</code>:
+        <strong>5 passed</strong>, EXIT=0, in the run worktree.</p>
+      <p><strong>Arms</strong>, one invocation over
+        <code>tests/test_stored_phase_advances.py</code>,
+        <code>tests/test_every_signal_leaves_a_sender_record.py</code> and
+        <code>tests/test_supervisor_outlives_its_launcher.py</code>:</p>
+      <ul>
+        <li><strong>Base</strong>, revision <code>f91fa54eeb</code> (a
+          <code>git archive</code> extraction in a scratch tree):
+          <strong>14 passed</strong>, EXIT=0.</li>
+        <li><strong>Head</strong>, revision <code>f91fa54eeb</code> plus the
+          working tree: <strong>14 passed</strong>, EXIT=0.</li>
+        <li><strong>Added failures: 0.</strong></li>
+      </ul>
+      <p><strong>Negative controls</strong>, executed and logged. With the
+        grace-period exit removed
+        (<code>RECKON_TERMINAL_GRACE_NEGATIVE_CONTROL=grace-exit</code>):
+        <strong>2 failed, 3 passed, EXIT=1</strong>, the failing ids being
+        <code>test_a_complete_manifest_ends_the_worker_within_the_grace</code>
+        (still alive after its grace) and
+        <code>test_a_manifest_left_by_a_previous_attempt_is_not_this_attempts_delivery</code>.
+        Log: <code>negative-control.log</code>. With the baseline comparison
+        dropped (<code>RECKON_TERMINAL_GRACE_NEGATIVE_CONTROL=baseline</code>):
+        <strong>1 failed, 4 passed, EXIT=1</strong>, the failing id being
+        <code>test_a_manifest_left_by_a_previous_attempt_is_not_this_attempts_delivery</code>
+        &mdash; the resumed worker is killed by its own previous attempt's
+        manifest. Neither failing id is failed by the head arm. Log:
+        <code>negative-control-baseline.log</code>.</p>
+    </section>
+
+    <section id="landing">
+      <h2>Landing line</h2>
+      <p><code>landing: docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-terminal-worker-exits-within-its-grace.html</code></p>
+    </section>
+  </main>
+</body>
+</html>
