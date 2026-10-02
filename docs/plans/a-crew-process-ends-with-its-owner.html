@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="263">
+<meta name="plan-version" content="264">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -1403,6 +1403,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261002T083717645045-a-promotion-reads-only-the-fleet-fields-it-records" data-who="reckon-build" data-when="2026-10-02T10:42:01.780Z">
     <div class="r-comment-body"><p>perf(crew): _fleet_state_reading derives unreconciled_runs from the live pointers alone via _unreconciled_live_runs (the same closure_disposition_valid predicate and host-gated local_liveness as runs.drain), dropping the full drain and its plan-inventory read that was 22 percent of an 81.9 s promotion; the test asserts the bounded reading equals runs.drain on synthetic fleets, including a still-working pointer that exercises the classification-dependent branch, and that promotion.drain is never invoked</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T102241206863-the-clone-cache-stays-bounded" data-who="reckon-build" data-when="2026-10-02T10:43:08.887Z">
+    <div class="r-comment-body"><p>The clone scan&#x27;s corpus cache is bounded: reckon/clones.py records each entry&#x27;s last use and prunes the least recently used once it holds more than one entry per corpus file (cap derived from the corpus&#x27;s file count, not a fixed literal); the two window providers share a declared _WindowProvider Protocol. New gate tests/test_the_clone_cache_stays_bounded.py 4 passed; related clone suites 13 passed at base and 17 at head with zero added failures; declared negative control EXIT=1.</p></div>
 </div>
 </section>
 </main>
