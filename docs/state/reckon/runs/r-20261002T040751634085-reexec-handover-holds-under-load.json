@@ -1,0 +1,398 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 480000,
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "825bf5bc8d9fb4b1f269ec8712392eda0085a8ef",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 5539077,
+      "input_tokens_cumulative": 5539077,
+      "output_tokens": 46028,
+      "output_tokens_cumulative": 46028,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 65,
+    "files": 2,
+    "removed": 4
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 67,
+        "name": "_pid_gone",
+        "path": "tests/test_resume_reaps_its_child.py"
+      },
+      "run_function": {
+        "line": 88,
+        "name": "_pid_gone",
+        "path": "tests/test_a_reexec_keeps_its_children.py"
+      },
+      "window_line": 88
+    },
+    {
+      "existing_function": {
+        "line": 39,
+        "name": "_worker_plan",
+        "path": "tests/test_resume_reaps_its_child.py"
+      },
+      "run_function": {
+        "line": 125,
+        "name": "_spawn_worker",
+        "path": "tests/test_a_reexec_keeps_its_children.py"
+      },
+      "window_line": 150
+    },
+    {
+      "existing_function": {
+        "line": 64,
+        "name": "_synthesise_run",
+        "path": "tests/test_supervisor_starts_without_a_runpy_warning.py"
+      },
+      "run_function": {
+        "line": 125,
+        "name": "_spawn_worker",
+        "path": "tests/test_a_reexec_keeps_its_children.py"
+      },
+      "window_line": 142
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "3084d18a9b1ababf22179850fa5f760b970a5239",
+    "107b42cfd7348697bfae3b8964d1be3814b55a23"
+  ],
+  "completed_at": "2026-10-02T04:52:25.907Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-02T04:08:11Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": "pre-existing-failure",
+  "follow_on_paths": [
+    "tests/test_crew.py"
+  ],
+  "gate": "failed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -n 8 -p no:cacheprovider -q tests/test_a_reexec_keeps_its_children.py tests/test_crew.py",
+    "exit_status": 1,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T040751634085-reexec-handover-holds-under-load/logs/head-n8-run10.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.98,
+    "plan": "the-suite-is-green-at-head",
+    "reason": "gate-not-passing",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-02T04:57:52.487554+00:00",
+    "horizon_seconds": 3000,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-02T04:07:52Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 10,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 1,
+    "headroom": 15,
+    "mean_context": 80000,
+    "observed_at": "2026-10-02T04:07:42Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-02T04:52:25.907Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T040751634085-reexec-handover-holds-under-load/manifest.md",
+  "member": "disposable-r-20261002T040751634085-reexec-handover-holds-under-load",
+  "negative_control": {
+    "reason": "gate-not-passing",
+    "test_paths": [
+      "tests/test_a_reexec_keeps_its_children.py"
+    ],
+    "verdict": "exempt"
+  },
+  "no_commit": null,
+  "node": "reexec-handover-holds-under-load",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 307,
+          "cached_input_tokens": 448884,
+          "input_tokens": 449193,
+          "output_tokens": 201,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 449394,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "dea7b557-cbf3-46c1-bbfe-33166244c4a3",
+      "session_id": "s21-fin"
+    },
+    "done_when": "tests/test_a_reexec_keeps_its_children.py::test_the_reloader_exports_launched_pids_beside_the_checkpoint failed in the -n 8 suite at 3b883745b with a JSONDecodeError (the handover environment variable was empty at execve), and passed 4 of 4 times alone (~/.config/reckon/crew/reports/reckon/suite-remeasure.md). The node first measures it under load in ten -n 8 runs of that file together with tests/test_a_reexec_keeps_its_children.py's siblings and tests/test_crew.py, logging each. Then it names the race. If the test reads the handover before the child wrote it, the read becomes a bounded wait on that condition. A product defect in the reloader goes to follow_ons with file:line. The file passes ten consecutive -n 8 runs, all logged. Base and head arms of tests/test_a_reexec_keeps_its_children.py show zero added failures.",
+    "estimated_hours": 0.8,
+    "goal": "The reloader handover test passes under the parallel suite as it does alone",
+    "id": "reexec-handover-holds-under-load",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-02T04:07:52Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 10,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 1,
+      "headroom": 15,
+      "mean_context": 80000,
+      "observed_at": "2026-10-02T04:07:42Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T040751634085-reexec-handover-holds-under-load/manifest.md",
+    "negative_control": "restore the immediate read; the id fails in at least one of ten -n 8 runs, logged",
+    "plan": "the-suite-is-green-at-head",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "guided",
+    "time_budget": "50m",
+    "token_budget": null,
+    "write_paths": [
+      "tests/test_a_reexec_keeps_its_children.py",
+      "docs/evidence/fragments/the-suite-is-green-at-head/reexec-handover-holds-under-load.html",
+      "docs/figures/the-suite-is-green-at-head/reexec-handover-holds-under-load"
+    ]
+  },
+  "orientation_input_tokens": 3168069.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "reexec-handover-holds-under-load",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-02T04:08:02.086272+00:00",
+    "score": 0.7375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-suite-is-green-at-head",
+  "plan_impl_at_dispatch": 0.98,
+  "plan_link": null,
+  "promoted_revision": "107b42cfd7348697bfae3b8964d1be3814b55a23",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "825bf5bc8d9fb4b1f269ec8712392eda0085a8ef",
+    "reviewed_head_sha": "107b42cfd7348697bfae3b8964d1be3814b55a23",
+    "scores": {
+      "durability": 19,
+      "evidence": 18,
+      "fit": 19,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 96
+  },
+  "review_tier": "none",
+  "role": "implement",
+  "run_id": "r-20261002T040751634085-reexec-handover-holds-under-load",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session": "s21-fin",
+  "session_harness": "claude",
+  "session_id": "fef47855-071d-4382-81fb-e8719da2778a",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 5539077,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 2646.347,
+    "generated_tokens": 46028,
+    "generation_seconds": 572.058,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 30.8,
+    "machine_seconds": 2074.289,
+    "peak_input_tokens": 147965,
+    "tokens_per_second": 80.46,
+    "wall_tokens_per_second": 17.39
+  },
+  "time_budget": "50m",
+  "tool_steps": 50.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 2654,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-02T04:52:26Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-02T04:08:14Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261002T040751634085-reexec-handover-holds-under-load",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 11681,
+    "worker_pid": 1963830
+  },
+  "worker_seconds": 2634,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": {
+    "classification": "retained-for-resume",
+    "retained_at": "2026-10-02T04:52:25.907Z",
+    "session_id": "fef47855-071d-4382-81fb-e8719da2778a",
+    "session_source": "stream",
+    "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-fin/reexec-handover-holds-under-load"
+  }
+}
