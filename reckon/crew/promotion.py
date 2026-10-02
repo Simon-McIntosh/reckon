@@ -636,8 +636,16 @@ def _worktree_untracked_paths(tree: Path) -> tuple[str, ...]:
     dispatch rule plants in every worktree is not the run's work and is
     dropped.
     """
+    listed = _worktree_git_paths(tree, "ls-files", "--others", "--exclude-standard")
+    if not listed:
+        # A worktree whose directory is gone yields ``None`` rather than an empty
+        # list, and the honest reading of an unmeasurable tree is the empty set:
+        # a commitless run whose tree has been reclaimed holds no untracked path
+        # this check can see, so it reads as no repository change rather than
+        # raising on the iteration.
+        return ()
     untracked: list[str] = []
-    for line in _worktree_git_paths(tree, "ls-files", "--others", "--exclude-standard"):
+    for line in listed:
         path = line.strip().strip('"')
         if not path:
             continue

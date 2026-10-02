@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="plan-width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A vanished worktree reads as no referent">
+  <meta name="plan-summary" content="crew complete no longer raises TypeError on a worktree directory removed while git still lists it; a commitless promotion reads the vanished tree as no repository change and promotes, and a promotion citing a commit reaches the existing no-referent acknowledgement.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,promotion,worktree,reconcile">
+  <title>A vanished worktree reads as no referent — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-vanished-worktree-reads-as-no-referent" data-reckon="landed" data-when="2026-10-02">
+  <h2>A vanished worktree reads as no referent</h2>
+  <p><code>tests/test_a_vanished_worktree_reads_as_no_referent.py</code> removes a registered worktree's directory and shows both cases emitting a parsed JSON payload: a commitless promotion reads the vanished tree as no repository change, promotes, and names the absence in its released worktree payload (<code>tree is no longer available</code>); a promotion citing a commit is refused with the single no-referent acknowledgement. Before the guard, the same case raised <code>TypeError: 'NoneType' object is not iterable</code> at <code>reckon/crew/promotion.py:640</code>; the negative-control log records that red run (<code>EXIT=1</code>).</p>
+</article>
+</body>
