@@ -13,9 +13,12 @@ the live crew run pointers on this host. When no run resolves it writes nothing
 and exits 0, so a coordinator or an interactive session is never affected.
 
 When a run does resolve, the hook blocks in three cases: the manifest is absent,
-its top-level ``status:`` line does not name a terminal value, or it is terminal
-but was last written before this attempt began, which states that it was written
-by an earlier attempt and not by the worker now stopping. The reason names the
+its top-level ``status:`` line does not name a terminal value, or it is
+terminal but was last written before this attempt began, which states that it was written
+by an earlier attempt and not by the worker now stopping. A ``status: waiting``
+is a fourth acceptable ending when the declaration beside it is one the fleet's
+own reader honours — the worker has named what it is parked on and what ends
+the park — and is refused, naming the missing field. The reason names the
 manifest path and what is missing. So a worker that genuinely cannot finish is
 never trapped, the hook blocks at most three times per stop chain, counting in a
 file in the run directory. The chain is delimited by the payload's
@@ -32,10 +35,12 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
 TERMINAL_STATUSES = frozenset({"complete", "blocked", "failed"})
+WAITING_STATUS = "waiting"
 BLOCK_LIMIT = 3
 COUNTER_NAME = ".worker_stop_blocks"
 
@@ -135,6 +140,46 @@ def _manifest_predates_attempt(manifest: Path) -> bool:
         return False
 
 
+def _wait_declaration(manifest: Path) -> tuple[bool, str]:
+    """Whether the manifest's declared external wait is one the fleet acts on.
+
+    Read through the classifier's own reader rather than a second copy of the
+    wait grammar: a declaration the fleet would refuse as incomplete is not a
+    state a turn may end on, and one reader means the hook and the classifier
+    cannot disagree about what a parked worker is. Imported lazily, so an
+    ordinary stop that declares no wait pays nothing for the validator.
+    """
+    if __package__ in (None, ""):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    try:
+        from reckon.crew.recovery import _manifest_wait
+        from reckon.crew.reports import ManifestParseError, parse_manifest
+    except ImportError as exc:
+        return False, f"the wait reader could not be loaded ({exc})"
+    try:
+        data = parse_manifest(manifest.read_text(encoding="utf-8"))
+    except (OSError, ManifestParseError, ValueError) as exc:
+        return False, f"the manifest could not be read as a wait ({exc})"
+    try:
+        wait = _manifest_wait(
+            data,
+            manifest,
+            now_seconds=time.time(),
+            stale_after_seconds=0,
+        )
+    except Exception as exc:  # noqa: BLE001 - an unreadable wait is a refusal, not a crash
+        return False, f"the wait declaration could not be validated ({exc})"
+    if wait is None:
+        return False, (
+            "the wait fields name no actionable wait; wait_condition, "
+            "wait_probe (or wait_file), wait_terminal and resume_brief must "
+            "declare a condition that can end"
+        )
+    if not wait["valid"]:
+        return False, str(wait.get("error") or "the wait declaration is incomplete")
+    return True, ""
+
+
 def _write_terminal_record(manifest: Path) -> None:
     """Set the manifest's top-level status to ``blocked`` with the reason.
 
@@ -181,6 +226,17 @@ def decide(payload: dict[str, Any]) -> tuple[bool, str | None]:
     predates_attempt = _manifest_predates_attempt(manifest)
     if status in TERMINAL_STATUSES and not predates_attempt:
         return False, None
+    # A declared wait is a finished turn: the worker has named what it is
+    # parked on and what ends the park, so the record is complete and no resume
+    # is owed until the condition lifts. Only a declaration the fleet's own
+    # reader honours counts — a malformed one is refused with the missing field
+    # named, so the next attempt can repair it rather than being forced to
+    # write a status it cannot honestly claim.
+    wait_refusal = ""
+    if status == WAITING_STATUS and not predates_attempt:
+        declared, wait_refusal = _wait_declaration(manifest)
+        if declared:
+            return False, None
 
     counter = manifest.parent / COUNTER_NAME
     if payload.get("stop_hook_active"):
@@ -201,12 +257,15 @@ def decide(payload: dict[str, Any]) -> tuple[bool, str | None]:
 
     if predates_attempt:
         what = "predates this attempt"
+    elif status == WAITING_STATUS:
+        what = f"declares status 'waiting' but {wait_refusal}"
     else:
         what = "is absent" if status is None else f"has status '{status}'"
     reason = (
         f"worker stop refused: the run manifest {manifest} {what}; it must be "
-        "present with a status of complete, blocked or failed before the turn "
-        f"can end. Refusal {count + 1} of {BLOCK_LIMIT}."
+        "present with a status of complete, blocked or failed — or declare a "
+        "waiting status with a well-formed wait block — before the turn can "
+        f"end. Refusal {count + 1} of {BLOCK_LIMIT}."
     )
     return True, reason
 

@@ -5414,6 +5414,41 @@ def crew_discard(run_id, pretty):
     _emit({"ok": True, **result}, pretty)
 
 
+@crew.command(name="repair-status")
+@click.option(
+    "--run",
+    "run_id",
+    required=True,
+    help="Run whose manifest status word the coordinator is replacing.",
+)
+@click.option(
+    "--status",
+    type=click.Choice(["complete", "blocked", "failed"]),
+    required=True,
+    help=(
+        "The verdict the run actually reached: the terminal words, restated "
+        "here because importing the crew vocabulary would drag the whole "
+        "facade onto every reckon --help."
+    ),
+)
+@click.option(
+    "--reason",
+    required=True,
+    help="Why this is the verdict; recorded in the run directory.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_repair_status(run_id, status, reason, pretty):
+    """Replace a manifest's status word, keeping the file as delivered."""
+    crew_module, _ = _crew_modules()
+    from reckon.crew import runs as runs_module
+
+    try:
+        result = runs_module.repair_manifest_status(run_id, status, reason)
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **result}, pretty)
+
+
 def _ledger_module():
     """Import the ledger helpers on demand."""
     from reckon import ledger as ledger_module

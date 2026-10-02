@@ -1030,6 +1030,119 @@ def run_acknowledgement(pointer: Mapping[str, Any]) -> dict[str, Any] | None:
     return dict(recorded) if isinstance(recorded, Mapping) else None
 
 
+STATUS_REPAIR_RECORD_NAME = "status-repair.json"
+AS_DELIVERED_SUFFIX = ".asdelivered"
+DEFAULT_MANIFEST_NAME = "manifest.md"
+# The statuses a repaired manifest may carry: exactly the terminal vocabulary
+# the classifier treats as a verdict. The set is closed because the repair
+# exists to resolve a record, and a replacement outside it would leave the run
+# as undecided as it was.
+REPAIRABLE_STATUSES = ("complete", "blocked", "failed")
+
+
+def _manifest_for_repair(run_id: str) -> Path:
+    """The manifest a status repair rewrites.
+
+    The live pointer's own manifest path comes first, because that is the file
+    the classifier read and the one a dispatch customised; the run directory's
+    default manifest is the fallback for a run whose pointer is gone. A run
+    with no readable manifest at either path is refused naming both, so the
+    caller sees what the repair looked for rather than a bare absence.
+    """
+    candidates: list[Path] = []
+    pointer = pointer_path(run_id)
+    if pointer.is_file():
+        try:
+            record = read_pointer(run_id)
+        except CrewError:
+            record = {}
+        named = str(record.get("manifest_path") or "").strip()
+        if named:
+            candidates.append(Path(named).expanduser())
+    candidates.append(run_dir(run_id) / DEFAULT_MANIFEST_NAME)
+    for candidate in candidates:
+        if candidate.is_file():
+            return candidate
+    looked = ", ".join(str(candidate) for candidate in candidates)
+    raise CrewError(f"run {run_id!r} has no manifest to repair (looked at {looked})")
+
+
+def _status_line_replaced(text: str, verdict: str) -> tuple[str | None, str]:
+    """Rewrite the first top-level ``status:`` line, or None when absent.
+
+    Only a line starting at column zero counts, so a nested value is never
+    mistaken for the manifest's own status. The returned previous value is the
+    word being replaced, kept so the repair record states what changed.
+    """
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        if not line.startswith("status:"):
+            continue
+        previous = line.split(":", 1)[1].strip()
+        lines[index] = f"status: {verdict}"
+        replaced = "\n".join(lines)
+        if text.endswith("\n"):
+            replaced += "\n"
+        return replaced, previous
+    return None, ""
+
+
+def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, Any]:
+    """Replace a manifest's status word with a verdict, keeping what was delivered.
+
+    A worker that exits after committing its work but before replacing its
+    in-progress status leaves a delivery its own record cannot state, and the
+    manifest is the worker's own file — a hand edit loses the as-delivered
+    text and leaves nothing the reader can compare against. So the status line
+    becomes the verdict the coordinator read from the run, the delivered file is
+    kept beside it under ``manifest.md.asdelivered``, and the reason is recorded
+    in the run directory. A manifest with no top-level status line, or a status
+    outside the terminal vocabulary, is refused rather than half-repaired.
+    """
+    verdict = str(status).strip().lower()
+    if verdict not in REPAIRABLE_STATUSES:
+        allowed = ", ".join(REPAIRABLE_STATUSES)
+        raise CrewError(
+            f"a status repair names a verdict — one of {allowed} — not {status!r}"
+        )
+    recorded_reason = str(reason).strip()
+    if not recorded_reason:
+        raise CrewError("a status repair requires a non-empty --reason")
+
+    manifest = _manifest_for_repair(run_id)
+    try:
+        original = manifest.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise CrewError(
+            f"the manifest at {manifest} could not be read: {exc}"
+        ) from exc
+    rewritten, previous = _status_line_replaced(original, verdict)
+    if rewritten is None:
+        raise CrewError(
+            f"the manifest at {manifest} carries no top-level status line to repair"
+        )
+    # The as-delivered copy is written before the rewrite and never overwritten,
+    # so it always holds the worker's own file and a repair that repeats or
+    # fails still leaves the delivery recoverable beside it.
+    as_delivered = manifest.with_name(manifest.name + AS_DELIVERED_SUFFIX)
+    if not as_delivered.exists():
+        as_delivered.write_text(original, encoding="utf-8")
+    tmp = manifest.parent / f".{manifest.name}.repair.tmp"
+    tmp.write_text(rewritten, encoding="utf-8")
+    os.replace(tmp, manifest)
+    record = {
+        "run_id": run_id,
+        "status": verdict,
+        "reason": recorded_reason,
+        "previous_status": previous,
+        "previous_manifest": str(as_delivered),
+        "manifest": str(manifest),
+        "repaired_at": _utc_now(),
+    }
+    _write_json(run_dir(run_id) / STATUS_REPAIR_RECORD_NAME, record)
+    return record
+
+
 def _project_executable_remainder(project: str) -> tuple[int | None, int | None]:
     """Return a declared-scope lower bound and its uncovered plan count.
 
@@ -3285,6 +3398,7 @@ WATCH_ATTENTION_STATES = (
     "completed_unpromoted",
     "unknown",
     "unreadable",
+    "exited-unfinished",
     "wait-aged",
 )
 WATCH_PROGRESS_STATES = ("dispatched", "working", "running", "waiting", "promoted")

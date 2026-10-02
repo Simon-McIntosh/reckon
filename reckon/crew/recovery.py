@@ -71,7 +71,11 @@ process_alive = runs.process_alive
 # blocked and failed outcomes remain distinct so neither can be mistaken for a
 # completed delivery that is eligible for promotion. An unreadable manifest is
 # its own outcome: a file exists but no reader can judge it, which is neither a
-# delivered record (completed_unpromoted) nor an absence (abandoned). Paused is
+# delivered record (completed_unpromoted) nor an absence (abandoned). A worker
+# whose recorded exit ended the turn with work committed while its manifest
+# still reads a working status has delivered something no status word claims, so
+# it is its own outcome too: the record needs the verdict word the worker never
+# wrote, and the committed work is safe in the tree. Paused is
 # the wait that lifts itself: the run is waiting on time or on its own job, and
 # nobody has to act, because whoever or whatever lifts the run is not a person.
 # The discriminator is exactly that — who lifts it. A stop that needs a person
@@ -88,6 +92,7 @@ RECOVERY_CLASSES = (
     "blocked",
     "failed",
     "unreadable",
+    "exited-unfinished",
     "abandoned",
 )
 
@@ -149,6 +154,7 @@ RECOVERY_VERBS = {
     "scoring": "review",
     "promotable": "promote",
     "unreadable": "repair",
+    "exited-unfinished": "repair",
     "unwritten": "resume",
     "ready": "resume",
     "abandoned": "recover",
@@ -169,6 +175,7 @@ ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
         "stopped",
         "scoring",
         "unreadable",
+        "exited-unfinished",
         "unwritten",
         "ready",
         "abandoned",
@@ -6249,6 +6256,25 @@ def classify_pointer(
             exit_record=ended_exit,
         )
         commits_beyond_base = interruption_commits
+    # A worker whose end the run itself recorded — the supervisor's exit
+    # record, not an inference from a vanished pid — and whose worktree carries
+    # commits past its base while the manifest still reads a working status
+    # delivered work whose verdict word was never written. The end is a
+    # receipt, the worktree holds the work, and nothing about the stop is
+    # ambiguous, so the run reads as its own state rather than as a block: the
+    # coordinator replaces the missing verdict and the work lands through the
+    # ordinary gate. An interruption claims a death nothing recorded and stays
+    # its own reading, because a killed worker's remedy is its surviving
+    # session rather than a verdict word.
+    exited_unfinished = False
+    if (
+        alive is False
+        and interruption is None
+        and ended_exit is not None
+        and manifest_status in NON_TERMINAL_MANIFEST_STATUSES
+    ):
+        commits_beyond_base = _commits_beyond_base(record)
+        exited_unfinished = commits_beyond_base > 0
     review: dict[str, Any] | None = None
     review_error = ""
     if manifest_status == "complete" and not deferred_outcome:
@@ -6313,6 +6339,20 @@ def classify_pointer(
                 "had already recorded that no terminal event arrived"
             )
         action = "resolve the surviving session before choosing a recovery"
+    elif exited_unfinished:
+        classification = "exited-unfinished"
+        detail = (
+            f"the worker {_exit_record_end_phrase(ended_exit)} with "
+            f"{commits_beyond_base} commit"
+            f"{'s' if commits_beyond_base != 1 else ''} beyond its recorded "
+            f"base, but the manifest at {manifest} still reads "
+            f"{manifest_status!r}; the work is committed and no verdict word "
+            "says so"
+        )
+        action = (
+            f"reckon crew repair-status --run {run_id} --status complete "
+            "--reason <the verdict the worker reached>"
+        )
     elif manifest_unwritten:
         classification = "running"
         if _carries_orientation_write(manifest_text, manifest_data):
@@ -7712,6 +7752,13 @@ def _watch_verdict(
         # an absence, so the run reads as unreadable rather than falling into
         # the abandoned bucket the liveness checks below would assign it.
         state = "unreadable"
+    elif classification == "exited-unfinished":
+        # The worker's recorded exit ended the run with its work committed
+        # while the manifest still reads a working status. Nothing about the
+        # stop is unresolved, so the row is neither a block nor an abortion:
+        # it reads as its own state and the clause names the verdict word the
+        # record still needs.
+        state = "exited-unfinished"
     elif str(row.get("recovery_classification") or "") == "unwritten":
         # The compatibility state stays non-terminal while the typed surface
         # names that the worker never replaced its template. This keeps a

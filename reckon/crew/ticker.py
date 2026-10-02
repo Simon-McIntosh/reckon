@@ -145,6 +145,7 @@ STATE_HUE = {
         "wait-aged": 130,
         "unknown": 124,
         "unreadable": 124,
+        "exited-unfinished": 124,
         "unwritten": 124,
         "held": 97,
         "needs-help": 124,
@@ -169,6 +170,7 @@ STATE_HUE = {
         "wait-aged": 179,
         "unknown": 203,
         "unreadable": 203,
+        "exited-unfinished": 203,
         "unwritten": 203,
         "held": 104,
         "needs-help": 203,
@@ -235,6 +237,7 @@ NEEDS_ACTION = frozenset(
         "abandoned",
         "unknown",
         "unreadable",
+        "exited-unfinished",
         "wait-aged",
     }
 )
