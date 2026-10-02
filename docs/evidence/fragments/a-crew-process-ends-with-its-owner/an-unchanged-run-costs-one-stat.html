@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="An unchanged run costs one stat">
+  <meta name="plan-summary" content="A producer poll reuses a run's previous snapshot while the pointer, manifest, stream and exit record keep their stat identity and a fresh process reading still holds, opening no file and only recomputing the stream-silence reading from the poll's own moment.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s11">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,producer,snapshot,stat-gate">
+  <title>An unchanged run costs one stat — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="an-unchanged-run-costs-one-stat" data-reckon="landed" data-when="2026-10-02">
+  <h2>An unchanged run costs one stat</h2>
+  <p>The producer's snapshot path carries a per-run cache keyed on the stat identity of the pointer, manifest, stream, exit record, run directory and promotion ledger row, and, on a hit, reads process liveness fresh through the same host-gated reader the classifier uses — the process and its descendant. A run whose files and liveness both hold reuses its previous snapshot: the unchanged poll opens <strong>no file</strong> and stats each of the four, and only the stream-silence reading is recomputed, from the poll's own <code>moment</code>. The silence decision is a pure helper both the full and reused paths call, so a reused snapshot cannot disagree with a fresh one.</p>
+  <p>Gate: <code>tests/test_an_unchanged_run_costs_one_stat.py</code> — 5 passed. Wider arm (41 base test files that call <code>watch_ticker</code>/<code>_watch_snapshot</code>, <code>-n 8</code>), base <code>d2df6df9d</code> (git-archive tree) 446 passed / <code>EXIT=0</code>, head <code>c9f6c1fd0</code> 451 passed / <code>EXIT=0</code> — zero added failures. Declared mutation (recompute every snapshot on every poll) turns the unchanged-run case red: 1 failed, <code>EXIT=1</code>. This gate measures only this node's own change.</p>
+</article>
+</body>
+</html>
