@@ -8326,7 +8326,7 @@ def _fresh_liveness(pointer: Mapping[str, Any]) -> tuple[Any, Any, Any]:
 
 
 def _refresh_snapshot(
-    snapshot: Mapping[str, Any], *, moment: float
+    snapshot: Mapping[str, Any], *, moment: float, stall_seconds: int
 ) -> dict[str, Any]:
     """Re-derive a reused snapshot's clock-derived fields from its stats.
 
@@ -8337,8 +8337,20 @@ def _refresh_snapshot(
     then re-derived through the same helper the full recompute uses, so a
     reused snapshot can never disagree with one classified afresh at the same
     moment.
+
+    The window the silence is judged against is recomputed from the calling
+    producer's own ``stall_seconds`` rather than read from the frozen snapshot.
+    A snapshot is served under a reuse key that does not carry the window, so
+    two producers watching one unchanged run with different windows reach the
+    same entry; each must judge the run against its own window or one caller's
+    verdict leaks into the other's. Everything :func:`_stall_window_seconds`
+    reads travels on the snapshot — the liveness pair and the declared budget —
+    so the recomputation sees exactly the inputs the full classification saw,
+    and the reuse key is left unchanged.
     """
     refreshed = dict(snapshot)
+    window = _stall_window_seconds(snapshot, stall_seconds)
+    refreshed["stall_window_seconds"] = window
     stream_seconds = snapshot.get("stall_stream_seconds")
     launch_seconds = snapshot.get("stall_launch_seconds")
     quiet: int | None = None
@@ -8356,7 +8368,7 @@ def _refresh_snapshot(
             str(base_state),
             str(snapshot.get("stall_base_detail") or ""),
             quiet=quiet,
-            window=int(snapshot.get("stall_window_seconds") or 0),
+            window=window,
             pause_reason=snapshot.get("stall_pause_reason"),
             process_state=snapshot.get("stall_process_state"),
         )
@@ -8435,6 +8447,11 @@ def _compute_watch_snapshot(
         # producer that reuses a snapshot can compare the reading it was built
         # from with a fresh one and drop the entry when the child ends.
         "process_descendant_alive": row.get("process_descendant_alive"),
+        # The declared allowance the stall window widens by when a child is
+        # live under the worker, carried so a producer that reuses this
+        # snapshot recomputes the same window the full classification did
+        # rather than reading the one frozen onto the entry.
+        "budget_seconds": row.get("budget_seconds"),
         "recovery_classification": verdict["recovery_classification"],
         "recovery": verdict["recovery"],
         "lifting_condition": verdict.get("lifting_condition"),
@@ -8516,11 +8533,15 @@ def _watch_snapshot(
             stored.get("liveness_proven"),
             stored.get("process_descendant_alive"),
         ):
-            return _refresh_snapshot(stored, moment=moment)
+            return _refresh_snapshot(
+                stored, moment=moment, stall_seconds=stall_seconds
+            )
     snapshot = _compute_watch_snapshot(
         pointer, moment=moment, stall_seconds=stall_seconds
     )
-    refreshed = _refresh_snapshot(snapshot, moment=moment)
+    refreshed = _refresh_snapshot(
+        snapshot, moment=moment, stall_seconds=stall_seconds
+    )
     if run_id and key is not None:
         _remember_snapshot(run_id, key, refreshed, cache=store)
     return refreshed
