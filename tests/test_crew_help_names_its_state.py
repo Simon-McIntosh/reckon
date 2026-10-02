@@ -31,6 +31,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("member", "list"): "roster members and reusable sessions",
     ("observe",): "live run record",
     ("path",): "one kind of file",
+    ("pick",): "live routing state",
     ("placement",): "one reservation a project places its workers into",
     ("preflight",): "backend budget state",
     ("recover",): "live pointers left by an interrupted orchestrator",
@@ -120,7 +121,7 @@ def test_every_crew_verb_help_names_its_state_or_condition() -> None:
     leaves = _leaf_commands(cli_module.crew)
 
     assert set(leaves) == set(STATE_PHRASES)
-    assert len(leaves) == 34
+    assert len(leaves) == 35
     for path, command in leaves.items():
         first_line = _first_help_line(command)
         result = _help_result(path)

@@ -1136,7 +1136,7 @@ def crew_pick(
     checkout_path,
     pretty,
 ):
-    """Print a typed backend selection or replay; dispatch no worker."""
+    """Read one node's live routing state to select a backend; dispatch no worker."""
     from reckon.crew.node import TaskNode
     from reckon.crew.picker import PickRequest, pick
     from reckon.crew.picker.replay import replay
