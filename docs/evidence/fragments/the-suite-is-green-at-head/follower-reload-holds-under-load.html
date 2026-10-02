@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>follower-reload-holds-under-load</title>
+<meta name="reckon-type" content="evidence-fragment">
+<meta name="reckon-plan" content="the-suite-is-green-at-head">
+<meta name="reckon-node" content="follower-reload-holds-under-load">
+</head>
+<body>
+<article class="r-fragment" id="follower-reload-holds-under-load">
+<h2>follower-reload-holds-under-load</h2>
+
+<p><strong>Outcome.</strong> The re-parented reload case in
+<code>tests/test_follower_checks_its_owner.py</code> no longer races a
+transient replacement image. Commit <code>f03d27f9</code> <em>test(crew): keep
+the reload observable while its owner is still live</em>.</p>
+
+<p><strong>Cause, named.</strong>
+<code>test_a_reload_under_a_live_subreaper_keeps_the_dead_owner</code> armed its
+follower with an owner that was also its parent: killing the parent to force
+the re-parent to the subreaper also killed the owner. The replacement image
+therefore resolved a dead owner and left almost at once, and the only way the
+case could confirm the image replacement was <code>_observe_reload</code>,
+which samples <code>/proc/&lt;pid&gt;/cmdline</code> every 5&nbsp;ms. The window
+in which the launcher marker is visible is the replacement's own short lifetime,
+so on a loaded node the sampling loop could be descheduled across it and the case
+failed with <code>the follower left without replacing its image; argv=''</code>
+even though the reload had happened. The same window drove the sibling flake
+<code>the replacement image was still running 3.0&nbsp;s after its owner was
+killed</code>, which a slow node produced instead (reproduced here under five
+concurrent <em>-n&nbsp;8</em> loads; the failing follower's trace showed
+<code>poll:exec</code> — the reload occurred).</p>
+
+<p><strong>Repair.</strong> The case now arms the follower with an owner of its
+own that is neither its parent nor its parent's parent
+(<code>_start_subreaper_stub(&hellip;, owner_env=&hellip;)</code>, with the stub
+passing it through), keeps that owner alive until <code>_observe_reload</code>
+returns, and only then kills it. The replacement runs on the armed owner rather
+than for the length of its own imports, so watching for it is a wait on a live
+process instead of a race against a transient image. Killing the owner then
+proves which process the replacement resolved, because the subreaper it is
+re-parented to stays alive; the exit bound is relaxed to 20&nbsp;s because the
+direction it must catch — a replacement that re-derived its owner from the
+parent — never leaves at all.</p>
+
+<p><strong>Measured.</strong> Ten consecutive <em>-n&nbsp;8</em> runs of the
+file: <strong>5 passed each, 10 of 10</strong>
+(<code>logs/head-1.log</code>&hellip;<code>logs/head-10.log</code>). Five
+concurrent <em>-n&nbsp;8</em> runs under load: <strong>5 passed each</strong>
+(<code>logs/head-load-*.log</code>). Alone:
+<code>logs/head-alone-1.log</code> 5 passed. Declared negative control, executed
+and logged — <em>restore the original read: derive the follower's owner from
+<code>os.getppid()</code> rather than the recorded environment</em> in
+<code>_FollowerOwnerCache.resolve</code>: the target id fails
+(<code>logs/neg-1.log</code>, EXIT=1,
+<code>2 failed, 3 passed</code>, the reload case among them). Prescribed
+reproduction arm: ten <code>-n&nbsp;8</code> runs of this file with
+<code>tests/test_crew.py</code>. The logs hold seven attempts: six runs
+completed at 211 passed each (<code>logs/repro-1.log</code>&hellip;<code>
+logs/repro-6.log</code>, runs 1&ndash;6 in <code>logs/repro-summary.txt</code>),
+a seventh was cut off mid-run (<code>logs/repro-7.log</code>, no summary line),
+and runs 8&ndash;10 did not run. The target branch did not reproduce on an
+unloaded 28-core node, so the load arm above is the reproduction: the sibling
+bound branch was captured instead, which the traces attribute to the same
+transient window.</p>
+
+<p><strong>Follow-ons.</strong> None in this node's scope. The exit-bound flake
+(<code>still running 3.0s</code>) is removed by the same change; no product
+defect was found — every reload-case follower that reached
+<code>poll:exec</code> reloaded.</p>
+</article>
+</body>
+</html>
