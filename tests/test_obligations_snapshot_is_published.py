@@ -150,16 +150,18 @@ def test_a_pointer_transition_is_in_the_snapshot_by_the_next_sweep(
 ) -> None:
     """A transition is visible to a reader by the end of the first sweep after it."""
     _write_pointer(fleet, "r-before", phase="working", status="working")
-    with runs.follower_registration(PROJECT, SESSION):
-        with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
-            assert acquired is True
-            first = obligation_snapshot.read_snapshot(PROJECT, SESSION)
-            assert first is not None, "the producer's first sweep publishes a baseline"
-            kinds_before = [item["kind"] for item in first["obligations"]]
+    with (
+        runs.follower_registration(PROJECT, SESSION),
+        runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
+    ):
+        assert acquired is True
+        first = obligation_snapshot.read_snapshot(PROJECT, SESSION)
+        assert first is not None, "the producer's first sweep publishes a baseline"
+        kinds_before = [item["kind"] for item in first["obligations"]]
 
-            _write_pointer(fleet, "r-before", phase="complete", status="complete")
-            _sweep()
-            second = obligation_snapshot.read_snapshot(PROJECT, SESSION)
+        _write_pointer(fleet, "r-before", phase="complete", status="complete")
+        _sweep()
+        second = obligation_snapshot.read_snapshot(PROJECT, SESSION)
 
     assert second is not None
     kinds_after = [item["kind"] for item in second["obligations"]]
@@ -184,10 +186,12 @@ def test_the_snapshot_carries_the_derivation_over_unmodified_files(
     monkeypatch.setattr(recovery, "_utc_seconds", fleet["frozen"].timestamp)
     _write_pointer(fleet, "r-owed", phase="complete", status="complete")
     _write_pointer(fleet, "r-working", phase="working", status="working")
-    with runs.follower_registration(PROJECT, SESSION):
-        with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
-            assert acquired is True
-            stored = obligation_snapshot.read_snapshot(PROJECT, SESSION)
+    with (
+        runs.follower_registration(PROJECT, SESSION),
+        runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
+    ):
+        assert acquired is True
+        stored = obligation_snapshot.read_snapshot(PROJECT, SESSION)
 
     assert stored is not None
     expected = obligations_module.obligations(PROJECT, SESSION)
@@ -210,15 +214,17 @@ def test_a_writer_stopped_before_the_rename_leaves_the_previous_snapshot(
 ) -> None:
     """A snapshot writer that dies mid-write leaves the last snapshot readable."""
     _write_pointer(fleet, "r-owed", phase="complete", status="complete")
-    with runs.follower_registration(PROJECT, SESSION):
-        with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
-            assert acquired is True
-            previous = obligation_snapshot.read_snapshot(PROJECT, SESSION)
+    with (
+        runs.follower_registration(PROJECT, SESSION),
+        runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
+    ):
+        assert acquired is True
+        previous = obligation_snapshot.read_snapshot(PROJECT, SESSION)
     assert previous is not None
     path = obligation_snapshot.snapshot_path(PROJECT, SESSION)
     temps_before = [p for p in path.parent.iterdir() if p != path]
 
-    with pytest.raises(OSError):
+    with pytest.raises(OSError, match="stopped before renaming"):
         obligation_snapshot.write_snapshot(
             PROJECT,
             SESSION,
@@ -300,34 +306,36 @@ def test_each_freshness_outcome_is_returned_for_its_case() -> None:
 def test_a_file_change_and_the_floor_tick_each_republish(fleet: dict[str, Any]) -> None:
     """The other two triggers, and the guard that nothing else republishes."""
     _write_pointer(fleet, "r-working", phase="working", status="working")
-    with runs.follower_registration(PROJECT, SESSION):
-        with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
-            assert acquired is True
-            first = obligation_snapshot.read_snapshot(PROJECT, SESSION)
-            assert first is not None
+    with (
+        runs.follower_registration(PROJECT, SESSION),
+        runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
+    ):
+        assert acquired is True
+        first = obligation_snapshot.read_snapshot(PROJECT, SESSION)
+        assert first is not None
 
-            # No trigger: the sweep leaves the snapshot where it is.
-            _sweep()
-            assert obligation_snapshot.read_snapshot(PROJECT, SESSION) == first
+        # No trigger: the sweep leaves the snapshot where it is.
+        _sweep()
+        assert obligation_snapshot.read_snapshot(PROJECT, SESSION) == first
 
-            # A plan file's stat identity moved, with no pointer change at all.
-            plan = fleet["repo"] / "docs" / "plans" / "fixture-plan.html"
-            plan.write_text("<html>edited</html>\n", encoding="utf-8")
-            _sweep()
-            after_edit = obligation_snapshot.read_snapshot(PROJECT, SESSION)
-            assert after_edit is not None and after_edit != first
+        # A plan file's stat identity moved, with no pointer change at all.
+        plan = fleet["repo"] / "docs" / "plans" / "fixture-plan.html"
+        plan.write_text("<html>edited</html>\n", encoding="utf-8")
+        _sweep()
+        after_edit = obligation_snapshot.read_snapshot(PROJECT, SESSION)
+        assert after_edit is not None and after_edit != first
 
-            # The floor tick republishes with no event of any kind.
-            written = obligation_snapshot.sweep(
-                PROJECT,
-                sessions=[SESSION],
-                producer=after_edit["producer"],
-                stream_offset=first["stream_offset"],
-                state_dirs=[
-                    fleet["repo"] / "docs" / "state" / PROJECT,
-                    fleet["repo"] / "docs" / "plans",
-                ],
-                now=_computed_at(after_edit) + timedelta(seconds=FLOOR + 1),
-            )
+    # The floor tick republishes with no event of any kind.
+    written = obligation_snapshot.sweep(
+        PROJECT,
+        sessions=[SESSION],
+        producer=after_edit["producer"],
+        stream_offset=first["stream_offset"],
+        state_dirs=[
+            fleet["repo"] / "docs" / "state" / PROJECT,
+            fleet["repo"] / "docs" / "plans",
+        ],
+        now=_computed_at(after_edit) + timedelta(seconds=FLOOR + 1),
+    )
 
     assert written, "the floor tick republishes with no other event"
