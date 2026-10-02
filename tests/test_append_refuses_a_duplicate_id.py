@@ -14,6 +14,7 @@ import hashlib
 import json
 import threading
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -119,10 +120,15 @@ def _append(root: Path, target: str, item: dict, **extra) -> dict:
     return _edit(root, [{"op": "append", "target": target, "item": item, **extra}])
 
 
-def _assert_refused(detail: str, collection: str, ident: str, existing: str) -> None:
+def _assert_refused(
+    outcome: dict[str, Any], collection: str, ident: str, existing: str
+) -> None:
+    """The refusal names the collection and the id, and the item already held."""
+    detail = outcome["detail"]
     assert collection in detail, detail
     assert ident in detail, detail
-    assert existing in detail, detail
+    described = outcome["existing_item"]
+    assert existing in described, described
 
 
 def test_append_same_followup_id_twice_is_refused(repository: Path) -> None:
@@ -135,7 +141,7 @@ def test_append_same_followup_id_twice_is_refused(repository: Path) -> None:
 
     assert second["ok"] is False, second
     assert second["error"] == "op_error", second
-    _assert_refused(second["detail"], "followup", "f-dup", "First followup")
+    _assert_refused(second, "followup", "f-dup", "First followup")
     assert _version(repository) == version_after_first
     assert hashlib.sha256(_plan_file(repository).read_bytes()).hexdigest() == (
         digest_after_first
@@ -231,7 +237,7 @@ def test_every_collection_refuses_a_duplicate_id(
 
     assert second["ok"] is False, second
     assert second["error"] == "op_error", second
-    _assert_refused(second["detail"], label, ident, existing)
+    _assert_refused(second, label, ident, existing)
     assert _version(repository) == version_after_first
     assert (
         hashlib.sha256(_plan_file(repository).read_bytes()).hexdigest()

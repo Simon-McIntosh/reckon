@@ -1964,7 +1964,15 @@ class OpError(Exception):
     """Raised by apply_ops on a structurally invalid op (bad verb, dup id,
     move-not-found, …). Carries a human-readable message; edit_plan turns it
     into {ok: false, error: "op_error", detail: <message>} and writes nothing.
+
+    A collision — an append whose id already addresses an entry — also carries
+    ``existing_item``, a one-phrase description of the entry already stored, so
+    the writer can tell which item it collided with without re-reading the plan.
     """
+
+    def __init__(self, message: str, *, existing_item: str | None = None) -> None:
+        super().__init__(message)
+        self.existing_item = existing_item
 
 
 def _utc_ts() -> str:
@@ -2133,8 +2141,8 @@ def _refuse_duplicate_id(entries: list, collection: str, ident: str) -> None:
     if hit is not None:
         _, existing = hit
         raise OpError(
-            f"{_collection_label(collection)} {ident!r} already exists: "
-            f"{_describe_entry(existing)}"
+            f"{_collection_label(collection)} {ident!r} already exists",
+            existing_item=_describe_entry(existing),
         )
 
 
@@ -2585,8 +2593,8 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
         decisions = working.setdefault("decisions", {})
         if key in decisions:
             raise OpError(
-                f"decision {key!r} already exists: "
-                f"{_describe_entry(decisions[key])}"
+                f"decision {key!r} already exists",
+                existing_item=_describe_entry(decisions[key]),
             )
         decisions[key] = _decision_as_stored(item)
         return
@@ -2659,7 +2667,10 @@ def _apply_gate(working: dict, op: dict, is_index: bool, warnings: list[str]) ->
         raise OpError("plan has no gates list")
     hit = _find_by_id(gates, ident)
     if hit is not None:
-        raise OpError(f"gate {ident!r} already exists: {_describe_entry(hit[1])}")
+        raise OpError(
+            f"gate {ident!r} already exists",
+            existing_item=_describe_entry(hit[1]),
+        )
     gated_sections = op.get("gated_sections", [])
     if not isinstance(gated_sections, list) or not all(
         isinstance(section, str) for section in gated_sections
