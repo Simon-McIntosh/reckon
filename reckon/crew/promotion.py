@@ -1187,67 +1187,81 @@ def _require_gate_log_agrees(
         )
 
 
-def _head_arm_log_failure_ids(gate_check: Mapping[str, Any] | None) -> set[str] | None:
-    """The failing ids the head arm's log reports, or ``None`` when it is unreadable.
+def _arm_failure_ids(observation: Mapping[str, Any]) -> set[str] | None:
+    """The failing ids one suite arm records, or ``None`` when unreadable.
 
-    The head arm of a gated measurement is the run's own check, so its log is
-    the one the promotion cites: the ids are read from that log's own
-    ``FAILED``/``ERROR`` summary lines, canonicalised the way every other arm
-    reader canonicalises them. A citation that names no path, or one that
-    cannot be read from here, reports ``None`` rather than an empty set — an
-    unread log is not a log that failed nothing, and a comparison taken over an
-    empty set would claim exactly that.
+    The ids are read the way the neighbouring arm readers read them: as a list
+    of non-empty strings, canonicalised through the review module so both sides
+    of a comparison are canonical. A list that cannot be read as ids says
+    nothing, and ``None`` says so rather than standing in as the empty set,
+    which would claim every id was absent from the arm.
     """
-    if not isinstance(gate_check, Mapping):
+    failure_ids = observation.get("failure_ids")
+    if not isinstance(failure_ids, list) or any(
+        not isinstance(test_id, str) or not test_id.strip() for test_id in failure_ids
+    ):
         return None
-    raw = str(gate_check.get("log_path") or "").strip()
-    if not raw:
-        return None
-    try:
-        log_text = Path(raw).expanduser().read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return None
-    return _control_failure_ids(log_text)
+    return {review_module.canonical_node_id(test_id.strip()) for test_id in failure_ids}
 
 
-def _zero_added_against_a_red_base(
-    record: Mapping[str, Any], gate_check: Mapping[str, Any] | None
-) -> bool:
+def _zero_added_against_a_red_base(record: Mapping[str, Any]) -> bool:
     """Whether the run's own manifest shows a red base the head did not worsen.
 
     A gate is judged here by its delta against its base, so a nonzero exit
     beside a passing verdict is admitted only when the manifest records a
     baseline observation that is itself red — a nonzero exit status — and whose
-    recorded failure ids include every id the head arm's log reports. That is
-    zero added against a red base, which is what the passing verdict then
-    states; anything less is refused by the caller.
+    recorded failure ids include every id the head arm records. That is zero
+    added against a red base, which is what the passing verdict then states;
+    anything less is refused by the caller.
 
-    Every condition is asked of the run's own records, never inferred: a
-    manifest that records no baseline, a baseline with no readable status or no
-    readable list of failure ids, and a head log that cannot be read each leave
-    the delta unmeasured, and an unmeasured delta cannot license the pair.
+    Both arms are read from the run's own records, and each must declare its
+    run complete — a literal ``True``, never a truthy stand-in, the way the
+    strict arm validator and the neighbouring arm readers ask it. An
+    interrupted arm lists only the failures it reached before it stopped: a
+    short baseline covers every id an unfinished head recorded while the
+    comparison itself says nothing about what the head added, because the
+    baseline never finished the suite the head is measured against. Every
+    other condition is asked of the records too, never inferred: a manifest
+    that records no arm, a baseline with no readable status or an arm with no
+    readable list of failure ids each leave the delta unmeasured, and an
+    unmeasured delta cannot license the pair.
     """
     manifest = _fresh_manifest(record)
     if manifest is None:
         return False
     baseline = manifest.get("baseline_suite")
-    if not isinstance(baseline, Mapping):
+    after = manifest.get("after_suite")
+    if not isinstance(baseline, Mapping) or not isinstance(after, Mapping):
         return False
+    for arm in (baseline, after):
+        if arm.get("completed") is not True:
+            return False
     base_exit = baseline.get("exit_status")
     if isinstance(base_exit, bool) or not isinstance(base_exit, int) or base_exit == 0:
         return False
-    base_ids = baseline.get("failure_ids")
-    if not isinstance(base_ids, list) or any(
-        not isinstance(test_id, str) or not test_id.strip() for test_id in base_ids
-    ):
+    canonical_base = _arm_failure_ids(baseline)
+    canonical_head = _arm_failure_ids(after)
+    if canonical_base is None or canonical_head is None:
         return False
-    canonical_base = {
-        review_module.canonical_node_id(test_id.strip()) for test_id in base_ids
-    }
-    head_ids = _head_arm_log_failure_ids(gate_check)
-    if head_ids is None:
-        return False
-    return head_ids <= canonical_base
+    return canonical_head <= canonical_base
+
+
+def _arm_without_completion(manifest: Mapping[str, Any] | None) -> str | None:
+    """Name the first recorded suite arm that does not declare its run complete.
+
+    The refusal beside a nonzero exit status names the arm whose withheld
+    completion is what the admission turned on, so a reader knows which
+    observation to finish and record. Only an arm the manifest actually
+    records can be named: an arm that is absent is not an arm that omitted the
+    key, and calling it uncompleted would state a fact its absence does not.
+    """
+    if manifest is None:
+        return None
+    for name in ("baseline_suite", "after_suite"):
+        observation = manifest.get(name)
+        if isinstance(observation, Mapping) and observation.get("completed") is not True:
+            return name
+    return None
 
 
 def _require_verdict_matches_exit_status(
@@ -1268,29 +1282,41 @@ def _require_verdict_matches_exit_status(
     record of its own.
 
     The one pair admitted is the repository's own delta rule: an armed run
-    whose manifest records a red baseline covering every id the head arm's log
-    reports measures zero added against that base, so its passing verdict is
-    the delta verdict and not a contradiction. The admission is read from the
-    run's records by ``_zero_added_against_a_red_base``; everything else
-    refuses, naming both the verdict and the status.
+    whose manifest records a red baseline covering every id the head arm
+    reports — both arms declaring their runs complete — measures zero added
+    against that base, so its passing verdict is the delta verdict and not a
+    contradiction. The admission is read from the run's records by
+    ``_zero_added_against_a_red_base``; everything else refuses, naming both
+    the verdict and the status, and naming the arm whose withheld completion is
+    what the admission turned on when there is one.
     """
     if verdict != "passed" or not isinstance(gate_check, Mapping):
         return
     asserted = gate_check.get("exit_status")
     if isinstance(asserted, bool) or not isinstance(asserted, int) or asserted == 0:
         return
-    if _zero_added_against_a_red_base(record, gate_check):
+    if _zero_added_against_a_red_base(record):
         return
+    incomplete = _arm_without_completion(_fresh_manifest(record))
+    withheld = (
+        ""
+        if incomplete is None
+        else (
+            f", and the {incomplete} arm it records does not declare "
+            "completed: true, so that arm never reached its suite's summary "
+            "line and its list of failures is not the set it measured"
+        )
+    )
     raise CrewError(
         f"run {run_id!r} asserts gate 'passed' beside exit status {asserted}: a "
         "passed verdict states the check succeeded and a nonzero exit status "
         "states it did not, so the row would record two contradictory readings "
-        "of one run. Found: gate 'passed' with a nonzero exit status, "
-        f"'{asserted}'. Re-promote with the verdict the evidence shows, or — "
-        "when the base this check measures against is itself red and the head "
-        "adds no failure to it — record the baseline_suite observation in the "
-        "manifest so the zero added against that base is what the passing "
-        "verdict states"
+        f"of one run. Found: gate 'passed' with a nonzero exit status, "
+        f"'{asserted}'{withheld}. Re-promote with the verdict the evidence "
+        "shows, or — when the base this check measures against is itself red, "
+        "the head adds no failure to it, and both suite arms record "
+        "completed: true — the passing verdict states the zero added against "
+        "that base"
     )
 
 
