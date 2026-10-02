@@ -32,8 +32,8 @@ import pytest
 from reckon import _backends
 
 NEGATIVE_CONTROL_MUTATION = (
-    "remove the claude branch from _harness_credential_binds so no "
-    "subscription credential bind is composed"
+    "remove the claude branch from _harness_credential_binds and observe the "
+    "new bind assertion fail"
 )
 
 
