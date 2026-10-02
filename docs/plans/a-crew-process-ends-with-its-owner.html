@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="252">
+<meta name="plan-version" content="253">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -1370,6 +1370,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261002T083645178761-the-metadata-index-reuses-unchanged-plans" data-who="reckon-build" data-when="2026-10-02T09:13:32.961Z">
     <div class="r-comment-body"><p>The metadata index now keys row reuse on a sha256 content digest of each file instead of its stat identity (reckon/metadata_index.py); a rebuild over an unchanged docs tree re-parses 0 of 16 covered rows, a rebuild after one plan changes re-parses exactly that plan, and a build whose only change is a moved mtime re-parses 0.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T091523623566-review-of-the-metadata-index-reuses-unchanged-plans" data-who="reckon-build" data-when="2026-10-02T09:35:45.202Z">
+    <div class="r-comment-body"><p>Independent review of r-20261002T083645178761-the-metadata-index-reuses-unchanged-plans stored: five dimensions goal_fidelity 20, evidence 19, scope_discipline 20, durability 18, fit 19 (total 96), reviewed base 57dfae03..head 2b0e8135, zero added failures from the run&#x27;s own gate logs, one follow-on finding (reckon/metadata_index.py:160 stale docstring) and no blocking findings.</p></div>
 </div>
 </section>
 </main>
