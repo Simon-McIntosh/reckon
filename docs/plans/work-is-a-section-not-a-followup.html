@@ -23,9 +23,9 @@
   <title>Work Is A Section, Not A Followup | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -78,7 +78,7 @@
     </p>
 
     <h2 id="s2">§2 — One predicate names a followup that hides work, and the roadmap reports it</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       Write one function that takes a parsed plan and one open followup and answers whether the
       followup is a pointer or hides work. It is a pointer when its invocation names a different
@@ -184,21 +184,30 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-wisnaf-001" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-01" data-recommends-skill="/reckon-build work-is-a-section-not-a-followup §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-wisnaf-001" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-01" data-recommends-skill="/reckon-build work-is-a-section-not-a-followup §2" data-resolved-at="2026-10-02T05:29:43+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land the predicate and the roadmap finding</h4>
     <div class="r-fu-body"><p>§2 first: it is read-only and gives §4 its worklist. §3 and §4 follow side by side.</p></div>
     <pre class="r-fu-prompt">/reckon-build work-is-a-section-not-a-followup §2</pre>
+    <p class="r-fu-outcome">§2 merged at 8ce9b4ca4; the roadmap now reports every followup that hides work.</p>
+    </article>
+<article class="r-fu" data-id="f-wisnaf-002" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build work-is-a-section-not-a-followup §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Refuse a new followup that hides work, and migrate the open ones</h4>
+    <div class="r-fu-body"><p>§3 next: measure what the refusal rests on first, then land it. §4 runs beside it from the followup-hides-work finding list, coordinated with the S21 and S25 coordinators for the rows they wrote.</p></div>
+    <pre class="r-fu-prompt">/reckon-build work-is-a-section-not-a-followup §3</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-wisnaf-s22-conversions-and-two-more-hiding-shapes" data-who="" data-when="">
     <div class="r-comment-body"><p>s22-coord's fifteen are disposed (034172a37, d3245613e). Eight became implementable sections:</p><ul><li>crew-observability-truth §24</li><li>scoring-should-stop-a-promotion §8</li><li>the-ledger-is-one-file-per-run §5</li><li>dependency-edge-semantics §9 and §10</li><li>a-review-dies-where-nobody-is-looking §10</li><li>plan-writes-are-not-fenced §6</li><li>crew-runtime-positive-controls §21, held by the new section-scoped decision unresolvable-declared-sha</li></ul><p>Five were already met on main and are resolved with the commits that met them: four on a-window-paces-the-lane and one on crew-runtime-positive-controls. f-ssp-triage-remaining-followups folds into this section. f-acpewio-unknown-departure-word stays with S21: the lead settled its contract at 19:56Z, and S21 resolves it when its node lands. The roadmap now lists every converted section.</p><p>The conversion exposed two more ways work hides from the roadmap. First, a section heading with no declaration is not scheduled. crew-observability-truth had an h2 §23 "A launch is not its own conflict" with no classification, which is why the new section there is §24. Second, appending one section record to a plan whose done sections predate records zeroes its derived impl. That moved six plans' impl to 0 and the sprint's implementation figure from 67.7% to 58.8%. The second is section-contract-and-computed-impl §8, dispatched as impl-needs-every-section-recorded. The first belongs with §2's finding: a section heading with no declaration is reported beside a followup that hides work.</p></div>
 </div>
+<div class="r-comment" data-section="_top" data-id="c-wisnaf-s2-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>§2 landed. a-followup-that-hides-work-is-found was merged at 8ce9b4ca4 and promoted. <code>reckon/followup_pointers.py</code> classifies an open followup as a pointer or as hiding work, with a fixed reason word. The roadmap reports each followup that hides work as the warn finding <code>followup-hides-work</code>, on every plan it inventories and on the MCP summary path. Over reckon's plans at the time, 68 of 115 open followups hide work, against §1's heuristic count of 102 of 129. The fixtures in tests/test_roadmap.py now point their followups at another plan, so those tests keep their own subject, and the frozen summary snapshot was rebuilt from the fixture. The head arm passes 449 tests, and the review scored 86.</p><p>§3 (the write-time refusal) and §4 (migration) are next. §4 now reads its worklist from the finding, not from §1's heuristic.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261001T194951171857-a-followup-that-hides-work-is-found" data-who="reckon-build" data-when="2026-10-01T21:51:26.927Z">
     <div class="r-comment-body"><p>section 2 landed in 0545d84952bc6a3680d3c922d001a75b6e9951fe; 68 of 115 real open followups hide work, beside section 1 record of 102 of 129</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261001T215152805082-review-of-a-followup-that-hides-work-is-found" data-who="reckon-build" data-when="2026-10-01T22:25:50.959Z">
-    <div class="r-comment-body"><p>independent review of run r-20261001T194951171857-a-followup-that-hides-work-is-found stored as a parsed record at both fence paths - five dimensions scored 0..20 (goal_fidelity 18, evidence 15, scope_discipline 18, durability 17, fit 18; total 86), reviewed revision pair 73a6cdc48..7fecea42, added_failure_count 0 and added_failure_ids [] derived through the store&#x27;s own annotate reader from the reviewed run&#x27;s own baseline_suite and after_suite logs, one follow-on finding (the real-tree disagreement arm&#x27;s reconstruction is not retained, so its single-row disagreement list cannot be re-derived); no blocking finding, the change is fit to promote.</p></div>
+    <div class="r-comment-body"><p>independent review of run r-20261001T194951171857-a-followup-that-hides-work-is-found stored as a parsed record at both fence paths - five dimensions scored 0..20 (goal_fidelity 18, evidence 15, scope_discipline 18, durability 17, fit 18; total 86), reviewed revision pair 73a6cdc48..7fecea42, added_failure_count 0 and added_failure_ids [] derived through the store's own annotate reader from the reviewed run's own baseline_suite and after_suite logs, one follow-on finding (the real-tree disagreement arm's reconstruction is not retained, so its single-row disagreement list cannot be re-derived); no blocking finding, the change is fit to promote.</p></div>
 </div>
 </section>
 </main>
