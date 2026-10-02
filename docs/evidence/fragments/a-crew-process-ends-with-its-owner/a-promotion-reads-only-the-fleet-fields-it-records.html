@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A promotion reads only the fleet fields it records">
+  <meta name="plan-summary" content="The fleet-state reading ran the full closure drain, whose plan inventory it never consumed. The unreconciled count is now derived from the live pointers alone, by the same closure predicate the drain uses, through the same host-gated liveness reading.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s13">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,promotion,fleet-state,drain,performance">
+  <title>A promotion reads only the fleet fields it records — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-promotion-reads-only-the-fleet-fields-it-records" data-reckon="landed" data-when="2026-10-02">
+  <h2>A promotion reads only the fleet fields it records</h2>
+  <p>The promotion result stamps a bounded fleet reading on the row: <code>live_runs</code>, <code>unreconciled_runs</code>, <code>actionable_runs</code>, <code>actionable_classifications</code> and <code>occupied_lanes</code>. Only one of those came from the closure drain, and <code>_fleet_state_reading</code> ran the whole drain — including its plan inventory over every plan file — to read the single <code>unreconciled_runs</code> count. That control-plus-plan read was measured at 22&nbsp;% of an 81.9&nbsp;s promotion. The reading now derives its unreconciled count in <code>_unreconciled_live_runs</code> from the live pointers alone, by the same closure predicate (<code>closure_disposition_valid</code>) over the same pointers, taking liveness through the same host-gated <code>local_liveness</code> the drain uses so the answer cannot differ. The live-pointer projection still owns the actionable classification, unchanged.</p>
+  <p>A new test builds synthetic fleets in a temporary <code>RECKON_HOME</code> and asserts the bounded reading equals what <code>runs.drain</code> writes on the same pointers (<code>unreconciled_runs</code> and <code>live_runs</code>), including a fleet carrying a <code>handed-off</code> disposition so the count is not trivially the live count; a second test patches <code>promotion.drain</code> and asserts it is never invoked. Four cases pass, <code>EXIT=0</code>.</p>
+  <p>The declared mutation — <code>unreconciled_runs</code> calling the full drain again (<code>int(drain(project)["unreconciled_runs"])</code>) — fails the no-drain assertion: <code>EXIT=1</code>, <code>test_the_bounded_reading_does_not_run_the_closure_drain</code> failed, one id the head arm does not fail. This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>
