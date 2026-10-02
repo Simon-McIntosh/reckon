@@ -8555,8 +8555,9 @@ def _reap_worker_on_its_terminal_manifest(
     and then ends its process — writing the sender record before it signals, so
     the signal is attributable to the run's own directory. A worker whose
     manifest is non-terminal, or blocked (kept for resume), is waited on as
-    before. Returns the wait status, or ``None`` when the child was already
-    reaped elsewhere.
+    before, and so is a worker that rewrites a done manifest back to a non-done
+    status: withdrawing the delivery clears the deadline it had set. Returns the
+    wait status, or ``None`` when the child was already reaped elsewhere.
 
     The manifest is stat'd each poll and read for its status only when its
     mtime has advanced past the attempt's baseline and changed since the last
@@ -8590,6 +8591,13 @@ def _reap_worker_on_its_terminal_manifest(
                 # is already in the past and the worker is ended at once.
                 age = time.time() - (mtime_ns / 1_000_000_000)
                 deadline = now + grace_seconds - age
+            else:
+                # The manifest was rewritten to a non-done status: the delivery
+                # is withdrawn — the worker is working again, or has declared a
+                # wait for resume — so a deadline an earlier done read set is
+                # cleared and the worker is waited on as before rather than ended
+                # on the withdrawn delivery's clock.
+                deadline = None
         if deadline is not None and signalled_at is None and now >= deadline:
             signal_worker(
                 pid,

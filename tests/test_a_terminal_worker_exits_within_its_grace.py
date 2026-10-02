@@ -61,6 +61,25 @@ STUB_RESUME = (
     "time.sleep(300)\n"
 )
 
+# A stub worker that delivers and then withdraws: it writes the manifest
+# complete, holds it long enough for the supervisor's coarse poll to read the
+# delivery and start the grace, then rewrites it blocked and sleeps far past
+# the grace. The blocked rewrite lands inside the complete delivery's grace, so
+# a deadline left set would end the worker while it has declared a wait.
+STUB_WITHDRAW = (
+    "import os, time\n"
+    "from pathlib import Path\n"
+    "manifest = Path(os.environ['RECKON_MANIFEST'])\n"
+    "manifest.write_text(\n"
+    "    'node: stub-node\\nstatus: complete\\ncommits: []\\n'\n"
+    ")\n"
+    "time.sleep(float(os.environ['RECKON_HOLD_SECONDS']))\n"
+    "manifest.write_text(\n"
+    "    'node: stub-node\\nstatus: blocked\\ncommits: []\\n'\n"
+    ")\n"
+    "time.sleep(300)\n"
+)
+
 # The two declared mutations, verbatim: the strings the promotion audit matches
 # against each red log's facts.
 DECLARED_MUTATION = (
@@ -70,6 +89,10 @@ DECLARED_MUTATION = (
 DECLARED_RESUME_MUTATION = (
     "drop the baseline comparison; the resumed-run case is killed and fails"
 )
+DECLARED_WITHDRAW_MUTATION = (
+    "leave the deadline set when the manifest turns non-done; the "
+    "rewritten-blocked case is ended and fails"
+)
 
 NEGATIVE_CONTROL = os.environ.get("RECKON_TERMINAL_GRACE_NEGATIVE_CONTROL", "").strip()
 
@@ -78,6 +101,13 @@ NEGATIVE_CONTROL = os.environ.get("RECKON_TERMINAL_GRACE_NEGATIVE_CONTROL", "").
 # so an exit within this bound can only be the supervisor's act.
 GRACE_SECONDS = 2
 SLACK_SECONDS = 15
+
+# The withdrawal case runs a wider grace and a shorter hold. The hold exceeds
+# the supervisor's poll so the complete manifest is read and its deadline set;
+# the grace exceeds the hold plus a poll so the blocked rewrite is read and
+# clears the deadline well before it would fire.
+WITHDRAW_GRACE_SECONDS = 10
+WITHDRAW_HOLD_SECONDS = 4
 
 
 def _control(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -100,6 +130,14 @@ def _control(monkeypatch: pytest.MonkeyPatch) -> None:
         # is read as this attempt's delivery, so a resumed worker is killed.
         monkeypatch.setattr(
             dispatch_module, "_supervisor_manifest_baseline_ns", lambda *a, **k: 0
+        )
+    elif NEGATIVE_CONTROL == "keep-deadline":
+        # Leave the deadline set when the manifest turns non-done: every
+        # manifest read counts as a done delivery, so the blocked rewrite no
+        # longer clears the deadline and the worker is ended on the withdrawn
+        # complete delivery's clock.
+        monkeypatch.setattr(
+            dispatch_module, "_worker_manifest_done_status", lambda *a, **k: "complete"
         )
 
 
@@ -461,6 +499,73 @@ def test_a_manifest_left_by_a_previous_attempt_is_not_this_attempts_delivery(
 
     assert failures == [], failures
     assert observed == ["kept", "ended"]
+
+
+def test_a_withdrawn_delivery_clears_the_deadline(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A manifest rewritten to a non-done status withdraws its delivery.
+
+    A worker that writes complete and then rewrites blocked has withdrawn the
+    delivery — it is working again, or has declared a wait for resume — so the
+    deadline the complete read set must be cleared and the worker kept, rather
+    than ended on the withdrawn delivery's clock while it still holds its turn.
+    """
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    monkeypatch.setenv(
+        dispatch_module.TERMINAL_MANIFEST_GRACE_ENV, str(WITHDRAW_GRACE_SECONDS)
+    )
+    _control(monkeypatch)
+
+    fixture = _stub_run(
+        tmp_path,
+        status="complete",
+        stub=STUB_WITHDRAW,
+        extra_env={"RECKON_HOLD_SECONDS": str(WITHDRAW_HOLD_SECONDS)},
+    )
+    run_id = fixture["run_id"]
+    manifest = fixture["manifest"]
+
+    failures: list[BaseException] = []
+    observed: list[str] = []
+
+    def driver() -> None:
+        pid: int | None = None
+        try:
+            _wait_until(
+                lambda: manifest.is_file() and _worker_pid(run_id) is not None,
+                timeout=15,
+                detail="the stub worker's manifest and record",
+            )
+            pid = _worker_pid(run_id)
+            # The stub rewrites the manifest blocked inside the complete
+            # delivery's grace. Wait past the grace: a worker ended on the
+            # withdrawn delivery's deadline is gone, one kept for its declared
+            # wait is still running.
+            time.sleep(WITHDRAW_GRACE_SECONDS + SLACK_SECONDS)
+            if _running(pid):
+                observed.append("running")
+            else:
+                failures.append(
+                    AssertionError(
+                        "a manifest rewritten blocked before the grace cleared "
+                        "the deadline; the worker was ended on the withdrawn "
+                        "complete delivery"
+                    )
+                )
+        except BaseException as exc:  # noqa: BLE001 - reported to the main thread
+            failures.append(exc)
+        finally:
+            # The supervisor is waiting on this worker, so ending it lets the
+            # supervisor return.
+            _kill(pid)
+
+    _drive(fixture["spec_path"], driver)
+
+    assert failures == [], failures
+    assert observed == ["running"]
 
 
 def test_the_done_status_set_excludes_blocked_and_non_terminal(tmp_path: Path) -> None:
