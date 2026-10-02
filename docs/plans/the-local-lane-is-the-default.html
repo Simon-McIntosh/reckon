@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="59">
+<meta name="plan-version" content="60">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -549,6 +549,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20260928T1700-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T15:00:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T134355700628-s21-audit-lane). The report is at <code>~/.config/reckon/crew/reports/reckon/s21-audit-lane.{json,md}</code>. The twelve cited test files report 103 passed at both base and head, with 0 added failures.</p><ul><li><b>§1: done.</b></li><li><b>§10: superseded, now declared done.</b> the-suite-is-green-at-head §1–§3 landed, so the 77-failure baseline is historical.</li><li><b>§2 (model routing): still required, and it gates §3 and §4.</b> Dispatch has no <code>--model</code>, and each backend declares only one model.</li><li><b>§3: partly done.</b> There is no claude permission gate and no escalation-reason record.</li><li><b>§4: still required.</b> <code>_review_lane_candidates</code> still ends in <code>sorted(backends)</code>.</li><li><b>§5: partly done.</b> The live document reports state unknown for every account, and the timer is allocation-bound.</li><li><b>§6: partly done.</b> The graded pace state belongs with a-window-paces-the-lane.</li><li><b>§7: partly done.</b> <code>crew follow</code> has no <code>--until-actionable</code>.</li><li><b>§8: still required,</b> and now gated on a-dispatch-returns-without-its-worker §10 (gate g-tllitd-8).</li><li><b>§9: partly done.</b> The digest landed; SKILL.md is 1224 lines against a target of under 400.</li></ul><p>The audit estimates about 47 worker-hours remaining. f-tllitd-001 stays the driving followup, starting from §2.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261002T053037483795-dispatch-counts-worker-slots" data-who="reckon-build" data-when="2026-10-02T06:51:42.880Z">
+    <div class="r-comment-body"><p>dispatch counts workers against the router&#x27;s worker slots (per-session, then new-session, then global, then headroom as a worker count, distrusted under 900 s of observation history) and holds on an allowance of zero or less under LaneHeld, naming the router&#x27;s verdict; tests/test_dispatch_counts_worker_slots.py drives all six rungs through the lane reader&#x27;s own path and reports 8 passed</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
