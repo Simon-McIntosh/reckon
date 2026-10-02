@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 </head>
 <body>
   <main class="plan-doc">
@@ -209,6 +209,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261002T221453926504-review-of-gc-releases-squash-landed-worktrees" data-who="reckon-build" data-when="2026-10-02T22:23:26.043Z">
     <div class="r-comment-body"><p>independent review of r-20261002T214116756941-gc-releases-squash-landed-worktrees stored at the head-keyed and legacy review paths: goal_fidelity 18, evidence 18, scope_discipline 18, durability 18, fit 17, total 89, reviewed_base_sha 344c3af994ef6a1b72f4f68e2db0b2850e84dddd, reviewed_head_sha 1eddff9f35aeba0cb35727bf8525dd2f49374095, added_failure_count 0, one follow-on finding on the audit-path empty commit lists.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261002T223224404015-unmeasured-commit-list" data-who="reckon-build" data-when="2026-10-02T23:03:40.814Z">
+    <div class="r-comment-body"><p>routing.py now returns null for non_equivalent_commits and patch_equivalent_commits on a worktree row whose commits beyond the integration head were not measured, with commits_unmeasured_reason naming why (release_residue false / head is an ancestor / tree is clean / comparison could not run), while a measured row keeps both lists even when empty; gate base 111 passed, head 114 passed (3 new tests), added failure ids none, negative control returning empty lists for an unmeasured row fails the null assertion EXIT=1; landing record docs/evidence/fragments/a-finished-worktree-releases-without-a-force/unmeasured-commit-list.html.</p></div>
 </div>
 </section>
 </main>
