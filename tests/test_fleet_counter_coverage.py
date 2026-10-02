@@ -31,9 +31,10 @@ from reckon.crew import ticker as ticker_module
 
 
 def _emitted_states() -> set[str]:
-    """The states the verdict reducer can assign, read from its source.
+    """The states the verdict reducer can assign, read from its source and helpers.
 
     The possible values are the literal ``state = "..."`` assignments, the
+    states the reducer's emitting helpers return as their first element, the
     manifest verdicts assigned from ``manifest_status``, the classifier's
     classifications reachable through the fallback assignment, and that
     fallback's literal ``"unknown"``. Reading them from the emitter is what
@@ -42,12 +43,37 @@ def _emitted_states() -> set[str]:
     vocabulary is read out of the classifier itself rather than from the
     recovery-class tuple beside it, because that tuple is a second copy of the
     same fact and had already fallen behind the classifier once.
+
+    The helper is part of the emitter because the reducer delegates part of its
+    verdict to one and the delegated word never appears as an assignment: the
+    stream-silence reading returns ``"stalled"`` from a ``return`` the
+    reducer's own source does not carry, so scraping assignments alone lets a
+    state a snapshot can carry escape the emitted set — the same drift these
+    tests exist to catch. Reading the helper as an emitter keeps the property
+    that a state added to the delegated vocabulary joins the set with it.
     """
     source = inspect.getsource(recovery._watch_verdict)
     emitted = set(re.findall(r'state = "([a-z_-]+)"', source))
+    emitted |= _states_the_verdict_helpers_return()
     emitted |= {"complete", "blocked", "failed"}  # assigned from manifest_status
     emitted |= _classifications_that_become_a_state()
     emitted |= {"unknown"}  # the fallback's last resort
+    return emitted
+
+
+# The reducer delegates the stream-silence reading to a pure helper, so the
+# states it can assign are not all in the reducer's own source. Each helper here
+# returns ``(state, detail),`` and its first element is a state a snapshot can
+# carry; reading its literal returns is what keeps that delegated state in the
+# emitted vocabulary rather than letting it fall out of every subset assertion.
+_VERDICT_EMITTING_HELPERS = (recovery._stall_reading,)
+
+
+def _states_the_verdict_helpers_return() -> set[str]:
+    """The states the reducer's emitting helpers return as their first element."""
+    emitted: set[str] = set()
+    for helper in _VERDICT_EMITTING_HELPERS:
+        emitted |= set(re.findall(r'return "([a-z_-]+)",', inspect.getsource(helper)))
     return emitted
 
 
