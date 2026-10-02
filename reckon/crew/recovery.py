@@ -8058,21 +8058,22 @@ def _departure_word(run_id: str, recorded: set[str] | None) -> str:
     """The word a departing run's absence carries.
 
     Promotion has first claim, because a recorded ledger row is the fleet's
-    evidence that work landed and a run directory cannot argue with it. Where no
-    ledger evidence resolves at all — the caller supplies no reader and the run
-    names no project to resolve one from — the departure reads ``departed``: the
-    fleet knows the run left and nothing more, so the word promises neither a
-    landing nor a withdrawal. A ledger that resolves and does not record the run
-    leaves either a marker the run's directory holds from a deliberate discard,
-    which names the departure discarded, or the bare withdrawal a reaped or
-    hand-removed pointer earns.
+    evidence that work landed and a run directory cannot argue with it. Failing
+    that, a marker the run's directory holds from a deliberate discard names the
+    departure discarded whatever else is known: the discard is a fact the run's
+    own home records, so it outranks a ledger that cannot be resolved. Only when
+    no such marker exists does an unresolvable ledger decide the word — the
+    caller supplies no reader and the run names no project to resolve one from —
+    and then the departure reads ``departed``, which promises neither a landing
+    nor a withdrawal. A ledger that resolves and records no row leaves the run
+    the bare withdrawal a reaped or hand-removed pointer earns.
     """
     if recorded is not None and run_id in recorded:
         return "promoted"
-    if recorded is None:
-        return "departed"
     if _discard_recorded(run_id):
         return "discarded"
+    if recorded is None:
+        return "departed"
     return "withdrawn"
 
 

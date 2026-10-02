@@ -585,6 +585,20 @@ def test_a_departure_with_no_ledger_evidence_reads_departed() -> None:
     assert _departure_word(use_ledger=False) == "departed"
 
 
+def test_a_discard_marker_outranks_an_unresolvable_ledger() -> None:
+    # A deliberate discard is a fact the run's own directory records, so it
+    # names the departure discarded even when the ledger cannot be resolved to
+    # confirm it. The unresolvable-ledger word applies only where no such
+    # evidence exists.
+    from reckon.crew.promotion import discard_record_path
+
+    marker = discard_record_path("r-departure")
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text('{"discarded_at": "2026-10-02T00:00:00Z"}', encoding="utf-8")
+
+    assert _departure_word(use_ledger=False) == "discarded"
+
+
 # ── Case 7: every emitted word falls in exactly one bucket ────────────────
 
 
