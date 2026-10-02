@@ -20,7 +20,9 @@ from reckon._schema import (
     GATE_TRANSITIONS,
     GRAPH_HANDLE_GRAMMAR,
     LEGACY_EFFORT_HOURS,
+    decision_section_refusals,
     decision_sections,
+    declared_section_identities,
     is_graph_handle,
     is_section_identity,
     parse_plan_ref,
@@ -2279,6 +2281,34 @@ def _build_roadmap(
             dependency_rows[slug].extend(section_edge_rows)
             findings.extend(section_edge_findings)
 
+        # A decision scoped to a section the plan never declares holds nothing
+        # and can never be satisfied, so it is reported rather than silently
+        # rendered as a frozen wait. The declared set is read from the same
+        # source the write boundary refuses against, so one scope has one
+        # answer on both surfaces.
+        decision_mapping = _plan_decision_sections(plan, docs_dir, project, slug)
+        decision_declarations = _plan_declarations(plan, docs_dir, project, slug)
+        declared_sections = declared_section_identities(plan, decision_declarations)
+        findings.extend(
+            _finding(
+                refusal["code"],
+                "error",
+                (
+                    f"{slug}: decision {refusal['decision']!r} is scoped to "
+                    f"section {refusal['section']!r}, which this plan does "
+                    "not declare"
+                ),
+                slug=slug,
+                extra={
+                    "decision": refusal["decision"],
+                    "section": refusal["section"],
+                },
+            )
+            for refusal in decision_section_refusals(
+                decision_mapping, declared_sections
+            )
+        )
+
         # Soft sequencing: resolved here, ranked below, and deliberately kept
         # out of every blocker list — an after target that has not shipped
         # orders the plan later without ever holding it.
@@ -2498,13 +2528,19 @@ def _build_roadmap(
         deferred_decisions = [
             decision for decision in decisions if decision["status"] == "deferred"
         ]
+        # The fallback asks whether any blocker the derivation can see explains
+        # a persisted blocked status. A section-scoped decision does not hold
+        # the plan, so it cannot be that explanation: the guard names the same
+        # plan-level list `is_blocked` tests, and a persisted blocked plan whose
+        # only open decision is section-scoped keeps a visible blocker instead
+        # of reading deferred while it is stored blocked.
         if (
             status == "blocked"
             and not explicit_blockers
             and not held_blockers
             and not plan_dependency_blockers
             and not gate_blockers
-            and not open_decisions
+            and not plan_holding_decisions
         ):
             explicit_blockers = [{"kind": "persisted", "id": "unrecorded"}]
         dispatchable, missing_dispatchability = _dispatchability(plan)

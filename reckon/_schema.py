@@ -675,6 +675,42 @@ def decision_section_refusals(
     return refusals
 
 
+def declared_section_identities(
+    plan: Mapping[str, Any],
+    declarations: Mapping[str, Any] | None = None,
+) -> frozenset[str]:
+    """Return the section identities a plan declares, from its parsed state.
+
+    A decision scoped to sections holds only sections that exist, so every
+    consumer that judges a scope — the write boundary refusing it and the
+    roadmap reporting it — must read the same set. The identities come from the
+    plan's own declarations: its section records, its classification mapping
+    (``declarations`` overrides the plan's own when a caller holds a fresher
+    read of the file), and the anchors its gates and comments already carry.
+    """
+
+    identities: set[str] = set(plan_section_anchors(plan))
+    mapping = declarations
+    if mapping is None:
+        mapping = plan.get("section_declarations")
+    if isinstance(mapping, Mapping):
+        identities.update(
+            value
+            for raw in mapping
+            if (value := str(raw or "").strip())
+            and _RESOURCE_SEGMENT_RE.fullmatch(value)
+        )
+    records = plan.get("sections")
+    if isinstance(records, (list, tuple)):
+        for record in records:
+            if not isinstance(record, Mapping):
+                continue
+            identity = str(record.get("id") or "").strip()
+            if identity and _RESOURCE_SEGMENT_RE.fullmatch(identity):
+                identities.add(identity)
+    return frozenset(identities)
+
+
 def resolve_plan_ref(
     ref: str,
     owning_project: str,
@@ -817,6 +853,8 @@ class Decision(BaseModel):
     choices: list[str] = Field(default_factory=list)
     option_labels: dict[str, str] = Field(default_factory=dict)
     choice: str = ""  # "" == open; an option value OR free text
+    recommended: str = ""  # a proposed choice; never becomes choice on its own
+    recommended_by: str = ""
     sections: list[str] = Field(default_factory=list)
     rationale: str = ""
     when: str = ""
