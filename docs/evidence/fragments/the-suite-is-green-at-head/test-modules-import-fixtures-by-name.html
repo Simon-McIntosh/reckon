@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="Test modules import shared fixtures by name">
+  <meta name="plan-summary" content="The three modules that declared pytest_plugins naming tests.test_crew now import the home and repo fixtures by name, so test_crew's autouse fixture and module-level cells stay scoped to the module that owns them.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s3">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,tests,isolation">
+  <title>Test modules import shared fixtures by name | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="test-modules-import-fixtures-by-name" data-reckon="landed" data-when="2026-10-02">
+  <h2>Test modules import shared fixtures by name instead of promoting a plugin</h2>
+  <p><code>tests/test_fence_is_on_again.py</code>, <code>tests/test_worker_env_export.py</code> and
+  <code>tests/test_backend_environment.py</code> each declared
+  <code>pytest_plugins = ("tests.test_crew",)</code>, which registers <code>tests.test_crew</code>
+  as a session-wide plugin. Its autouse fixture then ran for every test in the session and its
+  module-level cells were shared beyond the module that owns them. Each module now imports the
+  <code>home</code> and <code>repo</code> fixtures by name, so the fixtures resolve for these
+  modules while <code>test_crew</code>'s autouse fixture and cells stay scoped to
+  <code>test_crew.py</code>.</p>
+  <p><strong>Evidence.</strong> A grep over <code>tests/</code> finds no <code>pytest_plugins</code>
+  naming <code>tests.test_crew</code>. The reduced <code>-n 8</code> gate over
+  <code>test_crew</code>, <code>test_budget</code>, the three modules and
+  <code>test_shared_helper_edges</code> is <strong>290 passed, EXIT=0</strong>; base and head arms
+  of the four files are <strong>217 passed</strong> each, zero added failures. Declared negative
+  control: restoring <code>pytest_plugins</code> in one module and adding an eager <code>mkdir</code>
+  to the autouse fixture makes
+  <code>test_shared_helper_edges.py::test_chmod_failure_leaves_no_temporary_beside_the_destination</code>
+  fail (<strong>1 failed, EXIT=1</strong>).</p>
+</article>
+</body>
+</html>
