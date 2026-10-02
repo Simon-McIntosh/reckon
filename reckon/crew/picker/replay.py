@@ -134,6 +134,9 @@ def _summary(
         "median_latency_ms": statistics.median(
             row["selection"]["latency_ms"] for row in rows
         ),
+        "max_latency_ms": max(
+            (row["selection"]["latency_ms"] for row in rows), default=None
+        ),
         "median_jev_latency_ms": (
             statistics.median(jev_latencies) if jev_latencies else None
         ),
