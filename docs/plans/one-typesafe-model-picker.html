@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="40">
+<meta name="plan-version" content="41">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -199,6 +199,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261002T130436751082-picker-return-time" data-who="reckon-build" data-when="2026-10-02T14:13:21.690Z">
     <div class="r-comment-body"><p>picker-return-time — lane_context renders per-candidate return time (clive implement/guided p50 3806.5 s, p90 11468 s, 230 runs, time_budget 30m_to_60m) and the live local lane (running 16, waiting 0, headroom -2, worker_slots 0); state.jinja renders both blocks and questions.jinja names them criteria; 8 new tests pass; item (5), the live replay, is not met here and is deferred by the coordinator to picker-replay-measure.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261002T141355394937-review-of-picker-return-time" data-who="reckon-build" data-when="2026-10-02T14:37:08.068Z">
+    <div class="r-comment-body"><p>review-of-picker-return-time — independent review of r-20261002T130436751082-picker-return-time stored as a parsed record at the reviewed pair ca630c06e894d95111a8627b11d02a023aa270dd..44b75c262a86e3bcd73d5ae82aeecb81038ed843; scores goal_fidelity 15, evidence 14, scope_discipline 20, durability 19, fit 18 (total 86); one follow-on finding that the live pick at reckon/crew/picker/__init__.py:61 renders state.jinja without project so the return-time block is null in production; added-failure count unmeasured because the reviewed manifest names no base gate log.</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
