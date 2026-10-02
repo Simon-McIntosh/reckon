@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="53">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="54">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -111,7 +111,7 @@
     </ul>
 
     <h2 id="s3">§3 — The hook reads the snapshot and never derives</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       <code>coordinator_obligations.py</code> resolves its session as it does today, then reads the
       session's snapshot: one stat and one small JSON read. The snapshot is <em>fresh</em> when a
@@ -236,7 +236,7 @@
 <p>Observed on 2026-10-02 by s22-coord. On each producer reload, for about a minute, the prompt hook answered <em>not current: the producer is running older code; run <code>reckon crew watch --ensure</code></em>, at 16:34Z, 17:09Z and 17:40Z. During a normal reload that remedy is wrong, and the hook showed no obligations at all although the last snapshot was seconds old. At 16:34Z it answered <em>no producer</em> for the seconds before a newly started producer published.</p><p><strong>Done when</strong> a reload in progress shows the last snapshot's list headed by its age and the words <em>producer reloading</em>, with no remedy line. A reload is in progress when the snapshot's producer is alive and its code stamp is older than the source, or when the seat records a reload intent. <em>No producer</em> and its remedy appear only when no live producer has published for longer than a reload's bound, which is stated as a named constant. A test covers each case on the prompt path in a temporary configuration home. The negative control restores the not-current line for a live, reloading producer, and the reload case then fails.</p>
 
     <h2 id="s11">§11 — A duty the lane refuses reads as queued, and does not block the stop</h2>
-<section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
 <p>Observed on 2026-10-02 by s22-coord. The stop hook blocked six times on <code>review-missing</code> duties whose review dispatch the lane's fair share had refused with <code>lane-paused</code> (exit 75), while the review reflex was set to take the next free slot. The only way to stop each time was a hand <code>crew ack</code>. One hand dispatch that ran in the same second as the reflex lost both runs (crew-runtime-positive-controls §29).</p><p><strong>Done when</strong> a review duty whose last dispatch was refused with <code>lane-paused</code>, within a stated bound, reads as <code>review-queued</code>. It names the refusal's time and the session's published worker slots, is listed on the prompt path, and does not block the stop hook. Once the bound passes with no review dispatched, it returns to <code>review-missing</code>. A test covers the queued reading and the return after the bound, in a temporary configuration home. The negative control removes the lane-refusal check, and the queued case then blocks.</p>
 
     <h2 id="s12">§12 — One unreadable review record cannot stop the sweep</h2>
@@ -305,10 +305,16 @@
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §10</pre>
     <p class="r-fu-outcome">§10 landed at aafe1349e (run r-20261002T213757420157-reload-shows-the-last-snapshot, reviewed at 96, zero added failures). A reloading producer now shows the last snapshot headed by its age, with no remedy line. The no-producer remedy appears only outside the shared 65 s window. Live check: the hook read 'producer reloading, last snapshot 1m19s old' during the reload that merge triggered. Review follow-ons: the fragment has no figure, and not_fresh_line no longer handles the producer-stale-code state; that state is unreachable today because _prompt routes it through reload_in_progress.</p>
     </article>
-<article class="r-fu" data-id="f-tohras-007" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tohras-007" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="" data-resolved-at="2026-10-02T23:54:58+00:00" data-resolved-by="s22-coord">
     <h4 class="r-fu-title">land §3&#x27;s stop path with §11</h4>
     <div class="r-fu-body"><p>§3's stop path and §11 together, so the stop hook reads the snapshot and stops blocking on duties the lane has refused. In the same node, have not_fresh_line handle the producer-stale-code state itself, so a direct caller never renders the no-producer remedy.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §11</pre>
+    <p class="r-fu-outcome">§3's stop path and §11 landed at 87759a6e6 (run r-20261002T224659340678-stop-hook-reads-the-snapshot, reviewed at 94, zero added failures). The stop hook reads the session's snapshot and derives inline under a 5 s budget only when the snapshot is not fresh. A review duty the lane refused reads as review-queued within its bound and does not block the stop. not_fresh_line handles the producer-stale-code state, and an empty list prints no oldest age. Review follow-ons: resolve() in the hook has no caller left; the new-session worker-slots fallback is gated on sessions_present rather than on the admission block's presence; and the evidence fragment's plan-verifies names only #s3, while its evidence-commit names the base.</p>
+    </article>
+<article class="r-fu" data-id="f-tohras-008" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">land §12 with the §3/§11 review follow-ons</h4>
+    <div class="r-fu-body"><p>§12: one unreadable review record cannot stop the sweep. Fold in the §3/§11 review's three follow-ons in the same files: remove the dead <code>resolve()</code>, gate the new-session worker-slots fallback on the admission block's presence, and correct the fragment's <code>plan-verifies</code> and <code>evidence-commit</code>.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §12</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">

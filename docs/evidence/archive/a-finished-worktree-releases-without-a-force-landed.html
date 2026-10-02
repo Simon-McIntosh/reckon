@@ -96,6 +96,25 @@
       <code>docs/evidence/fragments/a-finished-worktree-releases-without-a-force/gc-releases-squash-landed-worktrees.html</code>.
       Re-running gc over the twelve worktrees kept in §4 is the next step, after §7.
     </p>
+
+    <h2 id="s7">§7 — An unmeasured commit list reads as unmeasured (merged at 33f7bb13a)</h2>
+    <p>
+      A gc row whose commits beyond the integration head were not measured now carries
+      <code>null</code> in <code>non_equivalent_commits</code> and
+      <code>patch_equivalent_commits</code>, with a field naming why. A measured row keeps its
+      lists, even when they are empty. The node was
+      r-20261002T223224404015-unmeasured-commit-list, reviewed at 98 with no added failures. Its
+      head arm passed 114 tests against 111 at the base.
+    </p>
+    <p>
+      The re-run over the twelve kept worktrees: the dry run at 22:29Z on 2026-10-02 found
+      that every one carries at least one commit with no patch-equivalent on main, so none
+      qualifies for release under §6. The 22:34Z <code>--apply</code> removed only one tree, the
+      clean and integrated <code>review-of-dry-run-shows-each-set-override</code> worktree. The
+      twelve hold unlanded work, most of it S15 <code>wip(crew)</code> commits whose behaviour
+      later landed in a different form. Releasing them needs a decision on those commits, not a
+      gc rule.
+    </p>
   </main>
 </body>
 </html>

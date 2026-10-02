@@ -23,9 +23,9 @@
   <title>A Finished Worktree Releases Without a Force | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 </head>
 <body>
   <main class="plan-doc">
@@ -153,7 +153,7 @@
 <p>§4's release at about 21:35Z kept 12 dirty worktrees, because each carries one to six commits that are not on main. They are listed in the landed record, <code>docs/evidence/archive/a-finished-worktree-releases-without-a-force-landed.html#s4</code>. Their dirt is mostly the superseded <code>_signal_one</code> patch, but a commit that is not on main may hold work that exists nowhere else.</p><p><strong>Done when</strong> each of the 12 is checked commit by commit for patch equivalence with main, using <code>git cherry</code> or <code>git patch-id</code> against the integration head. A worktree whose every commit has a patch-equivalent on main is released through §3's residue-preserving path. A worktree with any commit that has no equivalent is kept and named with that commit's subject, in a report committed beside the landed record for the lead. The check also runs in <code>crew gc</code>, so a future squash-landed worktree releases the same way, with a test in a temporary repository covering an equivalent commit that releases and a non-equivalent one that is kept. The negative control drops the equivalence check, and the equivalent case is then kept.</p>
 
     <h2 id="s7">§7 — An unmeasured commit list reads as unmeasured</h2>
-<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p><strong>From the §6 review (89, zero added failures).</strong> <code>_inspect_workspace</code> in reckon/crew/routing.py measures a worktree's commits beyond the integration head only when <code>release_residue</code> is true. Every other caller still gets a row with <code>non_equivalent_commits: []</code> and <code>patch_equivalent_commits: []</code>. The promotion audit row is one of them (promotion.py, default <code>release_residue=False</code>). For a divergent dirty tree it reports an empty list of non-equivalent commits, so an unmeasured absence reads as a measured zero.</p>
 <p><strong>Done when.</strong> A row whose commits were not measured carries <code>null</code> in both fields, with a field naming why. A measured row keeps the lists. A test inspects one divergent dirty worktree both ways and asserts null in one case and a list in the other. Existing gc and residue tests keep passing.</p>
 
@@ -170,10 +170,16 @@
     <pre class="r-fu-prompt">/reckon-build a-finished-worktree-releases-without-a-force §2</pre>
     <p class="r-fu-outcome">§2 to §6 landed: §2 at 3398d7f85, §3 at 19087433d, §4 at 344c3af99 (23 worktrees released with residue saved), §5 at 34eb46322, and §6 at 4ceb579f5 (gc releases a worktree whose commits are all patch-equivalent on main; reviewed at 89, zero added failures). The review's follow-on is §7.</p>
     </article>
-<article class="r-fu" data-id="f-afwrwaf-002" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-afwrwaf-002" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="" data-resolved-at="2026-10-02T23:54:29+00:00" data-resolved-by="s22-coord">
     <h4 class="r-fu-title">land §7, then re-run gc over the kept worktrees</h4>
     <div class="r-fu-body"><p>Land §7. Then run <code>reckon crew gc --repo ~/Code/reckon --project reckon</code> as a dry run over the twelve worktrees §4 kept, apply it, and record in the evidence what was released and what stayed.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-finished-worktree-releases-without-a-force §7</pre>
+    <p class="r-fu-outcome">§7 landed at 33f7bb13a (run r-20261002T223224404015-unmeasured-commit-list, reviewed at 98, zero added failures): a row whose commits gc did not measure carries null in both commit lists, with a field naming why. The gc re-run is done: the 2026-10-02 22:29Z dry run over the twelve worktrees §4 kept shows every one carrying commits with no patch-equivalent on main, so §6 releases none of them, and the 22:34Z apply removed only the clean integrated review-of-dry-run-shows-each-set-override tree. The twelve hold unlanded work and stay for a decision on their commits.</p>
+    </article>
+<article class="r-fu" data-id="f-afwrwaf-003" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">land §8</h4>
+    <div class="r-fu-body"><p>§8: gc names the tree it failed on, reports a broken worktree as a row and continues, and always reports what it already removed. It came from nova-f5 by way of s25-coord. Tell s25-coord when it lands.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-finished-worktree-releases-without-a-force §8</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
