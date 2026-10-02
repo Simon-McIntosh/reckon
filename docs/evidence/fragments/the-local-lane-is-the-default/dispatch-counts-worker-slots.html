@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-local-lane-is-the-default">
+  <meta name="plan-verifies" content="reckon:the-local-lane-is-the-default#s11">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-02">
+  <meta name="evidence-commit" content="d6d3173d1">
+  <title>Dispatch counts workers against the router's worker slots | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="dispatch-counts-worker-slots">
+  <h2>Dispatch counts workers against the router's worker slots</h2>
+  <p>Base <code>c47424bd</code>, head <code>d6d3173d1</code>. The lane reader now carries the
+  admission block's own capacity figures — <code>worker_slots</code>,
+  <code>new_session_worker_slots</code>, <code>sessions</code> (per-session
+  <code>live_runs</code>, <code>worker_slots</code>), <code>requests_per_run</code>,
+  <code>live_runs</code>, <code>observed_seconds</code>, <code>active_sessions</code>,
+  <code>fair_share</code>, <code>borrow_reserve</code> — each degrading on its own, and
+  <code>dispatch</code> chooses its allowance in the router's own order: the session's own
+  share, then <code>new_session_worker_slots</code>, then the global <code>worker_slots</code>,
+  then the request <code>headroom</code> read as a worker count. No slot figure is used until
+  the router reports at least 15 minutes of observation, so the young-router overstatement
+  measured at 320 s of history is not counted; below that bound the allowance falls back to
+  headroom. An allowance of zero or less holds the node before any worktree exists, under
+  <code>LaneHeld</code>, naming the router's verdict; an allowance that cannot be read holds
+  nothing. Reckon does no fairness arithmetic of its own.</p>
+
+  <p><strong>Live document, read-only, at 2026-10-02T06:33:11Z</strong>
+  (<code>~/public/imas-ambix/lane.json</code>, log in the run directory): session
+  <code>s22-coord</code> resolves to <code>worker_slots</code> 5 beside a headroom of 4 on the
+  request count, verdict <code>open</code>; the rule returns allowance 5, source &ldquo;the
+  session's own worker slots&rdquo;, held false. The positive control is the per-session figure
+  the router actually published.</p>
+
+  <p><strong>Gate</strong> (49 existing test files naming <code>lane_document</code>,
+  <code>headroom</code> or <code>worker_slots</code>, plus the new file; <code>-n 8
+  --timeout=300</code>). Base arm: <strong>1128 passed, 2 skipped</strong>, <code>EXIT=0</code>,
+  header naming revision <code>c47424bd</code> and module file
+  <code>&lt;base&gt;/reckon/crew/dispatch.py</code>. Head arm: <strong>1136 passed, 2
+  skipped</strong>, <code>EXIT=0</code>, module file the node worktree's own
+  <code>reckon/crew/dispatch.py</code>. Delta +8 = the new file's cases; zero added failure
+  ids.</p>
+
+  <p><strong>Declared negative control</strong>: restore the headroom-only rule in
+  <code>reckon/crew/dispatch.py</code> (slot rungs disabled), then the positive per-session
+  case holds and fails. Executed in a scratch tree of head: <code>EXIT=1</code>, 4 failed /
+  4 passed, first failing id
+  <code>test_a_positive_per_session_share_proceeds_over_negative_headroom</code> —
+  the declared string exactly.</p>
+
+  <p><strong>Focused gate</strong>: <code>tests/test_dispatch_counts_worker_slots.py</code>,
+  8 passed, one case per rung — positive per-session share over negative headroom;
+  unlisted session uses the new-session share; no sessions block with a positive global
+  share; an allowance of 0 holds naming the verdict; null <code>worker_slots</code> falls
+  back to headroom; a young router with no <code>observed_seconds</code> falls back — plus
+  the measured 320 s case and the unreadable-allowance case. Each document is resolved
+  through the lane reader's own path before the rule is driven.</p>
+</section>
+</main>
+</body>
+</html>
