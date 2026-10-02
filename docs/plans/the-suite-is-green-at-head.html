@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="208">
+<meta name="plan-version" content="209">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1683,6 +1683,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261002T041615043714-review-of-grace-baseline-reuses-the-timestamp-parser" data-who="reckon-build" data-when="2026-10-02T04:25:40.457Z">
     <div class="r-comment-body"><p>review of r-20261002T040657926582-grace-baseline-reuses-the-timestamp-parser stored as a parsed record (status parsed, scores goal_fidelity 19 / evidence 18 / scope_discipline 20 / durability 20 / fit 20, total 97, absent []), reviewed_base_sha 825bf5bc8d9fb4b1f269ec8712392eda0085a8ef, reviewed_head_sha 4a6747c600bf16e91e21772b6315cb6748a658ad, added_failure_count 0, added_failure_ids []; the change routes _iso_stamp_to_ns through reckon._timestamps.parse_utc and I reproduced the head arm green and the negative control red independently.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261002T040631202720-signal-fakes-take-the-caller-arguments" data-who="reckon-build" data-when="2026-10-02T04:35:04.376Z">
+    <div class="r-comment-body"><p>moved the eleven test stand-ins for _signal_process_group to the shipped keyword signature (reason/run_dir/project, all stale fixtures, no product defect) — tests/test_crew.py (2), tests/test_crew_lane_change.py (2), tests/test_crew_recovery.py (1), tests/test_receipt_after_release.py (4), tests/test_terminal_run_elapsed.py (1), tests/test_worker_env_export.py (1); stand-ins that already assert on the recorded signal now also record the reason; six-file base arm 11 failed / 305 passed, head arm 316 passed / 0 failed, zero added; record at docs/evidence/fragments/the-suite-is-green-at-head/signal-fakes-take-the-caller-arguments.html</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
