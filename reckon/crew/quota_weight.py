@@ -73,6 +73,13 @@ def _as_date(value: object) -> date | None:
     if isinstance(value, date):
         return value
     if isinstance(value, str):
+        # Retained rather than routed through reckon._timestamps.parse_utc: an
+        # ``as_of`` is a calendar date, not an instant, and the shared parser
+        # hands back a datetime. Routing would also widen the accepted domain in
+        # two ways that silently change an ``as_of``: a datetime string such as
+        # "2026-10-02T12:00:00" would be read as an instant and truncated to its
+        # day, and a bare integer would be read as an epoch. Both are refused
+        # here, so a value that is not literally a date stays refused.
         try:
             return date.fromisoformat(value.strip())
         except ValueError:

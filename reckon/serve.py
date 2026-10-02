@@ -3692,9 +3692,19 @@ class Handler(BaseHTTPRequestHandler):
             "doc": doc_stem,
             "data": new_data,
         }
-        tmp = out_file.with_suffix(".json.tmp")
-        tmp.write_text(json.dumps(envelope, indent=2) + "\n")
-        tmp.replace(out_file)
+        # Routed through the shared atomic writer so a reader never observes a
+        # half-written envelope. ``fsync`` is off to keep this route's existing
+        # durability behaviour, and ``mode=None`` keeps an ordinary whole-file
+        # creation mode; the serialisation matches the previous
+        # ``json.dumps(envelope, indent=2)`` byte for byte.
+        write_json_atomically(
+            out_file,
+            envelope,
+            fsync=False,
+            indent=2,
+            sort_keys=False,
+            mode=None,
+        )
         self._send_json(
             HTTPStatus.OK,
             {"ok": True, "path": str(out_file), "version": new_data["_version"]},
