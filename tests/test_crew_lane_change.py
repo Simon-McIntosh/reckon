@@ -139,7 +139,7 @@ def test_redispatch_keeps_the_run_node_and_worktree(
 ) -> None:
     repo, before = dispatched_run
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
-    signalled: list[tuple[int, str]] = []
+    signalled: list[tuple[int, str, str]] = []
     monkeypatch.setattr(
         dispatch_module,
         "process_alive",
@@ -148,7 +148,9 @@ def test_redispatch_keeps_the_run_node_and_worktree(
     monkeypatch.setattr(
         dispatch_module,
         "_signal_process_group",
-        lambda pid, started: signalled.append((pid, started)),
+        lambda pid, started, *, reason="", **kwargs: signalled.append(
+            (pid, started, reason)
+        ),
     )
     monkeypatch.setattr(dispatch_module, "_spawn", lambda *args, **kwargs: 42002)
     _resolve_config(monkeypatch)
@@ -174,7 +176,7 @@ def test_redispatch_keeps_the_run_node_and_worktree(
     assert after["node"]["id"] == before["node"]["id"]
     assert after["worktree"] == before["worktree"]
     assert Path(after["worktree"]).is_dir()
-    assert signalled == [(41001, "old-process")]
+    assert signalled == [(41001, "old-process", "lane-change")]
     assert after["backend"] == "beta"
     assert after["lane_changes"][-1]["from_backend"] == "alpha"
     assert after["lane_changes"][-1]["to_backend"] == "beta"
@@ -212,7 +214,7 @@ def test_redispatch_continues_a_stream_resolved_session_and_records_its_source(
 
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     monkeypatch.setattr(dispatch_module, "process_alive", lambda pid: pid == 41001)
-    monkeypatch.setattr(dispatch_module, "_signal_process_group", lambda *args: None)
+    monkeypatch.setattr(dispatch_module, "_signal_process_group", lambda *args, **kwargs: None)
     monkeypatch.setattr(dispatch_module, "_spawn", lambda *args, **kwargs: 42002)
     _resolve_config(monkeypatch)
 
