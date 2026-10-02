@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="283">
+<meta name="plan-version" content="284">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -198,74 +198,12 @@
       own import cost.</p>
     </div>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-02</span>
     <h2 id="s3">&sect;3 &mdash; A producer holds a lease, not a lifetime</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="4.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p>Per-project <code>crew watch</code> producers are detached with
-    <code>start_new_session=True</code> and ppid 1 by design, and nothing ends them. On the
-    night they were 21 h to 3.5 days old. The imas-codex producer used 21% of a core for
-    three days with no run to watch, and the reckon producer 37%. The <code>sample</code>
-    project's producer had lost its registration, so <code>crew unwatch</code> answered "no
-    registered watcher" and it could only be stopped by pid. A producer with no consumers is
-    pure cost, and one with no registration cannot be managed at all.</p>
-    <p>The fix has three parts. Each live follower renews a lease on its project's producer
-    repeatedly, at least once per half lease interval, for as long as the follower lives. A
-    single renewal at attach is not enough. A producer whose lease has not been renewed for the
-    lease interval stated below exits cleanly. The producer writes its own pid into its
-    registration at start by writing a temporary sibling and renaming it into place, so a
-    reader never sees a partial record. When the registration file is unlinked under it, the
-    producer recreates it at the same path on its next wake-up, so <code>crew unwatch</code>
-    can always find it. A producer is idle when its project has no live run pointer, whatever
-    the state of runs it watched earlier. An idle producer backs off its poll interval instead
-    of spinning. A
-    follower arming for a project whose producer has exited starts one, as it does today, so
-    the lease costs nothing in availability.</p>
-    <p><strong>The lease interval is ten minutes, and it can be set.</strong> The default is
-    600 s. <code>RECKON_PRODUCER_LEASE_SECONDS</code> overrides it, so a test can use a
-    lease of a few seconds. The idle back-off doubles the poll interval on each idle poll,
-    starting from the producer's existing base interval, up to a cap of 30 s. It returns to
-    the base on the first poll that sees a live run. The producer writes its current interval
-    into its registration as <code>poll_interval_seconds</code>, which is what the test reads.
-    The lease is checked on every wake-up, and no sleep outlasts the lease's remaining time,
-    so a producer exits within one second of its lease lapsing however far its interval has
-    backed off.</p>
-    <p><strong>Done when</strong> <code>tests/test_producer_holds_a_lease.py</code> runs in a
-    temporary <code>RECKON_HOME</code> with <code>RECKON_PRODUCER_LEASE_SECONDS</code> set to
-    3. It shows a producer exiting after its lease lapses with no follower attached, and one
-    staying up for three lease intervals while a follower renews. It shows <code>crew
-    unwatch</code> stopping a producer whose registration file was deleted under it: the
-    producer has recreated the file by its next wake-up, and <code>crew unwatch</code> finds it
-    there. It shows
-    an idle producer's recorded poll interval growing to the 30 s cap. The negative control is
-    executed and logged: with lease expiry removed, the unattended producer is still running
-    after three intervals and the test fails. The login-node check, that a project with no
-    follower for an hour has no producer running, is a post-merge acceptance recorded in
-    &sect;8, not part of this node's gate. <strong>Order and write paths:</strong> the producer
-    spans the <code>crew watch</code> and <code>crew unwatch</code> commands in
-    <code>reckon/cli.py</code>, its loop in <code>reckon/crew/recovery.py</code>, and its
-    spawn in <code>reckon/crew/dispatch.py</code>. So this section runs after &sect;2, which
-    also writes <code>reckon/cli.py</code>, and after
-    <code>a-dispatch-returns-without-its-worker</code> &sect;3, which writes
-    <code>dispatch.py</code>. The write paths are those three modules and that test.</p>
-    <p><strong>Two items settle before release</strong> (read-back
-    <code>review-of-the-producer-lease</code>, 2026-09-24). <em>M2:</em> a reader has no way to
-    see a lease renewal happen. The follower writes <code>lease_renewed_at</code> (UTC) into the
-    producer's registration on each renewal, and the test reads that field, as it reads
-    <code>poll_interval_seconds</code>. <em>M8:</em> the write paths also need
-    <code>reckon/crew/runs.py</code>, where registrations are written, and the ordering clause
-    names both files this section shares with &sect;2, <code>reckon/cli.py</code> and
-    <code>reckon/crew/runs.py</code>. On the fleet, the producer launch also takes
-    <code>a-dispatch-returns-without-its-worker</code> &sect;10's spawn path, so this section
-    runs after that one.</p>
-    <p><strong>Three readings settled before release (read-back
-    <code>r-20261001T140351462236</code>, 2026-10-01).</strong> The lease interval a producer
-    compares against is the effective one: <code>RECKON_PRODUCER_LEASE_SECONDS</code> when set,
-    600 s otherwise. A live run pointer is a pointer for the project whose run is not terminal.
-    A completed-but-unpromoted run therefore keeps its producer awake, and a promoted or
-    discarded one does not. The registration has two writers, the producer (pid,
-    <code>poll_interval_seconds</code>) and the follower (<code>lease_renewed_at</code>). Each
-    write is a read-modify-write under the registration's existing lock, and it lands by
-    temp-file rename. So neither writer drops the other's field, and a reader never sees a
-    partial record. The section is released for dispatch.</p>
+<section data-reckon="section" data-id="s3" data-effort-hours="4.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">A crew watch producer ends one lease interval after its last follower renewal. It backs off to a 30 s poll when idle, and rewrites a deleted registration so crew unwatch can stop it. Lease renewals are counted by their writes, and the stale-producer warning waits out an in-place reload. <a href="s3">full record</a></p>
+</section>
 
     <h2 id="s4">&sect;4 &mdash; Polling reads what changed, never the whole tree</h2>
     <p><code>git status --untracked-files=all</code> is issued from
@@ -1462,7 +1400,7 @@
     <div class="r-comment-body"><p>identify_resource's metadata read is memoised on the file's sha256 content digest instead of its path, so docs trees holding byte-identical content share one parse while changed bytes re-parse; warm promotion profile at head 20.52 s wall, resolve_resource 8 calls 10.95 s and read_state 54 calls 8.81 s beside the 23.53 s / 20.0 s / 104-call baseline; new test 5 passed, negative control red (3 ids), base/head arms zero added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261002T140501193797-review-of-resource-identity-reads-the-digest-index" data-who="reckon-build" data-when="2026-10-02T14:37:09.874Z">
-    <div class="r-comment-body"><p>Independent review of r-20261002T130407321130-resource-identity-reads-the-digest-index stored as a parsed record scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 18 (total 93) over ca630c06..36dd12d0, with added_failure_count 0; two follow-on findings (per-site profile figures live only under node-local $TMPDIR, and the manifest&#x27;s suite log_path values name a reaped /tmp path).</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261002T130407321130-resource-identity-reads-the-digest-index stored as a parsed record scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 18 (total 93) over ca630c06..36dd12d0, with added_failure_count 0; two follow-on findings (per-site profile figures live only under node-local $TMPDIR, and the manifest's suite log_path values name a reaped /tmp path).</p></div>
 </div>
 </section>
 </main>
