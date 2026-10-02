@@ -45,6 +45,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import tempfile
 from collections.abc import Iterable, Iterator
 from pathlib import Path, PurePath, PurePosixPath
@@ -1352,6 +1353,151 @@ def _control_log_findings(
     return []
 
 
+# ── A citation that names no object is not evidence ──────────────────────────
+# The ``commits`` field is a citation list: the revisions the run created, and
+# the pointer a coordinator follows to the work. A citation that resolves to no
+# object is worse than an unpopulated field, because it reads as evidence and
+# points at nothing — and a value assembled rather than copied passes every
+# shape check while naming nothing, so the store is asked about the value as
+# cited and never about its form. This is the same reading promotion applies,
+# taken at the write. Measured on a delivered manifest: a cited object id
+# differed from the real commit in a single nibble and reached the coordinator,
+# because nothing between the worker's own check and the promotion read the
+# store.
+
+# Punctuation a citation can be wrapped in by the prose or list syntax around
+# it, stripped before the token is asked about.
+_CITATION_EDGE_PUNCTUATION = "[](){}<>'\",;.:…*`"
+
+
+def _opens_with_an_absence_word(value: str) -> bool:
+    """Whether a text value opens with an absence word standing alone.
+
+    The word must end at the value's edge or at any character that is not a
+    letter, digit or underscore, so ``none — the scope is outside the
+    repository`` is the declaration it is while ``nonesuch`` is a longer word
+    and is read as the citation attempt it looks like. The vocabulary is this
+    module's own statement of what an explicit nothing looks like in a
+    manifest field.
+    """
+    stripped = value.strip()
+    return any(
+        re.match(rf"{re.escape(word)}(?!\w)", stripped, re.IGNORECASE)
+        for word in _NONE_VALUES
+        if word
+    )
+
+
+def _citation_tokens(entry: str) -> list[str]:
+    """The commit-id shaped tokens one citation entry carries, in order.
+
+    An entry is the worker's own line — a single revision, several revisions
+    separated by spaces or commas, or a revision followed by the subject it was
+    committed under — so the ids are read as the tokens they are rather than
+    the entry being resolved whole, which would refuse an honest entry holding
+    more than one. A token that is not hexadecimal object-id shaped is left
+    alone; the shape only decides what is worth asking about, the store still
+    decides what resolves.
+    """
+    tokens: list[str] = []
+    for raw in entry.split():
+        token = raw.strip(_CITATION_EDGE_PUNCTUATION)
+        if token and _RECORDED_REVISION.fullmatch(token) and token not in tokens:
+            tokens.append(token)
+    return tokens
+
+
+def _commit_resolves_in(root: Path, revision: str) -> bool:
+    """Report whether one revision names a commit object in one repository."""
+    probe = subprocess.run(
+        [
+            "git",
+            "rev-parse",
+            "--verify",
+            "--quiet",
+            "--end-of-options",
+            f"{revision}^{{commit}}",
+        ],
+        cwd=str(root),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return probe.returncode == 0 and bool(probe.stdout.strip())
+
+
+def _citation_stores(
+    *, worktree: Path | None, repository: Path | None
+) -> tuple[Path, ...]:
+    """The stores a citation may resolve in, each one shown able to answer.
+
+    The run records the worktree it worked in and the repository that worktree
+    belongs to, and either shares the object store the citations name, so a
+    citation resolves when any recorded tree can find it. A candidate is only
+    used once git reports a repository there: a pointer into a tree that is not
+    a repository leaves the check unarmed, because asking a store that cannot
+    answer would report every citation as unresolvable and measure the absence
+    of a store rather than of a commit.
+    """
+    stores: list[Path] = []
+    for candidate in (repository, worktree):
+        if candidate is None:
+            continue
+        root = Path(candidate)
+        if not root.is_dir() or root in stores:
+            continue
+        probe = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "--quiet", "--git-dir"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if probe.returncode == 0:
+            stores.append(root)
+    return tuple(stores)
+
+
+def _commit_citation_findings(
+    manifest: dict[str, Any],
+    *,
+    worktree: Path | None = None,
+    repository: Path | None = None,
+) -> list[str]:
+    """Report each ``commits`` citation none of the run's stores can resolve.
+
+    The field opens with a declaration when it opens with an absence word — a
+    report-only node writes ``none — the store is outside the repository`` —
+    and that is a statement about the run rather than a citation, so the whole
+    field is left alone. Every other entry is read token by token: each token
+    the stores cannot resolve is reported by value, and an entry carrying no
+    commit-id shaped token is left to the readers that judge prose.
+    """
+    entries = [str(entry).strip() for entry in (manifest.get("commits") or ())]
+    entries = [entry for entry in entries if entry]
+    if not entries or _opens_with_an_absence_word(entries[0]):
+        return []
+    stores = _citation_stores(worktree=worktree, repository=repository)
+    if not stores:
+        return []
+    findings: list[str] = []
+    for entry in entries:
+        unresolved = [
+            token
+            for token in _citation_tokens(entry)
+            if not any(_commit_resolves_in(store, token) for store in stores)
+        ]
+        if not unresolved:
+            continue
+        named = ", ".join(repr(token) for token in unresolved)
+        verb = "does not resolve" if len(unresolved) == 1 else "do not resolve"
+        named_stores = ", ".join(str(store) for store in stores)
+        findings.append(
+            f"commits entry {entry!r} cites {named}, which {verb} to a commit "
+            f"object in the run repository ({named_stores})"
+        )
+    return findings
+
+
 def audit_manifest(
     text: str,
     node: TaskNode | None = None,
@@ -1435,6 +1581,9 @@ def audit_manifest(
     )
     findings.extend(
         _gate_log_revision_findings(manifest, manifest_path=resolved_manifest_path)
+    )
+    findings.extend(
+        _commit_citation_findings(manifest, worktree=worktree, repository=repository)
     )
     findings.extend(_unmarked_finding_severity_findings(node))
     if node is not None and manifest["changed_paths"]:

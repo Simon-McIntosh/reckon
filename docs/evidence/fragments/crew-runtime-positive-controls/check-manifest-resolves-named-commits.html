@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="check-manifest resolves every cited commit in the run's repository">
+  <meta name="plan-summary" content="A manifest's commits field is the pointer a coordinator follows to the work, and a cited id that resolves to nothing reads as evidence while pointing at none. The manifest audit now resolves each commit-id shaped token an entry carries against the run's repository and worktree, reporting by value what no store can find; a field that opens by declaring no commit is left alone, and a store that cannot answer leaves the check unarmed.">
+  <meta name="plan-evidence-for" content="reckon:crew-runtime-positive-controls">
+  <meta name="plan-verifies" content="reckon:crew-runtime-positive-controls#s22">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,check-manifest,citation,manifest,resolution">
+  <title>check-manifest resolves every cited commit in the run's repository &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>check-manifest resolves every cited commit in the run's repository</h1>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <p><code>reckon/crew/reports.py</code>: <code>audit_manifest</code> now
+        calls <code>_commit_citation_findings</code>, which asks the run's own
+        git stores (the repository recorded on the pointer, then its worktree)
+        about every commit-id shaped token carried by a <code>commits</code>
+        entry, and reports each entry whose token no store can resolve &mdash;
+        naming the value. An entry holding several space-separated revisions is
+        read token by token, so the fleet's honest multi-revision entries are
+        not refused for the shape of the line. A field whose first entry opens
+        with a declared absence word (<code>none &mdash; &hellip;</code>) is a
+        statement about the run, not a citation, and is left alone. A store
+        that cannot answer (a pointer into a tree that is not a repository)
+        leaves the check unarmed rather than reporting every citation as
+        unresolvable. <code>check-manifest</code> passes the pointer's worktree
+        and repository through unchanged, so the refusal reaches the worker
+        while it still holds a turn.</p>
+      <p>The honest-population shapes the reader must accept were measured
+        first on 401 delivered manifests: 497 entries carried one or more
+        space-separated or comma-separated ids, 4 carried an id beside its
+        subject, and 235 fields opened with an absence declaration; the
+        parsed-first-entry absence rule agreed with the raw field on every
+        one, so no raw-field reader was needed.</p>
+    </section>
+
+    <section id="measure">
+      <h2>The measure</h2>
+      <table>
+        <thead><tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>base</td>
+            <td><code>853fa75c4</code></td>
+            <td>615 passed, EXIT=0</td>
+            <td><code>logs/gate-base-853fa75c.log</code></td>
+          </tr>
+          <tr>
+            <td>head</td>
+            <td><code>1653900b7</code></td>
+            <td>621 passed (+6 new), EXIT=0</td>
+            <td><code>logs/gate-head-1653900b.log</code></td>
+          </tr>
+          <tr>
+            <td>negative control: resolution check removed</td>
+            <td><code>1653900b7</code> + mutation</td>
+            <td>3 failed, EXIT=1</td>
+            <td><code>logs/negative-control.log</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The gate is the new test file plus every test file under
+        <code>tests/</code> that names <code>audit_manifest</code> or
+        <code>check-manifest</code> (16 at base, 17 at head), run with
+        <code>pytest-xdist -n 8 --timeout=300</code>; base arm from a
+        <code>git archive</code> extraction of the base revision. The negative
+        control's failing ids are
+        <code>test_the_unresolvable_citation_is_reported_and_the_resolving_one_is_not</code>,
+        <code>test_a_field_that_opens_by_declaring_absence_is_left_alone</code>
+        and <code>test_the_command_reports_the_unresolvable_citation</code> &mdash;
+        none fail in the head arm. The head arm adds no failing id against the
+        base arm's zero.</p>
+      <p>The new test synthesises its own temporary repository and asserts both
+        directions on the instrument before believing them: the store resolves
+        the committed sha and answers nothing for the fabricated 40-character
+        sha, and exactly the second is reported.</p>
+    </section>
+
+    <section id="paths">
+      <h2>Paths and commits</h2>
+      <ul>
+        <li><code>reckon/crew/reports.py</code></li>
+        <li><code>tests/test_check_manifest_resolves_named_commits.py</code></li>
+        <li>commit <code>1653900b714d3973d3f7479a6c31f5aa8c70ab35</code></li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
