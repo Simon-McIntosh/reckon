@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="262">
+<meta name="plan-version" content="263">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -1400,6 +1400,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261002T100841220627-review-of-a-promotion-reads-only-the-fleet-fields-it-records" data-who="reckon-build" data-when="2026-10-02T10:40:02.391Z">
     <div class="r-comment-body"><p>review attached to run r-20261002T083717645045-a-promotion-reads-only-the-fleet-fields-it-records at head af59c36403a5f24a8709404c15de1f782a0c9f84 (base 57dfae0345a5d8ecee9377da3706e8b1ea5dee3b): total 92 (goal_fidelity 20, evidence 17, scope_discipline 19, durability 19, fit 17), added_failure_count 0, two follow-on findings</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T083717645045-a-promotion-reads-only-the-fleet-fields-it-records" data-who="reckon-build" data-when="2026-10-02T10:42:01.780Z">
+    <div class="r-comment-body"><p>perf(crew): _fleet_state_reading derives unreconciled_runs from the live pointers alone via _unreconciled_live_runs (the same closure_disposition_valid predicate and host-gated local_liveness as runs.drain), dropping the full drain and its plan-inventory read that was 22 percent of an 81.9 s promotion; the test asserts the bounded reading equals runs.drain on synthetic fleets, including a still-working pointer that exercises the classification-dependent branch, and that promotion.drain is never invoked</p></div>
 </div>
 </section>
 </main>
