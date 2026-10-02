@@ -23,9 +23,9 @@
   <title>Plan Writes Are Not Fenced | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="22">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;}">
+<meta name="plan-modified" content="2026-10-03">
+<meta name="plan-version" content="23">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -164,7 +164,7 @@
 <p>S21's closing suite at ca630c06e (-n 8, 10,171 tests) failed three cases of <code>tests/test_landing_write_races_every_writer.py</code>, from §6: <code>[followup-append]</code>, <code>[section-append]</code> and <code>[state-set]</code>. Each passes alone in 5 to 6 s. The two writer threads meet at a <code>threading.Barrier(2)</code> whose <code>wait(timeout=2.0)</code> is wrapped in <code>contextlib.suppress(threading.BrokenBarrierError)</code>, so under load one thread can miss the window, the barrier breaks silently and the writes no longer race. Report: <code>~/.config/reckon/crew/runs/r-20261002T130500694738-suite-at-the-closing-head/suite-closing.md</code>.</p><p><strong>Done when</strong> the threads are coordinated so that a broken rendezvous fails the case loudly rather than running the writers unraced, and the file passes 20 consecutive runs at <code>-n 8</code> alongside the rest of the plan-write tests, with each run's result logged. A case whose rendezvous is made to break fails rather than passes.</p>
 
     <h2 id="s9">§9 — A section record moves from deferred to implementable through one write</h2>
-<section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
 <p>Reported on 2026-10-02 by s25-picker, routed by the lead. On one-typesafe-model-picker §5, no edit path could move a typed section record from <code>deferred</code> to <code>implementable</code>. A <code>set section_declarations.s5</code> write was refused with <code>sections['s5'].status: 'deferred' disagrees with section declaration 'implementable'</code>, raised by <code>_consistent_section_records</code> in <code>reckon/_schema.py</code>. <code>set sections</code> is an unsupported plan set path, and a text-mode edit of the record's <code>data-status</code> is refused because it overlaps a structured-state region. The setter in <code>reckon/_store.py</code> already writes the record's status beside the declaration, so the refusal comes from a plan shape that setter does not reach. The session worked around it by opening §8 and §9.</p><p><strong>Done when</strong> the plan's HTML at the revision that refused (from <code>git log -- docs/plans/one-typesafe-model-picker.html</code>, before the workaround) is copied into a temporary docs tree as a fixture, the refusal is reproduced on it, and <code>set section_declarations.&lt;id&gt;</code> then moves that record between any two declared values in one versioned write. The test fails at the base, and the negative control restores the setter's old record lookup.</p>
 
     <h2 id="s10">§10 — Text mode applies a batch of replacements in one versioned write</h2>
@@ -234,6 +234,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T192649015435-review-of-text-mode-applies-a-batch" data-who="reckon-build" data-when="2026-10-02T19:34:06.916Z">
     <div class="r-comment-body"><p>reviewed r-20261002T181720891682-text-mode-applies-a-batch at base a326205d5b8173815b4b839fc651b4f49ce6156e / head 40a8d645389519e2161c9006fc6ac22ee9b588d7; stored a parsed five-dimension review (goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 19; total 98) with added_failure_count 0 and added_failure_ids [], plus one follow-on finding.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-pwnf-s9-landed" data-who="s22-coord" data-when="2026-10-03">
+    <div class="r-comment-body"><p>Landed at 72990cf1e (run r-20261002T213705240861-section-record-moves-between-declarations, reviewed at 91, zero added failures). The write that refused was the whole-map form, <code>{"op":"set","path":"section_declarations","value":{...}}</code>, which reached the generic assignment and moved the declaration map without the typed records beside it. The dotted form <code>section_declarations.&lt;id&gt;</code> already moved the record at the base and is the test's positive control. So this section's original done-when, which named the dotted form, was a check that already passed at the base. The fixture is one-typesafe-model-picker at 53a72f8c: section 5 now moves between deferred and implementable in one versioned write each way. Record: <code>docs/evidence/fragments/plan-writes-are-not-fenced/section-record-moves-between-declarations.html</code>.</p></div>
 </div>
 </section>
 </main>
