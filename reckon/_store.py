@@ -1791,9 +1791,7 @@ def append_to_list(
             "prompt": _validate_new_followup_prompt(item.get("prompt", "")),
         }
         if _followup_is_open(item):
-            _refuse_hiding_followup(
-                {**cur_data, "slug": slug}, item, project=project
-            )
+            _refuse_hiding_followup(cur_data, item, project=project)
     lst = list(cur_data.get(field, []))
     if isinstance(item, dict) and item.get("id"):
         _refuse_duplicate_id(lst, field, str(item["id"]))
