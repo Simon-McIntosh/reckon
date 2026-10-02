@@ -9355,6 +9355,14 @@ def _reap_the_launched_worker(
     worker rather than a launcher's exit taken while the worker still runs.
     """
     worker_pid, worker_status = pid, status
+    if status is not None and os.WIFSIGNALED(status):
+        # A launcher hands the attempt to its worker by exiting; it is not
+        # killed. A spawned child that ended by signal ended the attempt's own
+        # worker, and any descendants it leaves behind are leftovers of that
+        # worker rather than a worker still running the attempt. The signal is
+        # the fact the exit record carries, so it is written now rather than
+        # after a leftover ends.
+        return worker_pid, worker_status
     while True:
         children = _child_processes_of(os.getpid())
         if not children:
