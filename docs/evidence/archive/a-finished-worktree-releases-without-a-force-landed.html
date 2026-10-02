@@ -80,6 +80,22 @@
       <li><code>ship-s18-20260918/a-scoring-run-dispatches-its-own-review</code> (2)</li>
       <li><code>ship-s18-20260918/a-withheld-worktree-says-whether-its-work-is-unique</code> (6)</li>
     </ul>
+
+    <h2 id="s6">§6 — Patch-equivalent commits release (merged at 4ceb579f5)</h2>
+    <p>
+      <code>crew gc</code> now asks <code>git cherry</code> whether each commit a dirty worktree
+      carries beyond the integration head already has a patch-equivalent there. A worktree whose
+      every such commit is equivalent, because it landed through a squash or a merge of a
+      different sha, is released through the §3 residue-preserving path. A worktree carrying any
+      non-equivalent commit is kept, and its row names that commit's sha and subject. A
+      comparison that cannot run counts as not equivalent, so an unreadable tree is kept. The
+      node was r-20261002T214116756941-gc-releases-squash-landed-worktrees, on the local lane,
+      reviewed at 89 with no added failures. Its head arm passed 52 tests against 49 at the base,
+      and the control that drops the equivalence branch fails the equivalent-commit case. The
+      worker's record is
+      <code>docs/evidence/fragments/a-finished-worktree-releases-without-a-force/gc-releases-squash-landed-worktrees.html</code>.
+      Re-running gc over the twelve worktrees kept in §4 is the next step, after §7.
+    </p>
   </main>
 </body>
 </html>
