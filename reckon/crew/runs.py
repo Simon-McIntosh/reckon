@@ -1561,13 +1561,14 @@ def _producer_snapshot_identity(project: str) -> dict[str, Any]:
 
 
 def _publish_obligation_snapshots(project: str, *, transition_fired: bool) -> list[str]:
-    """Republish every registered session's obligations snapshot for one sweep.
+    """Republish every live session's obligations snapshot for one sweep.
 
-    The sessions are the ones holding a follower registration in the project's
-    watch directory — the same registration the hook resolves its own session
-    through — whether or not their follower is attached at that moment, since
-    the snapshot is what a later turn reads. A session that never registered a
-    follower is not coordinating and gets no snapshot.
+    The sessions are the ones currently delivering from a follower registration
+    in the project's watch directory — the same registration the hook resolves
+    its own session through. A registration keeps its file after its follower
+    goes, so publishing for every registration the project has ever had would
+    spend the sweep deriving for sessions nobody is coordinating under; a
+    session that never registered a follower gets no snapshot at all.
 
     The triggers live with the snapshot module; this is the per-project sweep
     the producer already runs, so its clock and its stat reads are the ones the
@@ -1575,7 +1576,15 @@ def _publish_obligation_snapshots(project: str, *, transition_fired: bool) -> li
     """
     from reckon.crew import obligation_snapshot
 
-    sessions = [str(row.get("session") or "") for row in list_followers(project)]
+    sessions = [
+        str(row.get("session") or "")
+        for row in list_followers(project)
+        # Only a registration something is delivering from is a session with
+        # duties to publish: a released registration keeps its file for a later
+        # re-arm, and deriving for every registration the project has ever had
+        # would spend the sweep on sessions nobody is coordinating under.
+        if row.get("live")
+    ]
     docs = _docs_dir_for_project(project)
     written = obligation_snapshot.sweep(
         project,

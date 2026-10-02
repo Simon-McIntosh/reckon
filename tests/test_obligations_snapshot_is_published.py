@@ -20,6 +20,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -36,6 +37,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 SNAPSHOT_MODULE = REPOSITORY_ROOT / "reckon" / "crew" / "obligation_snapshot.py"
 DERIVATION_MODULES = ("reckon._plan_html", "reckon._backends", "reckon.ledger")
 FRESHNESS = obligation_snapshot.FRESHNESS_WINDOW_SECONDS
+STAT = obligation_snapshot.STAT_IDENTITY_INTERVAL_SECONDS
 FLOOR = obligation_snapshot.FLOOR_TICK_SECONDS
 
 # The module is imported by path: `import reckon.crew.obligation_snapshot`
@@ -151,7 +153,7 @@ def test_a_pointer_transition_is_in_the_snapshot_by_the_next_sweep(
     """A transition is visible to a reader by the end of the first sweep after it."""
     _write_pointer(fleet, "r-before", phase="working", status="working")
     with (
-        runs.follower_registration(PROJECT, SESSION),
+        runs.follower_registration(PROJECT, SESSION, delivery="stream"),
         runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
     ):
         assert acquired is True
@@ -187,7 +189,7 @@ def test_the_snapshot_carries_the_derivation_over_unmodified_files(
     _write_pointer(fleet, "r-owed", phase="complete", status="complete")
     _write_pointer(fleet, "r-working", phase="working", status="working")
     with (
-        runs.follower_registration(PROJECT, SESSION),
+        runs.follower_registration(PROJECT, SESSION, delivery="stream"),
         runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
     ):
         assert acquired is True
@@ -201,7 +203,7 @@ def test_the_snapshot_carries_the_derivation_over_unmodified_files(
     # computed must reproduce the derivation exactly, ages included.
     assert (
         obligation_snapshot.live_payload(stored, now=_computed_at(stored)) == expected
-    )  # __T5__
+    )
 
 
 def _stopped_between_write_and_rename(staging: str, destination: str) -> None:
@@ -215,7 +217,7 @@ def test_a_writer_stopped_before_the_rename_leaves_the_previous_snapshot(
     """A snapshot writer that dies mid-write leaves the last snapshot readable."""
     _write_pointer(fleet, "r-owed", phase="complete", status="complete")
     with (
-        runs.follower_registration(PROJECT, SESSION),
+        runs.follower_registration(PROJECT, SESSION, delivery="stream"),
         runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
     ):
         assert acquired is True
@@ -307,7 +309,7 @@ def test_a_file_change_and_the_floor_tick_each_republish(fleet: dict[str, Any]) 
     """The other two triggers, and the guard that nothing else republishes."""
     _write_pointer(fleet, "r-working", phase="working", status="working")
     with (
-        runs.follower_registration(PROJECT, SESSION),
+        runs.follower_registration(PROJECT, SESSION, delivery="stream"),
         runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
     ):
         assert acquired is True
@@ -318,24 +320,124 @@ def test_a_file_change_and_the_floor_tick_each_republish(fleet: dict[str, Any]) 
         _sweep()
         assert obligation_snapshot.read_snapshot(PROJECT, SESSION) == first
 
-        # A plan file's stat identity moved, with no pointer change at all.
-        plan = fleet["repo"] / "docs" / "plans" / "fixture-plan.html"
-        plan.write_text("<html>edited</html>\n", encoding="utf-8")
-        _sweep()
-        after_edit = obligation_snapshot.read_snapshot(PROJECT, SESSION)
-        assert after_edit is not None and after_edit != first
-
-    # The floor tick republishes with no event of any kind.
-    written = obligation_snapshot.sweep(
-        PROJECT,
-        sessions=[SESSION],
-        producer=after_edit["producer"],
-        stream_offset=first["stream_offset"],
-        state_dirs=[
+        dirs = [
             fleet["repo"] / "docs" / "state" / PROJECT,
             fleet["repo"] / "docs" / "plans",
-        ],
-        now=_computed_at(after_edit) + timedelta(seconds=FLOOR + 1),
+        ]
+
+    def sweep_at(instant: datetime) -> list[Path]:
+        return obligation_snapshot.sweep(
+            PROJECT,
+            sessions=[SESSION],
+            producer=first["producer"],
+            stream_offset=first["stream_offset"],
+            state_dirs=dirs,
+            now=instant,
+        )
+
+    # A plan file's stat identity moved, with no pointer change at all — but
+    # the walk is on a cadence, so inside it the change is not looked for yet.
+    plan = fleet["repo"] / "docs" / "plans" / "fixture-plan.html"
+    plan.write_text("<html>edited</html>\n", encoding="utf-8")
+    assert sweep_at(_computed_at(first) + timedelta(seconds=5)) == []
+
+    # Past the cadence the same change republishes the session's snapshot.
+    assert sweep_at(_computed_at(first) + timedelta(seconds=STAT + 5))
+    after_edit = obligation_snapshot.read_snapshot(PROJECT, SESSION)
+    assert after_edit is not None and after_edit != first
+
+    # The floor tick republishes with no event of any kind.
+    assert sweep_at(_computed_at(after_edit) + timedelta(seconds=FLOOR + 1))
+
+
+def _released_registration(session: str) -> None:
+    """Leave a registration whose process is gone, as a released one looks."""
+    finished = subprocess.Popen(["true"])
+    finished.wait()
+    path = runs.follower_lock_path(PROJECT, session)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"project": PROJECT, "session": session, "pid": finished.pid}),
+        encoding="utf-8",
     )
 
-    assert written, "the floor tick republishes with no other event"
+
+def test_only_a_live_registration_gets_a_snapshot(fleet: dict[str, Any]) -> None:
+    """A registration whose follower has gone is not published for."""
+    _released_registration("released-fixture")
+    _write_pointer(fleet, "r-working", phase="working", status="working")
+    with (
+        runs.follower_registration(PROJECT, SESSION, delivery="stream"),
+        runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
+    ):
+        assert acquired is True
+        rows = {row["session"]: row for row in runs.list_followers(PROJECT)}
+        assert rows["released-fixture"]["live"] is False, "the fixture must be released"
+        assert rows[SESSION]["live"] is True
+
+    assert obligation_snapshot.read_snapshot(PROJECT, SESSION) is not None
+    assert obligation_snapshot.read_snapshot(PROJECT, "released-fixture") is None
+
+
+def test_a_slice_equals_the_derivation_over_the_same_files(
+    fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The per-session slice is the derivation, field for field."""
+    # Both derivations are read at one instant: the classifier's own clock
+    # otherwise moves between them and an age that ticked forward would read as
+    # a content diff. It is the files that must be unmodified, not the clock.
+    monkeypatch.setattr(recovery, "_utc_seconds", fleet["frozen"].timestamp)
+    _write_pointer(fleet, "r-owed", phase="complete", status="complete")
+    _write_pointer(fleet, "r-working", phase="working", status="working")
+    now = fleet["frozen"]
+    state = obligation_snapshot.fleet_state(PROJECT, now=now)
+    sliced = obligation_snapshot.payload_for(state, SESSION)
+    derived = obligations_module.obligations(PROJECT, SESSION)
+    assert derived["obligations"], "the slice parity case must compare duties"
+    assert sliced == derived
+
+
+def test_the_stat_walk_skips_run_records(fleet: dict[str, Any]) -> None:
+    """A record under the state directory's runs subtree is not walked."""
+    state_dir = fleet["repo"] / "docs" / "state" / PROJECT
+    record = state_dir / "runs" / "r-one.json"
+    record.parent.mkdir(parents=True, exist_ok=True)
+    record.write_text("{}\n", encoding="utf-8")
+    kept = state_dir / "crew.json"
+    kept.write_text("{}\n", encoding="utf-8")
+    identity = obligation_snapshot._stat_identity(
+        [state_dir, fleet["repo"] / "docs" / "plans"]
+    )
+    assert str(kept) in identity, "a file beside the runs subtree is still walked"
+    assert not any("/runs/" in path for path in identity)
+
+
+def test_a_zombie_producer_is_not_fresh(fleet: dict[str, Any]) -> None:
+    """A process that has exited and not been reaped does not hold a snapshot.
+
+    A zombie keeps its process-table entry, so a liveness probe that only reads
+    a start time still finds one; the state field is what tells it apart from a
+    running producer.
+    """
+    zombie = subprocess.Popen([sys.executable, "-c", "pass"])
+    try:
+        deadline = time.monotonic() + 10.0
+        start = None
+        while time.monotonic() < deadline:
+            if obligation_snapshot._process_stat_fields(zombie.pid)[:1] == ["Z"]:
+                start = obligation_snapshot.process_start_time(zombie.pid)
+                break
+            time.sleep(0.05)
+        assert start is not None, "the child never became a zombie"
+        document = _document(
+            pid=zombie.pid,
+            start=start,
+            stamp="stamp-one",
+            computed_at=datetime.now(tz=UTC),
+        )
+        assert (
+            obligation_snapshot.freshness(document, current_stamp="stamp-one")
+            == "no-producer"
+        )
+    finally:
+        zombie.wait()

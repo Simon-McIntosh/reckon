@@ -51,7 +51,12 @@ NO_PRODUCER = "no-producer"
 STALE_CODE = "producer-stale-code"
 STALE_SNAPSHOT = "stale-snapshot"
 
-_NOT_FRESH_REASONS = (NO_PRODUCER, STALE_CODE, STALE_SNAPSHOT)
+STAT_IDENTITY_INTERVAL_SECONDS = 10.0
+
+# A state directory's ``runs`` subtree changes on every run event, and those
+# changes reach the producer as pointer transitions, so the sweep does not walk
+# it.
+_RUNS_DIRNAME = "runs"
 
 # The keys this module adds to the derived payload, and the ones it removes
 # from a stored snapshot on the way back to the payload's shape.
@@ -192,10 +197,11 @@ def _records_the_live_producer(producer: Mapping[str, Any]) -> bool:
     is recorded, so a snapshot naming a pid with no start time, or one whose
     start time is unreadable, is not evidence of a live producer.
     """
+    pid = producer.get("pid")
     recorded = str(producer.get("pid_start_time") or "")
-    if not recorded:
+    if not recorded or not _process_is_running(pid):
         return False
-    return process_start_time(producer.get("pid")) == recorded
+    return process_start_time(pid) == recorded
 
 
 # ── Code stamp ──────────────────────────────────────────────────────────────
@@ -400,6 +406,7 @@ class _SweepMemory:
     """What one project's producer remembers between its sweeps."""
 
     identity: dict[str, tuple[int, int]]
+    checked_at: datetime
     published_at: datetime
 
 
@@ -412,21 +419,156 @@ def _stat_identity(directories: Iterable[Any]) -> dict[str, tuple[int, int]]:
     Judged per file rather than per directory: an in-place edit that leaves a
     directory's own stat unchanged still moves the file's size or mtime, and
     that is the change the producer republishes on.
+
+    A ``runs`` directory directly under one of the roots is not walked. Its
+    files change whenever a run records anything, and those changes reach the
+    producer as pointer transitions already, so walking them would spend the
+    sweep's stat budget on a trigger that carries no new event.
     """
     identity: dict[str, tuple[int, int]] = {}
     for directory in directories:
         root = Path(directory)
         if not root.is_dir():
             continue
-        for path in sorted(root.rglob("*")):
+        for entry in sorted(root.iterdir()):
+            if entry.name == _RUNS_DIRNAME:
+                continue
             try:
-                if not path.is_file():
+                if entry.is_file():
+                    metadata = entry.stat()
+                    identity[str(entry)] = (metadata.st_size, metadata.st_mtime_ns)
                     continue
-                metadata = path.stat()
+                for path in sorted(entry.rglob("*")):
+                    if not path.is_file():
+                        continue
+                    metadata = path.stat()
+                    identity[str(path)] = (metadata.st_size, metadata.st_mtime_ns)
             except OSError:
                 continue
-            identity[str(path)] = (metadata.st_size, metadata.st_mtime_ns)
     return identity
+
+
+def _derivation_module():
+    """The obligations derivation, imported where it is used and not before."""
+    from reckon.crew import obligations as module
+
+    return module
+
+
+@dataclass
+class FleetState:
+    """The fleet inputs one sweep's per-session payloads share.
+
+    A project's obligations are mostly a property of the fleet — every live
+    pointer classified once, the ledger read once, each run's review looked up
+    once — and only the slicing is per session. Deriving these once per sweep
+    rather than once per session is what keeps a sweep proportional to the
+    fleet instead of to the fleet multiplied by the sessions reading it.
+    """
+
+    project: str
+    now: datetime
+    config: Mapping[str, Any]
+    grace: float
+    floors: Mapping[str, Any]
+    rows: list[dict[str, Any]]
+    acknowledged: dict[str, dict[str, Any]]
+    reviews_in_flight: dict[str, set[str]]
+
+
+def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
+    """Derive everything a sweep's per-session payloads are sliced from."""
+    module = _derivation_module()
+    instant = _utc_now() if now is None else now
+    config = module.flight.resolve(project).config
+    grace = module.parse_duration(
+        str((config.get("fences") or {}).get("unreconciled_run_grace") or "15m")
+    )
+    reviews_in_flight: dict[str, set[str]] = {}
+    for pointer in module.runs.list_live(project=project):
+        session = str(pointer.get("session") or "")
+        run_id = str(pointer.get("run_id") or "")
+        if session and run_id and module._current_review_in_flight(pointer):
+            reviews_in_flight.setdefault(session, set()).add(run_id)
+    return FleetState(
+        project=project,
+        now=instant,
+        config=config,
+        grace=grace,
+        floors=module.review_module.declared_dimension_floors(config),
+        rows=module._classified_rows(project),
+        acknowledged=module._acknowledgements_in_force(project, now=instant),
+        reviews_in_flight=reviews_in_flight,
+    )
+
+
+def _duty_kind(
+    module, state: FleetState, row: Mapping[str, Any], in_flight: set[str]
+) -> str:
+    """The duty one classified row owes its session, or the empty string."""
+    classification = str(row.get("classification") or "")
+    recovery_classification = str(row.get("recovery_classification") or "")
+    if classification == "scoring":
+        if str(row.get("run_id") or "") in in_flight:
+            return ""
+        return module.CLASSIFICATION_DUTY_KINDS[classification]
+    if classification == "promotable":
+        age = module._row_age(row, now=state.now)
+        return (
+            "promotable-stale"
+            if age > state.grace
+            else module.CLASSIFICATION_DUTY_KINDS[classification]
+        )
+    if recovery_classification in module.RECOVERY_CLASSIFICATION_DUTY_KINDS:
+        return module.RECOVERY_CLASSIFICATION_DUTY_KINDS[recovery_classification]
+    return module.CLASSIFICATION_DUTY_KINDS.get(classification, "")
+
+
+def payload_for(state: FleetState, session: str) -> dict[str, Any]:
+    """One session's obligations payload, sliced from a derived fleet state.
+
+    The shape and the ordering are :func:`reckon.crew.obligations.obligations`'s
+    own, composed from the same helpers the derivation uses, so a slice and a
+    derivation over the same files are equal field for field.
+    """
+    module = _derivation_module()
+    in_flight = state.reviews_in_flight.get(session, set())
+    items: list[dict[str, Any]] = []
+    for row in state.rows:
+        if str(row.get("session") or "") != session:
+            continue
+        kind = _duty_kind(module, state, row, in_flight)
+        if kind:
+            items.append(module._live_item(row, kind=kind, now=state.now))
+    items.extend(
+        module._sub_floor_items(state.project, session, state.floors, now=state.now)
+    )
+    items.extend(module._held_worktrees(state.project, session, now=state.now))
+    items, acknowledged = module._partition_acknowledged(items, state.acknowledged)
+    items.sort(
+        key=lambda item: (
+            -int(item["age_seconds"]),
+            str(item["run_id"]),
+            str(item["kind"]),
+        )
+    )
+    acknowledged.sort(
+        key=lambda item: (str(item["until"]), str(item["run_id"]), str(item["kind"]))
+    )
+    closure = module.runs.drain(state.project, session=session)
+    return {
+        "project": state.project,
+        "session": session,
+        "obligations": items,
+        "acknowledged": acknowledged,
+        "summary": {
+            "count": len(items),
+            "oldest_age_seconds": max(
+                (int(item["age_seconds"]) for item in items), default=0
+            ),
+            "unreconciled_runs": int(closure["unreconciled_runs"]),
+        },
+    }
 
 
 def sweep(
@@ -453,7 +595,12 @@ def sweep(
     instant = _utc_now() if now is None else now
     key = str(snapshot_dir(project))
     memory = _SWEEPS.get(key)
-    identity = _stat_identity(state_dirs)
+    checked = (
+        memory is not None
+        and (instant - memory.checked_at).total_seconds()
+        < STAT_IDENTITY_INTERVAL_SECONDS
+    )
+    identity = memory.identity if checked else _stat_identity(state_dirs)
     due = (
         transition_fired
         or memory is None
@@ -461,17 +608,19 @@ def sweep(
         or (instant - memory.published_at).total_seconds() >= FLOOR_TICK_SECONDS
     )
     if not due:
+        _SWEEPS[key] = _SweepMemory(
+            identity=identity,
+            checked_at=instant if not checked else memory.checked_at,
+            published_at=memory.published_at,
+        )
         return []
 
-    from reckon.crew.obligations import obligations
-
+    state = fleet_state(project, now=instant)
     written: list[Path] = []
-    seen: set[str] = set()
-    for session in sessions:
-        if not session or session in seen:
+    for session in dict.fromkeys(str(session or "") for session in sessions):
+        if not session:
             continue
-        seen.add(session)
-        payload = obligations(project, session)
+        payload = payload_for(state, session)
         document = document_for(
             payload,
             computed_at=instant,
@@ -479,5 +628,9 @@ def sweep(
             producer=producer,
         )
         written.append(write_snapshot(project, session, document))
-    _SWEEPS[key] = _SweepMemory(identity=identity, published_at=instant)
+    _SWEEPS[key] = _SweepMemory(
+        identity=identity,
+        checked_at=instant if not checked else memory.checked_at,
+        published_at=instant,
+    )
     return written
