@@ -13,6 +13,7 @@ from reckon.crew.node import (
     is_test_path,
     negative_control_is_none,
     parse_duration,
+    role_may_write_repository_paths,
 )
 
 # The commit-and-manifest-early contract, embedded in every composed prompt.
@@ -477,16 +478,22 @@ RUNTIME FILESYSTEM
   The repository at the assigned worktree path {worktree} is read-only.
 """
     # The landing contract is a named slot in the template like its siblings,
-    # gated to the shape where a repository change is the deliverable. The gate
-    # is whether the worker can write its assigned worktree — the fact that
-    # decides if a change is something it can commit — resolved by dispatch and
-    # never by which dialect happens to relocate the process directory. Each
-    # slot is separated by blank lines so a test can mask any one constant and
-    # recompose: the result must equal the live prompt with that block deleted.
+    # gated to the shape where a repository change is the deliverable. Two
+    # facts decide it: the worker can write its assigned worktree — the fact
+    # that decides if a change is something it can commit — resolved by
+    # dispatch and never by which dialect happens to relocate the process
+    # directory, and the role may land repository paths, the same predicate the
+    # promotion refusal reads. Both are required, so a role whose sandbox can
+    # write the worktree but whose commits a promotion refuses is never
+    # instructed to land, and no role that receives the contract is refused for
+    # following it. Each slot is separated by blank lines so a test can mask
+    # any one constant and recompose: the result must equal the live prompt
+    # with that block deleted.
     if can_write_worktree is None:
-        can_land = Path(working_directory) == Path(worktree)
+        writable = Path(working_directory) == Path(worktree)
     else:
-        can_land = can_write_worktree
+        writable = can_write_worktree
+    can_land = bool(writable) and role_may_write_repository_paths(node.role)
     if not can_land:
         landing_contract = ""
     else:
