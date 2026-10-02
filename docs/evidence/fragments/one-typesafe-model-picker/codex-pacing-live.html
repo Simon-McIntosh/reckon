@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="Group pacing reads the live account window">
+  <meta name="plan-summary" content="The account surface paces the codex-sub group beside a rolled-over receipt; a provided 1,440-minute window is retained and paced by its own fraction; the bar fills from a primary-only window; and a role-aware pace hold withholds implementation work from a window that stands above its elapsed allowance.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s7">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,budget,codex,pacing,evidence">
+  <title>Group pacing reads the live account window | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="codex-pacing-reads-live-window" data-reckon="landed" data-when="2026-10-02">
+  <h2>Group pacing reads the live account window</h2>
+  <p>The account surface is now read beside the recorded receipts and the freshest dated
+  reading of the two speaks for the group, so a dispatch is paced by the window the provider
+  reports now rather than by a receipt from a window that has already reset. Previously a
+  rolled-over weekly receipt paced the whole window (<code>derived 1.0</code>) and admitted an
+  implement dispatch; the fresh account-surface reading paces by its own elapsed fraction.</p>
+
+  <h3>What the change does</h3>
+  <ul>
+    <li>The dispatch pace record (<code>budget.pace_row</code>) merges the account surface with
+    the recorded evidence, keeping the newest dated reading.</li>
+    <li>Any positive provider-reported window length is retained on the account-surface and
+    rollout paths; a 1,440-minute window is no longer dropped and paced by its own elapsed
+    fraction.</li>
+    <li>The bar is drawn from a primary-only account's operative window rather than reading
+    unknown, so an account with no five-hour sibling still fills the bar.</li>
+    <li>A role-aware <code>budget.pace_hold</code> withholds non-bookend dispatch while the
+    window stands above its elapsed allowance, naming utilisation, allowance and reset; the
+    review and verify roles the reserve protects are admitted.</li>
+  </ul>
+
+  <h3>Measure</h3>
+  <p>At the fixture reading (10,080-minute primary window at 3% used, 0.84% elapsed,
+  <code>pace_multiple 1.1</code>) the group derives a <code>0.924%</code> allowance at
+  <code>3.57&times;</code> burn, the bar fills at <code>0.03</code>, an implement dispatch is
+  held and a review dispatch admitted. Two days into a 43,200-minute fixture the allowance is
+  <code>7.33%</code>; a 1,440-minute fixture at 25% elapsed allows
+  <code>0.275</code> rather than being dropped.</p>
+  <p>The gate (tests/test_budget_window_length.py, tests/test_budget.py, tests/test_reserve.py,
+  tests/test_pace.py, tests/test_preflight_pace.py) is 152 passed, exit 0, at commit
+  <code>43ab5d69</code>. The three new cases fail at base <code>f8cb9464d</code> (3 failed,
+  3 passed). The declared negative control — pace_row ignoring the account surface — leaves
+  test (1) the only failure (<code>EXIT=1</code>).</p>
+
+  <h3>Live read</h3>
+  <p>This node's own codex account-surface probe returns unknown from its compute node, so the
+  coordinator took the live read from this worktree's code on a node where the surface answers
+  (<code>reckon.__file__</code> resolved inside this worktree) at 2026-10-02T13:1xZ:</p>
+  <pre><code>PYTHONPATH=&lt;this worktree&gt; /home/ITER/mcintos/Code/reckon/.venv/bin/reckon \
+  crew preflight --project reckon --backend codex --role implement</code></pre>
+  <p>Exit 3, <code>held: true</code>. The <code>codex-sub</code> group reads source
+  <code>account-surface</code> (member <code>codex</code>):</p>
+  <table>
+    <thead><tr><th>source</th><th>window</th><th>elapsed</th><th>utilisation</th><th>burn</th><th>allowance</th><th>limited_by</th><th>held</th></tr></thead>
+    <tbody><tr>
+      <td><code>account-surface</code></td>
+      <td>10,080 min</td>
+      <td>2.63 h</td>
+      <td>5%</td>
+      <td>3.19&times;</td>
+      <td>1.7238%</td>
+      <td><code>allowance</code></td>
+      <td>yes</td>
+    </tr></tbody>
+  </table>
+  <p>The group's <code>pace_hold</code> for the <code>implement</code> role is
+  <code>held: true</code>, naming utilisation <code>5%</code>, a <code>3.19068&times;</code>
+  burn against the <code>1.1&times;</code> pace multiple, the <code>1.72377%</code> allowance,
+  and the reset at <code>2026-10-09T10:39:36Z</code>. The read is recorded at
+  <code>coordinator-live-read.json</code>.</p>
+
+  <h3>Commits</h3>
+  <p><code>43ab5d69</code> — implementation and tests; <code>5b2263c4</code> — this fragment with the coordinator live read. Logs under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T120549875121-codex-pacing-reads-live-window/</code>.</p>
+</article>
+</body>
+</html>

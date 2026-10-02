@@ -60,6 +60,7 @@ from reckon._timestamps import parse_utc
 from reckon.crew import bar as bar_module
 from reckon.crew import budget_group, window_reading
 from reckon.crew import pace as pace_module
+from reckon.crew import reserve as reserve_module
 from reckon.crew import rollout as rollout_module
 from reckon.crew.refusals import format_refusal
 
@@ -1720,6 +1721,28 @@ def preflight(
             if member is not None and member in window_sources:
                 entry["source"] = window_sources[member]
         report["window_sources"] = window_sources
+    # A requested non-bookend role is judged against its group's pace beside the
+    # ceiling hold: a group spending its window faster than the pace it reported
+    # admits no implementation work until the window resets, while the roles the
+    # reserve protects are never withheld by pace. The verdict rides the group
+    # entry so a reader sees the utilisation, allowance and reset the hold rests
+    # on, and a pace hold withholds the wave exactly as a ceiling hold does.
+    role_names = [str(role) for role in roles] if roles is not None else []
+    pacing_roles = [role for role in role_names if not reserve_module.is_bookend(role)]
+    if pacing_roles:
+        pace_holds = []
+        for entry in report["groups"]:
+            verdict = pace_hold(entry, pacing_roles[0])
+            entry["pace_hold"] = verdict
+            if verdict["held"]:
+                pace_holds.append(verdict)
+        if pace_holds:
+            report["held"] = True
+            report["pace_holds"] = pace_holds
+            if report.get("resume_at") is None:
+                report["resume_at"] = _earliest_reset(
+                    [{"state": {"resets_at": hold["resets_at"]}} for hold in pace_holds]
+                )
     report["summary"] = summary(report)
     return report
 
@@ -1744,9 +1767,12 @@ def _state_window_reading(
     ):
         return None
     minutes = int(raw_minutes)
-    period = _clock_for_window(minutes)
-    if period is None:
-        return None
+    # The account surface reports one operative window, whatever its length, so
+    # its figure is named ``primary`` rather than placed on a historical clock:
+    # a provider window of a length this reader has seen before is still this
+    # account's operative window, not its five-hour or seven-day sibling, and
+    # naming it by length would let a stale receipt's clock stand in for it.
+    period = "primary"
     figure = window_reading.WindowFigure(
         period=period,
         utilisation=float(utilisation) / 100.0,
@@ -2345,8 +2371,10 @@ def _group_bar(
     clocks: Mapping[str, Mapping[str, Any]],
     ready: Iterable[Mapping[str, Any]],
     runway: Mapping[str, Any] | None = None,
+    *,
+    operative: window_reading.WindowFigure | None = None,
 ) -> dict[str, Any]:
-    """Judge a stated ready set against the group's five-hour fill.
+    """Judge a stated ready set against the group's filling window.
 
     The bar rises with the window that fills, so the five-hour utilisation is
     the fill it is drawn against. Each node keeps the bar's own four outcomes —
@@ -2365,6 +2393,19 @@ def _group_bar(
     """
     five = clocks[CLOCK_FIVE_HOUR]
     fill = five["utilisation"] if five["state"] == OBSERVED else None
+    fill_state = five["state"]
+    if (
+        fill is None
+        and operative is not None
+        and clocks[CLOCK_SEVEN_DAY]["state"] != OBSERVED
+    ):
+        # An account reporting one operative window and neither historical clock
+        # is not a window nobody read: fill the bar from that window's own
+        # utilisation rather than leaving every node undecided. A five-hour or
+        # seven-day clock that *was* observed keeps the fill it defines, so a
+        # receipt carrying only the week still reports no five-hour fill.
+        fill = float(operative.utilisation)
+        fill_state = OBSERVED
 
     recommendations: list[dict[str, Any]] = []
     admitted: list[dict[str, Any]] = []
@@ -2425,7 +2466,7 @@ def _group_bar(
 
     return {
         "window_fill": fill,
-        "state": five["state"],
+        "state": fill_state,
         "recommendations": recommendations,
         "admitted": admitted,
         "split": split,
@@ -2514,10 +2555,166 @@ def group_pace(
                 "allowance": _group_allowance(
                     group, reading, clocks, config, moment=moment
                 ),
-                "bar": _group_bar(clocks, nodes_by_group[group], runway),
+                "bar": _group_bar(
+                    clocks,
+                    nodes_by_group[group],
+                    runway,
+                    operative=_operative_window(reading),
+                ),
             }
         )
     return report
+
+
+def pace_hold(entry: Mapping[str, Any], role: str | None) -> dict[str, Any]:
+    """Whether a group's pace withholds a dispatch from a role's work.
+
+    A group is over its pace when the window it reports stands above the
+    allowance its own elapsed fraction grants: at that utilisation the account
+    would exhaust the window before its reset if it kept spending at the rate
+    it has. The verdict is read whole from the group entry -- the utilisation
+    the provider reported, the allowance derived from the window it reports, and
+    that window's reset -- so a hold names the figures it rests on rather than
+    an assertion a reader has to take on faith.
+
+    The reserve's bookend roles are never held by pace: review and verify are
+    the expenditure a spent window is being protected for, so they are admitted
+    at any utilisation and the hold applies only to the roles that spend the
+    window down. A group carrying no derived allowance -- an unread window or a
+    reset that cannot be placed -- holds nothing, because absence of a reading
+    is not a measured overspend.
+    """
+    allowance = entry.get("allowance")
+    allowance = allowance if isinstance(allowance, Mapping) else {}
+    utilisation = allowance.get("utilisation")
+    derived = allowance.get("derived")
+    resets_at = allowance.get("resets_at")
+    burn = allowance.get("burn_multiple")
+    multiple = allowance.get("pace_multiple")
+    bookend = reserve_module.is_bookend(role)
+    measured = all(
+        isinstance(value, (int, float)) and not isinstance(value, bool)
+        for value in (utilisation, derived, burn, multiple)
+    )
+    if not measured:
+        return {
+            "role": str(role),
+            "bookend": bookend,
+            "held": False,
+            "utilisation": None,
+            "allowance": None,
+            "resets_at": None,
+            "reason": (
+                f"the {entry.get('group')!r} group's allowance was not read, so "
+                "no overspend can be measured and nothing is held"
+            ),
+        }
+    held = (not bookend) and float(burn) > float(multiple)
+    if bookend:
+        reason = (
+            f"the {role} role is a bookend, so the {entry.get('group')!r} group's "
+            f"pace does not withhold it: the window stands at "
+            f"{float(utilisation) * 100:g}% against a {float(derived) * 100:g}% "
+            "allowance"
+        )
+    elif held:
+        reason = format_refusal(
+            "D02",
+            f"the {entry.get('group')!r} group reports utilisation "
+            f"{float(utilisation) * 100:g}% at {float(burn):g}x burn against a "
+            f"{float(multiple):g}x pace multiple, above its "
+            f"{float(derived) * 100:g}% allowance for the elapsed window, so a "
+            f"{role} dispatch is held until the window resets at "
+            f"{resets_at or 'an unstated time'}",
+        )
+    else:
+        reason = (
+            f"the {entry.get('group')!r} group reports utilisation "
+            f"{float(utilisation) * 100:g}% at {float(burn):g}x burn, at or below "
+            f"the {float(multiple):g}x pace multiple and its "
+            f"{float(derived) * 100:g}% allowance, so a {role} dispatch is admitted"
+        )
+    return {
+        "role": str(role),
+        "bookend": bookend,
+        "held": held,
+        "utilisation": float(utilisation),
+        "allowance": float(derived),
+        "burn_multiple": float(burn),
+        "resets_at": resets_at,
+        "reason": reason,
+    }
+
+
+def _merge_readings(
+    recorded: Mapping[str, window_reading.WindowReading],
+    surface: Mapping[str, window_reading.WindowReading],
+) -> dict[str, window_reading.WindowReading]:
+    """Combine two readings per backend, keeping the newest dated one.
+
+    The recorded evidence and the account surface are two witnesses of one
+    wallet, so the freshest dated reading of the two speaks for the group rather
+    than either source winning by kind: a surface read taken now supersedes a
+    receipt from before the window reset, and a receipt written after the
+    surface was last cached is retained.
+    """
+    merged = dict(recorded)
+    for name, reading in surface.items():
+        current = merged.get(name)
+        if current is None or _reading_stamp(reading) >= _reading_stamp(current):
+            merged[name] = reading
+    return merged
+
+
+def _account_surface_readings(
+    project: str,
+    config: Mapping[str, Any],
+    *,
+    root: str | Path | None,
+    moment: datetime,
+) -> dict[str, window_reading.WindowReading]:
+    """One window reading per opted-in group member, from its own account surface.
+
+    The account surface describes the account now, and a recorded receipt
+    describes whenever the run that wrote it ended. A group whose newest receipt
+    predates a reset would otherwise pace by a window that has already rolled
+    over, admitting the whole window when it should admit only the pace its
+    elapsed fraction allows. Only members whose config sets ``budget_check`` are
+    asked, so a lane that did not opt into a surface read is never probed and
+    keeps its recorded evidence.
+    """
+    members = sorted(
+        {
+            member
+            for group_members in budget_group.declared_groups(config).values()
+            for member in group_members
+        }
+    )
+    configured = config.get("backends") or {}
+    try:
+        recorded = latest_recorded(project, root=root, config=config)
+    except (OSError, TypeError, ValueError, ledger.LedgerError):
+        recorded = None
+    readings: dict[str, window_reading.WindowReading] = {}
+    for name in members:
+        settings = configured.get(name)
+        settings = settings if isinstance(settings, Mapping) else {}
+        if not settings.get("budget_check"):
+            continue
+        try:
+            state = state_for(
+                name,
+                settings,
+                recorded=None if recorded is None else recorded.for_backend(name),
+                unattributed=() if recorded is None else recorded.unattributed,
+                now=moment,
+            )
+        except (OSError, TypeError, ValueError):
+            continue
+        reading = _state_window_reading(state.as_dict(), moment=moment)
+        if reading is not None:
+            readings[name] = reading
+    return readings
 
 
 def pace_row(
@@ -2605,6 +2802,14 @@ def pace_row(
         )
         return row
     readings = recorded_windows(project, config, root=root, now=moment)
+    # The account surface is read beside the receipts and the freshest dated
+    # reading of the two speaks for the group, so a dispatch paces by the window
+    # the provider reports now rather than by a receipt from a window that has
+    # already reset.
+    readings = _merge_readings(
+        readings,
+        _account_surface_readings(project, config, root=root, moment=moment),
+    )
     entry = next(
         item
         for item in group_pace(
@@ -2667,6 +2872,24 @@ def _clock_for_window(window_minutes: int) -> str | None:
     if named is not None:
         return named
     return "primary" if window_minutes > WEEKLY_WINDOW_MINUTES else None
+
+
+def _reported_window_clock(window_minutes: int) -> str | None:
+    """Name any positive window a provider reports for itself, novel lengths kept.
+
+    A receipt identifies its windows by length, and only the lengths this reader
+    has seen are placed on a named clock, so a length it does not recognise is
+    left unplaced. An account surface or a session rollout is different: the
+    provider is reporting its own operative window, and a length this reader has
+    not seen before is a real window rather than a malformed row. Dropping it
+    would silently fall the group back to a stale receipt, which is the failure
+    the two historical period names exist to avoid. Such a window is therefore
+    retained under ``primary`` whatever its length.
+    """
+    named = WINDOW_MINUTES_CLOCK.get(window_minutes)
+    if named is not None:
+        return named
+    return "primary" if window_minutes > 0 else None
 
 
 # The weekly window a run's own receipt prices it against. A receipt keys its rows
@@ -2945,7 +3168,7 @@ def _rollout_reading(
         )
     figures: list[window_reading.WindowFigure] = []
     for minutes, row in sorted(readings.items()):
-        clock = _clock_for_window(minutes)
+        clock = _reported_window_clock(minutes)
         if clock is None:
             continue
         used = getattr(row, "used_percent", None)
