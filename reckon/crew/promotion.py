@@ -14,7 +14,16 @@ from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
-from reckon import _backends, _store, capabilities, clones, flight, ledger, review_tiers
+from reckon import (
+    _backends,
+    _plan_html,
+    _store,
+    capabilities,
+    clones,
+    flight,
+    ledger,
+    review_tiers,
+)
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew import review as review_module
 from reckon.crew import rollout
@@ -3238,6 +3247,68 @@ def _path_differs_from_head(checkout: Path, path: Path) -> bool:
     return diff.returncode != 0
 
 
+def _working_copy_differs_only_by_its_comment(
+    checkout: Path,
+    plan_file: Path,
+    comment: Mapping[str, Any],
+) -> bool:
+    """Whether the plan file's uncommitted change is this run's own comment.
+
+    The expected working copy is rebuilt from the plan at HEAD: its parsed
+    state takes up this run's one comment and the two version stamps the
+    versioned write always moves, and it is rendered back with the authored
+    prose of the HEAD text as the base. The working copy must match that byte
+    for byte, so an unrelated change anywhere — parsed state or authored prose
+    — fails the comparison and the caller refuses. A file not present at HEAD, a
+    comment absent from the working copy, or an unreadable plan yields False
+    rather than sweeping an unread change into the commit.
+    """
+    comment_id = str(comment.get("comment_id") or "")
+    if not comment_id:
+        return False
+    try:
+        relative = plan_file.resolve().relative_to(checkout.resolve()).as_posix()
+    except ValueError:
+        return False
+    head = _git(checkout, "show", f"HEAD:{relative}", check=False)
+    if head.returncode != 0:
+        return False
+    try:
+        head_text = head.stdout
+        disk_text = plan_file.read_text(encoding="utf-8", errors="replace")
+        head_state = _plan_html.read_state(head_text)
+        disk_state = _plan_html.read_state(disk_text)
+    except Exception:  # noqa: BLE001 - an unreadable plan is not provably clean
+        return False
+    record = None
+    anchor = None
+    for key, items in (disk_state.get("comments") or {}).items():
+        record = next(
+            (item for item in items if str(item.get("id") or "") == comment_id),
+            None,
+        )
+        if record is not None:
+            anchor = key
+            break
+    if record is None or anchor is None:
+        return False
+    comments = {
+        key: list(items) for key, items in (head_state.get("comments") or {}).items()
+    }
+    existing = comments.setdefault(anchor, [])
+    if not any(str(item.get("id") or "") == comment_id for item in existing):
+        existing.append(record)
+    expected_state = dict(head_state)
+    expected_state["comments"] = comments
+    expected_state["version"] = disk_state.get("version")
+    expected_state["modified"] = disk_state.get("modified")
+    try:
+        expected_text = _plan_html.write_state(head_text, expected_state)
+    except Exception:  # noqa: BLE001 - a plan that cannot be rebuilt is not provably clean
+        return False
+    return expected_text == disk_text
+
+
 def _plan_comment_store_path(
     *,
     project: str,
@@ -3252,14 +3323,15 @@ def _plan_comment_store_path(
     recorded row adds it explicitly, while the already-landed branch rewrote
     no ledger of its own.
 
-    A newly recorded comment always wrote the plan file, so the file is
-    returned. An idempotent retry usually leaves the plan file unchanged and
-    returns empty, but not when an earlier attempt recorded the comment and
-    then failed to commit it: the comment reads as already recorded from the
-    plan on disk while the file still differs from HEAD, so leaving it out
-    would strand the landing's own write as uncommitted state. The fact that
-    decides inclusion is therefore whether the file differs from HEAD, not
-    whether this call recorded it.
+    A plan file matching HEAD is not carried. A file that differs is carried
+    only when the difference is this run's own landing comment, whether this
+    call recorded the file or found the comment already recorded: an earlier
+    attempt that recorded the comment and then failed to commit it leaves the
+    comment on disk with the file differing from HEAD, and that comment was
+    recorded by this same run, so leaving it out would strand the landing's own
+    write as uncommitted state. A file that also carries any unrelated
+    uncommitted change is refused before the commit so the landing cannot sweep
+    it in, naming the plan file and leaving the edit in place.
     """
     if not str(plan) or not comment.get("recorded"):
         return []
@@ -3268,10 +3340,16 @@ def _plan_comment_store_path(
     )
     if plan_file is None:
         return []
-    if comment.get("already_recorded") and not _path_differs_from_head(
-        checkout, plan_file
-    ):
+    if not _path_differs_from_head(checkout, plan_file):
         return []
+    if not _working_copy_differs_only_by_its_comment(checkout, plan_file, comment):
+        raise CrewError(
+            f"the plan file {plan_file} carries an uncommitted change that is "
+            f"not this run's landing comment (comment "
+            f"{comment.get('comment_id')!r}); refusing to sweep it into the "
+            "landing commit. Commit or discard the unrelated edit, then "
+            "re-promote."
+        )
     return [plan_file]
 
 
