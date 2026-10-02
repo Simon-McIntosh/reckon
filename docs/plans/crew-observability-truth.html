@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="562">
+<meta name="plan-version" content="563">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.57">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -2028,6 +2028,11 @@ Model time is extractable and its scarcity is plumbing, not measurement: one dia
     <div class="r-fu-body"><p>The dispatch prompt's FENCE — TIME line (reckon/crew/prompts.py, the <code>{time_budget}</code> slot) states a duration and nothing to measure it against. A worker has no clock but the one it asks for, so it estimates elapsed time from how much work it has done. On 2026-10-01 r-20261001T183138776104-pointer-classification-is-memoised launched at 18:32:03Z with a 60-minute fence. After 14,714 stream records it wrote "Time fence reached", committed a half-finished node and ended its turn at 18:46:23Z, 14 minutes in, without writing its test file, negative control or head arm. Its manifest blocker read "the node's 60-minute fence expired". The coordinator recovered it with a resume, but a coordinator that took the blocker at its word would have redispatched the work or dropped it.</p><p>Done when the time fence states the attempt's launch instant and its deadline in UTC, gives the command that checks it (<code>date -u</code>), and a resume restates both for the resumed attempt. A test renders a dispatch prompt and a resume advice for a fixed launch instant and asserts that both carry the same deadline string. The negative control restores the bare duration, under which that assertion fails. A manifest whose blocker cites an expired time fence before its deadline should also read as a defect, not a blocker. Name that check here, or file it on the plan that owns manifest audit if that plan is a better owner.</p></div>
     <pre class="r-fu-prompt">/reckon-build crew-observability-truth</pre>
     <p class="r-fu-outcome">Moved into §24 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
+    </article>
+<article class="r-fu" data-id="f-cot-dispatch-stdout-is-one-document" data-status="open" data-written-by="s21-fin coordinator (reported by nova-f5, nova S21)" data-written-at="2026-10-02" data-recommends-skill="/reckon-build crew-observability-truth" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">crew dispatch writes exactly one JSON document to stdout</h4>
+    <div class="r-fu-body"><p><b>Measured.</b> On nova, <code>reckon crew dispatch</code> stdout sometimes carries more than one JSON document. Its first codex-astra dispatch at about 21:11 local on 2026-10-01 is an example: <code>json.load</code> failed with "Extra data" at char 554. Callers that parse the payload, including coordinator dispatch scripts, then read nothing.</p><p><b>Done when</b> every crew dispatch outcome writes exactly one JSON document to stdout, and every additional notice goes to stderr. A test drives the dispatch paths that emit an extra notice and asserts that <code>json.loads(stdout)</code> parses.</p></div>
+    <pre class="r-fu-prompt">/reckon-build crew-observability-truth</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
