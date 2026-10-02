@@ -254,6 +254,7 @@ _BOOLEAN = "boolean"
 _OBSERVED = "observed"
 
 _CLOCK_PERIODS: tuple[str, ...] = ("five_hour", "seven_day")
+_FIVE_HOUR_PERIOD = "five_hour"
 
 # The shape a replay reads a pace row in: every path this module converts or
 # dereferences, and the fields it does not derive from as well.  Reading the row
@@ -337,11 +338,15 @@ _ROW_FIELDS: tuple[tuple[tuple[str, ...], str, str, str], ...] = (
 
 # The figures one metered clock is read as: required of an observed clock, and
 # admitted as null otherwise, because an unobserved clock reports absence rather
-# than a position.  Each carries the words a reader is given for it.
+# than a position.  Each carries the words a reader is given for it.  The window
+# length rides the clock because the allowance is derived from the period the
+# provider reported rather than from a fixed week, so a reader that does not read
+# the length cannot reproduce the derivation.
 _CLOCK_FIGURES: tuple[tuple[str, str, str], ...] = (
     ("utilisation", _NUMBER, "utilisation"),
     ("observed_at", _INSTANT, "observation stamp"),
     ("resets_at", _INSTANT, "reset stamp"),
+    ("window_minutes", _NUMBER, "window length"),
 )
 
 
@@ -351,15 +356,19 @@ class _RowEvidence:
 
     The derivation consumes values the reader has already passed rather than
     reaching back into the row, so the shape that was checked is the shape that
-    is used.
+    is used.  Both clocks are carried, because the operative window length and
+    the branch the producer took are read from them: an account with a short
+    sibling is paced through the week derivation, and a primary-only account by
+    the elapsed fraction of the one window it reports.
     """
 
     recorded_at: datetime
-    reset_at: datetime
-    utilisation: float
     group: str
     lead_hours: float
     pace_multiple: float
+    primary_only: bool
+    five_hour: Mapping[str, Any]
+    seven_day: Mapping[str, Any]
 
 
 def _read(
@@ -418,6 +427,21 @@ def _read(
     raise ValueError(f"{kind!r} is not a kind this reader knows")
 
 
+def _raw_at(row: Any, path: tuple[str, ...]) -> Any:
+    """Return a row value as the record wrote it, for verbatim comparison.
+
+    Only ever called for a path :func:`_read` has already passed, so the value
+    exists and carries the kind it was checked as; this returns it uncoerced so
+    a stamp the derivation copies keeps the producer's own text.
+    """
+    value: Any = row
+    for key in path:
+        if not isinstance(value, Mapping) or key not in value:
+            return None
+        value = value[key]
+    return value
+
+
 def _read_clock(row: Any, period: str) -> dict[str, Any] | _UnmeasuredAllowance:
     """Read one metered clock, requiring its figures of an observed one only."""
     named = period.replace("_", "-")
@@ -454,6 +478,12 @@ def _read_clock(row: Any, period: str) -> dict[str, Any] | _UnmeasuredAllowance:
         if isinstance(value, _UnmeasuredAllowance):
             return value
         clock[name] = value
+    # The stamps are recorded as the producer wrote them, because the allowance
+    # copied them verbatim and a replay that re-rendered a parsed instant would
+    # report a disagreement over formatting rather than over the figure.
+    for name in ("observed_at", "resets_at"):
+        text = _raw_at(row, ("clocks", period, name))
+        clock[f"{name}_text"] = text if isinstance(text, str) else None
     age = _read(
         row,
         ("clocks", period, "age_seconds"),
@@ -468,36 +498,25 @@ def _read_clock(row: Any, period: str) -> dict[str, Any] | _UnmeasuredAllowance:
 
 
 def _read_row(row: Mapping[str, Any]) -> _RowEvidence | _UnmeasuredAllowance:
-    """Read a whole pace row through the guarded reader, first failure first."""
-    containers = (
-        (("clocks",), "the pace row's clocks", "the pace row carries no clocks"),
-        (
-            ("clocks", "seven_day"),
-            "the pace row's seven-day clock",
-            "the pace row carries no seven-day clock",
-        ),
-    )
-    for path, label, missing in containers:
-        container = _read(row, path, _OBJECT, label=label, missing=missing)
-        if isinstance(container, _UnmeasuredAllowance):
-            return container
-    clock_state = _read(
-        row,
-        ("clocks", "seven_day", "state"),
-        _TEXT,
-        label="the seven-day clock state",
-        missing="the seven-day clock carries no state",
-    )
-    if isinstance(clock_state, _UnmeasuredAllowance):
-        return clock_state
-    if clock_state != _OBSERVED:
-        return _UNMEASURED
+    """Read a whole pace row through the guarded reader, first failure first.
+
+    Both metered clocks are read whatever the row's shape, because which one
+    paced the group is read from them rather than assumed: an account with a
+    genuine short sibling is paced through the week derivation, and a
+    primary-only account -- whose one reported window sits where a five-hour
+    clock would, under the period name ``primary`` -- is paced by that window's
+    own elapsed fraction.  A row whose short sibling is present but whose weekly
+    clock was not observed cannot be reproduced and is unmeasured.
+    """
     clocks: dict[str, Any] = {}
     for period in _CLOCK_PERIODS:
         clock = _read_clock(row, period)
         if isinstance(clock, _UnmeasuredAllowance):
             return clock
         clocks[period] = clock
+    primary_only = clocks["five_hour"]["period"] != _FIVE_HOUR_PERIOD
+    if not primary_only and clocks["seven_day"]["state"] != _OBSERVED:
+        return _UNMEASURED
     values: dict[tuple[str, ...], Any] = {}
     for path, kind, label, missing in _ROW_FIELDS:
         value = _read(row, path, kind, label=label, missing=missing)
@@ -518,12 +537,28 @@ def _read_row(row: Mapping[str, Any]) -> _RowEvidence | _UnmeasuredAllowance:
             return decision
     return _RowEvidence(
         recorded_at=values[("recorded_at",)],
-        reset_at=clocks["seven_day"]["resets_at"],
-        utilisation=clocks["seven_day"]["utilisation"],
         group=values[("group",)],
         lead_hours=values[("policy", "drain_lead_hours")],
         pace_multiple=values[("policy", "pace_multiple")],
+        primary_only=primary_only,
+        five_hour=clocks["five_hour"],
+        seven_day=clocks["seven_day"],
     )
+
+
+def _operative_clock(evidence: _RowEvidence) -> Mapping[str, Any]:
+    """Return the clock whose window the group was paced by.
+
+    The producer derives from the longest provider-reported window, and the row
+    carries each clock's own length, so the operative clock is the one with the
+    greater length.  A length tie is settled on the weekly clock, matching the
+    producer's preference for the longer horizon.
+    """
+    five = evidence.five_hour
+    week = evidence.seven_day
+    five_minutes = five["window_minutes"] or 0.0
+    week_minutes = week["window_minutes"] or 0.0
+    return week if week_minutes >= five_minutes else five
 
 
 def _recomputed_allowance(
@@ -531,25 +566,83 @@ def _recomputed_allowance(
     *,
     drain_lead_hours: float | None,
 ) -> dict[str, Any] | _UnmeasuredAllowance:
-    """Recompute an allowance from the row's clocks through ``pace.py``."""
+    """Recompute an allowance from the row's own clocks, under its own window.
+
+    The window the provider reported is what the derivation divides: a group
+    carrying a genuine short sibling keeps the week derivation over its weekly
+    reset, and a primary-only group's allowance is the elapsed fraction of its
+    one window leaned by the pace multiple.  Both carry the operative length and
+    reset forward, so the reproduced allowance is the recorded one rather than an
+    approximation of it.
+    """
     if isinstance(evidence, _UnmeasuredAllowance):
         return evidence
-    elapsed_hours = max(
+    operative = _operative_clock(evidence)
+    window_minutes = operative["window_minutes"]
+    if not isinstance(window_minutes, float) or window_minutes <= 0:
+        return _UnmeasuredAllowance("the operative window length was not read")
+    reset = operative["resets_at"]
+    if reset is None:
+        return _UnmeasuredAllowance("the operative window has no readable reset")
+    window_hours = window_minutes / 60.0
+    remaining_hours = (reset - evidence.recorded_at).total_seconds() / 3600.0
+    elapsed_hours = max(0.0, window_hours - remaining_hours)
+    elapsed_fraction = min(1.0, elapsed_hours / window_hours)
+    multiple = evidence.pace_multiple
+    utilisation = operative["utilisation"]
+    burn = None if elapsed_fraction <= 0 else float(utilisation) / elapsed_fraction
+    if evidence.primary_only:
+        derived = min(1.0, elapsed_fraction * float(multiple))
+        return {
+            "group": evidence.group,
+            "state": _OBSERVED,
+            "reason": None,
+            "utilisation": float(utilisation),
+            "elapsed_hours": elapsed_hours,
+            "drain_hours": window_hours,
+            "remaining_budget": max(0.0, 1.0 - float(utilisation)),
+            "remaining_windows": None,
+            "pace_multiple": float(multiple),
+            "derived": derived,
+            "provider_ceiling": None,
+            "effective_limit": derived,
+            "limited_by": "allowance",
+            "window_minutes": window_minutes,
+            "elapsed_fraction": elapsed_fraction,
+            "burn_multiple": burn,
+            "observed_at": operative["observed_at_text"],
+            "resets_at": operative["resets_at_text"],
+        }
+    week = evidence.seven_day
+    week_reset = week["resets_at"]
+    week_elapsed = max(
         0.0,
         pace_module.WEEK_HOURS
-        - (evidence.reset_at - evidence.recorded_at).total_seconds() / 3600.0,
+        - (week_reset - evidence.recorded_at).total_seconds() / 3600.0,
     )
     lead = evidence.lead_hours if drain_lead_hours is None else drain_lead_hours
     pace = pace_module.PacePolicy(
         drain_lead_hours=lead,
-        pace_multiple=evidence.pace_multiple,
+        pace_multiple=multiple,
     )
     reading = pace_module.GroupReading(
         group=evidence.group,
-        utilisation=evidence.utilisation,
-        elapsed_hours=elapsed_hours,
+        utilisation=week["utilisation"],
+        elapsed_hours=week_elapsed,
     )
-    return pace_module.allowance_for_group(reading, pace=pace).as_dict()
+    allowance = pace_module.allowance_for_group(reading, pace=pace).as_dict()
+    allowance.update(
+        {
+            "state": _OBSERVED,
+            "reason": None,
+            "window_minutes": window_minutes,
+            "elapsed_fraction": elapsed_fraction,
+            "burn_multiple": burn,
+            "observed_at": operative["observed_at_text"],
+            "resets_at": operative["resets_at_text"],
+        }
+    )
+    return allowance
 
 
 def _hold_decision(row: Mapping[str, Any]) -> dict[str, Any] | object:
