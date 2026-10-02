@@ -515,6 +515,12 @@ def _sub_floor_items_by_session(
         if not run_id:
             continue
         tree = _reviewed_tree(pointer)
+        if review_module.read_review(project, run_id) is None:
+            # A run with no stored review owes no dimension duty, and the head
+            # is consulted only to choose between reviews that exist, so
+            # resolving it here would launch one git process per live run per
+            # sweep for an answer that cannot name a duty.
+            continue
         record, _described = recovery.select_review_for_head(
             project,
             run_id,
