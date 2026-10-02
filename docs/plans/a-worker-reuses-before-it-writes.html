@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="a-review-is-sized-to-its-risk,a-refusal-is-about-the-work,a-landing-record-never-conflicts,the-fleet-reports-its-velocity">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
   <title>A Worker Reuses Before It Writes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-30">
-<meta name="plan-version" content="65">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="66">
 <meta name="plan-impl" content="0.95">
 </head>
 <body>
@@ -65,16 +65,11 @@
       exception listed with its reason, and a test in the suite interrupts a write through the shared writer and asserts
       the target file is either the old or the new content.</p>
 
-    <h2 id="s4">§4 — A copy is visible at promotion</h2>
-    <p><strong>Deliverable.</strong> The census's normalised six-line clone detector, ported into a package module
-      (<code>reckon/clones.py</code>); the study's script stays as the review's artifact and nothing in the package imports
-      from <code>docs/</code>. Promotion runs it over the functions the run added or modified, against
-      <code>reckon/</code> and <code>tests/</code> at the promoted revision, and records each match — the run's function,
-      the existing one, both <code>file:line</code> — on the ledger row and, when the run was reviewed, in its stored
-      review record. It warns; it does not refuse. The velocity view counts matches per week.</p>
-    <p><strong>Done when</strong> two tests in the suite pass: a synthesised run that adds a private copy of
-      <code>parse_utc</code> is reported with <code>reckon/_timestamps.py:parse_utc</code>'s location, and a run that adds
-      a function matching nothing reports no match.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-02</span>
+    <h2 id="s4">§4 — A copy is visible at promotion</h2></header>
+  <p class="landed-summary">Landed: promotion records <code>clone_matches</code> from <code>reckon/clones.py</code>, keeping an unmeasured result distinct from an empty one, and velocity reports a weekly clone block. Covered by <code>tests/test_promotion_reports_clones.py</code> and <code>tests/test_velocity_clone_matches.py</code> (landings <code>b4683397</code>, <code>512414af</code>, <code>9c31c44c</code>). <a href="s4-a-copy-is-visible-at-promotion">full record</a></p>
+</section>
 
     <h2 id="s5">§5 — The interface has a budget</h2>
     <p><strong>Deliverable.</strong> The velocity view reports, for the <code>reckon/</code> package, the level at each
@@ -281,6 +276,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260930T202748671313-review-of-velocity-counts-clone-matches" data-who="reckon-build" data-when="2026-09-30T20:41:26.249Z">
     <div class="r-comment-body"><p>An independent review of run r-20260930T195500572735-velocity-counts-clone-matches, read at base 84b6364f1 and head 2710cc2ce, is stored at both granted paths as a parsed record scoring all five dimensions in 0..20 — goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 19, total 95, no dimension absent, all six checklist items reported, two production call sites verified — carrying added_failure_count null with added_failure_ids [] derived through reckon.crew.review over the reviewed run's own after_suite arm (it names no baseline_suite, so the count is unmeasured, though both measurable arms carry zero failures), and filing two findings: the repaired unrecorded-state fold is fixed and independently falsified, but the reviewed manifest names no baseline_suite arm and its gate log's first line spells the revision rev=&lt;sha&gt;, which the store's recorded_log_revision does not resolve.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-awrbiw-currency-audit" data-who="s25-coord" data-when="2026-10-02">
+    <div class="r-comment-body"><p>S25 currency audit at <code>0da2431ed</code> (report: <code>~/.config/reckon/crew/reports/reckon/s25-coord/s25-currency-audit.md</code>). <strong>§4 landed</strong> and is now collapsed.</p><ul><li><strong>§2, partly landed.</strong> Three callers still parse timestamps directly with no stated reason: <code>reckon/crew/prompts.py</code>, <code>reckon/crew/repair.py</code> and <code>reckon/served_code.py</code>. The census has not been re-pinned since the migration.</li><li><strong>§3, partly landed.</strong> It needs that same census re-run.</li><li><strong>§5, partly landed.</strong> The plan-review rubric of <code>a-plan-is-reviewed-before-it-is-built</code> (S22) does not yet cite the interface counts (f-awrbiw-003). The S22 coordinator has been asked who edits it.</li></ul><p>Next nodes: route the three timestamp callers through <code>parse_utc</code>, after <code>one-severity-predicate</code> releases <code>repair.py</code>; then re-pin the census.</p></div>
 </div>
 </section>
 </main>

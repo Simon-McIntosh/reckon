@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-after" content="a-review-is-sized-to-its-risk,a-refusal-is-about-the-work,a-landing-record-never-conflicts">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
   <title>A Small Change Is A Small Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="17">
+<meta name="plan-version" content="18">
 <meta name="plan-impl" content="0.6">
 </head>
 <body>
@@ -77,13 +77,11 @@
       week after this lands, classifies each coordinator commit that carries a worker's diff by table entry, with any
       commit outside the table listed.</p>
 
-    <h2 id="s5">§5 — A directory claim that overlaps a peer asks first</h2>
-    <p><strong>Deliverable.</strong> Dispatch warns when a declared write path is a directory that contains, or is
-      contained in, another live run's claimed path, and lists the files the brief names as the exact alternative; the
-      dispatch proceeds with the directory claim only when it carries <code>--accept-directory-claim</code>. The
-      imas-ambix coordinator lost about 30 minutes to its own <code>tests</code> claim blocking a peer.</p>
-    <p><strong>Done when</strong> a test with a live run claiming <code>tests/test_x.py</code> and a dry-run claiming
-      <code>tests</code> returns the warning and the alternative, and the same dry-run with the flag proceeds.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-02</span>
+    <h2 id="s5">§5 — A directory claim that overlaps a peer asks first</h2></header>
+  <p class="landed-summary">Landed: a directory claim overlapping a peer's warns, then refuses unless <code>--accept-directory-claim</code> is given. 12 tests in <code>tests/test_directory_claim_asks_first.py</code>, review 96 with no findings (landings <code>e554b4d8</code>, <code>3129f05e</code>, <code>4af67bd</code>). <a href="s5-a-directory-claim-asks-first">full record</a></p>
+</section>
 
     <h2 id="s6">§6 — Measure the small-change path end to end</h2>
     <p><strong>Deliverable.</strong> One week after §2 lands, measure for repairs of at most 50 changed lines the median
@@ -162,6 +160,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20260930T203755534764-repair-of-directory-claim-sees-uncreated-dirs-3129f05e8a6d" data-who="reckon-build" data-when="2026-09-30T20:51:20.372Z">
     <div class="r-comment-body"><p>repair-of-directory-claim-sees-uncreated-dirs-3129f05e8a6d answers finding fbb06230e03 — acted fbb06230e03: 4af67bd34eaa249123ebd86779a4f9e9b3e3ff93 — the absent-path arm of _directory_claim_overlaps no longer keys on Path.suffix == ""; _absent_path_names_a_directory reads a final component as a leaf file only when its suffix carries a letter, so docs/evidence/2026.09 inside a live docs/evidence claim warns and requires --accept-directory-claim while notes.html keeps the plain file refusal; tests/test_directory_claim_asks_first.py 12 passed at EXIT=0, declared mutation red at EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-ascsn-currency-audit" data-who="s25-coord" data-when="2026-10-02">
+    <div class="r-comment-body"><p>S25 currency audit at <code>0da2431ed</code> (report: <code>~/.config/reckon/crew/reports/reckon/s25-coord/s25-currency-audit.md</code>). <strong>§5 landed</strong> and is now collapsed.</p><ul><li><strong>§2, partly landed.</strong> The brief carrier works; the answer record is missing. Promotion must write each finding's answering commit, or its declined reason, onto the reviewed run's ledger row. That needs <code>reckon/ledger.py</code>, which <code>clean-review-promotes-itself</code> and then the picker session hold, so it follows them.</li><li><strong>§3 and §4.</strong> Landed bar their week-long measures, which are due after 2026-10-06.</li><li><strong>§6.</strong> Its window opens a week after §2's answer record lands.</li></ul></div>
 </div>
 </section>
 </main>
