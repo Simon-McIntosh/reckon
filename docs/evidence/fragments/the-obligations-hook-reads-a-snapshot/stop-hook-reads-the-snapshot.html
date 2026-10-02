@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-verifies" content="reckon:the-obligations-hook-reads-a-snapshot#s3">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-02">
+  <meta name="evidence-commit" content="24ea2cb1">
+  <title>The stop hook reads the session snapshot, and a lane-refused review reads queued | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-done">
+<section id="stop-hook-reads-the-snapshot">
+  <h2>The stop hook reads the session snapshot, and a lane-refused review reads queued</h2>
+
+  <p>The stop path now decides from the same published snapshot as the prompt path:
+  a fresh snapshot blocks exactly when it lists outstanding obligations, and a
+  not-fresh one — no producer, a producer on older code, or a stale snapshot —
+  sends the hook to the derivation, imported lazily and run under a 5&nbsp;s
+  budget that a test overrides through
+  <code>RECKON_STOP_DERIVATION_BUDGET_SECONDS</code>. When the budget runs out the
+  stop is allowed with one line naming the not-fresh reason, so no producer
+  state can trap a coordinator. A review whose dispatch the lane refused as
+  <code>lane-paused</code>, read from the attempt record the reflex writes and
+  within half an hour of the refusal, now reads <code>review-queued</code>: it
+  names the refusal instant and the session's published worker slots, is listed
+  on the prompt path, and does not hold the stop open; past the bound it reads
+  <code>review-missing</code> again and blocks.</p>
+
+  <table>
+    <thead><tr><th>Arm</th><th>Tree</th><th>Result</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr><td>base <code>24ea2cb1</code></td><td><code>git archive</code> under <code>/tmp</code></td><td>26 passed, EXIT=0</td><td><code>logs/base-arm.log</code></td></tr>
+      <tr><td>head</td><td>worktree after <code>ruff format</code></td><td>33 passed, EXIT=0</td><td><code>logs/head-arm-final.log</code></td></tr>
+      <tr><td>negative control</td><td>head with the lane-paused reading removed</td><td>1 failed (the queued case), EXIT=1</td><td><code>logs/negative-control.log</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>Both arms ran <code>pytest -n 8 --timeout=300</code> over the files reaching
+  the change, and the head arm adds no failure id to the base's empty set.
+  <code>ruff check</code> and <code>ruff format --check</code> over the changed
+  paths report no finding the base did not. The negative control removes the
+  lane-paused reading from the review duty; the queued case then reads
+  <code>review-missing</code> and fails, which is the red run its log records.</p>
+
+  <p>Logs live under the run directory:
+  <code>.config/reckon/crew/runs/r-20261002T224659340678-stop-hook-reads-the-snapshot/logs/</code>.
+  The cases are in <code>tests/test_stop_hook_reads_the_snapshot.py</code>: one
+  per stop-path branch (fresh, inline within the budget, inline over an
+  overridden short budget), the queued reading and its return to missing after
+  the bound, the stale-code line from a direct call, and the empty list
+  printing no oldest age.</p>
+</section>
+</main>
+</body>
+</html>

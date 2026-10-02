@@ -34,8 +34,13 @@ Two modes, selected by ``--hook``:
   returned would otherwise match the set left behind and never be spoken
   again.
 - ``stop`` — wired as Stop. Prints ``{"decision": "block", "reason": ...}``
-  while duties remain, so the turn cannot end into forgotten work. It derives
-  from state at the moment of the stop. The block fires at most once per list:
+  while duties remain, so the turn cannot end into forgotten work. It reads the
+  same snapshot as the prompt path and blocks on what that snapshot lists,
+  except the duty kinds a reflex already owns and retries, which are listed but
+  never hold a turn open. When the snapshot is not fresh for any reason it
+  derives inline under a bounded budget instead, and if that budget runs out it
+  allows the stop with one line naming the not-fresh reason, so no producer
+  state can trap a coordinator. The block fires at most once per list:
   ``stop_hook_active`` marks a turn that already continued on a blocking
   reason, and the hook then stays silent rather than looping. Stopping is read
   by the harness as a verdict on the turn, so this mode's verdict never consults
@@ -70,6 +75,7 @@ import importlib.util
 import json
 import os
 import shlex
+import signal
 import sys
 from collections.abc import Mapping, Sequence
 from functools import cache
@@ -111,6 +117,80 @@ def snapshot_module() -> Any:
 # measured shape is arming shell -> claude process, so one hop covers it; the
 # bound only keeps a pathological tree from spinning inside a hook.
 _OWNERSHIP_DEPTH = 12
+
+# The stop path derives inline when the snapshot is not fresh. A bounded wait
+# is what keeps a stalled machine from trapping a coordinator behind a hook:
+# the derivation is measured in seconds, and when the budget runs out the stop
+# is allowed with one line naming the not-fresh reason. Tests override the
+# budget through the environment to exercise that branch.
+STOP_DERIVATION_BUDGET_SECONDS = 5.0
+STOP_DERIVATION_BUDGET_ENV = "RECKON_STOP_DERIVATION_BUDGET_SECONDS"
+
+
+class _DerivationBudgetError(Exception):
+    """Raised inside the stop hook when the inline derivation runs out of time."""
+
+
+def stop_derivation_budget() -> float:
+    """The inline derivation's budget in seconds, honouring the test override."""
+    try:
+        return float(os.environ[STOP_DERIVATION_BUDGET_ENV])
+    except (KeyError, ValueError):
+        return STOP_DERIVATION_BUDGET_SECONDS
+
+
+def _obligations_view():
+    """The obligations derivation, imported where it is used and not before.
+
+    Kept out of every other path on purpose: a prompt turn reaches none of the
+    derivation modules, and only a stop whose snapshot is not fresh pays for
+    loading them.
+    """
+    from reckon.crew.obligations import obligations as view
+
+    return view
+
+
+def derive_within_budget(
+    project: str, session: str, budget: float
+) -> dict[str, Any] | None:
+    """Derive one session's duties under a wall-clock budget, or None.
+
+    The derivation is imported inside the timed region because the import is
+    part of the cost the budget bounds. A budget of zero or less runs nothing,
+    which is how the over-budget branch is exercised without depending on a
+    race. The alarm needs the main thread, where a hook always runs; a caller
+    on another thread cannot arm it and derives unbounded rather than going
+    without an answer.
+    """
+    if budget <= 0:
+        return None
+    alarm = getattr(signal, "SIGALRM", None)
+    if alarm is None:
+        return _obligations_view()(project, session)
+
+    def _expired(signum: int, frame: Any) -> None:
+        raise _DerivationBudgetError
+
+    try:
+        previous = signal.signal(alarm, _expired)
+    except ValueError:
+        return _obligations_view()(project, session)
+    try:
+        signal.setitimer(signal.ITIMER_REAL, budget)
+        return _obligations_view()(project, session)
+    except _DerivationBudgetError:
+        return None
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(alarm, previous)
+
+
+# The duty kinds listed but never holding a stop open: the work behind them is
+# already owned by a reflex that retries, so blocking would ask a coordinator to
+# act on a wait it cannot shorten. Mirrors the derivation's own vocabulary,
+# which cannot be imported here on the paths that read a fresh snapshot.
+_NON_BLOCKING_KINDS = frozenset({"review-queued"})
 
 # A session worktree's directory component is the repository name plus a short
 # hex digest, e.g. ``reckon-c8f839407e49``.
@@ -488,12 +568,17 @@ def format_checklist(payload: dict[str, Any], *, note: str = "") -> str:
     summary = payload.get("summary") or {}
     project = str(payload.get("project") or "")
     session = str(payload.get("session") or "")
+    count = summary.get("count", len(items))
     header = (
         f"reckon obligations for session {session} (project {project}): "
         f"{note + '; ' if note else ''}"
-        f"{summary.get('count', len(items))} outstanding, "
-        f"oldest {_format_age(int(summary.get('oldest_age_seconds') or 0))}"
+        f"{count} outstanding"
     )
+    # An empty list has no oldest item, and the age such a payload carries is
+    # the snapshot's own age rather than any duty's, so naming it would invent
+    # a figure no duty supports.
+    if items:
+        header += f", oldest {_format_age(int(summary.get('oldest_age_seconds') or 0))}"
     lines = [header]
     lines.extend(_work_lines(items))
     unreconciled = f"unreconciled runs: {summary.get('unreconciled_runs', 0)}"
@@ -502,17 +587,13 @@ def format_checklist(payload: dict[str, Any], *, note: str = "") -> str:
     return "\n".join(lines)
 
 
-def resolve(payload: dict[str, Any]) -> dict[str, Any] | None:
-    """The obligations payload this hook should act on, or None.
+def locate_session(payload: dict[str, Any]) -> tuple[str, str] | None:
+    """The project and crew session this hook answers for, or None.
 
     None means this session is not coordinating reckon work: its directory is
-    in no mount, or no follower registered it. An empty duty list is not None —
-    the session is coordinating and owes nothing, which is a state the caller
-    has to act on, because the record of what the session was last injected
-    with must not outlive the duties it describes.
+    in no mount, or no follower registered it. Both modes resolve through here
+    so the stop path reads the same session's snapshot the prompt path wrote.
     """
-    from reckon.crew.obligations import obligations as obligations_view
-
     cwd = Path(
         str(payload.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
     )
@@ -526,7 +607,13 @@ def resolve(payload: dict[str, Any]) -> dict[str, Any] | None:
     )
     if session is None:
         return None
-    obligations = obligations_view(project, session)
+    return project, session
+
+
+def follow_each_local_lane(
+    obligations: dict[str, Any], *, project: str
+) -> dict[str, Any]:
+    """Point every item's printed command at the configured local lane."""
     for item in obligations.get("obligations") or ():
         if isinstance(item, dict):
             item["next_command"] = follow_local_lane(
@@ -535,19 +622,41 @@ def resolve(payload: dict[str, Any]) -> dict[str, Any] | None:
     return obligations
 
 
+def resolve(payload: dict[str, Any]) -> dict[str, Any] | None:
+    """The obligations payload derived at this instant, or None when not ours.
+
+    An empty duty list is not None — the session is coordinating and owes
+    nothing, which is a state the caller has to act on, because the record of
+    what the session was last injected with must not outlive the duties it
+    describes.
+    """
+    located = locate_session(payload)
+    if located is None:
+        return None
+    project, session = located
+    return follow_each_local_lane(
+        _obligations_view()(project, session), project=project
+    )
+
+
 def not_fresh_line(
     state: str, *, project: str, session: str, document: Mapping[str, Any] | None
 ) -> str:
     """One line naming why the session's snapshot is not fresh, and the remedy.
 
-    The reason is one of the two not-fresh states a remedy answers, said in
-    words a coordinator reads at the open of a turn: no producer, or the age
-    of a snapshot whose producer is alive but silent. Neither is a reload the
-    producer is expected to finish, so the remedy is the one command that
-    publishes a snapshot again.
+    Each of the three not-fresh states is said in its own words a coordinator
+    reads at the open of a turn: no producer, a producer running older code
+    than the checkout, or the age of a snapshot. None of them is a reload the
+    producer is expected to finish on this path, so the remedy is the one
+    command that publishes a snapshot again. A caller that routes a live stale
+    producer through the reload reading never reaches this line for it, and a
+    direct caller gets the state it asked about rather than the no-producer
+    sentence.
     """
     module = snapshot_module()
-    if state == module.STALE_SNAPSHOT:
+    if state == module.STALE_CODE:
+        reason = "the producer is running older code than the checkout"
+    elif state == module.STALE_SNAPSHOT:
         age = module.snapshot_age_seconds(document)
         reason = (
             "the snapshot is stamped with no readable age"
@@ -642,19 +751,10 @@ def _prompt(payload: dict[str, Any]) -> int:
     function imports is loaded before the read -- the snapshot module by file
     path -- so no derivation module reaches a turn's opening.
     """
-    cwd = Path(
-        str(payload.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
-    )
-    project = resolve_project(cwd)
-    if project is None:
+    located = locate_session(payload)
+    if located is None:
         return 0
-    session = _session_from_followers(
-        project,
-        harness_session=str(payload.get("session_id") or ""),
-        claude_pid=_claude_pid(),
-    )
-    if session is None:
-        return 0
+    project, session = located
     module = snapshot_module()
     document = module.read_snapshot(project, session)
     state = module.freshness(document)
@@ -689,27 +789,75 @@ def _prompt(payload: dict[str, Any]) -> int:
     return 0
 
 
+def _blocking_items(items: Sequence[Any]) -> list[Any]:
+    """The duties a stop is held open for, in list order.
+
+    Kinds a reflex already owns are listed like any other duty and never hold
+    a turn open, because the coordinator could not shorten the wait by acting.
+    """
+    blocking: list[Any] = []
+    for item in items:
+        kind = str(item.get("kind") or "") if isinstance(item, Mapping) else ""
+        if kind not in _NON_BLOCKING_KINDS:
+            blocking.append(item)
+    return blocking
+
+
 def _stop(payload: dict[str, Any]) -> int:
-    """Answer one stop turn from a derivation at the moment of the stop."""
-    resolved = resolve(payload)
-    if resolved is None:
+    """Answer one stop turn from the session's snapshot, or a bounded derivation.
+
+    The snapshot decides when it is fresh, exactly as it does for the prompt
+    path, and the verdict is read from what it lists minus the kinds a reflex
+    already owns. A snapshot that is not fresh -- for any of its three reasons
+    -- sends the hook to the derivation, imported lazily and run under the
+    bounded budget, because a stop is a verdict on the turn and a list no
+    producer stands behind must not decide it. If the budget runs out, the stop
+    is allowed with one line naming the not-fresh reason: no producer state may
+    trap a coordinator.
+    """
+    located = locate_session(payload)
+    if located is None:
         return 0
+    project, session = located
+    module = snapshot_module()
+    document = module.read_snapshot(project, session)
+    state = module.freshness(document)
+    if state == module.FRESH:
+        resolved = module.live_payload(document)
+    else:
+        resolved = derive_within_budget(project, session, stop_derivation_budget())
+        if resolved is None:
+            if not payload.get("stop_hook_active"):
+                line = not_fresh_line(
+                    state, project=project, session=session, document=document
+                )
+                sys.stdout.write(json.dumps({"systemMessage": line}))
+            return 0
+    follow_each_local_lane(resolved, project=project)
     items = resolved.get("obligations") or ()
     digest_file = digest_path(
-        str(resolved.get("project") or ""), str(resolved.get("session") or "")
+        str(resolved.get("project") or project),
+        str(resolved.get("session") or session),
     )
     if not items:
         # An empty list is the one change the digest cannot record by
         # comparison: there is no checklist to inject and nothing to compare
-        # it with, so the set that was last injected has to be cleared instead.
-        # Left in place, it makes the same duties *returning* read as a repeat
-        # of what the session was already shown, and the duty that emptied and
-        # came back is never spoken again. Either mode clears it, because
-        # whichever event first sees the list empty is the last one that can
-        # notice it went away: a duty drained over a stop and returned before
-        # the next prompt is exactly the case a prompt-only clear would swallow.
+        # it with, so the set that was last injected has to be cleared
+        # instead. Left in place, it makes the same duties *returning*
+        # read as a repeat of what the session was already shown, and the duty
+        # that emptied and came back is never spoken again. Either mode clears
+        # it, because whichever event first sees the list empty is the last one
+        # that can notice it went away: a duty drained over a stop and returned
+        # before the next prompt is exactly the case a prompt-only clear would
+        # swallow.
         if _read_digest(digest_file):
             _store_digest(digest_file, "")
+        return 0
+    if not _blocking_items(items):
+        # Only duties some reflex already owns: they are listed, and they do
+        # not hold the turn open. The recorded set is left as it stands,
+        # because the prompt path injected this very list and clearing it
+        # would make the same duties speak twice.
         return 0
     emit("stop", payload, resolved)
     return 0
