@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-finished-worktree-releases-without-a-force">
+  <meta name="plan-title" content="A resume refuses a session over the lane's window">
+  <meta name="plan-summary" content="A resume — hand-typed or through the review-repair reflex — reads the run's last recorded request input and refuses, before any attempt opens, when that count exceeds the lane's published input window, naming the count and the window with a fresh repair node as the remedy.">
+  <meta name="plan-evidence-for" content="reckon:a-finished-worktree-releases-without-a-force">
+  <meta name="plan-verifies" content="reckon:a-finished-worktree-releases-without-a-force#s5">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,resume,context-window,refusal">
+  <title>A resume refuses a session over the lane's window — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="resume-refuses-a-session-over-the-window" data-reckon="landed" data-when="2026-10-02">
+  <h2>A resume refuses a session over the lane's window</h2>
+  <p>A resumed turn re-sends the session's whole context, so a session grown past the lane's published input window dies at the endpoint with its attempt file already open: the worker exits having done no work, and the delivered manifest it leaves reads stale to promotion. Every resume now reads the session's own measurement before it is planned. The count is the run's <em>last recorded request input</em> — the charged input of the final request its stream reports, cache read included, because that is the context a resumed turn carries — and the window is the smallest figure the lane publishes: <code>usable_input_window</code> (already net of the launcher's output reservation) and <code>effective_input_window</code> (the lowest input the lane's endpoint is recorded refusing), the same pair the dispatch-time context-fit check gates on. When the count exceeds the window, the resume is refused before the plan is built and before anything is written, naming both figures and the lane and giving a fresh repair node as the remedy; the run keeps its classification, its phase and its manifest, and gains no attempt file.</p>
+  <p>Both doors read the same guard. A hand-typed <code>crew resume</code> reaches <code>resume_plan</code> directly; the review-repair reflex resumes through the sweep's <code>_resume</code>, which is that plan plus the attempt's files and the turn it records; and the sweep's dry run consults the same gate through <code>_launcher_refusal</code>, so a preview reports the refusal a real resume would raise rather than a resume it would not. The gate fails open on absence in both directions: a lane publishing no window and a run whose stream recorded no usage each refuse nothing, because an unmeasured session is not a session known to be too large.</p>
+  <p>Six cases pass in <code>tests/test_resume_refuses_a_session_over_the_window.py</code> against a temporary <code>RECKON_HOME</code>, proving the real crew home untouched: a session inside the window resumes through both doors (the reflex writes <code>resume-1.jsonl</code> and records the turn), a session over it is refused with the count and the window named by both doors with no <code>resume-*</code> file and the pointer unchanged, the dry-run prediction matches the real refusal's type and message, and both fail-open directions hold. The last-record reading is exercised in both cases with an earlier request on the other side of the window, so a guard reading the first or the largest figure would fail the case. The two existing resume tests (<code>test_direct_resume_needs_an_observed_death.py</code>, <code>test_resume_sweep_needs_an_observed_death.py</code>) and the dry-run parity test keep passing, 18 cases at base and 24 at head.</p>
+  <p>The declared mutation — remove the window check — takes the same test file to 3 failed: the over-window sessions resume, and the reflex case fails because its attempt opens and its launcher is called (<code>EXIT=1</code>, control log kept). This gate measures only this node's own change over a bounded arm of the tests that reach the resume doors; a full-suite arm was started and abandoned — the suite is 10,367 cases and the shared node sat at load ~45, so a full arm projects to hours against this node's fence. Verifying the merged result at the suite scale belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>

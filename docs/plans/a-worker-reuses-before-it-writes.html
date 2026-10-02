@@ -25,8 +25,8 @@
   <title>A Worker Reuses Before It Writes | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="69">
+<meta name="plan-modified" content="2026-10-03">
+<meta name="plan-version" content="71">
 <meta name="plan-impl" content="0.95">
 </head>
 <body>
@@ -180,6 +180,9 @@
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261002T171336188879-timestamp-callers-use-parse-utc" data-who="reckon-build" data-when="2026-10-02T18:05:17.128Z">
     <div class="r-comment-body"><p>migrated the last three timestamp callers (reckon/crew/prompts.py:time_fence_statement, reckon/crew/repair.py:_parsed_moment, reckon/served_code.py:_summary) onto reckon._timestamps; six-row base-recorded table matched 36/36 cells by tests/test_timestamp_callers_use_parse_utc.py; caller-suite arms base 328 passed vs head 348 passed with no added failing id</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261002T202341535715-census-pin-after-migration" data-who="reckon-build" data-when="2026-10-02T21:59:39.541Z">
+    <div class="r-comment-body"><p>re-pinned the code-depth census at reckon e6cfdeea0bd7bd3a6a959c243dcdd3a2ff416eef (nova unchanged 16287918db2f90d0088c1786ec45965cd90e6652): fromisoformat direct callers 44 -&gt; 7, all seven named against the bound of three; atomic JSON writer 14 -&gt; 2, below the three-definition grouping floor, both named with their statements; stream enumeration 3 with two function-local delegates; numeric decoder group gone, one shared home; fragment docs/evidence/fragments/a-worker-reuses-before-it-writes/census-pin-after-migration.html</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260928T221420462479-review-of-one-atomic-writer-and-one-number-decoder" data-who="reckon-build" data-when="2026-09-28T23:04:52.771Z">
     <div class="r-comment-body"><p>review of run r-20260928T215645482298-one-atomic-writer-and-one-number-decoder stored under the crew review store as a parsed record (goal_fidelity 16, evidence 15, scope_discipline 20, durability 16, fit 19; total 86) with three findings</p></div>
 </div>
@@ -284,6 +287,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-awrbiw-currency-audit" data-who="s25-coord" data-when="2026-10-02">
     <div class="r-comment-body"><p>S25 currency audit at <code>0da2431ed</code> (report: <code>~/.config/reckon/crew/reports/reckon/s25-coord/s25-currency-audit.md</code>). <strong>§4 landed</strong> and is now collapsed.</p><ul><li><strong>§2, partly landed.</strong> Three callers still parse timestamps directly with no stated reason: <code>reckon/crew/prompts.py</code>, <code>reckon/crew/repair.py</code> and <code>reckon/served_code.py</code>. The census has not been re-pinned since the migration.</li><li><strong>§3, partly landed.</strong> It needs that same census re-run.</li><li><strong>§5, partly landed.</strong> The plan-review rubric of <code>a-plan-is-reviewed-before-it-is-built</code> (S22) does not yet cite the interface counts (f-awrbiw-003). The S22 coordinator has been asked who edits it.</li></ul><p>Next nodes: route the three timestamp callers through <code>parse_utc</code>, after <code>one-severity-predicate</code> releases <code>repair.py</code>; then re-pin the census.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-awrbiw-census-repin" data-who="s25-coord" data-when="2026-10-03">
+    <div class="r-comment-body"><p><strong>Census re-pinned after the migration</strong>: run <code>r-20261002T202341535715-census-pin-after-migration</code>, merged at <code>1385dd89c</code>, record <code>docs/evidence/fragments/a-worker-reuses-before-it-writes/census-pin-after-migration.html</code>. A ninth pin at <code>e6cfdeea0</code> is appended and every earlier pin kept. The figures below are the census's own counter at that pin.</p><ul><li><strong>§2, still short:</strong> 7 functions call <code>fromisoformat</code> directly, against 44 at the previous pin; the section allows 3. Four have a known reason: <code>_timestamps.parse_iso</code> is the canonical home, and <code>dispatch._lane_reading_carry</code>, <code>ledger._parse_timestamp</code> and <code>doccheck.modified_age_days</code> carry stated reasons. Three carry none: <code>crew/quota_weight.py:63 _as_date</code>, <code>crew/obligation_snapshot.py:184 _parse_instant</code> and <code>crew/run_time_profile.py:215 _completed_after</code>. The last two modules were added after the migration, which is the reuse gap this plan exists to close.</li><li><strong>§3, still short:</strong> the atomic JSON writer has 2 implementations, against 14. One is <code>recovery._write_classification_memo</code>, with a stated reason; the other is <code>serve.py:3570 Handler._handle_post</code>, without one. It has fallen below the census's three-definition grouping threshold. Stream enumeration counts 3: the <code>metering.run_streams</code> home plus two function-local delegates in <code>ledger</code> and <code>promotion</code>. The numeric decoder counts 1, so it is met.</li><li><strong>Validator:</strong> the pin, scope and candidate checks pass. The plan-append assertion (<code>validate.py:178</code>) compares against a blob older than this plan's closure commit, so it fails independently of the pin. Re-anchoring it is a decision the run left open.</li></ul><p><strong>Next:</strong> route or justify the three unexplained timestamp callers and the <code>serve.py</code> writer. Then decide whether a delegate that only calls <code>metering.run_streams</code> counts as one implementation; that would be a census-instrument change. <code>run_time_profile.py</code> waits until the picker session's unpromoted claim on it lands.</p></div>
 </div>
 </section>
 </main>

@@ -1,0 +1,111 @@
+<article class="landed-report" data-node="picker-replay-measure">
+<h3>Twenty recorded dispatches replayed through the live picker</h3>
+<p>One live replay of <code>reckon crew pick --project reckon --replay 20</code>
+at revision <code>855d0a6d91471e2ee942261b3743579945a8de6d</code>, run from this
+node's own worktree with <code>PYTHONPATH</code> pinned to that tree, so the
+tree named here is the tree under test. The replay re-asks Jev for each of the
+twenty most recently dispatched reckon runs under live conditions: one dated
+budget snapshot, one project read and one set of serving observations are
+shared across the cohort rather than each row paying for its own. It dispatches
+no worker and changes no routing. The run completed <code>EXIT=0</code> in
+184 s.</p>
+<h4>What ran</h4>
+<pre># revision: 855d0a6d91471e2ee942261b3743579945a8de6d
+# tree under test: the worktree
+#   /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s25-picker/picker-replay-measure
+# command:
+#   PYTHONPATH=&lt;run&gt;/shim:&lt;worktree&gt; \
+#     /home/ITER/mcintos/Code/reckon/.venv/bin/reckon crew pick \
+#     --project reckon --replay 20
+# started 2026-10-02T20:32:28Z, finished 2026-10-02T20:35:32Z
+# EXIT=0, stderr empty</pre>
+<table><thead><tr><th>#</th><th>run</th><th>dispatched [UTC]</th>
+<th>actual backend</th><th>actual gate</th><th>picked action</th>
+<th>picked backend</th><th>confidence</th><th>pick [ms]</th>
+<th>Jev [ms]</th></tr></thead><tbody><tr><td>0</td><td><code>r-20261002T194052703929-review</code></td><td>2026-10-02T19:41:19Z</td><td>clive</td><td>not-run</td><td>route</td><td>codex-astra</td><td>0.22</td><td>120623</td><td>1293</td></tr>
+<tr><td>1</td><td><code>r-20261002T193105112177-a-reus</code></td><td>2026-10-02T19:31:39Z</td><td>clive</td><td>passed</td><td>route</td><td>codex-astra</td><td>0.45</td><td>2544</td><td>1015</td></tr>
+<tr><td>2</td><td><code>r-20261002T192931255263-review</code></td><td>2026-10-02T19:29:59Z</td><td>clive</td><td>passed</td><td>route</td><td>codex</td><td>0.20</td><td>2316</td><td>278</td></tr>
+<tr><td>3</td><td><code>r-20261002T192413480713-review</code></td><td>2026-10-02T19:24:41Z</td><td>clive</td><td>passed</td><td>route</td><td>codex</td><td>0.32</td><td>5149</td><td>3332</td></tr>
+<tr><td>4</td><td><code>r-20261002T191426446967-review</code></td><td>2026-10-02T19:14:52Z</td><td>clive</td><td>passed</td><td>route</td><td>codex-astra</td><td>0.20</td><td>2404</td><td>276</td></tr>
+<tr><td>5</td><td><code>r-20261002T190701226087-picker</code></td><td>2026-10-02T19:07:40Z</td><td>codex-terra</td><td>passed</td><td>route</td><td>codex-terra</td><td>0.47</td><td>2304</td><td>286</td></tr>
+<tr><td>6</td><td><code>r-20261002T190215924633-review</code></td><td>2026-10-02T19:02:43Z</td><td>clive</td><td>not-run</td><td>route</td><td>codex</td><td>0.34</td><td>1832</td><td>323</td></tr>
+<tr><td>7</td><td><code>r-20261002T184258840182-lane-l</code></td><td>2026-10-02T18:43:27Z</td><td>clive</td><td>passed</td><td>route</td><td>codex-astra</td><td>0.65</td><td>2409</td><td>299</td></tr>
+<tr><td>8</td><td><code>r-20261002T184210876844-retire</code></td><td>2026-10-02T18:42:36Z</td><td>clive</td><td>passed</td><td>route</td><td>codex-astra</td><td>0.21</td><td>2266</td><td>295</td></tr>
+<tr><td>9</td><td><code>r-20261002T184125127673-review</code></td><td>2026-10-02T18:41:52Z</td><td>clive</td><td>passed</td><td>route</td><td>codex</td><td>0.38</td><td>2056</td><td>344</td></tr>
+<tr><td>10</td><td><code>r-20261002T182653557698-review</code></td><td>2026-10-02T18:27:30Z</td><td>clive</td><td>not-run</td><td>route</td><td>codex</td><td>0.19</td><td>2097</td><td>326</td></tr>
+<tr><td>11</td><td><code>r-20261002T181720891682-text-m</code></td><td>2026-10-02T18:17:51Z</td><td>clive</td><td>passed</td><td>route</td><td>codex-astra</td><td>0.36</td><td>2127</td><td>298</td></tr>
+<tr><td>12</td><td><code>r-20261002T181445402596-review</code></td><td>2026-10-02T18:15:17Z</td><td>clive</td><td>not-run</td><td>route</td><td>codex</td><td>0.31</td><td>1939</td><td>283</td></tr>
+<tr><td>13</td><td><code>r-20261002T181356903868-review</code></td><td>2026-10-02T18:14:27Z</td><td>clive</td><td>passed</td><td>route</td><td>codex</td><td>0.33</td><td>1989</td><td>303</td></tr>
+<tr><td>14</td><td><code>r-20261002T181154804680-review</code></td><td>2026-10-02T18:12:23Z</td><td>clive</td><td>not-run</td><td>route</td><td>codex</td><td>0.21</td><td>2469</td><td>357</td></tr>
+<tr><td>15</td><td><code>r-20261002T180754447915-review</code></td><td>2026-10-02T18:08:23Z</td><td>clive</td><td>not-run</td><td>route</td><td>codex</td><td>0.19</td><td>1987</td><td>293</td></tr>
+<tr><td>16</td><td><code>r-20261002T180555630047-review</code></td><td>2026-10-02T18:06:24Z</td><td>clive</td><td>not-run</td><td>route</td><td>codex</td><td>0.35</td><td>2480</td><td>308</td></tr>
+<tr><td>17</td><td><code>r-20261002T175200268541-picker</code></td><td>2026-10-02T17:52:38Z</td><td>codex</td><td>passed</td><td>route</td><td>codex-terra</td><td>0.31</td><td>2418</td><td>311</td></tr>
+<tr><td>18</td><td><code>r-20261002T175108967088-picker</code></td><td>2026-10-02T17:51:45Z</td><td>codex-astra</td><td>passed</td><td>route</td><td>codex-terra</td><td>0.32</td><td>1932</td><td>294</td></tr>
+<tr><td>19</td><td><code>r-20261002T174003181861-review</code></td><td>2026-10-02T17:40:32Z</td><td>clive</td><td>not-run</td><td>route</td><td>codex</td><td>0.25</td><td>1789</td><td>310</td></tr>
+</tbody></table>
+<h4>Summary</h4>
+<ul>
+<li><strong>Agreement with the backend actually used: 1 of 20 (0.05).</strong>
+The twenty recorded dispatches went to the lane deterministic routing chose
+(17 to <code>clive</code>, and one each to <code>codex</code>,
+<code>codex-astra</code> and <code>codex-terra</code>); the live picker offered
+only the four codex backends because <code>clive</code> and the claude family
+were unavailable at replay, so agreement is low by construction — a property of
+which lanes were serving, not a picker fault. The one agreement is the
+<code>codex-terra</code> dispatch.</li>
+<li><strong>Holds: 0.</strong> Every row carried at least one eligible
+candidate and Jev chose a backend on every row.</li>
+<li><strong>Fallbacks: 0</strong> — no fallback reason was recorded on any row;
+refusals 0; picks with no selection 0.</li>
+<li><strong>Picks to a refused or logged-out model: 0.</strong></li>
+<li><strong>Per-pick latency: median 2,285.3 ms, maximum 120,622.9 ms.</strong>
+The maximum is row 0, the first pick, which pays the cohort's one-time setup:
+the dated budget snapshot took 12,862 ms and the nine serving observations were
+probed there and cached for the later rows. From row 1 on, the picks sit
+between 1,789 ms and 5,149 ms.</li>
+<li><strong>Jev: 20 calls, median 305.4 ms</strong> — all twenty rows called
+Jev, and every answer carried a complete distribution over the offered keys,
+which the picker refuses unless it is normalised to one.</li>
+<li><strong>Jev cost: $0.001922.</strong></li>
+</ul>
+<h4>Uniform columns, checked before reporting them</h4>
+<p>Every row routed, none held, none fell back, none refused. That uniform
+column is the picker working rather than a gate that never ran: each row
+offered <strong>4 candidates</strong> and excluded <strong>5</strong> with
+reason <strong>availability</strong> — <code>claude</code>,
+<code>claude-haiku</code>, <code>claude-opus</code>, <code>clive</code> and
+<code>native</code> all read <code>unavailable</code> at replay while
+<code>codex</code>, <code>codex-astra</code>, <code>codex-luna</code> and
+<code>codex-terra</code> read <code>served</code> — so the eligibility
+gate was live and its exclusions differed row from row. Jev's answers were not
+a constant either: picks spread over <strong>3 backends</strong>
+(<code>codex</code>, <code>codex-astra</code>, <code>codex-terra</code>) with
+confidences from <strong>0.19</strong> to <strong>0.65</strong>.</p>
+<h4>One rendered Jev state, verbatim</h4>
+<p>The state rendered for row 0
+(<code>r-20261002T194052703929-review-of-a-reused-snapshot-takes-the-callers-stall-window</code>),
+captured in the run's own JSONL at render time, immediately before the picker
+parsed it for the Jev request. Its <code>return_times</code> block carries
+non-null medians and run counts for all four offered backends, and its
+<code>local_lane</code> block carries non-null <code>running</code>,
+<code>waiting</code>, <code>headroom</code>, <code>worker_slots</code> and
+<code>read_at</code>. HTML-escaped for the page only; the JSONL holds the exact
+bytes.</p>
+<pre>{"node":{"role":"review","spec_level":"exact","capability":{},"goal":"attach an independent review to run r-20261002T193105112177-a-reused-snapshot-takes-the-callers-stall-window","done_when":"the review for r-20261002T193105112177-a-reused-snapshot-takes-the-callers-stall-window stores a parsed record scoring all 5 dimensions in the range 0..20, recording the revision it read as reviewed_base_sha and reviewed_head_sha, and carrying added_failure_count and added_failure_ids derived from the reviewed run's own baseline_suite and after_suite gate logs; the turn ends once that record is stored and the manifest reads complete","estimated_context":0,"estimated_hours":null,"attempts":1},"orchestrator_comment":"","candidates":{
+"codex":{"availability":"served","utilisation_pct":21.0,"burn_multiple":3.5696458684654297,"pace_allowance":0.06471136150744061,"resets_at":"2026-10-09T10:39:35Z","worker_slots":null,"congestion":null,"outcomes_14_days":{"passed":0,"failed":0,"not-run":0,"unknown":0}},
+"codex-astra":{"availability":"served","utilisation_pct":21.0,"burn_multiple":3.5696458684654297,"pace_allowance":0.06471136150744061,"resets_at":"2026-10-09T10:39:35Z","worker_slots":null,"congestion":null,"outcomes_14_days":{"passed":4,"failed":0,"not-run":1,"unknown":0}},
+"codex-luna":{"availability":"served","utilisation_pct":21.0,"burn_multiple":3.569746198600298,"pace_allowance":0.06471136150744061,"resets_at":"2026-10-09T10:39:36Z","worker_slots":null,"congestion":null,"outcomes_14_days":{"passed":0,"failed":0,"not-run":0,"unknown":0}},
+"codex-terra":{"availability":"served","utilisation_pct":21.0,"burn_multiple":3.569746198600298,"pace_allowance":0.06471136150744061,"resets_at":"2026-10-09T10:39:36Z","worker_slots":null,"congestion":null,"outcomes_14_days":{"passed":4,"failed":0,"not-run":0,"unknown":0}}},"days_to_reset":{
+"codex":6.58805406550926,
+"codex-astra":6.58805406550926,
+"codex-luna":6.588065639583334,
+"codex-terra":6.588065639583334},"return_times":{"codex":{"p50_s":531.5,"p90_s":937,"runs":12,"size_key":null,"size_bucket":null,"budget_source":"account-surface","budget_age_s":132.42097,"stale":false},"codex-astra":{"p50_s":608,"p90_s":1051,"runs":5,"size_key":null,"size_bucket":null,"budget_source":"account-surface","budget_age_s":132.42097,"stale":false},"codex-luna":{"p50_s":765.0,"p90_s":1329,"runs":8,"size_key":null,"size_bucket":null,"budget_source":"account-surface","budget_age_s":132.42097,"stale":false},"codex-terra":{"p50_s":890.0,"p90_s":1746,"runs":4,"size_key":null,"size_bucket":null,"budget_source":"account-surface","budget_age_s":132.42097,"stale":false}},"local_lane":{"running":14,"waiting":0,"headroom":1,"worker_slots":8,"tokens_per_second":null,"read_at":"2026-10-02T20:34:46.444375+00:00"}}
+}</pre>
+<h4>Artifacts</h4>
+<p>Raw replay JSON, the command's own stdout:
+<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T202124445000-picker-replay-measure/replay.json</code>.
+Run log with the revision, tree, command and exit status:
+<code>…/replay.log</code>. Every rendered state, one JSON object per line in
+render order (line 0 is the state quoted above):
+<code>…/jev-states.jsonl</code>.</p>
+</article>

@@ -206,7 +206,11 @@ def test_lane_document_is_read(isolated_lane):
                 "running": 7,
                 "waiting": 2,
                 "headroom": 5,
-                "admission": {"worker_slots": 4, "state": "open"},
+                "admission": {
+                    "worker_slots": 4,
+                    "state": "open",
+                    "observed_seconds": 300,
+                },
             }
         ),
         encoding="utf-8",

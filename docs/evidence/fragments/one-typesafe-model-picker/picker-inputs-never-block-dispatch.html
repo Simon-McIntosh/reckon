@@ -1,0 +1,22 @@
+<article class="r-evidence" data-plan="one-typesafe-model-picker" data-node="picker-inputs-never-block-dispatch">
+  <h3>picker-inputs-never-block-dispatch — the picker's inputs are guarded</h3>
+
+  <p>The ledger rows, shared verdict inputs and budget view that dispatch builds
+  for <code>dispatch_picker_selection</code> are now each built behind a guard
+  that records a failure against the input's own name and passes
+  <code>None</code> in its place, so the pick re-reads what it is not handed and
+  a read failure cannot abort the dispatch.</p>
+
+  <p><strong>Repair confirmed against a recorded reproduction.</strong>
+  <code>test_an_unreadable_ledger_refuses_with_the_ledger_reason</code> failed at
+  base 3e32e09ae with <code>CorruptEnvelopeError</code> escaping
+  <code>dispatch</code> at the picker's ledger read
+  (<code>reckon/crew/dispatch.py:5549</code>); at head it passes and the repair
+  path's own <code>could not be read</code> refusal is reached.</p>
+
+  <p><strong>Head gate.</strong>
+  <code>tests/test_picker_inputs_never_block_dispatch.py</code> makes each of the
+  three input builders raise in turn and shows each dispatch proceeding to its
+  own verdict with the failure (<code>RuntimeError: boom:&lt;input&gt;</code>)
+  recorded on the returned selection; 5 passed.</p>
+</article>

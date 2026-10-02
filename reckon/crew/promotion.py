@@ -71,6 +71,7 @@ from reckon.crew.routing import (
     section_record_id,
 )
 from reckon.crew.runs import (
+    _drain_row,
     _live_worktree_claims,
     _manifest_freshness,
     _pointer_lock,
@@ -6208,32 +6209,15 @@ def _harvest_lane_receipt(
 def _unreconciled_live_runs(pointers: Iterable[Mapping[str, Any]]) -> int:
     """Count the live pointers no closure disposition excuses.
 
-    The closure drain derives its ``unreconciled_runs`` by the same predicate
-    over the same pointers, so this agrees with the drain on a given fleet
-    without reading the plan inventory the drain also serves: a promotion stamps
-    a reading on its row and never consumes the drain's closure count or plan
-    remainder. Liveness is taken through the host-gated reading the drain uses,
-    so a pointer whose classification turns on a live process reads the same
-    either way rather than being measured against a stored answer.
+    Each pointer is classified by the closure drain's own per-pointer step,
+    :func:`reckon.crew.runs._drain_row`, so this agrees with the drain's
+    ``unreconciled_runs`` by construction: the drain builds its rows with the
+    same function, and a change to the composition reaches both. Nothing is
+    recomputed here, and the drain's plan inventory is not read — a promotion
+    stamps a reading on its row and never consumes the drain's closure count or
+    plan remainder.
     """
-    from reckon.crew import recovery
-
-    unreconciled = 0
-    for pointer in pointers:
-        alive, proven = recovery.local_liveness(pointer)
-        row = recovery.classify_pointer(
-            {**pointer, "process_alive": alive if proven else None}
-        )
-        recorded = pointer.get("closure_disposition")
-        disposition = (
-            str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
-        )
-        classification = str(
-            row.get("classification") or row.get("recovery_classification") or ""
-        )
-        if not recovery.closure_disposition_valid(disposition, classification):
-            unreconciled += 1
-    return unreconciled
+    return sum(1 for pointer in pointers if _drain_row(pointer)["unreconciled"])
 
 
 def _fleet_state_reading(project: str) -> dict[str, Any]:

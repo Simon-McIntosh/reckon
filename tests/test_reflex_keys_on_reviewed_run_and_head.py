@@ -115,9 +115,10 @@ class _Fleet:
     def head(self) -> str:
         return _git(self.repo, "rev-parse", "HEAD")
 
-    def commit(self, name: str) -> str:
-        (self.repo / f"{name}.txt").write_text(f"{name}\n", encoding="utf-8")
-        _git(self.repo, "add", f"{name}.txt")
+    def commit(self, name: str, *, suffix: str = ".txt") -> str:
+        path = f"{name}{suffix}"
+        (self.repo / path).write_text(f"{name}\n", encoding="utf-8")
+        _git(self.repo, "add", path)
         _git(self.repo, "commit", "-q", "-m", f"chore: add {name}")
         return self.head()
 
@@ -307,12 +308,36 @@ def test_a_stored_record_for_the_head_stands_and_an_older_head_does_not(
     old_head = stale.head()
     _scoring_run(stale)
     _stored_review(stale, SOURCE_RUN, old_head)
-    stale.commit("second")
+    # The move must touch runtime source: a head-blind reader would suppress on
+    # the stored record alone, and a data-only move is now carried forward
+    # rather than re-reviewed, so a non-source commit would not discriminate.
+    stale.commit("second", suffix=".py")
 
     resumed = stale.sweep()
 
     assert len(resumed["dispatched"]) == 1
     assert len(stale.launches) == 1
+
+
+def test_a_data_only_move_carries_the_stored_record_forward(fleets) -> None:
+    """The companion of the stale half: a non-source move is carried, not re-reviewed.
+
+    The head moves over a data file, so the stored review is carried forward to
+    the new head; the reflex buys no second review of the run.
+    """
+    fleet = fleets("data_only_move")
+    head = fleet.head()
+    _scoring_run(fleet)
+    _stored_review(fleet, SOURCE_RUN, head)
+    moved = fleet.commit("record")
+
+    result = fleet.sweep()
+
+    assert result["dispatched"] == []
+    assert fleet.launches == []
+    carried = review.read_review(PROJECT, SOURCE_RUN, reviewed_head_sha=moved)
+    assert carried is not None
+    assert recovery.same_revision(carried["reviewed_head_sha"], moved)
 
 
 def test_a_run_resumed_to_a_new_head_gets_one_review_and_a_second_sweep_none(

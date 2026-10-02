@@ -30,7 +30,9 @@ Each case exists because its opposite was a plausible bug:
 * **The router's observed window** gates worker slots: a zero, negative or
   absent ``observed_seconds`` carries no slot figure, while a positive one
   carries the published figure, so a slot allowance resting on no history is
-  not read as a real capacity.
+  not read as a real capacity. The gate reads the allowance's structured
+  ``rests_on_observed_window`` field, and a case rewrites the human-readable
+  source label to show the gate does not match its text.
 """
 
 from __future__ import annotations
@@ -273,6 +275,93 @@ def test_a_positive_window_carries_the_published_slots(
     load = local_lane_load()
 
     assert load["worker_slots"] == 5
+
+
+def test_the_slot_gate_reads_the_window_flag_not_the_source_label(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Rewording every source label leaves the gate on the structured flag.
+
+    The allowance carries a human-readable ``source`` beside the structured
+    ``rests_on_observed_window`` field. The load reading must decide which slot
+    figures to trust from that field alone. The wrapper below rewrites the label
+    to a sentence carrying no slot wording at all: a gate that matched the
+    label's text would drop a figure that the flag says is real.
+    """
+
+    real = profile_module._lane_worker_allowance
+
+    def reworded(document, *, session):
+        decision = dict(real(document, session=session))
+        decision["source"] = "a reworded label carrying no slot wording"
+        return decision
+
+    monkeypatch.setattr(profile_module, "_lane_worker_allowance", reworded)
+
+    trusted = tmp_path / "trusted.json"
+    trusted.write_text(
+        json.dumps(
+            {
+                "running": 4,
+                "headroom": 3,
+                "admission": {"worker_slots": 5, "observed_seconds": 600},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("RECKON_LOCAL_LANE_DOCUMENT", str(trusted))
+    assert local_lane_load()["worker_slots"] == 5
+
+    untrusted = tmp_path / "untrusted.json"
+    untrusted.write_text(
+        json.dumps(
+            {
+                "running": 4,
+                "headroom": 3,
+                "admission": {"worker_slots": 5, "observed_seconds": 0},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("RECKON_LOCAL_LANE_DOCUMENT", str(untrusted))
+    assert local_lane_load()["worker_slots"] is None
+
+
+def test_a_slot_labelled_source_without_the_window_flag_carries_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """A label that reads like a slot figure is not the gate; the flag is.
+
+    A gate matching the substring ``worker slots`` in the source label would
+    carry a figure whose structured flag says it rests on no observed window.
+    Here the label reads like the global slot figure while the flag is false,
+    and the load reading drops the figure.
+    """
+
+    real = profile_module._lane_worker_allowance
+
+    def mislabelled(document, *, session):
+        decision = dict(real(document, session=session))
+        decision["source"] = "the global worker slots"
+        decision["rests_on_observed_window"] = False
+        return decision
+
+    monkeypatch.setattr(profile_module, "_lane_worker_allowance", mislabelled)
+
+    path = tmp_path / "lane.json"
+    path.write_text(
+        json.dumps(
+            {
+                "running": 4,
+                "headroom": 3,
+                "admission": {"worker_slots": 5, "observed_seconds": 0},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("RECKON_LOCAL_LANE_DOCUMENT", str(path))
+
+    assert local_lane_load()["worker_slots"] is None
 
 
 def test_the_module_is_the_one_under_test():

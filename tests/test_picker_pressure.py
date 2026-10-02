@@ -113,6 +113,41 @@ def test_no_candidates_refuses_without_calling_jev(
     caller.assert_not_called()
 
 
+def test_review_node_is_never_offered_a_review_excluded_backend(
+    live_facts, request_node, config, tmp_path
+):
+    """A backend withdrawn from review routing is filtered, not left to Jev."""
+    request_node.node.role = "review"
+    config["backends"] = {
+        "clive": {
+            "launch": "cli",
+            "command": "clive",
+            "model": "local-model",
+            "effort": "high",
+        },
+        "codex": {"launch": "cli", "command": "codex", "model": "remote-model"},
+        "codex-astra": {"launch": "cli", "command": "codex", "model": "astra-model"},
+    }
+    config["local_backend"] = "clive"
+    config["default_backend"] = "clive"
+    config["roles"] = {"review": {}}
+    config["review_excluded_backends"] = ["codex", "codex-astra"]
+    seen = []
+
+    def caller(state, questions, **kwargs):
+        seen.append(questions["route"]["criteria"])
+        return _answer("clive", state["candidates"])
+
+    selection = pick(request_node, config, repo=tmp_path, records=[], caller=caller)
+    assert set(seen[0]) == {"clive", "hold"}
+    assert {c["backend"] for c in selection.offered} == {"clive"}
+    excluded = {c["backend"]: c["reasons"] for c in selection.excluded}
+    assert excluded == {
+        "codex": ["review-excluded-backend"],
+        "codex-astra": ["review-excluded-backend"],
+    }
+
+
 def test_reserve_hold_below_hard_ceiling_remains_offered(
     live_facts, monkeypatch, request_node, config, tmp_path
 ):

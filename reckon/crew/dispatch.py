@@ -63,7 +63,11 @@ from reckon.crew.node import (
 )
 from reckon.crew.prompts import compose_prompt, time_fence_statement
 from reckon.crew.refusals import format_refusal
-from reckon.crew.recovery import REVIEW_NODE_PREFIX, stream_paths_newest_first
+from reckon.crew.recovery import (
+    REVIEW_NODE_PREFIX,
+    resume_window_refusal,
+    stream_paths_newest_first,
+)
 from reckon.crew.reserve import admit as reserve_admit
 from reckon.crew.review import review_store_root
 from reckon.crew.routing import (
@@ -4143,6 +4147,76 @@ def _brief_text(node: TaskNode) -> str:
 PICKER_DISPATCH_TIMEOUT_SECONDS = 5.0
 
 
+def _picker_fallback(
+    reason: str,
+    comment: str,
+    *,
+    input_errors: Mapping[str, str] | None = None,
+    latency_ms: float | None = None,
+) -> dict[str, Any]:
+    """The selection dispatch records when the picker did not decide one.
+
+    One shape serves every fallback — a picker that raised, one that ran past
+    its bound, and one whose inputs could not be built — so a reader settles
+    each case by the ``fallback_reason`` rather than by which keys are present.
+    """
+    client = sys.modules.get("reckon.crew.picker.client")
+    return {
+        "action": "fallback",
+        "backend": None,
+        "family": None,
+        "model": None,
+        "effort": None,
+        "probabilities": {},
+        "confidence": None,
+        "jev_model": getattr(client, "JEV_MODEL", None),
+        "fallback_reason": reason,
+        "latency_ms": latency_ms,
+        "offered": [],
+        "excluded": [],
+        "comment": comment,
+        **({"input_errors": dict(input_errors)} if input_errors else {}),
+    }
+
+
+def _picker_ledger_rows(project: str, ledger_root: Path) -> list[dict[str, Any]]:
+    return ledger.runs(project, root=ledger_root)
+
+
+def _picker_verdict_inputs(project: str, repo_root: Path) -> Mapping[str, Any]:
+    return shared_verdict_inputs(project, repo_root)
+
+
+def _picker_budget_snapshot(
+    project: str,
+    config: Mapping[str, Any],
+    repo_root: Path,
+    records: list[dict[str, Any]] | None,
+) -> Mapping[str, Any]:
+    from reckon.crew.picker import snapshot as picker_snapshot
+
+    return picker_snapshot.budget_view(
+        project, dict(config), repo_root, records, cached_only=True
+    )
+
+
+def _picker_input(
+    name: str, build: Callable[[], Any], errors: dict[str, str]
+) -> Any:
+    """Build one dispatch-scope picker input, recording a failure instead of raising.
+
+    These inputs are advisory: the picker re-reads whatever it is not handed, so
+    a damaged ledger, a conflicting merge marker or a missing mount that makes
+    one of them unreadable must leave the dispatch to reach its own verdict
+    rather than abort the run's bookkeeping before the picker is consulted.
+    """
+    try:
+        return build()
+    except Exception as exc:  # noqa: BLE001 - a picker input never blocks dispatch
+        errors[name] = f"{type(exc).__name__}: {exc}"
+        return None
+
+
 def dispatch_picker_selection(
     *,
     node: TaskNode,
@@ -4154,8 +4228,19 @@ def dispatch_picker_selection(
     records: list[dict[str, Any]] | None = None,
     verdict_inputs: Mapping[str, Any] | None = None,
     budget_snapshot: Mapping[str, Any] | None = None,
+    input_errors: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Ask the picker without letting its latency or failure stop dispatch."""
+    if input_errors:
+        # An input the dispatcher could not build is not re-read here: the same
+        # source that failed once would only fail again, so the picker's own
+        # pick is skipped and the failure is named in the recorded fallback.
+        return _picker_fallback(
+            "; ".join(f"{name}: {detail}" for name, detail in input_errors.items()),
+            comment,
+            input_errors=input_errors,
+            latency_ms=0.0,
+        )
     finished = threading.Event()
     result: dict[str, Any] = {}
     started = time.monotonic()
@@ -4193,23 +4278,11 @@ def dispatch_picker_selection(
         result["error"] = "timeout"
     if "selection" in result and "error" not in result:
         return result["selection"]
-    client = sys.modules.get("reckon.crew.picker.client")
-
-    return {
-        "action": "fallback",
-        "backend": None,
-        "family": None,
-        "model": None,
-        "effort": None,
-        "probabilities": {},
-        "confidence": None,
-        "jev_model": getattr(client, "JEV_MODEL", None),
-        "fallback_reason": result.get("error") or "picker returned no selection",
-        "latency_ms": round((time.monotonic() - started) * 1000, 3),
-        "offered": [],
-        "excluded": [],
-        "comment": comment,
-    }
+    return _picker_fallback(
+        result.get("error") or "picker returned no selection",
+        comment,
+        latency_ms=round((time.monotonic() - started) * 1000, 3),
+    )
 
 
 def _picker_refusal_reasons(selection: Mapping[str, Any]) -> str:
@@ -5298,6 +5371,7 @@ def _lane_allowance_unknown(detail: str) -> dict[str, Any]:
         "state": "unknown",
         "allowance": None,
         "source": "none",
+        "rests_on_observed_window": False,
         "held": False,
         "verdict": _lane_document.UNKNOWN,
         "headroom": None,
@@ -5332,6 +5406,13 @@ def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
     read holds nothing, because absence of a signal is not exhaustion. Reckon
     does no fairness arithmetic of its own: every figure carried here is one
     the router published.
+
+    The ``source`` label is prose for a reader. A caller that must decide
+    *whether* the figure rests on observed history reads
+    ``rests_on_observed_window`` instead: the structured field is true exactly
+    when the allowance was taken from a router slot figure inside the block
+    that states the window it was averaged over, and it stays true for every
+    spelling of the label, so no caller needs to match the label's text.
     """
     reading = _lane_document.read_lane_document(document)
     admission = _lane_document.read_lane_admission(document)
@@ -5375,6 +5456,11 @@ def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
             if share is not None:
                 allowance = share
                 source = "the global worker slots"
+    # Captured before the headroom fallback: only a figure taken inside the
+    # trusted-window block above rests on observed history, and headroom --
+    # which needs no window -- never does.
+    rests_on_observed_window = allowance is not None
+
     if allowance is None and headroom is not None:
         allowance = headroom
         source = "the request headroom"
@@ -5408,6 +5494,7 @@ def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
         "state": state,
         "allowance": allowance,
         "source": source,
+        "rests_on_observed_window": rests_on_observed_window,
         "held": held,
         "verdict": verdict,
         "headroom": headroom,
@@ -5544,12 +5631,27 @@ def dispatch(
     # asked for rather than carrying the held backend's defaults forward.
     caller_time_budget = node.time_budget
     caller_write_paths = list(node.write_paths)
-    from reckon.crew.picker import snapshot as picker_snapshot
-
-    picker_records = ledger.runs(project, root=ledger_root)
-    picker_inputs = shared_verdict_inputs(project, repo_root)
-    picker_budget = picker_snapshot.budget_view(
-        project, dict(config), repo_root, picker_records, cached_only=True
+    # Each picker input is built independently behind a guard: an unreadable
+    # ledger, a conflicting mount or a raising budget view is recorded against
+    # the input that failed and the picker is left to fall back, so a picker
+    # meant only to inform the dispatch can never abort the dispatch itself.
+    picker_input_errors: dict[str, str] = {}
+    picker_records = _picker_input(
+        "records",
+        lambda: _picker_ledger_rows(project, ledger_root),
+        picker_input_errors,
+    )
+    picker_inputs = _picker_input(
+        "verdict_inputs",
+        lambda: _picker_verdict_inputs(project, repo_root),
+        picker_input_errors,
+    )
+    picker_budget = _picker_input(
+        "budget_snapshot",
+        lambda: _picker_budget_snapshot(
+            project, config, repo_root, picker_records
+        ),
+        picker_input_errors,
     )
     picker_selection = dispatch_picker_selection(
         node=node,
@@ -5561,6 +5663,7 @@ def dispatch(
         records=picker_records,
         verdict_inputs=picker_inputs,
         budget_snapshot=picker_budget,
+        input_errors=picker_input_errors,
     )
     resolution = plan_dispatch(
         node=node,
@@ -10153,6 +10256,18 @@ def resume_plan(
     )
     if verdict["held"]:
         raise _actionable_budget_hold(verdict, config=config)
+    # A resumed turn re-sends the session's whole context, so a session grown
+    # past the lane's input window dies at the endpoint with the attempt file
+    # already open, and an attempt whose worker dies at once leaves a delivered
+    # manifest reading stale to promotion. The count is the run's own last
+    # recorded request input rather than an estimate, and the gate is consulted
+    # before the plan is built and before anything is written, so a session the
+    # lane cannot hold is refused with a fresh repair node as the remedy.
+    window_refusal = resume_window_refusal(
+        run_id, record, backend=backend, config=config
+    )
+    if window_refusal is not None:
+        raise window_refusal
     # A second worker on one run is the collision this refuses, and a hand-typed
     # resume starts a worker exactly as the sweep does. The guard above refuses
     # only a process this host found alive, so a run whose end nothing observed —

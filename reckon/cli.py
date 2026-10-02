@@ -2531,6 +2531,29 @@ PRODUCER_RELOAD_WINDOW_SECONDS = (
 )
 FOLLOWER_PRODUCER_RELOADING_EVENT = "producer-reloading"
 FOLLOWER_PRODUCER_RELOAD_FAILED_EVENT = "producer-reload-failed"
+FOLLOWER_PRODUCER_STOPPED_EVENT = "producer-stopped"
+
+
+def _logged_producer_stop(project: str) -> str | None:
+    """Read the producer's final reason without loading its long service log."""
+    from reckon.crew import runs
+
+    try:
+        with runs.watch_log_path(project).open("rb") as stream:
+            stream.seek(0, os.SEEK_END)
+            stream.seek(max(0, stream.tell() - 4096))
+            lines = stream.read().decode("utf-8", errors="replace").splitlines()
+    except OSError:
+        return None
+    for line in reversed(lines):
+        if line.strip():
+            marker = "reckon crew watch stopped: "
+            candidate = line.strip()
+            if candidate.startswith("[") and "] " in candidate:
+                candidate = candidate.split("] ", 1)[1]
+            return candidate if candidate.startswith(marker) else None
+    return None
+
 
 # The window is granted on the in-place-reload path only: a producer mid-reload
 # is rendered as a note, and only a mismatch that outlasts the window earns the
@@ -3196,6 +3219,7 @@ def _follow_watch_lines(
     producer_reload_deferred = False
     producer_stale_advised = False
     producer_reload_failure_reported = False
+    producer_stop_reported = False
 
     def _producer_stale_event(identity: Mapping[str, Any]) -> dict[str, Any]:
         """Name a producer running old code and the command that cycles it."""
@@ -3293,6 +3317,16 @@ def _follow_watch_lines(
     while not _stopped() and not lifetime_elapsed and not consumer_gone:
         identity = runs.watch_producer_identity(project)
         if not runs.producer_live(project):
+            reason = _logged_producer_stop(project)
+            if reason and not producer_stop_reported:
+                producer_stop_reported = True
+                yield {
+                    "event": FOLLOWER_PRODUCER_STOPPED_EVENT,
+                    "project": project,
+                    "session": session or "",
+                    "run_id": None,
+                    "line": f"producer {project} is gone; {reason}",
+                }
             if (
                 identity.get("reload_started_at")
                 and not producer_reload_failure_reported
@@ -3319,6 +3353,7 @@ def _follow_watch_lines(
             sleeper(poll_interval)
             continue
         producer_reload_failure_reported = False
+        producer_stop_reported = False
 
         try:
             cursor = runs.watch_stream_cursor(project)
@@ -4063,6 +4098,7 @@ def crew_follow(
                 FOLLOWER_STALE_PRODUCER_EVENT,
                 FOLLOWER_PRODUCER_RELOADING_EVENT,
                 FOLLOWER_PRODUCER_RELOAD_FAILED_EVENT,
+                FOLLOWER_PRODUCER_STOPPED_EVENT,
             ):
                 # The seat's producer runs older code than this follower — with
                 # the cycle remedy once it is confirmed stale, or a line saying
@@ -4229,22 +4265,51 @@ def crew_watch(
                 color=getattr(grid, "color", False),
             )
             poller = _StampPoll(reloader, runs_module.FOLLOWER_FRESHNESS_SECONDS)
-            poller.start()
+            stopped_by_signal: int | None = None
+
+            def stop_on_signal(signum, frame) -> None:
+                nonlocal stopped_by_signal
+                stopped_by_signal = signum
+                raise SystemExit(128 + signum)
+
+            previous_handlers = {
+                signum: signal.signal(signum, stop_on_signal)
+                for signum in (signal.SIGTERM, signal.SIGHUP)
+            }
+            stop_reason = "watch stream ended"
             try:
-                for result in watch_follow(
-                    project, stall_window=stall_window, transitions=True
+                poller.start()
+                try:
+                    for result in watch_follow(
+                        project, stall_window=stall_window, transitions=True
+                    ):
+                        if json_output or result.get("event") not in {
+                            "baseline",
+                            "transition",
+                        }:
+                            _emit({"ok": True, **result}, pretty)
+                        elif not _row_is_stale_inventory(result):
+                            click.echo(
+                                format_watch_transition(result, ticker=grid), color=True
+                            )
+                finally:
+                    poller.stop()
+                renewed = runs_module.watch_lease_renewed_at(project)
+                if (
+                    renewed is not None
+                    and time.time() - renewed >= runs_module.producer_lease_seconds()
                 ):
-                    if json_output or result.get("event") not in {
-                        "baseline",
-                        "transition",
-                    }:
-                        _emit({"ok": True, **result}, pretty)
-                    elif not _row_is_stale_inventory(result):
-                        click.echo(
-                            format_watch_transition(result, ticker=grid), color=True
-                        )
+                    stop_reason = "producer lease expired"
+            except BaseException as exc:
+                if stopped_by_signal is not None:
+                    stop_reason = f"received {signal.Signals(stopped_by_signal).name}"
+                else:
+                    stop_reason = f"{type(exc).__name__}: {exc}"
+                raise
             finally:
-                poller.stop()
+                click.echo(f"reckon crew watch stopped: {stop_reason}", err=True)
+                for signum, previous in previous_handlers.items():
+                    signal.signal(signum, previous)
             return
         result = crew_module.watch(
             project,

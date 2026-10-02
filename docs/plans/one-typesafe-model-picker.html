@@ -25,8 +25,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="59">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="74">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -43,23 +43,12 @@
     <p>The lead's direction (2026-10-02): one lane per provider (claude, clive, codex), and a router that picks both the <strong>family and the model</strong> for every dispatch and handles the whole choice. The orchestrator does not pick. It may write a free-form comment, which the router passes on to the model making the judgment. That model is <strong>Jev</strong>, TypeSafe's flagship and first System One model, which returns typed answers with probabilities rather than generated text. Code keeps every hard constraint; Jev supplies the semantic judgment of which family and model fit the node. This is a significant redesign. The typesafe-ai skill and the live TypeSafe docs guide it; the skill was installed on 2026-10-02 as a Claude Code plugin and is invoked as <code>/typesafe:typesafe-ai</code>. The router is prototyped and dogfooded on reckon's own dispatches before it becomes anyone's default (§6).</p>
     <p>It overlaps <code>the-local-lane-is-the-default</code> (route by backend and model, local by default), <code>a-window-paces-the-lane</code> and <code>advise-the-lane-never-force-it</code>. This plan is sequenced after the first and is meant to absorb the routing parts of all three, which the design section reconciles explicitly.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-02</span>
     <h2 id="s2">§2 — Why the codex account refuses its configured models</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p>Establish which codex models this account serves now that the lead reports it is back on the pro plan. On 2026-10-01 the account reported <code>plan_type</code> <code>free</code>. <code>gpt-5.6-sol</code> and <code>gpt-6-astra</code> were refused and only <code>gpt-5.6-terra</code> served. On 2026-10-02 at 10:37Z, a one-line probe of <code>gpt-5.6-sol</code> returned HTTP 401 <code>token_invalidated</code> ("Your authentication token has been invalidated. Please try signing in again.") on every request, including the model-list refresh. The stored login was invalidated, which fits a plan change.</p>
-    <p><strong>Measured after the lead's fresh <code>codex login</code> (2026-10-02, 10:39Z), one one-line probe per model:</strong></p>
-    <table>
-      <thead><tr><th>backend</th><th>model</th><th>verdict</th></tr></thead>
-      <tbody>
-        <tr><td><code>codex</code></td><td><code>gpt-5.6-sol</code></td><td>serves</td></tr>
-        <tr><td><code>codex-astra</code></td><td><code>gpt-6-astra</code></td><td>serves</td></tr>
-        <tr><td><code>codex-terra</code></td><td><code>gpt-5.6-terra</code></td><td>serves</td></tr>
-        <tr><td><code>codex-luna</code></td><td><code>gpt-5.6-luna</code></td><td>serves</td></tr>
-        <tr><td><code>codex-spark</code></td><td><code>gpt-5.3-codex-spark</code></td><td>refused: "not supported when using Codex with a ChatGPT account", and the CLI has no metadata for it</td></tr>
-      </tbody>
-    </table>
-    <p>The session records report <code>plan_type: pro</code>, with one primary window of 10,080 minutes (seven days) at 0% used, no secondary window, and no five-hour window. A preflight of the five codex backends at 10:4xZ read 0% and closed all five holds opened on 2026-10-01 at 20:42:48Z. It also marked <code>codex-spark</code> clear, although the provider refuses that model. A budget reading says nothing about whether a model serves, and §4's candidate filter has to close that gap.</p>
-    <p><strong>What remains in this section:</strong> decide <code>codex-spark</code>'s disposition (retired, or a separate subscription that needs its own login). Then measure with one real non-review codex dispatch whether the bookend reserve in <code>reckon/crew/reserve.py</code> admits it on a seven-day-only account, or refuses it as an unreadable window as it did on the free plan. Recommend the reserve's behaviour for any account without a five-hour window.</p>
-    <p><strong>Done when:</strong> <code>codex-spark</code> has a recorded disposition with its evidence; one real non-review codex dispatch shows from its own run record whether the bookend reserve admitted or refused it; and a report recommends one reserve behaviour for an account with no five-hour window, naming the window the reserve reads instead.</p>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">codex-spark is retired (account refuses it, provider list omits it; dotfiles 8390913, merge d7e1a0fe2). On an account with no five-hour window the reserve reads the provider-reported primary window; a real implement-role codex-astra dispatch was admitted at 21:20Z. Merge fd83fd8ae. <a href="s2">full record</a></p>
+</section>
 
     <h2 id="s3">§3 — Which model is current for each provider</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
@@ -163,6 +152,12 @@
 <div class="r-comment" data-section="s2" data-id="c-otmp-s2-reserve-refusal" data-who="s25-picker" data-when="2026-10-02T11:17:00Z">
     <div class="r-comment-body"><p><strong>Measured: the bookend reserve refuses non-review codex dispatch on this account.</strong> At 11:16Z, dispatching <code>picker-reuse-map</code> (role documentation, backend codex) was refused before any worktree existed: "the window's utilisation could not be read (the 'codex' lane's five-hour clock reports state 'unknown'), and an unreadable window is not an empty one: the documentation role's dispatch is refused against the 20% the window keeps for review and verify roles". At the same moment the account surface read the primary window at 0% used, with a 10,080-minute period resetting 2026-10-09T10:39Z. <code>_refuse_against_the_bookend_reserve</code> in <code>reckon/crew/dispatch.py</code> reads only the <code>five_hour</code> clock, so on an account without one, every non-bookend role is refused. The wave-1 codex dispatches therefore carry <code>--set backends.codex.budget_group=null</code>, recorded on each run, which skips the group reserve; per-backend budget checks still apply. §7's <code>codex-window-pacing</code> node owns the fix: the reserve reads the window the provider reports.</p></div>
 </div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261002T202451106868-reserve-without-five-hour-window" data-who="reckon-build" data-when="2026-10-02T21:00:13.656Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/one-typesafe-model-picker/reserve-without-five-hour-window.html closes §2 — codex-spark retired with resolving shas (dotfiles 839091357d0d15630889c085c283a90b6fb53c3b, reckon merge d7e1a0fe2ebafac65ae68a4421355a06f255c81b); pre-merge refusal at 11:16Z quoted; post-merge dry run of the same codex documentation dispatch (main checkout reckon, adf905314 ancestor) exits 0 with ok:true; recommendation: on a five-hour-less account the reserve reads the provider-reported primary window (10,080 min) as the operative window.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261002T210312258465-review-of-reserve-without-five-hour-window" data-who="reckon-build" data-when="2026-10-02T21:23:15.466Z">
+    <div class="r-comment-body"><p>Review of documentation node reserve-without-five-hour-window: scored goal_fidelity 17, evidence 13, scope_discipline 20, durability 16, fit 18 (total 84); record stored parsed at base e6cfdeea0b head f2d20ae5d; no blocking findings, one follow-on — the post-merge dry run exits from plan_dispatch and never reaches the launch-only bookend reserve (reckon/crew/dispatch.py:5942), so it does not demonstrate that the reserve admits a five-hour-less codex documentation dispatch.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261002T111727761881-picker-reuse-map" data-who="reckon-build" data-when="2026-10-02T11:28:37Z">
     <div class="r-comment-body"><p>Mapped 28 base-revision functions/classes and 2,060 recent ledger rows; the existing gates are reusable through one candidate-snapshot wrapper, with one picker call and one persisted typed selection block still to add.</p></div>
 </div>
@@ -253,17 +248,53 @@
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261002T192931255263-review-of-picker-fast-on-dispatch-path" data-who="reckon-build" data-when="2026-10-02T19:35:39.777Z">
     <div class="r-comment-body"><p>Independent review of run r-20261002T190701226087-picker-fast-on-dispatch-path stored as a parsed record over reviewed aa231c204bacade0f70b1c9da25816af61cf5942..aa7f10024fbc8dded38fba70ef7a5d832236d1eb, scoring goal_fidelity 15, evidence 12, scope_discipline 18, durability 16, fit 18 (total 79), added_failure_count 0; five follow-ons, the material one being that the base measurement arm fell back on a Jev error while the head arm served, so the before/after latency comparison is not like-for-like and the improvement is unestablished.</p></div>
 </div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261002T202233075897-dispatch-builds-picker-inputs" data-who="reckon-build" data-when="2026-10-02T20:50:01.597Z">
+    <div class="r-comment-body"><p>tests/test_picker_in_dispatch.py gains test_dispatch_hands_the_picker_its_precomputed_inputs (drives the dispatch entry with the picker stubbed; stub receives non-null records, verdict_inputs and budget_snapshot) and tests/test_picker_latency.py gains test_a_planless_pick_never_scans_the_docs_tree (a full pick for a request naming no plan and no hours never calls reckon.resources.iter_resources, with the estimate spied so the assertion is not vacuous); picker suite at head 1 failed/77 passed against base 1 failed/75 passed, zero added failure ids, and both tests are red under their declared mutations.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261002T205447651259-review-of-dispatch-builds-picker-inputs" data-who="reckon-build" data-when="2026-10-02T21:07:57.434Z">
+    <div class="r-comment-body"><p>none — review node; promotes as a comment on the plan section, so no plan edit and no commit.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261002T202601353426-picker-inputs-never-block-dispatch" data-who="reckon-build" data-when="2026-10-02T20:54:41.597Z">
+    <div class="r-comment-body"><p>guarded the ledger rows, shared verdict inputs and budget view dispatch builds for the picker, so a read failure is recorded against the input's own name and the pick falls back instead of raising out of dispatch; the corrupt-ledger refusal regains its own reason and 5 new tests pass.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261002T202331013825-lane-slot-gate-reads-a-flag" data-who="reckon-build" data-when="2026-10-02T20:43:13.513Z">
+    <div class="r-comment-body"><p>lane-slot-gate-reads-a-flag — _lane_worker_allowance now returns rests_on_observed_window beside its source label and local_lane_load gates worker_slots on that field instead of the "worker slots" substring; head gate 24 passed EXIT=0, base arm (head tests on base module) 2 failed EXIT=1, declared negative control (substring gate restored) 2 failed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261002T205534920803-review-of-lane-slot-gate-reads-a-flag" data-who="reckon-build" data-when="2026-10-02T21:13:23.389Z">
+    <div class="r-comment-body"><p>review of lane-slot-gate-reads-a-flag at base e6cfdeea0 head da0984529 — stored the parsed five-dimension record (goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20, total 99; item_aggregate 6, no findings, added_failure_count 0) after independently reproducing the head gate (24 passed EXIT=0), the base arm (2 failed EXIT=1) and the declared negative control (2 failed EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261002T210132480048-review-of-picker-inputs-never-block-dispatch" data-who="reckon-build" data-when="2026-10-02T21:12:38.002Z">
+    <div class="r-comment-body"><p>reviewed run a80dc97c against base 3e32e09ae; the guard is correct — each dispatch-scope picker input is built behind _picker_input, a failure is recorded under the input's own name, and dispatch_picker_selection returns a named fallback instead of raising; scores 98/100, added_failure_count 0, no findings.</p></div>
+</div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T175108967088-picker-judges-pressure" data-who="reckon-build" data-when="2026-10-02T18:13:37Z">
     <div class="r-comment-body"><p>Jev now judges lane pressure with route/hold and unthresholded confidence: burn 3.4x and zero slots stay offered; live size-matched return time is p50 250s/p90 400s; representative state 1165/1500 estimated tokens; assigned gate base 2 failed/109 passed, head 2 failed/124 passed, zero added failure ids; restored burn exclusion fails the pressure test. Evidence: docs/evidence/fragments/one-typesafe-model-picker/picker-judges-pressure.html#picker-judges-pressure.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T181356903868-review-of-picker-judges-pressure" data-who="reckon-build" data-when="2026-10-02T18:37:11.492Z">
     <div class="r-comment-body"><p>Review of r-20261002T175108967088-picker-judges-pressure (picker-judges-pressure) attached as a parsed record: reviewed_base_sha ba5ac01e746ecaa66f94fb1d2a8709401da30c23, reviewed_head_sha a3df11428e9c7cb87094bf5842fe2800e86b76dd, added_failure_count 0 with added_failure_ids [] derived from the reviewed run's baseline_suite/after_suite gate logs and reproduced independently; scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 19, total 95.</p></div>
 </div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T211909857570-picker-honours-review-exclusion" data-who="reckon-build" data-when="2026-10-02T21:38:51.111Z">
+    <div class="r-comment-body"><p>snapshot.candidates now withholds, for a review-role node, every backend named in the resolved review_excluded_backends with reason review-excluded-backend before any competence/serving/budget check; the new tests/test_picker_pressure.py::test_review_node_is_never_offered_a_review_excluded_backend (codex, codex-astra, clive with the two codex backends excluded; Jev offered exactly clive and hold) fails at base 5b5a14a12 and passes at head, and tests/test_picker*.py add zero failure ids (base 2 failed/82 passed, head 1 failed/83 passed).</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T213926273463-review-of-picker-honours-review-exclusion" data-who="reckon-build" data-when="2026-10-02T21:49:41.706Z">
+    <div class="r-comment-body"><p>independent review of run r-20261002T211909857570-picker-honours-review-exclusion stored at base 5b5a14a12ffb462fe177213d2a669eb1c1294e89 head 78bd2242127e7edde0a548d95752296b23761a5e; scores goal_fidelity 20, evidence 19, scope_discipline 19, durability 19, fit 19, total 96 of 100, zero added failure ids; no blocking findings</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T212009757157-picker-holds-for-local" data-who="reckon-build" data-when="2026-10-02T21:40:03Z">
+    <div class="r-comment-body"><p>Added local_lane.admission and expected_wait_s plus sliding-scale hold guidance; 96 picker tests pass versus baseline 82 passed/1 failed, zero added failure IDs; removing admission fails 9 state checks; live paused-lane picks hold routine documentation (p=0.94, confidence=0.93) and route elevated-risk design to codex-astra (p=0.80, confidence=0.76); evidence at docs/evidence/fragments/one-typesafe-model-picker/picker-holds-for-local.html#picker-holds-for-local.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T214047353685-review-of-picker-holds-for-local" data-who="reckon-build" data-when="2026-10-02T21:52:17.052Z">
+    <div class="r-comment-body"><p>Reviewed r-20261002T212009757157-picker-holds-for-local at base 5b5a14a12ffb462fe177213d2a669eb1c1294e89 / head 18a78500263d52e9fa77739a46f9ec93d4253d64: added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s baseline_suite (1 failed/82 passed, id tests/test_picker_return_time.py::test_lane_document_is_read) and after_suite (96 passed, []); scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 19, total 96.</p></div>
+</div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261002T175200268541-picker-in-dispatch" data-who="reckon-build" data-when="2026-10-02T18:41:00Z">
     <div class="r-comment-body"><p>Every dispatch records a bounded cached picker selection and optional picker routing; base 163 passed, final head 175 passed, zero added failure ids; the real dry run printed a fallback selection in 96.897 ms.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261002T184125127673-review-of-picker-in-dispatch" data-who="reckon-build" data-when="2026-10-02T19:02:28.924Z">
     <div class="r-comment-body"><p>independent review of run r-20261002T175200268541-picker-in-dispatch stored as a parsed five-dimension record (goal_fidelity 18, evidence 16, scope_discipline 20, durability 19, fit 19; total 92) at both the legacy and head-keyed paths, with one follow-on finding.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261002T202124445000-picker-replay-measure" data-who="reckon-build" data-when="2026-10-02T20:51:36.598Z">
+    <div class="r-comment-body"><p>picker-replay-measure — published one live replay of `crew pick --project reckon --replay 20` at revision 855d0a6d9, from this node's worktree: 20 rows routed, 0 holds, 0 fallbacks, 0 picks to a refused or logged-out model, agreement with the backend actually used 0.05 (1 of 20, the clive and claude lanes being unavailable at replay so only the four codex backends were eligible), pick latency median 2285.3 ms and maximum 120622.9 ms (row 0 pays the one-time snapshot and serving-probe setup), Jev 20 calls at median 305.4 ms, and one rendered Jev state quoted verbatim with non-null return_times and local_lane blocks; report at docs/evidence/fragments/one-typesafe-model-picker/picker-replay-measure.html, raw JSON, log and every rendered state under run r-20261002T202124445000-picker-replay-measure.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261002T205353930612-review-of-picker-replay-measure" data-who="reckon-build" data-when="2026-10-02T21:10:16.962Z">
+    <div class="r-comment-body"><p>review-of-picker-replay-measure — independent review of r-20261002T202124445000-picker-replay-measure stored as a parsed record at reviews/reckon/r-20261002T202124445000-picker-replay-measure.json (and the .at-14568acf7 revision copy).</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">

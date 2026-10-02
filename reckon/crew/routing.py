@@ -9,6 +9,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import tarfile
 import tempfile
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
@@ -662,6 +663,7 @@ def _inspect_workspace(
     shadow_record: Mapping[str, Any] | None = None,
     *,
     raise_on_unavailable: bool = True,
+    release_residue: bool = False,
 ) -> dict[str, Any]:
     state = _tree_state(path)
     if not state.get("available"):
@@ -704,7 +706,9 @@ def _inspect_workspace(
     elif shadow_record is not None and _shadow_patch_retained(shadow_record):
         classification = "disposable"
     elif dirty:
-        classification = "dirty"
+        classification = (
+            "dirty-integrated" if reachable and release_residue else "dirty"
+        )
     elif reachable:
         classification = "integrated"
     else:
@@ -806,7 +810,7 @@ def _shadow_worktree_records(
 # What `--apply` removes, and why each of the rest stays. Kept beside the removal
 # branch so the report and the behaviour cannot drift: a classification named
 # here as reclaimable must be one that branch acts on.
-RECLAIMABLE_CLASSES = ("integrated", "disposable")
+RECLAIMABLE_CLASSES = ("integrated", "disposable", "dirty-integrated")
 WITHHELD_REASONS = {
     "dirty": (
         "uncommitted changes in the worktree; commit or discard them, and "
@@ -822,6 +826,215 @@ WITHHELD_REASONS = {
         "run first"
     ),
 }
+
+
+def _residue_run_record(
+    path: Path, records: Iterable[Mapping[str, Any]]
+) -> Mapping[str, Any] | None:
+    """Attribute a finished tree only when one ledger row identifies it."""
+    matches = [
+        record
+        for record in records
+        if str(record.get("run_id") or "")
+        and (
+            str(record.get("worktree") or "") == str(path)
+            or str(record.get("run_id")) in path.parts
+            or (
+                str(record.get("session") or "") == path.parent.name
+                and str(record.get("node") or "") == path.name
+            )
+        )
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
+def _residue_file_bytes(path: Path) -> bytes | None:
+    if path.is_symlink():
+        return os.fsencode(os.readlink(path))
+    return path.read_bytes() if path.is_file() else None
+
+
+def _git_blob(repo: Path, revision: str, path: str) -> bytes | None:
+    result = subprocess.run(
+        ["git", "show", f"{revision}:{path}"],
+        cwd=repo,
+        capture_output=True,
+        check=False,
+    )
+    return result.stdout if result.returncode == 0 else None
+
+
+def _residue_digests() -> set[tuple[str, str]]:
+    """Find equal path contents already preserved by another release."""
+    roots = (runs_dir(), runs_dir().parent / "worktree-residue")
+    found: set[tuple[str, str]] = set()
+    for root in roots:
+        for record in (
+            root.glob("*/worktree-residue/*/classification.json")
+            if root == roots[0]
+            else root.glob("*/classification.json")
+        ):
+            try:
+                rows = json.loads(record.read_text()).get("paths", {})
+            except (OSError, ValueError):
+                continue
+            for path, detail in rows.items():
+                if isinstance(detail, Mapping) and detail.get("digest"):
+                    found.add((path, str(detail["digest"])))
+    return found
+
+
+def _save_and_release_worktree(
+    repo: Path,
+    path: Path,
+    integrated_into: str,
+    record: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Save, verify, and clear a finished tree before a non-forced removal."""
+    if _live_worktree_claims().get(path.resolve()):
+        raise CrewError(f"refusing residue release of live worktree {path}")
+    head = _git(path, "rev-parse", "HEAD").stdout.strip()
+    if _git(
+        repo, "merge-base", "--is-ancestor", head, integrated_into, check=False
+    ).returncode:
+        raise CrewError(f"worktree {path} is not integrated into {integrated_into}")
+    status_before = _tree_state(path)["status_digest"]
+    patch = subprocess.run(
+        ["git", "diff", "HEAD", "--binary", "--no-ext-diff", "--no-renames", "--"],
+        cwd=path,
+        capture_output=True,
+        check=True,
+    ).stdout
+    tracked = [
+        os.fsdecode(name)
+        for name in subprocess.run(
+            ["git", "diff", "HEAD", "--name-only", "--no-renames", "-z", "--"],
+            cwd=path,
+            capture_output=True,
+            check=True,
+        ).stdout.split(b"\0")
+        if name
+    ]
+    untracked = [
+        os.fsdecode(name)
+        for name in subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard", "-z"],
+            cwd=path,
+            capture_output=True,
+            check=True,
+        ).stdout.split(b"\0")
+        if name
+    ]
+    if not patch and not untracked:
+        raise CrewError(f"worktree {path} has no residue to save")
+    run_id = str(record.get("run_id") or "") if record else ""
+    parent = (
+        (runs_dir() / run_id / "worktree-residue")
+        if run_id
+        else (runs_dir().parent / "worktree-residue")
+    )
+    parent.mkdir(parents=True, exist_ok=True)
+    name = f"{path.name}-{hashlib.sha256(os.fsencode(path)).hexdigest()[:12]}-"
+    destination = Path(tempfile.mkdtemp(prefix=name, dir=parent))
+    patch_path = destination / "residue.patch"
+    tar_path = destination / "untracked.tar"
+    class_path = destination / "classification.json"
+    patch_path.write_bytes(patch)
+    with tarfile.open(tar_path, "w") as archive:
+        for relative in untracked:
+            archive.add(path / relative, arcname=relative, recursive=False)
+    with tarfile.open(tar_path) as archive:
+        if sorted(archive.getnames()) != sorted(untracked):
+            raise CrewError(f"saved untracked archive for {path} is incomplete")
+        for relative in untracked:
+            member = archive.getmember(relative)
+            source = path / relative
+            if member.issym():
+                if not source.is_symlink() or member.linkname != os.readlink(source):
+                    raise CrewError(f"saved symlink {relative} does not match {path}")
+            else:
+                saved = archive.extractfile(member)
+                if saved is None or saved.read() != source.read_bytes():
+                    raise CrewError(f"saved file {relative} does not match {path}")
+    if patch:
+        with tempfile.TemporaryDirectory() as scratch:
+            env = {**os.environ, "GIT_INDEX_FILE": str(Path(scratch) / "index")}
+            subprocess.run(
+                ["git", "read-tree", head],
+                cwd=path,
+                env=env,
+                check=True,
+                capture_output=True,
+            )
+            verified = subprocess.run(
+                ["git", "apply", "--cached", "--check", str(patch_path)],
+                cwd=path,
+                env=env,
+                capture_output=True,
+                check=False,
+            )
+            if verified.returncode:
+                raise CrewError(
+                    f"saved patch for {path} does not apply to its HEAD: {os.fsdecode(verified.stderr).strip()}"
+                )
+    already_saved = _residue_digests()
+    base = str(record.get("base_sha") or head) if record else head
+    classes: dict[str, str] = {}
+    detail: dict[str, dict[str, str]] = {}
+    for relative in sorted(set(tracked + untracked)):
+        content = _residue_file_bytes(path / relative)
+        digest = hashlib.sha256(
+            b"absent\0" if content is None else b"present\0" + content
+        ).hexdigest()
+        if (
+            content == _git_blob(repo, integrated_into, relative)
+            or (relative, digest) in already_saved
+        ):
+            category = "subsumed"
+        elif _git_blob(repo, base, relative) != _git_blob(
+            repo, integrated_into, relative
+        ):
+            category = "superseded"
+        else:
+            category = "unique"
+        classes[relative] = category
+        detail[relative] = {"class": category, "digest": digest}
+    class_path.write_text(
+        json.dumps({"worktree": str(path), "head": head, "paths": detail}, indent=2)
+        + "\n"
+    )
+    if _tree_state(path)["status_digest"] != status_before:
+        raise CrewError(
+            f"worktree {path} changed while residue was saved; preserved copy at {destination}"
+        )
+    _git(path, "read-tree", head)
+    for relative in tracked:
+        target = path / relative
+        if (
+            _git(repo, "cat-file", "-e", f"{head}:{relative}", check=False).returncode
+            == 0
+        ):
+            _git(path, "checkout-index", "--force", "--", relative)
+        elif target.is_file() or target.is_symlink():
+            target.unlink()
+    for relative in untracked:
+        target = path / relative
+        if target.is_file() or target.is_symlink():
+            target.unlink()
+    if _git(path, "status", "--porcelain", "--untracked-files=all").stdout.strip():
+        raise CrewError(
+            f"worktree {path} remains dirty after residue was saved at {destination}"
+        )
+    _git(repo, "worktree", "remove", str(path))
+    return {
+        "residue_patch": str(patch_path),
+        "residue_tar": str(tar_path),
+        "residue_classification": str(class_path),
+        "residue_classes": classes,
+        "head": head,
+    }
+
+
 # The extraction's reason is held in its own constant rather than joining
 # WITHHELD_REASONS: that mapping is asserted to name exactly the worktree-rule
 # vocabulary, and an extraction is not a worktree rule — it has no commit to
@@ -928,6 +1141,7 @@ def garbage_collect(
     runs_root = runs_dir()
     claims = _live_worktree_claims()
     shadow_records = _shadow_worktree_records(repo_root, project)
+    ledger_records = _ledgered_records(repo_root, project)
     # The managed set is the workspace registry; a tree the promotion boundary
     # already walks must be one gc sees too, and that includes registered
     # worktrees a worker created under a run directory.
@@ -948,6 +1162,7 @@ def garbage_collect(
             claims.get(path.resolve(), ()),
             shadow_records.get(path.resolve()),
             raise_on_unavailable=False,
+            release_residue=True,
         )
         for path in sorted(candidates)
     ]
@@ -957,9 +1172,10 @@ def garbage_collect(
         _extraction_report(path) for path in _run_directory_extractions(runs_root)
     )
     removed: list[str] = []
+    residue_report: list[dict[str, Any]] = []
     if apply:
         for item in worktrees:
-            if item["classification"] not in ("integrated", "disposable"):
+            if item["classification"] not in RECLAIMABLE_CLASSES:
                 continue
             path = Path(item["path"])
             current_claims = _live_worktree_claims().get(path.resolve(), [])
@@ -967,12 +1183,48 @@ def garbage_collect(
                 item["classification"] = "live-referenced"
                 item["claimed_by_live_runs"] = sorted(current_claims)
                 continue
-            if item["classification"] == "disposable":
+            if item["classification"] == "dirty-integrated":
+                current = _inspect_workspace(
+                    repo_root,
+                    path,
+                    integrated_into,
+                    (),
+                    raise_on_unavailable=False,
+                    release_residue=True,
+                )
+                if (
+                    current["classification"] != "dirty-integrated"
+                    or current["head"] != item["head"]
+                ):
+                    item.update(current)
+                    continue
+                saved = _save_and_release_worktree(
+                    repo_root,
+                    path,
+                    integrated_into,
+                    _residue_run_record(path, ledger_records),
+                )
+                item.update(saved)
+                if "unique" in saved["residue_classes"].values():
+                    residue_report.append({"worktree": str(path), **saved})
+            elif item["classification"] == "disposable":
                 shadow_record = shadow_records.get(path.resolve())
                 if shadow_record is None or not _shadow_patch_retained(shadow_record):
                     item["classification"] = "unintegrated"
                     continue
                 _git(repo_root, "worktree", "remove", "--force", str(path))
+            elif _git(
+                path, "status", "--porcelain", "--untracked-files=all"
+            ).stdout.strip():
+                saved = _save_and_release_worktree(
+                    repo_root,
+                    path,
+                    integrated_into,
+                    _residue_run_record(path, ledger_records),
+                )
+                item.update(saved)
+                if "unique" in saved["residue_classes"].values():
+                    residue_report.append({"worktree": str(path), **saved})
             else:
                 _git(repo_root, "worktree", "remove", str(path))
             removed.append(str(path))
@@ -1088,6 +1340,7 @@ def garbage_collect(
             "integrated",
             "disposable",
             "dirty",
+            "dirty-integrated",
             "unintegrated",
             "live-referenced",
         )
@@ -1123,6 +1376,7 @@ def garbage_collect(
         "counts": counts,
         "worktrees": worktrees,
         "removed_worktrees": removed,
+        "residue_report": residue_report,
         "pointers": pointer_reports,
         "run_directories": run_reports,
         "run_directories_withheld": run_directories_withheld,

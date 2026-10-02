@@ -38,8 +38,8 @@ def main():
     assert data["inputs"] == full["inputs"]
     actual = hashlib.sha256((here / "census.py").read_bytes()).hexdigest()
     assert actual == data["instrument_sha256"]
-    assert len(data["snapshots"]) == 8
-    assert sum(len(s["scopes"]) for s in data["snapshots"]) == 12
+    assert len(data["snapshots"]) == 9
+    assert sum(len(s["scopes"]) for s in data["snapshots"]) == 14
     cutoff = datetime.fromisoformat(data["inputs"]["capture_cutoff"]).timestamp()
     for repository in data["inputs"]["repositories"]:
         repo = Path("/home/ITER/mcintos/Code") / repository["repository"]
@@ -62,12 +62,19 @@ def main():
         ]
         for snapshot in repository["snapshots"]:
             target = datetime.fromisoformat(snapshot["target"]).timestamp()
+            committed = datetime.fromisoformat(snapshot["committed_at"]).timestamp()
+            assert committed - snapshot["offset_seconds"] == target
+            if snapshot["offset_seconds"] == 0:
+                # The explicit re-pin records the branch tip at re-pin time,
+                # beyond the pinned history, rather than selecting a commit at
+                # a target instant.
+                continue
             selected = min(
                 candidates, key=lambda item: (abs(item[1] - target), item[1], item[0])
             )
             assert selected[0] == snapshot["commit"]
     print(
-        "PASS: all eight nearest-commit selections independently re-derived from pinned primary history"
+        "PASS: all eight target-selected nearest-commit selections independently re-derived from pinned primary history; committed_at minus offset_seconds equals target for all nine pins"
     )
     for snapshot, compact_snapshot in zip(
         full["snapshots"], data["snapshots"], strict=True
@@ -114,7 +121,7 @@ def main():
             assert clone["duplicate_window_fingerprints"] == len(clone["windows"])
             assert scope.startswith(snapshot["repository"])
     print(
-        "PASS: compact census is below 300000 bytes; all twelve scope rows reconcile with the external full census, including counts and clone denominators"
+        "PASS: compact census is below 300000 bytes; all fourteen scope rows reconcile with the external full census, including counts and clone denominators"
     )
 
     @cache
@@ -190,9 +197,10 @@ def main():
         "/reckon/figures/orchestrator-crew-pattern-studies/code-depth-trends.svg"
         in evidence.read_text()
     )
-    for name in ("census.log", "reproduction.log"):
+    receipts = {"census.log": "EXIT=0\n", "reproduction.log": "exit_status=0\n"}
+    for name, tail in receipts.items():
         log = (here / name).read_text()
-        assert log.startswith("revision=") and log.endswith("exit_status=0\n")
+        assert log.startswith("revision=") and log.endswith(tail)
     assert "byte-identity check passed" in (here / "reproduction.log").read_text()
     print(
         "PASS: project-absolute figure reference, valid SVG and successful census/reproduction receipts"

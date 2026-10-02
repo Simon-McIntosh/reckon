@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>worker ends its turn clean — landing</title>
+  <meta name="node" content="worker-ends-its-turn-clean">
+  <meta name="status" content="complete">
+</head>
+<body>
+<article>
+<h1>Refuse a worker's turn end while its worktree is dirty</h1>
+<p>The stop hook now resolves the run's worktree, lists its uncommitted
+paths, and refuses the turn end until each is committed or discarded. The
+<code>.venv</code> and <code>.env</code> provisioning links and everything
+under the run directory are exempt; a blocked or failed manifest may end
+dirty once it names every path it leaves; a stop reaching the refusal cap
+records the uncommitted paths before it is allowed.</p>
+<h2>Reproduction on the base revision</h2>
+<p>A worktree holding <code> M tracked.txt</code> and <code>?? notes.txt</code>
+with a manifest reading complete stopped silently:</p>
+<pre>blocked: False
+reason: None</pre>
+<h2>Refusal on the changed revision</h2>
+<pre>blocked: True
+reason: worker stop refused: the worktree ... holds uncommitted changes outside the run directory: tracked.txt, notes.txt. Commit each path or discard it before the turn can end. Refusal 1 of 3.</pre>
+<h2>Gate</h2>
+<p>Base arm (two existing stop-hook test files): 20 passed, EXIT=0. Head arm
+(same two files plus the five new cases): 25 passed, EXIT=0; no added failure
+id. The declared negative control, with the cleanliness check removed in a
+scratch copy: 4 failed, EXIT=1 — the dirty-end cases stop without a refusal,
+exactly as declared.</p>
+<p>Landed in commit <code>2f8af560</code>.</p>
+</article>
+</body>
+</html>

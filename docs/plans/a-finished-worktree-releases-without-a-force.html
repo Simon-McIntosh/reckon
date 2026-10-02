@@ -23,7 +23,9 @@
   <title>A Finished Worktree Releases Without a Force | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+<meta name="plan-modified" content="2026-10-03">
+<meta name="plan-version" content="10">
 </head>
 <body>
   <main class="plan-doc">
@@ -77,7 +79,7 @@
     </p>
 
     <h2 id="s2">§2 — A worker cannot end its turn with uncommitted changes</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       <strong>Done when</strong> <code>reckon/hooks/worker_stop.py</code> refuses a worker's turn end
       while its worktree holds an uncommitted change to a tracked file, or an untracked file that
@@ -91,7 +93,7 @@
     </p>
 
     <h2 id="s3">§3 — A finished worktree preserves its residue and releases</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       <strong>Done when</strong> release of a worktree whose commits are integrated into the
       integration head saves any residue first: tracked-file changes as a patch, and untracked
@@ -119,7 +121,7 @@
     </p>
 
     <h2 id="s4">§4 — The standing dirty worktrees are released through §3</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       <strong>Done when</strong> §3's release has run over every dirty worktree that no live run
       claims, and the residue report lists each with its classes. The report is committed under
@@ -131,7 +133,7 @@
     </p>
 
     <h2 id="s5">§5 — The repair reflex does not resume a session the lane cannot hold</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       The review-repair reflex resumed <code>passed-verdict-needs-exit-zero</code> after its commits were
       merged. It got one useful turn, then two resumes that died at launch on the lane's context cap,
@@ -144,9 +146,11 @@
       and the over-window case then opens an attempt.
     </p>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-<h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    
+
+    <h2 id="s6">§6 — A worktree whose commits landed elsewhere releases too</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>§4's release at about 21:35Z kept 12 dirty worktrees, because each carries one to six commits that are not on main. They are listed in the landed record, <code>docs/evidence/archive/a-finished-worktree-releases-without-a-force-landed.html#s4</code>. Their dirt is mostly the superseded <code>_signal_one</code> patch, but a commit that is not on main may hold work that exists nowhere else.</p><p><strong>Done when</strong> each of the 12 is checked commit by commit for patch equivalence with main, using <code>git cherry</code> or <code>git patch-id</code> against the integration head. A worktree whose every commit has a patch-equivalent on main is released through §3's residue-preserving path. A worktree with any commit that has no equivalent is kept and named with that commit's subject, in a report committed beside the landed record for the lead. The check also runs in <code>crew gc</code>, so a future squash-landed worktree releases the same way, with a test in a temporary repository covering an equivalent commit that releases and a non-equivalent one that is kept. The negative control drops the equivalence check, and the equivalent case is then kept.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -154,8 +158,28 @@
     <h4 class="r-fu-title">Stop new dirt, then release the standing dirt</h4>
     <div class="r-fu-body"><p>§2 and §3 are independent, and §5 is independent of both. §4 runs after §3 lands.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-finished-worktree-releases-without-a-force §2</pre>
-</article>
-    </section>
-  </main>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261002T203108817841-finished-worktree-saves-residue-and-releases" data-who="reckon-build" data-when="2026-10-02T21:10:24Z">
+    <div class="r-comment-body"><p>gc --apply saves tracked changes as a verified patch and untracked files as a tar, classifies each dirty path, reports unique residue, and releases integrated unclaimed worktrees without force; final head 57 passed vs archived base 50 passed, skip-save control 1 failed.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261002T211727378876-review-of-finished-worktree-saves-residue-and-releases" data-who="reckon-build" data-when="2026-10-02T21:29:21.790Z">
+    <div class="r-comment-body"><p>independent review of r-20261002T203108817841-finished-worktree-saves-residue-and-releases at head 5328fa62 against base 50b92333; scored goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 19 (total 98/100); added_failure_count 0 (base 50 passed EXIT=0, head 57 passed EXIT=0).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261002T203349578586-worker-ends-its-turn-clean" data-who="reckon-build" data-when="2026-10-02T21:34:59.481Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/a-finished-worktree-releases-without-a-force/worker-ends-its-turn-clean.html</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261002T213536846150-review-of-worker-ends-its-turn-clean" data-who="reckon-build" data-when="2026-10-02T21:47:08.193Z">
+    <div class="r-comment-body"><p>independent review of r-20261002T203349578586-worker-ends-its-turn-clean stored at both fenced paths — total 92/100 (goal_fidelity 19, evidence 18, scope_discipline 19, durability 17, fit 19), added_failure_count 0, two follow-on findings</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261002T213625937136-review-of-resume-refuses-a-session-over-the-window" data-who="reckon-build" data-when="2026-10-02T21:49:50.641Z">
+    <div class="r-comment-body"><p>review of run r-20261002T203452309560-resume-refuses-a-session-over-the-window accepted at head cefab8613 through both doors: the resume-window guard refuses a session over the lane's published input window before any write, fails open on an unmeasured session; scores goal_fidelity 18, evidence 16, scope_discipline 13, durability 18, fit 16, total 81 of 100; the two follow-ons are the declared out-of-scope call sites in dispatch.py/resumption.py and the suite-scale verification still owed to a test node.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261002T215733991612-review-of-resume-refuses-a-session-over-the-window" data-who="reckon-build" data-when="2026-10-02T22:07:18.259Z">
+    <div class="r-comment-body"><p>light re-review of run r-20261002T203452309560-resume-refuses-a-session-over-the-window stored at head 2f123fbc7, total 81/100 (goal_fidelity 18, evidence 16, scope_discipline 13, durability 18, fit 16), zero added failures; the delta cefab8613..2f123fbc7 does not touch the resume-window guard.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
