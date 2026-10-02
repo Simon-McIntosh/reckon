@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="67">
+<meta name="plan-version" content="68">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;done&quot;}">
 </head>
 <body>
@@ -575,6 +575,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261002T110417942086-review-of-worker-slot-hold-is-tested-where-it-acts" data-who="reckon-build" data-when="2026-10-02T11:14:19.581Z">
     <div class="r-comment-body"><p>Reviewed worker-slot-hold-is-tested-where-it-acts (base 853fa75c4, head f4971d5fa): all four section-12 items land and are falsifiable; recorded total 96/100 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 18, fit 19), added_failure_count 0, added_failure_ids [].</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261002T165158636730-admission-trusts-only-positive-history" data-who="reckon-build" data-when="2026-10-02T17:36:53.451Z">
+    <div class="r-comment-body"><p>dispatch.py&#x27;s allowance rule counts a slot figure only when observed_seconds is positive, so zero or below reads as no history and falls through to headroom exactly as a missing value does; the new case fails at base (======================== 1 failed, 51 passed in 14.84s =========================, EXIT=1) and the head arm passes (============================= 52 passed in 27.81s ==============================, EXIT=0); ruff format --check tests/test_dispatch_counts_worker_slots.py reports nothing; the declared negative control fails the case (======================== 1 failed, 51 passed in 12.59s =========================, EXIT=1). commits 9a25db160, bb934a5a3.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
