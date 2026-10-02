@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="267">
+<meta name="plan-version" content="268">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -1415,6 +1415,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261002T104446124741-review-of-the-clone-cache-stays-bounded" data-who="reckon-build" data-when="2026-10-02T10:53:32.417Z">
     <div class="r-comment-body"><p>Review of run r-20261002T102241206863-the-clone-cache-stays-bounded stored at both declared paths: total 95/100 (goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 19), reviewed base f262cad52c28e950c3fb7b8aa991bc550d81a573 / head c6a2f77b2d92fe5fcb4f40a1988791048f9a3ad9, added_failure_count 0 with empty added_failure_ids from the run's own base/after gate logs, one follow-on finding (subset head_sources prunes the shared cache to the subset's count) and no blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T105539138565-a-partial-scan-keeps-the-whole-cache" data-who="reckon-build" data-when="2026-10-02T11:12:55.461Z">
+    <div class="r-comment-body"><p>clone_matches now caps the corpus cache at one entry per file the scan knows about — the paths it read plus the paths the cache already holds — instead of one per path in the caller&#x27;s subset; a five-file scan, then a one-file scan, then a five-file scan re-parses 0 files (mutation to the subset-only cap re-parses 4: private_copy.py, helper_0..2).</p></div>
 </div>
 </section>
 </main>
