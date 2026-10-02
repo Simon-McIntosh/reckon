@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -204,7 +204,10 @@
     <div class="r-comment-body"><p>review-of-picker-return-time — independent review of r-20261002T130436751082-picker-return-time stored as a parsed record at the reviewed pair ca630c06e894d95111a8627b11d02a023aa270dd..44b75c262a86e3bcd73d5ae82aeecb81038ed843; scores goal_fidelity 15, evidence 14, scope_discipline 20, durability 19, fit 18 (total 86); one follow-on finding that the live pick at reckon/crew/picker/__init__.py:61 renders state.jinja without project so the return-time block is null in production; added-failure count unmeasured because the reviewed manifest names no base gate log.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261002T132743882305-picker-latency" data-who="reckon-build" data-when="2026-10-02T14:29:48.695Z">
-    <div class="r-comment-body"><p>picker-latency: a pick now loads the project ledger once and shares it across all candidates (nine-candidate fixture: 1 ledger read vs 9 at base) and scans the docs tree once, takes one budget snapshot, and the replay summary reports the Jev-latency median over only rows that made a Jev call with that count beside it and derives refused-model picks from the picked backend&#x27;s serving observation; done-when (4), the live replay arm, is not met in this node and is deferred by the coordinator to picker-replay-measure because the serving probe writes a lane-probe lock under a read-only ~/.config.</p></div>
+    <div class="r-comment-body"><p>picker-latency: a pick now loads the project ledger once and shares it across all candidates (nine-candidate fixture: 1 ledger read vs 9 at base) and scans the docs tree once, takes one budget snapshot, and the replay summary reports the Jev-latency median over only rows that made a Jev call with that count beside it and derives refused-model picks from the picked backend's serving observation; done-when (4), the live replay arm, is not met in this node and is deferred by the coordinator to picker-replay-measure because the serving probe writes a lane-probe lock under a read-only ~/.config.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261002T143011041791-review-of-picker-latency" data-who="reckon-build" data-when="2026-10-02T14:55:39.806Z">
+    <div class="r-comment-body"><p>review-of-picker-latency: r-20261002T132743882305-picker-latency scored 84/100 (goal_fidelity 14, evidence 14, scope_discipline 20, durability 17, fit 19) at reviewed base cd5059bd and head d34d905; one finding — the replay refused_model_picks figure is zero by construction on the live pick path because a refused-served candidate is excluded from offered and can never be selected. Record stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261002T132743882305-picker-latency.json.</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
