@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="8">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="9">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -152,7 +152,7 @@
     <a href="/reckon/evidence/archive/plan-writes-are-not-fenced-landed#s5-commutative-append-is-not-refused">&sect;5 landed</a>.</p>
 
     <h2 id="s6">§6 — Every writer that can race the landing write commutes or refuses</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
 <p>36330a4 made a comment append survive a concurrent plan write, which is the case §1 measured, and §5's falsifier and positive control both hold for it. The landing write also races every other writer that can reach the same plan: the landing record itself, followup appends, section appends and state sets. §5's measure has been shown for one of them.</p><p><strong>Done when</strong> a two-writer test runs each of those writers against an in-flight landing write on the same plan, and asserts for each that its change is either present afterwards or its loss is refused with both versions named. The same test keeps §5's positive control: a sequential write still succeeds and still advances the version. Any writer that still loses silently is named in the manifest, with the test case that shows it. The negative control reverts 36330a4's commutative append, and the comment case must then fail.</p>
 
     <h2 id="s7">§7 — An append rejects an id that already exists</h2>

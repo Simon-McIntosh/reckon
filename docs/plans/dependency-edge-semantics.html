@@ -22,10 +22,10 @@
   <title>Edges That Mean What They Say | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-01">
-<meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="39">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-impl" content="0.98">
+<meta name="plan-version" content="41">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="fd0b1d4,bea76f1,ec8fb56d">
 </head>
 <body>
@@ -615,7 +615,7 @@
     </p>
 
     <h2 id="s9">§9 — A section edge stays out of the summary&#x27;s plan-level blocking, and a malformed mapping is named</h2>
-<section data-reckon="section" data-id="s9" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
 <p>The review of f129b456 found two defects. First, the section rows that <code>read_plan</code> appends to <code>deps</code> (<code>reckon/mcp.py</code> lines 942 to 952) fold into the typed summary view's blocking list, through <code>mcp.py</code> line 1360, <code>mcp_views._blocking</code> and <code>lifecycle.unresolved_dependencies</code> (<code>mcp_views.py</code> line 1916). So a summary reports the whole plan blocked when only one section waits. Second, a wholly malformed <code>plan-section-depends-on</code> value (invalid JSON, or JSON that is not an object) returns None at <code>_schema.py</code> line 389 with no finding, and every declared wait disappears silently. The plan also asks the skills to say that the gate op covers the evidence-shaped case and this edge covers the plan-shaped case, and that sentence is not yet written.</p><p><strong>Done when</strong> a summary of a plan with one waiting section reports that section held and the plan not blocked, a malformed mapping produces a named finding, and the skills carry the sentence. Each repair has a test that fails before it.</p>
 
     <h2 id="s10">§10 — A decision carries a recommendation the lead accepts, and a section-scoped decision is checked</h2>
