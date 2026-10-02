@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="63">
+<meta name="plan-version" content="64">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -565,6 +565,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261002T065219318014-review-of-dispatch-counts-worker-slots" data-who="reckon-build" data-when="2026-10-02T07:22:22.133Z">
     <div class="r-comment-body"><p>independent review of run r-20261002T053037483795-dispatch-counts-worker-slots stored as a parsed record scoring goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 19 (total 93), with reviewed_base_sha c47424bd75e134cee6fa51e3b30948a11253372d, reviewed_head_sha 2a9435b0bf070beba94d6c10ee295cafcc7de65c, and added_failure_count 0 with the reviewed run's own baseline_suite and after_suite both readable at zero failures</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261002T100739447759-worker-slot-hold-is-tested-where-it-acts" data-who="reckon-build" data-when="2026-10-02T11:03:28.625Z">
+    <div class="r-comment-body"><p>The LaneHeld raise now has a non-dry-run case (zero allowance exits 75 as lane-paused, naming allowance 0 and verdict full); a slot figure is trusted as soon as the block publishes observed_seconds rather than after a dispatch-side bound; change_lane resolves its destination under the run&#x27;s coordinator session; the dry-run-only doctrine test is re-cut to state the real hold — gate base 936 passed / head 938 passed, and the declared negative control (raise removed) delivers 1 failed / 9 passed with test_a_zero_allowance_holds_a_real_dispatch. Landing record: docs/evidence/fragments/the-local-lane-is-the-default/worker-slot-hold-is-tested-where-it-acts.html</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
