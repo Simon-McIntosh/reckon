@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-dry-run-must-resolve-what-the-real-call-resolves">
+  <meta name="plan-verifies" content="reckon:a-dry-run-must-resolve-what-the-real-call-resolves#s6">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-02">
+  <title>Each --set override resolves in the dispatch dry run | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="dry-run-shows-each-set-override">
+  <h2>Each --set override resolves in the dispatch dry run</h2>
+  <p><code>reckon crew dispatch --dry-run</code> now echoes every <code>--set</code> path as
+  <code>overrides.&lt;path&gt;.before</code> beside <code>overrides.&lt;path&gt;.resolved</code>, the
+  value the resolved flight configuration holds there (null included) against the value the layers
+  beneath the null carried without it, so <code>backends.codex.budget_group=null</code> is visibly
+  a null rather than a silent no-op. A <code>--set</code> path naming a backend or role no config
+  layer defines is refused, with the path and the defined names in the refusal, rather than echoed
+  as an override that could change nothing.</p>
+  <p>Reproduction against the base tree (a326205d5, this node's test run unchanged against it):
+  <strong>2 failed, 1 passed</strong>. The override case dies on <code>KeyError: 'overrides'</code>
+  — the base dry run emits no key naming a <code>--set</code> path at all — and the unknown-path
+  case finds the base returning <code>"ok": true</code> (exit 0) for
+  <code>--set backends.ghost.budget_group=null</code>, a path no layer defines. Measured after, in
+  a temporary <code>RECKON_HOME</code> and temporary repository: the override case asserts
+  <code>{"before": "waves", "resolved": null}</code> and <code>{"before": 2, "resolved": 4}</code>
+  for the two <code>--set</code> paths; the git-archive base arm (521 passed, 1 skipped) and the
+  head arm (524 passed, 1 skipped, no added failure id) both ended EXIT=0. The negative control —
+  the resolution block dropped from the dry-run output — fails 1 (KeyError: 'overrides') against
+  2 passed, EXIT=1.</p>
+  <p>Repair round. The launch path now refuses a <code>--set</code> path naming a backend or role
+  no configuration layer defines, exactly as the preview refuses it, so a name defined only through
+  <code>--set</code> can no longer merge on a real dispatch after the preview refused it. Every
+  dry-run refusal document now carries the same override echo a successful preview carries,
+  including the contract refusal (exit 2) and the held-lane refusal (exit 75), so a caller can tell
+  an override that failed to resolve from one that resolved against a held lane. And a
+  <code>--set</code> leaf key the flight schema does not carry answers as a decodable
+  <code>request-error</code> document on the dry-run channel — the channel the keyed-map refusal
+  already used — in place of a plain-text line on stderr. Reproduction against the head above
+  before the repair: <strong>5 failed, 3 passed</strong>; after, the file's 8 cases pass. Reverting
+  each repair in turn restores the failure its check names: the echo repair 2 failed, 6 passed; the
+  launch-parity repair 1 failed, 7 passed; the request-error-channel repair 3 failed, 5 passed;
+  every log ends EXIT=1. Suite arms over the same 31 files plus this node's test file: base
+  <strong>521 passed, 1 skipped</strong> and head <strong>529 passed, 1 skipped</strong>, both
+  EXIT=0, no added failure id. One caveat on how the arms were measured: the session environment
+  carries a <code>RECKON_FOLLOWER_OWNER</code> stamp naming a process that has since exited, which
+  makes eight pre-existing follower-admission tests refuse identically on the untouched base tree
+  and on the head tree; those eight failures are the environment's, and each arm above was run with
+  the stale stamp removed, restoring the condition the tests assume.</p>
+</section>
+</main>
+</body>
+</html>
