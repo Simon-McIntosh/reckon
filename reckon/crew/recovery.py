@@ -7863,7 +7863,7 @@ def _watch_snapshot(
         # departure fold can resolve the ledger that decides its word when its
         # caller supplies no reader. A snapshot written before this field existed
         # carries none, which leaves a departure's record unknown and therefore
-        # withdrawn rather than promised as promoted.
+        # departed rather than promised as promoted.
         "project": str(pointer.get("project") or ""),
         # The dispatching session, so a reader can tell its own fleet from a
         # peer's on a stream that is necessarily project-wide.
@@ -8056,7 +8056,7 @@ def _departure_recorded_run_ids(
     the reader, promotion still requires a recorded row.
 
     A departure whose snapshot names no project leaves the record unknown rather
-    than empty, and unknown is answered by the withdrawal word, never by a
+    than empty, and unknown is answered by the ``departed`` word, never by a
     promotion: the alternative asserts a fact no reader established.
     """
     reader = ledger_run_ids
@@ -8160,13 +8160,16 @@ def fleet_transitions(
     # acts on the word, and each of the three asks for a different response, so
     # the fold resolves all three. A promotion is read from the ledger alone and
     # claims the run whenever a row records it; failing that, a discard marker
-    # in the run directory names the departure discarded; failing both, the word
-    # is withdrawn. A promotion is never inferred from a missing row's absence,
-    # so an unrecorded departure cannot read as work that landed. The ledger is
-    # read at most once per observation and only when something departed; a
-    # reader the caller cannot supply is resolved from the departing run's own
-    # project, and a departure with no project at all still withdraws — the safe
-    # direction, because the alternative promises a landing nobody recorded.
+    # in the run directory names the departure discarded. With neither, a ledger
+    # that resolves and records no row leaves the word withdrawn, while a ledger
+    # that cannot be resolved leaves it departed — the honest unknown, which
+    # promises neither a landing nor a withdrawal. A promotion is never inferred
+    # from a missing row's absence, so an unrecorded departure cannot read as
+    # work that landed. The ledger is read at most once per observation and only
+    # when something departed; a reader the caller cannot supply is resolved
+    # from the departing run's own project, and a departure whose snapshot names
+    # no project at all still reads departed, because the alternative asserts a
+    # fact no reader established.
     if departures:
         recorded = _departure_recorded_run_ids(known, departures, ledger_run_ids)
     else:
