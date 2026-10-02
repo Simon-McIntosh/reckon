@@ -323,6 +323,11 @@ DOCS_DIR="$REPO_ROOT/docs"
      "measure":"<what the section needs from X>","required_evidence":"<X's
      evidence anchor or receipt>"}`. Gates feed `roadmap.gate_blockers`; a
      prose comment feeds nothing and the next session cannot see the rule.
+     The `gate` op covers the evidence-shaped case, a section held until
+     another plan's section supplies the anchored evidence, while the
+     `plan-section-depends-on` head meta (`{"s5": ["other-plan#s3"]}`,
+     authored markup a state write leaves untouched) covers the plan-shaped
+     case, a section held until another plan's section lands.
    - **no to question 4 but you would still rather start after X ships** →
      `after` with the same ref grammar (bare slug, `project:slug`, optional
      `#section`). A coordinator with no relation between `depends_on` (blocks)
