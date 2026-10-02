@@ -955,6 +955,18 @@ REPAIR_RESUME_LIMIT = 2
 # so the marker and the advice it recognises cannot drift apart.
 REPAIR_ADVICE_SCOPE_LINE = "Write scope for this round: "
 
+# The line every composed repair advice opens with, naming the round it belongs
+# to. The scope line above is identical in every round, so the round token is the
+# marker a retry reads to tell a refusal of *this* round from a manifest quoting
+# an earlier round's advice.
+REPAIR_ROUND_TOKEN_LINE = "Repair round: "
+
+
+def _repair_round_token(round_id: str) -> str:
+    """The advice line naming ``round_id``, as the retry reads it back from the
+    manifest."""
+    return REPAIR_ROUND_TOKEN_LINE + str(round_id or "")
+
 # The pointer field recording every repair round the reflex has *opened* for a
 # run. A round opens only when a repair actually starts — a resume or a
 # dispatch — so a refusal, an awaiting-lane hold, a decline-only round and an
@@ -1845,20 +1857,22 @@ def _repair_source_refusal(record: Mapping[str, Any]) -> str:
     return ""
 
 
-def _reviewed_run_refused_the_round(record: Mapping[str, Any]) -> bool:
-    """Whether the reviewed run's own manifest refused a repair round's advice.
+def _reviewed_run_refused_the_round(
+    record: Mapping[str, Any], round_id: str
+) -> bool:
+    """Whether the reviewed run's own manifest refused this round's advice.
 
     A resumed turn can end in two ways the busy guard cannot tell apart: it can
     die mid-work, leaving the run's manifest untouched, or it can read the
     round's advice, refuse the dead end it names, and write a terminal manifest
     quoting that advice as its blocker. Only the second is a dead end — a retry
     would re-send byte-identical advice into the same refusal — so the retry is
-    suppressed exactly when the manifest already answers the round. The scope
-    line every composed repair advice carries is the marker, so a manifest that
-    states it has read this round's advice; a manifest without it may belong to
-    any earlier turn and does not settle the retry. A manifest that cannot be
-    read, or one carrying no recognised status, is not evidence of a refusal, so
-    the guard degrades toward the retry rather than suppressing it.
+    suppressed exactly when the manifest already answers this round. The marker
+    is the round token the composed advice opens with, keyed on the round id, so
+    a manifest quoting an earlier round's advice does not settle this one. A
+    manifest that cannot be read, or one carrying no recognised status, is not
+    evidence of a refusal, so the guard degrades toward the retry rather than
+    suppressing it.
     """
     path = str(record.get("manifest_path") or "")
     if not path:
@@ -1867,7 +1881,7 @@ def _reviewed_run_refused_the_round(record: Mapping[str, Any]) -> bool:
         text = Path(path).read_text(encoding="utf-8")
     except OSError:
         return False
-    if REPAIR_ADVICE_SCOPE_LINE not in text:
+    if _repair_round_token(round_id) not in text:
         return False
     try:
         parsed = parse_manifest(text, path=path)
@@ -2060,7 +2074,9 @@ def _record_repair_dispatch(
     return written.get("attempt", 0)
 
 
-def _repair_resume_advice(composed: Mapping[str, Any], scope: Sequence[str]) -> str:
+def _repair_resume_advice(
+    composed: Mapping[str, Any], scope: Sequence[str], round_id: str
+) -> str:
     """The advice a resume of the reviewed run carries for its composed round.
 
     The reviewed run's own worker already holds its worktree, its claim and the
@@ -2069,11 +2085,17 @@ def _repair_resume_advice(composed: Mapping[str, Any], scope: Sequence[str]) -> 
     scope the round's findings grant, the round's done-when and the negative
     control the composer declared. The findings are therefore answered by id in
     the reviewed run's own manifest, and no finding is left without an answer.
+
+    The advice opens with the round id, so a worker's refusal that quotes the
+    advice names the round it refused and a retry can tell it from a manifest
+    quoting an earlier round's advice.
     """
     findings = list(composed.get("findings") or ())
     ids = ", ".join(str(finding.get("id") or "") for finding in findings)
     scope = [str(path) for path in scope]
     parts = [
+        _repair_round_token(round_id),
+        "",
         f"An independent review of this run found {len(findings)} blocking "
         f"finding(s) ({ids}). Answer each in this run.",
         "",
@@ -2550,7 +2572,7 @@ def dispatch_repair_for_run(
         if (
             same_round
             and prior >= 1
-            and _reviewed_run_refused_the_round(durable or record)
+            and _reviewed_run_refused_the_round(durable or record, round_id)
         ):
             reason = (
                 "the ended turn refused this round's advice; a retry would "
@@ -2601,7 +2623,7 @@ def dispatch_repair_for_run(
                 "reason": reason,
             }
 
-        advice = _repair_resume_advice(composed, scope)
+        advice = _repair_resume_advice(composed, scope, round_id)
         try:
             resumed = resumption_module._resume(
                 run_id, record, config=config, launcher=launcher, advice=advice

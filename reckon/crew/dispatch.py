@@ -10693,7 +10693,17 @@ def change_lane(
         )
 
     directory.mkdir(parents=True, exist_ok=True)
-    prompt_path.write_text(prompt, encoding="utf-8")
+    # The lane-change prompt was composed for the attempt that already ended —
+    # the bare advice for a continued session, or the original prompt with its
+    # original fence for a fresh one — so restating the fence for the attempt now
+    # starting is what stops the worker reading the first attempt's deadline. The
+    # resume path does the same through resume_plan.
+    prompt_path.write_text(
+        _restate_time_fence(
+            prompt, record, attempt_started_at=lane_change["changed_at"]
+        ),
+        encoding="utf-8",
+    )
     spawned_pid: int | None = None
     if target_plan is not None:
         spawn = launcher or _spawn
