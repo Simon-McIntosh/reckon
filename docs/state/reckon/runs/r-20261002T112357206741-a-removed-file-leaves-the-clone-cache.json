@@ -1,0 +1,406 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 480000,
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "5c7f693582753f2edb23b9ac96c50f074d7382cf",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 8736685,
+      "input_tokens_cumulative": 8736685,
+      "output_tokens": 29545,
+      "output_tokens_cumulative": 29545,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 416,
+    "files": 3,
+    "removed": 26
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 520,
+        "name": "_velocity_cache_root",
+        "path": "reckon/velocity.py"
+      },
+      "run_function": {
+        "line": 389,
+        "name": "_cache_root",
+        "path": "reckon/clones.py"
+      },
+      "window_line": 401
+    },
+    {
+      "existing_function": {
+        "line": 47,
+        "name": "_filler",
+        "path": "tests/test_a_partial_scan_keeps_the_whole_cache.py"
+      },
+      "run_function": {
+        "line": 53,
+        "name": "_filler",
+        "path": "tests/test_a_removed_file_leaves_the_clone_cache.py"
+      },
+      "window_line": 53
+    },
+    {
+      "existing_function": {
+        "line": 116,
+        "name": "test_the_next_full_scan_re_parses_nothing",
+        "path": "tests/test_a_partial_scan_keeps_the_whole_cache.py"
+      },
+      "run_function": {
+        "line": 156,
+        "name": "test_the_partial_scan_still_re_parses_nothing",
+        "path": "tests/test_a_removed_file_leaves_the_clone_cache.py"
+      },
+      "window_line": 157
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "fa76fa3b7e1526b5074f1c7a6e2cfe9b1c0c9a42",
+    "48e75e6995279d9035c12945dd1374daafada68c",
+    "abcaefcbbd6bdabe6189da8fb94e1c6a919cae92",
+    "f497c5eb98d2e3ef3210fc488f6636e55d5c7ca1",
+    "e0221456ccc803177d35cebee6b04e010e919f34"
+  ],
+  "completed_at": "2026-10-02T12:20:08.916Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-02T11:24:25Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest summary",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_removed_file_leaves_the_clone_cache.py tests/test_a_partial_scan_keeps_the_whole_cache.py tests/test_the_clone_cache_stays_bounded.py tests/test_the_clone_scan_reads_only_the_promoted_diff.py tests/test_promotion_reports_clones.py tests/test_velocity_clone_matches.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T112357206741-a-removed-file-leaves-the-clone-cache/logs/gate.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.75,
+    "plan": "a-crew-process-ends-with-its-owner",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-02T12:08:57.995934+00:00",
+    "horizon_seconds": 2700,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-02T11:23:57Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 29,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 3,
+    "headroom": 13,
+    "mean_context": 184000,
+    "observed_at": "2026-10-02T11:23:28Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-02T12:20:08.916Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T112357206741-a-removed-file-leaves-the-clone-cache/manifest.md",
+  "member": "disposable-r-20261002T112357206741-a-removed-file-leaves-the-clone-cache",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_removed_file_leaves_the_clone_cache.py::test_a_removed_file_leaves_no_cache_entry"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_removed_file_leaves_the_clone_cache.py::test_a_removed_file_leaves_no_cache_entry"
+    ],
+    "declaration": "count every cached path toward the cap again; the removed path's entry survives and the case fails",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T112357206741-a-removed-file-leaves-the-clone-cache/logs/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T112357206741-a-removed-file-leaves-the-clone-cache/logs/negative-control.log",
+    "test_paths": [
+      "tests/test_a_removed_file_leaves_the_clone_cache.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-removed-file-leaves-the-clone-cache",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 951,
+          "cached_input_tokens": 325852,
+          "input_tokens": 326805,
+          "output_tokens": 1492,
+          "reasoning_output_tokens": 271,
+          "total_tokens": 328297,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "dea7b557-cbf3-46c1-bbfe-33166244c4a3",
+      "session_id": "s21-fin"
+    },
+    "done_when": "The review of a-partial-scan-keeps-the-whole-cache (97) found that in reckon/clones.py clone_matches, known_paths = set(corpus_paths) | _cached_paths(cache) lets a removed or renamed file keep its entry for ever. The deleted path's own entry puts it back into known_paths, so the cap it sets prevents its eviction. corpus.json then grows with every path ever scanned rather than with the current corpus, against the bound the module docstring states. The node keeps the partial-scan guarantee (a five-file scan, then a one-file scan, then the five-file scan re-parses nothing). It also lets a path that no scan has read for a stated span stop counting toward the cap, so its entry is evicted. The span is a named constant whose comment gives its reason, and it is measured in scans or in time, whichever the node can test without sleeping. The module docstring states the bound that results. tests/test_a_removed_file_leaves_the_clone_cache.py scans a corpus, removes one file, and runs scans past the span. It asserts the removed path's entry is gone and the entry count equals the current corpus. It also asserts that the partial-scan case still re-parses nothing. The declared negative control is executed and logged. Base and head arms of tests/test_a_partial_scan_keeps_the_whole_cache.py, tests/test_the_clone_cache_stays_bounded.py, tests/test_the_clone_scan_reads_only_the_promoted_diff.py, tests/test_promotion_reports_clones.py and tests/test_velocity_clone_matches.py show zero added failures, each log ending in its pytest summary and EXIT= line.",
+    "estimated_hours": 0.7,
+    "goal": "A file removed or renamed from the corpus stops holding a clone cache entry",
+    "id": "a-removed-file-leaves-the-clone-cache",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-02T11:23:57Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 29,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 3,
+      "headroom": 13,
+      "mean_context": 184000,
+      "observed_at": "2026-10-02T11:23:28Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T112357206741-a-removed-file-leaves-the-clone-cache/manifest.md",
+    "negative_control": "count every cached path toward the cap again; the removed path's entry survives and the case fails",
+    "plan": "a-crew-process-ends-with-its-owner",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§13",
+    "spec_level": "guided",
+    "time_budget": "45m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/clones.py",
+      "tests/test_a_removed_file_leaves_the_clone_cache.py",
+      "docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-removed-file-leaves-the-clone-cache.html",
+      "docs/figures/a-crew-process-ends-with-its-owner/a-removed-file-leaves-the-clone-cache"
+    ]
+  },
+  "orientation_input_tokens": 961331.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "a-removed-file-leaves-the-clone-cache",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-02T11:24:10.399451+00:00",
+    "score": 0.6625,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "a-crew-process-ends-with-its-owner",
+  "plan_impl_at_dispatch": 0.75,
+  "plan_link": null,
+  "promoted_revision": "e0221456ccc803177d35cebee6b04e010e919f34",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "5c7f693582753f2edb23b9ac96c50f074d7382cf",
+    "reviewed_head_sha": "e0221456ccc803177d35cebee6b04e010e919f34",
+    "scores": {
+      "durability": 19,
+      "evidence": 19,
+      "fit": 19,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 97
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20261002T112357206741-a-removed-file-leaves-the-clone-cache",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§13",
+  "session": "s21-fin",
+  "session_harness": "claude",
+  "session_id": "e19bfc8b-7254-4d4d-8bcf-78d3e3db52c4",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 15327984,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 996.542,
+    "generated_tokens": 65994,
+    "generation_seconds": 861.756,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 36.1,
+    "machine_seconds": 134.786,
+    "peak_input_tokens": 173097,
+    "tokens_per_second": 76.58,
+    "wall_tokens_per_second": 66.22
+  },
+  "time_budget": "45m",
+  "tool_steps": 64.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 3343,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-02T12:20:10Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-02T12:03:27Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261002T112357206741-a-removed-file-leaves-the-clone-cache",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 10315,
+    "worker_pid": 7357
+  },
+  "worker_seconds": 3323,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
