@@ -992,6 +992,17 @@
                         "null"
                     ]
                 },
+                "routing": {
+                    "anyOf": [
+                        {
+                            "$ref": "#/$defs/RoutingConfig"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ],
+                    "description": "How dispatch selects its worker backend."
+                },
                 "summary": {
                     "anyOf": [
                         {
@@ -1131,6 +1142,15 @@
                 "in-harness"
             ],
             "title": "LaunchMode",
+            "type": "string"
+        },
+        "PickerMode": {
+            "description": "Whether the recorded picker selection controls dispatch.",
+            "enum": [
+                "shadow",
+                "route"
+            ],
+            "title": "PickerMode",
             "type": "string"
         },
         "PlacementConfig": {
@@ -1507,6 +1527,18 @@
             "title": "RoleConfig",
             "type": "object"
         },
+        "RoutingConfig": {
+            "additionalProperties": false,
+            "description": "Dispatch routing policy, overridable per dispatch.",
+            "properties": {
+                "picker": {
+                    "$ref": "#/$defs/PickerMode",
+                    "description": "Record the picker selection in shadow mode, or route dispatch by it. A per-dispatch route override takes precedence over this layered value."
+                }
+            },
+            "title": "RoutingConfig",
+            "type": "object"
+        },
         "RoutingOverlay": {
             "additionalProperties": false,
             "description": "Settings that replace the selected role and backend routing for one level.",
@@ -1809,6 +1841,17 @@
                 "object",
                 "null"
             ]
+        },
+        "routing": {
+            "anyOf": [
+                {
+                    "$ref": "#/$defs/RoutingConfig"
+                },
+                {
+                    "type": "null"
+                }
+            ],
+            "description": "How dispatch selects its worker backend."
         },
         "summary": {
             "anyOf": [

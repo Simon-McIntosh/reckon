@@ -1303,9 +1303,9 @@ def crew_preflight(
 )
 @click.option(
     "--route",
-    type=click.Choice(["picker"]),
+    type=click.Choice(["picker", "deterministic"]),
     default=None,
-    help="Use the picker's backend selection for this dispatch.",
+    help="Override routing.picker with picker or deterministic routing.",
 )
 @click.option("--comment", default="", help="Context passed verbatim to the picker.")
 @click.option(
@@ -1514,7 +1514,7 @@ def crew_dispatch(
     ``launch`` kind.
     """
     crew_module, flight_module = _crew_modules()
-    from reckon.crew.dispatch import LanePaused
+    from reckon.crew.dispatch import LanePaused, resolve_dispatch_route
     from reckon.crew.node import PlanReviewMissingError
 
     if brief_path and plan_slug:
@@ -1526,12 +1526,13 @@ def crew_dispatch(
             "--brief and --section are mutually exclusive; a brief names no "
             "committed plan section"
         )
-    if route == "picker" and (backend or local):
-        raise click.UsageError(
-            "--route picker cannot be combined with --backend or --local"
-        )
-
     config = _dispatch_resolved_flight(flight_module, project, checkout_path, overrides)
+    effective_route = resolve_dispatch_route(config, route)
+    if effective_route == "picker" and (backend or local):
+        raise click.UsageError(
+            "picker routing cannot be combined with --backend or --local; "
+            "use --route deterministic to override routing.picker"
+        )
     flight_backend_override = _flight_default_backend_override(
         flight_module, config, overrides
     )
@@ -1571,7 +1572,7 @@ def crew_dispatch(
 
     availability_refusal = (
         None
-        if route == "picker"
+        if effective_route == "picker"
         else _model_availability_refusal(crew_module, flight_module, config, node)
     )
     if availability_refusal is not None:
@@ -1623,7 +1624,7 @@ def crew_dispatch(
                 watch_override=no_watch,
                 repairs=repairs,
                 accept_directory_claim=accept_directory_claim,
-                route=route or "shadow",
+                route=route,
                 picker_selection=picker_selection,
             )
         except crew_module.BudgetHold as exc:
@@ -1772,7 +1773,7 @@ def crew_dispatch(
             repairs=repairs,
             accept_directory_claim=accept_directory_claim,
             no_fence_reason=no_fence_reason,
-            route=route or "shadow",
+            route=route,
             comment=comment,
         )
     except crew_module.PlanVisibilityError as exc:

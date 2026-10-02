@@ -34,6 +34,14 @@ imports:
 # an effort ladder stays an open string.
 
 enums:
+  PickerMode:
+    description: Whether the recorded picker selection controls dispatch.
+    permissible_values:
+      shadow:
+        description: Record the selection and use deterministic routing.
+      route:
+        description: Route dispatch by the picker selection.
+
   LaunchMode:
     description: How a worker process for a backend is started.
     permissible_values:
@@ -263,6 +271,16 @@ slots:
     range: RoleConfig
     multivalued: true
     inlined: true
+
+  routing:
+    description: How dispatch selects its worker backend.
+    range: RoutingConfig
+
+  picker:
+    description: >-
+      Record the picker selection in shadow mode, or route dispatch by it.
+      A per-dispatch route override takes precedence over this layered value.
+    range: PickerMode
 
   gates:
     range: GateConfig
@@ -874,6 +892,7 @@ classes:
       - unprotected_paths
       - backends
       - roles
+      - routing
       - gates
       - review
       - budget
@@ -882,6 +901,11 @@ classes:
       - worktree
       - summary
       - ticker
+
+  RoutingConfig:
+    description: Dispatch routing policy, overridable per dispatch.
+    slots:
+      - picker
 
   ReviewConfig:
     description: >-

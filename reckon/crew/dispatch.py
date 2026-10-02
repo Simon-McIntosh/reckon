@@ -2861,6 +2861,8 @@ class DispatchPlan:
     lane_advisory: dict[str, Any] | None = None
     open_endedness: float | None = None
     picker_selection: dict[str, Any] | None = None
+    route: str = "shadow"
+    route_override: str | None = None
 
     def as_dict(self) -> dict[str, Any]:
         agent = _stamp_agent_display(
@@ -2873,6 +2875,8 @@ class DispatchPlan:
             "agent": agent,
             "backend": self.backend,
             "picker_selection": self.picker_selection,
+            "route": self.route,
+            "route_override": self.route_override,
             "default_backend": self.default_backend,
             "execution_fit": self.execution_fit.as_dict(),
             "launch": self.launch,
@@ -4308,6 +4312,18 @@ def _picker_refusal_reasons(selection: Mapping[str, Any]) -> str:
     return "; ".join(dict.fromkeys(reasons)) or "no eligible backend"
 
 
+def resolve_dispatch_route(config: Mapping[str, Any], route: str | None) -> str:
+    """Resolve a per-dispatch override before the layered picker setting."""
+    if route is not None:
+        if route not in {"shadow", "picker", "deterministic"}:
+            raise CrewError(f"unknown dispatch route {route!r}")
+        return route
+    mode = (config.get("routing") or {}).get("picker", "shadow")
+    if mode not in {"shadow", "route"}:
+        raise CrewError(f"unknown routing.picker value {mode!r}")
+    return "picker" if mode == "route" else "shadow"
+
+
 def plan_dispatch(
     *,
     node: TaskNode,
@@ -4332,7 +4348,7 @@ def plan_dispatch(
     watch_override: bool = False,
     repairs: str = "",
     accept_directory_claim: bool = False,
-    route: str = "shadow",
+    route: str | None = None,
     picker_selection: Mapping[str, Any] | None = None,
 ) -> DispatchPlan:
     """Resolve routing and defaults for one node and judge it. No side effects.
@@ -4371,8 +4387,8 @@ def plan_dispatch(
     if repairs:
         _require_repairs_target(project, repairs, authority=authority)
     requested_backend = str(backend_override or default_backend_override or "").strip()
-    if route not in {"shadow", "picker"}:
-        raise CrewError(f"unknown dispatch route {route!r}")
+    route_override = route
+    route = resolve_dispatch_route(config, route)
     if route == "picker" and picker_selection is None:
         raise CrewError("picker route has no selection")
     if route == "picker" and picker_selection is not None:
@@ -4759,6 +4775,8 @@ def plan_dispatch(
         lane_advisory=lane_advisory,
         open_endedness=open_endedness,
         picker_selection=(None if picker_selection is None else dict(picker_selection)),
+        route=route,
+        route_override=route_override,
     )
     if verdict.ok and repo is not None:
         resolution.competence = _competence_verdict(
@@ -5568,7 +5586,7 @@ def dispatch(
     repairs: str = "",
     accept_directory_claim: bool = False,
     no_fence_reason: str = "",
-    route: str = "shadow",
+    route: str | None = None,
     comment: str = "",
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
@@ -5685,6 +5703,7 @@ def dispatch(
         route=route,
         picker_selection=picker_selection,
     )
+    route = resolution.route
     if not resolution.validation.ok:
         raise CrewError(
             "node is not dispatchable — "
@@ -5841,7 +5860,7 @@ def dispatch(
                 ),
                 allow_unreviewed_plan=unreviewed_plan_override,
                 session=session,
-                route=route,
+                route=resolution.route_override,
                 picker_selection=picker_selection,
             )
             resolution.requested_backend = requested_backend
@@ -6392,6 +6411,8 @@ def dispatch(
             "budget": _backends.unknown_budget("no events yet"),
             "budget_fallback": budget_fallback,
             "picker_selection": picker_selection,
+            "route": resolution.route,
+            "route_override": resolution.route_override,
             "pace": pace_record,
             "warnings": [
                 *resolution.warnings,
