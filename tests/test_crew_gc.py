@@ -208,7 +208,8 @@ def test_gc_dry_run_itemizes_worktrees_without_touching_them(
     assert result.exit_code == 0, result.output
     assert payload["dry_run"] is True
     assert payload["counts"] == {
-        "dirty": 1,
+        "dirty": 0,
+        "dirty-integrated": 1,
         "disposable": 0,
         "integrated": 1,
         "live-referenced": 1,
@@ -217,16 +218,16 @@ def test_gc_dry_run_itemizes_worktrees_without_touching_them(
         # headline said 0 while dozens of integrated worktrees were removable,
         # so a caller concluded nothing was reclaimable and the accumulation
         # grew — measured at 46 worktrees in one project, 40 of them integrated.
-        "reclaimable": 1,
+        "reclaimable": 2,
     }
     by_path = {item["path"]: item for item in payload["worktrees"]}
     assert by_path[str(integrated)]["classification"] == "integrated"
-    assert by_path[str(dirty)]["classification"] == "dirty"
+    assert by_path[str(dirty)]["classification"] == "dirty-integrated"
     assert by_path[str(live)]["claimed_by_live_runs"] == ["run-live"]
     assert integrated.exists() and dirty.exists() and live.exists()
 
 
-def test_gc_apply_removes_only_integrated_unclaimed_worktrees(
+def test_gc_apply_saves_then_releases_dirty_integrated_worktrees(
     tmp_path: Path, monkeypatch
 ) -> None:
     home = tmp_path / "config"
@@ -245,9 +246,12 @@ def test_gc_apply_removes_only_integrated_unclaimed_worktrees(
 
     assert result.exit_code == 0, result.output
     assert payload["dry_run"] is False
-    assert payload["removed_worktrees"] == [str(integrated)]
+    assert payload["removed_worktrees"] == [str(dirty), str(integrated)]
     assert not integrated.exists()
-    assert dirty.exists() and live.exists()
+    assert not dirty.exists() and live.exists()
+    row = next(item for item in payload["worktrees"] if item["path"] == str(dirty))
+    assert Path(row["residue_tar"]).is_file()
+    assert row["residue_classes"]["untracked.txt"] == "unique"
 
 
 def test_a_merged_worktree_holding_only_harness_scratch_reads_integrated(
@@ -272,6 +276,23 @@ def test_a_merged_worktree_holding_only_harness_scratch_reads_integrated(
     assert item["dirty"] == []
 
 
+def test_apply_preserves_harness_scratch_before_releasing_integrated_tree(
+    tmp_path: Path, monkeypatch
+) -> None:
+    home = tmp_path / "config"
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    repo = repository(tmp_path)
+    worktree = merged_worktree(repo, "scratch", "release")
+    plant_harness_scratch(worktree)
+
+    report = routing.garbage_collect(repo=repo, apply=True)
+    item = next(item for item in report["worktrees"] if item["path"] == str(worktree))
+
+    assert not worktree.exists()
+    assert Path(item["residue_tar"]).is_file()
+    assert item["residue_classes"]["harness/CLAUDE.md"] == "unique"
+
+
 def test_an_untracked_file_beside_harness_scratch_still_reads_dirty(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -290,8 +311,8 @@ def test_an_untracked_file_beside_harness_scratch_still_reads_dirty(
     item = next(item for item in payload["worktrees"] if item["path"] == str(worktree))
 
     assert result.exit_code == 0, result.output
-    assert item["classification"] == "dirty"
-    assert item["reclaimable"] is False
+    assert item["classification"] == "dirty-integrated"
+    assert item["reclaimable"] is True
     assert item["dirty"] == ["?? leftover.txt"]
 
 
@@ -314,7 +335,7 @@ def test_a_nested_path_named_after_the_scratch_is_not_excluded(
     item = next(item for item in payload["worktrees"] if item["path"] == str(worktree))
 
     assert result.exit_code == 0, result.output
-    assert item["classification"] == "dirty"
+    assert item["classification"] == "dirty-integrated"
     assert item["dirty"] == ["?? notes/codex-home/keep.md"]
 
 
@@ -376,7 +397,7 @@ def test_gc_apply_removes_a_disposable_shadow_and_retains_its_patch(
     assert artifact.read_text() == "retained evidence\n"
 
 
-def test_gc_withholds_a_shadow_whose_patch_is_absent(
+def test_gc_saves_integrated_shadow_residue_when_its_earlier_patch_is_absent(
     tmp_path: Path, monkeypatch
 ) -> None:
     home = tmp_path / "config"
@@ -402,8 +423,9 @@ def test_gc_withholds_a_shadow_whose_patch_is_absent(
 
     assert result.exit_code == 0, result.output
     assert item["classification"] != "disposable"
-    assert str(shadow) not in payload["removed_worktrees"]
-    assert shadow.exists()
+    assert str(shadow) in payload["removed_worktrees"]
+    assert not shadow.exists()
+    assert Path(item["residue_tar"]).is_file()
 
 
 def test_gc_never_offers_a_live_referenced_shadow(tmp_path: Path, monkeypatch) -> None:
@@ -473,6 +495,9 @@ def test_a_withheld_worktree_says_which_condition_holds_it(tmp_path, monkeypatch
     dirty = create_worktree(repo, "audit", "dirty")
     live = create_worktree(repo, "audit", "live")
     (dirty / "untracked.txt").write_text("dirty\n")
+    (dirty / "divergent.txt").write_text("only here\n")
+    git(dirty, "add", "divergent.txt")
+    git(dirty, "commit", "-q", "-m", "test: divergent content")
     write_pointer(home, "run-live", live)
 
     result = CliRunner().invoke(cli.main, ["crew", "gc", "--repo", str(repo)])
@@ -499,7 +524,11 @@ def test_the_reclaimable_set_is_exactly_what_apply_removes(tmp_path, monkeypatch
     """
     from reckon.crew import routing
 
-    assert set(routing.RECLAIMABLE_CLASSES) == {"integrated", "disposable"}
+    assert set(routing.RECLAIMABLE_CLASSES) == {
+        "integrated",
+        "disposable",
+        "dirty-integrated",
+    }
     assert set(routing.WITHHELD_REASONS) == {
         "dirty",
         "unintegrated",
@@ -508,9 +537,8 @@ def test_the_reclaimable_set_is_exactly_what_apply_removes(tmp_path, monkeypatch
     assert not set(routing.RECLAIMABLE_CLASSES) & set(routing.WITHHELD_REASONS)
 
     source = inspect.getsource(routing.garbage_collect)
-    branch = source.split('if item["classification"] not in (', 1)[1].split(")", 1)[0]
-    for name in routing.RECLAIMABLE_CLASSES:
-        assert f'"{name}"' in branch, f"{name} is reported reclaimable but not removed"
+    assert 'if item["classification"] not in RECLAIMABLE_CLASSES:' in source
+    assert 'item["classification"] == "dirty-integrated"' in source
 
 
 def test_gc_with_no_repo_resolves_the_named_projects_registered_checkout(

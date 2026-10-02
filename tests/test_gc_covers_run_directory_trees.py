@@ -125,7 +125,7 @@ def test_an_extraction_with_no_git_directory_is_reported_as_its_own_kind(
         assert "no git directory" in item["withheld"]
 
 
-def test_a_run_directory_worktree_with_modified_files_is_held(
+def test_a_run_directory_worktree_with_modified_files_is_reclaimable(
     tmp_path: Path, home: Path
 ) -> None:
     repo = repository(tmp_path)
@@ -136,9 +136,8 @@ def test_a_run_directory_worktree_with_modified_files_is_held(
     report = routing.garbage_collect(repo=repo)
     item = rows(report)[tree]
 
-    assert item["classification"] == "dirty"
-    assert item["reclaimable"] is False
-    assert "uncommitted changes" in item["withheld"]
+    assert item["classification"] == "dirty-integrated"
+    assert item["reclaimable"] is True
 
 
 def test_an_ordinary_managed_worktree_is_classified_exactly_as_today(
@@ -156,6 +155,7 @@ def test_an_ordinary_managed_worktree_is_classified_exactly_as_today(
     # The run-directory additions must leave the summary vocabulary untouched.
     assert report["counts"] == {
         "dirty": 0,
+        "dirty-integrated": 0,
         "disposable": 0,
         "integrated": 1,
         "live-referenced": 0,
@@ -164,7 +164,7 @@ def test_an_ordinary_managed_worktree_is_classified_exactly_as_today(
     }
 
 
-def test_apply_removes_only_the_clean_contained_run_directory_worktree(
+def test_apply_saves_and_removes_dirty_contained_run_directory_worktree(
     tmp_path: Path, home: Path
 ) -> None:
     repo = repository(tmp_path)
@@ -180,8 +180,9 @@ def test_apply_removes_only_the_clean_contained_run_directory_worktree(
 
     report = routing.garbage_collect(repo=repo, apply=True)
 
-    assert report["removed_worktrees"] == [str(integrated)]
+    assert report["removed_worktrees"] == [str(integrated), str(dirty)]
     assert not integrated.exists()
-    assert dirty.exists()
+    assert not dirty.exists()
+    assert Path(rows(report)[dirty]["residue_tar"]).is_file()
     assert extraction.exists()
-    assert report["counts"]["reclaimable"] == 1
+    assert report["counts"]["reclaimable"] == 2
