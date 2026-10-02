@@ -1,0 +1,599 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "xhigh",
+    "launch": "cli",
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "855d0a6d91471e2ee942261b3743579945a8de6d",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 10134164,
+      "input_tokens_cumulative": 10134164,
+      "output_tokens": 56990,
+      "output_tokens_cumulative": 56990,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 111,
+    "files": 1,
+    "removed": 0
+  },
+  "clone_matches": [],
+  "commit_resolution": null,
+  "commits": [
+    "14568acf713723c11264b948b0c62855cff9c39e"
+  ],
+  "completed_at": "2026-10-02T20:51:36.598Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-02T20:21:50Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "documentation",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "fence_waiver": {
+    "reason": "the live replay's serving probe writes its lane-probe lock under ~/.config/reckon, which the worker fence mounts read-only"
+  },
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/reckon crew pick --project reckon --replay 20",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T202124445000-picker-replay-measure/replay.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": null,
+    "plan": "one-typesafe-model-picker",
+    "reason": "role-not-enforced:documentation",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-02T21:06:25.144517+00:00",
+    "horizon_seconds": 2700,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-02T20:21:25Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 24,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 4,
+    "headroom": 9,
+    "mean_context": 80000,
+    "observed_at": "2026-10-02T20:21:01Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 1
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-02T20:51:36.598Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T202124445000-picker-replay-measure/manifest.md",
+  "member": "disposable-r-20261002T202124445000-picker-replay-measure",
+  "negative_control": {
+    "reason": "node-writes-no-test-path",
+    "verdict": "exempt"
+  },
+  "no_commit": null,
+  "node": "picker-replay-measure",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 953,
+          "cached_input_tokens": 664444,
+          "input_tokens": 665399,
+          "output_tokens": 891,
+          "reasoning_output_tokens": 196,
+          "total_tokens": 666290,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "2d0412cd-9d81-48d8-9d5c-32537d1c4e2b",
+      "session_id": "s25-picker"
+    },
+    "done_when": "docs/evidence/fragments/one-typesafe-model-picker/picker-replay-measure.html publishes one live run of /home/ITER/mcintos/Code/reckon/.venv/bin/reckon crew pick --project reckon --replay 20 from this worktree, at the revision named in the fragment. It gives a table with one row per replayed dispatch (actual backend and gate outcome beside the picked action, backend and confidence) and a summary: agreement rate, hold count, fallback count with reasons, median and maximum per-pick latency, and median Jev latency over the rows that called Jev, with their count. It quotes one rendered Jev state verbatim, showing the return_times and local_lane blocks with non-null figures. The raw replay JSON and its log are under this run's directory and named in the manifest.",
+    "estimated_hours": null,
+    "goal": "Publish a live 20-dispatch replay through the finished picker",
+    "id": "picker-replay-measure",
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-02T20:21:25Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 24,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 4,
+      "headroom": 9,
+      "mean_context": 80000,
+      "observed_at": "2026-10-02T20:21:01Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 1
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T202124445000-picker-replay-measure/manifest.md",
+    "negative_control": "",
+    "plan": "one-typesafe-model-picker",
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "documentation",
+    "section": "§6",
+    "spec_level": "exact",
+    "time_budget": "45m",
+    "token_budget": null,
+    "write_paths": [
+      "docs/evidence/fragments/one-typesafe-model-picker/picker-replay-measure.html",
+      "docs/figures/one-typesafe-model-picker/picker-replay-measure"
+    ]
+  },
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "picker-replay-measure",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-02T20:21:37.681133+00:00",
+    "score": 0.55,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "route",
+    "answering_model": "typesafe/jev-1.13-20260917",
+    "backend": "clive",
+    "comment": "Runs one replay command and writes up its figures; well specified, no design judgment, a few Jev calls of cost.",
+    "confidence": 0.8,
+    "decision_source": "jev",
+    "effort": "xhigh",
+    "excluded": [
+      {
+        "availability": "unavailable",
+        "backend": "native",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": null,
+        "family": "in-harness",
+        "local": false,
+        "model": null,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "availability: unavailable"
+        ],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "fallback_reason": null,
+    "family": "local",
+    "jev_latency_ms": 342.94,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 4111.925,
+    "model": "deepseek-v4.1-flash",
+    "offered": [
+      {
+        "availability": "served",
+        "backend": "claude",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": 1.4018485563194445,
+        "effort": "medium",
+        "family": "claude",
+        "local": false,
+        "model": "claude-sonnet-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00Z",
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "claude-haiku",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-haiku-4-5-20251001",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "claude-opus",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "claude",
+        "local": false,
+        "model": "claude-opus-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "clive",
+        "burn_multiple": null,
+        "congestion": {
+          "admission_verdict": "open",
+          "running": 4,
+          "slots_state": "measured",
+          "stale": false,
+          "waiting": 1
+        },
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "local",
+        "local": true,
+        "model": "deepseek-v4.1-flash",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 2,
+          "passed": 11,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": 275
+      },
+      {
+        "availability": "served",
+        "backend": "codex",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "high",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-sol",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "codex-astra",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-astra",
+        "outcomes": {
+          "failed": 1,
+          "not-run": 0,
+          "passed": 1,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "codex-luna",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-luna",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "codex-terra",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-5.6-terra",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "probabilities": {
+      "claude": 0.03,
+      "claude-haiku": 0.02,
+      "claude-opus": 0,
+      "clive": 0.83,
+      "codex": 0.01,
+      "codex-astra": 0.01,
+      "codex-luna": 0.05,
+      "codex-terra": 0.01,
+      "hold": 0.04
+    },
+    "rendered_token_estimate": 1186,
+    "usage": {
+      "cost": 0.000135954,
+      "input_tokens": 3237,
+      "output_tokens": 99
+    }
+  },
+  "plan": "one-typesafe-model-picker",
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "14568acf713723c11264b948b0c62855cff9c39e",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "855d0a6d91471e2ee942261b3743579945a8de6d",
+    "reviewed_head_sha": "14568acf713723c11264b948b0c62855cff9c39e",
+    "scores": {
+      "durability": 17,
+      "evidence": 17,
+      "fit": 18,
+      "goal_fidelity": 19,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 90
+  },
+  "review_tier": "full",
+  "role": "documentation",
+  "run_id": "r-20261002T202124445000-picker-replay-measure",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§6",
+  "session": "s25-picker",
+  "session_harness": "claude",
+  "session_id": "26140674-545e-41c5-ac6c-693e1a7cad45",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 0,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 10134164,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 1758.808,
+    "generated_tokens": 56990,
+    "generation_seconds": 1480.478,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 76.4,
+    "machine_seconds": 278.33,
+    "peak_input_tokens": 175810,
+    "tokens_per_second": 38.49,
+    "wall_tokens_per_second": 32.4
+  },
+  "time_budget": "45m",
+  "tool_steps": 97.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 1786,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-02T20:51:39Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-02T20:22:12Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261002T202124445000-picker-replay-measure",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 11772,
+    "worker_pid": 3831368
+  },
+  "worker_seconds": 1742,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
