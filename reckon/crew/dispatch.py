@@ -2849,6 +2849,7 @@ class DispatchPlan:
     lane_declaration: dict[str, Any] | None = None
     lane_reading: dict[str, Any] | None = None
     lane_gate: dict[str, Any] | None = None
+    lane_allowance: dict[str, Any] | None = None
     lane_advisory: dict[str, Any] | None = None
     open_endedness: float | None = None
 
@@ -2877,6 +2878,9 @@ class DispatchPlan:
             ),
             "lane_gate": (
                 None if self.lane_gate is None else dict(self.lane_gate)
+            ),
+            "lane_allowance": (
+                None if self.lane_allowance is None else dict(self.lane_allowance)
             ),
             "node": self.node.as_dict(),
             "brief": _brief_record(self.node),
@@ -3559,6 +3563,18 @@ class LanePaused(CrewError):  # noqa: N818 - named as the dispatch states it, be
             str(gate.get("detail") or "").strip()
             or (f"the lane gate is {gate.get('state')!r} at {gate.get('gate_path')!r}")
         )
+
+
+class LaneHeld(LanePaused):
+    """A dispatch holds because the lane's own router grants it no worker slot.
+
+    The lane is answering and its own arithmetic leaves this coordinator
+    session no room, so the node is held rather than refused: nothing was
+    created, the node is still ready, and the caller retries when the router's
+    next reading grants a slot. The allowance decision that produced the hold
+    rides the exception, so every surface reports the figure the router
+    published rather than a second opinion about it.
+    """
 
 
 class _GateReadDeadline(Exception):  # noqa: N818 - an internal marker, not a raised API
@@ -4513,6 +4529,7 @@ def plan_dispatch(
         )
     lane_reading = _dispatch_lane_reading(backend)
     lane_gate = _dispatch_lane_gate(backend)
+    lane_allowance = _dispatch_lane_allowance(backend, session=session)
     resolution = DispatchPlan(
         run_id=resolved_run_id,
         backend=backend_name,
@@ -4536,6 +4553,7 @@ def plan_dispatch(
         lane_declaration=lane_declaration,
         lane_reading=lane_reading,
         lane_gate=lane_gate,
+        lane_allowance=lane_allowance,
         lane_advisory=lane_advisory,
         open_endedness=open_endedness,
     )
@@ -5144,6 +5162,171 @@ def _require_repairs_target(
     )
 
 
+# The router averages its slot arithmetic over a window it reports as
+# ``observed_seconds``. Until that window has filled, the ratio is divided by a
+# history the router does not yet have and the published slot count overstates
+# the room -- measured once at 320 s of history as 57 slots against about 11
+# true -- so no slot figure is used until the router reports at least this much
+# observation. A block publishing no ``observed_seconds`` cannot be shown to
+# have any.
+_LANE_SLOT_TRUST_SECONDS = 15 * 60
+
+
+def _lane_allowance_unknown(detail: str) -> dict[str, Any]:
+    """The allowance decision when no slot figure and no headroom could be read."""
+    return {
+        "state": "unknown",
+        "allowance": None,
+        "source": "none",
+        "held": False,
+        "verdict": _lane_document.UNKNOWN,
+        "headroom": None,
+        "session": "",
+        "reason": detail,
+        "detail": detail,
+    }
+
+
+def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
+    """Choose the extra-worker allowance the lane's router grants this session.
+
+    The router's own arithmetic is the authority and its own preference orders
+    the choice, most specific first: the session's share from the admission
+    block's ``sessions`` map when that map lists this session; the
+    ``new_session_worker_slots`` share when the map is present and does not
+    list it; the global ``worker_slots``; and, only when no slot figure is
+    published, the request ``headroom`` read as a worker count. A slot figure
+    is used only when the router reports at least ``_LANE_SLOT_TRUST_SECONDS``
+    of observation history; below that -- and when the block states no history
+    at all -- the slot arithmetic cannot be shown to rest on a filled window,
+    so the allowance falls back to headroom, which needs no history.
+
+    An allowance of zero or less *holds*: the router has granted no room and
+    the reason names the router's own verdict. An allowance that could not be
+    read holds nothing, because absence of a signal is not exhaustion. Reckon
+    does no fairness arithmetic of its own: every figure carried here is one
+    the router published.
+    """
+    reading = _lane_document.read_lane_document(document)
+    admission = _lane_document.read_lane_admission(document)
+    headroom = _metric_number(reading.get("headroom"))
+    verdict = str(reading.get("admission_verdict") or _lane_document.UNKNOWN)
+    verdict_reason = str(reading.get("admission_reason") or "")
+    session_id = str(session or "").strip()
+
+    observed = admission.get(_lane_document.ADMISSION_OBSERVED_SECONDS_KEY)
+    history_is_trusted = (
+        isinstance(observed, (int, float))
+        and not isinstance(observed, bool)
+        and observed >= _LANE_SLOT_TRUST_SECONDS
+    )
+
+    allowance: int | float | None = None
+    source = "none"
+    if admission.get("present") and history_is_trusted:
+        sessions_present = bool(admission.get("sessions_present"))
+        listed = (
+            admission["sessions"].get(session_id)
+            if sessions_present and session_id
+            else None
+        )
+        if listed is not None:
+            share = _metric_number(listed.get("worker_slots"))
+            if share is not None:
+                allowance = share
+                source = "the session's own worker slots"
+        elif sessions_present:
+            share = _metric_number(
+                admission.get(_lane_document.ADMISSION_NEW_SESSION_WORKER_SLOTS_KEY)
+            )
+            if share is not None:
+                allowance = share
+                source = "the new-session worker slots"
+        if allowance is None:
+            share = _metric_number(
+                admission.get(_lane_document.ADMISSION_WORKER_SLOTS_KEY)
+            )
+            if share is not None:
+                allowance = share
+                source = "the global worker slots"
+    if allowance is None and headroom is not None:
+        allowance = headroom
+        source = "the request headroom"
+
+    if allowance is None:
+        detail = str(admission.get("detail") or reading.get("detail") or "").strip()
+        detail = detail or "no worker-slot figure and no headroom were published"
+        return _lane_allowance_unknown(detail) | {"session": session_id}
+
+    held = allowance <= 0
+    grant = (
+        f"the lane's router grants {allowance:g} extra workers to session "
+        f"{session_id or 'unidentified'} ({source})"
+    )
+    if held:
+        reason = f"{grant}; the router's own verdict is {verdict}"
+        if verdict_reason and verdict_reason != _lane_document.UNKNOWN:
+            reason = (
+                f"{grant}; the router's own verdict is {verdict} — {verdict_reason}"
+            )
+        state = "held"
+    else:
+        reason = grant
+        detail = (
+            reason
+            if admission.get("present")
+            else f"{reason}; no admission block was published"
+        )
+        state = "measured"
+    return {
+        "state": state,
+        "allowance": allowance,
+        "source": source,
+        "held": held,
+        "verdict": verdict,
+        "headroom": headroom,
+        "session": session_id,
+        "reason": reason,
+        "detail": reason if held else detail,
+    }
+
+
+def _dispatch_lane_allowance(
+    backend: Mapping[str, Any], *, session: str
+) -> dict[str, Any] | None:
+    """Read the resolved lane's published allowance for this coordinator session.
+
+    A backend may declare ``lane_document``, the local JSON the lane publishes
+    about itself. The document is resolved through the shared lane reader and
+    the allowance is chosen from the router's own figures. An absent
+    declaration returns ``None`` -- a lane that publishes nothing has nothing
+    to hold on -- and a document that cannot be read or parsed resolves to an
+    unknown allowance that holds nothing, because absence of a signal is not
+    exhaustion.
+    """
+    declared = backend.get("lane_document")
+    if not declared:
+        return None
+    path = Path(str(declared)).expanduser()
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return _lane_allowance_unknown(
+            f"lane document {str(path)!r} cannot be read — {exc}"
+        )
+    try:
+        payload = json.loads(raw)
+    except ValueError as exc:
+        return _lane_allowance_unknown(
+            f"lane document {str(path)!r} is not valid JSON — {exc}"
+        )
+    if not isinstance(payload, Mapping):
+        return _lane_allowance_unknown(
+            f"lane document {str(path)!r} is not a JSON object"
+        )
+    return _lane_worker_allowance(payload, session=session)
+
+
 def dispatch(
     *,
     node: TaskNode,
@@ -5249,6 +5432,7 @@ def dispatch(
         member=member,
         allow_unreviewed_plan=unreviewed_plan_override,
         repairs=repairs,
+        session=session,
     )
     if not resolution.validation.ok:
         raise CrewError(
@@ -5373,6 +5557,7 @@ def dispatch(
                     else ""
                 ),
                 allow_unreviewed_plan=unreviewed_plan_override,
+                session=session,
             )
             resolution.requested_backend = requested_backend
             if not resolution.validation.ok:
@@ -5419,6 +5604,16 @@ def dispatch(
     lane_gate = resolution.lane_gate or {}
     if lane_gate.get("state") in _LANE_GATE_WAITING_STATES:
         raise LanePaused(lane_gate)
+
+    # The lane's own allowance, chosen from the router's published figures: an
+    # allowance of zero or less holds the node here, before a pointer or a
+    # worktree exists, so the caller retries when the router's next reading
+    # grants a slot rather than unwinding a launch. This is the same wait the
+    # gate-withholds dispatch above is, and it is raised distinctly so the
+    # reason a surface reports is the allowance the router published.
+    lane_allowance = resolution.lane_allowance or {}
+    if lane_allowance.get("held"):
+        raise LaneHeld(lane_allowance)
 
     # A cli worker launches inside the fence, and the fence is bubblewrap over a
     # user namespace. A host with neither cannot seal a worker's writes, so the
