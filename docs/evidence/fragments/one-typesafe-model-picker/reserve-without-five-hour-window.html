@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="The reserve reads the window the provider reports">
+  <meta name="plan-summary" content="codex-spark is retired on both flight layers; the bookend reserve refused a documentation codex dispatch on a five-hour-less account before the pacing merge and the same dispatch validates after it, and the implemented behaviour reads the provider-reported primary window.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s2">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,budget,codex,reserve,evidence">
+  <title>The reserve reads the window the provider reports | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="reserve-without-five-hour-window" data-reckon="landed" data-when="2026-10-02">
+  <h2>The reserve reads the window the provider reports</h2>
+
+  <h3>codex-spark is retired</h3>
+  <p><strong>Disposition: retired 2026-10-02.</strong> The account refuses
+  <code>gpt-5.3-codex-spark</code> with "not supported when using Codex with a ChatGPT
+  account", and the provider's model list omits it, so it has left the Pro plan.</p>
+  <table>
+    <thead><tr><th>layer</th><th>change</th><th>sha (checked to resolve, 2026-10-02)</th></tr></thead>
+    <tbody>
+      <tr><td>host (dotfiles)</td><td>removes the <code>codex-spark</code> backend block (model <code>gpt-5.3-codex-spark</code>, alias <code>spark5.3</code>, budget group <code>spark-sub</code>) from <code>reckon/flight.yaml</code></td><td>host-level commit <code>839091357d0d15630889c085c283a90b6fb53c3b</code> ("chore(reckon): repin codex to gpt-6 releases and retire codex-spark")</td></tr>
+      <tr><td>project (reckon)</td><td>removes <code>codex-spark</code> from <code>docs/state/reckon/flight.yaml</code> backends and from <code>review_excluded_backends</code></td><td>merge <code>d7e1a0fe2ebafac65ae68a4421355a06f255c81b</code> ("Merge retire-codex-spark-project-layer"), ancestor of the main checkout HEAD</td></tr>
+    </tbody>
+  </table>
+  <p>The retirement covers the whole lane: no flight layer resolves the backend, so no
+  picker candidate filter can route to it.</p>
+
+  <h3>Before the pacing merge: refused as an unreadable window</h3>
+  <p>At 11:16Z a real dispatch of <code>picker-reuse-map</code> (role <code>documentation</code>,
+  backend <code>codex</code>, five-hour-less account) was refused before any worktree existed:</p>
+  <pre><code>the window's utilisation could not be read (the 'codex' lane's five-hour clock
+reports state 'unknown'), and an unreadable window is not an empty one: the
+documentation role's dispatch is refused against the 20% the window keeps for
+review and verify roles</code></pre>
+  <p>The message template resolves at <code>reckon/crew/reserve.py:122</code> in both the
+  pre-merge revision and at the checked-out HEAD. Wave-1 codex dispatches then carried
+  <code>--set backends.codex.budget_group=null</code> recorded on each run to skip the group
+  reserve.</p>
+
+  <h3>After merge adf905314: the dry run is admitted</h3>
+  <p>Merge <code>adf905314490b6799b253e85c268608f0c922033</code> ("Merge codex-window-pacing")
+  is an ancestor of the main checkout HEAD. Replaying the same dispatch as a dry run with
+  the main checkout's reckon (<code>/home/ITER/mcintos/Code/reckon</code>, revision
+  <code>67aa4a7ff59b9bdc57fd3d91a1c8802d51b5b2ef</code> at run time; the checkout advances
+  as peers merge), <code>--dry-run --no-watch --project reckon --plan one-typesafe-model-picker
+  --section s4 --role documentation --backend codex --node picker-reuse-map</code>, exits 0:</p>
+  <pre><code>"dry_run": true
+"requested_backend": "codex"
+"role": "documentation"          (node block)
+"ok": true
+</code></pre>
+  <p>Log: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T202451106868-reserve-without-five-hour-window/dry-run-after-pacing.log</code>.
+  <code>--no-watch</code> is used because a dry run otherwise opens the session's follower lock
+  under <code>~/.config/reckon/crew/watch/</code>, which the worker fence mounts read-only; the
+  watcher gate only appends delivery warnings, not the reserve verdict.</p>
+  <p>Instrument note, so the admission is not read as unconditional: a standalone replay
+  composing the same pace row and calling the reserve directly
+  (<code>reserve_replay.py</code> and <code>reserve-replay.log</code> in the same run directory)
+  reproduced the refusal <em>verbatim</em> where no window reading was recorded in that
+  context — the guard still fires on an unreadable window. On the live path the reading
+  comes from the account surface, as the pacing node's own record shows below.</p>
+
+  <h3>Recommendation the code now implements</h3>
+  <p><strong>On an account with no five-hour window, the reserve reads the provider-reported
+  primary window as the operative window; it does not treat the missing five-hour sibling as
+  an unreadable account.</strong> The pacing merge carries the provider's own window length
+  into the reading (<code>reckon/crew/window_reading.py</code>: <code>WindowFigure.window_minutes</code>,
+  taken from the provider's <code>windowDurationMins</code> with named-period fallbacks) and
+  derives the group allowance from the operative window
+  (<code>reckon/budget.py</code>: <code>_operative_window</code>; a primary-only reading's
+  allowance is the elapsed fraction of its reported period leaned by
+  <code>budget.pace_multiple</code>). The merge's own record
+  (<code>docs/evidence/fragments/one-typesafe-model-picker/codex-window-pacing.html</code>)
+  captures the provider response it was measured against: one primary window of
+  <code>windowDurationMins: 10080</code> (10,080 minutes), no secondary, and a paced row
+  reading 1.00% used. A short fallback period and a long primary therefore pace by the same
+  rule, and a later change of the reported length needs no code change.</p>
+</article>
+</body>
+</html>
