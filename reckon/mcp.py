@@ -653,6 +653,24 @@ def _resource_title(data: dict[str, Any], fallback: str) -> str:
     )
 
 
+def _op_error_response(exc: OpError) -> dict[str, Any]:
+    """The op_error payload, carrying the entry a duplicate collision names.
+
+    The refusal message stays the short pinned sentence; the entry already
+    holding the id rides beside it as ``existing_item`` so a writer can retry
+    with a distinct id without re-reading the plan to find out what it met.
+    """
+    response: dict[str, Any] = {
+        "ok": False,
+        "error": "op_error",
+        "detail": str(exc),
+    }
+    existing_item = getattr(exc, "existing_item", None)
+    if existing_item:
+        response["existing_item"] = existing_item
+    return response
+
+
 def _conflict_response(
     exc: VersionConflict,
     *,
@@ -3623,7 +3641,7 @@ def _edit_plan(
         # contract clause "on failure → no write" holds and a retry is unblocked.
         if created_file is not None:
             created_file.unlink(missing_ok=True)
-        return {"ok": False, "error": "op_error", "detail": str(e)}
+        return _op_error_response(e)
 
     retire_preimages = [
         str(op["preimage"]) for op in ops if op.get("op") == "retire_prose"
@@ -3699,7 +3717,7 @@ def _edit_plan(
     except OpError as e:
         if created_file is not None:
             created_file.unlink(missing_ok=True)
-        return {"ok": False, "error": "op_error", "detail": str(e)}
+        return _op_error_response(e)
     except (ValueError, FileNotFoundError) as e:
         return {"ok": False, "error": "resource_selection", "detail": str(e)}
 

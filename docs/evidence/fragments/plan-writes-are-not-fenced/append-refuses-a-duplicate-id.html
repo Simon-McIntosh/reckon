@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="plan-writes-are-not-fenced">
+<title>append-refuses-a-duplicate-id — landing record</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="append-refuses-a-duplicate-id">Landing record — an append rejects an id that already exists</h2>
+<p>An <code>edit_plan</code> append whose id already addresses an entry in its collection is refused and nothing is written; the refusal names the collection and the id, and carries a one-phrase description of the entry already stored in a structured <code>existing_item</code> field on the <code>op_error</code> payload, so the writer retries with a distinct id knowing what it collided with. The refusal sentence itself is unchanged: two assertions in <code>tests/test_edit_plan.py</code> pin it word-for-word (<code>test_append_duplicate_followup_id_rejected</code>, <code>test_append_duplicate_ids_rejected_for_addressed_collections</code>), and that file lies outside this node's write scope, so the item rides beside the sentence rather than inside it.</p>
+<h3>What the base already held</h3>
+<p>The guard is not new. The recorded collision on <code>uniform-worker-dispatch</code> is dated 2026-08-12, the same day commit <code>6b043e3fe</code> (&ldquo;enforce unique addressed entries&rdquo;) gave <code>_refuse_duplicate_id</code> its duplicate check for followups, research, questions, sections and comments. Run against the base revision, the same-id-twice append is refused there too: what the base does not do is say <em>which</em> item it met, and no test pinned the behaviour for gates or decisions. So the recorded defect does not reproduce as written; the reproduction shows the guard firing, and the delta this node lands is the item naming plus the missing tests.</p>
+<h3>Gate</h3>
+<p>Base arm <code>ff112f9f0</code> (git archive): <strong>106 passed, 0 failed</strong>. Head arm <code>92174999c</code>: <strong>114 passed, 0 failed</strong>, no failure id beyond the base's. Negative control (the append op's duplicate-id check removed in an extracted head tree): the declared mutation removed the followup check and <strong>3 tests failed</strong>, <code>EXIT=1</code> — the same-id-twice case, the followup arm of the collection sweep, and the two-writer case. Ruff over the changed Python paths reports the same findings as the base (store 14/14, mcp 19/19) and the new test file is clean. Logs live in the run directory: <code>gate/baseline-arm.log</code>, <code>gate/head-arm-3.log</code>, <code>gate/negative-control-3.log</code>.</p>
+</main>
+</body>
+</html>
