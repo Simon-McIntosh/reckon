@@ -164,39 +164,39 @@ def _committed_scope(
     A tree diff from the first cited commit's parent to the run's tip is a diff
     of a span, not of a run: a head that merged the integration branch carries
     every path that branch changed, and the span charges them to the run. The
-    paths are therefore read from each cited commit's own diff, and a cited
-    merge is skipped rather than resolved, because what a merge brought belongs
-    to the branch it came from — not to the run that merged it.
+    paths are therefore read from each cited commit's diff against its first
+    parent, and a cited merge is skipped rather than resolved, because what a
+    merge brought in belongs to the branch it came from — not to the run that
+    merged it.
 
-    The counts are one net diff over the run's own commits, restricted to the
-    paths those commits touched and headed at the run's last own commit, so a
-    trailing merge is not charged the content it resolved to. Adding each
-    commit's own numstat counts churn
-    the run netted out for itself — a path rewritten across two cited commits
-    contributes both revisions — so the row would describe the run's keystrokes
-    rather than its effect.
+    A citation list of merges alone carries no such commit, and a run's work
+    can reach the record inside a merge: each cited merge is then measured
+    against its first parent, which is the content the merge brought, so the
+    run is charged that content rather than recorded as changing nothing.
+
+    The counts are one net diff over the measured commits, restricted to the
+    paths those commits touched and headed at the last of them, so a trailing
+    merge is not charged the content it resolved to. Adding each commit's own
+    numstat counts churn the run netted out for itself — a path rewritten
+    across two cited commits contributes both revisions — so the row would
+    describe the run's keystrokes rather than its effect.
 
     A citation list that measures no path is refused rather than recorded as
-    zero. A merge cited alone reaches that state by the skip above, and would
-    otherwise be promoted as a run that changed nothing; a citation list whose
-    own commits changed no path reaches it by containing no deliverable at all.
+    zero: a row of zeros reads as a measured run that changed nothing, and a
+    citation list whose commits change no path contains no deliverable at all.
     """
     if not commits:
         return _CumulativeDiff((), {"available": False, "reason": "missing_base"})
     merges = set(_merge_revisions(cwd, commits))
-    own = [commit for commit in commits if commit not in merges]
-    if not own:
-        raise CrewError(
-            f"run {run_id!r} cites only merge commits ("
-            + ", ".join(str(commit) for commit in commits)
-            + "); a merge's own diff belongs to the branch it brought, so this "
-            "citation list measures no path and the run's own work cannot be "
-            "measured from it. Cite the non-merge commit(s) the run made, or "
-            "pass --no-commit '<why>' when it produced none"
-        )
+    measured = [commit for commit in commits if commit not in merges]
+    if not measured:
+        # Every cited commit is a merge, so the run's content is what each
+        # merge brought relative to its first parent: that is what gets
+        # charged. _merge_revisions preserves citation order.
+        measured = [commit for commit in commits if commit in merges]
     paths: list[str] = []
     seen: set[str] = set()
-    for commit in own:
+    for commit in measured:
         result = subprocess.run(
             [
                 "git",
@@ -204,7 +204,7 @@ def _committed_scope(
                 "--numstat",
                 "--no-renames",
                 "-z",
-                f"{commit}^",
+                f"{commit}^1",
                 commit,
                 "--",
             ],
@@ -232,7 +232,9 @@ def _committed_scope(
             "measures no path. Cite the commit(s) whose diff is the work, or "
             "pass --no-commit '<why>' when the run produced none"
         )
-    counts = scoped_diff_stat(cwd=cwd, base=f"{own[0]}^", head=own[-1], paths=paths)
+    counts = scoped_diff_stat(
+        cwd=cwd, base=f"{measured[0]}^1", head=measured[-1], paths=paths
+    )
     if not counts.get("available", True):
         return _CumulativeDiff(
             (),

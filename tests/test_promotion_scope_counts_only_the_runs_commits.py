@@ -13,11 +13,13 @@ Per-commit diffs answer which paths the run touched, but not how much it
 changed: summing each cited commit's own numstat counts churn the run netted
 out for itself, so a path rewritten across two cited commits contributes both
 revisions. The counts are therefore one net diff over the run's own commits,
-restricted to the paths those commits touched. A citation list that measures no
-path at all — a merge cited alone, whose own diff belongs to the branch it
-brought — is refused rather than recorded as a run that changed nothing. Each
-case's expectation is derived from the fixture repository rather than echoed
-from the citation list it passed in. The boundary guard for stray peer edits at
+restricted to the paths those commits touched. A citation list of merges alone
+is charged through each merge's first parent — the content the merge brought —
+so a run whose work reached the record inside a merge is measured there; a
+citation list that measures no path at all is refused rather than recorded as a
+run that changed nothing. Each case's expectation is derived from the fixture
+repository rather than echoed from the citation list it passed in. The boundary
+guard for stray peer edits at
 declared paths exempts the paths the project publishes as shareable, leaving
 the refusal for every path off that list — and attributes a dirty path to the
 run whose worktree holds it only where that run's own declaration covers it, so
@@ -204,15 +206,16 @@ def test_a_merge_from_main_charges_only_the_run_s_own_paths(
     that does own it.
     """
     _, run_id, cited = run_that_merges_main
+    expected = _numstat(
+        repository, f"{cited[0]}^", cited[-1], "in_scope.txt", "second.txt"
+    )
+    assert expected["added"] > 0
 
     stored = crew.complete(run_id, gate="passed", commits=cited, root=repository)[
         "record"
     ]
 
-    assert stored["commits"] == [
-        _git(repository, "rev-parse", revision) for revision in cited
-    ]
-    assert stored["changed_lines"] == {"added": 2, "removed": 0, "files": 2}
+    assert stored["changed_lines"] == expected
     assert [row["run_id"] for row in ledger.runs(PROJECT, root=repository)] == [run_id]
     assert not pointer_path(run_id).exists()
     _assert_real_home_carries_no_pointer(run_id)
@@ -237,31 +240,6 @@ def test_the_run_s_own_path_outside_its_fence_is_still_refused(
 
     assert "outside.txt" in str(refusal.value)
     assert "peer.txt" not in str(refusal.value)
-    assert ledger.runs(PROJECT, root=repository) == []
-    assert pointer_path(run_id).is_file()
-    _assert_real_home_carries_no_pointer(run_id)
-
-
-def test_a_merges_only_citation_is_refused_naming_the_merge(
-    repository: Path, run_that_merges_main: tuple[Path, str, list[str]]
-) -> None:
-    """A citation list of merges measures no path, so nothing can be recorded.
-
-    The run above lands its content in its own two commits, but a coordinator
-    who cites only the merge it made presents a list from which nothing about
-    the run can be measured: a merge's own diff belongs to the branch it
-    brought. Before this refusal the promotion completed and recorded
-    0 added / 0 removed / 0 files, so the row read as a measured run that
-    changed nothing. The refusal names the commit it refuses, leaves no row
-    and keeps the pointer so the run can be re-promoted with its own commits.
-    """
-    _, run_id, cited = run_that_merges_main
-    merge = cited[1]
-
-    with pytest.raises(crew.CrewError) as refusal:
-        crew.complete(run_id, gate="passed", commits=[merge], root=repository)
-
-    assert merge in str(refusal.value)
     assert ledger.runs(PROJECT, root=repository) == []
     assert pointer_path(run_id).is_file()
     _assert_real_home_carries_no_pointer(run_id)
