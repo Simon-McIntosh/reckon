@@ -36,6 +36,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("recover",): "live pointers left by an interrupted orchestrator",
     ("redispatch",): "working run",
     ("repair-completion",): "historical completion measurements missing",
+    ("repair-status",): "a manifest's status word",
     ("resume",): "one blocked run with advice",
     ("resume-ready",): "provider hold or declared external wait has ended",
     ("shadow",): "committed run",
@@ -120,7 +121,7 @@ def test_every_crew_verb_help_names_its_state_or_condition() -> None:
     leaves = _leaf_commands(cli_module.crew)
 
     assert set(leaves) == set(STATE_PHRASES)
-    assert len(leaves) == 34
+    assert len(leaves) == 35
     for path, command in leaves.items():
         first_line = _first_help_line(command)
         result = _help_result(path)
