@@ -419,7 +419,11 @@ def _canonical_commits(tree: Path | None, entries: Iterable[Any]) -> list[str]:
     return resolved
 
 
-def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, Any]:
+def _review_dispatch_fields(
+    record: Mapping[str, Any],
+    *,
+    delta: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     """The facts a scoring run's review dispatch is built from.
 
     Composed from the run's own record so the command a reader may still retype
@@ -461,7 +465,15 @@ def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, Any]:
         "node_id": f"{REVIEW_NODE_PREFIX}{source_node}",
         "session": str(record.get("session") or "<session>"),
         "time_budget": str(node.get("time_budget") or "20m"),
-        "goal": f"attach an independent review to run {run_id}",
+        "goal": (
+            f"attach an independent review to run {run_id}"
+            + (
+                " covering only the commits it gained since it was reviewed: "
+                + ", ".join(str(path) for path in delta.get("paths") or ())
+                if delta
+                else ""
+            )
+        ),
         # The review's whole deliverable is the record it stores, so the brief
         # states where its turn ends: once that record is stored and its own
         # manifest reads complete there is nothing left to do, and a reviewer
@@ -486,6 +498,9 @@ def _review_dispatch_fields(record: Mapping[str, Any]) -> dict[str, Any]:
         ),
         "write_path": write_paths[0],
         "write_paths": write_paths,
+        "scope": list(delta.get("paths") or ()) if delta else None,
+        "review_tier": review_tiers.LIGHT if delta else None,
+        "delta_base": str(delta.get("reviewed_head") or "") if delta else "",
     }
 
 
@@ -1103,6 +1118,12 @@ def _review_in_flight(record: Mapping[str, Any]) -> str:
     fields = _review_dispatch_fields(record)
     head = str(fields.get("head") or "")
     recorded = record.get(REVIEW_DISPATCH_FIELD)
+    if isinstance(recorded, Mapping) and str(recorded.get("status") or "") == (
+        "withdrawn"
+    ):
+        # A withdrawn attempt stands for nothing: the run's own resume moved the
+        # head past it, so it is neither in flight nor a covering claim.
+        recorded = None
     if isinstance(recorded, Mapping):
         standing = str(recorded.get("run_id") or "")
         if (
@@ -1237,6 +1258,206 @@ def _run_head_for_review(record: Mapping[str, Any]) -> str:
     which for such a record is the only tree left to read.
     """
     return _review_head_and_tree(record)[0]
+
+
+# A review is sized to the risk of a head move, not to the run it examines a
+# second time. When a reviewed run gains commits, the stored review stands while
+# those commits change no runtime source, and only a runtime-source commit earns
+# a re-review — a light one scoped to that commit alone rather than a second
+# full read of the whole run. The carry-forward is written to the run's own
+# record so it satisfies the review requirement visibly, never as a silent
+# absence that a reader would have to reconstruct.
+CARRY_FORWARD_FIELD = "review_carry_forward"
+
+# The window a resumed run is left to settle before the reflex dispatches a
+# review of it. A review launched against a head a resume is about to move
+# reads a revision the run no longer carries, so the reflex waits out the
+# window before composing; a review already running when a resume lands
+# finishes, and the head-move rule below decides what it means.
+REVIEW_SETTLE_SECONDS = 300
+
+
+def _changed_paths_between(tree: Path | None, older: str, newer: str) -> list[str] | None:
+    """The paths that changed between two revisions, or None if git cannot say.
+
+    None is the fail-safe: a history git cannot compare cannot be shown to
+    change no runtime source, so the caller must read it as a runtime-source
+    move and re-review rather than carry the stored review over an unread diff.
+    """
+    if tree is None or not older or not newer:
+        return None
+    try:
+        completed = subprocess.run(
+            ["git", "diff", "--name-only", f"{older}..{newer}"],
+            cwd=tree,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if completed.returncode:
+        return None
+    return [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+
+
+def review_head_move(record: Mapping[str, Any]) -> dict[str, Any]:
+    """How a run's head moved past the head its stored review read.
+
+    Empty when there is nothing to decide: no readable tree, no complete stored
+    review, a review that already describes the run's current head, or a move
+    between revisions git cannot compare. The changed paths are classified once,
+    through :func:`reckon.review_tiers.changes_runtime_source`, so the reflex
+    and the promotion gate cannot split on whether a moved commit is runtime
+    source — a second classifier here is exactly the drift this shares instead.
+    """
+    tree = _review_tree(record)
+    if tree is None:
+        return {}
+    head = _reviewed_run_head(record)
+    if not head:
+        return {}
+    project = str(record.get("project") or "")
+    run_id = str(record.get("run_id") or "")
+    stored = review_module.read_review(project, run_id)
+    if stored is None or not _review_is_complete(stored):
+        return {}
+    reviewed_head = review_described_head(stored, tree=tree)
+    if not reviewed_head or same_revision(reviewed_head, head):
+        return {}
+    paths = _changed_paths_between(tree, reviewed_head, head)
+    if paths is None:
+        return {}
+    return {
+        "reviewed_head": reviewed_head,
+        "head": head,
+        "paths": paths,
+        "changes_runtime_source": review_tiers.changes_runtime_source(paths),
+    }
+
+
+def carry_review_forward(
+    record: Mapping[str, Any], *, config: Mapping[str, Any] | None = None
+) -> dict[str, Any] | None:
+    """Carry a stored review forward over a data-only move, else light re-review.
+
+    Returns None when the head did not move. This is the reflex's decision for a
+    reviewed run that gained commits, and it is expressed through the same
+    record selection every reader shares, so the classifier, the promotion gate
+    and the obligation producer cannot disagree about which review a run owes.
+
+    A move over paths that change no runtime source is carried: the stored
+    record is re-stored at the run's new head, marked with the revision it came
+    from and the paths the move touched, so a review exists at the head the run
+    now carries and the run raises no review requirement. A move that does
+    change runtime source is not carried — it earns a light re-review scoped to
+    a new commit alone, and the caller is told the paths.
+    """
+    move = review_head_move(record)
+    if not move:
+        return None
+    run_id = str(record.get("run_id") or "")
+    project = str(record.get("project") or "")
+    if move["changes_runtime_source"]:
+        return {
+            "run_id": run_id,
+            "carried": False,
+            "review_tier": review_tiers.LIGHT,
+            "scope": list(move["paths"]),
+            "paths": list(move["paths"]),
+            "reviewed_head": move["reviewed_head"],
+            "head": move["head"],
+        }
+    raw = review_module.stored_record(
+        project, run_id, reviewed_head_sha=move["reviewed_head"]
+    )[1]
+    if raw is None:
+        return None
+    carried = dict(raw)
+    carried["reviewed_base_sha"] = move["reviewed_head"]
+    carried["reviewed_head_sha"] = move["head"]
+    carried["timestamp"] = _utc_now()
+    carried["carried_forward"] = {
+        "from": move["reviewed_head"],
+        "to": move["head"],
+        "paths": list(move["paths"]),
+        "at": carried["timestamp"],
+    }
+    review_module.store_review(carried)
+    _mutate_pointer(
+        run_id,
+        lambda pointer: {
+            **pointer,
+            CARRY_FORWARD_FIELD: dict(carried["carried_forward"]),
+        },
+    )
+    return {
+        "run_id": run_id,
+        "carried": True,
+        "review_tier": review_tiers.NONE,
+        "scope": list(move["paths"]),
+        "reviewed_head": move["reviewed_head"],
+        "head": move["head"],
+    }
+
+
+def review_settle_seconds_remaining(record: Mapping[str, Any]) -> float:
+    """Seconds left before a resumed run is settled enough to review, or zero.
+
+    A review dispatched against a head a resume is about to move reads a
+    revision the run no longer carries, so the reflex waits the settle window
+    out from the run's own resume stamp before composing. A run with no resume
+    stamp is settled already.
+    """
+    resume = record.get("auto_resume")
+    resumed_at = parse_utc(resume.get("at")) if isinstance(resume, Mapping) else None
+    if resumed_at is None:
+        return 0.0
+    elapsed = (datetime.now(tz=UTC) - resumed_at).total_seconds()
+    return max(0.0, REVIEW_SETTLE_SECONDS - elapsed)
+
+
+def withdraw_superseded_review(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Withdraw a queued review the run's own resume has moved past.
+
+    A review dispatch is queued against the head it composed for. Once the run
+    is resumed its head moves, and the queued review speaks for a revision the
+    run no longer carries. The reflex records the attempt withdrawn rather than
+    letting it stand, so the superseded attempt is visible and the run is free
+    to be re-reviewed — or carried — at its new head. A dispatch that already
+    covers the current head, or a run not resumed since the attempt was
+    recorded, is left standing.
+    """
+    run_id = str(record.get("run_id") or "")
+    recorded = record.get(REVIEW_DISPATCH_FIELD)
+    if not run_id or not isinstance(recorded, Mapping):
+        return None
+    if str(recorded.get("status") or "") == "withdrawn":
+        return None
+    resume = record.get("auto_resume")
+    resumed_at = parse_utc(resume.get("at")) if isinstance(resume, Mapping) else None
+    if resumed_at is None:
+        return None
+    at = parse_utc(recorded.get("at"))
+    if at is not None and resumed_at <= at:
+        return None
+    head = _run_head_for_review(record)
+    if _review_head_covers(str(recorded.get("head") or ""), head):
+        return None
+    _record_review_dispatch(
+        run_id,
+        status="withdrawn",
+        reason=(
+            "the run was resumed after this review was queued, so the review "
+            "speaks for a head the run no longer carries"
+        ),
+    )
+    return {
+        "run_id": run_id,
+        "withdrawn": True,
+        "review_run_id": str(recorded.get("run_id") or ""),
+        "head": head,
+    }
 
 
 def _review_attempt_withdrawn_before_launch(run_id: str) -> bool:
@@ -1629,7 +1850,27 @@ def dispatch_review_for_run(
             "review_run_id": in_flight,
         }
 
-    fields = _review_dispatch_fields(record)
+    # The run has a stored review that speaks for an earlier head, or none at
+    # all. A move the stored review no longer covers is either carried forward
+    # — data-only commits, no re-review — or re-reviewed lightly, scoped to the
+    # commits that changed runtime source. Only a run with no review at all
+    # (or a move git cannot compare) falls through to the full review below.
+    move = carry_review_forward(record, config=config)
+    if move is not None and move["carried"]:
+        reason = (
+            "the run gained only commits that change no runtime source, so its "
+            "stored review is carried forward to the new head " + move["head"][:12]
+        )
+        _record_review_dispatch(
+            run_id,
+            status="carried-forward",
+            reason=reason,
+            reviewed_head=move["head"],
+        )
+        return {**move, "dispatched": False, "reason": reason}
+    delta = move if move is not None else None
+
+    fields = _review_dispatch_fields(record, delta=delta)
     project = fields["project"]
     repo = str(record.get("repo") or "")
     if not project or not repo:
@@ -1800,6 +2041,8 @@ def dispatch_review_for_run(
         "dispatched": True,
         "backend": backend,
         "review_run_id": review_run_id,
+        "scope": fields.get("scope"),
+        "review_tier": fields.get("review_tier"),
         "reason": f"dispatched the composed review as run {review_run_id}",
     }
 
@@ -3054,6 +3297,10 @@ def dispatch_awaiting_reviews(
         # of that chain is a real dispatch against a real member.
         if _is_review_node(pointer):
             continue
+        # A run resumed since its queued review was recorded carries a head the
+        # review no longer speaks for; the queued attempt is withdrawn rather
+        # than left standing against a revision the run has moved past.
+        withdraw_superseded_review(pointer)
         scan: dict[str, Any] | None = None
         try:
             scan = classify_pointer(pointer)
@@ -3067,6 +3314,25 @@ def dispatch_awaiting_reviews(
             # tier is resolved through promotion's own resolver and the skip is
             # recorded here rather than left as a silent absence.
             run_id = str(pointer.get("run_id") or "")
+            remaining = review_settle_seconds_remaining(pointer)
+            if remaining > 0:
+                # A run resumed within the settle window is still moving toward
+                # the head it will be reviewed at; composing now would read a
+                # revision the run is about to leave, so the sweep waits.
+                reason = (
+                    "the run was resumed less than five minutes ago, so its "
+                    "head has not settled; the reflex waits before reviewing it"
+                )
+                _record_review_dispatch(run_id, status="settling", reason=reason)
+                reports.append(
+                    {
+                        "run_id": run_id,
+                        "dispatched": False,
+                        "settling_seconds": int(remaining),
+                        "reason": reason,
+                    }
+                )
+                continue
             tier = _sweep_review_tier(pointer, scan.get("manifest_commits") or [])
             if tier == review_tiers.NONE:
                 reason = (
