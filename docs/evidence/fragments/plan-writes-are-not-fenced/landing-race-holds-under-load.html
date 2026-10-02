@@ -1,0 +1,16 @@
+<article class="r-evidence" data-node="landing-race-holds-under-load">
+<h3>The landing race case fails when its rendezvous breaks</h3>
+<p>Measured at the base revision: the two writer threads meet at a
+<code>threading.Barrier(2)</code> inside <code>_plan_html.write_state</code>, but the plan
+write path holds a per-file lock across its version check and its render step, so only one
+thread ever entered the barrier; it timed out after 2.03&#8239;s, the break was swallowed by
+<code>contextlib.suppress</code>, and the writers ran unraced while the case passed — a
+deliberate 3&#8239;s stall reproduced the same silent pass. The meeting now sits at the store's
+write threshold (<code>_store._write_state</code>, after each writer's own read and version
+check, before either takes the lock), where both threads can arrive; a thread absent when the
+window closes raises <code>RendezvousMissedError</code> naming it, and the case fails rather
+than judging unraced writes. A new case rigs the writer to miss the meeting and requires that
+failure. Measure: 20 consecutive runs of the landing-write cohort at <code>-n 8</code> passed,
+0 failures; base arm 16 passed / head arm 17 passed, no added failure id; with the suppressed
+wait restored the new case fails and the rest pass (1 failed, 6 passed).</p>
+</article>

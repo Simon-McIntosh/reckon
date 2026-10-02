@@ -15,17 +15,25 @@ same plan. For each it requires that the writer's change is present
 afterwards, or that its loss was refused with both versions named: a writer
 that reports success while its change is gone is the failure being fenced.
 
-Both writers rendezvous inside the render step, after each has passed its own
-version check and before either replaces the file. That is the meeting the
-plan measured; with the write path fenced the rendezvous degrades to one
-writer proceeding and the other meeting the fenced path.
+Both writers rendezvous at the store's write threshold — after each has read
+the plan and passed its own version check, before either takes the plan's
+write lock. The lock then decides which writer proceeds and which meets the
+fenced path. The meeting cannot sit inside the render step, because the write
+path holds the lock across the version check and the replacement: with the
+meeting placed there the second writer waits on the lock rather than on the
+meeting, so it can never complete (measured: the barrier timed out on every
+run and the writers raced nothing).
+
+A thread that does not reach the meeting within the window fails the case,
+naming the thread that missed it, rather than having the writers run unraced.
+One case rigs a deliberate miss and requires that failure.
 """
 
 from __future__ import annotations
 
-import contextlib
 import json
 import threading
+import time
 from collections.abc import Callable
 from pathlib import Path
 
@@ -53,6 +61,58 @@ SECTION_RECORD = {
     },
     "links": [],
 }
+
+
+class RendezvousMissedError(AssertionError):
+    """Raised when a writer thread does not reach the meeting in time."""
+
+
+class Rendezvous:
+    """The meeting both writer threads must reach before either writes.
+
+    ``timeout`` bounds how long either thread waits for the other; a thread
+    still absent when the window closes fails the case against the thread that
+    missed it. ``absent`` rigs one named thread to skip the meeting, which is
+    how the failure path itself is exercised: the meeting then cannot complete
+    and the waiting writer must report that the rendezvous broke rather than
+    judge writes made without one.
+    """
+
+    PARTNERS = ("landing", "writer")
+
+    def __init__(self, *, timeout: float = 30.0, absent: str | None = None) -> None:
+        self.timeout = timeout
+        self.absent = absent
+        self._arrived: set[str] = set()
+        self._missed: RendezvousMissedError | None = None
+        self._condition = threading.Condition(threading.Lock())
+
+    def meet(self, name: str) -> None:
+        with self._condition:
+            if self._missed is not None:
+                raise self._missed
+            if name == self.absent:
+                self._condition.notify_all()
+                return
+            self._arrived.add(name)
+            self._condition.notify_all()
+            deadline = time.monotonic() + self.timeout
+            while len(self._arrived) < len(self.PARTNERS):
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    missing = " and ".join(
+                        partner
+                        for partner in self.PARTNERS
+                        if partner not in self._arrived
+                    )
+                    self._missed = RendezvousMissedError(
+                        f"the rendezvous broke: {missing} did not reach the "
+                        f"meeting within {self.timeout:g}s, so the writers "
+                        "never raced"
+                    )
+                    self._condition.notify_all()
+                    raise self._missed
+                self._condition.wait(remaining)
 
 
 def _seed(root: Path) -> Path:
@@ -179,25 +239,27 @@ def _comment_ids(state: dict) -> set[str]:
 
 
 def _race(
-    root: Path, monkeypatch: pytest.MonkeyPatch, writer: Callable[[], object]
+    root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    writer: Callable[[], object],
+    *,
+    rendezvous: Rendezvous | None = None,
 ) -> dict:
     """Run a landing write and ``writer`` so two writers meet on one plan.
 
-    Both threads rendezvous inside ``_plan_html.write_state`` — after each has
-    passed its own version check and before either replaces the file. With the
-    write path fenced, the rendezvous degrades: whichever writer holds the
-    plan's lock proceeds once the barrier times out, and the other meets the
-    fenced path.
+    Both threads meet at ``_store._write_state`` — after each has read the
+    plan and passed its own version check, before either takes the plan's
+    write lock. Both threads can arrive there; the lock then decides which
+    writer proceeds and which meets the fenced path.
     """
-    gate = threading.Barrier(2)
-    render = _plan_html.write_state
+    meeting = rendezvous or Rendezvous()
+    write_state = _store._write_state
 
-    def rendering(html_text, state):
-        with contextlib.suppress(threading.BrokenBarrierError):
-            gate.wait(timeout=2.0)
-        return render(html_text, state)
+    def meeting_first(*args, **kwargs):
+        meeting.meet(threading.current_thread().name)
+        return write_state(*args, **kwargs)
 
-    monkeypatch.setattr(_plan_html, "write_state", rendering)
+    monkeypatch.setattr(_store, "_write_state", meeting_first)
     outcomes: dict[str, object] = {}
 
     def run(name: str, call: Callable[[], object]) -> None:
@@ -207,14 +269,16 @@ def _race(
             outcomes[name] = exc
 
     landing = threading.Thread(
-        target=run, args=("landing", lambda: _landing_write(root, "c-landing"))
+        target=run,
+        args=("landing", lambda: _landing_write(root, "c-landing")),
+        name="landing",
     )
-    other = threading.Thread(target=run, args=("writer", writer))
+    other = threading.Thread(target=run, args=("writer", writer), name="writer")
     landing.start()
     other.start()
     landing.join(timeout=30)
     other.join(timeout=30)
-    monkeypatch.setattr(_plan_html, "write_state", render)
+    monkeypatch.setattr(_store, "_write_state", write_state)
     return outcomes
 
 
@@ -280,29 +344,29 @@ def _initial_version(root: Path) -> int:
     return version
 
 
-@pytest.mark.parametrize(
-    ("build_writer", "change_present"),
-    [
-        pytest.param(
-            _landing_record_writer,
-            lambda state: {"c-landing", "c-second-landing"} <= _comment_ids(state),
-            id="landing-record",
-        ),
-        pytest.param(_followup_writer, _wrote_followup, id="followup-append"),
-        pytest.param(_section_writer, _wrote_section, id="section-append"),
-        pytest.param(_state_set_writer, _wrote_state_set, id="state-set"),
-        pytest.param(_comment_writer, _wrote_comment, id="comment-append"),
-    ],
-)
-def test_each_writer_racing_a_landing_write_commutes_or_is_refused(
-    repository: Path,
+def _race_case(
+    root: Path,
     monkeypatch: pytest.MonkeyPatch,
     build_writer: Callable[[Path, int], Callable[[], object]],
     change_present: Callable[[dict], bool],
+    *,
+    rendezvous: Rendezvous | None = None,
 ) -> None:
-    version = _initial_version(repository)
-    outcomes = _race(repository, monkeypatch, build_writer(repository, version))
-    state = _state(repository)
+    version = _initial_version(root)
+    outcomes = _race(
+        root, monkeypatch, build_writer(root, version), rendezvous=rendezvous
+    )
+    missed = [
+        outcome
+        for outcome in outcomes.values()
+        if isinstance(outcome, RendezvousMissedError)
+    ]
+    if missed:
+        raise AssertionError(
+            "the writers never met, so this case measured no race: "
+            + " | ".join(str(miss) for miss in missed)
+        )
+    state = _state(root)
     comment_ids = _comment_ids(state)
     landing_present = "c-landing" in comment_ids
     writer_present = change_present(state)
@@ -325,13 +389,59 @@ def test_each_writer_racing_a_landing_write_commutes_or_is_refused(
     # Positive control: a sequential write after the meeting still succeeds
     # and still advances the version, so a fence that refuses everything
     # cannot pass this test.
-    before = int(_state(repository).get("version", 0))
+    before = int(_state(root).get("version", 0))
     sequential = _edit(
-        repository, [{"op": "set", "path": "owner", "value": "after-race"}], before
+        root, [{"op": "set", "path": "owner", "value": "after-race"}], before
     )
     assert sequential.get("ok") is True, sequential
     assert sequential.get("new_version") == before + 1, sequential
-    assert _state(repository).get("owner") == "after-race"
+    assert _state(root).get("owner") == "after-race"
+
+
+@pytest.mark.parametrize(
+    ("build_writer", "change_present"),
+    [
+        pytest.param(
+            _landing_record_writer,
+            lambda state: {"c-landing", "c-second-landing"} <= _comment_ids(state),
+            id="landing-record",
+        ),
+        pytest.param(_followup_writer, _wrote_followup, id="followup-append"),
+        pytest.param(_section_writer, _wrote_section, id="section-append"),
+        pytest.param(_state_set_writer, _wrote_state_set, id="state-set"),
+        pytest.param(_comment_writer, _wrote_comment, id="comment-append"),
+    ],
+)
+def test_each_writer_racing_a_landing_write_commutes_or_is_refused(
+    repository: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    build_writer: Callable[[Path, int], Callable[[], object]],
+    change_present: Callable[[dict], bool],
+) -> None:
+    _race_case(repository, monkeypatch, build_writer, change_present)
+
+
+def test_a_broken_rendezvous_fails_the_case_rather_than_passing_it(
+    repository: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """With one writer rigged to miss the meeting, the case must report it.
+
+    A rendezvous that breaks must fail the case against the thread that missed
+    it. Falling through would judge writes the writers never raced, which is
+    the silent success this instrument exists to rule out.
+    """
+    with pytest.raises(AssertionError) as failure:
+        _race_case(
+            repository,
+            monkeypatch,
+            _state_set_writer,
+            _wrote_state_set,
+            rendezvous=Rendezvous(timeout=0.5, absent="writer"),
+        )
+    message = str(failure.value)
+    assert "rendezvous" in message, message
+    assert "writer" in message, message
 
 
 def test_a_sequential_write_still_succeeds_and_advances_the_version(
