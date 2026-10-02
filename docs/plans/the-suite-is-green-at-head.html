@@ -22,9 +22,9 @@
   <title>The Suite Is Green At Head | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-modified" content="2026-10-03">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="230">
+<meta name="plan-version" content="231">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1745,6 +1745,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261002T142452263450-review-of-suite-at-the-closing-head" data-who="reckon-build" data-when="2026-10-02T14:48:17.181Z">
     <div class="r-comment-body"><p>independent review of run r-20261002T130500694738-suite-at-the-closing-head (suite measured at base 903f6e991, head ca630c06e) stored as a parsed record scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18 (total 92) with added_failure_count 17 and two follow-on findings</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261002T224154269623-the-fleet-vocabulary-reads-the-stall-helper" data-who="reckon-build" data-when="2026-10-02T22:48:36.175Z">
+    <div class="r-comment-body"><p>tests/test_fleet_counter_coverage.py now reads the verdict reducer&#x27;s emitting helpers (starting with recovery._stall_reading) alongside its literal state assignments, matching the first element of their literal returns, so &quot;stalled&quot; joins the emitted vocabulary; gate of that file plus tests/test_an_unchanged_run_costs_one_stat.py and tests/test_a_reused_snapshot_takes_the_callers_stall_window.py: 14 passed; negative control (scrape only _watch_verdict&#x27;s source again) exits 1 on the emitted-states subset assertion; commits 10d86a7c1, 1828f6990; fragment docs/evidence/fragments/the-suite-is-green-at-head/the-fleet-vocabulary-reads-the-stall-helper.html</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
