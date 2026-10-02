@@ -534,9 +534,7 @@ def clone_matches(
                     }
                     dirty = True
             else:
-                head_functions.extend(
-                    _cached_functions(source, path, cache, now, scan)
-                )
+                head_functions.extend(_cached_functions(source, path, cache, now, scan))
                 dirty = True
         except (SyntaxError, ValueError):
             continue

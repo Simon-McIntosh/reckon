@@ -81,9 +81,7 @@ def _full_corpus() -> dict[str, str]:
 
 def _corpus_without_removed() -> dict[str, str]:
     return {
-        path: source
-        for path, source in _full_corpus().items()
-        if path != REMOVED_PATH
+        path: source for path, source in _full_corpus().items() if path != REMOVED_PATH
     }
 
 
