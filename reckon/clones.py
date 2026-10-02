@@ -25,11 +25,12 @@ import json
 import os
 import subprocess
 import tarfile
+import time
 import tokenize
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 WINDOW_LINES = 6
 FUNCTIONS = (ast.FunctionDef, ast.AsyncFunctionDef)
@@ -39,8 +40,13 @@ DEFINITIONS = (*FUNCTIONS, ast.ClassDef)
 # of an unchanged file reads its windows instead of re-parsing it. A cache entry
 # is keyed by the file's path and content digest, so a file whose bytes change
 # misses and is parsed again; an entry a newer shape of this module would not
-# write is discarded rather than read as current.
-_CLONE_CACHE_VERSION = 1
+# write is discarded rather than read as current. Each entry records when it was
+# last used. Because every content a file ever had keeps its entry, and several
+# worktrees at different revisions share one cache root, the cache is pruned to
+# the least recently used once it exceeds a cap derived from the corpus's file
+# count (see ``_cap_for``); without that bound an entry for every revision ever
+# scanned accumulates and corpus.json grows without limit.
+_CLONE_CACHE_VERSION = 2
 _CORPUS_CACHES: dict[Path, dict[str, Any]] = {}
 
 
@@ -100,6 +106,25 @@ def _nested_definition_lines(node: ast.AST) -> set[int]:
             if isinstance(descendant, (ast.Module, *DEFINITIONS)):
                 nested.update(range(descendant.lineno, descendant.end_lineno + 1))
     return nested
+
+
+class _WindowProvider(Protocol):
+    """A provider of six-line token windows for one parsed function.
+
+    ``_Function`` (parsed this scan) and ``_CachedFunction`` (rebuilt from the
+    cache) both satisfy this shape, and the corpus index and the head list hold
+    either kind interchangeably. Naming the shape once lets a type checker see
+    that an interface mismatch between the two providers is a defect rather than
+    letting ``Any`` hide it.
+    """
+
+    path: str
+    name: str
+    line: int
+
+    def ref(self) -> dict[str, Any]: ...
+
+    def windows(self) -> list[tuple[str, int]]: ...
 
 
 @dataclass(frozen=True)
@@ -205,17 +230,66 @@ def _function_from_record(record: Mapping[str, Any]) -> _CachedFunction:
     )
 
 
-def _cached_functions(source: str, path: str, cache: dict[str, Any]) -> list[Any]:
+def _cap_for(corpus_file_count: int) -> int:
+    """The most cache entries a scan keeps.
+
+    The cap is one entry per corpus file, because one revision's worth of
+    fingerprints is all a scan can use: an entry is keyed by path and content
+    digest, so two revisions of the same file are two entries, and every entry
+    beyond the corpus's own file count is a revision the current scan did not
+    read. Deriving the cap from the corpus's file count rather than a fixed
+    literal keeps it correct as the corpus grows, and holding at most one
+    revision's worth bounds corpus.json no matter how many revisions or
+    worktrees share the cache root. The floor of one keeps an empty corpus from
+    disarming the prune.
+    """
+    return max(1, corpus_file_count)
+
+
+def _used_at(entry: Any) -> float:
+    """The time ``entry`` was last used, or a value that sorts it first."""
+    if isinstance(entry, Mapping):
+        used = entry.get("used")
+        if isinstance(used, (int, float)):
+            return float(used)
+    return float("-inf")
+
+
+def _evict_to_cap(cache: dict[str, Any], cap: int) -> bool:
+    """Drop the least recently used entries until ``cache`` holds ``cap``.
+
+    Returns whether anything was dropped, so the caller knows the cache it
+    holds differs from the one on disk.
+    """
+    if len(cache) <= cap:
+        return False
+    ordered = sorted(cache.items(), key=lambda item: _used_at(item[1]), reverse=True)
+    for key, _entry in ordered[cap:]:
+        del cache[key]
+    return True
+
+
+def _cached_functions(
+    source: str, path: str, cache: dict[str, Any], now: float
+) -> list[_WindowProvider]:
     """Return ``source``'s functions, reusing the cache for unchanged bytes."""
     key = _cache_key(path, source)
     record = cache.get(key)
-    if isinstance(record, list):
-        try:
-            return [_function_from_record(item) for item in record]
-        except (KeyError, TypeError, ValueError):
-            pass
+    if isinstance(record, Mapping):
+        functions = record.get("functions")
+        if isinstance(functions, list):
+            try:
+                rebuilt = [_function_from_record(item) for item in functions]
+            except (KeyError, TypeError, ValueError):
+                rebuilt = None
+            if rebuilt is not None:
+                cache[key] = {"used": now, "functions": functions}
+                return rebuilt
     functions = functions_in(source, path)
-    cache[key] = [_function_record(function) for function in functions]
+    cache[key] = {
+        "used": now,
+        "functions": [_function_record(function) for function in functions],
+    }
     return functions
 
 
@@ -248,7 +322,13 @@ def _load_corpus_cache(root: Path) -> dict[str, Any]:
     if not isinstance(entry, dict) or entry.get("version") != _CLONE_CACHE_VERSION:
         return {}
     files = entry.get("files")
-    return files if isinstance(files, dict) else {}
+    if not isinstance(files, dict):
+        return {}
+    return {
+        key: value
+        for key, value in files.items()
+        if isinstance(value, dict) and isinstance(value.get("functions"), list)
+    }
 
 
 def _store_corpus_cache(root: Path, files: dict[str, Any]) -> None:
@@ -270,9 +350,11 @@ def _shared_cache(root: Path) -> dict[str, Any]:
     return cache
 
 
-def _index(functions: Iterable[_Function]) -> dict[str, list[_Function]]:
+def _index(
+    functions: Iterable[_WindowProvider],
+) -> dict[str, list[_WindowProvider]]:
     """Map each window fingerprint to the functions that carry it."""
-    index: dict[str, list[_Function]] = collections.defaultdict(list)
+    index: dict[str, list[_WindowProvider]] = collections.defaultdict(list)
     for function in functions:
         for fingerprint, _line in function.windows():
             index[fingerprint].append(function)
@@ -317,14 +399,26 @@ def clone_matches(
     under ``corpus_prefixes`` is read from a cache keyed by its path and content
     digest, so an unchanged file is never re-parsed. A file outside the corpus
     that did not change contributes nothing and is not read at all.
+
+    Each cache entry records when it was last used, and the cache is pruned to
+    the least recently used once it holds more than one entry per corpus file,
+    so the entry a scan just read survives and an entry for a superseded
+    revision is dropped. That bound is what keeps ``corpus.json`` from growing
+    with every revision that shares the cache root.
     """
     prefixes = tuple(corpus_prefixes)
     base_sources = dict(base_sources or {})
     changed = frozenset(changed_paths)
     root = _cache_root(cache_root)
     cache = _shared_cache(root)
-    before = len(cache)
-    head_functions: list[Any] = []
+    now = time.time()
+    corpus_paths = [
+        path
+        for path in head_sources
+        if path.endswith(".py") and path.startswith(prefixes)
+    ]
+    head_functions: list[_WindowProvider] = []
+    dirty = False
     for path, source in head_sources.items():
         if not path.endswith(".py"):
             continue
@@ -335,14 +429,20 @@ def clone_matches(
                 parsed = functions_in(source, path)
                 head_functions.extend(parsed)
                 if path.startswith(prefixes):
-                    cache[_cache_key(path, source)] = [
-                        _function_record(function) for function in parsed
-                    ]
+                    cache[_cache_key(path, source)] = {
+                        "used": now,
+                        "functions": [
+                            _function_record(function) for function in parsed
+                        ],
+                    }
+                    dirty = True
             else:
-                head_functions.extend(_cached_functions(source, path, cache))
+                head_functions.extend(_cached_functions(source, path, cache, now))
+                dirty = True
         except (SyntaxError, ValueError):
             continue
-    if len(cache) != before:
+    evicted = _evict_to_cap(cache, _cap_for(len(corpus_paths)))
+    if dirty or evicted:
         with contextlib.suppress(OSError):
             # The cache is a speed-up, not a dependency: a directory that
             # cannot be written leaves the scan reading every file, which still
