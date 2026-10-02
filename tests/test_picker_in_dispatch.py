@@ -151,6 +151,28 @@ def test_shadow_records_selection_without_changing_backend(repo, monkeypatch):
     assert payload["picker_selection"]["backend"] == "beta"
 
 
+def test_dispatch_hands_the_picker_its_precomputed_inputs(repo, monkeypatch):
+    """The dispatch entry, not the picker helper, threads the precomputed inputs.
+
+    A pick that reaches the picker with ``records``, ``verdict_inputs`` or
+    ``budget_snapshot`` unset reloads each of them per candidate, which is the
+    latency this node removes. Driving the dispatch entry proves the wiring at
+    its call site rather than only inside ``dispatch_picker_selection``.
+    """
+    received = {}
+
+    def pick(request, config, *, repo, cached_only, **inputs):
+        received.update(inputs)
+        return selection()
+
+    monkeypatch.setattr(picker, "pick", pick)
+    result, _ = invoke(repo)
+    assert result.exit_code == 0, result.output
+    assert received.get("records") is not None
+    assert received.get("verdict_inputs") is not None
+    assert received.get("budget_snapshot") is not None
+
+
 def test_dispatch_survives_a_raising_picker(repo, monkeypatch):
     def raise_pick(*_args, **_kwargs):
         raise RuntimeError("picker failed")
