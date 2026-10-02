@@ -16,9 +16,13 @@ condition (the supervisor's pid is gone) under a ceiling generous for a loaded
 node; the ceiling sits under the worker's own sleep, so an exit inside it can
 only be the supervisor's escalation, not the worker finishing.
 
-The declared mutation withholds the stop-grace escalation: the supervisor then
-waits on the worker's own exit and its pid outlives the ceiling, so the test
-fails.
+Two declared mutations withhold the stop-grace escalation through one
+environment hook, and each reddens a different assertion. The ceiling control
+gives the supervisor a grace beyond the wait ceiling, so the ignored-stop case
+fails in the bounded wait on the supervisor's exit -- it shows the ceiling
+discriminating, never the bound. The mid-window control gives a grace between
+the elapsed bound and the ceiling, so the case clears the wait and fails on the
+elapsed-bound assertion itself: the bound failing on its own.
 """
 
 from __future__ import annotations
@@ -64,11 +68,17 @@ STUB_ENDS_ON_STOP = (
 )
 
 NEGATIVE_CONTROL = os.environ.get("RECKON_STOP_SUPERVISOR_NEGATIVE_CONTROL", "").strip()
+# The hook value that selects the mid-window stop grace below, in place of the
+# ceiling control.
+MID_WINDOW_CONTROL = "mid-window"
 
 # The stop grace the cases configure, short so a healthy escalation is quick.
 STOP_GRACE_SECONDS = 1.0
-# The mutation's stop grace: far larger than the case ceiling, so a supervisor
-# that does not escalate waits on the worker's own exit instead.
+# The ceiling control's stop grace: far larger than the case ceiling, so a
+# supervisor that does not escalate waits on the worker's own exit instead. The
+# ignored-stop case then dies in the bounded wait rather than at the elapsed
+# bound, so this control shows the wait ceiling discriminating and never reaches
+# the bound itself.
 MUTATION_STOP_GRACE_SECONDS = 600.0
 # The stub worker's own sleep. It outlives the case ceiling, so the bounded
 # wait (the supervisor's pid is gone) cannot be satisfied by a supervisor that
@@ -97,14 +107,30 @@ SUPERVISOR_PROMPT_DRAIN_SECONDS = 2 * SUPERVISOR_POLL_SECONDS
 # CEILING_SECONDS, so a supervisor that overruns its drain fails the case on
 # this bound rather than passing the wait and being reported healthy.
 LOAD_MARGIN_SECONDS = 30.0
+# The mid-window control's stop grace: chosen so the supervisor's exit lands
+# after the elapsed bound but before the wait ceiling. The ignored-stop case
+# then clears the bounded wait and fails on the elapsed-bound assertion itself,
+# which is the discriminator the ceiling control cannot show. Derived from the
+# bound and the ceiling rather than written as a literal so it tracks them: the
+# supervisor's drain is three poll intervals plus the stop grace, so placing the
+# midpoint of the bound and the ceiling on that drain gives the grace.
+MUTATION_MID_WINDOW_GRACE_SECONDS = (
+    SUPERVISOR_STOP_DRAIN_SECONDS + LOAD_MARGIN_SECONDS + CEILING_SECONDS
+) / 2 - (SUPERVISOR_STOP_DRAIN_SECONDS - STOP_GRACE_SECONDS)
 
 
 def _stop_grace_environment() -> str:
     """The stop grace the launched supervisor reads.
 
-    The mutation withholds the escalation by giving the supervisor a grace far
-    larger than the test's window, so it waits on the worker's own exit.
+    Two declared mutations withhold the escalation through this one hook. The
+    ceiling control gives a grace far beyond the wait ceiling, so the supervisor
+    holds the worker past the ceiling and the ignored-stop case dies in the
+    bounded wait. The mid-window control gives a grace that ends the supervisor
+    after the elapsed bound but before the ceiling, so the case clears the wait
+    and fails on the bound itself.
     """
+    if NEGATIVE_CONTROL == MID_WINDOW_CONTROL:
+        return str(MUTATION_MID_WINDOW_GRACE_SECONDS)
     if NEGATIVE_CONTROL:
         return str(MUTATION_STOP_GRACE_SECONDS)
     return str(STOP_GRACE_SECONDS)
