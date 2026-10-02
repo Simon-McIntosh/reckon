@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="197">
+<meta name="plan-version" content="198">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -1511,6 +1511,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T003833350758-review-of-promotion-retires-a-disposable-identity" data-who="reckon-build" data-when="2026-10-02T00:48:40.826Z">
     <div class="r-comment-body"><p>independent review of r-20261001T233335429161-promotion-retires-a-disposable-identity stored; the record parses, scores all five dimensions in 0..20 (goal_fidelity 18, evidence 18, scope_discipline 19, durability 17, fit 19; total 91), names reviewed base c8087d0bc and head 790f296ca, and carries added_failure_count 0 with no added ids; one follow-on finding: the identity keys are not persisted on the run row.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-20261002T005500Z-s10-landing-guard-reverted" data-who="s21-fin" data-when="2026-10-02T00:55:00Z">
+    <div class="r-comment-body">landing-commit-carries-only-its-own-comment was merged at 03a28cd8d (reviewed at 91) and reverted at e70bb91cb about two minutes later. Its guard compared the plan file's bytes against HEAD plus the run's own comment. Live, it refused the landing commit of the very run that introduced it, after that run's ledger row and plan comment were already written. Every later promotion on this plan then refused too, because the stranded comment read as an unrelated edit. The two stranded landing records were committed as they stood (40d9e54d9). The corrective node landing-guard-tolerates-the-stores-own-writes re-lands the guard. It compares parsed plan state rather than bytes, refuses before any store is written, and adds the measured cascade and a non-canonical-encoding plan as test cases. Already landed in §10 today: nongit-promotion-test-stays-outside-a-repo, repromotion-commits-its-recorded-comment, complete-refuses-an-open-merge, complete-refuses-an-open-revert, stored-phase-advances-past-starting, stored-phase-covers-a-failed-spawn, observe-keeps-a-terminal-stored-phase, reflex-review-outlives-its-follower, and promotion-retires-a-disposable-identity.</div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
