@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="53">
+<meta name="plan-version" content="54">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -216,6 +216,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261002T114703880019-review-of-model-currency" data-who="reckon-build" data-when="2026-10-02T12:09:21.979Z">
     <div class="r-comment-body"><p>review of run r-20261002T112032725794-model-currency stored (r-20261002T114703880019-review-of-model-currency); scored goal_fidelity 16, evidence 14, scope_discipline 20, durability 8, fit 17, total 75; base 39b8719da002907a6e160d56f98627afbb10a1d5 head 50f759110690c4916abb62b9431ea3c60688de22; two follow-on findings (older-id coverage gaps; the gate verifies a hardcoded claim list rather than the fragment).</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261002T184210876844-retire-codex-spark-project-layer" data-who="reckon-build" data-when="2026-10-02T19:00:11.054Z">
+    <div class="r-comment-body"><p>removed the codex-spark backend entry and the codex-spark item under review_excluded_backends from the project flight layer (git diff: 1 file changed, 8 deletions(-), no other line changed); resolved at this worktree&#x27;s layer via --checkout-path the config lists backends [claude,claude-haiku,claude-opus,clive,codex,codex-astra,codex-luna,codex-terra,native] and review_excluded_backends with no codex-spark, exit 0; the gate (tests/test_backends.py plus the only test file grepping review_excluded_backends, tests/test_a_review_never_runs_in_harness.py) is 47 passed at head against 47 passed at base, zero added failure ids</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261002T130436751082-picker-return-time" data-who="reckon-build" data-when="2026-10-02T14:13:21.690Z">
     <div class="r-comment-body"><p>picker-return-time — lane_context renders per-candidate return time (clive implement/guided p50 3806.5 s, p90 11468 s, 230 runs, time_budget 30m_to_60m) and the live local lane (running 16, waiting 0, headroom -2, worker_slots 0); state.jinja renders both blocks and questions.jinja names them criteria; 8 new tests pass; item (5), the live replay, is not met here and is deferred by the coordinator to picker-replay-measure.</p></div>
