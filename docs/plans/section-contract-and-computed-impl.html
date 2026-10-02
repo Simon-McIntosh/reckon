@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="66">
+<meta name="plan-version" content="67">
 <meta name="plan-impl" content="0.9">
 </head>
 <body>
@@ -694,6 +694,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261002T110254565404-review-of-impl-stays-authorable-while-records-are-partial" data-who="reckon-build" data-when="2026-10-02T11:38:29.820Z">
     <div class="r-comment-body"><p>an independent review of r-20261002T094138017408-impl-stays-authorable-while-records-are-partial is stored at both review paths: status parsed, scores goal_fidelity 19 / evidence 18 / scope_discipline 18 / durability 19 / fit 20, total 94, reviewed_base_sha 4d0c843ecaf49c5c5254c17a052444d6390f653d, reviewed_head_sha d3ed0932b30b5538f4f957835335092ed1344763, added_failure_count 0 with no added ids; three follow-on findings (uncommitted fragment edit in the reviewed worktree, manifest after_suite revision not matching its cited log header, untested insert-path warning); no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T130500572100-section-id-on-its-wrapper-resolves" data-who="reckon-build" data-when="2026-10-02T14:32:16.842Z">
+    <div class="r-comment-body"><p>collapse_section and read_plan(view=&#x27;section&#x27;) now resolve a section id carried on a wrapping &lt;section id=...&gt; element as well as on its h2 — reckon/_store.py gains _wrapper_section_heading so the collapse replaces the wrapper and carries the id onto the heading the card keeps, and reckon/mcp_views.py gains _authored_section_headings so the read lists and selects wrapper identities — measured by tests/test_section_id_on_its_wrapper_resolves.py: at base ca630c06e894 the gate is 9 failed / 127 passed (EXIT=1, every wrapper case) and at head b5179bc74 it is 136 passed / 0 failed (EXIT=0); the declared mutation (h2-only lookup restored) is 6 failed / EXIT=1, and reading a-review-dies-where-nobody-is-looking now answers &quot;available sections: s1, s2, s3, s4, s5, s6, s7, s8, s9, s10&quot; and resolves s2, where the section read reported none.</p></div>
 </div>
 </section>
 </main>
