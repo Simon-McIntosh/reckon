@@ -23,9 +23,9 @@
   <title>The Obligations Hook Reads A Snapshot | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="49">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+<meta name="plan-modified" content="2026-10-03">
+<meta name="plan-version" content="50">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -232,7 +232,7 @@
 <p>The snapshot producer (§2, merged at d53a3fc68) and the head-reading review obligation (scoring-should-stop-a-promotion §10, merged at 4095a2b0d) were each green on their own gates. At the combined head the gate replay of §2 fails two parity cases in <code>tests/test_obligations_snapshot_is_published.py</code>: <code>test_the_snapshot_carries_the_derivation_over_unmodified_files</code> and <code>test_a_slice_equals_the_derivation_over_the_same_files</code>. The derivation's <code>_review_duty_item</code> in <code>reckon/crew/obligations.py</code> now keys a review duty to the run's current worktree head and carries <code>head</code> (and the reviewed head when they differ), while <code>payload_for</code> in <code>reckon/crew/obligation_snapshot.py</code> builds its duties by its own path, so the snapshot's review-missing item no longer equals the derivation's. Replay log: <code>~/.config/reckon/crew/runs/r-20261001T204424733309-the-producer-publishes-the-snapshot/verify-gate.log</code>.</p><p><strong>Done when</strong> the snapshot's duties are built through the same review-duty function the derivation uses, so both parity cases pass at the merged head, with a case where the run's head has moved past its stored review asserting the snapshot and the derivation name the same two heads. The negative control restores the snapshot's own duty path, and the moved-head case then fails.</p>
 
     <h2 id="s10">§10 — A reload shows the last snapshot, not a remedy</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
 <p>Observed on 2026-10-02 by s22-coord. On each producer reload, for about a minute, the prompt hook answered <em>not current: the producer is running older code; run <code>reckon crew watch --ensure</code></em>, at 16:34Z, 17:09Z and 17:40Z. During a normal reload that remedy is wrong, and the hook showed no obligations at all although the last snapshot was seconds old. At 16:34Z it answered <em>no producer</em> for the seconds before a newly started producer published.</p><p><strong>Done when</strong> a reload in progress shows the last snapshot's list headed by its age and the words <em>producer reloading</em>, with no remedy line. A reload is in progress when the snapshot's producer is alive and its code stamp is older than the source, or when the seat records a reload intent. <em>No producer</em> and its remedy appear only when no live producer has published for longer than a reload's bound, which is stated as a named constant. A test covers each case on the prompt path in a temporary configuration home. The negative control restores the not-current line for a live, reloading producer, and the reload case then fails.</p>
 
     <h2 id="s11">§11 — A duty the lane refuses reads as queued, and does not block the stop</h2>
@@ -294,10 +294,16 @@
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §9</pre>
     <p class="r-fu-outcome">§9 landed at de1377a66 after a review of 95: the snapshot builds review duties through the derivation's own function, and both parity cases pass again. The reload-window finding this followup carried is now §10, and the stop-path note is folded into §3 and §11.</p>
     </article>
-<article class="r-fu" data-id="f-tohras-006" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §10" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tohras-006" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build the-obligations-hook-reads-a-snapshot §10" data-resolved-at="2026-10-02T22:38:33+00:00" data-resolved-by="s22-coord">
     <h4 class="r-fu-title">Fix the reload window, then move the stop path onto the snapshot</h4>
     <div class="r-fu-body"><p>§10 first, because the prompt path shows the wrong remedy for a minute on every reload. Then §3's stop path together with §11, so the stop hook reads the snapshot and stops blocking on duties the lane has refused.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §10</pre>
+    <p class="r-fu-outcome">§10 landed at aafe1349e (run r-20261002T213757420157-reload-shows-the-last-snapshot, reviewed at 96, zero added failures). A reloading producer now shows the last snapshot headed by its age, with no remedy line. The no-producer remedy appears only outside the shared 65 s window. Live check: the hook read 'producer reloading, last snapshot 1m19s old' during the reload that merge triggered. Review follow-ons: the fragment has no figure, and not_fresh_line no longer handles the producer-stale-code state; that state is unreachable today because _prompt routes it through reload_in_progress.</p>
+    </article>
+<article class="r-fu" data-id="f-tohras-007" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">land §3&#x27;s stop path with §11</h4>
+    <div class="r-fu-body"><p>§3's stop path and §11 together, so the stop hook reads the snapshot and stops blocking on duties the lane has refused. In the same node, have not_fresh_line handle the producer-stale-code state itself, so a direct caller never renders the no-producer remedy.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §11</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
