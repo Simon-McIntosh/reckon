@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="reckon-tooling,crew,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="work-scheduling-surface">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
   <title>Section contract and computed impl | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="68">
-<meta name="plan-impl" content="0.9">
+<meta name="plan-modified" content="2026-10-03">
+<meta name="plan-version" content="69">
+<meta name="plan-impl" content="0.91">
 </head>
 <body>
   <main class="plan-doc">
@@ -483,7 +483,7 @@
 <p>The schema without the refusal is a suggestion; the refusal without the schema has nothing to refuse. §3 depends on §1. §5 depends on §4. §6 is documentation and an audit warning and can run beside any of them.</p><p><strong>Done when</strong> the refusal lands with the schema it refuses for.</p><p>Moved from followup f-scci-001 on section-contract-and-computed-impl by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.84; §1+§2 as one node, §3 after §1, §5 after §4, §6 documentation and an audit warning</p>
 
     <h2 id="s12">§12 — The insert path&#x27;s first-record warning has a test</h2>
-<section data-reckon="section" data-id="s12" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s12" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p>§9 (merged at 49fec9bea, review 94) added the warning that a plan's first typed section record makes impl derived from then on, on both the append path and <code>_apply_insert_section</code> in <code>reckon/_store.py</code>. Only the append path is tested, so the insert half could regress unseen.</p><p><strong>Done when</strong> a test inserts the first section record through the insert path on a plan with none, in a temporary docs tree, and asserts the warning; removing the warning from <code>_apply_insert_section</code> makes that test fail.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
@@ -559,6 +559,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-scci-s8-landed" data-who="" data-when="">
     <div class="r-comment-body"><p>§8 landed. impl-needs-every-section-recorded was merged at 4b43272ac and promoted. <code>derive_impl_from_sections</code> now takes the plan's section declarations, on both read paths. It returns None, so the authored impl stands, while any section declared done or implementable has no record. The six zeroed plans read 0.57, 0.98, 0.97, 0.88, 0.5 and 1.0 again. Over the real tree 14 plans changed figure: 11 to their authored value, and 3 to no figure because none is authored. The negative control fails the partial-coverage case. The gate fails the same 2 pre-existing ids at base and head, and the review scored 94.</p><p>One consequence for authors: a plan whose authored impl is 0 and whose records cover only some sections now reads 0 until the rest carry records. the-obligations-hook-reads-a-snapshot was such a plan. Attaching records to its two record-less done sections made it derive 0.41.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-scci-s12-landed" data-who="s22-coord" data-when="2026-10-02">
+    <div class="r-comment-body"><p>Landed at 8496dafdb (run r-20261002T224347306695-insert-path-warns-on-first-record, reviewed at 98, zero added failures). <code>test_first_section_record_insert_warns_impl_becomes_computed</code> covers the insert path: inserting the first section record through <code>insert_section</code> on a plan carrying none returns the warning that impl becomes computed. The negative control removes the warning from <code>_apply_insert_section</code> and fails exactly that case. Review follow-on, outside this plan: the run's gate-log header spelled <code>rev=</code>, which <code>_LOGGED_REVISION_RE</code> in reckon/crew/review.py does not read, so the review's base and head log revisions annotate null. The coordinator's gate rules now name the <code>revision=</code> spelling.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260919T114226411288-scci-wiring-asserted-at-creation" data-who="reckon-ship" data-when="2026-09-19T12:08:30.455Z">
     <div class="r-comment-body"><p>An unwired implementable plan is refused at creation and audit unless it declares itself standalone; review 83/100 with four findings queued</p></div>
@@ -699,7 +702,7 @@
     <div class="r-comment-body"><p>collapse_section and read_plan(view='section') now resolve a section id carried on a wrapping &lt;section id=...&gt; element as well as on its h2 — reckon/_store.py gains _wrapper_section_heading so the collapse replaces the wrapper and carries the id onto the heading the card keeps, and reckon/mcp_views.py gains _authored_section_headings so the read lists and selects wrapper identities — measured by tests/test_section_id_on_its_wrapper_resolves.py: at base ca630c06e894 the gate is 9 failed / 127 passed (EXIT=1, every wrapper case) and at head b5179bc74 it is 136 passed / 0 failed (EXIT=0); the declared mutation (h2-only lookup restored) is 6 failed / EXIT=1, and reading a-review-dies-where-nobody-is-looking now answers "available sections: s1, s2, s3, s4, s5, s6, s7, s8, s9, s10" and resolves s2, where the section read reported none.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T143926835137-review-of-section-id-on-its-wrapper-resolves" data-who="reckon-build" data-when="2026-10-02T14:57:43.324Z">
-    <div class="r-comment-body"><p>review of run r-20261002T130500572100-section-id-on-its-wrapper-resolves stored parsed: goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 16 (total 90/100), reviewed base ca630c06e894 → head b5179bc74b7f, added_failure_count 0, one follow-on (authored_plan_text still drops a data-reckon=&#x27;section&#x27; wrapper&#x27;s prose from search); no blocking findings.</p></div>
+    <div class="r-comment-body"><p>review of run r-20261002T130500572100-section-id-on-its-wrapper-resolves stored parsed: goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 16 (total 90/100), reviewed base ca630c06e894 → head b5179bc74b7f, added_failure_count 0, one follow-on (authored_plan_text still drops a data-reckon='section' wrapper's prose from search); no blocking findings.</p></div>
 </div>
 </section>
 </main>
