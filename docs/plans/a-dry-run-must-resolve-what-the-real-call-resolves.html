@@ -23,9 +23,9 @@
   <title>A Dry Run Must Resolve What The Real Call Resolves | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="5">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+<meta name="plan-modified" content="2026-10-03">
+<meta name="plan-version" content="6">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -157,6 +157,11 @@ Measured twice on 2026-09-21. A dry run naming a sprint id as --plan returned ok
 <section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
 <p>Reported by s25-picker. <code>reckon crew dispatch --dry-run</code> does not show how a <code>--set</code> override resolved. For example, <code>backends.codex.budget_group=null</code> gives no sign that the null took effect, so nothing confirms an override before the real dispatch spends a run.</p><p><strong>Done when</strong> the dry-run output carries, for each <code>--set</code> path, the value the resolved flight configuration holds at that path, null included, beside the value it held before the override. A path the configuration does not know is refused naming it. A test dry-runs a dispatch with <code>--set backends.codex.budget_group=null</code> and one other override, in a temporary RECKON_HOME, and asserts both resolved values appear. The negative control drops the resolution block, and the case then fails.</p>
 
+    <h2 id="s7">§7 — Every dry-run refusal carries the override echo</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p><strong>From the §6 repair round's review (94, zero added failures).</strong> Two dry-run documents still differ in shape from the rest. The availability competence refusal (<code>_model_availability_refusal</code>, exit 5) is emitted on the dry-run path before <code>override_resolution</code> is computed, so it carries no override echo. A caller cannot tell a resolved override from one that never applied on that refusal. The <code>--local</code> failure from <code>select_local_backend</code> emits <code>{"ok": false, "error": "request-error"}</code> with neither <code>dry_run: true</code> nor the override echo, unlike the request-error documents that <code>_emit_dry_run_request_error</code> unifies in reckon/cli.py.</p>
+<p><strong>Done when</strong> every dry-run refusal document, those two included, carries <code>dry_run: true</code> and the override echo. A test drives each of the two refusals in dry-run form and asserts both fields. The negative control emits the availability refusal before the overrides are resolved, and that case then fails.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="member-repository-requirement" data-choice="" data-by="" data-when="">
@@ -181,7 +186,7 @@ Measured twice on 2026-09-21. A dry run naming a sprint id as --plan returned ok
 
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261002T201929125165-review-of-dry-run-shows-each-set-override" data-who="reckon-build" data-when="2026-10-02T20:38:18.277Z">
-    <div class="r-comment-body"><p>independent review of run r-20261002T181759902620-dry-run-shows-each-set-override stored for base a326205d5b8173815b4b839fc651b4f49ce6156e head baf499dfd0163f686aa32175a301c80d6c278201 - goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 19 (total 93); three follow-on findings; added_failure_count 0 with no ids over the reviewed run&#x27;s own base/head arms (521 passed/1 skipped base, 524 passed/1 skipped head, both EXIT=0)</p></div>
+    <div class="r-comment-body"><p>independent review of run r-20261002T181759902620-dry-run-shows-each-set-override stored for base a326205d5b8173815b4b839fc651b4f49ce6156e head baf499dfd0163f686aa32175a301c80d6c278201 - goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 19 (total 93); three follow-on findings; added_failure_count 0 with no ids over the reviewed run's own base/head arms (521 passed/1 skipped base, 524 passed/1 skipped head, both EXIT=0)</p></div>
 </div>
 </section>
 </main>
