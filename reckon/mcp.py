@@ -99,6 +99,7 @@ from reckon._store import (
     patch_plan,
     read_plan,
     replace_plan_text,
+    replace_plan_text_batch,
     resolve_in_list,
     set_nested,
     state_path,
@@ -1685,7 +1686,7 @@ _DOS_DONTS = {
         "use depends_on only for executable prerequisites; research, evidence, and specifications use informs.",
         "landed/outcome records carry evidence_for naming the plan(s) whose execution they record — the plan-to-generated-evidence back-link; informs is reserved for INPUTS that feed future work.",
         "use roadmap for pending work, completion, ready/blocked sets, sprint order, critical paths, and wiring findings.",
-        "use edit_plan mode='text' for one exact version-safe authored HTML replacement; use mode='state' for structured ops.",
+        "use edit_plan mode='text' for exact version-safe authored HTML replacements — one old_html/new_html pair, or a replacements list applied in order as one versioned write; use mode='state' for structured ops.",
     ],
     "dont": [
         "never set plan-version yourself — the server owns it.",
@@ -3349,13 +3350,17 @@ def _edit_plan(
     mode: Literal["state", "text"] = "state",
     old_html: str | None = None,
     new_html: str | None = None,
+    replacements: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     """Edit structured state or authored prose with version protection.
 
     ``mode='state'`` applies ``ops`` IN ORDER to a working copy, validates the
     resulting schema, and writes atomically. ``mode='text'`` replaces the one
-    exact ``old_html`` occurrence with ``new_html`` and refuses any structured
-    state change. Text mode accepts ``ops=None`` or an empty list and does not
+    exact ``old_html`` occurrence with ``new_html`` — or applies a
+    ``replacements`` list of ``{old_html, new_html}`` pairs in order as ONE
+    versioned write — and refuses any structured state change. A refused pair
+    refuses the whole batch, naming the pair's index, with the file and version
+    unchanged. Text mode accepts ``ops=None`` or an empty list and does not
     support ``create``. Both modes reject stale ``expected_version`` values.
 
     Routing: slug="index" → project config (sprints/milestones/timeline/blockers,
@@ -3416,6 +3421,36 @@ def _edit_plan(
                 "error": "invalid_edit_request",
                 "detail": "text mode does not accept structured ops",
             }
+        if replacements is not None:
+            if old_html is None and new_html is None:
+                if not isinstance(replacements, list):
+                    return {
+                        "ok": False,
+                        "error": "invalid_edit_request",
+                        "detail": (
+                            "text mode replacements must be a list of "
+                            "{old_html, new_html} pairs; got "
+                            f"{type(replacements).__name__}"
+                        ),
+                    }
+                return _edit_plan_prose(
+                    project,
+                    slug,
+                    None,
+                    None,
+                    expected_version,
+                    checkout_path,
+                    doc_type,
+                    replacements=replacements,
+                )
+            return {
+                "ok": False,
+                "error": "invalid_edit_request",
+                "detail": (
+                    "text mode accepts either old_html/new_html or replacements, "
+                    "not both"
+                ),
+            }
         if old_html is None or not old_html:
             return {
                 "ok": False,
@@ -3437,11 +3472,11 @@ def _edit_plan(
             checkout_path,
             doc_type,
         )
-    if old_html is not None or new_html is not None:
+    if old_html is not None or new_html is not None or replacements is not None:
         return {
             "ok": False,
             "error": "invalid_edit_request",
-            "detail": "state mode does not accept old_html or new_html",
+            "detail": "state mode does not accept old_html, new_html or replacements",
         }
     if ops is None:
         return {
@@ -3751,31 +3786,43 @@ def _edit_plan(
 def _edit_plan_prose(
     project: str,
     slug: str,
-    old_html: str,
-    new_html: str,
+    old_html: str | None,
+    new_html: str | None,
     expected_version: int,
     checkout_path: str | None = None,
     doc_type: str | None = None,
+    replacements: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
-    """Replace one exact authored HTML fragment with version protection.
+    """Replace authored HTML with version protection, one pair or a batch.
 
-    Use this for plan prose, tables, figures, and section bodies.  The old
+    Use this for plan prose, tables, figures, and section bodies.  Each old
     fragment must occur exactly once.  The operation refuses any change to
     plan metadata or ``data-reckon`` state; use ``edit_plan`` for structured
     fields.  Pair the version and ``checkout_path`` with the preceding raw
-    ``read_plan`` call.
+    ``read_plan`` call.  A ``replacements`` list applies in order as one
+    write; without one, the single ``old_html``/``new_html`` pair is done.
     """
 
     try:
-        new_version, path = replace_plan_text(
-            project,
-            slug,
-            old_html,
-            new_html,
-            expected_version,
-            checkout_path,
-            doc_type,
-        )
+        if replacements is None:
+            new_version, path = replace_plan_text(
+                project,
+                slug,
+                old_html,
+                new_html,
+                expected_version,
+                checkout_path,
+                doc_type,
+            )
+        else:
+            new_version, path = replace_plan_text_batch(
+                project,
+                slug,
+                replacements,
+                expected_version,
+                checkout_path,
+                doc_type,
+            )
         result = _edit_success_response(
             project=project,
             slug=slug,
@@ -3814,6 +3861,7 @@ def _edit_plan_tool(
     ops: list[dict[str, Any]] | None = None,
     old_html: str | None = None,
     new_html: str | None = None,
+    replacements: list[dict[str, str]] | None = None,
     create: bool = False,
     checkout_path: str | None = None,
     doc_type: str | None = None,
@@ -3822,9 +3870,11 @@ def _edit_plan_tool(
 
     Use ``mode='state'`` with ``ops`` for validated structured changes. Use
     ``mode='text'`` with ``old_html`` and ``new_html`` for one exact authored
-    HTML replacement. Read the same resource first and pass its version as
-    ``expected_version``; worktree callers must reuse the same
-    ``checkout_path`` on both calls.
+    HTML replacement, or with a ``replacements`` list of
+    ``{old_html, new_html}`` pairs to apply them in order as one versioned
+    write; a refused pair refuses the whole batch, naming the pair's index.
+    Read the same resource first and pass its version as ``expected_version``;
+    worktree callers must reuse the same ``checkout_path`` on both calls.
 
     Creating a plan at or beyond the project's declared pending-plan limit
     still succeeds; the success response carries a ``warning`` naming the limit,
@@ -3843,6 +3893,7 @@ def _edit_plan_tool(
         mode=mode,
         old_html=old_html,
         new_html=new_html,
+        replacements=replacements,
     )
 
 

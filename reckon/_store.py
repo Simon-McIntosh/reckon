@@ -59,7 +59,7 @@ mutators, serve.py, single-checkout agents) are completely unaffected.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from contextvars import ContextVar
 import json
 import os
@@ -1590,7 +1590,7 @@ def _replace_authored_html(
     after = {key: value for key, value in after_state.items() if key not in stamps}
     if before != after:
         raise ValueError(
-            "authored HTML replacement changes structured plan state; use "
+            f"{selector_name} changes structured plan state; use "
             "edit_plan structured ops for metadata or data-reckon sections"
         )
     return replaced
@@ -1764,14 +1764,98 @@ def replace_plan_text(
     :func:`write_plan` or the MCP ``edit_plan`` tool for those fields.
     """
 
+    return _replace_plan_text(
+        project,
+        slug,
+        [(old_html, new_html)],
+        expected_version,
+        root,
+        artifact_type,
+        indexed=False,
+    )
+
+
+def replace_plan_text_batch(
+    project: str,
+    slug: str,
+    replacements: Sequence[Mapping[str, str]],
+    expected_version: int,
+    root: str | Path | None = None,
+    artifact_type: str | None = None,
+) -> tuple[int, Path]:
+    """Apply an ordered batch of authored HTML replacements as one versioned write.
+
+    Each entry carries ``old_html`` and ``new_html``, exactly as the single
+    replacement does. The pairs are applied to a working copy in order, so a
+    later pair sees the text an earlier one wrote, and the file is written once
+    with one version advance. Every pair keeps :func:`replace_plan_text`'s
+    refusals — a non-unique match, an overlap with a ``section[data-reckon]``
+    region, or a change to structured plan state — and a refusal names the
+    pair's index in ``replacements`` while leaving the file and version
+    untouched.
+    """
+
+    if not replacements:
+        raise ValueError(
+            "replacements must be a non-empty list of {old_html, new_html} pairs"
+        )
+    pairs: list[tuple[str, str]] = []
+    for index, entry in enumerate(replacements):
+        selector = f"replacements[{index}]"
+        if not isinstance(entry, Mapping):
+            # ValueError, not TypeError: text mode's refusal channel is
+            # ValueError, which the MCP handler maps to text_edit_error.
+            raise ValueError(  # noqa: TRY004
+                f"{selector} must be an object with old_html and new_html"
+            )
+        unknown = sorted(set(entry) - {"old_html", "new_html"})
+        if unknown:
+            raise ValueError(f"{selector} has unsupported fields: {unknown}")
+        missing = [key for key in ("old_html", "new_html") if key not in entry]
+        if missing:
+            raise ValueError(f"{selector} is missing {missing[0]!r}")
+        old_html = entry["old_html"]
+        new_html = entry["new_html"]
+        if not isinstance(old_html, str) or not isinstance(new_html, str):
+            # ValueError for the same reason: it is the refusal the MCP
+            # handler maps to text_edit_error.
+            raise ValueError(  # noqa: TRY004
+                f"{selector} old_html and new_html must be strings"
+            )
+        pairs.append((old_html, new_html))
+    return _replace_plan_text(
+        project,
+        slug,
+        pairs,
+        expected_version,
+        root,
+        artifact_type,
+        indexed=True,
+    )
+
+
+def _replace_plan_text(
+    project: str,
+    slug: str,
+    pairs: Sequence[tuple[str, str]],
+    expected_version: int,
+    root: str | Path | None,
+    artifact_type: str | None,
+    *,
+    indexed: bool,
+) -> tuple[int, Path]:
     from reckon import _plan_html
     from reckon._schema import TYPE_ENUM
     from reckon.resources import canonical_type, resolve_resource
 
-    if not old_html:
-        raise ValueError("old_html must be non-empty")
-    if old_html == new_html:
-        raise ValueError("old_html and new_html are identical")
+    checked: list[tuple[str, str, str]] = []
+    for index, (old_html, new_html) in enumerate(pairs):
+        selector = f"replacements[{index}].old_html" if indexed else "old_html"
+        if not old_html:
+            raise ValueError(f"{selector} must be non-empty")
+        if old_html == new_html:
+            raise ValueError(f"{selector} and new_html are identical")
+        checked.append((old_html, new_html, selector))
 
     docs_dir = _docs_dir_for_project(project, root)
     if docs_dir is None:
@@ -1806,12 +1890,14 @@ def replace_plan_text(
         if expected_version != current_version:
             raise VersionConflict(expected_version, current_version, current_state)
 
-        replaced = _replace_authored_html(
-            text,
-            old_html,
-            new_html,
-            selector_name="old_html",
-        )
+        replaced = text
+        for old_html, new_html, selector in checked:
+            replaced = _replace_authored_html(
+                replaced,
+                old_html,
+                new_html,
+                selector_name=selector,
+            )
 
         stamped_state = dict(current_state)
         stamped_state["modified"] = date.today().isoformat()
