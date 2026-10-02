@@ -2548,7 +2548,10 @@ def _logged_producer_stop(project: str) -> str | None:
     for line in reversed(lines):
         if line.strip():
             marker = "reckon crew watch stopped: "
-            return line.strip() if line.strip().startswith(marker) else None
+            candidate = line.strip()
+            if candidate.startswith("[") and "] " in candidate:
+                candidate = candidate.split("] ", 1)[1]
+            return candidate if candidate.startswith(marker) else None
     return None
 
 

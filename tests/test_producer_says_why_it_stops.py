@@ -11,6 +11,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
 from reckon import cli, crew
@@ -50,7 +51,7 @@ def test_expired_lease_writes_stop_reason(tmp_path) -> None:
 
 def test_renewed_producer_keeps_publishing(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
-    monkeypatch.setenv("RECKON_PRODUCER_LEASE_SECONDS", "1")
+    monkeypatch.setenv("RECKON_PRODUCER_LEASE_SECONDS", "3")
     run_log = tmp_path / "run.log"
     run_log.write_text('{"type":"turn.started"}\n')
     pointer = {
@@ -90,10 +91,10 @@ def test_renewed_producer_keeps_publishing(tmp_path, monkeypatch) -> None:
                 assert producer.poll() is None, producer_log.read_text()
                 time.sleep(0.1)
             assert runs.producer_live("sample"), producer_log.read_text()
-            deadline = time.monotonic() + 2.2
+            deadline = time.monotonic() + 6.5
             while time.monotonic() < deadline:
                 runs.renew_producer_lease("sample")
-                time.sleep(0.2)
+                time.sleep(0.4)
             assert producer.poll() is None, producer_log.read_text()
             stream = runs.watch_stream_path("sample")
             before = stream.stat().st_size
@@ -102,18 +103,25 @@ def test_renewed_producer_keeps_publishing(tmp_path, monkeypatch) -> None:
             deadline = time.monotonic() + 5
             while stream.stat().st_size == before and time.monotonic() < deadline:
                 runs.renew_producer_lease("sample")
-                time.sleep(0.2)
+                time.sleep(0.4)
             assert stream.stat().st_size > before, producer_log.read_text()
         finally:
             producer.terminate()
             producer.wait(timeout=10)
 
 
-def test_follower_reports_logged_stop_reason(tmp_path, monkeypatch) -> None:
+@pytest.mark.parametrize(
+    "line",
+    [
+        "reckon crew watch stopped: producer lease expired",
+        "[2026-10-02T20:05:30Z] reckon crew watch stopped: producer lease expired",
+    ],
+)
+def test_follower_reports_logged_stop_reason(tmp_path, monkeypatch, line) -> None:
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
     log = runs.watch_log_path("sample")
     log.parent.mkdir(parents=True)
-    log.write_text("reckon crew watch stopped: producer lease expired\n")
+    log.write_text(f"{line}\n")
     monkeypatch.setattr(runs, "producer_live", lambda project: False)
     stop = threading.Event()
     events = cli._follow_watch_lines(
