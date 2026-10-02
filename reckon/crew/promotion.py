@@ -4490,6 +4490,21 @@ def _rebuild_record_from_run_directory(
         "fenced": supervisor.get("fenced") is True,
         "rebuilt_from_run_directory": True,
     }
+    # The pointer carries the run's assigned write scope, and a discard removes
+    # it with the pointer. The durable manifest is the one scope declaration
+    # that survives that removal: its ``changed_paths`` names the paths the run
+    # says it delivered, so a rebuilt record presents that declaration in place
+    # of the lost assignment. Without it a run citing its own commit is refused
+    # for changing paths no surviving declaration contains, which is exactly the
+    # discarded run that reached main through a follow-on.
+    if manifest.is_file():
+        try:
+            manifest_data = parse_manifest(manifest.read_text(encoding="utf-8"))
+        except (OSError, KeyError, ValueError):
+            manifest_data = {}
+        declared = list(_changed_paths_inside_repository(manifest_data, record))
+        if declared:
+            record["node"] = {"write_paths": declared}
     attempt = attempt_record.get("attempt") or worker.get("attempt")
     if attempt is not None:
         record["attempt"] = attempt
