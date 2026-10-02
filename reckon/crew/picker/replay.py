@@ -1,6 +1,7 @@
 """Replay recorded dispatch contracts against current lane conditions."""
 
 import statistics
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -8,7 +9,7 @@ from reckon import ledger
 from reckon._timestamps import parse_utc
 from reckon.crew.node import TaskNode
 
-from . import pick
+from . import pick, snapshot
 from .types import PickRequest
 
 
@@ -30,6 +31,8 @@ def replay(
             f"Replay requested {count} dispatches but the ledger has only {len(recent)}"
         )
     rows = []
+    availability_cache = {}
+    snapshotter = partial(snapshot.candidates, availability_cache=availability_cache)
     for record in recent:
         definition = record.get("node_definition") or {}
         node = TaskNode(
@@ -50,7 +53,9 @@ def replay(
             comment=str(definition.get("comment") or ""),
             session=str(record.get("session") or ""),
         )
-        selection = pick(request, config, repo=repo, records=records)
+        selection = pick(
+            request, config, repo=repo, records=records, snapshotter=snapshotter
+        )
         rows.append(
             {
                 "run_id": record["run_id"],
@@ -64,7 +69,8 @@ def replay(
         )
     return {
         "project": project,
-        "conditions": "live at replay, not historical lane state",
+        "conditions": "live at replay, not historical lane state; serving observations shared within this cohort",
+        "serving_observations": list(availability_cache.values()),
         "rows": rows,
         "summary": {
             "count": len(rows),

@@ -117,15 +117,31 @@ def candidates(
     repo: Path,
     *,
     records: list[dict[str, Any]] | None = None,
+    availability_cache: dict[tuple[str, str | None], dict[str, Any]] | None = None,
 ) -> list[Candidate]:
     """Read a fresh snapshot; never dispatch or change routing configuration."""
     now = datetime.now(UTC)
     rows = ledger.runs(request.project, root=repo) if records is None else records
-    recorded = budget.latest_recorded(request.project, root=repo, config=config)
     windows = budget.recorded_windows(request.project, config, root=repo, records=rows)
-    groups = budget.group_pace(config, windows=windows, records=rows, now=now)
+    probeable = [
+        name
+        for name, settings in config.get("backends", {}).items()
+        if name not in REFUSED_BACKENDS and settings.get("model") not in REFUSED_MODELS
+    ]
+    # The budget view composes state_for and group_pace, including the account's
+    # operative window. Consuming its verdict keeps every clock in one authority.
+    view = budget.preflight(
+        request.project,
+        config,
+        root=repo,
+        backends=probeable,
+        windows=windows,
+        records=rows,
+        now=now,
+    )
+    budget_by_backend = {row["backend"]: row for row in view["backends"]}
     group_by_backend = {
-        member: group for group in groups for member in group["members"]
+        member: group for group in view["groups"] for member in group["members"]
     }
     result = []
     for name in config.get("backends", {}):
@@ -141,15 +157,18 @@ def candidates(
         reasons = []
         if name in REFUSED_BACKENDS or model in REFUSED_MODELS:
             reasons.append("account-refused-model")
-        state = budget.state_for(name, backend, recorded=recorded.get(name), now=now)
-        verdict = budget.decide(state, budget.policy(config), now=now)
+        verdict = budget_by_backend.get(name) or {
+            "held": False,
+            "state": budget.BudgetState(name).as_dict(),
+        }
+        state = verdict["state"]
         if verdict["held"]:
             reasons.append("budget-held: " + verdict["reason"])
         metered = not local and not ledger.is_unmetered_backend(name)
         if (
             metered
-            and state.burn_multiple is not None
-            and state.burn_multiple > pace_policy(config).pace_multiple
+            and state.get("burn_multiple") is not None
+            and state["burn_multiple"] > pace_policy(config).pace_multiple
         ):
             reasons.append("burn-exceeds-pace-multiple")
         gate = _dispatch_lane_gate(backend)
@@ -165,9 +184,14 @@ def candidates(
         if reasons:
             availability = "not-probed"
         else:
-            observation = resumption.probe_lane_availability(
-                request.project, name, backend, root=repo
-            )
+            cache_key = (name, model)
+            observation = (availability_cache or {}).get(cache_key)
+            if observation is None:
+                observation = resumption.probe_lane_availability(
+                    request.project, name, backend, root=repo
+                )
+                if availability_cache is not None:
+                    availability_cache[cache_key] = observation
             availability = observation["status"]
             if availability != "served":
                 reasons.append("availability: " + availability)
@@ -176,6 +200,7 @@ def candidates(
         except _backends.BackendError:
             family = str(backend.get("launch") or name)
         group_allowance = (group_by_backend.get(name) or {}).get("allowance") or {}
+        budget_facts = {} if state.get("expired") else state
         result.append(
             Candidate(
                 backend=name,
@@ -184,10 +209,10 @@ def candidates(
                 effort=backend.get("effort"),
                 local=local,
                 availability=availability,
-                utilisation_pct=state.utilisation_pct,
-                burn_multiple=state.burn_multiple,
+                utilisation_pct=budget_facts.get("utilisation_pct"),
+                burn_multiple=budget_facts.get("burn_multiple"),
                 pace_allowance=group_allowance.get("effective_limit"),
-                resets_at=state.resets_at,
+                resets_at=budget_facts.get("resets_at"),
                 worker_slots=slots,
                 congestion=congestion,
                 outcomes=recent_outcomes(rows, request, name, model, now=now),

@@ -28,6 +28,7 @@ def environment() -> Environment:
         undefined=StrictUndefined,
         autoescape=False,  # noqa: S701 - JSON prompts, never HTML
     )
+
     def encode(value: Any) -> str:
         if isinstance(value, Undefined):
             str(value)

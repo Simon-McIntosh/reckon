@@ -67,7 +67,11 @@ def config():
 
 @pytest.fixture
 def live_facts(monkeypatch):
-    monkeypatch.setattr(snapshot.budget, "latest_recorded", lambda *a, **k: {})
+    monkeypatch.setattr(
+        snapshot.budget,
+        "latest_recorded",
+        lambda *a, **k: SimpleNamespace(for_backend=lambda name: None, unattributed=[]),
+    )
     monkeypatch.setattr(snapshot.budget, "recorded_windows", lambda *a, **k: {})
     monkeypatch.setattr(snapshot.budget, "group_pace", lambda *a, **k: [])
     monkeypatch.setattr(
@@ -151,7 +155,12 @@ def test_hard_exclusions(
         monkeypatch.setattr(
             snapshot.budget,
             "decide",
-            lambda *a, **k: {"held": True, "reason": "exhausted"},
+            lambda state, *a, **k: {
+                "held": True,
+                "reason": "exhausted",
+                "backend": state.backend,
+                "state": state.as_dict(),
+            },
         )
     elif kind == "burn":
         monkeypatch.setattr(
@@ -453,3 +462,36 @@ def test_replay_sorts_by_dispatch_not_promotion(monkeypatch, tmp_path, config):
     result = replay("example", 2, config, repo=tmp_path)
     assert [row["run_id"] for row in result["rows"]] == ["3", "2"]
     assert result["summary"]["agreement_rate"] == 1
+
+
+def test_replay_reuses_one_serving_observation_per_model(
+    live_facts, monkeypatch, request_node, config, tmp_path
+):
+    probe = Mock(
+        return_value={"status": "served", "observed_at": "2026-01-20T00:00:00Z"}
+    )
+    monkeypatch.setattr(snapshot.resumption, "probe_lane_availability", probe)
+    observations = {}
+    for _ in range(2):
+        options = snapshot.candidates(
+            request_node, config, tmp_path, records=[], availability_cache=observations
+        )
+        assert len([c for c in options if not c.reasons]) == 2
+    assert probe.call_count == 2
+    assert len(observations) == 2
+
+
+def test_expired_budget_is_not_rendered_as_current(
+    live_facts, monkeypatch, request_node, config, tmp_path
+):
+    monkeypatch.setattr(
+        snapshot.budget,
+        "state_for",
+        lambda name, *a, **k: budget.BudgetState(
+            name, expired=True, utilisation_pct=90, resets_at="2000-01-01T00:00:00Z"
+        ),
+    )
+    candidates = snapshot.candidates(request_node, config, tmp_path, records=[])
+    remote = next(c for c in candidates if c.backend == "remote")
+    assert remote.utilisation_pct is None
+    assert remote.resets_at is None
