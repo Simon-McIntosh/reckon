@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery, runs
+from reckon.crew import obligation_snapshot, recovery, runs
 from reckon.crew.obligations import obligations as obligations_view
 from reckon.hooks.coordinator_obligations import (
     digest_path,
@@ -147,6 +147,33 @@ def _live_run(
         },
     )
     return manifest
+
+
+def _publish_snapshot() -> None:
+    """Publish the fixture's derived obligations as a fresh snapshot.
+
+    The prompt path reads what the project's producer published, so a case that
+    drives it publishes first: the snapshot carries the payload the hook used to
+    derive, written with the module's own writer into the case's temporary
+    configuration home, ages stored as the instant they are measured from. The
+    producer is this process, which is alive for the drive, and the stamp is the
+    one computed for this checkout's source -- the same file the hook loads its
+    reader from -- so the drive reads it as fresh for the same reasons a real
+    producer's snapshot would be.
+    """
+    computed_at = datetime.now(tz=UTC)
+    document = obligation_snapshot.document_for(
+        obligations_view(PROJECT, SESSION),
+        computed_at=computed_at,
+        stream_offset=0,
+        producer={
+            "pid": os.getpid(),
+            "pid_start_time": obligation_snapshot.process_start_time(os.getpid()),
+            "started_at": computed_at.isoformat(),
+            "code_stamp": obligation_snapshot.source_code_stamp(),
+        },
+    )
+    obligation_snapshot.write_snapshot(PROJECT, SESSION, document)
 
 
 def _blocked_run(
@@ -321,6 +348,12 @@ def _hook(
     *,
     claude_pid: int | None = None,
 ) -> subprocess.CompletedProcess[str]:
+    # The prompt path reads the session's published snapshot, so a prompt drive
+    # publishes the current state first, exactly as the project's producer
+    # republishes on a trigger before the next turn opens. The stop path still
+    # derives at the moment of the stop and reads no snapshot.
+    if mode == "prompt":
+        _publish_snapshot()
     environment = dict(os.environ)
     environment["PYTHONPATH"] = str(REPO_ROOT)
     # Every case names its harness identity, so nothing ambient steers the
@@ -459,6 +492,10 @@ def _hook_under_bare_harness(
     """Drive the hook with no CLAUDE_PID, under a ``claude``-named ancestor."""
     wrapper = tmp_path / "bare_harness.py"
     wrapper.write_text(_BARE_HARNESS_WRAPPER, encoding="utf-8")
+    # This drive skips ``_hook``, so it publishes the session's snapshot for the
+    # current state itself, for the same reason ``_hook`` does.
+    if mode == "prompt":
+        _publish_snapshot()
     environment = dict(os.environ)
     # Renaming argv[0] hides the interpreter's own directory from CPython, so
     # the virtual environment is found through the path rather than the layout.
