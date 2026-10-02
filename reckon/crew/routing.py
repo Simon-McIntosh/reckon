@@ -657,15 +657,15 @@ def _repository_tree_snapshot(
 
 def _commits_beyond_merge_base(
     repo: Path, path: Path, integrated_into: str
-) -> list[dict[str, str]]:
+) -> list[dict[str, str]] | None:
     """List the commits a worktree carries beyond the integration head.
 
     ``git cherry`` compares each commit's patch against the integration head and
     marks the ones whose change is already there, so a commit that landed as
     part of a squash or a rebase is recognised even though its sha is not an
-    ancestor. A comparison that cannot run returns nothing, and a caller treats
-    an empty list as not equivalent, so an unreadable tree is kept rather than
-    released.
+    ancestor. ``None`` means the comparison could not run, which a caller
+    reports as an unmeasured list rather than as an empty one, so an unreadable
+    tree is kept rather than released.
     """
     integration = _git(
         repo, "rev-parse", f"{integrated_into}^{{commit}}"
@@ -678,7 +678,7 @@ def _commits_beyond_merge_base(
         check=False,
     )
     if result.returncode:
-        return []
+        return None
     commits: list[dict[str, str]] = []
     for line in result.stdout.splitlines():
         mark, _, remainder = line.partition(" ")
@@ -698,6 +698,14 @@ def _inspect_workspace(
     raise_on_unavailable: bool = True,
     release_residue: bool = False,
 ) -> dict[str, Any]:
+    """Inspect one worktree's commits, residue and classification.
+
+    The two commit-list fields are null exactly when the commits beyond the
+    integration head were not measured — this caller did not ask, the head is
+    an ancestor, the tree is clean, or the comparison could not run — and the
+    sibling ``commits_unmeasured_reason`` names which. A measured row keeps
+    both lists even when they are empty.
+    """
     state = _tree_state(path)
     if not state.get("available"):
         detail = state.get("detail") or "tree is unavailable"
@@ -717,8 +725,11 @@ def _inspect_workspace(
             "dirty": [],
             "integrated_into": integrated_into,
             "claimed_by_live_runs": sorted(claimed_by),
-            "non_equivalent_commits": [],
-            "patch_equivalent_commits": [],
+            "non_equivalent_commits": None,
+            "patch_equivalent_commits": None,
+            "commits_unmeasured_reason": (
+                "the worktree is unavailable, so there is no tree to measure"
+            ),
             "shadow_run_id": "",
             "shadow_patch": "",
         }
@@ -736,16 +747,37 @@ def _inspect_workspace(
         == 0
     )
     claims = sorted(claimed_by)
-    commits: list[dict[str, str]] = []
-    if dirty and not reachable and release_residue:
+    commits: list[dict[str, str]] | None = None
+    if release_residue and not reachable and dirty:
         commits = _commits_beyond_merge_base(repo, path, integrated_into)
+    if commits is None:
+        if not release_residue:
+            unmeasured_reason = (
+                "release_residue is false: this caller did not ask for the "
+                "commits beyond the integration head to be measured"
+            )
+        elif reachable:
+            unmeasured_reason = (
+                "the worktree head is an ancestor of the integration head, so "
+                "it carries no commits beyond it"
+            )
+        elif not dirty:
+            unmeasured_reason = (
+                "the worktree is clean, so no residue release reads its commits"
+            )
+        else:
+            unmeasured_reason = (
+                "the comparison against the integration head could not run"
+            )
+    else:
+        unmeasured_reason = ""
     if claims:
         classification = "live-referenced"
     elif shadow_record is not None and _shadow_patch_retained(shadow_record):
         classification = "disposable"
     elif dirty:
         landed_elsewhere = bool(commits) and all(
-            commit["equivalent"] for commit in commits
+            commit["equivalent"] for commit in (commits or [])
         )
         classification = (
             "dirty-integrated"
@@ -763,12 +795,17 @@ def _inspect_workspace(
         "dirty": dirty,
         "integrated_into": integrated_into,
         "claimed_by_live_runs": claims,
-        "non_equivalent_commits": [
-            commit for commit in commits if not commit["equivalent"]
-        ],
-        "patch_equivalent_commits": [
-            commit for commit in commits if commit["equivalent"]
-        ],
+        "non_equivalent_commits": (
+            None
+            if commits is None
+            else [commit for commit in commits if not commit["equivalent"]]
+        ),
+        "patch_equivalent_commits": (
+            None
+            if commits is None
+            else [commit for commit in commits if commit["equivalent"]]
+        ),
+        "commits_unmeasured_reason": unmeasured_reason,
         "shadow_run_id": (
             str(shadow_record.get("run_id") or "") if shadow_record else ""
         ),
