@@ -10,7 +10,7 @@
   <meta name="plan-verifies" content="reckon:the-obligations-hook-reads-a-snapshot#s2">
   <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-10-02">
-  <meta name="evidence-commit" content="28e5baa6b">
+  <meta name="evidence-commit" content="b589b9476">
   <title>The producer publishes each session's obligations snapshot | reckon</title>
   <link rel="stylesheet" href="/reckon/_shared/foundation.css">
   <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
@@ -48,12 +48,17 @@
   longer walks a state directory's <code>runs/</code> subtree, whose changes arrive as pointer
   transitions already.</p>
 
-  <p>Measured read-only against the real reckon fleet, with a temporary configuration home holding
-  the written snapshots and the real home left untouched (<code>sweep-wall-time.log</code>): one
-  sweep of the live sessions — two at measurement time — took <strong>56.4 s</strong>, and one
-  sweep over all fifty registrations, the unbounded shape, took <strong>567.5 s</strong>. The live
-  figure is a full sweep in a fresh process: the stat walk once, one derivation, then the
-  per-session slices and their writes.</p>
+  <p>Warm against the real fleet the slice was still the expensive part: <code>payload_for</code> cost
+  about <strong>7 s</strong> for one live session and <strong>14–15 s</strong> for two, because
+  each slice re-selected every run's review (subprocesses against the run's tree), re-read the
+  ledger for the held-worktree scan, and re-classified every live pointer for the closure drain —
+  once per session. Each of those derivations is now the fleet's: computed once per sweep and
+  sliced per session. Measured warm, read-only against the real fleet, in
+  <code>sweep-profile.log</code>: <code>payload_for</code> is under <strong>0.01 s</strong> and
+  <code>fleet_state</code>, now carrying the whole derivation, takes about <strong>18 s</strong>
+  once per sweep — which is why the sweep itself runs on its own thread. A transition is written
+  the moment it is detected and never waits on the derivation, at most one sweep is in flight, and
+  a trigger arriving while one runs is skipped rather than queued.</p>
 
   <h3>Gate — the 51-file surface, both arms, eight workers each</h3>
   <p>The gate is the new test file plus every <code>tests/</code> file naming
@@ -61,12 +66,12 @@
   <code>crew watch</code>, found by a text search: 51 files at the head revision and 50 at the base,
   run under <code>pytest -n 8 --timeout=300</code> with a private basetemp outside any repository.
   The head arm adds <strong>no</strong> failure id —
-  its set is the base's minus one, and the eleven tests it passes beyond the base are this node's ten cases plus one the base arm leaves failing.</p>
+  its set is the base's minus one, and the twelve tests it passes beyond the base are this node's eleven cases plus one the base arm leaves failing.</p>
   <table>
     <thead><tr><th>arm</th><th>revision</th><th>result</th><th>failure ids</th><th>log</th></tr></thead>
     <tbody>
-      <tr><td>base</td><td><code>3fadeb60e</code></td><td>8 failed, 637 passed, 1 skipped, 1 warning, 1 error in 401.07 s</td><td>9 — see below</td><td><code>gate/base-xdist4.log</code></td></tr>
-      <tr><td>head</td><td><code>28e5baa6b</code></td><td>7 failed, 648 passed, 1 skipped, 1 error in 406.96 s</td><td>the base's nine, minus the producer-loop deferral test</td><td><code>gate/head-xdist4.log</code></td></tr>
+      <tr><td>base</td><td><code>3fadeb60e</code></td><td>8 failed, 637 passed, 1 skipped, 1 error in 392.88 s</td><td>9 — see below</td><td><code>gate/base-xdist5.log</code></td></tr>
+      <tr><td>head</td><td><code>b589b9476</code></td><td>7 failed, 649 passed, 1 skipped, 1 warning, 1 error in 407.26 s</td><td>the base's nine, minus the producer-loop deferral test</td><td><code>gate/head-xdist5.log</code></td></tr>
     </tbody>
   </table>
   <p>These ids recur in both arms; none is added by this node. The list: <code>conftest.py::test_temp_config_home</code> (error),
@@ -90,7 +95,7 @@
   base — passes at the head revision. The other did not reproduce: three serial probes passed at
   <code>a2a8f5f0d</code> and again at the head, and the final head arm does not carry it.</p>
 
-  <h3>The ten cases the new file adds</h3>
+  <h3>The eleven cases the new file adds</h3>
   <ul>
     <li>a pointer transition is visible in the session's snapshot by the end of the first sweep
     after it, with the sweep driven explicitly and the stream offset advanced;</li>
@@ -112,7 +117,9 @@
     the parity case for the derive-once slice;</li>
     <li>the stat walk skips a state directory's <code>runs/</code> subtree and still walks a file
     beside it;</li>
-    <li>a producer that exited and has not been reaped does not hold a snapshot fresh.</li>
+    <li>a producer that exited and has not been reaped does not hold a snapshot fresh;</li>
+    <li>a sweep in flight is skipped over: a delay injected into the sweep, and the next transition
+    is still written while it runs — the slow-sweep case.</li>
   </ul>
   <p>The import case loads the file by path, because importing it through
   <code>reckon/crew.py</code> runs the facade, which eagerly imports every concern module and would
