@@ -4902,6 +4902,7 @@ def complete(
     live_run_waiver: str = "",
     plan_link: str = "",
     unplanned_reason: str = "",
+    promoted_by: str = "",
 ) -> dict[str, Any]:
     """Promote a run, or finish cleanup when its record already landed."""
     verdict = str(gate).strip().lower()
@@ -5195,6 +5196,7 @@ def complete(
             live_run_waived=live_run_waived,
             plan_link=plan_link,
             unplanned_reason=unplanned_reason,
+            promoted_by=promoted_by,
             landing=landing,
         )
         if commit_list_shortfall is not None:
@@ -7065,6 +7067,7 @@ def _complete_locked(
     plan_link: str = "",
     unplanned_reason: str = "",
     landing: Mapping[str, Any] | None = None,
+    promoted_by: str = "",
 ) -> dict[str, Any]:
     """Promote a finished run into the owning repository's committed ledger.
 
@@ -7429,6 +7432,7 @@ def _complete_locked(
         dispute_count=dispute_count,
         review=reviewed,
         clone_matches=clone_matches,
+        promoted_by=promoted_by,
     )
     run["attempt"] = int(record.get("attempt") or 1)
     run["attempt_kind"] = str(record.get("attempt_kind") or "dispatch")
