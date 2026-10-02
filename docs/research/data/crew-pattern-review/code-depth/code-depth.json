@@ -1,8 +1,8 @@
 {
   "full_output": {
-    "bytes": 14979441,
-    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T104810100005-code-depth-reuse-census/code-depth-full.json",
-    "sha256": "e6b4bbd61d2f4f03d8b2b5618026e5edde4fe62a8de3d35c3bc8b494b227169e"
+    "bytes": 16840814,
+    "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T202341535715-census-pin-after-migration/code-depth-full.json",
+    "sha256": "b6f0027232d3feeed02605150c9fa58db1386d0f46358d98bf2394828913b37a"
   },
   "inputs": {
     "capture_cutoff": "2026-09-26T10:00:00+00:00",
@@ -35,6 +35,12 @@
             "committed_at": "2026-09-26T11:59:44+02:00",
             "offset_seconds": -7216,
             "target": "2026-09-26T12:00:00+00:00"
+          },
+          {
+            "commit": "e6cfdeea0bd7bd3a6a959c243dcdd3a2ff416eef",
+            "committed_at": "2026-10-02T22:22:14+02:00",
+            "offset_seconds": 0,
+            "target": "2026-10-02T20:22:14+00:00"
           }
         ]
       },
@@ -70,7 +76,7 @@
         ]
       }
     ],
-    "selection": "Nearest committer timestamp on pinned primary first-parent history, at or before capture cutoff; ties prefer earlier timestamp then SHA."
+    "selection": "Nearest committer timestamp on pinned primary first-parent history, at or before capture cutoff; ties prefer earlier timestamp then SHA. A pin with offset_seconds 0 records the branch tip explicitly at re-pin time, rather than selecting at a target instant."
   },
   "instrument_sha256": "a025017a0005ac26f78df3eff48468dabcf0f3c2e7ca0700ad4431b734921369",
   "methodology": {
@@ -769,7 +775,7 @@
       "title": "One digest operation over canonical contract bytes"
     }
   ],
-  "ranking_source_sha256": "0270269e13318d355b8743b73ef77dd8c14fe1f7ad36499a8bca93a9820a3fbb",
+  "ranking_source_sha256": "0c50c7cbec04fa8036429053b9d390abfb21c2b6ded5ca99a8578d9489b99bde",
   "snapshots": [
     {
       "commit": "7b46b7b56f52d92a324888b1207af7833b425c58",
@@ -1803,6 +1809,277 @@
         }
       },
       "target": "2026-09-26T12:00:00+00:00"
+    },
+    {
+      "commit": "e6cfdeea0bd7bd3a6a959c243dcdd3a2ff416eef",
+      "committed_at": "2026-10-02T22:22:14+02:00",
+      "offset_seconds": 0,
+      "repository": "reckon",
+      "scopes": {
+        "reckon/": {
+          "clones": {
+            "clone_share": 0.10243807,
+            "cloned_source_code_lines": 8941,
+            "duplicate_window_fingerprints": 1211,
+            "source_code_lines": 87282,
+            "window_code_lines": 6
+          },
+          "function_length_distribution": {
+            "count": 3733,
+            "max": 1263,
+            "median": 17.0,
+            "min": 1,
+            "p75": 32.0,
+            "p90": 55.0,
+            "p95": 84.4
+          },
+          "interfaces": {
+            "cli_command_count": 68,
+            "cli_group_count": 10,
+            "cli_option_count": 298,
+            "cli_option_unique_flag_count": 137,
+            "dispatch_raise_site_count": 110,
+            "dispatch_refusal_code_count": 23,
+            "dispatch_refusal_codes": [
+              "D01",
+              "D02",
+              "D03",
+              "D04",
+              "D05",
+              "D06",
+              "D07",
+              "D08",
+              "D09",
+              "D10",
+              "D11",
+              "D12",
+              "D13",
+              "D14",
+              "D15",
+              "D16",
+              "D17",
+              "D18",
+              "D19",
+              "D20",
+              "D21",
+              "D22",
+              "D23"
+            ],
+            "mcp_unique_view_name_count": 22,
+            "mcp_view_count": 32
+          },
+          "module_count": 116,
+          "module_surfaces": [
+            {
+              "code_lines": 50,
+              "path": "reckon/shim_lookup.py",
+              "physical_lines": 112,
+              "public_classes": 0,
+              "public_methods": 0,
+              "public_surface": 6,
+              "public_surface_per_100_code_lines": 12.0,
+              "public_top_level_functions": 6,
+              "sha256": "ca7f55f4e36aa4261649331c3d2c464d76c72819a7c1c0da82a058d1a6c335e8"
+            },
+            {
+              "code_lines": 354,
+              "path": "reckon/_flight_schema.py",
+              "physical_lines": 564,
+              "public_classes": 31,
+              "public_methods": 8,
+              "public_surface": 39,
+              "public_surface_per_100_code_lines": 11.0169,
+              "public_top_level_functions": 0,
+              "sha256": "955da572868de717797b6869a1003629da4e3d04da4a468db3f58b434d53fad1"
+            },
+            {
+              "code_lines": 129,
+              "path": "reckon/service.py",
+              "physical_lines": 244,
+              "public_classes": 2,
+              "public_methods": 0,
+              "public_surface": 14,
+              "public_surface_per_100_code_lines": 10.8527,
+              "public_top_level_functions": 12,
+              "sha256": "479c42715914ea45b9be9030936800161afb168840cbf90fa37e1f25b033e27d"
+            },
+            {
+              "code_lines": 53,
+              "path": "reckon/crew/picker/types.py",
+              "physical_lines": 64,
+              "public_classes": 3,
+              "public_methods": 2,
+              "public_surface": 5,
+              "public_surface_per_100_code_lines": 9.434,
+              "public_top_level_functions": 0,
+              "sha256": "4f000730ac654192c91efbb6e20df0792c27c48330be596d749ed625b77fa789"
+            },
+            {
+              "code_lines": 119,
+              "path": "reckon/crew/pace.py",
+              "physical_lines": 213,
+              "public_classes": 3,
+              "public_methods": 1,
+              "public_surface": 11,
+              "public_surface_per_100_code_lines": 9.2437,
+              "public_top_level_functions": 7,
+              "sha256": "45316565d12a311b648a49ed2f440dea90fb3e50883b969c1ec9a8181b8c67d3"
+            }
+          ],
+          "pass_through_function_count": 34,
+          "primitive_counts": {
+            "Advisory file locking": 24,
+            "Atomic JSON file replacement": 2,
+            "Content digest construction": 55,
+            "Finite numeric input validation": 2,
+            "Git subprocess invocation": 52,
+            "HTML file discovery and reading": 12,
+            "ISO timestamp parsing": 7,
+            "JSON document decoding": 131,
+            "JSON document encoding": 24,
+            "JSON record stream decoding": 29,
+            "PID existence probing": 1
+          },
+          "public_class_count": 205,
+          "public_function_count": 1170,
+          "public_surface": 1375,
+          "reimplementation_group_count": 27,
+          "source_code_lines": 87282,
+          "source_lines": 128226,
+          "test_code_lines": 189019,
+          "test_lines": 266014,
+          "test_module_count": 799
+        },
+        "reckon/crew/": {
+          "clones": {
+            "clone_share": 0.06814393,
+            "cloned_source_code_lines": 2657,
+            "duplicate_window_fingerprints": 352,
+            "source_code_lines": 38991,
+            "window_code_lines": 6
+          },
+          "function_length_distribution": {
+            "count": 1784,
+            "max": 1263,
+            "median": 18.0,
+            "min": 2,
+            "p75": 32.0,
+            "p90": 55.0,
+            "p95": 81.85
+          },
+          "interfaces": {
+            "cli_command_count": 0,
+            "cli_group_count": 0,
+            "cli_option_count": 0,
+            "cli_option_unique_flag_count": 0,
+            "dispatch_raise_site_count": 110,
+            "dispatch_refusal_code_count": 18,
+            "dispatch_refusal_codes": [
+              "D05",
+              "D07",
+              "D08",
+              "D09",
+              "D10",
+              "D11",
+              "D12",
+              "D13",
+              "D14",
+              "D15",
+              "D16",
+              "D17",
+              "D18",
+              "D19",
+              "D20",
+              "D21",
+              "D22",
+              "D23"
+            ],
+            "mcp_unique_view_name_count": 0,
+            "mcp_view_count": 0
+          },
+          "module_count": 54,
+          "module_surfaces": [
+            {
+              "code_lines": 53,
+              "path": "reckon/crew/picker/types.py",
+              "physical_lines": 64,
+              "public_classes": 3,
+              "public_methods": 2,
+              "public_surface": 5,
+              "public_surface_per_100_code_lines": 9.434,
+              "public_top_level_functions": 0,
+              "sha256": "4f000730ac654192c91efbb6e20df0792c27c48330be596d749ed625b77fa789"
+            },
+            {
+              "code_lines": 119,
+              "path": "reckon/crew/pace.py",
+              "physical_lines": 213,
+              "public_classes": 3,
+              "public_methods": 1,
+              "public_surface": 11,
+              "public_surface_per_100_code_lines": 9.2437,
+              "public_top_level_functions": 7,
+              "sha256": "45316565d12a311b648a49ed2f440dea90fb3e50883b969c1ec9a8181b8c67d3"
+            },
+            {
+              "code_lines": 265,
+              "path": "reckon/crew/fleet_node.py",
+              "physical_lines": 467,
+              "public_classes": 2,
+              "public_methods": 0,
+              "public_surface": 18,
+              "public_surface_per_100_code_lines": 6.7925,
+              "public_top_level_functions": 16,
+              "sha256": "1cfd973f5368e80bdad9c868430470374a976214d83740410ee1d6db6ec002d6"
+            },
+            {
+              "code_lines": 82,
+              "path": "reckon/crew/staleness.py",
+              "physical_lines": 160,
+              "public_classes": 2,
+              "public_methods": 0,
+              "public_surface": 5,
+              "public_surface_per_100_code_lines": 6.0976,
+              "public_top_level_functions": 3,
+              "sha256": "9b762f86a3f2cad4c5673d0d928b925f57edbe09bc10b80e2cebbbd0c4c7d2f3"
+            },
+            {
+              "code_lines": 404,
+              "path": "reckon/crew/worker_digest.py",
+              "physical_lines": 580,
+              "public_classes": 7,
+              "public_methods": 0,
+              "public_surface": 24,
+              "public_surface_per_100_code_lines": 5.9406,
+              "public_top_level_functions": 17,
+              "sha256": "b3d079128316aa229e7c4886b33c763314a326a6d12fb988117eed7361b02996"
+            }
+          ],
+          "pass_through_function_count": 16,
+          "primitive_counts": {
+            "Advisory file locking": 20,
+            "Atomic JSON file replacement": 1,
+            "Content digest construction": 20,
+            "Finite numeric input validation": 1,
+            "Git subprocess invocation": 30,
+            "ISO timestamp parsing": 4,
+            "JSON document decoding": 73,
+            "JSON document encoding": 9,
+            "JSON record stream decoding": 20,
+            "PID existence probing": 1
+          },
+          "public_class_count": 74,
+          "public_function_count": 533,
+          "public_surface": 607,
+          "reimplementation_group_count": 10,
+          "source_code_lines": 38991,
+          "source_lines": 62015,
+          "test_code_lines": 131629,
+          "test_lines": 186535,
+          "test_module_count": 510
+        }
+      },
+      "target": "2026-10-02T20:22:14+00:00"
     },
     {
       "commit": "e247cff66a06bc6a12cdfd3d9003c34fde90ecde",

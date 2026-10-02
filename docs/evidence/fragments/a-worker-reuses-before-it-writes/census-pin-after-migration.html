@@ -1,0 +1,54 @@
+<section id="census-pin-after-migration">
+  <h2>The code-depth census re-pinned after the timestamp migration</h2>
+  <p>Every earlier pin is kept and one appended: <code>snapshots.json</code> now records nine pins (five for reckon, four for nova). The appended pin captures reckon at its primary-branch tip <code>e6cfdeea0bd7bd3a6a959c243dcdd3a2ff416eef</code> (committed 2026-10-02T22:22:14+02:00), recorded with <code>offset_seconds: 0</code> — the explicit-tip form a re-pin uses instead of selecting a commit at a target instant. Nova's tip is unchanged at <code>16287918db2f90d0088c1786ec45965cd90e6652</code>. <code>census.py</code> was re-run in the worktree at revision <code>beda87586</code> (about nine minutes, bounded at 1500 s), with <code>census.log</code> and its rewritten <code>code-depth.json</code> beside it; the 16,840,814-byte full census lives in the run directory. Every figure below is that run's own counter.</p>
+
+  <h3>Section 2 — functions still calling fromisoformat directly</h3>
+  <p>The census's <em>ISO timestamp parsing</em> primitive counts <strong>7</strong> copies at the new pin against <strong>44</strong> at the previously pinned head <code>056c08e0</code>. The section asks for at most three retainers, each carrying a comment that states why it is retained; the census reads seven, so every function over that bound is named here.</p>
+  <table>
+    <tr><th>function (definition line)</th><th>direct call</th><th>statement it carries</th></tr>
+    <tr>
+      <td><code>reckon/_timestamps.py:62</code> <code>parse_iso</code></td>
+      <td>:80</td>
+      <td>The canonical parser the migration routes callers to — the census counts the home itself, because its own call sits on this detector. Its docstring states the shared contract: the zone a stamp carries is kept, and a stamp naming no zone is returned naive rather than read as UTC.</td>
+    </tr>
+    <tr>
+      <td><code>reckon/crew/dispatch.py:3369</code> <code>_lane_reading_carry</code></td>
+      <td>:3427</td>
+      <td>Comment at :3422 — "Retained rather than routed through <code>reckon._timestamps.parse_iso</code>: the refusal quotes the parser's own exception text, which the shared parser swallows to return <code>None</code>, and the reading is strict enough to report why a stamp was rejected."</td>
+    </tr>
+    <tr>
+      <td><code>reckon/ledger.py:2929</code> <code>_parse_timestamp</code></td>
+      <td>:2938</td>
+      <td>Docstring at :2932 — "Retained rather than routed through <code>reckon._timestamps.parse_utc</code>: this returns the moment in the zone the stamp was written in, and the shared parser normalises every zone to UTC, which would change the value a stamp carrying an offset of its own resolves to."</td>
+    </tr>
+    <tr>
+      <td><code>reckon/doccheck.py:205</code> <code>modified_age_days</code></td>
+      <td>:220</td>
+      <td>A <code>date.fromisoformat</code> calendar-date read. The docstring states the reason — "this reader takes that date literally: a plan's modification stamp carries a stated date, not an instant, so a zone on the value must not shift the day it reports."</td>
+    </tr>
+    <tr>
+      <td><code>reckon/crew/quota_weight.py:63</code> <code>_as_date</code></td>
+      <td>:77</td>
+      <td>A <code>date.fromisoformat</code> calendar-date coercion. The docstring states its input contract (a YAML-parsed layer hands over a <code>datetime.date</code> for an unquoted ISO date and a string for a quoted one, and both are accepted), but no comment states why direct parsing is retained. Present at the currency audit's base, and not among the six it counted.</td>
+    </tr>
+    <tr>
+      <td><code>reckon/crew/obligation_snapshot.py:184</code> <code>_parse_instant</code></td>
+      <td>:192</td>
+      <td>No comment states why it is retained; the docstring gives the reading policy only (a missing zone is read as UTC). The module postdates the audit's base — added 2026-10-01.</td>
+    </tr>
+    <tr>
+      <td><code>reckon/crew/run_time_profile.py:215</code> <code>_completed_after</code></td>
+      <td>:230</td>
+      <td>No comment states why it is retained; the docstring says an unreadable stamp is left in rather than dropped. The module postdates the audit's base — added 2026-10-02.</td>
+    </tr>
+  </table>
+  <p>Compared with the s25 currency audit's AST count (six functions before the three-caller migration, merge <code>853ca4702</code>): three of its six remain direct at the new pin — <code>dispatch</code>, <code>ledger</code>, <code>doccheck</code>, the three it flagged as carrying stated reasons. The other three it counted (<code>reckon/crew/prompts.py</code>, <code>reckon/crew/repair.py</code>, <code>reckon/served_code.py</code>) were routed through the shared parser by that merge and none of them contains a direct call at the new pin. The census's seven are then accounted for one by one: the three remaining from the audit's six, plus the canonical parser itself (the audit used <code>reckon/_timestamps.py:62</code> as its positive control and excluded it), plus two functions in modules that did not exist at the audit's base (<code>obligation_snapshot.py</code>, added 2026-10-01; <code>run_time_profile.py</code>, added 2026-10-02), plus <code>quota_weight._as_date</code>, present at the base but not among the audit's six. 3 + 1 + 2 + 1 = 7. The audit's own note records that its figure is an AST count with its own scan and "is not the census's own counter"; the census's seven is the primitive inventory's copy count over the pinned tree at the new pin.</p>
+
+  <h3>Section 3 — one implementation per concept</h3>
+  <p><strong>Atomic JSON file replacement.</strong> The census counts <strong>2</strong> copies at the new pin (14 at <code>056c08e0</code>, where the concept was also reported as a grouped reimplementation row). At the new pin it no longer reaches the grouped reimplementation census: a group forms only from at least three distinct definitions, and two remain — the census's own reading of this concept at this pin, not an instrument failure. The two it counts are <code>reckon/crew/recovery.py:5951</code> <code>_write_classification_memo</code>, whose docstring states its reason (the memo is a cache written by a read and never brings a run's home into being; the write lands through a rename so a reader sees the previous memo or this one, never half of either; a memo that cannot be written is not an error), and <code>reckon/serve.py:3570</code> <code>Handler._handle_post</code>, which writes <code>&lt;doc&gt;.json</code> through the fixed sibling <code>&lt;file&gt;.json.tmp</code> and renames it into place, with no comment stating why it is not the shared writer. One of the two carries a stated reason; one does not.</p>
+  <p><strong>Stream enumeration.</strong> The census's same-name row for <code>run_streams</code> counts <strong>3</strong> at both pins: the home <code>reckon/crew/metering.py:319</code>, and two delegates — <code>reckon/ledger.py:2749</code> and <code>reckon/crew/promotion.py:3033</code> — each importing <code>reckon.crew.metering</code> inside its body and returning <code>metering.run_streams(...)</code> (the ledger adapter builds <code>streams_root / run_id / "stream.jsonl"</code>). No comment states why the import is function-local; the counter lists all three bodies, so this concept still reads as three where the section asks for one.</p>
+  <p><strong>Numeric decoder.</strong> At <code>056c08e0</code> the census grouped four identical bodies under one fingerprint (<code>reckon/_backends.py:1608</code> <code>_number</code>, <code>reckon/crew/carryover_census.py:215</code> <code>_measured</code>, <code>reckon/crew/hold.py:178</code> <code>_as_number</code>, <code>reckon/crew/window_reading.py:266</code> <code>_numeric</code>). At the new pin no identical-body row carries that body, and all four sites import <code>optional_number</code> from <code>reckon/_observations.py:21</code> and call it, whose docstring states the shared policy (a value is a measurement only when it is a real number; <code>bool</code> is refused before the numeric check because <code>True</code> would otherwise decode to <code>1.0</code>, leaving a flag and a measurement indistinguishable). Of the new scope's 1,211 duplicate-window fingerprints, none covers the home's body. This concept reads as one implementation at the new pin.</p>
+
+  <h3>The pin's commit ids</h3>
+  <p>The pinned commits these figures measure: reckon <code>e6cfdeea0bd7bd3a6a959c243dcdd3a2ff416eef</code> (the appended pin, written into <code>snapshots.json</code> by commit <code>5413e1f38</code>) and nova <code>16287918db2f90d0088c1786ec45965cd90e6652</code> (unchanged). The census run that produced them ran at revision <code>beda87586</code>; its receipts are the full output (16,840,814 bytes, sha256 <code>b6f0027232d3feeed02605150c9fa58db1386d0f46358d98bf2394828913b37a</code>) in the run directory and the compact <code>code-depth.json</code> (sha256 <code>7142340fa32f168e04929d59b2c8641a04f5e6c58fbf3ca332de29402f4e798f</code>) in the data directory.</p>
+</section>
