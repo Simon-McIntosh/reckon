@@ -430,8 +430,12 @@ def _replay_allowance(row: dict) -> dict:
     Nothing here opens a stream, a receipt or a configuration layer: the week's
     utilisation, both policy figures and the instant the row was judged at all
     come off the row, and the elapsed hours are recomputed from the row's own
-    recorded instant and the weekly reset it carries. Recomputing rather than
-    re-reading is what makes the row checkable by someone who was not there.
+    recorded instant and the weekly reset it carries. The operative window --
+    the longest the provider reported -- governs the elapsed fraction and the
+    burn the row records beside its derived allowance, so the reconstruction
+    reads the length the row carries rather than assuming a fixed week.
+    Recomputing rather than re-reading is what makes the row checkable by
+    someone who was not there.
     """
     week = row["clocks"]["seven_day"]
     assert week["state"] == "observed", week
@@ -449,7 +453,42 @@ def _replay_allowance(row: dict) -> dict:
         drain_lead_hours=row["policy"]["drain_lead_hours"],
         pace_multiple=row["policy"]["pace_multiple"],
     )
-    return pace_module.allowance_for_group(reading, pace=pace).as_dict()
+    allowance = pace_module.allowance_for_group(reading, pace=pace).as_dict()
+    allowance.update(_operative_extras(row, recorded))
+    return allowance
+
+
+def _operative_extras(row: dict, recorded: datetime) -> dict:
+    """The operative window's own figures, as the row carries them.
+
+    The derivation divides the week, but the row also records the elapsed
+    fraction and burn of the longest window the provider reported, together with
+    that window's length, observation and reset. Recomputing those from the same
+    clocks the producer read is what lets a reader reproduce the recorded
+    allowance whole rather than only its week-derived half.
+    """
+    clocks = [
+        clock
+        for clock in row["clocks"].values()
+        if clock.get("window_minutes") is not None
+    ]
+    operative = max(clocks, key=lambda clock: clock["window_minutes"])
+    window_hours = operative["window_minutes"] / 60.0
+    remaining = (
+        datetime.fromisoformat(operative["resets_at"]) - recorded
+    ).total_seconds() / 3600.0
+    fraction = min(1.0, max(0.0, window_hours - remaining) / window_hours)
+    return {
+        "state": "observed",
+        "reason": None,
+        "window_minutes": operative["window_minutes"],
+        "elapsed_fraction": fraction,
+        "burn_multiple": (
+            None if fraction <= 0 else operative["utilisation"] / fraction
+        ),
+        "observed_at": operative["observed_at"],
+        "resets_at": operative["resets_at"],
+    }
 
 
 def test_a_prescribed_dispatch_records_the_pace_of_the_wallet_that_paced_it(host):

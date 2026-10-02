@@ -52,6 +52,19 @@ def _row(
         elapsed_hours=elapsed,
     )
     allowance = pace.allowance_for_group(reading, pace=policy).as_dict()
+    window_minutes = int(pace.WEEK_HOURS * 60)
+    fraction = elapsed / pace.WEEK_HOURS
+    allowance.update(
+        {
+            "state": "observed",
+            "reason": None,
+            "window_minutes": window_minutes,
+            "elapsed_fraction": fraction,
+            "burn_multiple": None if fraction <= 0 else utilisation / fraction,
+            "observed_at": recorded_at,
+            "resets_at": reset_at.isoformat(),
+        }
+    )
     pace_row = {
         "lane": backend,
         "node": node,
@@ -74,6 +87,7 @@ def _row(
                 "observed_at": recorded_at,
                 "resets_at": _instant(elapsed + 5.0),
                 "age_seconds": 0.0,
+                "window_minutes": 300,
             },
             "seven_day": {
                 "period": "seven_day",
@@ -82,6 +96,7 @@ def _row(
                 "observed_at": recorded_at,
                 "resets_at": reset_at.isoformat(),
                 "age_seconds": 0.0,
+                "window_minutes": window_minutes,
             },
         },
         "allowance": allowance,
@@ -644,3 +659,78 @@ def test_a_damaged_field_marks_its_row_and_never_the_week(
                 assert report["allowances"]["all_match"] is False, (path, candidate)
             assert untouched["allowance_unmeasured"] is False, (path, candidate)
             assert untouched["allowance_match"] is True, (path, candidate)
+
+
+def test_a_primary_only_window_replays_its_own_allowance(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A provider-reported month window is paced and replayed from the row alone.
+
+    An account publishing one operative window and no short sibling has its
+    allowance derived from that window's own elapsed fraction. The row records
+    the window length, the fraction and the burn beside the derived figure, so
+    the replay reproduces the recorded allowance from the row without a stream,
+    a receipt or the window-length table. A replay that assumed a fixed week
+    would reproduce a different allowance for the same row.
+    """
+    from reckon import budget
+    from reckon.crew.pace_replay import replay
+
+    moment = datetime(2026, 9, 22, 8, tzinfo=UTC)
+    reset = moment + timedelta(minutes=43_200) - timedelta(days=2)
+    reading = budget._rate_limits_reading(
+        {
+            "primary": {
+                "window_minutes": 43_200,
+                "used_percent": 2.0,
+                "resets_at": int(reset.timestamp()),
+            },
+            "secondary": None,
+        },
+        observed_at=moment,
+        moment=moment,
+    )
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(budget, "recorded_windows", lambda *a, **k: {"alpha": reading})
+    monkeypatch.setattr(budget, "_account_surface_readings", lambda *a, **k: {})
+    config = {
+        "backends": {
+            "alpha": {
+                "launch": "cli",
+                "command": "codex",
+                "model": "some-model",
+                "budget_group": "sol",
+            }
+        },
+        "budget": {"pace_multiple": 1.1, "drain_lead_hours": 12.0},
+    }
+    row = budget.pace_row(
+        config, project="sample", lane="alpha", node="n", score=0.0, now=moment
+    )
+
+    # The row carries the operative length and derives from that window's
+    # elapsed fraction, not from a fixed week: two days into a thirty-day window
+    # at 2% used, the leaning multiple gives the month's own share.
+    assert row["clocks"]["five_hour"]["period"] == "primary", row["clocks"]
+    assert row["allowance"]["window_minutes"] == 43_200
+    assert row["allowance"]["elapsed_fraction"] == pytest.approx(2 / 30)
+    assert row["allowance"]["derived"] == pytest.approx((2 / 30) * 1.1, abs=1e-4)
+
+    report = replay(
+        [
+            {
+                "run_id": "run-primary",
+                "role": "implement",
+                "backend": "alpha",
+                "local": False,
+                "pace": row,
+            }
+        ]
+    )
+
+    assert report["allowances"]["all_match"] is True, report["text"]
+    assert report["row_count"] == 1
+    reproduced = report["rows"][0]["recomputed_allowance"]
+    assert reproduced["window_minutes"] == 43_200
+    assert reproduced["derived"] == pytest.approx(row["allowance"]["derived"])
+    assert reproduced == row["allowance"]
