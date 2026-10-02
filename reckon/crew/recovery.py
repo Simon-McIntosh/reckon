@@ -7915,6 +7915,37 @@ def _stall_window_seconds(row: Mapping[str, Any], stall_seconds: int) -> int:
     return max(stall_seconds, budget_seconds)
 
 
+def _stall_reading(
+    state: str,
+    detail: str,
+    *,
+    quiet: int | None,
+    window: int,
+    pause_reason: str | None,
+    process_state: str | None,
+) -> tuple[str, str]:
+    """Apply the stream-silence reading to a non-terminal state.
+
+    The only part of a verdict that moves with the clock rather than with a
+    file: a run that was working and has gone quiet past its window is paused
+    when something explains the silence and stalled when nothing does. It is a
+    pure function of the state, the silence and the window so a producer that
+    reuses a snapshot can re-derive exactly this decision from stored inputs,
+    without reading a stream or a manifest again: the silence is recomputed from
+    the stream's own stat and the rest is carried on the verdict.
+    """
+    if state not in ("dispatched", "working"):
+        return state, detail
+    if quiet is None or quiet <= window:
+        return state, detail
+    if pause_reason is not None:
+        return (
+            WAITING_STATUS,
+            f"paused: sitting in {pause_reason} for {quiet}s; it lifts itself",
+        )
+    return "stalled", f"{process_state}, quiet {quiet // 60}m"
+
+
 def _watch_verdict(
     pointer: Mapping[str, Any],
     row: Mapping[str, Any],
@@ -8065,6 +8096,17 @@ def _watch_verdict(
             detail = detail[len(prefix) :]
             break
 
+    # The stream-silence reading is the only part of a verdict that moves with
+    # the clock rather than with a file, so it is isolated behind a pure
+    # helper and its inputs are exposed on the verdict below. A producer that
+    # reuses a snapshot recomputes the silence from the stream's own stat and
+    # re-derives exactly this decision without reading anything again.
+    stall_base_state = state
+    stall_base_detail = detail
+    quiet_seconds = None
+    stall_window = _stall_window_seconds(row, stall_seconds)
+    stall_pause_reason = None
+    stall_process_state = None
     if death_reason is not None:
         # The classifier's clause for this record says the run was still
         # working when the process ended, which is the reading this branch
@@ -8075,42 +8117,33 @@ def _watch_verdict(
         # so the stall check has to reach every non-terminal state a pointer
         # can sit in — gating it on "working" alone left a run killed before
         # its phase ever advanced past "starting" permanently exempt.
-        quiet = _run_stream_quiet_seconds(pointer, now_seconds=moment)
-        if quiet > _stall_window_seconds(row, stall_seconds):
-            # A quiet stream is a hang only when nothing is waiting. An alive
-            # worker sitting in a bounded wait — a sleep, a peer read, a task
-            # wait, a rejected window, or a rate-limit retry loop — wakes
-            # itself, so it pauses rather than stalling; a genuinely hung
-            # process with none of those still stalls and is not weakened here.
-            wait = _stall_wait_reason(pointer)
-            if wait is not None:
-                state = WAITING_STATUS
-                detail = f"paused: sitting in {wait} for {quiet}s; it lifts itself"
-            else:
-                state = "stalled"
-                # The stall word covers three situations whose remedies
-                # differ: a live worker in a long quiet step needs nothing, a
-                # dead one needs a resume, and one whose liveness nothing
-                # established needs the check a reader would otherwise run by
-                # hand. Which one this is cannot be left to a colour or a
-                # glyph, so the row says it in words. Death is claimed only
-                # where something observed it, and two things can: a pid
-                # checked on this host and found dead, which the row's own
-                # liveness_proven records, or the supervisor's exit record,
-                # which survives a pointer nobody updated and a pid no other
-                # machine can look up. A stored answer carried because the
-                # launching host is another machine is neither, and neither is
-                # no answer at all, so those read as unproven rather than as a
-                # death. The quiet time is the row's own, in whole minutes,
-                # floored so the token never claims more silence than measured.
-                process_state = _process_reading(
-                    alive,
-                    liveness_proven=row.get("liveness_proven") is True,
-                    exit_record=row.get("exit_record"),
-                )
-                detail = f"{process_state}, quiet {quiet // 60}m"
-        else:
-            detail = ""
+        quiet_seconds = _run_stream_quiet_seconds(pointer, now_seconds=moment)
+        # A quiet stream is a hang only when nothing is waiting. An alive
+        # worker sitting in a bounded wait — a sleep, a peer read, a task
+        # wait, a rejected window, or a rate-limit retry loop — wakes itself,
+        # so it pauses rather than stalling; a genuinely hung process with none
+        # of those still stalls and is not weakened here. The stall word covers
+        # three situations whose remedies differ: a live worker in a long quiet
+        # step needs nothing, a dead one needs a resume, and one whose liveness
+        # nothing established needs the check a reader would otherwise run by
+        # hand. Death is claimed only where something observed it, and two
+        # things can: a pid checked on this host and found dead, or the
+        # supervisor's exit record.
+        stall_pause_reason = _stall_wait_reason(pointer)
+        stall_process_state = _process_reading(
+            alive,
+            liveness_proven=row.get("liveness_proven") is True,
+            exit_record=row.get("exit_record"),
+        )
+        state, detail = _stall_reading(
+            state,
+            "",
+            quiet=quiet_seconds,
+            window=stall_window,
+            pause_reason=stall_pause_reason,
+            process_state=stall_process_state,
+        )
+        stall_base_detail = ""
     elif state not in EXPLAINED_STATES:
         # Named as the states that MAY explain themselves rather than the ones
         # that may not. An allow-list of states to clear leaves every state
@@ -8160,10 +8193,179 @@ def _watch_verdict(
         "recovery_classification": recovery_classification,
         "recovery": recovery_verb,
         "lifting_condition": lifting_condition,
+        # The stream-silence inputs, carried so a producer that reuses a
+        # snapshot can re-derive the same reading from the stream's stat alone.
+        # ``stall_base_state`` is None for a verdict the silence reading never
+        # touched, which is what marks a snapshot whose state needs no refresh.
+        "stall_base_state": stall_base_state if quiet_seconds is not None else None,
+        "stall_base_detail": "" if quiet_seconds is not None else None,
+        "stall_window_seconds": stall_window,
+        "stall_pause_reason": stall_pause_reason,
+        "stall_process_state": stall_process_state,
+        "stall_quiet_seconds": quiet_seconds,
     }
 
 
-def _watch_snapshot(
+def _quiet_clock_latest(record: Mapping[str, Any], *, moment: float) -> float:
+    """The latest write instant a run's stream evidence offers, by stat alone.
+
+    The same clock ``runs._stream_quiet_seconds`` falls back to: the pointer's
+    own log, then the pointer's mtime, then the run's creation. Read here as an
+    absolute instant rather than a delta so a producer reusing a snapshot can
+    recompute the silence at a later moment without reading the file again.
+    """
+    stream = Path(str(record.get("log_path") or ""))
+    try:
+        if stream.is_file():
+            return stream.stat().st_mtime
+    except OSError:
+        pass
+    run_id = str(record.get("run_id") or "")
+    if run_id:
+        pointer = runs.pointer_path(run_id)
+        try:
+            if pointer.is_file():
+                return pointer.stat().st_mtime
+        except OSError:
+            pass
+    created = parse_utc(str(record.get("created_at") or ""))
+    return moment if created is None else created.timestamp()
+
+
+def _snapshot_reuse_key(record: Mapping[str, Any]) -> str | None:
+    """The identity of every input a run's classification is a function of.
+
+    The classification's own composition, as :func:`_classification_inputs`
+    resolves it: the pointer, manifest, stream, the run's exit, worker and
+    attempt records, the review store's candidates for this run, and the
+    worktree's git head. A review landing on a reviewer's target, or its head
+    moving, drops the snapshot exactly as it moves the classification. The
+    promotion ledger row joins the composition because a promotion writes it
+    while the pointer still exists and no other input moves with it. Liveness
+    is deliberately not here: it is not a file, so the reuse path reads it
+    fresh through the shared host-gated reader.
+    """
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return None
+    log = Path(str(record.get("log_path") or ""))
+    parts = [_classification_key(_classification_inputs(record, log))]
+    # The newest stream a run has may differ from the pointer's own log once a
+    # resume or a lane change writes beside it; its identity joins the key so a
+    # record appended to a resumed stream drops the snapshot.
+    found = _record_newest_stream(record)
+    parts.append(
+        f"stream={_file_identity(found[0]) if found is not None else 'absent'}"
+    )
+    project = str(record.get("project") or "")
+    repo = str(record.get("repo") or "")
+    if project and repo:
+        from reckon import ledger as ledger_module
+
+        try:
+            promote = ledger_module.run_path(project, run_id, repo)
+        except (OSError, ValueError):
+            promote = None
+        parts.append(
+            f"promote={_file_identity(promote) if promote is not None else 'absent'}"
+        )
+    return "|".join(parts)
+
+
+_SNAPSHOT_CACHE: dict[str, tuple[str, dict[str, Any]]] = {}
+_SNAPSHOT_CACHE_LIMIT = 256
+
+
+def _remember_snapshot(
+    run_id: str,
+    key: str,
+    snapshot: dict[str, Any],
+    *,
+    cache: dict[str, tuple[str, dict[str, Any]]] | None = None,
+) -> None:
+    """Store one run's snapshot, keeping the cache bounded.
+
+    Re-storing a run moves it to the most-recent position: a plain assignment
+    keeps a key at its original insertion place, so a run stored early and
+    updated every poll would sit at the front and be the first evicted by a
+    busy process once the cache filled — the entry the poll just wrote.
+    """
+    store = _SNAPSHOT_CACHE if cache is None else cache
+    store.pop(run_id, None)
+    store[run_id] = (key, snapshot)
+    if len(store) <= _SNAPSHOT_CACHE_LIMIT:
+        return
+    for rid in list(store):
+        if rid != run_id and not runs.run_dir(rid).is_dir():
+            del store[rid]
+    while len(store) > _SNAPSHOT_CACHE_LIMIT:
+        store.pop(next(iter(store)))
+
+
+def _fresh_liveness(pointer: Mapping[str, Any]) -> tuple[Any, Any, Any]:
+    """The process readings a snapshot reports, taken fresh from the process table.
+
+    The same host-gated reading classify_pointer composes: liveness through
+    ``local_liveness``, and — only where this host issued the pid — whether
+    anything still runs beneath the worker. A signal-0 probe, not a storage
+    read, so a poll over a run whose files have not moved takes it rather than
+    trusting the reading the previous poll happened to observe.
+    """
+    alive, proven = local_liveness(pointer)
+    descendant: Any = None
+    if proven and alive is True:
+        worker_pid = (
+            _worker_record_pid(pointer)
+            if _worker_record_liveness(pointer) is True
+            else None
+        )
+        if worker_pid is None:
+            worker_pid = _int_or_none(pointer.get("pid"))
+        descendant = _live_descendant(worker_pid) if worker_pid is not None else None
+    return (alive, proven, descendant)
+
+
+def _refresh_snapshot(
+    snapshot: Mapping[str, Any], *, moment: float
+) -> dict[str, Any]:
+    """Re-derive a reused snapshot's clock-derived fields from its stats.
+
+    Everything a snapshot carries was read from files that have not moved, so
+    only the silence — the one reading that grows with the clock — is
+    recomputed, from the stream instant and the attempt clock already recorded
+    on the snapshot and the moment this poll reports. The state and detail are
+    then re-derived through the same helper the full recompute uses, so a
+    reused snapshot can never disagree with one classified afresh at the same
+    moment.
+    """
+    refreshed = dict(snapshot)
+    stream_seconds = snapshot.get("stall_stream_seconds")
+    launch_seconds = snapshot.get("stall_launch_seconds")
+    quiet: int | None = None
+    if stream_seconds is not None or launch_seconds is not None:
+        candidates = [
+            moment - seconds
+            for seconds in (stream_seconds, launch_seconds)
+            if seconds is not None
+        ]
+        quiet = max(0, int(min(candidates)))
+    refreshed["quiet_seconds"] = quiet
+    base_state = snapshot.get("stall_base_state")
+    if base_state is not None:
+        state, detail = _stall_reading(
+            str(base_state),
+            str(snapshot.get("stall_base_detail") or ""),
+            quiet=quiet,
+            window=int(snapshot.get("stall_window_seconds") or 0),
+            pause_reason=snapshot.get("stall_pause_reason"),
+            process_state=snapshot.get("stall_process_state"),
+        )
+        refreshed["state"] = state
+        refreshed["detail"] = detail
+    return refreshed
+
+
+def _compute_watch_snapshot(
     pointer: Mapping[str, Any], *, moment: float, stall_seconds: int
 ) -> dict[str, Any]:
     """Reduce one pointer to the state and reason a ticker compares."""
@@ -8173,6 +8375,23 @@ def _watch_snapshot(
         stale_after_seconds=stall_seconds,
     )
     verdict = row["fleet_verdict"]
+
+    # The absolute instants the silence is measured between, resolved once
+    # here so a reused snapshot can recompute it from the stream's stat at a
+    # later moment without re-listing the run directory.
+    found = _record_newest_stream(pointer)
+    if found is not None:
+        stream_seconds: float | None = found[1]
+        stall_stream_path: str | None = str(found[0])
+    else:
+        stream_seconds = _quiet_clock_latest(pointer, moment=moment)
+        stall_stream_path = None
+    attempt_started = _attempt_started_seconds(pointer)
+    launch_seconds = (
+        attempt_started
+        if attempt_started is not None
+        else _quiet_clock_latest(pointer, moment=moment)
+    )
 
     # What ran it, as facts rather than a display string. The alias and effort
     # spelling were decided at dispatch and frozen onto the pointer; a later
@@ -8212,6 +8431,10 @@ def _watch_snapshot(
         "classification": row["classification"],
         "process_alive": row["process_alive"],
         "liveness_proven": row["liveness_proven"],
+        # The descendant reading the stall window is widened by, carried so a
+        # producer that reuses a snapshot can compare the reading it was built
+        # from with a fresh one and drop the entry when the child ends.
+        "process_descendant_alive": row.get("process_descendant_alive"),
         "recovery_classification": verdict["recovery_classification"],
         "recovery": verdict["recovery"],
         "lifting_condition": verdict.get("lifting_condition"),
@@ -8245,7 +8468,62 @@ def _watch_snapshot(
         "manifest_status": str(row.get("manifest_status") or ""),
         "manifest_commits": list(row.get("manifest_commits") or []),
         "manifest_digest": row.get("manifest_digest"),
+        # The clock-derived inputs, carried so a producer that reuses this
+        # snapshot recomputes the silence from the stream's stat alone rather
+        # than re-reading or re-listing anything.
+        "quiet_seconds": verdict.get("stall_quiet_seconds"),
+        "stall_base_state": verdict.get("stall_base_state"),
+        "stall_base_detail": verdict.get("stall_base_detail"),
+        "stall_window_seconds": verdict.get("stall_window_seconds"),
+        "stall_pause_reason": verdict.get("stall_pause_reason"),
+        "stall_process_state": verdict.get("stall_process_state"),
+        "stall_stream_seconds": stream_seconds,
+        "stall_launch_seconds": launch_seconds,
+        "stall_stream_path": stall_stream_path,
     }
+
+
+def _watch_snapshot(
+    pointer: Mapping[str, Any],
+    *,
+    moment: float,
+    stall_seconds: int,
+    cache: dict[str, tuple[str, dict[str, Any]]] | None = None,
+) -> dict[str, Any]:
+    """Reduce one pointer to the state and reason a ticker compares.
+
+    A run whose classification inputs are all unchanged since the last poll
+    serves its previous snapshot: only the silence is recomputed, from the
+    stream's stat and the poll's own moment. Any change to an input, or a
+    liveness change the snapshot reports, drops the entry and a full
+    classification is taken again. ``cache`` is the producer's own store, so a
+    cache never carries an answer across two independently armed watchers; the
+    module-level cache serves callers that pass none.
+    """
+    store = _SNAPSHOT_CACHE if cache is None else cache
+    run_id = str(pointer.get("run_id") or "")
+    served = store.get(run_id)
+    key = _snapshot_reuse_key(pointer)
+    if run_id and served is not None and key is not None and served[0] == key:
+        stored = served[1]
+        # A snapshot is reused only while the process reading it was built from
+        # still holds. Liveness is not a file: a worker can die, or a child it
+        # was waiting on can end, with every file untouched, and the row must
+        # change on the poll that observes it. The probe is taken every poll,
+        # through the same host-gated reader classify_pointer uses.
+        if _fresh_liveness(pointer) == (
+            stored.get("process_alive"),
+            stored.get("liveness_proven"),
+            stored.get("process_descendant_alive"),
+        ):
+            return _refresh_snapshot(stored, moment=moment)
+    snapshot = _compute_watch_snapshot(
+        pointer, moment=moment, stall_seconds=stall_seconds
+    )
+    refreshed = _refresh_snapshot(snapshot, moment=moment)
+    if run_id and key is not None:
+        _remember_snapshot(run_id, key, refreshed, cache=store)
+    return refreshed
 
 
 # The ordinary three buckets remain unchanged when no external wait exists. A
@@ -8981,6 +9259,10 @@ def watch_ticker(
         # producer records it each pass so a reader sees how far it has backed
         # off without asking the process.
         poll_interval_current = poll_interval
+        # The snapshots one armed watcher carries between its polls. It lives
+        # only as long as this watcher, so an independently armed producer
+        # starting later can never be served an earlier watcher's reading.
+        snapshot_cache: dict[str, tuple[str, dict[str, Any]]] = {}
         while True:
             # An unlinked seat record is rewritten before anything else, so a
             # producer whose file was removed is findable by unwatch again, and
@@ -9006,7 +9288,8 @@ def watch_ticker(
             moment = _utc_seconds()
             current = {
                 str(pointer.get("run_id") or ""): _watch_snapshot(
-                    pointer, moment=moment, stall_seconds=stall_seconds
+                    pointer, moment=moment, stall_seconds=stall_seconds,
+                    cache=snapshot_cache,
                 )
                 for pointer in pointers
                 if pointer.get("run_id")
