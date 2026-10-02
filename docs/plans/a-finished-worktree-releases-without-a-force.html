@@ -23,9 +23,9 @@
   <title>A Finished Worktree Releases Without a Force | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 </head>
 <body>
   <main class="plan-doc">
@@ -121,7 +121,7 @@
     </p>
 
     <h2 id="s4">§4 — The standing dirty worktrees are released through §3</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       <strong>Done when</strong> §3's release has run over every dirty worktree that no live run
       claims, and the residue report lists each with its classes. The report is committed under
@@ -147,6 +147,10 @@
     </p>
 
     
+
+    <h2 id="s6">§6 — A worktree whose commits landed elsewhere releases too</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>§4's release at about 21:35Z kept 12 dirty worktrees, because each carries one to six commits that are not on main. They are listed in the landed record, <code>docs/evidence/archive/a-finished-worktree-releases-without-a-force-landed.html#s4</code>. Their dirt is mostly the superseded <code>_signal_one</code> patch, but a commit that is not on main may hold work that exists nowhere else.</p><p><strong>Done when</strong> each of the 12 is checked commit by commit for patch equivalence with main, using <code>git cherry</code> or <code>git patch-id</code> against the integration head. A worktree whose every commit has a patch-equivalent on main is released through §3's residue-preserving path. A worktree with any commit that has no equivalent is kept and named with that commit's subject, in a report committed beside the landed record for the lead. The check also runs in <code>crew gc</code>, so a future squash-landed worktree releases the same way, with a test in a temporary repository covering an equivalent commit that releases and a non-equivalent one that is kept. The negative control drops the equivalence check, and the equivalent case is then kept.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>

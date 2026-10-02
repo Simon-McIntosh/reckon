@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-finished-worktree-releases-without-a-force-landed">
+  <meta name="plan-title" content="A Finished Worktree Releases Without a Force — landed record">
+  <meta name="plan-summary" content="What landed for a-finished-worktree-releases-without-a-force, and the residue report from releasing the standing dirty worktrees.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-evidence-for" content="a-finished-worktree-releases-without-a-force">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <title>A Finished Worktree Releases Without a Force — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="lead">
+        The cumulative record for a-finished-worktree-releases-without-a-force: one anchor per
+        landed result.
+      </p>
+    </header>
+
+    <h2 id="s3">§3 — Residue-preserving release (merged at 19087433d)</h2>
+    <p>
+      <code>reckon crew gc --apply</code> releases an integrated worktree that no live run
+      claims, even when it holds uncommitted changes. It first saves tracked-file changes as a
+      patch it verifies, and untracked files as a tar. It then classifies each dirty path as
+      subsumed, superseded or unique, and only after that removes the worktree. The node was
+      r-20261002T203108817841-finished-worktree-saves-residue-and-releases, on the codex lane,
+      reviewed at 98 with no added failures. Its head arm passed 57 tests against 50 at the base,
+      and the skip-save control fails.
+    </p>
+
+    <h2 id="s4">§4 — The standing dirty worktrees, released on 2026-10-02 at about 21:35Z</h2>
+    <p>
+      s22-coord ran <code>reckon crew gc --repo ~/Code/reckon --project reckon --apply</code>
+      after a dry run listed its targets. Its full output is at
+      <code>~/.config/reckon/crew/reports/reckon/gc-apply-20261002T2135Z.json</code>.
+    </p>
+    <table>
+      <thead><tr><th>Worktrees</th><th>Count</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr><td>dirty and integrated, no live claim</td><td>23</td><td>residue saved, then removed</td></tr>
+        <tr><td>dirty with commits not on main</td><td>12</td><td>kept; see below</td></tr>
+        <tr><td>claimed by a live run</td><td>10</td><td>untouched</td></tr>
+        <tr><td>unintegrated, clean</td><td>13</td><td>untouched</td></tr>
+        <tr><td>base-tree extractions</td><td>32</td><td>untouched</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The 23 released worktrees held 65 dirty paths, classified as 41 subsumed (the content is
+      already at main's head), 19 superseded (main changed the path since the worktree's base)
+      and 5 unique. Residue is under <code>~/.config/reckon/crew/worktree-residue/</code>, one
+      directory per worktree, each holding <code>residue.patch</code>, <code>untracked.tar</code>
+      and <code>classification.json</code>. The thirty <code>_signal_one</code> patches classified
+      as subsumed or superseded. The source changes in <code>s13-ship/execution-fit-refusal</code>
+      did not classify as unique. The five unique paths are scratch rather than product work:
+    </p>
+    <ul>
+      <li><code>ship-s20-20260923/follower-repair-reuse-map</code>: <code>docs/figures/a-follower-keeps-your-work-in-view/reuse-map-chains.svg</code></li>
+      <li><code>ship-s15-2026-09-04/a-lane-killed-run-is-blocked-not-abandoned</code>: <code>test_logs/ruff_head.txt</code></li>
+      <li><code>ship-s18-20260915/a-write-never-drops-members-it-was-not-asked-to</code>: <code>output/base_tree_path.txt</code>, <code>output/parse_check.py</code>, <code>output/reap_repro.py</code></li>
+    </ul>
+    <p>
+      Twelve dirty worktrees were kept, because each carries one to six commits that are not on
+      main. A commit there may hold work nowhere else, so these are not released by §3. They are
+      the subject of §6:
+    </p>
+    <ul>
+      <li><code>660d357e-…/review-prompt-per-item-verdicts</code> (1 commit; a plan edit)</li>
+      <li><code>s9-20260825-surfacefix/n-after-capture-evidence</code> (1)</li>
+      <li><code>ship-s15/session-keying-test-expectation</code> (2)</li>
+      <li><code>ship-s15-0903/</code>: <code>a-spent-lane-judgement-has-a-shelf-life</code>, <code>liveness-is-derived-not-remembered</code>, <code>model-and-effort-are-separate-columns</code>, <code>the-promotion-gate-reads-the-attribution</code>, <code>the-transition-carries-the-role-it-renders</code> and <code>the-working-bucket-counts-only-work</code> (1 each)</li>
+      <li><code>ship-s18-20260915/review-of-the-reason-keeps-its-predicate</code> (1)</li>
+      <li><code>ship-s18-20260918/a-scoring-run-dispatches-its-own-review</code> (2)</li>
+      <li><code>ship-s18-20260918/a-withheld-worktree-says-whether-its-work-is-unique</code> (6)</li>
+    </ul>
+  </main>
+</body>
+</html>
