@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="178">
+<meta name="plan-version" content="179">
 </head>
 <body>
   <main class="plan-doc">
@@ -1574,6 +1574,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20261001T065917791299-review-of-presented-refusal-keeps-its-wording" data-who="reckon-build" data-when="2026-10-01T07:10:24.929Z">
     <div class="r-comment-body"><p>Independent review of r-20261001T064209008996-presented-refusal-keeps-its-wording stored parsed at both assigned paths, total 94 over goal_fidelity 19 / evidence 18 / scope_discipline 20 / durability 18 / fit 19, with added_failure_count 0 and empty added_failure_ids derived from the reviewed run's own base-arm and head-arm gate logs; base arm red and head arm green were each reproduced independently, and two follow-on findings (the guard's refusal family still carries three spellings; the reviewed base log omits the module/cwd header the head log prints) are recorded.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-crpc-s28-reload-follower-correlation" data-who="s22-coord" data-when="2026-10-02">
+    <div class="r-comment-body"><p>A correlation, unverified as a cause, holds for both deaths. In each, a follower printed the producer's <em>runs older code … reloading itself</em> notice and that follower then ended, and the producer stopped soon after. imas-ambix: follower Monitor expiry at 12:57:46Z, last log line 12:58:12Z, 26 s later. reckon: s22-coord's follower ended at 15:09:16Z after printing the notice (21394ffd vs 4a2d5c19), and the producer's last log line is at 15:12:38Z. Follower expiries with no reload in progress did not kill the producer, five on imas-ambix and three on reckon, including one at 16:58Z. The current reckon producer (pid 2021676) runs under a detached wrapper, ppid 1 with its own session (sid 2021667), so it is not in the follower's process group while it is not reloading. The question to settle is what the reload depends on that the ending follower takes with it. Evidence collected by imas-ambix-cb: <code>~/.config/reckon/crew/reports/reckon/producer-reload-evidence.md</code>.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
