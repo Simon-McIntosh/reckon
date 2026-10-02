@@ -372,9 +372,10 @@ def test_the_reflex_resumes_a_session_inside_the_window(
     assert result["pid"] == LIVE_PID
     assert len(launcher.calls) == 1
     assert Path(launcher.calls[0]["log_path"]).name == "resume-1.jsonl"
-    assert Path(launcher.calls[0]["prompt_path"]).read_text(encoding="utf-8") == (
-        "answer the review's findings\n"
-    )
+    advice_prompt = Path(launcher.calls[0]["prompt_path"]).read_text(encoding="utf-8")
+    assert "answer the review's findings" in advice_prompt
+    assert "FENCE — TIME (resumed attempt)" in advice_prompt
+    assert "deadline " in advice_prompt
     resumed = runs.read_pointer(WITHIN_RUN)
     assert resumed["resumed_turn"] == 1
     assert resumed["attempt_kind"] == "resume"

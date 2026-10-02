@@ -245,7 +245,10 @@ def test_a_lapsed_refusal_is_resumed_once_with_a_continue_advice(
     assert resumed["session_source"] == "stream"
     assert resumed["session_id"]
     assert len(launcher.calls) == 1
-    assert launcher.calls[0]["prompt"] == CONTINUE_ADVICE
+    advice_prompt = launcher.calls[0]["prompt"]
+    assert CONTINUE_ADVICE in advice_prompt
+    assert "FENCE — TIME (resumed attempt)" in advice_prompt
+    assert "deadline " in advice_prompt
     assert resumed["session_id"] in json.dumps(launcher.calls[0]["plan"].as_dict())
 
     # What an operator reads afterwards, rather than inferring it from a run

@@ -151,9 +151,12 @@ def test_the_sweep_resumes_only_after_the_condition_terminates(
     finished = sweep(PROJECT, launcher=launcher, condition_test=condition_test)
     assert [item["run_id"] for item in finished["resumed"]] == [run_id]
     assert finished["resumed"][0]["observed"] == "COMPLETED"
-    assert launcher.calls[0]["prompt"] == (
-        "cluster job 7788 finished; inspect its result and finish the report"
+    resume_prompt = launcher.calls[0]["prompt"]
+    assert "cluster job 7788 finished; inspect its result and finish the report" in (
+        resume_prompt
     )
+    assert "FENCE — TIME (resumed attempt)" in resume_prompt
+    assert "deadline " in resume_prompt
 
     repeated = sweep(PROJECT, launcher=launcher, condition_test=condition_test)
     assert repeated["resumed"] == []
