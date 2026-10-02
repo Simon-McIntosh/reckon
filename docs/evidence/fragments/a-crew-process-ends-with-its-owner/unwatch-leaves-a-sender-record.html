@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="crew unwatch leaves a sender record beside the watcher registration">
+  <meta name="plan-summary" content="crew unwatch writes the sender record into the directory holding the watch registration before it signals, naming the watcher pid and the unwatch reason, so a watcher stop is attributed from its own registration directory.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,watch,unwatch,sender-record">
+  <title>crew unwatch leaves a sender record beside the watcher registration — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="unwatch-leaves-a-sender-record" data-reckon="landed" data-when="2026-10-02">
+  <h2>crew unwatch leaves a sender record beside the watcher registration</h2>
+  <p><code>recovery.unwatch</code> now calls <code>routing._write_sender_record</code> with the watch registration's own directory as the target and <code>reason="unwatch"</code> before it signals the recorded watcher pid, so a watcher is attributed from its own registration directory since it has no run directory. <code>tests/test_unwatch_leaves_a_sender_record.py</code> arms a real producer in a temporary <code>RECKON_HOME</code>, reads the record at the instant of signalling and asserts it exists and names the live producer's pid — <strong>2 passed</strong>, <code>EXIT=0</code>. The declared mutation (write removed) fails the record assertion, <code>EXIT=1</code>. Base and head arms of <code>tests/test_every_signal_leaves_a_sender_record.py</code>, <code>tests/test_producer_registration_survives_unlink.py</code> and <code>tests/test_crew_watch_lifetime.py</code> each report <strong>10 passed</strong> with <strong>zero added failures</strong>.</p>
+</article>
+</body>
+</html>
