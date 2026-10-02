@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="271">
+<meta name="plan-version" content="272">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -1341,6 +1341,9 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T105858739050-the-stop-bound-has-its-own-control" data-who="reckon-build" data-when="2026-10-02T11:08:14.681Z">
     <div class="r-comment-body"><p>tests/test_a_stopped_run_ends_its_supervisor.py adds a second declared control mutation through the stop-grace hook — a mid-window grace derived from the elapsed bound and the wait ceiling (56 s; supervisor drains ~65 s) — so the ignored-stop case clears the 90 s wait and fails on the elapsed bound itself (62.7 s vs 40 s); unmutated 3 passed, ceiling control fails at the 90 s ceiling, mid-window control fails at the bound.</p></div>
 </div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T110839853404-review-of-the-stop-bound-has-its-own-control" data-who="reckon-build" data-when="2026-10-02T11:22:27.170Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261002T105858739050-the-stop-bound-has-its-own-control at head a78af06d3 (base 0993c2b88): total 97/100 across five dimensions (goal_fidelity 20, evidence 19, scope_discipline 20, durability 18, fit 20). The node adds a mid-window stop-grace mutation derived from the elapsed bound and the wait ceiling (56.0 s; drain 65.0 s = midpoint of the 40 s bound and the 90 s ceiling) so the ignored-stop case clears the bounded wait and fails on the elapsed bound itself (62.36 s &lt; 40 s, line 317); all four arms reproduced (base 3 passed EXIT=0, head 3 passed EXIT=0, mid-window 1 failed EXIT=1 at the bound, ceiling 1 failed EXIT=1 at the 90 s wait); added_failure_count 0.</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
 </div>
@@ -1426,7 +1429,7 @@
     <div class="r-comment-body"><p>Independent review of r-20261002T104603166755-crew-complete-time-after-the-bounds stored (91/100: goal_fidelity 19, evidence 17, scope_discipline 20, durability 16, fit 19) for the reviewed head 7f9b87644855f26c9a5b5ee6078f49586c6984c5; three follow-on findings, none blocking.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261002T111317913444-review-of-a-partial-scan-keeps-the-whole-cache" data-who="reckon-build" data-when="2026-10-02T11:20:04.503Z">
-    <div class="r-comment-body"><p>Review of run r-20261002T105539138565-a-partial-scan-keeps-the-whole-cache stored at both declared paths: total 97/100 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19), reviewed base 80e60ab02921867be837147ea775bdd1a453ab30 / head fde9af37b34221998156bf60aee4e92bc88a59ba, added_failure_count 0 with empty added_failure_ids derived from the run&#x27;s own base/head gate logs, one follow-on finding (counting cached paths into the prune cap lets a removed file&#x27;s entry persist) and no blocking findings.</p></div>
+    <div class="r-comment-body"><p>Review of run r-20261002T105539138565-a-partial-scan-keeps-the-whole-cache stored at both declared paths: total 97/100 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19), reviewed base 80e60ab02921867be837147ea775bdd1a453ab30 / head fde9af37b34221998156bf60aee4e92bc88a59ba, added_failure_count 0 with empty added_failure_ids derived from the run's own base/head gate logs, one follow-on finding (counting cached paths into the prune cap lets a removed file's entry persist) and no blocking findings.</p></div>
 </div>
 </section>
 </main>
