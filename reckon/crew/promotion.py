@@ -3263,15 +3263,19 @@ def _plan_differs_only_by_the_stores_own_writes(
     the plan store itself makes.
 
     The store is the sole writer of a plan's reckon-owned content: the
-    ``plan-*`` scalars (``impl``, ``status``, the version stamps and the rest),
-    the section records, and the gates, decisions, followups, questions,
-    research and comment sections. Every one of those is a plan-state write the
-    store makes, so a change confined to them — an impl or status move, a
-    resolved followup, an appended landing comment, a re-encoded entity — is
-    the run's own bookkeeping and is admitted. The comparison therefore reads
-    each side as parsed HTML and keeps only the authored content outside those
-    store-owned regions; an authored prose edit, which the store never
-    regenerates, survives on both sides and is the only thing that refuses.
+    ``plan-*`` scalars (``impl``, ``status``, the version stamps and the rest)
+    and every element carrying ``data-reckon``. That marker declares the store's
+    own region whatever the tag, so the admitted class is every ``data-reckon``
+    element the store writes — the section records, the sections such as gates,
+    decisions, followups, questions, research and comments, and the landed and
+    landing notes are examples rather than an exhaustive list. Every one of
+    those is a plan-state write the store makes, so a change confined to them —
+    an impl or status move, a resolved followup, an appended landing comment, a
+    collapsed section's landed note, a re-encoded entity — is the run's own
+    bookkeeping and is admitted. The comparison therefore reads each side as
+    parsed HTML and keeps only the authored content outside those store-owned
+    regions; an authored prose edit, which the store never regenerates, survives
+    on both sides and is the only thing that refuses.
 
     Parsing both sides through the same HTML reader also normalises a
     re-encoded entity, so the store's canonical re-encoding does not read as an
@@ -3317,7 +3321,6 @@ def _plan_differs_only_by_the_stores_own_writes(
 
 _RECORD_ATTRIBUTES = frozenset(
     {
-        "data-reckon",
         "data-effort-hours",
         "data-attempts",
         "data-status",
@@ -3329,15 +3332,18 @@ _RECORD_ATTRIBUTES = frozenset(
 def _strip_store_owned_content(soup) -> None:
     """Remove the plan store's regenerate-from-state content in place.
 
-    Leaves only authored prose: the ``plan-*`` scalars, the reckon-owned
-    sections, and the section-record metadata the writer regenerates are all
-    detached, so a difference that survives is one the store does not own.
+    Leaves only authored prose: the ``plan-*`` scalars and every element the
+    store marks as its own region are detached, so a difference that survives
+    is one the store does not own. Every element carrying ``data-reckon`` is
+    such a region, whatever its tag — the section records, the sections such
+    as gates, decisions, followups, questions, research and comments, and the
+    landed and landing notes are examples rather than an exhaustive list.
     """
     for meta in soup.find_all("meta"):
         if (meta.get("name") or "").lower().startswith("plan-"):
             meta.decompose()
-    for section in soup.select("section[data-reckon]"):
-        section.decompose()
+    for element in soup.select("[data-reckon]"):
+        element.decompose()
     for element in soup.find_all(True):
         for attribute in list(element.attrs):
             if attribute in _RECORD_ATTRIBUTES or attribute.startswith(

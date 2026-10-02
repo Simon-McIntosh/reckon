@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s2">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-tools" content="crew,promotion,landing-guard,data-reckon">
+  <title>Landing guard admits every store element | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/body.css">
+</head>
+<body>
+<article class="r-note" data-node="landing-guard-admits-every-store-element" data-reckon="landed" data-when="2026-10-02">
+  <h2>Landing guard admits every data-reckon element the store writes</h2>
+
+  <p><strong>Defect reproduced before repair.</strong> A review of
+  <code>guard-test-docstring-names-sections-as-examples</code> recorded that the
+  landing guard's strip at <code>reckon/crew/promotion.py</code> decomposed only
+  <code>section[data-reckon]</code>, so every other element the plan store
+  writes &mdash; the landed and landing notes, which are
+  <code>div</code>/<code>article</code> elements carrying
+  <code>data-reckon</code> &mdash; lost only their attribute and kept their
+  content on the compared side. A plan whose only uncommitted difference was
+  such a store write therefore read as an authored edit and the promotion was
+  refused. The missing test was written first and observed red on the base code
+  (<code>EXIT=1</code>, the new id failing), quoting the refusal the guard
+  raised) before any product change.</p>
+
+  <p><strong>Change.</strong> <code>_strip_store_owned_content</code> now
+  decomposes <em>every</em> element carrying <code>data-reckon</code>, whatever
+  its tag, on both the HEAD and working-copy sides, so the store's own region is
+  removed before the comparison in the same way for a section record, a section
+  such as gates/decisions/followups/questions/research/comments, and a landed or
+  landing note. The now-unreachable <code>data-reckon</code> entry was dropped
+  from the record-attribute strip, and the guard's docstring names the admitted
+  class as every <code>data-reckon</code> element the store writes, with the
+  element kinds as examples rather than an exhaustive list.</p>
+
+  <p><strong>Measure.</strong> The node writes a test, so it declares a
+  <code>negative control</code>: <em>decompose only
+  <code>section[data-reckon]</code> again; the collapse-sized landed-note case
+  is refused and fails.</em> Base and head arms of the four named files ran on
+  the fleet allocation node <code>98dci4-clu-2018</code> (job
+  <code>1277272</code>), one pytest process per file with its own basetemp; the
+  base arm runs the files as they stood at the base revision
+  <code>7a50473b</code> in an extracted tree, the head arm in the node worktree.</p>
+  <table>
+    <thead><tr><th>arm</th><th>tree</th><th>result</th><th>added failures</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td>extracted base tree</td><td>80 passed, 1 failed</td><td>&mdash;</td></tr>
+      <tr><td>head</td><td>node worktree</td><td>81 passed, 0 failed</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p>The single base failure is the new id
+  <code>test_landing_commit_carries_only_its_own_comment.py::test_a_store_written_collapse_of_one_section_lands_as_the_runs_own_bookkeeping</code>,
+  which the head arm passes, so the base-to-head delta is zero added failures and
+  the guarded behaviour is one the new test can still drive. The authored-edit
+  refusal case in the same file still refuses, and the guard's admitted-class
+  message test still passes.</p>
+
+  <p><strong>Companion files.</strong> <code>test_repromotion_commits_its_recorded_comment.py</code>
+  (2), <code>test_promotion_requires_impl_move.py</code> (19) and
+  <code>test_crew_promotion.py</code> (47) move not at all between the arms, so
+  the one-line broadening moves no other promotion behaviour.</p>
+
+  <p>Logs: <code>logs/baseline-4files.log</code> (the declared negative control,
+  bare <code>EXIT=1</code>), <code>logs/after-4files.log</code>,
+  <code>logs/negative-control.log</code> (the new id red on base code), and
+  <code>logs/newtest.log</code> (the new id green at head).</p>
+</article>
+</body>
+</html>
