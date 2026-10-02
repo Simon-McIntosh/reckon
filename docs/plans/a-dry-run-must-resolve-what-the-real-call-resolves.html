@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="3">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="4">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -152,6 +152,10 @@
     <h2 id="s5">§5 — The dry run resolves what the real call resolves</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
 Measured twice on 2026-09-21. A dry run naming a sprint id as --plan returned ok and the real call refused plan-unavailable; the session that saw the green recorded 'the sprint slug is an acceptable --plan for review nodes' in a handoff, and a later session acted on it. Separately, --member codex-a dispatched with no --repo while codex-b, identically registered in the same roster, refused naming --repo. §2 moves the dry run's stopping line to the worktree so every read-only resolution the real call performs is performed, §3 makes member resolution single-valued, and §4 records the discriminator that finds the next one: what would make this field wrong while it still printed the same value.<p><strong>Done when</strong> a dry run performs every read-only resolution the real call performs and refuses what the real call refuses (§2 first).</p><p>Moved from followup f-ddr-001 on a-dry-run-must-resolve-what-the-real-call-resolves by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>draft</code>, live; §2–§4 named in body</p>
+
+    <h2 id="s6">§6 — A dispatch dry run shows how each --set override resolved</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>Reported by s25-picker. <code>reckon crew dispatch --dry-run</code> does not show how a <code>--set</code> override resolved. For example, <code>backends.codex.budget_group=null</code> gives no sign that the null took effect, so nothing confirms an override before the real dispatch spends a run.</p><p><strong>Done when</strong> the dry-run output carries, for each <code>--set</code> path, the value the resolved flight configuration holds at that path, null included, beside the value it held before the override. A path the configuration does not know is refused naming it. A test dry-runs a dispatch with <code>--set backends.codex.budget_group=null</code> and one other override, in a temporary RECKON_HOME, and asserts both resolved values appear. The negative control drops the resolution block, and the case then fails.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
