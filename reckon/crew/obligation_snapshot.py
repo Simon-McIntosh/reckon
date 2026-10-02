@@ -541,6 +541,7 @@ class FleetState:
     grace: float
     floors: Mapping[str, Any]
     rows: list[dict[str, Any]]
+    pointers: dict[str, Mapping[str, Any]]
     acknowledged: dict[str, dict[str, Any]]
     reviews_in_flight: dict[str, set[str]]
     sub_floor: dict[str, list[dict[str, Any]]]
@@ -557,9 +558,12 @@ def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
         str((config.get("fences") or {}).get("unreconciled_run_grace") or "15m")
     )
     reviews_in_flight: dict[str, set[str]] = {}
+    pointers: dict[str, Mapping[str, Any]] = {}
     for pointer in module.runs.list_live(project=project):
         session = str(pointer.get("session") or "")
         run_id = str(pointer.get("run_id") or "")
+        if run_id:
+            pointers[run_id] = pointer
         if session and run_id and module._current_review_in_flight(pointer):
             reviews_in_flight.setdefault(session, set()).add(run_id)
     floors = module.review_module.declared_dimension_floors(config)
@@ -570,6 +574,7 @@ def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
         grace=grace,
         floors=floors,
         rows=module._classified_rows(project),
+        pointers=pointers,
         acknowledged=module._acknowledgements_in_force(project, now=instant),
         reviews_in_flight=reviews_in_flight,
         sub_floor=module._sub_floor_items_by_session(project, floors, now=instant),
@@ -578,26 +583,19 @@ def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
     )
 
 
-def _duty_kind(
-    module, state: FleetState, row: Mapping[str, Any], in_flight: set[str]
-) -> str:
-    """The duty one classified row owes its session, or the empty string."""
-    classification = str(row.get("classification") or "")
+def _duty_kind(module, row: Mapping[str, Any]) -> str:
+    """The duty one classified row owes its session, or the empty string.
+
+    Rows whose evidence is a stored review of the run's current head are built
+    through the derivation's own review-duty function instead, so this resolves
+    the remaining kinds.
+    """
     recovery_classification = str(row.get("recovery_classification") or "")
-    if classification == "scoring":
-        if str(row.get("run_id") or "") in in_flight:
-            return ""
-        return module.CLASSIFICATION_DUTY_KINDS[classification]
-    if classification == "promotable":
-        age = module._row_age(row, now=state.now)
-        return (
-            "promotable-stale"
-            if age > state.grace
-            else module.CLASSIFICATION_DUTY_KINDS[classification]
-        )
     if recovery_classification in module.RECOVERY_CLASSIFICATION_DUTY_KINDS:
         return module.RECOVERY_CLASSIFICATION_DUTY_KINDS[recovery_classification]
-    return module.CLASSIFICATION_DUTY_KINDS.get(classification, "")
+    return module.CLASSIFICATION_DUTY_KINDS.get(
+        str(row.get("classification") or ""), ""
+    )
 
 
 def payload_for(state: FleetState, session: str) -> dict[str, Any]:
@@ -613,7 +611,22 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
     for row in state.rows:
         if str(row.get("session") or "") != session:
             continue
-        kind = _duty_kind(module, state, row, in_flight)
+        run_id = str(row.get("run_id") or "")
+        classification = str(row.get("classification") or "")
+        if classification in module.REVIEW_CLASSIFICATION_KINDS:
+            if classification == "scoring" and run_id in in_flight:
+                continue
+            items.append(
+                module._review_duty_item(
+                    state.project,
+                    row,
+                    state.pointers.get(run_id),
+                    now=state.now,
+                    grace=state.grace,
+                )
+            )
+            continue
+        kind = _duty_kind(module, row)
         if kind:
             items.append(module._live_item(row, kind=kind, now=state.now))
     items.extend(state.sub_floor.get(session, []))

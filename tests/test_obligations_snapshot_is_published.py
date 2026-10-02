@@ -29,6 +29,7 @@ from typing import Any
 import pytest
 
 from reckon.crew import obligation_snapshot, recovery, runs
+from reckon.crew import review as review_module
 
 obligations_module = importlib.import_module("reckon.crew.obligations")
 
@@ -78,6 +79,14 @@ def _git(repository: Path, *arguments: str) -> str:
         text=True,
     )
     return completed.stdout.strip()
+
+
+def _commit(repository: Path, name: str, body: str) -> str:
+    """Add one file at the repository root and return the new revision."""
+    (repository / name).write_text(body, encoding="utf-8")
+    _git(repository, "add", name)
+    _git(repository, "commit", "-q", "-m", f"test: add {name}")
+    return _git(repository, "rev-parse", "HEAD")
 
 
 @pytest.fixture()
@@ -413,6 +422,58 @@ def test_a_slice_equals_the_derivation_over_the_same_files(
     derived = obligations_module.obligations(PROJECT, SESSION)
     assert derived["obligations"], "the slice parity case must compare duties"
     assert sliced == derived
+
+
+def _store_review(*, run_id: str, base: str, head: str) -> None:
+    """Store one complete review record naming the revision it read."""
+    emitted = "\n".join(
+        f"SCORE {dimension}: 20" for dimension in review_module.REVIEW_DIMENSIONS
+    )
+    record = review_module.parse_review(emitted)
+    record.update(
+        {
+            "project": PROJECT,
+            "reviewed_run_id": run_id,
+            "review_run_id": f"review-of-{run_id}",
+            "reviewed_base_sha": base,
+            "reviewed_head_sha": head,
+        }
+    )
+    review_module.store_review(record)
+
+
+def test_a_moved_head_names_the_same_two_heads_in_snapshot_and_derivation(
+    fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A run whose head moved past its stored review reads review-missing.
+
+    The snapshot's duty and the derivation's are compared directly, so a
+    snapshot building the review duty by its own path fails: the duty would
+    carry no head pair and the two readers would disagree on the run's
+    evidence.
+    """
+    monkeypatch.setattr(recovery, "_utc_seconds", fleet["frozen"].timestamp)
+    repository = fleet["repo"]
+    reviewed_head = _git(repository, "rev-parse", "HEAD")
+    head = _commit(repository, "repair.txt", "repair\n")
+    assert head != reviewed_head
+    _write_pointer(fleet, "r-moved", phase="complete", status="complete")
+    _store_review(run_id="r-moved", base=reviewed_head, head=reviewed_head)
+
+    state = obligation_snapshot.fleet_state(PROJECT, now=fleet["frozen"])
+    sliced = obligation_snapshot.payload_for(state, SESSION)
+    derived = obligations_module.obligations(PROJECT, SESSION)
+
+    assert sliced == derived
+    for reader, payload in (("snapshot", sliced), ("derivation", derived)):
+        duties = [
+            item for item in payload["obligations"] if item["run_id"] == "r-moved"
+        ]
+        assert len(duties) == 1, (reader, payload["obligations"])
+        duty = duties[0]
+        assert duty["kind"] == "review-missing", (reader, duty)
+        assert duty["head"] == head, (reader, duty)
+        assert duty["reviewed_head"] == reviewed_head, (reader, duty)
 
 
 def test_the_stat_walk_skips_run_records(fleet: dict[str, Any]) -> None:
