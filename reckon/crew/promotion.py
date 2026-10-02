@@ -16,7 +16,6 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from reckon import (
     _backends,
-    _plan_html,
     _store,
     capabilities,
     clones,
@@ -3255,18 +3254,23 @@ def _plan_differs_only_by_the_stores_own_writes(
     """Whether the plan file's working copy differs from HEAD only by writes
     the plan store itself makes.
 
-    The store's own writes are an appended landing comment, the version and
-    modified stamps every versioned write moves, and its canonical
-    re-encoding of the reckon-owned meta and sections. Both sides are rendered
-    through the store's own writer and then read as parsed HTML, so a
-    re-encoded entity — in authored prose as much as in a rendered section —
-    does not read as an authored change. A comment element the working copy
-    holds and HEAD does not is a landing record the store appended and is
-    dropped before comparing; a comment HEAD already carries survives on both
-    sides, so an edit to it is still caught. Authored prose outside the
-    reckon-owned sections is carried through the render from each side, so an
-    added paragraph refuses. Any other difference — a scalar, a section record,
-    a decision — refuses.
+    The store is the sole writer of a plan's reckon-owned content: the
+    ``plan-*`` scalars (``impl``, ``status``, the version stamps and the rest),
+    the section records, and the gates, decisions, followups, questions,
+    research and comment sections. Every one of those is a plan-state write the
+    store makes, so a change confined to them — an impl or status move, a
+    resolved followup, an appended landing comment, a re-encoded entity — is
+    the run's own bookkeeping and is admitted. The comparison therefore reads
+    each side as parsed HTML and keeps only the authored content outside those
+    store-owned regions; an authored prose edit, which the store never
+    regenerates, survives on both sides and is the only thing that refuses.
+
+    Parsing both sides through the same HTML reader also normalises a
+    re-encoded entity, so the store's canonical re-encoding does not read as an
+    authored change. A body-resident comment the working copy holds and HEAD
+    does not is a landing record the store appended outside its comments
+    section and is dropped before comparing, while one HEAD already carries
+    survives on both sides.
     """
     from bs4 import BeautifulSoup
 
@@ -3280,46 +3284,58 @@ def _plan_differs_only_by_the_stores_own_writes(
     try:
         head_text = head.stdout
         disk_text = plan_file.read_text(encoding="utf-8", errors="replace")
-        head_state = _plan_html.read_state(head_text)
-        disk_state = _plan_html.read_state(disk_text)
+        head_soup = BeautifulSoup(head_text, "html.parser")
+        disk_soup = BeautifulSoup(disk_text, "html.parser")
     except Exception:  # noqa: BLE001 - an unreadable plan is not provably clean
         return False
     head_ids = {
-        str(item.get("id") or "")
-        for items in (head_state.get("comments") or {}).values()
-        for item in items
+        str(element.get("data-id") or "") for element in head_soup.select(".r-comment")
     }
-    try:
-        head_render = _plan_html.write_state(head_text, head_state)
-        disk_render = _plan_html.write_state(disk_text, disk_state)
-    except Exception:  # noqa: BLE001 - a plan that cannot be rebuilt is not clean
-        return False
-    head_soup = BeautifulSoup(head_render, "html.parser")
-    disk_soup = BeautifulSoup(disk_render, "html.parser")
-    # The versioned write always moves both stamps; they are not authorship, so
-    # drop them from both sides rather than comparing one working copy's stamps
-    # against the other's.
-    for soup in (head_soup, disk_soup):
-        for meta in soup.find_all(
-            "meta", attrs={"name": ["plan-version", "plan-modified"]}
-        ):
-            meta.decompose()
-    # A landing comment the store appended is not an authored change, so drop
-    # every comment element HEAD does not already carry, then any comments
-    # section left holding none of them.
+    # A body-resident comment the store appended for this landing is not
+    # authored, so drop disk elements HEAD does not already carry.
     for element in disk_soup.select(".r-comment"):
         if str(element.get("data-id") or "") not in head_ids:
             element.decompose()
-    for section in disk_soup.select('section[data-reckon="comments"]'):
-        if not section.select(".r-comment"):
-            section.decompose()
-    # Removing the store's appended records leaves the whitespace between the
-    # tags that held them, which is not authorship either side carried. Collapse
-    # whitespace between adjacent tags so the removed section does not read as a
+    for soup in (head_soup, disk_soup):
+        _strip_store_owned_content(soup)
+    # Removing the store's records leaves the whitespace between the tags that
+    # held them, which is not authorship either side carried. Collapse
+    # whitespace between adjacent tags so the removed records do not read as a
     # change; text inside a tag is untouched, so prose edits still differ.
     left = _collapse_inter_tag(str(head_soup))
     right = _collapse_inter_tag(str(disk_soup))
     return left == right
+
+
+_RECORD_ATTRIBUTES = frozenset(
+    {
+        "data-reckon",
+        "data-effort-hours",
+        "data-attempts",
+        "data-status",
+        "data-links",
+    }
+)
+
+
+def _strip_store_owned_content(soup) -> None:
+    """Remove the plan store's regenerate-from-state content in place.
+
+    Leaves only authored prose: the ``plan-*`` scalars, the reckon-owned
+    sections, and the section-record metadata the writer regenerates are all
+    detached, so a difference that survives is one the store does not own.
+    """
+    for meta in soup.find_all("meta"):
+        if (meta.get("name") or "").lower().startswith("plan-"):
+            meta.decompose()
+    for section in soup.select("section[data-reckon]"):
+        section.decompose()
+    for element in soup.find_all(True):
+        for attribute in list(element.attrs):
+            if attribute in _RECORD_ATTRIBUTES or attribute.startswith(
+                "data-capability-"
+            ):
+                del element[attribute]
 
 
 def _collapse_inter_tag(text: str) -> str:
