@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-follower-keeps-your-work-in-view">
+  <meta name="plan-title" content="A Follower Keeps Your Work In View">
+  <meta name="plan-summary" content="A coordinator&#x27;s own blocked and unpromoted runs are shown once and then scroll away, so every coordinator reconstructs them by hand from the live view.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="6.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-modified" content="2026-10-02">
+  <meta name="plan-version" content="20">
+  <meta name="plan-depends-on" content="a-scoped-follower-counts-its-own-session">
+  <title>A Follower Keeps Your Work In View | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-sprint" content="S22">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="0.0">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; What a coordinator must remember, the follower should keep saying</h2>
+    <p>The follower reports each run's state once. That is right for news and wrong for obligations.
+    A run that is blocked, unpromoted, stalled or abandoned needs the coordinator until it is
+    answered, and the one row announcing it scrolls away within minutes. Four coordinators said the
+    same on 2026-09-22, and each compensated by calling the live view filtered to their own session
+    before every decision. imas-efit-e3 counted about fifteen such calls in eight hours and still
+    left three runs unpromoted for between 1h21m and 2h42m.</p>
+    <p>The trailing figures do not help, because they count the whole project while the rows are the
+    reader's own. nova-37 read <code>6w&middot;3b&middot;3u</code> at 19:47 and looked for three
+    blocked runs that all belonged to another sprint. The count repair is owned by
+    <a href="/reckon/plans/a-scoped-follower-counts-its-own-session">a-scoped-follower-counts-its-own-session</a>,
+    whose last node passes the session at the follow command's call site. This plan depends on it.</p>
+    <p>Two open sections of older plans describe the same obligations and move here, because this
+    plan carries their dispatchable specification. The repeated inbox of
+    <a href="/reckon/plans/an-orchestrator-is-bound-by-its-inbox#s4">an-orchestrator-is-bound-by-its-inbox &sect;4</a>
+    becomes &sect;2, and the wave drain line of
+    <a href="/reckon/plans/crew-observability-truth#s13">crew-observability-truth &sect;13</a>
+    becomes &sect;3. The age cells that section's inbox work added to the row are removed by
+    <a href="/reckon/plans/a-monitor-row-reads-at-a-glance#s4">a-monitor-row-reads-at-a-glance &sect;4</a>
+    once the needs-you line carries each run's age beside its name.</p>
+    <p>Every coordinator also asked for the same two pushes, in nearly the same words. The first is a
+    standing list of their own runs that need them, restated rather than shown once. The second is a
+    line saying their own fleet has stopped working, because a quiet pane after a wave looks the same
+    whether work is running or finished.</p>
+
+    <h2 id="s2">&sect;2 &mdash; A standing line lists your runs that need you</h2>
+    <p>Add a row kind to the follower, the needs-you line. It lists every run of the owning session
+    whose state is in <code>NEEDS_ACTION</code> in <code>reckon/crew/ticker.py</code>, or is
+    unpromoted, or needs help. Each entry gives the node, the state word and the time the run has
+    held that state, as in <code>needs you: 2 unpromoted pta-adopted-read-cost 1h21m,
+    rail-worktree-uv-env 42m &middot; 1 blocked fsa-repair 5m</code>. The line is plain text and
+    reads fully without colour.</p>
+    <p>An unpromoted run whose review is already stored is marked <code>reviewed</code> in its entry.
+    imas-ambix-f6 lost the only repairable window this way: promotion deletes the pointer and its
+    captured session, so a review read after promotion can no longer be answered by resuming its
+    author.</p>
+    <p>Emit the line after any transition that changes the set, and again on a cadence whether or not
+    the set is empty. When nothing needs the coordinator the cadence line reads <code>yours: 4
+    working &middot; nothing needs you</code>. That makes the cadence line a heartbeat, which
+    imas-ambix-f6 asked for, because a quiet pane must not look the same for a healthy follower and a
+    dead one. The cadence defaults to ten minutes and is set with <code>--remind</code>. The line is
+    composed in Python beside the fleet partition in <code>reckon/crew/recovery.py</code>, so the
+    live MCP view can return the same list. The follower emits it from inside the generator
+    <code>_follow_watch_lines</code> in <code>reckon/cli.py</code>, in its wait pass where
+    <code>_tick()</code> is already called, because that code can yield to the pane. The
+    <code>on_poll</code> hook cannot carry it: the path map in
+    <a href="/reckon/plans/the-monitor-under-measurement#s4">the measurement plan &sect;4</a> found
+    that <code>_tick</code> discards <code>on_poll</code>'s return value, so nothing it produces
+    reaches the reader.</p>
+    <p><strong>Done when</strong> <code>tests/test_follow_needs_you_line.py</code> runs a follower
+    over a fixture holding two sessions. The owning session has one unpromoted and one working run,
+    and the other session has one blocked run. With the cadence set to one second, the needs-you line
+    appears at least twice in three seconds, names the unpromoted run with its age, and never names
+    the other session's blocked run. A second case with no owned run needing action asserts the cadence
+    line still appears and reads that nothing needs the coordinator. An unpromoted run with a stored
+    review record is marked <code>reviewed</code>. The negative control is executed and logged: with the cadence emission
+    removed, the line appears at most once and the first case fails. The live view returns the same
+    list, asserted by comparing the two outputs over the fixture. The write paths are
+    <code>reckon/crew/recovery.py</code>, <code>reckon/cli.py</code> and
+    <code>tests/test_follow_needs_you_line.py</code>.</p>
+
+    <h2 id="s3">&sect;3 &mdash; A drain line says when your own fleet stops working</h2>
+    <p>When the owning session's working and queued runs reach zero, emit one drain line. It says
+    either that the session's fleet is drained, or that nothing is working and names how many runs
+    still need the coordinator. Emit it once per change into that state, never on a cadence, because
+    the needs-you line already repeats.</p>
+    <p><strong>Done when</strong> a test moves the owning session's last working run to unpromoted
+    and asserts exactly one drain line naming one run that needs the coordinator. A peer session's
+    working run in the same fixture does not prevent the line. Moving the run on to promoted
+    produces exactly one further drain line saying the fleet is drained. The write paths are
+    <code>reckon/cli.py</code> and <code>tests/test_follow_drain_line.py</code>.</p>
+
+    <h2 id="s4">&sect;4 &mdash; Observing another session is read-only</h2>
+    <p>nova-a9 and nova-37 both found that a follower armed with <code>--observe-session</code> ran
+    the recovery sweep over the observed session's runs. In one case it dispatched a review onto a
+    peer's run from the observing session's runtime. The sweep a follower runs must act only on the
+    owning session's runs. <code>_sweep_lapsed_holds</code> in <code>reckon/cli.py</code> calls
+    <code>sweep</code> in <code>reckon/crew/resumption.py</code> with the project alone; pass the
+    owning session and filter the candidate runs by it. The path map in
+    <a href="/reckon/plans/the-monitor-under-measurement#s4">the measurement plan &sect;4</a> names
+    the exact lines.</p>
+    <p>A run whose session has no follower then has no sweeper. The decision below is locked on
+    the measurement in <a href="/reckon/plans/the-monitor-under-measurement#s7">the measurement plan
+    &sect;7</a>: the project watcher sweeps a session once it has had no live follower for ten
+    minutes, records itself as the writer of each action, and leaves alone a session whose pointers
+    name another host. Present coordinators re-arm within a median of 12 seconds and 90 percent
+    within 9.7 minutes, so ten minutes separates a re-arm from an absence.</p>
+    <p><strong>Done when</strong> <code>tests/test_follow_sweep_is_session_scoped.py</code> runs a
+    sweep through a follower for one session over a fixture where both that session and an observed
+    session each own one run whose hold has lapsed. Only the owning session's run is resumed, asserted
+    through a stub launcher that records its calls. Three further cases run through the watcher's
+    tick: a session unattended for eleven minutes is swept and its resumed run records the watcher
+    as writer, a session unattended for nine minutes is not swept, and a session whose pointer names
+    another host is not swept. The negative control is executed and logged:
+    calling the sweep without the session resumes both and the test fails. The write paths are
+    <code>reckon/cli.py</code>, <code>reckon/crew/resumption.py</code> and that test.</p>
+
+    <h2 id="s5">&sect;5 &mdash; A run nobody will come back to is reported, never capped</h2>
+    <p>The worker cap retired in a-dispatch-returns-without-its-worker &sect;8 guarded against a
+    real hazard in the wrong form: runs nobody returns to. The census imas-ambix-61 took at 13:17 UTC
+    on 2026-09-23 found finished, unpromoted pointers whose owning coordinator was no longer live.
+    Among them were imas-codex <code>ship-s14-20260917</code> at 52 hours,
+    <code>ship-s10-20260918</code>, and two runs of reckon <code>ship-crpc-20260921</code>. A session
+    may keep its runs as long as it needs them. The report exists so a run is never
+    <em>forgotten</em>, and it limits nothing.</p>
+    <p>A pointer is <em>forgotten</em> when two things hold. Its classification is terminal and
+    unpromoted: complete, blocked, failed, promotable, scoring or abandoned. And its owning session
+    has had no live follower registration, and no dispatch, for at least a threshold that defaults to
+    six hours. The list is derived in Python beside the fleet partition in
+    <code>reckon/crew/recovery.py</code> and returned by a <code>reckon crew forgotten --project P
+    [--hours N]</code> command, one row per pointer naming the run, node, session, classification,
+    age and the recover action. A pointer whose session is unknown counts as forgotten once it
+    passes the threshold, because absence is not ownership.</p>
+    <p><strong>Done when</strong> <code>tests/test_forgotten_runs_are_reported.py</code> builds a
+    temporary <code>RECKON_HOME</code> holding three pointers. One is complete and owned by a session
+    that has a live follower. One is complete and owned by a session with neither follower nor
+    dispatch for seven hours. One is running and owned by that same session. The command lists
+    exactly the second, with its age and recover action. With <code>--hours 8</code> it lists
+    nothing. The negative control is executed and logged: with the follower-liveness condition
+    removed, the first pointer is listed too and the test fails. No dispatch path consults the list,
+    asserted by the test grepping <code>reckon/crew/dispatch.py</code> for the new function's name.
+    The write paths are <code>reckon/crew/recovery.py</code>, <code>reckon/cli.py</code> and that
+    test. This section joins the <code>recovery.py</code> serial chain.</p>
+
+    <h2 id="s6">§6 — Push the reader&#x27;s own obligations</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>§2 and §3 share <code>reckon/cli.py</code> and run in order. §4 needs the sweep decision locked.</p><p><strong>Done when</strong> the follower surfaces the reader's own obligations unprompted (§2 and §3 in order; §4 needs the sweep decision).</p><p>Moved from followup f-afkywiv-001 on a-follower-keeps-your-work-in-view by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.0</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="who-sweeps-an-unfollowed-session" data-choice="the-project-watcher-sweeps-orphans" data-by="Simon McIntosh" data-when="2026-09-23T00:37:33+00:00">
+    <p class="r-dec-q">Once a follower sweeps only its own session, who sweeps the runs of a session that has no follower?</p>
+    <p class="r-dec-rat">Measured 2026-09-22 over seven days and four projects. A coordinator that is present re-arms fast: median 12 seconds, 471 of 587 gaps under a minute, 90th percentile 9.7 minutes. The tail, 99th percentile 5.2 hours and maximum 12.9 hours, is coordinators who were absent, and 13 expiries were never re-armed; three sessions were unattended at the census with pointers 24 to 26 hours old. A grace period of ten minutes, just above the 90th percentile, leaves a present coordinator&#x27;s re-arm alone and sweeps the sessions nobody is watching, while the 99th percentile would have disabled the sweep exactly when it is needed. The coordinator&#x27;s own session showed this the same night: its follower was down about two and a half hours during a usage-limit pause, and two finished runs received no review dispatch. No live pointer or registration named another host, so treating a foreign-host pointer as unknown costs nothing today. The watcher records itself as the writer of each sweep action, because no record today carries the sweeping session.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-afkywiv-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-follower-keeps-your-work-in-view" data-resolved-at="2026-10-02T08:45:05+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Push the reader&#x27;s own obligations</h4>
+    <div class="r-fu-body"><p>§2 and §3 share <code>reckon/cli.py</code> and run in order. §4 needs the sweep decision locked.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-follower-keeps-your-work-in-view</pre>
+    <p class="r-fu-outcome">Moved into §6 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
+    </article>
+</section>
+  <section data-reckon="gates" id="gates" class="r-gates">
+<h2><span class="sec">§</span> Evidence gates</h2>
+<div class="r-gate" data-id="g-afkywiv-sweep-ownership-measured" data-section="s4" data-gated-sections="s4" data-status="closed" data-verdict="passed">
+    <h4 class="r-gate-measure">the re-arm gap distribution, the unattended-session population, the count of cross-session sweep actions and the cross-host record count are measured, and the grace period is derived from the measured 99th percentile re-arm gap</h4>
+    <p class="r-gate-required-evidence">the-monitor-under-measurement#s7</p>
+    <a class="r-gate-evidence" href="docs/research/data/monitor-sweep-ownership.json at merge f7a03269: 587 expiry-to-re-arm gaps with median 12 s, 90th percentile 9.7 min, 99th percentile 5.2 h, 13 expiries never re-armed; 3 unattended sessions at census with pointers 24 to 26 h old; 0 records naming another host; the cross-session sweep count is not recoverable because no record carries the sweeping session, so the behaviour rests on the path map at the-monitor-under-measurement#s4, which read it from run r-20260922T161442206389&#x27;s own stream. The grace period is derived from the 90th rather than the 99th percentile the measure named, because the tail beyond it is absent coordinators, the population the sweep exists for.">Evidence</a>
+</div>
+</section>
+<section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s4" data-id="c-20260922T2020-sweep-recommendation" data-who="reckon-ship" data-when="2026-09-22T20:20:00+00:00">
+    <div class="r-comment-body"><p>Coordinator recommendation, not yet locked: the project watcher sweeps a session once it has had no live follower for a grace period, records itself as the sweep's writer on every run it acts on, and treats a session whose pointers name another login node as unknown rather than orphaned. The lead asked on 2026-09-22 that this rest on measurement, so the decision stays open behind gate <code>g-afkywiv-sweep-ownership-measured</code>. The grace period is the measured 99th percentile re-arm gap rounded up to five minutes, not the fifteen minutes first proposed. If the measurement finds no unattended sessions and no cross-session sweep actions, the recommendation weakens and the alternative option should be reconsidered.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260923T0045-sweep-locked" data-who="reckon-ship" data-when="2026-09-23T00:45:00+00:00">
+    <div class="r-comment-body"><p>Decision locked on measurement: the project watcher sweeps a session after ten minutes with no live follower, records itself as the writer of every sweep action, and treats a session whose pointers name another host as unknown. The grace period comes from the 90th percentile re-arm gap of 9.7 minutes, not the 99th percentile first proposed, because the tail beyond it is absent coordinators. The implementing node adds three tests beside the one this section names: a session unattended for eleven minutes is swept by the watcher and the resumed run records the watcher as its writer; a session unattended for nine minutes is not swept; a session whose pointer names another host is not swept. Its write paths extend to <code>reckon/crew/recovery.py</code> for the watcher's tick.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260923T0710-grace-population" data-who="reckon-ship" data-when="2026-09-23T07:10:00+00:00">
+    <div class="r-comment-body"><p><strong>Do not retune the ten-minute grace against the re-arm gap distribution.</strong> That distribution holds only sessions that re-armed; a follower that never comes back emits no gap and is absent from it by construction, which is the case the sweep exists for. imas-ambix-f6 pointed this out on 2026-09-23, and its own session is in the sample once for a re-arm on 2026-09-21 and missing for the follower it then lost for good. Ten minutes stands because it sits above the present-coordinator mode, not because the distribution bounds the absent case. A later tuning must measure the absent population directly, from sessions whose live pointers outlive every follower registration.</p><p><strong>A live instance, read at 07:05 UTC on 2026-09-23.</strong> imas-ambix has had no follower since the evening of 2026-09-22, and run <code>r-20260922T195432401622-placement-answers-the-scheduler</code> classifies as <code>scoring</code>: its manifest has been complete with two commits since 20:12 UTC, and no review was dispatched in the 5.5 hours since, because today only a follower's sweep dispatches reviews. Its pointer's stored phase still reads <code>starting</code>, the phase lag recorded on <a href="/reckon/plans/a-follower-outlives-its-monitor#s4">a-follower-outlives-its-monitor §4</a>. The watcher sweep this section adds would have dispatched that review ten minutes after the follower was lost.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260923T0150-correction-unfollowed-not-orphaned" data-who="reckon-ship" data-when="2026-09-23T01:50:00+00:00">
+    <div class="r-comment-body"><p><strong>Correction to the comment above, c-20260923T0710-grace-population.</strong> Its reading time was wrong: it was taken at about 01:45 UTC on 2026-09-23, not 07:05, because the time came from a peer's estimate rather than <code>date</code>. The run's wait since 20:12 UTC was about 5 hours 38 minutes, so that figure stands. Its label was also wrong. The run's owning coordinator, runtime session <code>230b9fc6-569c-40eb-97d2-19af05ea3982</code>, wrote its transcript five minutes before 01:50 UTC, so the session is <em>unfollowed</em>, not orphaned. How long it had been without a follower is unknown; it was without one for at least the 4.3 hours imas-ambix-f6 observed.</p><p><strong>What that changes for this section.</strong> The sweep's trigger is a session with no live follower for ten minutes, and that population includes busy coordinators who simply have no follower armed, not only absent ones. The sweep is still right for both, because its actions are exactly those the owner's own follower would take: resume a run whose hold lifted and dispatch a review a finished run has composed. It must never promote, discard or otherwise remove a live pointer, since promotion deletes the pointer and the owner's resume path with it. The implementing node adds a test that the watcher sweep over an unfollowed session leaves every pointer in place and writes no ledger row. Name the population <em>unfollowed</em> in code and rows; reserve <em>orphaned</em> for a session whose coordinator has also stopped writing.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260923T0205-double-review-guards" data-who="reckon-ship" data-when="2026-09-23T02:05:00+00:00">
+    <div class="r-comment-body"><p><strong>A sweep into a busy coordinator's runs can review a node twice, and three guards decide whether it does.</strong> imas-ambix-f6 raised this on 2026-09-23 after the trigger was widened to unfollowed sessions. Read against the source at 02:00 UTC:</p><ul><li><strong>Existing review suppresses the sweep's: already present.</strong> <code>_review_in_flight</code> in <code>reckon/crew/recovery.py</code> finds a standing review both from the dispatch record the reflex writes and, for a review a coordinator launched by hand, by the deterministic <code>review-of-</code> node id. The implementing node adds a test that a watcher sweep over an unfollowed session dispatches nothing when a hand-launched review of the same node is live.</li><li><strong>The owner sees a review it did not start: missing, and required here.</strong> A review dispatched by the watcher sweep appears in the owner's needs-you line as <code>review started by watcher</code> beside the run, so a coordinator returning to the node sees it before dispatching its own.</li><li><strong>The sweep respects the lane's published headroom: missing, and owned elsewhere.</strong> The sweep holds a review only when the local lane cannot be selected, when a previous lane refused, or on a metered budget hold; it never reads the lane document's headroom, so on the unmetered local lane nothing bounds how many reviews it fires across sessions at once. imas-ambix-f6 measured that lane's aggregate throughput falling from about 500 to 340 tokens a second past roughly 22 concurrent workers with nothing queueing visibly. How a dispatcher reads lane headroom belongs to <a href="/reckon/plans/advise-the-lane-never-force-it">advise-the-lane-never-force-it</a>; this section requires only that the watcher sweep, which has no coordinator present at its moment of choice, consult that same advisory and hold rather than exceed a published headroom of zero.</li></ul></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20260923T0200-headroom-rule-corrected" data-who="reckon-ship" data-when="2026-09-23T02:00:00+00:00">
+    <div class="r-comment-body"><p><strong>Correction to the third guard in c-20260923T0205-double-review-guards.</strong> "Hold on a published headroom of zero" is the wrong rule twice over, as imas-ambix-f6 pointed out. The lane document changes shape when its pool drains: at <code>running: 0</code> it reports <code>sizing_verdict: do-not-size</code> and <code>headroom: null</code>, and <code>concurrent_requests</code> is absent. A degraded read blanks the fields the same way, and one dispatch record shows <code>headroom: unknown</code> dispatched anyway. A rule keyed on the value zero cannot tell a drained lane from an unreadable one. And holding at zero does not bound a sweep that wants more reviews than the headroom it sees.</p><p><strong>The rule the implementing node follows.</strong> Each watcher sweep pass dispatches at most the published headroom, counted across every session the pass acts on, and it keys on which fields are present rather than on their values. With <code>headroom</code> numeric, the budget is that number. With the idle shape, <code>running</code> zero and <code>concurrent_requests</code> absent, the budget is <code>concurrent_requests_instant</code>. With the document missing, older than its shelf life, or carrying neither field, the pass dispatches nothing and records the lane as unreadable, since an absent field is a state, not permission. Reviews beyond the budget wait for the next pass. The tests cover all three shapes, including a pass that wants more reviews than a non-zero headroom and dispatches exactly the headroom. Read at 01:54 UTC the document carried <code>running: 4</code> and <code>headroom: 15</code>; the idle shape is the one recorded in the workstation's AGENTS.md and was not observed at this reading.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T044719237479-follower-repair-reuse-map" data-who="reckon-ship" data-when="2026-09-23T06:05:15.170Z">
+    <div class="r-comment-body"><p>reuse map for 20 S20 follower-repair sections, 107 grep-verified anchors, 6 shared write paths; review 85 (its gate does not enforce the tests-asserting column); no tracked file changed; manifest commits line repaired from prose</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T060520147321-review-of-follower-repair-reuse-map" data-who="reckon-ship" data-when="2026-09-23T07:30:40.863Z">
+    <div class="r-comment-body"><p>independent review of follower-repair-reuse-map: total 85, one finding that the map's own gate does not enforce the tests-asserting column; stopped after delivery while it re-verified unrelated runs</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T093112405934-removed-flag-migration-red-triaged" data-who="reckon-ship" data-when="2026-09-23T10:05:00Z">
+    <div class="r-comment-body"><p><strong>Triage of a red test on the delivery path: the source is right and the test was stale.</strong> <code>tests/test_removed_flag_migration.py::test_the_delivery_path_itself_carries_no_state_filter</code> ran the real <code>cli._follow_watch_lines</code> over a two-run fixture and waited for a delivered state named <code>complete</code>; the wait timed out at <code>_wait_for</code> (<code>tests/test_removed_flag_migration.py:363</code>). A manifest reporting <code>complete</code> with no independent review attached classifies <code>scoring</code> in <code>reckon/crew/recovery.py</code> and <code>_watch_snapshot</code> reduces it to <code>completed_unpromoted</code>; <code>complete</code> is reserved for a <code>promotable</code> run whose parsed review is attached. Commit <code>6255c53c</code> (2026-09-08, <em>keep watch states canonical</em>) fixed that mapping and carried <code>tests/test_crew_recovery.py</code> along; this test, written 2026-09-06, was not. The follower delivers all three states — <code>dispatched</code>, <code>working</code>, <code>completed_unpromoted</code> — so the no-filter property the name states holds; only the expected word was stale. Corrected the assertion and the wait predicate to the reducer's vocabulary; target test 1 passed in 2.5 s, added failures 0 (base 2 failed / 4 passed, after 1 failed / 5 passed, the survivor a pre-existing subprocess-stream failure reported as a follow-on). Negative control executed: a state filter reintroduced on the follower's selection in a scratch copy makes the corrected test fail at 38.1 s. Evidence anchor <a href="/reckon/plans/a-follower-keeps-your-work-in-view#removed-flag-migration">a-follower-keeps-your-work-in-view-landed.html#removed-flag-migration</a>, figure <code>/reckon/figures/a-follower-keeps-your-work-in-view/delivered-state-vocabulary.svg</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T110304353400-review-of-removed-flag-migration-red-triaged" data-who="reckon-ship" data-when="2026-09-23T12:22:58.296Z">
+    <div class="r-comment-body"><p>independent review of removed-flag-migration-red-triaged: total 96</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260923T182138607062-review-of-a-follower-keeps-your-work-in-view" data-who="reckon-ship" data-when="2026-09-23T19:14:33.017Z">
+    <div class="r-comment-body"><p>read-back of a-follower-keeps-your-work-in-view never completed (stopped for the lane drain); the plan has still not been read back, and its successor must run one before release</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260923T0735-over-budget-needs-you" data-who="reckon-ship" data-when="2026-09-23T07:35:00Z">
+    <div class="r-comment-body"><p><strong>Naming is not noticing, so the needs-you line must also list a run that is alive, silent and over its time budget.</strong> reckon-84 raised this on 2026-09-23 from a live specimen: <code>r-20260923T045846099612-second-read-back-of-the-control-gate-section</code>, with its process alive, 48 minutes silent and three hours into a twenty-minute budget. a-stalled-row-says-whether-the-worker-lives §3 and §6 would name that run correctly as alive and quiet, and §6 would rightly keep it from reading <code>stalled</code> while a live descendant exists. Nothing would escalate it, though: silence and health are least distinguishable in exactly that state. Before §2 is dispatched, its done-when gains one case. An owned run whose process is alive, whose newest stream is older than the stall window, and whose elapsed time exceeds its declared time budget appears on the needs-you line as <code>over budget, quiet Nm</code>. A run under budget with the same silence does not appear. Revise the §2 text and run its read-back before dispatch.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260924T1335-scout-draft-kept" data-who="" data-when="2026-09-24">
+    <div class="r-comment-body"><p><strong>A worktree was kept on purpose at the S20 re-plan.</strong> <code>~/Code/.reckon-worktrees/reckon-c8f839407e49/ship-s20-20260923/follower-repair-reuse-map</code> holds two untracked files from the prior-art scout of 2026-09-23. One is a draft of this plan's landed record, which differs from main's copy. The other is <code>docs/figures/a-follower-keeps-your-work-in-view/reuse-map-chains.svg</code>, which never reached main. The scout's reuse map itself is on GPFS at <code>~/.config/reckon/crew/reports/reckon/ship-s20-20260923/follower-repair-reuse-map/</code>. When this plan is next shipped, land the figure into the landed record, or record that it is not wanted, then remove the worktree without forcing it. A read-back of this plan was stopped for the lane drain and never completed, so this plan has <em>never been read back</em>. Run one before any section dispatches.</p></div>
+</div>
+</section>
+</main>
+</body>
+</html>

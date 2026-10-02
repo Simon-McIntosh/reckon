@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-title" content="A plan is reviewed before it is built">
+  <meta name="plan-summary" content="Every plan create and edit gets an advisory rubber-duck review via the reckon surface; before a build, a prior-art and depth review favours deep modules.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="8.0">
+  <meta name="plan-impl" content="0.6">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-sprint" content="S22">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="an-orchestrator-is-bound-by-its-inbox,the-local-lane-is-the-default">
+  <title>A plan is reviewed before it is built | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="18">
+<meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">&sect;1 &mdash; Why every plan needs a second reader</h2>
+    <p>The 2026-09-24 re-plan measured what nobody had re-read. imas-codex's
+    <code>sn-catalog-audit-instrument</code> had 13 reviewed and merged nodes and read as nearly
+    done. Measured against real call sites it stood at 0.56: 11 of 25 features were shallow, and
+    one computed its findings on every review for no template to read. imas-ambix closed a plan
+    as shipped whose criterion had never been met. Reckon's own consumers turned out to hardcode
+    1,537 lines of <code>~/.config/reckon</code> paths. In every case the author was competent and
+    the plan read well, but nothing checked the plan against the code or against a rubric before
+    work was built on it. Code gets an independent review before promotion; plans get none.</p>
+
+    <h2 id="s2">&sect;2 &mdash; A rubber-duck review of every plan create and edit</h2>
+    <p>Every plan create, and every edit that changes prose, done-whens, relationships or
+    sections, queues one review of the settled version. Edits are debounced, so a burst of edits
+    gets one review, and a pure metadata change such as an impl bump is skipped. Hand edits are
+    caught at commit as well as through the MCP write path. The review is read-only, runs on the
+    local lane, and checks a fixed rubric:</p>
+    <ul>
+      <li>the plan is wired: its depends-on, informs and gates are present and correct;</li>
+      <li>each done-when is measurable, with a declared negative control;</li>
+      <li>each node has a single goal;</li>
+      <li>evidence and gate logs sit on durable paths, never in a session scratchpad;</li>
+      <li>claims are cited, and every file, section or commit an anchor names resolves;</li>
+      <li>naming carries no plan labels or ticket numbers into code.</li>
+    </ul>
+    <p><strong>It is advisory, a rubber duck, not a gate.</strong> The authoring agent acts on each
+    finding or declines it with a one-line reason, and both are recorded. The loop is visible in the
+    reckon web surface next to the plan, and reaches the author as one follower line. Nothing
+    blocks.</p>
+    <p><strong>Done when</strong> a plan create and a prose edit each produce one review record
+    within the debounce window. A burst of five edits produces one review, and an impl-only edit
+    produces none. The web surface shows the review's state (pending, ready, acted on, declined)
+    next to the plan version it reviewed. The author's action or declining reason is stored with
+    each finding.</p>
+
+    <h2 id="s3">&sect;3 &mdash; A prior-art and depth review before a plan is built</h2>
+    <p>Before a plan's first implementation node is released, a second review searches the
+    codebases for existing machinery the plan could reuse. That extends the build skill's
+    reuse-map rule, which a coordinator currently remembers to apply, into a review that runs
+    without being remembered. The review then judges the design for depth. The preference, stated
+    as the rubric, is <strong>deep modules behind small interfaces over a spread of shallow
+    wrappers</strong>. A new module must hide substantial behaviour behind an interface smaller
+    than what it hides. A plan that adds a thin layer over existing machinery must say why that
+    machinery cannot be extended. A duplicate of shared infrastructure, such as placement, path
+    resolution, scheduler queries or state readers, is a finding naming the owner to extend.
+    Today's evidence for why this matters: imas-ambix carried three duplicated placement paths, and
+    the thin-interface audit found consumers parsing reckon's CLI prose in 151 places.</p>
+    <p>The review also reads the interface budget. The velocity view publishes weekly counts of
+    reckon's interface in four families, from <code>reckon/interface_counts.py</code>:
+    <code>public_definitions</code>, <code>cli_options</code>, <code>mcp_views</code> and
+    <code>refusal_families</code>. The review cites the current week's four figures, and holds every
+    section that adds to any of them to one rule: the section names, in its own text, what it
+    retires or merges, or states why nothing can be. A section that adds surface without either is a
+    finding.</p>
+    <p><strong>Done when</strong> a plan whose design duplicates an existing mechanism receives a
+    finding naming that mechanism and its file. A plan that extends a deep module passes clean.
+    The finding reaches the author through the same loop as &sect;2.</p>
+    <p><strong>Also done when</strong> the review of a plan names the current week's four interface
+    counts. A section that adds a public definition, CLI option, MCP view or refusal family without
+    naming in its text what it retires or merges, or why nothing can be, receives a finding. A
+    reviewer can check that from the section's text alone.</p>
+
+    <h2 id="s4">§4 — Build the plan-review loop: PR-1, then PR-3 and PR-4, then PR-2 and PR-5</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>Per comment c-20260925T1210-design-brief and the design brief it cites. PR-4 writes <code>reckon/crew/dispatch.py</code> and waits for that file to free up.</p><p><strong>Done when</strong> all five PR items land in the order the design brief states.</p><p>Moved from followup f-apirbiib-build on a-plan-is-reviewed-before-it-is-built by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.6; PR-1..PR-5 per comment c-20260925T1210-design-brief</p>
+
+    <h2 id="s5">§5 — The plan-review store test reads frozen plans, not live ones</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p><code>tests/test_plan_review_store.py::test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it</code> reads the live <code>docs/plans/a-plan-is-reviewed-before-it-is-built.html</code> and <code>docs/plans/reckon-mcp-plan.html</code>. Since the followup migration (f65cc8edf) gave the first a complete set of section records, its impl is derived, so the test's <code>plan-impl</code> edit no longer reaches the impl state and the case fails (<code>assert 0.0 != 0.0</code>), found by S21's closing suite at ca630c06e. A test whose outcome moves when a plan is edited is a monitor of the docs tree, not a test of the fingerprint.</p><p><strong>Done when</strong> the test reads committed fixture copies under <code>tests/fixtures/plan_review_store/</code>, one legacy plan without a named effort field and one current plan whose impl is authored, so editing any live plan cannot change its outcome; the case passes; and a second case asserts that on a plan whose impl derives from complete section records, a <code>plan-impl</code> edit leaves both the impl state and the fingerprint unchanged.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="declined-finding-recurrence" data-choice="surface-recurrence" data-by="lead" data-when="2026-09-25T08:32:15+00:00">
+    <p class="r-dec-q">When an author declines a finding, is that final, or does a finding declined across several plans surface to the lead?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="final">Declined is final</button>
+      <button class="r-opt chosen" data-value="surface-recurrence">A finding declined in three or more plans surfaces to the lead</button>
+      </p>
+    <p class="r-dec-rat">A finding type declined in three or more plans surfaces to the lead. A repeated decline means either the rubric or a practice is wrong, and both are the lead&#x27;s to rule on.</p>
+    </div>
+<div class="r-dec" data-key="review-storage" data-choice="review-store" data-by="lead" data-when="2026-09-25T08:32:15+00:00">
+    <p class="r-dec-q">Where do plan reviews live?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="plan-comments">As plan comments, which are simple and already rendered</button>
+      <button class="r-opt chosen" data-value="review-store">In a review store that can be queried across plans and projects</button>
+      </p>
+    <p class="r-dec-rat">Plan reviews go in the crew review store, keyed by plan and version, with a one-line pointer on the plan. That makes them queryable across plans and projects and reuses the code-review machinery. The 2026-09-25 review-utility census found its measures blocked by unjoinable records, so plan reviews must be joinable from the start.</p>
+    </div>
+</section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-apirbiib-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="/reckon-build" data-resolved-at="2026-09-25T10:08:48+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Settle the two decisions, then build the review loop</h4>
+    <div class="r-fu-body"><p>The storage decision gates §2's record shape; settle it with the lead first. §2 is the loop (trigger, debounce, rubric, record, surface). §3 reuses the loop with its own rubric. The vision review of figures is deliberately out of scope for now, at the lead's word.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-plan-is-reviewed-before-it-is-built</pre>
+    <p class="r-fu-outcome">Both decisions were locked by the lead on 2026-09-25 (review store with a plan pointer; recurrence surfaces at three plans), and a third was added: a review must exist, with findings advisory. The build is split into PR-1 to PR-5 per the design brief.</p>
+    </article>
+<article class="r-fu" data-id="f-apirbiib-build" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-plan-is-reviewed-before-it-is-built §2" data-resolved-at="2026-10-02T08:45:17+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Build the plan-review loop: PR-1, then PR-3 and PR-4, then PR-2 and PR-5</h4>
+    <div class="r-fu-body"><p>Per comment c-20260925T1210-design-brief and the design brief it cites. PR-4 writes <code>reckon/crew/dispatch.py</code> and waits for that file to free up.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-plan-is-reviewed-before-it-is-built §2</pre>
+    <p class="r-fu-outcome">Moved into §4 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-20260925T1035-plan-review-gate" data-who="" data-when="">
+    <div class="r-comment-body"><p>Lead decision, 2026-09-25, which revises §2's 'nothing blocks': <b>a review must exist; its findings stay advisory.</b> The first implementation dispatch against a plan version is refused until a plan review of that version exists and the author has acted on or declined, with a reason, each of its findings. The findings themselves never block. The aim is to catch reasoning errors before work is submitted, without making the rubber duck a veto. Ownership: this plan moved from s22-coord to s21-coord with s22's agreement (it still counts toward S22 in the rollup). Rubric input from s22's measurement the same day: code-review findings were acted on about 12 times in 20, and the misses were semantic (a reuse-map misattribution, a contract break) caught later by gates. So pilots and the rubric score a finding on whether it would have changed the plan, not on finding count. It ties to scoring-should-stop-a-promotion §2i's blocking/advisory split.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260925T1050-pilot-first-loop" data-who="" data-when="">
+    <div class="r-comment-body"><p>First pilot, 2026-09-25: plan-review-pilot-luna (r-20260925T083257138237, codex-luna, 14 min) reviewed six live plans and produced 14 findings, 13 rated would-change-the-plan. Findings: <code>~/.config/reckon/crew/reports/reckon/s21-coord/plan-review-pilot-luna/findings.json</code>. The dsv4.1 run of the same six plans is pending comparison. The act-or-decline loop ran by hand on two of them. <b>Acted on:</b> an-orchestrator-cannot-forget-its-obligations §7, where after three refusals the hook let a worker end with no terminal record, recreating the plan's own root defect. The owner amended §s7 in plan version 7 so that the final allowed stop writes a blocked record. <b>Declined, as a rubric false positive:</b> evidence hrefs without <code>.html</code> are the house convention (387 of 404 links in docs/plans) and the SPA resolves them. So the anchor-resolves rubric item must resolve an href the way the SPA does, with an extensionless path matching <code>&lt;path&gt;.html</code>, before it reports a finding. Two process notes for the build. First, <code>check-manifest</code> refuses a report-only investigate record (complete with no commits, and artifacts outside the repository scope), so the pilot wrongly marked itself blocked. A plan-review node needs a manifest shape the checker accepts. Second, rubric scoring worked as intended: every finding carried a would-change verdict and its reason, and the declined one was the only one resting on a convention the reviewer could not see.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260925T1210-design-brief" data-who="" data-when="">
+    <div class="r-comment-body"><p>Design brief by plan-review-design-scout (r-20260925T083345319450), at <code>~/.config/reckon/crew/reports/reckon/s21-coord/plan-review-design-scout/design.md</code>, with 39 file and function citations machine-checked and none failing. Adopted as the build contract. <b>D1</b>: a review record is keyed by plan and version and joined by a content fingerprint that excludes the server-managed metadata scalars (version, modified, impl, status, roi, effort-hours, owner, sprint, tags, archived). A version-only or impl-only write therefore neither triggers nor invalidates a review, and the gate keys on the fingerprint. <b>D2</b>: eligibility is derived by a sweep (fingerprint changed, and quiet longer than the settle window), never enqueued by a write hook. So MCP, POST and hand edits are all caught. <b>D3</b>: the plan pointer is surface state beside the plan, not written into the HTML. <b>D4</b>: an implementation-role dispatch is refused without a review of the current fingerprint in which every finding is acted on or declined with a reason. The first implementation dispatch of a plan also requires the §3 design review. An <code>--allow-unreviewed-plan</code> waiver is recorded on the run pointer, so a broken local lane cannot stop every build. <b>D5</b>: review-role nodes are exempt through <code>_is_review_node</code>. <b>D6</b>: plan-review dispatch extends the existing review reflex rather than copying it. Nodes: PR-1 record and store (<code>reckon/crew/plan_review.py</code>), then PR-3 rubric prompts and PR-4 dispatch gate, then PR-2 sweep and PR-5 responses and surface. Pilot input folded into PR-3: the anchor-resolves check resolves an extensionless href as the SPA does.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260925T1558-pr3-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>Two of five nodes have landed. PR-1 (review store and plan pointer) and PR-3 (the plan-review rubric prompts, merged at <code>fe707812</code>, commits <code>eb2fc40f</code> and <code>e2685b55</code>) are both on main. PR-3 also wrote <code>reckon/crew/review.py</code>, which the coordinator left out of its scope; the path was accepted at promotion. PR-4, the dispatch gate, was moved to clive during the codex pause. Its fence was widened with <code>reckon/cli.py</code> for the public <code>--allow-unreviewed-plan</code> option. PR-2 and PR-5 follow PR-4.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20260926T1115-pr4-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p><strong>PR-4, the dispatch gate, landed</strong> at <code>95e186ad</code> (re-review 92). <strong>Lead decision:</strong> the gate ships <strong>report-only</strong>. Dispatch of an implement node consults the plan's stored review. A missing review, or a finding with no response, is recorded as a warning on the dispatch result, and the dispatch proceeds. When the flight key <code>plan_review_gate: enforce</code> is set, it refuses as designed. The refusal names the unanswered finding, and dry-run and launch both report <code>plan-review-missing</code>. <strong>Before switching to enforce:</strong> PR-2, which dispatches plan reviews, must exist, and the active sprint's plans must carry a review. <strong>Open:</strong> the re-review found the launch path's <code>plan-review-missing</code> mapping untested (only dry-run is asserted); a follow-on test node covers it. The merge also joined PR-4's key with <code>harness_home_files</code> in flight's schema exclusion, resolved in a scratch worktree. PR-2 and PR-5 remain.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T083257138237-plan-review-pilot-luna" data-who="reckon-build" data-when="2026-09-25T08:48:18Z">
+    <div class="r-comment-body"><p>luna rubber-duck pilot of six live plans: 14 findings, 13 rated would-change-the-plan (a stop hook that recreates its root defect, a section marked done against its own outcome, a locked decision contradicting an invariant, a root cause quoting absent text, a missing blocks edge, broken .html anchors); checker exit 0; status repaired blocked-&gt;complete, as-delivered kept, because check-manifest refuses report-only records</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T083345319450-plan-review-design-scout" data-who="reckon-build" data-when="2026-09-25T10:15:54.822Z">
+    <div class="r-comment-body"><p>plan-review design brief: 39 citations checked, 0 failed; five nodes PR-1..PR-5; adopted in c-20260925T1210-design-brief</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T083334058244-plan-review-pilot-dsv" data-who="reckon-build" data-when="2026-09-25T10:23:18.627Z">
+    <div class="r-comment-body"><p>dsv4.1 rubber-duck pilot of six plans: 15 findings (8 yes, 4 maybe, 3 no); overlap with luna on about 4 sections</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T111913513328-review-of-plan-review-record-and-store" data-who="reckon-build" data-when="2026-09-25T11:33:57Z">
+    <div class="r-comment-body"><p>review stored; findings routed to the implementer's repair round</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260925T1305-plan-review-record-and-store" data-who="plan-review-record-and-store" data-when="2026-09-25T13:05:00Z">
+    <div class="r-comment-body"><p><b>Node <code>plan-review-record-and-store</code> landed.</b> <code>reckon/crew/plan_review.py</code> now owns the plan-review record: <code>plan_review_path</code>, <code>store_plan_review</code>, <code>read_plan_review</code>, <code>list_plan_reviews</code>, <code>plan_fingerprint</code>, <code>record_response</code>, <code>declined_recurrence</code>. A record lives at <code>reviews/&lt;project&gt;/plan-&lt;slug&gt;.v&lt;N&gt;.json</code>, with a <code>.at-&lt;blob8&gt;</code> sibling when one version is reviewed twice, and joins to plan content by a fingerprint that drops the ten metadata scalars (so an impl bump neither triggers nor orphans a review). Commit <code>b906f66b</code>. Gate: <code>pytest -q tests/test_plan_review_store.py</code> → 5 passed, exit 0. Negative control <i>plan_fingerprint folds in the version meta</i> executed: the metadata-only case failed, then the mutation was reverted and the file sha re-checked. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#plan-review-record-and-store">§2 landed record</a>. Remaining §2 nodes: rubric prompts, eligibility sweep, dispatch gate, responses and surface (repo <code>reckon</code>).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T121422918393-re-review-of-plan-review-record-and-store" data-who="reckon-build" data-when="2026-09-25T12:26:22Z">
+    <div class="r-comment-body"><p>review stored; findings routed or carried as followups</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T100927825379-plan-review-record-and-store" data-who="reckon-build" data-when="2026-09-25T12:22:23.556Z">
+    <div class="r-comment-body"><p>plan-review record and store with a content fingerprint excluding server-managed and derived metadata; review 85 then re-review 100; merged 8a11525c</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260925T130133-plan-review-rubric-prompts" data-who="plan-review-rubric-prompts" data-when="2026-09-25T13:01:33Z">
+    <div class="r-comment-body"><p><b>Node <code>plan-review-rubric-prompts</code> landed.</b> Two rubric prompts held as diffable files. <code>reckon/crew/prompts/plan_review.md</code> reads a plan's authored content for wiring; a measurable done-when that carries a negative control; a single goal per node; evidence and gate logs on durable paths; anchors that resolve; and naming with no plan labels or ticket numbers. It adds a reasoning check with three parts: the stated root cause matches the cited evidence, each section's mechanism produces its done-when, and the mechanism runs on the real code path with its caller named. <code>reckon/crew/prompts/plan_design_review.md</code> searches for existing machinery before new machinery, prefers a deep module behind a smaller interface, requires a thin wrapper to justify why the existing machinery cannot be extended, and makes a duplicate name the file that owns the mechanism. Each finding carries a <code>WOULD_CHANGE_THE_PLAN</code> verdict and a one-line <code>REASON</code>. Loaders <code>load_plan_review_prompt</code> and <code>load_plan_design_review_prompt</code> sit beside <code>load_review_prompt</code> in <code>reckon/crew/review.py</code>, with item constants <code>PLAN_REVIEW_ITEMS</code> and <code>PLAN_DESIGN_REVIEW_ITEMS</code>. The anchor item resolves an href that names no extension as <code>&lt;path&gt;.html</code>, as the surface does (<code>docs/ui/plan.jsx</code>), before it reports. Commit <code>eb2fc40f</code>. Gate: <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_plan_review_prompt.py</code> → 8 passed, exit 0. Negative control <i>delete one rubric item from plan_review.md; the mirror test must fail</i> executed: the mirror case failed, then the mutation was reverted and the file sha256 re-checked identical. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#plan-review-rubric-prompts">§2 landed record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T130740397874-review-of-plan-review-rubric-prompts" data-who="reckon-build" data-when="2026-09-25T13:16:06Z">
+    <div class="r-comment-body"><p>review stored: 86, one scope finding (coordinator spec omission)</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260925T1410-plan-review-record-and-store-repair" data-who="plan-review-record-and-store" data-when="2026-09-25T14:10:00Z">
+    <div class="r-comment-body"><p><b>Node <code>plan-review-record-and-store</code>: repair after review.</b> The review of run <code>r-20260925T100927825379</code> scored 85 and found that the fingerprint was wrong in two directions, both fixed in commit <code>b0027963</code> and both held by tests against <code>docs/plans</code> rather than a fixture. <b>(1) Derived metadata.</b> The exclusion set dropped only the ten named scalars, but the parser derives further state from them: writing <code>plan-effort-hours</code> to a plan that carried only the legacy effort letter moved the derived calibration flag (and the diagnostics list), so a metadata-only write invalidated a review on exactly the plans predating that field. A sweep of every document under <code>docs/</code> named those two keys and no others; they are now excluded as <code>PLAN_DERIVED_SCALARS</code>. <b>(2) Prose.</b> The parsed state carries no section prose at all, so rewriting the paragraphs a reader sees under a heading did not move the fingerprint — the one edit a review exists to catch. The digest now also covers the authored body text outside every <code>data-reckon</code> block. The gate is now six cases (<code>6 passed</code>), the negative control now declares the derived-flag mutation and fails on the legacy plan's <code>effort_hours</code> case. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#plan-review-record-and-store">§2 landed record</a>. Remaining §2 nodes unchanged.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260925T170351236569-review-of-plan-review-dispatch-gate" data-who="reckon-build" data-when="2026-09-25T18:05:39.491Z">
+    <div class="r-comment-body"><p>review record stored and read by the coordinator</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260925T1507-plan-review-dispatch-gate" data-who="plan-review-dispatch-gate" data-when="2026-09-25T15:07:23Z">
+    <div class="r-comment-body"><p><b>Node <code>plan-review-dispatch-gate</code> implemented and committed; one scope request open through the coordinator.</b> <code>require_plan_reviewed</code> sits in <code>reckon/crew/routing.py</code> beside <code>require_plan_section_visible</code> and is called from <code>plan_dispatch</code> right after it; <code>PlanReviewMissingError</code> sits beside <code>PlanVisibilityError</code> in <code>reckon/crew/node.py</code> with one new family in <code>DISPATCH_REFUSAL_REMEDIES</code> naming the composed plan-review dispatch; <code>--allow-unreviewed-plan</code> records <code>unreviewed_plan_override</code> on the run pointer beside the unreconciled-runs waiver. The join is by <code>plan_fingerprint</code>, so a metadata-only plan write neither demands a review nor orphans one, and investigation, test and review roles are exempt through the same predicate the promotion boundary uses to stop reviews of reviews. Commit <code>557fb583</code>. Gate: <code>pytest -q tests/test_plan_review_gate.py</code> → 8 passed, exit 0. Negative control <i>require_plan_reviewed returns reviewed unconditionally; the refusal case must fail</i> executed, then reverted. <b>Open:</b> the compatibility suites go 49 passed at base to 20 failed and 29 passed, because eighteen of those failures are implementation dispatches against minimal plan fixtures that carry no stored review and two are the refusal census, which enumerates the family set as <code>range(1, 23)</code>. Both need edits in <code>tests/test_crew_dispatch_guard.py, tests/test_crew_routing_visibility.py, tests/test_crew_refusal_visibility.py</code>, which are outside this node's fence, so they are requested rather than taken. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#plan-review-dispatch-gate">§2 landed record</a>. Remaining §2 nodes: eligibility sweep, responses and surface.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260925T1530-plan-review-dispatch-gate-fixtures" data-who="plan-review-dispatch-gate" data-when="2026-09-25T15:38:00Z">
+    <div class="r-comment-body"><p><b>Scope resolved: the three compatibility fixtures now carry the review.</b> The coordinator extended this node's fence to <code>tests/test_crew_dispatch_guard.py, tests/test_crew_routing_visibility.py, tests/test_crew_refusal_visibility.py</code>. Each fixture that dispatches an implementation node now stores an answered review for its own plan at the crew review store root, joined by <code>plan_review.plan_fingerprint</code>, so the fixture still tests what it tested before rather than being waived past the gate; the refusal census grows to the new family id. The gate is unchanged — the fixtures satisfy it instead of avoiding it. Re-run against base <code>ea867750</code>: compatibility gate <code>50 passed, exit 0</code> against the base arm's <code>49 passed, exit 0</code> — <strong>zero added failures</strong> (the one-test rise is the new family id joining the parametrised census case); spec gate <code>tests/test_plan_review_gate.py</code> 8 passed. Lint and format add no finding on the three files against the base archive tree. Commits <code>557fb583</code> and <code>e95c1d6d</code>. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#plan-review-dispatch-gate">§2 landed record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260926T0750-plan-review-dispatch-gate-report-only" data-who="plan-review-dispatch-gate" data-when="2026-09-26T07:50:00Z">
+    <div class="r-comment-body"><p><b>Review changes and the lead decision landed: the gate ships report-only behind a flight key.</b> Three changes, all in commit <code>4cf5d6f35dc70910aa9737b07cc0addbc2d30268</code>. (1) The unanswered-findings branch in <code>require_plan_reviewed</code> had no case: a stored review carrying one finding no response answers is now refused, and the refusal names that finding. (2) A <code>--dry-run</code> against an unreviewed plan answered <code>plan-unavailable</code> while the launch path answered <code>plan-review-missing</code>, sending a diagnosing operator to the mounts; both paths now answer <code>plan-review-missing</code>. (3) Report-only is the shipped default, because almost no plan carries a stored review yet and the node that writes one is not built: a missing or unanswered review is recorded as a warning on the dispatch result and the dispatch proceeds, and <code>plan_review_gate: enforce</code> in a flight layer restores the refusal unchanged. <b>The key is checked in <code>reckon/flight.py</code>, not in the generated model:</b> the shipped defaults layer is schema-checked like every other layer and the generated <code>FlightConfig</code> sets <code>extra = "forbid"</code>, so naming the key in <code>reckon/schema/flight-defaults.yaml</code> alone raises <code>FlightConfigError</code> on every flight resolution until the LinkML source is regenerated — measured, not assumed. The key is therefore held out of the schema check and validated beside it, which leaves <code>reckon/_flight_schema.py</code> as its source produces it; the defaults layer names <code>report</code>. Gates: spec <code>tests/test_plan_review_gate.py</code> 17 passed, exit 0; compatibility gate at the repaired head 50 passed, exit 0 against the stated base <code>ea867750</code>'s 49 passed, exit 0 — zero added failures; a wider arm over flight, provenance, dry-run and dispatch-guard 122 passed, 2 skipped, exit 0; lint adds no finding on the five changed files against the base archive tree. Negative control <i>the branch that refuses a review whose finding no response answers is deleted, so such a review is admitted; the case asserting that the refusal names the open finding must then fail</i>: base arm 1 passed, head arm 1 failed with <code>DID NOT RAISE PlanReviewMissingError</code>, both arms naming revision, tree and command, in scratch trees exported from the same revision. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#plan-review-dispatch-gate">§2 landed record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260926T075839396843-re-review-of-plan-review-dispatch-gate" data-who="reckon-build" data-when="2026-09-26T09:28:05.110Z">
+    <div class="r-comment-body"><p>review record stored and read by the coordinator (92; its launch-path finding is covered by launch-path-reports-plan-review-missing)</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20260926T0930-launch-path-reports-plan-review-missing" data-who="launch-path-reports-plan-review-missing" data-when="2026-09-26T09:30:00Z">
+    <div class="r-comment-body"><p><b>Node <code>launch-path-reports-plan-review-missing</code> landed.</b> The re-review of the dispatch gate (run <code>r-20260925T131953539635</code>, 92) found the launch path's <code>plan-review-missing</code> mapping untested while the dry-run mapping beside it was asserted, so the divergence an earlier review caught could return on the launch side and still pass. One case now drives <code>crew dispatch</code> without <code>--dry-run</code>, under <code>plan_review_gate: enforce</code>, for an implement node on the fixture plan that carries no stored review, and asserts the emitted error is <code>plan-review-missing</code> naming <code>fixture</code>. No worker is spawned — the gate refuses inside <code>plan_dispatch</code> before a worktree, pointer or ledger row exists. Commit <code>35da2422</code>. Gate: <code>pytest -q tests/test_plan_review_gate.py</code> → 18 passed, exit 0 (base <code>4b0ccd34</code> 17 passed), and the compatibility gate <code>tests/test_crew_dispatch_guard.py</code> 14 passed against 14 at base — <strong>zero added failures</strong>. Negative control <i>change the launch-path mapping in <code>reckon/cli.py</code> to emit <code>plan-unavailable</code>; the new case must fail</i>: base arm 1 passed, head arm 1 failed with <code>assert 'plan-unavailable' == 'plan-review-missing'</code>, both arms in scratch trees exported from the same revision, header lines naming revision, tree, <code>module.__file__</code> and command. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#launch-path-reports-plan-review-missing">§2 landed record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20260926T092819229022-review-of-launch-path-reports-plan-review-missing" data-who="reckon-build" data-when="2026-09-26T10:41:55.710Z">
+    <div class="r-comment-body"><p>review record stored and read by the coordinator (96)</p></div>
+</div>
+</section>
+</main>
+</body>
+</html>

@@ -10,13 +10,14 @@ declined finding without a reason is refused before anything is written, and a
 finding type declined across three distinct plans surfaces while one declined
 across two does not.
 
-The boundary is also held against the real corpus rather than a fixture, because
-a fixture cannot fail the way a legacy plan does: the parser derives a
-calibration flag and a diagnostics list while reading the metadata, so writing
-the named effort field to a plan that carried only the legacy effort letter
-moves state the exclusion set must normalise away. And the parsed state omits
-section prose, so a fingerprint over state alone would never notice a plan's
-prose being rewritten. Both are checked against `docs/plans`.
+The boundary is also held against frozen copies of real plans under
+`tests/fixtures/plan_review_store/`, not against the live plans. The parser
+derives a calibration flag and a diagnostics list while reading the metadata, so
+writing the named effort field to a plan that carried only the legacy effort
+letter moves state the exclusion set must normalise away; and the parsed state
+omits section prose, so a fingerprint over state alone would never notice a
+plan's prose being rewritten. Both are held against committed copies, so an edit
+to a live plan cannot move the case.
 """
 
 from __future__ import annotations
@@ -228,12 +229,17 @@ def test_recurrence_counts_distinct_plans(tmp_path: Path) -> None:
     ]
 
 
-# ── The boundary, held against the real corpus ──────────────────────────────
-PLANS_DIR = Path(__file__).resolve().parents[1] / "docs" / "plans"
-# A plan written before the named effort field existed, so it carries the legacy
-# letter and the parser must derive an uncalibrated effort from it.
-LEGACY_PLAN = PLANS_DIR / "reckon-mcp-plan.html"
-CURRENT_PLAN = PLANS_DIR / "a-plan-is-reviewed-before-it-is-built.html"
+# ── The boundary, held against frozen plan copies ───────────────────────────
+# Verbatim copies of live plans, so editing a live plan cannot move a case.
+# legacy_plan.html predates the named effort field (the parser derives its
+# effort from the legacy letter and reports it uncalibrated); current_plan.html
+# carries records short of its declarations, so its authored impl stands;
+# derived_impl_plan.html carries records covering its declarations, so its impl
+# is computed from them.
+FIXTURES = Path(__file__).resolve().parent / "fixtures" / "plan_review_store"
+LEGACY_PLAN = FIXTURES / "legacy_plan.html"
+CURRENT_PLAN = FIXTURES / "current_plan.html"
+DERIVED_PLAN = FIXTURES / "derived_impl_plan.html"
 
 # (parsed-state key, the meta that carries it, a metadata-only replacement).
 # `effort_hours` leads: it is the scalar a derived key breaks on, so a control
@@ -306,3 +312,24 @@ def test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it() ->
         assert module.plan_fingerprint(authored) != base_fingerprint, (
             f"{path.name}: authored prose must move the fingerprint"
         )
+
+
+def test_a_metadata_edit_leaves_a_derived_impl_and_the_fingerprint_unchanged() -> None:
+    html = DERIVED_PLAN.read_text(encoding="utf-8")
+    base_state = _plan_html.read_state(html)
+    # The premise the case turns on: the records cover the declarations, so the
+    # impl derives from them rather than from the meta.
+    assert base_state.get("impl_source") == "computed"
+    base_fingerprint = module.plan_fingerprint(html)
+
+    written = "0.42"
+    edited = _write_meta(html, "plan-impl", written)
+    # The edit reached the meta, so the stability below is not vacuous.
+    assert f'<meta name="plan-impl" content="{written}"' in edited
+
+    edited_state = _plan_html.read_state(edited)
+    assert edited_state.get("impl_source") == "computed"
+    assert edited_state.get("impl") == base_state.get("impl")
+    assert edited_state.get("impl") != float(written)
+    # `impl` is a metadata scalar, so the edit cannot demand a fresh review.
+    assert module.plan_fingerprint(edited) == base_fingerprint
