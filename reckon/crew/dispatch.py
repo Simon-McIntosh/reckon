@@ -4197,13 +4197,25 @@ def dispatch_picker_selection(
 
 def _picker_refusal_reasons(selection: Mapping[str, Any]) -> str:
     reasons = [
+        str(selection[key])
+        for key in ("reason", "fallback_reason")
+        if selection.get(key)
+    ]
+    if selection.get("action") == "hold":
+        confidence = selection.get("confidence")
+        hold_probability = (selection.get("probabilities") or {}).get("hold")
+        detail = "picker selected hold"
+        if isinstance(confidence, (int, float)):
+            detail += f" at confidence {confidence:g}"
+        if isinstance(hold_probability, (int, float)):
+            detail += f" (hold probability {hold_probability:g})"
+        reasons.insert(0, detail)
+    reasons.extend(
         str(reason)
         for candidate in selection.get("excluded") or ()
         for reason in candidate.get("reasons") or ()
-    ]
-    return "; ".join(reasons) or str(
-        selection.get("fallback_reason") or "no eligible backend"
     )
+    return "; ".join(dict.fromkeys(reasons)) or "no eligible backend"
 
 
 def plan_dispatch(

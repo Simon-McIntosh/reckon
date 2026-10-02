@@ -230,12 +230,18 @@ def test_picker_hold_uses_budget_code_before_worktree(repo, monkeypatch):
     monkeypatch.setattr(
         picker,
         "pick",
-        lambda *_a, **_k: selection("hold", None, fallback_reason="wait for room"),
+        lambda *_a, **_k: selection(
+            "hold",
+            None,
+            confidence=0.17,
+            probabilities={"hold": 0.17, "beta": 0.83},
+        ),
     )
     result, payload = invoke(repo, route=True)
     assert result.exit_code == 3
     assert payload["error"] == "budget-hold"
-    assert "wait for room" in payload["detail"]
+    assert "picker selected hold at confidence 0.17" in payload["detail"]
+    assert "hold probability 0.17" in payload["detail"]
     assert not list(repo.parent.glob("**/picker-test/.git"))
 
 
