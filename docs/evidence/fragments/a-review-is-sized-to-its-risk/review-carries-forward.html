@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en-locale">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-is-sized-to-its-risk">
+  <meta name="plan-title" content="A Review Is Sized To Its Risk — the reflex carries a review forward">
+  <meta name="plan-summary" content="The reflex re-reviewed a whole run whenever its head moved; it now withdraws a queued review a resume moved past, carries a stored review forward over a data-only move, and light-reviews only a runtime-source commit.">
+  <meta name="plan-evidence-for" content="a-review-is-sized-to-its-risk">
+  <meta name="plan-verdict" content="qualified">
+  <title>A Review Is Sized To Its Risk — the reflex carries a review forward | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>The reflex reviews a settled head and re-reviews only what changed.</h1>
+  <p>A stored review is evidence about a revision, so the moment a reviewed run gained commits the reflex found
+    nothing covering its new head, read the run back as <code>scoring</code>, and composed a second full review of the
+    whole run — even when the new commits changed no runtime source. Section 5 sizes that re-review to the move.</p>
+
+  <h2>What changed</h2>
+  <ul>
+    <li><strong>Carry-forward.</strong> <code>carry_review_forward</code> measures the paths between the stored
+      review's head and the run's current head. A move over paths that change no runtime source re-stores the stored
+      record at the new head, marked with the revision it came from, so the one selection shared by the classifier
+      (<code>_stored_review</code>), the promotion gate and the obligation producer finds a review at the head the run
+      carries. The run raises no <code>review-missing</code> obligation.</li>
+    <li><strong>Light re-review.</strong> A move that does change runtime source dispatches a light review scoped to
+      the moved commits alone. The verdict is the shared classifier's — <code>review_tiers.changes_runtime_source</code>
+      — never a second predicate.</li>
+    <li><strong>Resume withdrawal and settle.</strong> A queued review dispatch the run's own resume has moved past is
+      recorded withdrawn; a run resumed within five minutes is left to settle before the reflex reviews it.</li>
+  </ul>
+
+  <h2>Measure</h2>
+  <p><code>tests/test_review_carries_forward.py</code> — five cases, all green at
+    <code>cc17465e</code>: a resumed run's queued review for the superseded head is withdrawn; a queued review that
+    still covers the current head is not; a data-file relocation carries the stored review forward and raises no
+    <code>review-missing</code> obligation; a runtime-source commit's move is classified by the shared
+    <code>review_tiers.changes_runtime_source</code> (forcing it false flips the verdict); and that move dispatches a
+    light review whose scope is the moved path alone.</p>
+
+  <h2>Negative control</h2>
+  <p>Removing the carried-forward record write (the <code>store_review(carried)</code> call) turns the data-file
+    relocation test red — <code>EXIT=1</code>, failing id
+    <code>test_a_data_file_relocation_carries_the_review_forward</code> — because the run then reads
+    <code>review-missing</code>. Log: <code>negative-control.log</code> in the run directory.</p>
+ </main>
+</body>
+</html>
