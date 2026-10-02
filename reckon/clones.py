@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import ast
 import collections
+import contextlib
 import hashlib
 import io
 import json
@@ -342,7 +343,11 @@ def clone_matches(
         except (SyntaxError, ValueError):
             continue
     if len(cache) != before:
-        _store_corpus_cache(root, cache)
+        with contextlib.suppress(OSError):
+            # The cache is a speed-up, not a dependency: a directory that
+            # cannot be written leaves the scan reading every file, which still
+            # reports the same matches.
+            _store_corpus_cache(root, cache)
     corpus = [f for f in head_functions if f.path.startswith(prefixes)]
     index = _index(corpus)
     changed_names = _changed_base_names(base_sources, changed_paths)

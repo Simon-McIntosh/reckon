@@ -11,6 +11,7 @@ and a second scan re-parses only the file that changed.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -129,6 +130,47 @@ def test_a_corpus_file_whose_bytes_change_is_reparsed(
     }
     clones.clone_matches(changed, changed_paths=[COPY_PATH], base_sources={})
     assert ORIGINAL_PATH in parsed
+
+
+def test_the_disk_cache_round_trips_like_a_cold_scan(
+    cache_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A warm promotion runs in a fresh process, so the reading a returning
+    scan produces must survive the cache's serialise-then-read-from-disk path,
+    not only the in-process dict. Clearing the in-memory cache forces the disk
+    read; the matches must equal a cold full scan's, and only the changed file
+    may be re-parsed."""
+    head = {ORIGINAL_PATH: ORIGINAL, UNRELATED_PATH: UNRELATED, COPY_PATH: COPY}
+    cold = clones.clone_matches(head, changed_paths=[COPY_PATH], base_sources={})
+    assert cold, "the fixture copy must be reported as a match"
+
+    clones._CORPUS_CACHES.clear()
+    parsed = _count_parses(monkeypatch)
+    warm = clones.clone_matches(head, changed_paths=[COPY_PATH], base_sources={})
+
+    assert warm == cold
+    assert set(parsed) == {COPY_PATH}, "the unchanged corpus must come from disk"
+
+
+def test_an_unwritable_cache_directory_still_reports_matches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The cache must not become a dependency: when its directory cannot be
+    written the scan still parses the corpus and reports the same matches."""
+    root = tmp_path / "read-only-cache"
+    root.mkdir()
+    root.chmod(0o500)
+    if os.access(root, os.W_OK):
+        pytest.skip("the cache directory is writable, so a write cannot fail")
+    monkeypatch.setenv("RECKON_CLONE_CACHE", str(root))
+    clones._CORPUS_CACHES.clear()
+
+    head = {ORIGINAL_PATH: ORIGINAL, COPY_PATH: COPY}
+    matches = clones.clone_matches(head, changed_paths=[COPY_PATH], base_sources={})
+
+    assert matches, "a failed cache write must not disable the scan"
+    assert matches[0]["existing_function"]["path"] == ORIGINAL_PATH
+    assert matches[0]["run_function"]["path"] == COPY_PATH
 
 
 def test_a_changed_file_outside_the_corpus_is_still_reported(cache_root: Path) -> None:
