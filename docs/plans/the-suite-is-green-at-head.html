@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="204">
+<meta name="plan-version" content="205">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1671,6 +1671,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261002T014729626454-review-of-a-classification-read-creates-no-run-directory" data-who="reckon-build" data-when="2026-10-02T01:56:00.391Z">
     <div class="r-comment-body"><p>review of r-20261002T012900562767-a-classification-read-creates-no-run-directory: parsed record scoring all 5 dimensions (goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 19; total 95), reviewed base 53f2c080f head b1336f1a9, added_failure_count 0 with no ids; two follow-on findings (the non-empty-directory proxy predicate, and the node's after_suite recorded one docs-only commit before the reviewed head).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261002T032036121368-suite-remeasure-after-repairs" data-who="reckon-build" data-when="2026-10-02T04:05:02.196Z">
+    <div class="r-comment-body"><p>Full-suite remeasure at 3b883745b34d85fe612736519ded2a6ada178f25: 27 failed, 9838 passed, 76 skipped, 0 errors in 1335.35 s (wall 1337 s, EXIT=1) under -n 8; all 27 reproduce in the serial re-run (0 load-only); all ten deterministic ids recorded at b5dbaaa2 are fixed and 27 are new — 14 attributed to fc83a491a (the plan landing guard refuses the fixtures&#x27; uncommitted plan edit), 11 to 8753de02f (signal callers now pass run_dir=; three report as an empty watchdog signal list), 1 to b68b72c55 (_iso_stamp_to_ns added to dispatch.py&#x27;s fromisoformat census), 1 unknown (reexec handover timing race); record at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T032036121368-suite-remeasure-after-repairs/suite-remeasure.md (copy in /home/ITER/mcintos/.config/reckon/crew/reports/reckon/)</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
