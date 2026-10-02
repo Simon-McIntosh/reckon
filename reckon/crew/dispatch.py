@@ -63,7 +63,11 @@ from reckon.crew.node import (
 )
 from reckon.crew.prompts import compose_prompt, time_fence_statement
 from reckon.crew.refusals import format_refusal
-from reckon.crew.recovery import REVIEW_NODE_PREFIX, stream_paths_newest_first
+from reckon.crew.recovery import (
+    REVIEW_NODE_PREFIX,
+    resume_window_refusal,
+    stream_paths_newest_first,
+)
 from reckon.crew.reserve import admit as reserve_admit
 from reckon.crew.review import review_store_root
 from reckon.crew.routing import (
@@ -10153,6 +10157,18 @@ def resume_plan(
     )
     if verdict["held"]:
         raise _actionable_budget_hold(verdict, config=config)
+    # A resumed turn re-sends the session's whole context, so a session grown
+    # past the lane's input window dies at the endpoint with the attempt file
+    # already open, and an attempt whose worker dies at once leaves a delivered
+    # manifest reading stale to promotion. The count is the run's own last
+    # recorded request input rather than an estimate, and the gate is consulted
+    # before the plan is built and before anything is written, so a session the
+    # lane cannot hold is refused with a fresh repair node as the remedy.
+    window_refusal = resume_window_refusal(
+        run_id, record, backend=backend, config=config
+    )
+    if window_refusal is not None:
+        raise window_refusal
     # A second worker on one run is the collision this refuses, and a hand-typed
     # resume starts a worker exactly as the sweep does. The guard above refuses
     # only a process this host found alive, so a run whose end nothing observed —

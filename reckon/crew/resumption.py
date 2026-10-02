@@ -71,6 +71,7 @@ from reckon.crew.recovery import (
     dispatch_awaiting_reviews,
     external_wait,
     local_liveness,
+    resume_window_refusal,
     stream_paths_newest_first,
 )
 from reckon.crew.runs import (
@@ -601,7 +602,13 @@ def _launcher_refusal(
     verdict = _readonly_budget_verdict(record, config=config)
     if verdict["held"]:
         return _actionable_budget_hold(verdict, config=config)
-    return None
+    # The window gate is the launcher's own, so the prediction must consult it
+    # rather than report a resume the real call refuses. Consulted here, ahead
+    # of the sweep's observed-end gate, so both doors report the same reason
+    # for a run that fails several.
+    return resume_window_refusal(
+        run_id, record, backend=_backend_settings(record, config), config=config
+    )
 
 
 def _observed_end_refusal(record: Mapping[str, Any]) -> CrewError | None:
