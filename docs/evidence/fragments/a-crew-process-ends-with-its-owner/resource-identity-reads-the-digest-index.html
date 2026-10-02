@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="Resource identity reads the digest index">
+  <meta name="plan-summary" content="Identifying a docs resource reuses one metadata parse of byte-identical content across docs trees.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s13">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="resources,metadata-index,digest,promotion">
+  <title>Resource identity reads the digest index — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="resource-identity-reads-the-digest-index" data-reckon="landing">
+  <h2>Resource identity reads the digest index</h2>
+  <p>identify_resource now reads its metadata through a parse memo keyed on the file's sha256 content digest rather than its path (<code>metadata_index.parse_meta_shared</code>), so the docs trees holding byte-identical content share one parse while a file whose bytes changed re-parses. Warm promotion profile at head: wall 20.52&nbsp;s, <code>resolve_resource</code> 8 calls 10.95&nbsp;s, <code>read_state</code> 54 calls 8.81&nbsp;s, beside the 23.53&nbsp;s wall / 20.0&nbsp;s / 104-call baseline. New test 5 passed; negative control (parse reuse keyed by path again) 3 failing ids, EXIT=1; base/head arms over the affected files 0 added failures.</p>
+</article>
+</body>
+</html>
