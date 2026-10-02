@@ -1,0 +1,34 @@
+<article class="landed-report" data-run-id="r-20261002T053401032013-a-time-fence-names-its-clock">
+  <h3>a-time-fence-names-its-clock &mdash; the fence names its clock</h3>
+  <p>
+    The dispatch prompt's FENCE &mdash; TIME line gave a bare duration, so a worker had no clock
+    except the one it asked for and estimated elapsed time from the work it had done. The fence now
+    states the attempt's launch instant and its deadline (launch plus the declared budget, ISO-8601
+    UTC) and names <code>date -u</code> as the command that checks them. <code>dispatch()</code>
+    takes one clock read that is both the attempt record's launch instant and the instant its prompt
+    states, so the two cannot disagree; <code>resume_plan</code> restates the fence on the launched
+    resume prompt from the same instant the resumed launch records, with the node's recorded
+    <code>time_budget</code>. Implemented in <code>reckon/crew/prompts.py</code> and
+    <code>reckon/crew/dispatch.py</code> at <code>e273934d4</code>, plus one assertion in
+    <code>tests/test_crew.py</code> whose pinned byte-equality predated the restatement
+    (<code>tests/test_a_time_fence_names_its_clock.py</code>, 4 passed).
+  </p>
+  <p>
+    <strong>Measure.</strong> Narrowed gate: the new test plus every test naming
+    <code>reckon.crew.prompts</code>, the prompt composer or the resume path &mdash; 67 files, run
+    <code>-n 8 --timeout=300</code>. Base arm (233f442b0): 1011 passed,
+    <code>EXIT=0</code>. Head arm (e1cba478f): 1015 passed, <code>EXIT=0</code>, zero added ids.
+    The negative control (bare duration restored in the FENCE &mdash; TIME line) fails the three
+    parity/instant assertions, <code>EXIT=1</code>, and the test file then carries 3 failed / 1
+    passed. The parity test renders a dispatch prompt and a resume advice for one fixed launch
+    instant (2026-10-01T18:32:03Z) and budget (60m) and asserts both carry the deadline
+    2026-10-01T19:32:03Z.
+  </p>
+  <p>
+    <strong>Follow_ons.</strong> The report case &mdash; a manifest whose blocker cites an expired
+    time fence before its deadline is a defect, not a blocker &mdash; belongs to the manifest audit
+    (<code>reckon/crew/reports.py::audit_manifest</code>), outside this node's write scope. A lane
+    change (<code>reckon/crew/dispatch.py::change_lane</code>) relaunches an attempt but does not
+    restate its fence, unlike dispatch and resume.
+  </p>
+</article>
