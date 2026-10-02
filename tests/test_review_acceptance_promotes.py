@@ -12,8 +12,9 @@ and promotes with ``promoted_by: review-acceptance`` on the ledger row.
 Both halves are asserted, because an accepting branch on its own is
 indistinguishable from one that promotes everything: a run promotable with a
 clean stored review is promoted with no coordinator command; a review carrying
-one finding is not; and a run whose recorded gate was green but whose merged
-tree no longer satisfies the same command is not.
+one finding is not; a run whose recorded gate was green but whose merged tree no
+longer satisfies the same command is not; and a run whose commit is not on the
+branch yet is not, because acceptance never merges.
 
 The fixture asserts afterwards that the workstation's real crew pointer
 directory is untouched, because an isolated read does not prove an isolated
@@ -181,6 +182,7 @@ def _write_run(
     *,
     base: str,
     commit: str,
+    worktree: Path | None = None,
 ) -> None:
     manifest = tmp_path / "manifests" / f"{RUN_ID}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -188,7 +190,7 @@ def _write_run(
         "node: acceptance-target\n"
         "status: complete\n"
         f"commits: {commit}\n"
-        "changed_paths: candidate.txt\n"
+        f"changed_paths: candidate.txt\n"
         f"tests: {GATE_COMMAND}\n"
         f"test_logs:\n  - {_gate_log(tmp_path)}\n",
         encoding="utf-8",
@@ -199,7 +201,7 @@ def _write_run(
             "run_id": RUN_ID,
             "project": PROJECT,
             "repo": str(repository),
-            "worktree": str(repository),
+            "worktree": str(worktree or repository),
             "base_sha": base,
             "launch": "in-harness",
             "role": "implement",
@@ -234,6 +236,29 @@ def _land_and_review(
     _store_review(
         dict.fromkeys(review_module.REVIEW_DIMENSIONS, 20), base=base, head=commit
     )
+
+
+def _land_unmerged_run(repository: Path, tmp_path: Path) -> tuple[str, str, Path]:
+    """Land the run's deliverable in a tree whose commit is not on the branch.
+
+    The checkout (``repository``) stays at the seed head, so the recorded gate
+    passes there, while the run's own tree carries its commit. Acceptance must
+    stand down because that commit is not an ancestor of the branch the
+    checkout carries, which is the state a run sits in right after its review
+    and before a coordinator merges it.
+    """
+    base = _git(repository, "rev-parse", "HEAD")
+    worktree = tmp_path / "worker"
+    _git(repository, "worktree", "add", "-q", "--detach", str(worktree), base)
+    (worktree / "candidate.txt").write_text("delivered\n", encoding="utf-8")
+    _git(worktree, "add", "candidate.txt")
+    _git(worktree, "commit", "-q", "-m", "feat: unmerged run deliverable")
+    commit = _git(worktree, "rev-parse", "HEAD")
+    _write_run(repository, tmp_path, base=base, commit=commit, worktree=worktree)
+    _store_review(
+        dict.fromkeys(review_module.REVIEW_DIMENSIONS, 20), base=base, head=commit
+    )
+    return base, commit, worktree
 
 
 def test_a_clean_review_promotes_its_run_without_a_coordinator(
@@ -290,6 +315,32 @@ def test_a_gate_failing_at_the_merged_head_does_not_promote(
     # The refusal is the re-run's verdict, not an earlier guard: the recorded
     # gate read green, and the same command failed on the tree that ships.
     assert refusal["gate_report"]["integrated_verdict"] == "failed"
+    assert pointer_path(RUN_ID).is_file()
+    assert ledger.runs(PROJECT, root=repository) == []
+
+
+def test_an_unmerged_run_is_not_promoted(repository: Path, tmp_path: Path) -> None:
+    """A run whose commits are not on the branch yet is not promoted.
+
+    A run reaches acceptance right after its review, before a coordinator
+    merges it; a gate re-run against a branch that lacks the change would
+    verify the wrong tree and record a promotion whose commits never landed.
+    Acceptance stands down and names the commits it found off the branch.
+    """
+    _base, commit, _worktree = _land_unmerged_run(repository, tmp_path)
+
+    report = _sweep()
+
+    assert report["accepted"] == []
+    refusal = next(
+        entry
+        for entry in report["reports"]
+        if entry.get("run_id") == RUN_ID and "accepted" in entry
+    )
+    assert refusal["accepted"] is False
+    assert commit[:12] in refusal["reason"]
+    assert "not on the primary branch" in refusal["reason"]
+    assert refusal["unmerged_commits"] == [commit]
     assert pointer_path(RUN_ID).is_file()
     assert ledger.runs(PROJECT, root=repository) == []
 

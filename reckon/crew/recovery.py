@@ -2738,26 +2738,76 @@ def _review_accepts_promotion(review: Mapping[str, Any] | None) -> bool:
     return not (isinstance(findings, Sequence) and len(findings))
 
 
-def _recorded_gate_passed(record: Mapping[str, Any]) -> dict[str, Any] | None:
-    """The run's recorded gate check when it passed, else None.
+def _recorded_gate_passed(
+    record: Mapping[str, Any],
+) -> tuple[dict[str, Any], tuple[str, ...]]:
+    """The run's recorded gate check when it passed and its named commits.
 
     The gate a run records is its own manifest's evidence — the command under
     ``tests``, the log under ``test_logs`` and the ``EXIT=`` line the log
     carries — read through the same resolver a promotion fills its evidence
     from. A command with no exit status of zero, or no command at all, is not a
-    passing gate and acceptance stands down for it. The resolved check is
-    returned so the caller can re-run the same command at the merged head.
+    passing gate and acceptance stands down for it. The resolved check and the
+    commits the manifest names are returned together, so the caller can both
+    re-run the same command at the merged head and require those commits to be
+    on the branch that head names.
     """
     from reckon.crew import promotion as promotion_module
 
-    gate_check, _commits = promotion_module._default_gate_evidence_from_manifest(
+    gate_check, commits = promotion_module._default_gate_evidence_from_manifest(
         record, verdict="passed", gate_check=None, commits=()
     )
     if not str(gate_check.get("command") or "").strip():
-        return None
+        return None, ()
     if gate_check.get("exit_status") != 0:
-        return None
-    return gate_check
+        return None, ()
+    return gate_check, tuple(commits)
+
+
+def _commits_missing_from(repository: Path, commits: Sequence[str]) -> list[str]:
+    """The named commits that are not ancestors of the repository's HEAD.
+
+    A run's work is only landable once a coordinator has merged it onto the
+    branch the checkout carries; a run reaching acceptance straight after its
+    review has not been merged, so its commits are absent from the primary
+    branch and a gate re-run here would verify a tree the change is not in.
+    ``git merge-base --is-ancestor`` answers with status 0 for an ancestor, 1
+    for a commit present but not an ancestor, and any other status for an
+    instrument fault — an unresolvable object, a checkout that is not a work
+    tree, git itself failing. Status 1 is the only one read as "not merged";
+    every other failure raises, because an instrument that cannot answer must
+    not be reported as the answer "not an ancestor".
+    """
+    missing: list[str] = []
+    for commit in commits:
+        sha = str(commit).strip()
+        if not sha:
+            continue
+        probe = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(repository),
+                "merge-base",
+                "--is-ancestor",
+                sha,
+                "HEAD",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if probe.returncode == 0:
+            continue
+        if probe.returncode == 1:
+            missing.append(sha)
+            continue
+        raise CrewError(
+            f"git could not decide whether {sha} is an ancestor of HEAD in "
+            f"{repository}: exit {probe.returncode}: "
+            f"{(probe.stderr or probe.stdout).strip()}"
+        )
+    return missing
 
 
 def accept_clean_review(
@@ -2769,13 +2819,16 @@ def accept_clean_review(
 
     When a review run completes with a stored record whose five-dimension total
     is at least the acceptance floor and which carries no finding, the reviewed
-    run is promoted without a coordinator: the run's own recorded gate must
-    already have passed, the gate is re-run against the repository's current
-    head with the run merged, and on both passing the run is promoted with
-    ``promoted_by: review-acceptance`` on its ledger row. Anything short of
-    that returns to the coordinator exactly as before, so this is the accepting
-    branch beside the refusal that stops a promotion without a clean review
-    rather than a bypass of it.
+    run is promoted without a coordinator: the commits its manifest names must
+    already be ancestors of the repository's head, the run's own recorded gate
+    must already have passed, the gate is re-run against the repository's
+    current head with the run merged, and on all of those passing the run is
+    promoted with ``promoted_by: review-acceptance`` on its ledger row.
+    Anything short of that returns to the coordinator exactly as
+    before, so this is the accepting branch beside the refusal that stops a
+    promotion without a clean review rather than a bypass of it. Acceptance
+    never merges: an unmerged run stands down and names the commits it found
+    off the branch.
 
     None is returned when the run is not acceptance-eligible at all — no stored
     review, or a review that is incomplete, below the floor, or carrying a
@@ -2804,12 +2857,28 @@ def accept_clean_review(
             "accepted": False,
             "reason": "the run names no repository to verify the merged gate against",
         }
-    gate_check = _recorded_gate_passed(pointer)
+    gate_check, commits = _recorded_gate_passed(pointer)
     if gate_check is None:
         return {
             "run_id": run_id,
             "accepted": False,
             "reason": "the run records no passing gate to re-run at the merged head",
+        }
+    # The run's work must already be on the branch this checkout carries. A run
+    # reaching acceptance straight after its review has not been merged, so a
+    # gate re-run here would verify a tree the change is not in and record a
+    # promotion whose commits never landed. Only a coordinator merges; this
+    # handler stands down and says which commits are missing.
+    missing = _commits_missing_from(checkout, commits)
+    if missing:
+        return {
+            "run_id": run_id,
+            "accepted": False,
+            "reason": (
+                "the run's commits are not on the primary branch yet; a "
+                "coordinator merges it: " + ", ".join(sha[:12] for sha in missing)
+            ),
+            "unmerged_commits": list(missing),
         }
     from reckon.crew import promotion as promotion_module
 
