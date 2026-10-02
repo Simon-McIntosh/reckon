@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="reckon-type" content="fragment">
+<meta name="plan" content="crew-observability-truth">
+<title>A valid wait keeps its state, with an unrelated finding attached beside it</title>
+</head>
+<body>
+<h2>A valid wait keeps its state, with an unrelated finding attached beside it</h2>
+<p><b>Defect, measured.</b> <code>audit_manifest</code> in
+<code>reckon/crew/reports.py</code> refused <code>status: waiting</code> outright,
+reporting <code>status 'waiting' is not complete, blocked or failed</code>. A manifest
+declaring a well-formed external wait — a job-id wait with an <code>squeue</code> probe —
+was therefore judged to be in no state at all the moment any other check failed (for
+example the gate-log first-line check): the audit finding replaced the wait state a
+coordinator acts on, and with nothing reading waiting the automatic resume had no run
+to lift. The manifest audit and the fleet's own wait reader disagreed about the same
+declaration; the classifier and the worker stop hook read such a manifest as waiting.</p>
+<p><b>Change.</b> Commit <code>3fff1cbc4</code> reads a <code>waiting</code> manifest's
+declaration through <code>recovery._manifest_wait</code> — the one reader the classifier
+and the worker stop hook already share — so the three surfaces cannot disagree. An
+honoured declaration keeps its state, and the audit's other findings (a gate log naming
+no revision, an out-of-scope path) are reported beside it as attachments. A declaration
+the reader refuses is refused with the reader's own error, so a malformed wait block
+still reads unreadable, both at the audit and at the classifier.</p>
+<p><b>Measure.</b> <code>tests/test_valid_wait_keeps_its_state.py</code> builds a parked
+run in a temporary configuration home: a valid job-id wait beside a gate log whose first line
+the audit rules below. At the change, its valid-wait case reads <code>waiting</code> with the
+gate-log finding attached and no status-replacement finding; its malformed case
+(<code>echo</code> probe) still reads <code>unreadable</code>. At base
+<code>9fe5d8204</code> the valid-wait case fails — <code>1 failed, 1 passed</code> on
+<code>gate-base-supplement.log</code> — and so does the same case inside the base arm
+<code>gate-base.log</code> (<code>3 failed, 501 passed</code>, its other failure
+pre-existing). The negative control restores the unconditional status finding and the
+valid-wait case fails again (<code>EXIT=1</code>, log
+<code>negative-control.log</code>). Logs and the run manifest live under
+<code>~/.config/reckon/crew/runs/r-20261002T225510427652-valid-wait-keeps-its-state/</code>.</p>
+<p><b>Remainder.</b> The head gate arm was cut short once by a full <code>/tmp</code>
+(disk-full errors, not code); the focused head run passes 2 of 2 and the twelve-file head
+arm was rerun afterwards. See the run manifest's <code>failure_attribution</code> and
+<code>tests</code> for the exact figures.</p>
+</body>
+</html>

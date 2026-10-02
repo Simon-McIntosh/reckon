@@ -108,7 +108,9 @@ def _parked_run(tmp_path: Path, run_id: str, wait_block: str) -> tuple[dict, Pat
                 "type": "assistant",
                 "session_id": "fixture-session",
                 "timestamp": "2026-10-02T07:00:00.000Z",
-                "message": {"content": [{"type": "text", "text": "parked on the gate"}]},
+                "message": {
+                    "content": [{"type": "text", "text": "parked on the gate"}]
+                },
             }
         )
         + "\n",
@@ -139,9 +141,7 @@ def test_a_valid_wait_keeps_its_state_beside_an_unrelated_finding(
     tmp_path: Path,
 ) -> None:
     """The measured defect: the gate-log finding refused the waiting state itself."""
-    pointer, manifest, manifest_text = _parked_run(
-        tmp_path, "r-valid-wait", WAIT_BLOCK
-    )
+    pointer, manifest, manifest_text = _parked_run(tmp_path, "r-valid-wait", WAIT_BLOCK)
 
     row = recovery.classify_pointer(pointer)
     assert row["classification"] == "waiting", row["detail"]

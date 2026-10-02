@@ -965,7 +965,9 @@ def parse_needs_help(text: str) -> dict[str, Any]:
     for line in lines:
         stripped = line.strip()
         match = re.match(
-            r"^(tried|options|leaning|cost-if-wrong)\s*:\s*(.*)$", stripped, re.I
+            r"^(tried|options|leaning|cost-if-wrong)\s*:\s*(.*)$",
+            stripped,
+            re.IGNORECASE,
         )
         if match:
             current = match.group(1).lower()
@@ -1531,8 +1533,7 @@ def _wait_declaration_refusal(
         )
     if not wait["valid"]:
         return (
-            "status 'waiting' but the wait declaration is incomplete: "
-            f"{wait['error']}"
+            f"status 'waiting' but the wait declaration is incomplete: {wait['error']}"
         )
     return ""
 
