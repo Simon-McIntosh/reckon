@@ -62,15 +62,17 @@ cohort, so its figures are null.</p>
 <pre>{"node":{"role":"implement","spec_level":"guided","capability":{"class":"general"},"goal":"give Jev each lane's expected return time","done_when":"d","estimated_context":0},"orchestrator_comment":"routing context","candidates":{
 "clive":{"availability":"served",...,"congestion":{"running":16,"waiting":0,"admission_verdict":"congested","stale":false,"slots_state":"congested"},"outcomes_14_days":{"passed":0,"failed":0,"not-run":0,"unknown":0}},
 "codex-luna":{...},"codex-terra":{...},"claude":{...}},"return_times":{"clive":{"p50_s":3806.5,"p90_s":11468,"runs":230,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false},"codex-luna":{"p50_s":1274,"p90_s":3958,"runs":3,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false},"codex-terra":{"p50_s":891.5,"p90_s":3689,"runs":8,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false},"claude":{"p50_s":null,"p90_s":null,"runs":null,"size_key":"time_budget","size_bucket":"30m_to_60m","budget_source":null,"budget_age_s":null,"stale":false}},"local_lane":{"running":16,"waiting":0,"headroom":-2,"worker_slots":0,"tokens_per_second":null,"read_at":"2026-10-02T13:55:03.878949+00:00"}}</pre>
-<h4>Replay measure: blocked in the worker fence</h4>
-<p><code>reckon crew pick --replay 20</code> was attempted against live state
-under a shadow config home with a writable probe cache. It timed out at 540 s
-with no rows; a bounded <code>--replay 3</code> also timed out at 170 s, so the
-probe path in this worker's fence is too slow to complete a replay. The picks,
-agreement with the backend actually used, fallback count and refused-model count
-are therefore not available from this node. <strong>Refused-model picks: 0</strong>
-holds trivially only because no pick was produced, so reads as no evidence.</p>
-<p><strong>Follow-on:</strong> run <code>reckon crew pick --replay 20</code> on
-an unfenced lane (or with a warm probe cache) and land its summary here. No
-work outside this node's declared scope was triaged.</p>
+<h4>Replay measure: not met, deferred by the coordinator</h4>
+<p>Done-when item (5), the live replay of 20, is <strong>not met in this
+node</strong>. The coordinator has deferred it to a separate unfenced
+measurement node, <code>picker-replay-measure</code>, which will run after
+<code>picker-latency</code> lands and replay through the combined code.</p>
+<p>The deferral is because the availability probe path times out inside the
+worker fence. <code>reckon crew pick --replay 20</code> was attempted against
+live state under a shadow config home with a writable probe cache and timed out
+at 540 s with no rows; a bounded <code>--replay 3</code> also timed out at 170 s.
+The picks, agreement with the backend actually used, fallback count and
+refused-model counts are therefore unavailable from this node, and no claim
+about them is made here. No work outside this node's declared scope was
+triaged.</p>
 </article>
