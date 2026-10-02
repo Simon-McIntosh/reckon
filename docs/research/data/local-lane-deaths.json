@@ -19,23 +19,24 @@
     "measurement_script": "docs/research/scripts/scan_local_lane_deaths.py",
     "scan_revision": {
       "script": "docs/research/scripts/scan_local_lane_deaths.py",
-      "script_sha256": "03d7f845948950f43a57d60dd345323e6d9bac9863f2141bbfcf17d1a6383dbd",
-      "tree_revision": "af3e7bf052f55f1f0214bfabb3e83fe1db7334c4"
+      "script_sha256": "61214e443dfdf76029e989e861768987f8f3e4c4a4b17c2ac6de5a932205789c",
+      "tree_revision": "605a4d9d599b6eb87d71ce03c71677e6d1a45e69"
     },
     "invocation": "timeout 1200 <venv>/bin/python docs/research/scripts/scan_local_lane_deaths.py --out docs/research/data/local-lane-deaths.json",
-    "scan_time_utc": "2026-09-30T14:46:58Z"
+    "scan_time_utc": "2026-10-02T23:17:20Z",
+    "after_window_invocation": "timeout 1200 <venv>/bin/python docs/research/scripts/scan_local_lane_deaths.py --out <out.json> --since 2026-09-30T18:36:00Z"
   },
   "before": {
     "window": {
-      "start": "2026-09-02T13:32:33.973Z",
-      "end": "2026-09-30T14:37:12.534Z"
+      "start": "2026-09-02T18:37:20.500Z",
+      "end": "2026-10-02T23:11:45.005Z"
     },
     "population": {
-      "run_directories_scanned": 6835,
-      "runs_on_local_lane": 3035,
-      "runs_on_local_lane_with_streams": 3033,
-      "attempts_on_local_lane": 4019,
-      "review_attempts_all_efforts": 1372
+      "run_directories_scanned": 7733,
+      "runs_on_local_lane": 3909,
+      "runs_on_local_lane_with_streams": 3907,
+      "attempts_on_local_lane": 5034,
+      "review_attempts_all_efforts": 1855
     },
     "review_effort": "xhigh",
     "deaths": {
@@ -44,123 +45,123 @@
         "population": "review role at the lane's declared review effort",
         "role": "review",
         "effort": "xhigh",
-        "count": 392,
-        "attempts": 1324,
-        "rate": 0.2961
+        "count": 393,
+        "attempts": 1342,
+        "rate": 0.2928
       },
       "review_role_all_efforts": {
         "population": "review role at every declared effort",
-        "count": 393,
-        "attempts": 1372,
-        "rate": 0.2864
+        "count": 416,
+        "attempts": 1855,
+        "rate": 0.2243
       },
       "all_roles": {
         "population": "every role at every effort",
-        "count": 584
+        "count": 636
       }
     },
     "exit_records": {
       "all_attempts": {
         "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
-        "attempts": 4019,
-        "with_exit_record": 959,
-        "without_exit_record": 3060,
+        "attempts": 5034,
+        "with_exit_record": 1905,
+        "without_exit_record": 3129,
         "by_classification": {
-          "completed": 827,
-          "dead": 132,
+          "completed": 1726,
+          "dead": 179,
           "running": 0,
           "unreadable": 0
         },
-        "signalled": 133,
+        "signalled": 171,
         "signal_source": {
-          "exit_code_128_plus": 62,
-          "named_in_record": 71
+          "exit_code_128_plus": 95,
+          "named_in_record": 76
         },
         "signals_by_name": {
-          "SIGKILL": 39,
-          "SIGTERM": 94
+          "SIGKILL": 72,
+          "SIGTERM": 99
         },
         "exit_codes": {
-          "0": 818,
-          "1": 8,
-          "137": 39,
+          "0": 1720,
+          "1": 14,
+          "137": 72,
           "143": 23,
-          "None": 71
+          "None": 76
         },
-        "deaths": 584,
-        "deaths_with_exit_record": 132,
-        "deaths_signalled": 132,
+        "deaths": 636,
+        "deaths_with_exit_record": 179,
+        "deaths_signalled": 169,
         "deaths_signal_source": {
-          "exit_code_128_plus": 62,
-          "named_in_record": 70
+          "exit_code_128_plus": 95,
+          "named_in_record": 74
         },
         "deaths_signals_by_name": {
-          "SIGKILL": 39,
-          "SIGTERM": 93
+          "SIGKILL": 72,
+          "SIGTERM": 97
         },
-        "death_exit_record_coverage": 0.226,
-        "signalled_share_of_recorded_deaths": 1.0,
-        "signalled_share_of_all_deaths": 0.226
+        "death_exit_record_coverage": 0.2814,
+        "signalled_share_of_recorded_deaths": 0.9441,
+        "signalled_share_of_all_deaths": 0.2657
       },
       "review_role_all_efforts": {
         "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
-        "attempts": 1372,
-        "with_exit_record": 408,
-        "without_exit_record": 964,
+        "attempts": 1855,
+        "with_exit_record": 818,
+        "without_exit_record": 1037,
         "by_classification": {
-          "completed": 278,
-          "dead": 130,
+          "completed": 670,
+          "dead": 148,
           "running": 0,
           "unreadable": 0
         },
-        "signalled": 131,
+        "signalled": 149,
         "signal_source": {
-          "exit_code_128_plus": 62,
-          "named_in_record": 69
+          "exit_code_128_plus": 78,
+          "named_in_record": 71
         },
         "signals_by_name": {
-          "SIGKILL": 39,
-          "SIGTERM": 92
+          "SIGKILL": 55,
+          "SIGTERM": 94
         },
         "exit_codes": {
-          "0": 273,
-          "1": 4,
-          "137": 39,
+          "0": 664,
+          "1": 5,
+          "137": 55,
           "143": 23,
-          "None": 69
+          "None": 71
         },
-        "deaths": 393,
-        "deaths_with_exit_record": 130,
-        "deaths_signalled": 130,
+        "deaths": 416,
+        "deaths_with_exit_record": 148,
+        "deaths_signalled": 147,
         "deaths_signal_source": {
-          "exit_code_128_plus": 62,
-          "named_in_record": 68
+          "exit_code_128_plus": 78,
+          "named_in_record": 69
         },
         "deaths_signals_by_name": {
-          "SIGKILL": 39,
-          "SIGTERM": 91
+          "SIGKILL": 55,
+          "SIGTERM": 92
         },
-        "death_exit_record_coverage": 0.3308,
-        "signalled_share_of_recorded_deaths": 1.0,
-        "signalled_share_of_all_deaths": 0.3308
+        "death_exit_record_coverage": 0.3558,
+        "signalled_share_of_recorded_deaths": 0.9932,
+        "signalled_share_of_all_deaths": 0.3534
       }
     },
     "trailing": {
       "trailing_1d": {
-        "from": "2026-09-30",
-        "to": "2026-09-30",
+        "from": "2026-10-02",
+        "to": "2026-10-02",
         "population": "review role at every declared effort",
-        "review_attempts": 44,
-        "review_deaths": 2,
-        "rate": 0.0455
+        "review_attempts": 241,
+        "review_deaths": 15,
+        "rate": 0.0622
       },
       "trailing_7d": {
-        "from": "2026-09-24",
-        "to": "2026-09-30",
+        "from": "2026-09-26",
+        "to": "2026-10-02",
         "population": "review role at every declared effort",
-        "review_attempts": 727,
-        "review_deaths": 243,
-        "rate": 0.3343
+        "review_attempts": 947,
+        "review_deaths": 170,
+        "rate": 0.1795
       }
     },
     "positive_control": {
@@ -194,150 +195,259 @@
       {
         "role": "implement",
         "effort": "high",
-        "attempts": 2064,
-        "completed": 1908,
-        "dead": 156,
+        "attempts": 2413,
+        "completed": 2236,
+        "dead": 177,
         "running": 0,
         "unreadable": 0,
         "exit_records": {
           "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
-          "attempts": 2064,
-          "with_exit_record": 370,
+          "attempts": 2413,
+          "with_exit_record": 719,
           "without_exit_record": 1694,
           "by_classification": {
-            "completed": 368,
-            "dead": 2,
+            "completed": 696,
+            "dead": 23,
             "running": 0,
             "unreadable": 0
           },
-          "signalled": 2,
+          "signalled": 14,
           "signal_source": {
-            "named_in_record": 2
+            "exit_code_128_plus": 9,
+            "named_in_record": 5
           },
           "signals_by_name": {
-            "SIGTERM": 2
+            "SIGKILL": 9,
+            "SIGTERM": 5
           },
           "exit_codes": {
-            "0": 364,
-            "1": 4,
-            "None": 2
+            "0": 700,
+            "1": 5,
+            "137": 9,
+            "None": 5
           },
-          "deaths": 156,
-          "deaths_with_exit_record": 2,
-          "deaths_signalled": 2,
+          "deaths": 177,
+          "deaths_with_exit_record": 23,
+          "deaths_signalled": 14,
           "deaths_signal_source": {
-            "named_in_record": 2
+            "exit_code_128_plus": 9,
+            "named_in_record": 5
           },
           "deaths_signals_by_name": {
-            "SIGTERM": 2
+            "SIGKILL": 9,
+            "SIGTERM": 5
           },
-          "death_exit_record_coverage": 0.0128,
-          "signalled_share_of_recorded_deaths": 1.0,
-          "signalled_share_of_all_deaths": 0.0128
+          "death_exit_record_coverage": 0.1299,
+          "signalled_share_of_recorded_deaths": 0.6087,
+          "signalled_share_of_all_deaths": 0.0791
         },
-        "death_rate": 0.0756
+        "death_rate": 0.0734
       },
       {
         "role": "review",
         "effort": "xhigh",
-        "attempts": 1324,
-        "completed": 932,
-        "dead": 392,
+        "attempts": 1342,
+        "completed": 949,
+        "dead": 393,
         "running": 0,
         "unreadable": 0,
         "exit_records": {
           "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
-          "attempts": 1324,
-          "with_exit_record": 408,
+          "attempts": 1342,
+          "with_exit_record": 426,
           "without_exit_record": 916,
           "by_classification": {
-            "completed": 278,
-            "dead": 130,
+            "completed": 295,
+            "dead": 131,
             "running": 0,
             "unreadable": 0
           },
-          "signalled": 131,
+          "signalled": 132,
           "signal_source": {
             "exit_code_128_plus": 62,
-            "named_in_record": 69
+            "named_in_record": 70
           },
           "signals_by_name": {
             "SIGKILL": 39,
-            "SIGTERM": 92
+            "SIGTERM": 93
           },
           "exit_codes": {
-            "0": 273,
+            "0": 290,
             "1": 4,
             "137": 39,
             "143": 23,
-            "None": 69
+            "None": 70
           },
-          "deaths": 392,
-          "deaths_with_exit_record": 130,
-          "deaths_signalled": 130,
+          "deaths": 393,
+          "deaths_with_exit_record": 131,
+          "deaths_signalled": 131,
           "deaths_signal_source": {
             "exit_code_128_plus": 62,
-            "named_in_record": 68
+            "named_in_record": 69
           },
           "deaths_signals_by_name": {
             "SIGKILL": 39,
-            "SIGTERM": 91
+            "SIGTERM": 92
           },
-          "death_exit_record_coverage": 0.3316,
+          "death_exit_record_coverage": 0.3333,
           "signalled_share_of_recorded_deaths": 1.0,
-          "signalled_share_of_all_deaths": 0.3316
+          "signalled_share_of_all_deaths": 0.3333
         },
-        "death_rate": 0.2961
+        "death_rate": 0.2928
+      },
+      {
+        "role": "review",
+        "effort": "high",
+        "attempts": 513,
+        "completed": 490,
+        "dead": 23,
+        "running": 0,
+        "unreadable": 0,
+        "exit_records": {
+          "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
+          "attempts": 513,
+          "with_exit_record": 392,
+          "without_exit_record": 121,
+          "by_classification": {
+            "completed": 375,
+            "dead": 17,
+            "running": 0,
+            "unreadable": 0
+          },
+          "signalled": 17,
+          "signal_source": {
+            "exit_code_128_plus": 16,
+            "named_in_record": 1
+          },
+          "signals_by_name": {
+            "SIGKILL": 16,
+            "SIGTERM": 1
+          },
+          "exit_codes": {
+            "0": 374,
+            "1": 1,
+            "137": 16,
+            "None": 1
+          },
+          "deaths": 23,
+          "deaths_with_exit_record": 17,
+          "deaths_signalled": 16,
+          "deaths_signal_source": {
+            "exit_code_128_plus": 16
+          },
+          "deaths_signals_by_name": {
+            "SIGKILL": 16
+          },
+          "death_exit_record_coverage": 0.7391,
+          "signalled_share_of_recorded_deaths": 0.9412,
+          "signalled_share_of_all_deaths": 0.6957
+        },
+        "death_rate": 0.0448
       },
       {
         "role": "implement",
         "effort": "xhigh",
-        "attempts": 184,
-        "completed": 180,
-        "dead": 4,
+        "attempts": 300,
+        "completed": 290,
+        "dead": 10,
         "running": 0,
         "unreadable": 0,
         "exit_records": {
           "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
-          "attempts": 184,
-          "with_exit_record": 130,
+          "attempts": 300,
+          "with_exit_record": 246,
           "without_exit_record": 54,
           "by_classification": {
-            "completed": 130,
-            "dead": 0,
+            "completed": 240,
+            "dead": 6,
             "running": 0,
             "unreadable": 0
           },
-          "signalled": 0,
-          "signal_source": {},
-          "signals_by_name": {},
-          "exit_codes": {
-            "0": 130
+          "signalled": 6,
+          "signal_source": {
+            "exit_code_128_plus": 6
           },
-          "deaths": 4,
-          "deaths_with_exit_record": 0,
-          "deaths_signalled": 0,
-          "deaths_signal_source": {},
-          "deaths_signals_by_name": {},
-          "death_exit_record_coverage": 0.0,
-          "signalled_share_of_recorded_deaths": null,
-          "signalled_share_of_all_deaths": 0.0
+          "signals_by_name": {
+            "SIGKILL": 6
+          },
+          "exit_codes": {
+            "0": 237,
+            "1": 3,
+            "137": 6
+          },
+          "deaths": 10,
+          "deaths_with_exit_record": 6,
+          "deaths_signalled": 6,
+          "deaths_signal_source": {
+            "exit_code_128_plus": 6
+          },
+          "deaths_signals_by_name": {
+            "SIGKILL": 6
+          },
+          "death_exit_record_coverage": 0.6,
+          "signalled_share_of_recorded_deaths": 1.0,
+          "signalled_share_of_all_deaths": 0.6
         },
-        "death_rate": 0.0217
+        "death_rate": 0.0333
       },
       {
         "role": "investigate",
         "effort": "xhigh",
-        "attempts": 140,
-        "completed": 128,
-        "dead": 12,
+        "attempts": 163,
+        "completed": 150,
+        "dead": 13,
         "running": 0,
         "unreadable": 0,
         "exit_records": {
           "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
-          "attempts": 140,
-          "with_exit_record": 24,
+          "attempts": 163,
+          "with_exit_record": 47,
           "without_exit_record": 116,
+          "by_classification": {
+            "completed": 46,
+            "dead": 1,
+            "running": 0,
+            "unreadable": 0
+          },
+          "signalled": 1,
+          "signal_source": {
+            "exit_code_128_plus": 1
+          },
+          "signals_by_name": {
+            "SIGKILL": 1
+          },
+          "exit_codes": {
+            "0": 46,
+            "137": 1
+          },
+          "deaths": 13,
+          "deaths_with_exit_record": 1,
+          "deaths_signalled": 1,
+          "deaths_signal_source": {
+            "exit_code_128_plus": 1
+          },
+          "deaths_signals_by_name": {
+            "SIGKILL": 1
+          },
+          "death_exit_record_coverage": 0.0769,
+          "signalled_share_of_recorded_deaths": 1.0,
+          "signalled_share_of_all_deaths": 0.0769
+        },
+        "death_rate": 0.0798
+      },
+      {
+        "role": "documentation",
+        "effort": "xhigh",
+        "attempts": 124,
+        "completed": 116,
+        "dead": 8,
+        "running": 0,
+        "unreadable": 0,
+        "exit_records": {
+          "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
+          "attempts": 124,
+          "with_exit_record": 24,
+          "without_exit_record": 100,
           "by_classification": {
             "completed": 24,
             "dead": 0,
@@ -348,43 +458,8 @@
           "signal_source": {},
           "signals_by_name": {},
           "exit_codes": {
-            "0": 24
-          },
-          "deaths": 12,
-          "deaths_with_exit_record": 0,
-          "deaths_signalled": 0,
-          "deaths_signal_source": {},
-          "deaths_signals_by_name": {},
-          "death_exit_record_coverage": 0.0,
-          "signalled_share_of_recorded_deaths": null,
-          "signalled_share_of_all_deaths": 0.0
-        },
-        "death_rate": 0.0857
-      },
-      {
-        "role": "documentation",
-        "effort": "xhigh",
-        "attempts": 103,
-        "completed": 95,
-        "dead": 8,
-        "running": 0,
-        "unreadable": 0,
-        "exit_records": {
-          "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
-          "attempts": 103,
-          "with_exit_record": 3,
-          "without_exit_record": 100,
-          "by_classification": {
-            "completed": 3,
-            "dead": 0,
-            "running": 0,
-            "unreadable": 0
-          },
-          "signalled": 0,
-          "signal_source": {},
-          "signals_by_name": {},
-          "exit_codes": {
-            "0": 3
+            "0": 23,
+            "1": 1
           },
           "deaths": 8,
           "deaths_with_exit_record": 0,
@@ -395,84 +470,59 @@
           "signalled_share_of_recorded_deaths": null,
           "signalled_share_of_all_deaths": 0.0
         },
-        "death_rate": 0.0777
+        "death_rate": 0.0645
       },
       {
         "role": "test",
         "effort": "xhigh",
-        "attempts": 101,
-        "completed": 94,
-        "dead": 7,
+        "attempts": 124,
+        "completed": 116,
+        "dead": 8,
         "running": 0,
         "unreadable": 0,
         "exit_records": {
           "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
-          "attempts": 101,
-          "with_exit_record": 24,
+          "attempts": 124,
+          "with_exit_record": 47,
           "without_exit_record": 77,
           "by_classification": {
-            "completed": 24,
-            "dead": 0,
+            "completed": 46,
+            "dead": 1,
             "running": 0,
             "unreadable": 0
           },
-          "signalled": 0,
-          "signal_source": {},
-          "signals_by_name": {},
-          "exit_codes": {
-            "0": 24
+          "signalled": 1,
+          "signal_source": {
+            "exit_code_128_plus": 1
           },
-          "deaths": 7,
-          "deaths_with_exit_record": 0,
-          "deaths_signalled": 0,
-          "deaths_signal_source": {},
-          "deaths_signals_by_name": {},
-          "death_exit_record_coverage": 0.0,
-          "signalled_share_of_recorded_deaths": null,
-          "signalled_share_of_all_deaths": 0.0
+          "signals_by_name": {
+            "SIGKILL": 1
+          },
+          "exit_codes": {
+            "0": 46,
+            "137": 1
+          },
+          "deaths": 8,
+          "deaths_with_exit_record": 1,
+          "deaths_signalled": 1,
+          "deaths_signal_source": {
+            "exit_code_128_plus": 1
+          },
+          "deaths_signals_by_name": {
+            "SIGKILL": 1
+          },
+          "death_exit_record_coverage": 0.125,
+          "signalled_share_of_recorded_deaths": 1.0,
+          "signalled_share_of_all_deaths": 0.125
         },
-        "death_rate": 0.0693
+        "death_rate": 0.0645
       },
       {
         "role": "implement",
         "effort": "medium",
-        "attempts": 49,
-        "completed": 45,
-        "dead": 4,
-        "running": 0,
-        "unreadable": 0,
-        "exit_records": {
-          "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
-          "attempts": 49,
-          "with_exit_record": 0,
-          "without_exit_record": 49,
-          "by_classification": {
-            "completed": 0,
-            "dead": 0,
-            "running": 0,
-            "unreadable": 0
-          },
-          "signalled": 0,
-          "signal_source": {},
-          "signals_by_name": {},
-          "exit_codes": {},
-          "deaths": 4,
-          "deaths_with_exit_record": 0,
-          "deaths_signalled": 0,
-          "deaths_signal_source": {},
-          "deaths_signals_by_name": {},
-          "death_exit_record_coverage": 0.0,
-          "signalled_share_of_recorded_deaths": null,
-          "signalled_share_of_all_deaths": 0.0
-        },
-        "death_rate": 0.0816
-      },
-      {
-        "role": "review",
-        "effort": "high",
         "attempts": 46,
-        "completed": 45,
-        "dead": 1,
+        "completed": 42,
+        "dead": 4,
         "running": 0,
         "unreadable": 0,
         "exit_records": {
@@ -490,7 +540,7 @@
           "signal_source": {},
           "signals_by_name": {},
           "exit_codes": {},
-          "deaths": 1,
+          "deaths": 4,
           "deaths_with_exit_record": 0,
           "deaths_signalled": 0,
           "deaths_signal_source": {},
@@ -499,7 +549,43 @@
           "signalled_share_of_recorded_deaths": null,
           "signalled_share_of_all_deaths": 0.0
         },
-        "death_rate": 0.0217
+        "death_rate": 0.087
+      },
+      {
+        "role": "test",
+        "effort": "high",
+        "attempts": 5,
+        "completed": 5,
+        "dead": 0,
+        "running": 0,
+        "unreadable": 0,
+        "exit_records": {
+          "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
+          "attempts": 5,
+          "with_exit_record": 4,
+          "without_exit_record": 1,
+          "by_classification": {
+            "completed": 4,
+            "dead": 0,
+            "running": 0,
+            "unreadable": 0
+          },
+          "signalled": 0,
+          "signal_source": {},
+          "signals_by_name": {},
+          "exit_codes": {
+            "0": 4
+          },
+          "deaths": 0,
+          "deaths_with_exit_record": 0,
+          "deaths_signalled": 0,
+          "deaths_signal_source": {},
+          "deaths_signals_by_name": {},
+          "death_exit_record_coverage": null,
+          "signalled_share_of_recorded_deaths": null,
+          "signalled_share_of_all_deaths": null
+        },
+        "death_rate": 0.0
       },
       {
         "role": "investigate",
@@ -536,110 +622,8 @@
         "death_rate": 0.0
       },
       {
-        "role": "review",
-        "effort": "medium",
-        "attempts": 2,
-        "completed": 2,
-        "dead": 0,
-        "running": 0,
-        "unreadable": 0,
-        "exit_records": {
-          "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
-          "attempts": 2,
-          "with_exit_record": 0,
-          "without_exit_record": 2,
-          "by_classification": {
-            "completed": 0,
-            "dead": 0,
-            "running": 0,
-            "unreadable": 0
-          },
-          "signalled": 0,
-          "signal_source": {},
-          "signals_by_name": {},
-          "exit_codes": {},
-          "deaths": 0,
-          "deaths_with_exit_record": 0,
-          "deaths_signalled": 0,
-          "deaths_signal_source": {},
-          "deaths_signals_by_name": {},
-          "death_exit_record_coverage": null,
-          "signalled_share_of_recorded_deaths": null,
-          "signalled_share_of_all_deaths": null
-        },
-        "death_rate": 0.0
-      },
-      {
         "role": "cleanup",
         "effort": "xhigh",
-        "attempts": 1,
-        "completed": 1,
-        "dead": 0,
-        "running": 0,
-        "unreadable": 0,
-        "exit_records": {
-          "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
-          "attempts": 1,
-          "with_exit_record": 0,
-          "without_exit_record": 1,
-          "by_classification": {
-            "completed": 0,
-            "dead": 0,
-            "running": 0,
-            "unreadable": 0
-          },
-          "signalled": 0,
-          "signal_source": {},
-          "signals_by_name": {},
-          "exit_codes": {},
-          "deaths": 0,
-          "deaths_with_exit_record": 0,
-          "deaths_signalled": 0,
-          "deaths_signal_source": {},
-          "deaths_signals_by_name": {},
-          "death_exit_record_coverage": null,
-          "signalled_share_of_recorded_deaths": null,
-          "signalled_share_of_all_deaths": null
-        },
-        "death_rate": 0.0
-      },
-      {
-        "role": "investigate",
-        "effort": "medium",
-        "attempts": 1,
-        "completed": 1,
-        "dead": 0,
-        "running": 0,
-        "unreadable": 0,
-        "exit_records": {
-          "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
-          "attempts": 1,
-          "with_exit_record": 0,
-          "without_exit_record": 1,
-          "by_classification": {
-            "completed": 0,
-            "dead": 0,
-            "running": 0,
-            "unreadable": 0
-          },
-          "signalled": 0,
-          "signal_source": {},
-          "signals_by_name": {},
-          "exit_codes": {},
-          "deaths": 0,
-          "deaths_with_exit_record": 0,
-          "deaths_signalled": 0,
-          "deaths_signal_source": {},
-          "deaths_signals_by_name": {},
-          "death_exit_record_coverage": null,
-          "signalled_share_of_recorded_deaths": null,
-          "signalled_share_of_all_deaths": null
-        },
-        "death_rate": 0.0
-      },
-      {
-        "role": "test",
-        "effort": "high",
         "attempts": 1,
         "completed": 1,
         "dead": 0,
@@ -762,17 +746,28 @@
         "review": 36
       },
       "2026-09-29": {
-        "review": 61,
+        "review": 62,
         "implement": 2
       },
       "2026-09-30": {
-        "review": 2
+        "review": 4,
+        "implement": 2
+      },
+      "2026-10-01": {
+        "review": 5,
+        "implement": 4,
+        "investigate": 1
+      },
+      "2026-10-02": {
+        "implement": 21,
+        "review": 15,
+        "test": 1
       }
     },
     "role_attribution": {
-      "runs_on_local_lane": 3035,
-      "runs_with_streams": 3033,
-      "prompt_declares_role": 3033,
+      "runs_on_local_lane": 3909,
+      "runs_with_streams": 3907,
+      "prompt_declares_role": 3907,
       "prompt_silent_fell_back_to_ledger": 0,
       "disagreements_recorded": 0
     },
@@ -5511,6 +5506,20 @@
         "ended_during": "working"
       },
       {
+        "run_id": "r-20260929T071650132500-review-of-fleet-lane-carries-the-dispatch-environment",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "xhigh",
+        "last_at": "2026-09-29T07:19:42.604Z",
+        "last_record_type": "system",
+        "record_count": 1394,
+        "exit_record": true,
+        "exit_code": null,
+        "signal_name": "SIGTERM",
+        "signal_source": "named_in_record",
+        "ended_during": "working"
+      },
+      {
         "run_id": "r-20260929T072658415878-review-of-velocity-view-answers-within-its-deadline",
         "attempt": "stream",
         "role": "review",
@@ -6279,62 +6288,488 @@
         "signal_name": "SIGTERM",
         "signal_source": "named_in_record",
         "ended_during": "working"
+      },
+      {
+        "run_id": "r-20260930T202748671313-review-of-velocity-counts-clone-matches",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-09-30T20:30:37.074Z",
+        "last_record_type": "system",
+        "record_count": 2400,
+        "exit_record": false,
+        "exit_code": null,
+        "signal_name": null,
+        "signal_source": null,
+        "ended_during": null
+      },
+      {
+        "run_id": "r-20260930T233500551244-review-of-supervisor-outlives-its-launcher",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-09-30T23:35:43.552Z",
+        "last_record_type": "user",
+        "record_count": 68,
+        "exit_record": false,
+        "exit_code": null,
+        "signal_name": null,
+        "signal_source": null,
+        "ended_during": null
+      },
+      {
+        "run_id": "r-20261001T030949708232-review-of-the-reflex-resumes-an-unpromoted-run",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-01T03:10:44.549Z",
+        "last_record_type": "assistant",
+        "record_count": 40,
+        "exit_record": false,
+        "exit_code": null,
+        "signal_name": null,
+        "signal_source": null,
+        "ended_during": null
+      },
+      {
+        "run_id": "r-20261001T202019711185-review-of-pointer-classification-is-memoised",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-01T20:44:46.126Z",
+        "last_record_type": "user",
+        "record_count": 7003,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20261001T212913084959-review-of-srw-ingest-has-one-placement",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-01T21:50:44.374Z",
+        "last_record_type": "assistant",
+        "record_count": 4143,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20261001T215619828543-review-of-srw-index-counts-each-job-from-one-tier",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-01T22:33:54.822Z",
+        "last_record_type": "system",
+        "record_count": 7076,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20261001T221541046754-review-of-fsri-one-nova-lane-launcher",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-01T22:40:56.843Z",
+        "last_record_type": "system",
+        "record_count": 6577,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20261002T000325288419-review-of-observe-keeps-a-terminal-stored-phase",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-02T00:27:51.569Z",
+        "last_record_type": "assistant",
+        "record_count": 6926,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20261002T002038975664-review-of-ctta-join-split-contour-tree",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-02T00:42:08.821Z",
+        "last_record_type": "system",
+        "record_count": 7446,
+        "exit_record": false,
+        "exit_code": null,
+        "signal_name": null,
+        "signal_source": null,
+        "ended_during": null
+      },
+      {
+        "run_id": "r-20261002T055521595063-review-of-suite-final-measure",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-02T06:20:40.790Z",
+        "last_record_type": "assistant",
+        "record_count": 6310,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20261002T060101119494-review-of-s22-triage-pfs-cank",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-02T06:26:19.985Z",
+        "last_record_type": "assistant",
+        "record_count": 7242,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20261002T071141388102-review-of-a-followup-that-hides-work-is-refused",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-02T07:41:09.137Z",
+        "last_record_type": "system",
+        "record_count": 7262,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20261002T083055811250-review-of-migration-dispositions",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-02T08:52:41.733Z",
+        "last_record_type": "system",
+        "record_count": 6286,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20261002T085551528411-review-of-srw-ingest-prints-each-tick",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-02T09:14:35.851Z",
+        "last_record_type": "system",
+        "record_count": 4485,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20261002T085807018367-review-2-of-fsri-lane-timeout-equals-form-test",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-02T09:14:53.945Z",
+        "last_record_type": "assistant",
+        "record_count": 3041,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20261002T092656510580-review-of-a-promotion-reads-only-the-fleet-fields-it-records",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-02T10:04:19.130Z",
+        "last_record_type": "system",
+        "record_count": 13532,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20261002T110010810571-review-of-srw-watch-reads-stored-timestamps",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-02T11:28:57.606Z",
+        "last_record_type": "system",
+        "record_count": 10248,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20261002T133743419382-review-of-ecq-mark-cut-cell-capacity-receipts",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-02T14:07:37.073Z",
+        "last_record_type": "system",
+        "record_count": 6571,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20261002T163935419624-review-of-msc-figure-cohort-cite-or-retire",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-02T17:00:19.786Z",
+        "last_record_type": "user",
+        "record_count": 6249,
+        "exit_record": false,
+        "exit_code": null,
+        "signal_name": null,
+        "signal_source": null,
+        "ended_during": null
+      },
+      {
+        "run_id": "r-20261002T181154804680-review-of-a-decision-recommendation-is-accepted",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-02T18:12:27Z",
+        "last_record_type": null,
+        "record_count": 0,
+        "exit_record": true,
+        "exit_code": 1,
+        "signal_name": null,
+        "signal_source": null,
+        "ended_during": "launch"
+      },
+      {
+        "run_id": "r-20261002T182653557698-review-of-classify-rules-reconcile",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-02T19:02:38.772Z",
+        "last_record_type": "user",
+        "record_count": 10915,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
+      },
+      {
+        "run_id": "r-20261002T184125127673-review-of-picker-in-dispatch",
+        "attempt": "stream",
+        "role": "review",
+        "effort": "high",
+        "last_at": "2026-10-02T19:02:28.924Z",
+        "last_record_type": "system",
+        "record_count": 4741,
+        "exit_record": true,
+        "exit_code": 137,
+        "signal_name": "SIGKILL",
+        "signal_source": "exit_code_128_plus",
+        "ended_during": "working"
       }
     ],
     "review_cell": {
       "role": "review",
       "effort": "xhigh",
-      "attempts": 1324,
-      "completed": 932,
-      "dead": 392,
+      "attempts": 1342,
+      "completed": 949,
+      "dead": 393,
       "running": 0,
       "unreadable": 0,
       "exit_records": {
         "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
-        "attempts": 1324,
-        "with_exit_record": 408,
+        "attempts": 1342,
+        "with_exit_record": 426,
         "without_exit_record": 916,
         "by_classification": {
-          "completed": 278,
-          "dead": 130,
+          "completed": 295,
+          "dead": 131,
           "running": 0,
           "unreadable": 0
         },
-        "signalled": 131,
+        "signalled": 132,
         "signal_source": {
           "exit_code_128_plus": 62,
-          "named_in_record": 69
+          "named_in_record": 70
         },
         "signals_by_name": {
           "SIGKILL": 39,
-          "SIGTERM": 92
+          "SIGTERM": 93
         },
         "exit_codes": {
-          "0": 273,
+          "0": 290,
           "1": 4,
           "137": 39,
           "143": 23,
-          "None": 69
+          "None": 70
         },
-        "deaths": 392,
-        "deaths_with_exit_record": 130,
-        "deaths_signalled": 130,
+        "deaths": 393,
+        "deaths_with_exit_record": 131,
+        "deaths_signalled": 131,
         "deaths_signal_source": {
           "exit_code_128_plus": 62,
-          "named_in_record": 68
+          "named_in_record": 69
         },
         "deaths_signals_by_name": {
           "SIGKILL": 39,
-          "SIGTERM": 91
+          "SIGTERM": 92
         },
-        "death_exit_record_coverage": 0.3316,
+        "death_exit_record_coverage": 0.3333,
         "signalled_share_of_recorded_deaths": 1.0,
-        "signalled_share_of_all_deaths": 0.3316
+        "signalled_share_of_all_deaths": 0.3333
       },
-      "death_rate": 0.2961
+      "death_rate": 0.2928
     }
   },
-  "after": null,
-  "after_state": "not_produced",
-  "after_unavailable_reason": "the repair that would create a post-repair window has not landed: the review-reliability work that owns it is declared implementable with its driving followup still open, so no attempt in the corpus ran against a repaired lane."
+  "after": {
+    "scan_time_utc": "2026-10-02T23:17:20Z",
+    "window": {
+      "start": "2026-09-30T18:36:00Z",
+      "end": "2026-10-02T23:17:20Z",
+      "inclusion": "review attempts whose own first recorded instant is at or after the start and before the end",
+      "start_source": "the attempt stream's first timestamp, or the file mtime where a stream carries none; unreadable starts are counted and excluded"
+    },
+    "population": "review role at the effort this lane declares after reviews moved off xhigh",
+    "role": "review",
+    "effort": "high",
+    "reviews": 467,
+    "completed": 445,
+    "deaths": {
+      "view": "attempt",
+      "headline": {
+        "population": "review role at the effort this lane declares after reviews moved off xhigh, started inside the after window",
+        "role": "review",
+        "effort": "high",
+        "count": 22,
+        "attempts": 467,
+        "rate": 0.0471
+      },
+      "within_window_all_efforts": {
+        "population": "review role at every declared effort inside the window",
+        "count": 22,
+        "attempts": 467,
+        "rate": 0.0471
+      }
+    },
+    "running": 0,
+    "unreadable": 0,
+    "rate": 0.0471,
+    "rate_ci95": {
+      "method": "wilson_score",
+      "z": 1.96,
+      "low": 0.0313,
+      "high": 0.0703
+    },
+    "measurable": true,
+    "min_reviews_for_a_rate": 60,
+    "not_measurable_reason": null,
+    "time_source": {
+      "mtime": 1,
+      "stream": 466
+    },
+    "unreadable_start_stamps": 0,
+    "discrimination": {
+      "this_effort_started_before_the_window": 46,
+      "other_efforts_in_the_window": 0
+    },
+    "exit_records": {
+      "population": "attempts carrying a supervisor exit record (attempt-N-exit.json in the run directory), the same read the positive control goes through",
+      "attempts": 467,
+      "with_exit_record": 392,
+      "without_exit_record": 75,
+      "by_classification": {
+        "completed": 375,
+        "dead": 17,
+        "running": 0,
+        "unreadable": 0
+      },
+      "signalled": 17,
+      "signal_source": {
+        "exit_code_128_plus": 16,
+        "named_in_record": 1
+      },
+      "signals_by_name": {
+        "SIGKILL": 16,
+        "SIGTERM": 1
+      },
+      "exit_codes": {
+        "0": 374,
+        "1": 1,
+        "137": 16,
+        "None": 1
+      },
+      "deaths": 22,
+      "deaths_with_exit_record": 17,
+      "deaths_signalled": 16,
+      "deaths_signal_source": {
+        "exit_code_128_plus": 16
+      },
+      "deaths_signals_by_name": {
+        "SIGKILL": 16
+      },
+      "death_exit_record_coverage": 0.7727,
+      "signalled_share_of_recorded_deaths": 0.9412,
+      "signalled_share_of_all_deaths": 0.7273
+    },
+    "positive_control": {
+      "attempt": "stream",
+      "stream": "stream.jsonl",
+      "record_count": 7394,
+      "has_result_record": false,
+      "last_record_type": "user",
+      "last_record_subtype": null,
+      "classification": "dead",
+      "run_id": "r-20260928T044354744785-review-of-reflex-keys-on-reviewed-run-and-head",
+      "role": "review",
+      "effort": "xhigh",
+      "last_at": "2026-09-28T04:55:05.457Z",
+      "signal_name": "SIGTERM",
+      "ended_during": "working",
+      "signal_exit_record": true
+    },
+    "completion_control": {
+      "attempt": "resume-1",
+      "stream": "resume-1.jsonl",
+      "record_count": 11689,
+      "has_result_record": true,
+      "last_record_type": "result",
+      "last_record_subtype": "success",
+      "classification": "completed",
+      "run_id": "r-20260928T044354744785-review-of-reflex-keys-on-reviewed-run-and-head",
+      "note": "same run, later attempt: the parser reads a result record where one was written, so a death reading is not the reader failing on this run"
+    },
+    "controls_note": "the fixed control run is a review at the before effort and predates the window; it aims the classifier, not the window"
+  },
+  "after_state": "measured",
+  "after_unavailable_reason": null
 }
