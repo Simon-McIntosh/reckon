@@ -220,6 +220,31 @@ def test_an_unrelated_edit_to_the_plan_refuses_before_committing(
     assert _git(repository, "rev-parse", "HEAD") == head_before
 
 
+def test_the_refusal_message_names_the_admitted_plan_state_writes(
+    repository: Path,
+) -> None:
+    """The guard admits a plan-state write the store made, so its refusal must
+    name that admitted class and say the refused difference is authored content
+    outside the store-owned regions — not merely list the two writes it once
+    knew about."""
+    narrative = "a landing refused for an unrelated edit, to read its message"
+    _pointer(repository)
+    _fail_first_landing(repository, narrative)
+
+    plan_path = repository / PLAN_RELATIVE
+    text = plan_path.read_text(encoding="utf-8")
+    plan_path.write_text(
+        text.replace("</main>", f"<p>{UNRELATED}</p></main>"), encoding="utf-8"
+    )
+
+    with pytest.raises(CrewError) as caught:
+        _promote(repository, narrative)
+
+    message = str(caught.value)
+    assert "plan-state write the store made" in message
+    assert "authored content outside those store-owned regions" in message
+
+
 # ── The store's own plan-state write is the run's bookkeeping, not a refusal ─
 
 

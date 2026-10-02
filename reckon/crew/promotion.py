@@ -3369,9 +3369,12 @@ def _refuse_unrelated_plan_edit(
         return
     raise CrewError(
         f"the plan file {plan_file} carries an uncommitted change that is not a "
-        "write the plan store made (an appended landing comment, a version "
-        "stamp or its own re-encoding); refusing to sweep it into the landing "
-        "commit. Commit or discard the unrelated edit, then re-promote."
+        "plan-state write the store made (an impl or status move, a resolved "
+        "followup or other section record, an appended landing comment, a "
+        "version stamp or the store's own re-encoding); the refused difference "
+        "is authored content outside those store-owned regions, so refusing to "
+        "sweep it into the landing commit. Commit or discard the unrelated "
+        "edit, then re-promote."
     )
 
 
