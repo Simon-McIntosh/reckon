@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="16">
+<meta name="plan-version" content="17">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -75,9 +75,20 @@
     resolution, scheduler queries or state readers, is a finding naming the owner to extend.
     Today's evidence for why this matters: imas-ambix carried three duplicated placement paths, and
     the thin-interface audit found consumers parsing reckon's CLI prose in 151 places.</p>
+    <p>The review also reads the interface budget. The velocity view publishes weekly counts of
+    reckon's interface in four families, from <code>reckon/interface_counts.py</code>:
+    <code>public_definitions</code>, <code>cli_options</code>, <code>mcp_views</code> and
+    <code>refusal_families</code>. The review cites the current week's four figures, and holds every
+    section that adds to any of them to one rule: the section names, in its own text, what it
+    retires or merges, or states why nothing can be. A section that adds surface without either is a
+    finding.</p>
     <p><strong>Done when</strong> a plan whose design duplicates an existing mechanism receives a
     finding naming that mechanism and its file. A plan that extends a deep module passes clean.
     The finding reaches the author through the same loop as &sect;2.</p>
+    <p><strong>Also done when</strong> the review of a plan names the current week's four interface
+    counts. A section that adds a public definition, CLI option, MCP view or refusal family without
+    naming in its text what it retires or merges, or why nothing can be, receives a finding. A
+    reviewer can check that from the section's text alone.</p>
 
     <h2 id="s4">§4 — Build the plan-review loop: PR-1, then PR-3 and PR-4, then PR-2 and PR-5</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
