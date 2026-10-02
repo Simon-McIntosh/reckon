@@ -52,17 +52,23 @@
 </section>
 <section id="limitation">
   <h2>Limitation</h2>
-  <p>The two-arm suite gate over the 195 files naming <code>crew.complete</code>,
-  <code>complete_run</code>, <code>promotion</code> or <code>--commit</code> did not
-  complete within the node's time budget — both arms ran far slower than the budget, the
-  base arm was stopped by the harness at its background limit with its progress near
-  40 percent, and the head arm was still running when the budget expired. Their logs are
-  <code>gate-base.log</code> (base <code>233f442b0</code>, extracted under the run's
-  <code>/tmp</code> scratch, revision <code>233f442b0</code>) and <code>gate-head.log</code>
-  (head <code>0f2700d03</code>, <code>-n 8 --timeout=300</code>, separate basetemps).
-  Neither arm reached its summary and neither log carries an <code>EXIT=</code> line, so
-  no failure delta is claimed here; the approval of the change rests on the focused run and
-  the negative control above, not on a suite comparison.</p>
+  <p>The head arm of the suite gate over the 195 files naming <code>crew.complete</code>,
+  <code>complete_run</code>, <code>promotion</code> or <code>--commit</code> ran to its
+  summary at head <code>0f2700d03</code>: <strong>2737 passed</strong>, no failed id at
+  all, one teardown error
+  (<code>test_a_foreign_pid_never_reads_dead.py::test_a_death_read_elsewhere_is_not_enough_for_the_retained_work_clause</code>),
+  <code>EXIT=1</code> from that single error, in 2154 s). The teardown error is that case's own isolation
+  receipt: it asserts the fingerprint of the real <code>~/.config/reckon</code> is
+  unchanged across the case, and under the 36-minute 16-worker arm the live fleet's own
+  writes moved a directory mtime there. It passes standalone on both the head tree and the
+  base tree (9 passed each), and it is unrelated to the merits of the change; it is recorded
+  as a follow-on.</p>
+  <p>The base arm (base <code>233f442b0</code>, extracted under the run's
+  <code>/tmp</code> scratch) was stopped by the harness at its background limit near
+  40 percent and reached no summary, so no base-versus-head failure delta is claimed; the
+  head arm's own fact — no failing id — is what the gate reads. Logs:
+  <code>gate-head.log</code> (<code>-n 8 --timeout=300</code>, its own basetemp under the
+  run's scratch) and <code>gate-base.log</code>.</p>
 </section>
 </main>
 </body>
