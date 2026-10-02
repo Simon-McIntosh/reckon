@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="268">
+<meta name="plan-version" content="269">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -1338,6 +1338,9 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T104709470570-review-of-the-stop-bound-test-states-its-discriminator" data-who="reckon-build" data-when="2026-10-02T10:58:48.740Z">
     <div class="r-comment-body"><p>review of r-20261002T102735422467-the-stop-bound-test-states-its-discriminator at reviewed_base_sha 7a8981b4a5042a24eaaf9a7a66dc7051d14fc088, reviewed_head_sha a07308f67eb73ae91f12cbe5ace222c41a179100 — status parsed, 5 dimensions scored, total 96/100 (goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 20), added_failure_count 0, added_failure_ids []; the repair is genuine (the old `elapsed &lt; WORKER_SLEEP_SECONDS` was unfalsifiable under the 90 s ceiling and the new 40 s/36 s bounds have a non-empty window) with four follow-on observations and no blocker.</p></div>
 </div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T105858739050-the-stop-bound-has-its-own-control" data-who="reckon-build" data-when="2026-10-02T11:08:14.681Z">
+    <div class="r-comment-body"><p>tests/test_a_stopped_run_ends_its_supervisor.py adds a second declared control mutation through the stop-grace hook — a mid-window grace derived from the elapsed bound and the wait ceiling (56 s; supervisor drains ~65 s) — so the ignored-stop case clears the 90 s wait and fails on the elapsed bound itself (62.7 s vs 40 s); unmutated 3 passed, ceiling control fails at the 90 s ceiling, mid-window control fails at the bound.</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
 </div>
@@ -1417,7 +1420,7 @@
     <div class="r-comment-body"><p>Review of run r-20261002T102241206863-the-clone-cache-stays-bounded stored at both declared paths: total 95/100 (goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 19), reviewed base f262cad52c28e950c3fb7b8aa991bc550d81a573 / head c6a2f77b2d92fe5fcb4f40a1988791048f9a3ad9, added_failure_count 0 with empty added_failure_ids from the run's own base/after gate logs, one follow-on finding (subset head_sources prunes the shared cache to the subset's count) and no blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261002T105539138565-a-partial-scan-keeps-the-whole-cache" data-who="reckon-build" data-when="2026-10-02T11:12:55.461Z">
-    <div class="r-comment-body"><p>clone_matches now caps the corpus cache at one entry per file the scan knows about — the paths it read plus the paths the cache already holds — instead of one per path in the caller&#x27;s subset; a five-file scan, then a one-file scan, then a five-file scan re-parses 0 files (mutation to the subset-only cap re-parses 4: private_copy.py, helper_0..2).</p></div>
+    <div class="r-comment-body"><p>clone_matches now caps the corpus cache at one entry per file the scan knows about — the paths it read plus the paths the cache already holds — instead of one per path in the caller's subset; a five-file scan, then a one-file scan, then a five-file scan re-parses 0 files (mutation to the subset-only cap re-parses 4: private_copy.py, helper_0..2).</p></div>
 </div>
 </section>
 </main>
