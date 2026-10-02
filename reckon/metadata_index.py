@@ -26,6 +26,7 @@ change, so a reader that answers from the index — the drain's plan remainder,
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import logging
@@ -99,12 +100,54 @@ class IndexBuild:
 _LOCK = threading.Lock()
 _CACHE: dict[tuple[str, str, bool], IndexBuild] = {}
 
+#: A parse of a document's metadata, keyed by its bytes rather than its path.
+#: One promotion reads the same documents from several trees — the main
+#: checkout, the run's worktree and the tip tree — and the path-keyed memo in
+#: parsing then parses each tree's copy of byte-identical content separately.
+#: Keying on the content digest collapses those copies to one parse, while a
+#: file whose bytes changed has a new digest and is parsed again.
+_META_LOCK = threading.Lock()
+_META_BY_DIGEST: dict[tuple[str, str | None], dict] = {}
+_META_MAX_ENTRIES = 50_000
+
 
 def clear() -> None:
     """Drop every in-process index, as a process restart would."""
 
     with _LOCK:
         _CACHE.clear()
+    with _META_LOCK:
+        _META_BY_DIGEST.clear()
+
+
+def parse_meta_shared(path: Path, slug: str | None = None) -> dict:
+    """Parse ``path``'s metadata, reusing a parse of byte-identical content.
+
+    ``_plan_html.parse_meta`` memoises per path, so the same document reached
+    through two trees is parsed once per tree. Keying the parse on the file's
+    content digest instead lets a second tree's identical bytes reuse the first
+    tree's parse; a changed file has a new digest and is parsed afresh. A file
+    that cannot be hashed falls back to the path-keyed parse, so an unreadable
+    file's error path is unchanged.
+    """
+
+    from reckon import _plan_html
+
+    try:
+        digest = _content_digest(path)
+    except OSError:
+        return _plan_html.parse_meta(path, slug)
+    key = (digest, slug)
+    with _META_LOCK:
+        cached = _META_BY_DIGEST.get(key)
+        if cached is not None:
+            return copy.deepcopy(cached)
+    value = _plan_html.parse_meta(path, slug)
+    with _META_LOCK:
+        _META_BY_DIGEST[key] = copy.deepcopy(value)
+        while len(_META_BY_DIGEST) > _META_MAX_ENTRIES:
+            _META_BY_DIGEST.pop(next(iter(_META_BY_DIGEST)))
+    return value
 
 
 def invalidate_tree(docs_dir: Path) -> None:

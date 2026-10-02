@@ -260,6 +260,19 @@ def _read_head(path: Path) -> tuple[str, dict[str, str]]:
     return _read_head_meta(path)
 
 
+def _identify_meta(path: Path) -> dict:
+    """Read one file's metadata, sharing a parse of byte-identical content.
+
+    Identification runs once per file per docs tree, and a promotion reads the
+    same documents from several trees. The digest-keyed memo reuses one parse
+    across the trees holding identical bytes instead of re-parsing each copy.
+    """
+
+    from reckon import metadata_index
+
+    return metadata_index.parse_meta_shared(path)
+
+
 def identify_resource(docs_dir: Path, path: Path, project: str) -> Resource | None:
     """Classify one HTML file using typed location plus semantic metadata."""
     try:
@@ -282,7 +295,7 @@ def identify_resource(docs_dir: Path, path: Path, project: str) -> Resource | No
             _, meta = _read_head(path)
             slug = meta.get(f"{location_type}-id") or meta.get("reckon-id") or path.stem
     else:
-        meta = _plan_html.parse_meta(path)
+        meta = _identify_meta(path)
         artifact_type = canonical_type(meta.get("type"))
         slug = meta.get("slug") or path.stem
         if location_type and artifact_type != location_type:
