@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-impl" content="0.6">
 </head>
 <body>
@@ -163,6 +163,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-ascsn-currency-audit" data-who="s25-coord" data-when="2026-10-02">
     <div class="r-comment-body"><p>S25 currency audit at <code>0da2431ed</code> (report: <code>~/.config/reckon/crew/reports/reckon/s25-coord/s25-currency-audit.md</code>). <strong>§5 landed</strong> and is now collapsed.</p><ul><li><strong>§2, partly landed.</strong> The brief carrier works; the answer record is missing. Promotion must write each finding's answering commit, or its declined reason, onto the reviewed run's ledger row. That needs <code>reckon/ledger.py</code>, which <code>clean-review-promotes-itself</code> and then the picker session hold, so it follows them.</li><li><strong>§3 and §4.</strong> Landed bar their week-long measures, which are due after 2026-10-06.</li><li><strong>§6.</strong> Its window opens a week after §2's answer record lands.</li></ul></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-ascsn-brief-review-command" data-who="s25-coord" data-when="2026-10-02">
+    <div class="r-comment-body"><p><strong>A brief-carried run's suggested review command is not dispatchable.</strong> Measured 2026-10-02 on <code>r-20261002T123453435484-follower-reads-current-state</code>, which was dispatched with <code>--brief</code>. The obligations view's <code>next_command</code> for its missing review passes <code>--plan '' --section ''</code>, and dispatch refuses it with exit 2: <em>"fully-specified: no plan or brief is named as the semantic authority"</em>. The same review dispatches once it names the run's own brief with <code>--brief</code>. That dispatch was then held only by lane admission (exit 75). Whoever composes the review command for a run (the obligations view, and the review reflex if it shares the composer) should carry the reviewed run's authority, its brief or its plan and section, rather than emit empty plan fields. This belongs with §2: a finding that travels as a brief has to stay reviewable as one.</p></div>
 </div>
 </section>
 </main>
