@@ -99,17 +99,26 @@ def test_a_renewed_producer_outlives_three_lease_intervals(home: Path) -> None:
     thread, state = _run_producer(project)
     fresh = _await_lease(project, state)
 
+    # A renewal counts only when the follower's write advanced the instant
+    # recorded in the registration. renew_producer_lease also returns the
+    # existing record on a throttled call, so a non-None return alone would
+    # count a no-op write as a renewal and the assertion would pass without a
+    # single write having landed.
     renewals = 0
+    previous = fresh
     deadline = time.monotonic() + 3 * LEASE_SECONDS
     while time.monotonic() < deadline:
-        if runs.renew_producer_lease(project) is not None:
+        runs.renew_producer_lease(project)
+        renewed = runs.watch_lease_renewed_at(project)
+        if renewed is not None and renewed > previous:
             renewals += 1
+            previous = renewed
         time.sleep(LEASE_SECONDS / 2)
 
     assert state.get("error") is None, state.get("error")
     assert thread.is_alive(), "a renewed producer must stay up past three intervals"
-    # At least one renewal per half interval over three intervals is five
-    # writes; require the floor the cadence promises rather than the exact count.
+    # At least one observed write per half interval over three intervals is
+    # five; require the floor the cadence promises rather than the exact count.
     assert renewals >= 5
     advanced = runs.watch_lease_renewed_at(project)
     assert advanced is not None and advanced > fresh

@@ -142,15 +142,17 @@ def test_watchdog_still_stops_a_live_over_grace_cli_worker(monkeypatch) -> None:
         "process_alive": True,
         "log_path": str(Path("/nonexistent/stream.jsonl")),
     }
-    signalled: list[int] = []
+    signalled: list[tuple[int, str]] = []
     monkeypatch.setattr(
-        recovery, "_signal_process_group", lambda pid, started_at: signalled.append(pid)
+        recovery,
+        "_signal_process_group",
+        lambda pid, started_at, *, reason="", **kwargs: signalled.append((pid, reason)),
     )
     config = {"fences": {"enforce_budget_watchdog": True, "budget_grace_multiple": 2.0}}
 
     recovery._apply_budget_watchdog(record, config)
 
-    assert signalled == [4242]
+    assert signalled == [(4242, "budget-watchdog")]
     assert record["phase"] == "stopped"
     assert record["watchdog_enforced"] is True
 

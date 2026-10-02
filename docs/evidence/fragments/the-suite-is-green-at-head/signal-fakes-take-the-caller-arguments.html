@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s2">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-tags" content="crew,signals,sender-record,stale-fixture">
+  <title>Signal stand-ins take the caller arguments | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="signal-fakes-take-the-caller-arguments" data-reckon="landed" data-when="2026-10-02">
+  <h2>Signal stand-ins take the caller arguments</h2>
+  <p><strong>Cause group.</strong> The eleven ids attributed to
+  <code>8753de02f</code> (signalling callers name their sender-record directory).
+  That commit gave <code>_signal_process_group</code> the keyword-only
+  <code>reason</code>, <code>run_dir</code> and <code>project</code> and threaded
+  them from every run-bearing caller &mdash; dispatch rollback, lane change, run
+  stop, promotion settle and release, and the recovery budget watchdog. Each of
+  the eleven tests substitutes a stand-in for that function whose signature still
+  took only <code>(pid, start_time)</code>, so the shipped keyword call raised
+  <code>TypeError</code>. Where the stand-in sat behind the watchdog's broad
+  <code>except</code> the error was swallowed and the watchdog signalled nothing,
+  reporting an empty pid list rather than a crash.</p>
+  <p><strong>Decision, per id.</strong> Every one is a <em>stale fixture</em>: the
+  shipped change is correct and the test pinned the pre-change signature. No id is
+  a product defect, so no product file was touched. The stand-ins now take the
+  keyword-only arguments, and where the test already asserts on the recorded
+  signal, the stand-in also records the reason it was given, so the threading is
+  verified rather than merely accepted.</p>
+  <ul>
+    <li><code>test_crew.py::test_pointer_write_failure_terminates_process_and_removes_dispatch_artifacts</code>
+    &mdash; forwards the keywords to the real signal.</li>
+    <li><code>test_crew.py::test_opt_in_budget_watchdog_stops_and_records_the_run_phase</code>
+    &mdash; records <code>budget-watchdog</code>.</li>
+    <li><code>test_crew_lane_change.py::test_redispatch_keeps_the_run_node_and_worktree</code>
+    &mdash; records <code>lane-change</code>.</li>
+    <li><code>test_crew_lane_change.py::test_redispatch_continues_a_stream_resolved_session_and_records_its_source</code>
+    &mdash; accepts the keywords.</li>
+    <li><code>test_crew_recovery.py::test_watchdog_still_stops_a_live_over_grace_worker_with_a_token_budget</code>
+    &mdash; records <code>budget-watchdog</code>.</li>
+    <li><code>test_terminal_run_elapsed.py::test_watchdog_still_stops_a_live_over_grace_cli_worker</code>
+    &mdash; records <code>budget-watchdog</code>.</li>
+    <li><code>test_receipt_after_release.py</code> four ids &mdash; three accept the
+    keywords; <code>test_the_pre_release_gate_is_the_release_gates_signal</code>
+    records <code>promotion-settle</code>.</li>
+    <li><code>test_worker_env_export.py::test_an_in_harness_lane_change_carries_the_attempt_environment</code>
+    &mdash; accepts the keywords.</li>
+  </ul>
+  <p><strong>Measure.</strong> Base and head arms over the six owned files, one
+  pytest process per file with its own basetemp, on the fleet allocation node
+  <code>98dci4-clu-2018</code> (job <code>1277272</code>); the base arm runs the
+  files as they stood at the base revision in an extracted tree, the head arm in
+  the node worktree. Figures in the manifest (<code>baseline_suite</code>,
+  <code>after_suite</code>). No test was skipped, xfailed, deleted or weakened.</p>
+</article>
+</body>
+</html>

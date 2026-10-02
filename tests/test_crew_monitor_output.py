@@ -53,6 +53,11 @@ def test_three_followers_receive_each_subsequent_transition_once(
                     "observed_at": "2026-08-26T10:00:00Z",
                 }
             ],
+            # The follower reads the cursor's producer identity on every attach
+            # to report a seat running stale code; a stub must carry the key the
+            # real watch_stream_cursor always returns, or the read raises. No
+            # seat record exists here, so the identity is empty.
+            "producer": {},
         }
 
     def seat_claim(*_args, **_kwargs):

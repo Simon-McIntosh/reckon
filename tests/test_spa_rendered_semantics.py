@@ -15,7 +15,6 @@ import pytest
 from tests.spa_browser_harness import (
     NODE_PROBE,  # noqa: F401 - compatibility re-export for adjacent browser checks
     BrowserProbeError,
-    installed_browser,
     installed_browser_or_skip,
     run_browser_probe,
     served_spa,
@@ -34,9 +33,7 @@ def _skip_when_browser_is_unavailable():
 
 @pytest.fixture(scope="module")
 def rendered_browser(tmp_path_factory) -> str:
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip("no supported browser binary is installed")
+    browser = installed_browser_or_skip()
     with _skip_when_browser_is_unavailable():
         run_browser_probe(
             tmp_path_factory.mktemp("browser-capability"),

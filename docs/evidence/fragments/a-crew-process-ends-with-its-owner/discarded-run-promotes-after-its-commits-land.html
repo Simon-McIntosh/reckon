@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A discarded run is promoted once its commits reach main">
+  <meta name="plan-summary" content="A run discarded to free its claim, whose commit is carried into main by a follow-on merge, promotes from its surviving run directory after the fact, writing exactly one ledger row that cites its own commit.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,promotion,reconcile,discard,ledger">
+  <title>A discarded run is promoted once its commits reach main — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="discarded-run-promotes-after-its-commits-land" data-reckon="landed" data-when="2026-10-02">
+  <h2>A discarded run is promoted once its commits reach main</h2>
+  <p>A run whose live pointer is removed at discard can have its commit carried into
+  main by a follow-on node's merge. Completion already reconciles such a run from its
+  surviving run directory, but the rebuilt record carried no write scope, so citing
+  the run's own commit was refused for changing paths outside an empty declaration.
+  The rebuild now recovers the run's declared scope from the durable manifest's
+  <code>changed_paths</code>, the one scope statement that survives the discard.</p>
+  <p>The gate builds a scratch repository, discards a run whose commit is then merged
+  into main by a follow-on node, and shows <code>crew complete</code> on the
+  pointerless run writing exactly one ledger row that cites the discarded run's own
+  commit, while the follow-on's row is unchanged. The declared negative control
+  refuses completion of a run that has no live pointer; the discarded-run case then
+  fails (1 failed, <code>EXIT=1</code>).</p>
+</article>
+</body>
+</html>

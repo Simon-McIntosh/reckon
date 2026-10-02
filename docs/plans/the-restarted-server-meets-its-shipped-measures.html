@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-restarted-server-meets-its-shipped-measures">
+  <meta name="plan-title" content="The Restarted Server Meets Its Shipped Measures">
+  <meta name="plan-summary" content="Two shipped plans left measures that only a server running the merged code could meet. The lead approved the restart, so this plan carries them out.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="3.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="low">
+  <meta name="plan-sprint" content="S22">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling">
+  <meta name="plan-standalone" content="It carries live measures and an adoption step that two shipped plans left behind; no live plan's sections wait on it and it consumes no plan&#x27;s pending evidence.">
+  <title>The Restarted Server Meets Its Shipped Measures | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="lead">
+        inflight-visibility and north-star-orientation shipped with work that only a server running
+        the merged code could finish. Their followups held it until the lead authorised restarting
+        the shared reckon service. The lead approved that on 2026-10-02, and s22-coord restarted
+        <code>reckon.service</code> on the login node at 09:18:06Z, after the latest main commit.
+        MCP processes reconnect from each session. This plan carries the two remainders, which
+        work-is-a-section-not-a-followup §4 moved out of followups on completed plans.
+      </p>
+    </header>
+
+    <h2 id="s1">§1 — The in-flight surface is measured on the live server</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      inflight-visibility declared four measures that a checkout cannot produce:
+    </p>
+    <ul>
+      <li><strong>Live run visible:</strong> <code>GET /crew</code> reports <code>phase=working</code> within 3 s of a real dispatch, and done after the terminal event. Both latencies are recorded.</li>
+      <li><strong>No second daemon:</strong> <code>ss -ltnp</code>, taken while the watcher is in use, shows one listener on :8765 and no new port.</li>
+      <li><strong>Navigable:</strong> the watcher tab renders a live run with working plan and sprint links, kept as a figure.</li>
+      <li><strong>In-flight band:</strong> a plan page shows its band while a run targets it, in the same figure or a second one.</li>
+    </ul>
+    <p>
+      <strong>Done when</strong> each measure is recorded against the restarted server on
+      98dci4-srv-1006, with its latencies, the <code>ss</code> output and the figures saved under
+      <code>docs/figures/the-restarted-server-meets-its-shipped-measures/</code>. A measure that
+      fails is a finding, named with what was seen, not a pass.
+    </p>
+
+    <h2 id="s2">§2 — Reckon adopts its four north-star directions</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p>
+      north-star-orientation §5 proposed four directions:
+    </p>
+    <ul>
+      <li><strong>State that tells the truth:</strong> every status, number and gate verdict is derived from evidence a reader can re-check, and nothing computable is stored as an assertion.</li>
+      <li><strong>Unattended execution:</strong> an orchestrator carries a sprint from ready node to committed evidence without a human in the loop, and holds recoverably rather than failing when it must stop.</li>
+      <li><strong>Legible to human and agent alike:</strong> a person and an agent read the same plan state through surfaces suited to each, with neither a second store nor a second truth.</li>
+      <li><strong>Portable across harnesses:</strong> reckon's contracts hold whichever agent harness runs the work, so adding a backend never adds a second execution path.</li>
+    </ul>
+    <p>
+      Its write path, validated <code>north_stars</code> in project state (e8efbc7), is landed. The
+      declaration was blocked only by stale server and MCP code.
+    </p>
+    <p>
+      <strong>Done when</strong> the four directions are declared in reckon's project state and
+      returned by a read of the project resource. All eight plans of the three execution sprints
+      that §5 names also carry a label resolving to a declared id, each direction receives at least
+      one plan, and the dependency scan reports no undeclared direction.
+    </p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+<h2><span class="sec">§</span> Decisions</h2>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-trsmism-001" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build the-restarted-server-meets-its-shipped-measures §1" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Measure the live server, then adopt the directions</h4>
+    <div class="r-fu-body"><p>§1 and §2 are independent; either can go first.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-restarted-server-meets-its-shipped-measures §1</pre>
+</article>
+    </section>
+  </main>
+</body>
+</html>

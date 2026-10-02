@@ -60,7 +60,7 @@ from reckon.crew.node import (
     role_may_write_repository_paths,
     validate_node,
 )
-from reckon.crew.prompts import compose_prompt
+from reckon.crew.prompts import compose_prompt, time_fence_statement
 from reckon.crew.refusals import format_refusal
 from reckon.crew.recovery import REVIEW_NODE_PREFIX, stream_paths_newest_first
 from reckon.crew.reserve import admit as reserve_admit
@@ -92,6 +92,7 @@ from reckon.crew.routing import (
     resolved_time_ceiling,
     section_id_candidates,
     shadow_worktree_session,
+    signal_worker,
 )
 from reckon.crew.runs import (
     _expanded_scope_paths,
@@ -206,8 +207,11 @@ FENCE_WORKERS = True
 # old, 14 of them polling an already-deleted temporary home. So arming refuses
 # when the resolved configuration home lies under a pytest temporary
 # directory, and the refusal is raised at the caller rather than skipped
-# quietly. A test whose own subject is the producer lifecycle, and which reaps
-# what it starts, says so through this variable.
+# quietly. A pytest-named directory above the home is one signal; a pytest
+# session's own declared --basetemp is the other, so a custom base temp whose
+# directory carries no pytest name is still recognised. A test whose own
+# subject is the producer lifecycle, and which reaps what it starts, says so
+# through this variable.
 WATCH_ARMING_ENV = "RECKON_WATCH_ARMING"
 _PYTEST_TEMPORARY_ROOT = re.compile(r"^(pytest-of-.+|pytest-\d+)$")
 
@@ -960,11 +964,71 @@ def watch_arming_suppressed() -> bool:
     return _watch_arming_intent() == "off"
 
 
+def _running_under_pytest() -> bool:
+    """True when this process is a pytest session or one of its workers."""
+    return bool(
+        os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("PYTEST_VERSION")
+    )
+
+
+def _current_and_ancestor_argvs(limit: int = 12) -> list[list[str]]:
+    """The argv of this process and its ancestors, nearest first, bounded."""
+    argvs: list[list[str]] = []
+    pid = os.getpid()
+    for _ in range(limit):
+        try:
+            raw = Path(f"/proc/{pid}/cmdline").read_bytes()
+            stat = Path(f"/proc/{pid}/stat").read_text()
+        except OSError:
+            break
+        argvs.append([os.fsdecode(item) for item in raw.split(b"\0") if item])
+        rest = stat.rsplit(")", 1)[-1].split()
+        parent = int(rest[1]) if len(rest) > 1 else 2
+        if parent in (0, 1, pid):
+            break
+        pid = parent
+    return argvs
+
+
+def _declared_basetemp() -> Path | None:
+    """The temporary root the enclosing pytest session was told to use.
+
+    A session given a custom ``--basetemp`` names it on the command line, which
+    this process carries itself in a serial run and inherits from the session
+    master through its ancestors under ``pytest-xdist``. The default base temp
+    is discovered instead by the ``pytest-of-*`` ancestor name, so only a
+    declared one is read here, and only when a pytest session is running.
+    """
+    if not _running_under_pytest():
+        return None
+    for argv in _current_and_ancestor_argvs():
+        for index, arg in enumerate(argv):
+            if arg == "--basetemp" and index + 1 < len(argv):
+                return Path(argv[index + 1])
+            if arg.startswith("--basetemp="):
+                return Path(arg.split("=", 1)[1])
+    return None
+
+
 def _temporary_home_root(home: Path) -> Path | None:
-    """Return the throwaway test root containing ``home``, if there is one."""
+    """Return the throwaway test root containing ``home``, if there is one.
+
+    Two signals name a throwaway home: a pytest-named directory above it, and
+    the temporary root a running pytest session declared on its own command
+    line. The second is what carries a custom ``--basetemp`` such as
+    ``/tmp/anything``, whose directory carries no pytest name for the first to
+    match, and it is read from the running session so an ordinary home outside
+    that root is still armed.
+    """
     for candidate in (home, *home.parents, *home.resolve().parents):
         if _PYTEST_TEMPORARY_ROOT.match(candidate.name):
             return candidate
+    declared = _declared_basetemp()
+    if declared is not None:
+        root = declared.resolve()
+        resolved = home.resolve()
+        if resolved == root or root in resolved.parents:
+            return declared
     return None
 
 
@@ -1792,6 +1856,7 @@ def _compose_dispatch_prompt(
     run_directory: Path,
     worktree: str,
     working_directory: str,
+    launch_instant: str = "",
     needs_help_after_failures: int,
     peer_scopes: Mapping[str, Iterable[str]] | None = None,
     run_id: str = "",
@@ -1823,6 +1888,7 @@ def _compose_dispatch_prompt(
         writes_landing_fragment=_writes_its_landing_fragment(node, authority=authority),
         manifest_path=node.manifest_path,
         time_budget=node.time_budget,
+        launch_instant=launch_instant,
         needs_help_after_failures=needs_help_after_failures,
         peer_scopes=peer_scopes,
         run_id=run_id,
@@ -2785,6 +2851,7 @@ class DispatchPlan:
     lane_declaration: dict[str, Any] | None = None
     lane_reading: dict[str, Any] | None = None
     lane_gate: dict[str, Any] | None = None
+    lane_allowance: dict[str, Any] | None = None
     lane_advisory: dict[str, Any] | None = None
     open_endedness: float | None = None
 
@@ -2813,6 +2880,9 @@ class DispatchPlan:
             ),
             "lane_gate": (
                 None if self.lane_gate is None else dict(self.lane_gate)
+            ),
+            "lane_allowance": (
+                None if self.lane_allowance is None else dict(self.lane_allowance)
             ),
             "node": self.node.as_dict(),
             "brief": _brief_record(self.node),
@@ -3495,6 +3565,18 @@ class LanePaused(CrewError):  # noqa: N818 - named as the dispatch states it, be
             str(gate.get("detail") or "").strip()
             or (f"the lane gate is {gate.get('state')!r} at {gate.get('gate_path')!r}")
         )
+
+
+class LaneHeld(LanePaused):
+    """A dispatch holds because the lane's own router grants it no worker slot.
+
+    The lane is answering and its own arithmetic leaves this coordinator
+    session no room, so the node is held rather than refused: nothing was
+    created, the node is still ready, and the caller retries when the router's
+    next reading grants a slot. The allowance decision that produced the hold
+    rides the exception, so every surface reports the figure the router
+    published rather than a second opinion about it.
+    """
 
 
 class _GateReadDeadline(Exception):  # noqa: N818 - an internal marker, not a raised API
@@ -4449,6 +4531,7 @@ def plan_dispatch(
         )
     lane_reading = _dispatch_lane_reading(backend)
     lane_gate = _dispatch_lane_gate(backend)
+    lane_allowance = _dispatch_lane_allowance(backend, session=session)
     resolution = DispatchPlan(
         run_id=resolved_run_id,
         backend=backend_name,
@@ -4472,6 +4555,7 @@ def plan_dispatch(
         lane_declaration=lane_declaration,
         lane_reading=lane_reading,
         lane_gate=lane_gate,
+        lane_allowance=lane_allowance,
         lane_advisory=lane_advisory,
         open_endedness=open_endedness,
     )
@@ -5080,6 +5164,171 @@ def _require_repairs_target(
     )
 
 
+# The router averages its slot arithmetic over a window it reports as
+# ``observed_seconds``. Until that window has filled, the ratio is divided by a
+# history the router does not yet have and the published slot count overstates
+# the room -- measured once at 320 s of history as 57 slots against about 11
+# true -- so no slot figure is used until the router reports at least this much
+# observation. A block publishing no ``observed_seconds`` cannot be shown to
+# have any.
+_LANE_SLOT_TRUST_SECONDS = 15 * 60
+
+
+def _lane_allowance_unknown(detail: str) -> dict[str, Any]:
+    """The allowance decision when no slot figure and no headroom could be read."""
+    return {
+        "state": "unknown",
+        "allowance": None,
+        "source": "none",
+        "held": False,
+        "verdict": _lane_document.UNKNOWN,
+        "headroom": None,
+        "session": "",
+        "reason": detail,
+        "detail": detail,
+    }
+
+
+def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
+    """Choose the extra-worker allowance the lane's router grants this session.
+
+    The router's own arithmetic is the authority and its own preference orders
+    the choice, most specific first: the session's share from the admission
+    block's ``sessions`` map when that map lists this session; the
+    ``new_session_worker_slots`` share when the map is present and does not
+    list it; the global ``worker_slots``; and, only when no slot figure is
+    published, the request ``headroom`` read as a worker count. A slot figure
+    is used only when the router reports at least ``_LANE_SLOT_TRUST_SECONDS``
+    of observation history; below that -- and when the block states no history
+    at all -- the slot arithmetic cannot be shown to rest on a filled window,
+    so the allowance falls back to headroom, which needs no history.
+
+    An allowance of zero or less *holds*: the router has granted no room and
+    the reason names the router's own verdict. An allowance that could not be
+    read holds nothing, because absence of a signal is not exhaustion. Reckon
+    does no fairness arithmetic of its own: every figure carried here is one
+    the router published.
+    """
+    reading = _lane_document.read_lane_document(document)
+    admission = _lane_document.read_lane_admission(document)
+    headroom = _metric_number(reading.get("headroom"))
+    verdict = str(reading.get("admission_verdict") or _lane_document.UNKNOWN)
+    verdict_reason = str(reading.get("admission_reason") or "")
+    session_id = str(session or "").strip()
+
+    observed = admission.get(_lane_document.ADMISSION_OBSERVED_SECONDS_KEY)
+    history_is_trusted = (
+        isinstance(observed, (int, float))
+        and not isinstance(observed, bool)
+        and observed >= _LANE_SLOT_TRUST_SECONDS
+    )
+
+    allowance: int | float | None = None
+    source = "none"
+    if admission.get("present") and history_is_trusted:
+        sessions_present = bool(admission.get("sessions_present"))
+        listed = (
+            admission["sessions"].get(session_id)
+            if sessions_present and session_id
+            else None
+        )
+        if listed is not None:
+            share = _metric_number(listed.get("worker_slots"))
+            if share is not None:
+                allowance = share
+                source = "the session's own worker slots"
+        elif sessions_present:
+            share = _metric_number(
+                admission.get(_lane_document.ADMISSION_NEW_SESSION_WORKER_SLOTS_KEY)
+            )
+            if share is not None:
+                allowance = share
+                source = "the new-session worker slots"
+        if allowance is None:
+            share = _metric_number(
+                admission.get(_lane_document.ADMISSION_WORKER_SLOTS_KEY)
+            )
+            if share is not None:
+                allowance = share
+                source = "the global worker slots"
+    if allowance is None and headroom is not None:
+        allowance = headroom
+        source = "the request headroom"
+
+    if allowance is None:
+        detail = str(admission.get("detail") or reading.get("detail") or "").strip()
+        detail = detail or "no worker-slot figure and no headroom were published"
+        return _lane_allowance_unknown(detail) | {"session": session_id}
+
+    held = allowance <= 0
+    grant = (
+        f"the lane's router grants {allowance:g} extra workers to session "
+        f"{session_id or 'unidentified'} ({source})"
+    )
+    if held:
+        reason = f"{grant}; the router's own verdict is {verdict}"
+        if verdict_reason and verdict_reason != _lane_document.UNKNOWN:
+            reason = (
+                f"{grant}; the router's own verdict is {verdict} — {verdict_reason}"
+            )
+        state = "held"
+    else:
+        reason = grant
+        detail = (
+            reason
+            if admission.get("present")
+            else f"{reason}; no admission block was published"
+        )
+        state = "measured"
+    return {
+        "state": state,
+        "allowance": allowance,
+        "source": source,
+        "held": held,
+        "verdict": verdict,
+        "headroom": headroom,
+        "session": session_id,
+        "reason": reason,
+        "detail": reason if held else detail,
+    }
+
+
+def _dispatch_lane_allowance(
+    backend: Mapping[str, Any], *, session: str
+) -> dict[str, Any] | None:
+    """Read the resolved lane's published allowance for this coordinator session.
+
+    A backend may declare ``lane_document``, the local JSON the lane publishes
+    about itself. The document is resolved through the shared lane reader and
+    the allowance is chosen from the router's own figures. An absent
+    declaration returns ``None`` -- a lane that publishes nothing has nothing
+    to hold on -- and a document that cannot be read or parsed resolves to an
+    unknown allowance that holds nothing, because absence of a signal is not
+    exhaustion.
+    """
+    declared = backend.get("lane_document")
+    if not declared:
+        return None
+    path = Path(str(declared)).expanduser()
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return _lane_allowance_unknown(
+            f"lane document {str(path)!r} cannot be read — {exc}"
+        )
+    try:
+        payload = json.loads(raw)
+    except ValueError as exc:
+        return _lane_allowance_unknown(
+            f"lane document {str(path)!r} is not valid JSON — {exc}"
+        )
+    if not isinstance(payload, Mapping):
+        return _lane_allowance_unknown(
+            f"lane document {str(path)!r} is not a JSON object"
+        )
+    return _lane_worker_allowance(payload, session=session)
+
+
 def dispatch(
     *,
     node: TaskNode,
@@ -5185,6 +5434,7 @@ def dispatch(
         member=member,
         allow_unreviewed_plan=unreviewed_plan_override,
         repairs=repairs,
+        session=session,
     )
     if not resolution.validation.ok:
         raise CrewError(
@@ -5309,6 +5559,7 @@ def dispatch(
                     else ""
                 ),
                 allow_unreviewed_plan=unreviewed_plan_override,
+                session=session,
             )
             resolution.requested_backend = requested_backend
             if not resolution.validation.ok:
@@ -5355,6 +5606,16 @@ def dispatch(
     lane_gate = resolution.lane_gate or {}
     if lane_gate.get("state") in _LANE_GATE_WAITING_STATES:
         raise LanePaused(lane_gate)
+
+    # The lane's own allowance, chosen from the router's published figures: an
+    # allowance of zero or less holds the node here, before a pointer or a
+    # worktree exists, so the caller retries when the router's next reading
+    # grants a slot rather than unwinding a launch. This is the same wait the
+    # gate-withholds dispatch above is, and it is raised distinctly so the
+    # reason a surface reports is the allowance the router published.
+    lane_allowance = resolution.lane_allowance or {}
+    if lane_allowance.get("held"):
+        raise LaneHeld(lane_allowance)
 
     # A cli worker launches inside the fence, and the fence is bubblewrap over a
     # user namespace. A host with neither cannot seal a worker's writes, so the
@@ -5658,6 +5919,10 @@ def dispatch(
                 )
             except _backends.BackendError as exc:
                 raise CrewError(format_refusal("D22", str(exc))) from exc
+        # One read of the clock is both the attempt's recorded launch instant
+        # and the instant its fence states, so the prompt and the record cannot
+        # disagree about when this attempt started.
+        attempt_started_at = _utc_now()
         dispatch_host = _current_host_facts()
         prompt = _compose_dispatch_prompt(
             node=node,
@@ -5668,6 +5933,7 @@ def dispatch(
             run_directory=directory,
             worktree=worktree["path"],
             working_directory=working_directory,
+            launch_instant=attempt_started_at,
             needs_help_after_failures=int(fences.get("needs_help_after_failures", 2)),
             peer_scopes=peers,
             run_id=run_id,
@@ -5717,7 +5983,6 @@ def dispatch(
         # wallet records that no group paced it rather than a wallet nothing
         # read. The row is composed once, above the refusals, so the reading
         # this record carries is the same one the bookend reserve judged.
-        attempt_started_at = _utc_now()
         record: dict[str, Any] = {
             "run_id": run_id,
             "project": project,
@@ -6150,7 +6415,12 @@ def dispatch(
             _unwire_peer_channels(run_id, wired_peer_run_ids)
             if spawned_pid is not None:
                 try:
-                    _signal_process_group(spawned_pid, spawned_start_time)
+                    _signal_process_group(
+                        spawned_pid,
+                        spawned_start_time,
+                        run_dir=run_dir(run_id),
+                        reason="dispatch-rollback",
+                    )
                 except (CrewError, OSError):
                     pass
             # The pointer goes first. The worktree remover refuses a worktree
@@ -8211,20 +8481,21 @@ def _record_launch_abandoned_before_spawn(
     the pointer a discard removes and a reader needs to tell this launch from a
     worker that started and died.
     """
+    exit_record = _supervisor_exit_record(
+        run_id=str(spec.get("run_id") or ""),
+        attempt=attempt,
+        worker_pid=None,
+        launched_at=launched_at,
+        status=None,
+        run_directory=run_directory,
+    ) | {"detail": "crew stop arrived before the worker was spawned"}
     _write_attempt_artifact(
         run_directory,
         EXIT_RECORD_NAME,
-        _supervisor_exit_record(
-            run_id=str(spec.get("run_id") or ""),
-            attempt=attempt,
-            worker_pid=None,
-            launched_at=launched_at,
-            status=None,
-            run_directory=run_directory,
-        )
-        | {"detail": "crew stop arrived before the worker was spawned"},
+        exit_record,
         attempt=attempt,
     )
+    _publish_stored_phase(spec, ended=True, exit_record=exit_record)
 
 
 def _stop_is_requested(flag: threading.Event, blocked: set[int]) -> bool:
@@ -8346,6 +8617,386 @@ def _publish_stored_phase(
         return
 
 
+# A worker whose manifest reaches one of these has delivered its verdict and
+# will do no more work, so the supervisor stops waiting for it and ends it. The
+# terminal ``blocked`` is excluded on purpose: a blocked run is resumed in
+# place, and its process and disposable identity are kept for that resume.
+# ``in-progress`` is non-terminal and is waited on as before.
+_WORKER_DONE_MANIFEST_STATUSES = frozenset({"complete", "failed"})
+
+# The env var a test (or an operator) shortens the grace with. The default
+# bounds how long a finished worker may hold its slot before the supervisor
+# ends it; a worker whose manifest is complete or failed should exit at once,
+# so the grace covers only the flush between the manifest write and the exit.
+TERMINAL_MANIFEST_GRACE_ENV = "RECKON_WORKER_TERMINAL_GRACE_SECONDS"
+TERMINAL_MANIFEST_GRACE_DEFAULT = 300.0
+# How often the supervisor rechecks a manifest while it waits for the worker.
+# Coarse on purpose: the file lives on shared storage, and a manifest the
+# worker has not written again cannot have changed its status, so poll often
+# enough to notice a delivery against a multi-minute grace without reading the
+# manifest across the whole life of every worker.
+_WORKER_MANIFEST_POLL_SECONDS = 3.0
+# How long a worker gets to end on the grace signal before the supervisor
+# escalates to SIGKILL, so a worker ignoring SIGTERM cannot hold the slot.
+_WORKER_GRACE_KILL_SECONDS = 10.0
+# How long a worker gets to end after ``crew stop`` reaches its process group
+# before the supervisor escalates to SIGKILL. The stop signal is already
+# delivered to the worker; the grace only covers the flush between receiving it
+# and exiting. Without a bound here, a worker that ignores the stop holds the
+# supervisor for as long as the worker itself lives.
+STOP_GRACE_ENV = "RECKON_WORKER_STOP_GRACE_SECONDS"
+STOP_GRACE_DEFAULT = _WORKER_GRACE_KILL_SECONDS
+# A manifest's mtime must rest for this long before its terminal status counts
+# as a delivery. A worker writes its manifest line by line, so it passes through
+# states where the status line already reads terminal while the list fields
+# below it are still being written; signalling on such a read is what cut a
+# manifest off mid-path near the deadline — wrote complete, then kept writing,
+# and the grace expired against the half-written file.
+_WORKER_MANIFEST_QUIET_SECONDS = 3.0
+# The overall ceiling on deferring a signal. A whole terminal manifest that
+# will not rest — its mtime keeps advancing, so the quiet period is never met —
+# may defer its signal for at most this long; past it the whole read the
+# supervisor holds is taken as the delivery. An incomplete manifest is never
+# signalled on, at the ceiling or before it.
+_WORKER_MANIFEST_CEILING_SECONDS = 600.0
+
+
+def _terminal_manifest_grace_seconds() -> float:
+    """The grace a finished worker is given to exit on its own, in seconds.
+
+    Read from the environment so a test can shorten it, and floored at zero so
+    a nonsensical value degrades to an immediate end rather than to no bound.
+    """
+    raw = os.environ.get(TERMINAL_MANIFEST_GRACE_ENV, "").strip()
+    if raw:
+        try:
+            value = float(raw)
+        except ValueError:
+            value = None
+        if value is not None and value >= 0:
+            return value
+    return TERMINAL_MANIFEST_GRACE_DEFAULT
+
+
+def _stop_grace_seconds() -> float:
+    """The grace a stopped worker is given to exit before it is killed.
+
+    Read from the environment so a test can shorten it, and floored at zero so
+    a nonsensical value degrades to an immediate end rather than to no bound.
+    """
+    raw = os.environ.get(STOP_GRACE_ENV, "").strip()
+    if raw:
+        try:
+            value = float(raw)
+        except ValueError:
+            value = None
+        if value is not None and value >= 0:
+            return value
+    return STOP_GRACE_DEFAULT
+
+
+def _supervisor_manifest_path(run_id: str) -> Path:
+    """The manifest the supervisor watches for its run's terminal verdict.
+
+    Read from the live pointer, whose manifest path the launcher wrote; a
+    pointer already gone (a discard took it) falls back to the run directory,
+    so the watch names a path rather than raising.
+    """
+    try:
+        record: Mapping[str, Any] = read_pointer(run_id)
+    except CrewError:
+        record = {}
+    return Path(_recorded_manifest_path(record, run_id))
+
+
+def _worker_manifest_done_status(manifest_path: Path) -> str:
+    """The done status a delivered manifest carries, or "" for none yet.
+
+    A manifest that is absent, unreadable, still carries the dispatch
+    template's placeholder or names a status the supervisor waits on all read
+    as "" — the worker is still working, or has declared a wait, and is left
+    to its own exit.
+    """
+    from reckon.crew.reports import manifest_status_is_template, parse_manifest
+
+    try:
+        text = manifest_path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+    try:
+        status = str(parse_manifest(text, path=str(manifest_path)).get("status") or "")
+    except ValueError:
+        return ""
+    status = status.strip().lower()
+    if not status or manifest_status_is_template(status):
+        return ""
+    return status if status in _WORKER_DONE_MANIFEST_STATUSES else ""
+
+
+def _worker_manifest_is_whole(manifest_path: Path) -> bool:
+    """Whether every list field on the manifest closes its bracket.
+
+    The tolerant reader accepts a value and splits it, so a ``changed_paths:
+    [a, b, c`` line cut off mid-path still parses to a done manifest with a
+    plausible list — the shape a worker at its pen passes through. A list field
+    whose raw value opens a ``[`` must close it before the manifest counts as
+    delivered; an unbalanced bracket is a write in progress, not a delivery.
+
+    A field written in the block form (a bare key over ``- item`` lines) carries
+    no bracket to check; the quiet period, not this check, is what covers it.
+    """
+    from reckon.crew.reports import _MANIFEST_LIST_KEYS
+
+    keys = frozenset((*_MANIFEST_LIST_KEYS, "orientation_write_paths"))
+    try:
+        text = manifest_path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    for raw in text.splitlines():
+        line = raw.strip()
+        match = re.match(
+            r"^(?:[-*]\s+)?(?:\*\*)?(?P<key>[a-z][a-z0-9_-]*)\s*:\s*(?P<value>.*)$",
+            line,
+            re.IGNORECASE,
+        )
+        if not match:
+            continue
+        if match.group("key").lower().replace("-", "_") not in keys:
+            continue
+        value = match.group("value").strip().strip("*").strip()
+        if "[" in value and value.count("[") != value.count("]"):
+            return False
+    return True
+
+
+def _iso_stamp_to_ns(stamp: str) -> int | None:
+    """An ISO-8601 instant as epoch nanoseconds, or None for an unreadable one."""
+    parsed = parse_utc(stamp)
+    if parsed is None:
+        return None
+    return int(parsed.timestamp() * 1_000_000_000)
+
+
+def _attempt_started_ns(
+    spec: Mapping[str, Any], record: Mapping[str, Any], supervisor_started_at: str
+) -> int | None:
+    """The current attempt's own start, as epoch nanoseconds.
+
+    The spec is authoritative — it is written by the launch that started this
+    supervisor — and the pointer is the fallback for a spec that omits the
+    field. The supervisor's own launch instant is the last resort before the
+    clock is unreadable.
+    """
+    for stamp in (
+        spec.get("attempt_started_at"),
+        record.get("attempt_started_at"),
+        supervisor_started_at,
+    ):
+        if not stamp:
+            continue
+        parsed = _iso_stamp_to_ns(str(stamp))
+        if parsed is not None:
+            return parsed
+    return None
+
+
+def _supervisor_manifest_baseline_ns(
+    run_id: str, spec: Mapping[str, Any], *, supervisor_started_at: str = ""
+) -> int:
+    """The manifest generation this attempt may call its own.
+
+    A resumed run keeps its manifest path, so the previous attempt's delivered
+    manifest is still on disk when the new worker starts, carrying an mtime from
+    before this attempt began. A generation recorded on the pointer at dispatch
+    time predates that manifest, so honouring it alone would read the stale
+    manifest as this attempt's delivery. The baseline is therefore never earlier
+    than the attempt's own start: a recorded generation counts only when it is
+    at or after that start, which is the floor. A manifest written before this
+    attempt began cannot count as its delivery.
+
+    When the attempt clock is unreadable everywhere, the recorded generation is
+    taken as before — a manifest is then treated as delivery, the pre-existing
+    behaviour rather than a regression.
+    """
+    try:
+        record: Mapping[str, Any] = read_pointer(run_id)
+    except CrewError:
+        record = {}
+    baseline: int | None = None
+    recorded = record.get("manifest_baseline_mtime_ns")
+    if recorded is not None:
+        try:
+            baseline = int(recorded)
+        except (TypeError, ValueError):
+            baseline = None
+    started_ns = _attempt_started_ns(spec, record, supervisor_started_at)
+    if started_ns is None:
+        return baseline if baseline is not None else 0
+    if baseline is None:
+        return started_ns
+    return max(baseline, started_ns)
+
+
+def _reap_worker_on_its_terminal_manifest(
+    pid: int,
+    *,
+    run_directory: Path,
+    manifest_path: Path,
+    grace_seconds: float,
+    baseline_ns: int,
+    stop_requested: threading.Event | None = None,
+    stop_grace_seconds: float = 0.0,
+) -> int | None:
+    """Collect a worker's exit, ending it once its manifest is delivered or a stop arrives.
+
+    A worker that delivered (a complete or failed manifest) and then kept
+    running holds its run's slot long after its work was finished. The
+    supervisor notices the delivery, gives the worker the grace period to exit
+    on its own, and then ends its process — writing the sender record before it
+    signals, so the signal is attributable to the run's own directory.
+
+    A delivery is a manifest this attempt wrote that reads as a done status,
+    parses in full with every list field closed, and has rested without a write
+    for the quiet period. A manifest that is still being written — its mtime
+    advancing, or a list field whose bracket is not yet closed — is a worker at
+    its pen, and the supervisor defers to the next poll rather than signal a
+    half-written record. A manifest that reads non-terminal, or blocked (kept
+    for resume), is waited on as before, and so is a worker that rewrites a done
+    manifest back to a non-done status: withdrawing the delivery clears the
+    deadline it had set. A done manifest that reads whole but will not rest
+    cannot defer its signal forever: past the overall ceiling the supervisor
+    takes the whole read it holds as the delivery. An incomplete manifest is
+    never signalled on, at the ceiling or before it. Returns the wait status, or
+    ``None`` when the child was already reaped elsewhere.
+
+    A recorded stop bounds the wait as well. ``crew stop`` delivers its signal
+    to the worker's whole process group, so the worker has already been asked to
+    end; the supervisor gives it ``stop_grace_seconds`` to do so, then kills it.
+    Without this the supervisor would block on ``waitpid`` for as long as the
+    worker lives, so a worker that ignores the stop would hold the supervisor,
+    and its slot, past any bound. A stop does not wait on a manifest: it ends
+    the run outright.
+
+    The manifest is stat'd each poll; its status and wholeness are read only
+    when its mtime has advanced past the attempt's baseline and changed since
+    the last read, so an unchanged manifest is never reparsed and a manifest
+    left by a previous attempt — a resumed run's own complete record — is not
+    mistaken for this attempt's delivery.
+    """
+    seen_mtime_ns: int | None = None
+    written_at: float | None = None
+    terminal_at: float | None = None
+    is_done = False
+    is_whole = False
+    deadline: float | None = None
+    signalled_at: float | None = None
+    stop_deadline: float | None = None
+    stop_killed = False
+    while True:
+        try:
+            waited_pid, status = os.waitpid(pid, os.WNOHANG)
+        except (ChildProcessError, OSError):
+            return None
+        if waited_pid == pid:
+            return status
+        now = time.monotonic()
+        if (
+            stop_requested is not None
+            and stop_deadline is None
+            and not stop_killed
+            and stop_requested.is_set()
+        ):
+            # A stop ends the run: the group signal has already reached the
+            # worker, and re-signalling it here names the sender in the run's
+            # worker record. The grace covers only the flush between receiving
+            # the stop and exiting.
+            signal_worker(
+                pid,
+                signal.SIGTERM,
+                reason="run-stop",
+                run_dir=run_directory,
+            )
+            stop_deadline = now + stop_grace_seconds
+        if stop_deadline is not None and now >= stop_deadline:
+            # The worker outlived the stop grace. SIGKILL cannot be ignored, so
+            # the supervisor ends it rather than waiting on it further.
+            signal_worker(
+                pid,
+                signal.SIGKILL,
+                reason="worker-ignored-the-stop-grace-signal",
+                run_dir=run_directory,
+            )
+            stop_deadline = None
+            stop_killed = True
+        try:
+            mtime_ns = manifest_path.stat().st_mtime_ns
+        except OSError:
+            mtime_ns = None
+        if mtime_ns is not None and mtime_ns != seen_mtime_ns:
+            seen_mtime_ns = mtime_ns
+            written_at = now
+            fresh = mtime_ns > baseline_ns
+            is_done = fresh and bool(_worker_manifest_done_status(manifest_path))
+            is_whole = is_done and _worker_manifest_is_whole(manifest_path)
+            if is_done:
+                if terminal_at is None:
+                    terminal_at = now
+            else:
+                terminal_at = None
+        # Delivered: a done manifest this attempt wrote, whole, and rested past
+        # the quiet period. The grace is measured from the manifest's own write,
+        # so a delivery noticed late still ends on schedule; the age is
+        # subtracted unclamped, so once it reaches the grace the deadline is
+        # already in the past and the worker is ended at once.
+        settled = (
+            mtime_ns is not None
+            and is_done
+            and is_whole
+            and written_at is not None
+            and now - written_at >= _WORKER_MANIFEST_QUIET_SECONDS
+        )
+        # A whole done manifest that will not rest cannot defer its signal past
+        # the overall ceiling: the whole read the supervisor holds is the
+        # delivery. An unwhole manifest never reaches this branch.
+        ceiling_due = (
+            mtime_ns is not None
+            and is_done
+            and is_whole
+            and terminal_at is not None
+            and now - terminal_at >= _WORKER_MANIFEST_CEILING_SECONDS
+        )
+        if settled or ceiling_due:
+            age = time.time() - (mtime_ns / 1_000_000_000)
+            deadline = now + grace_seconds - age
+        else:
+            # Nothing whole, quiet and terminal is on disk: either the delivery
+            # was withdrawn (the worker is working again, or has declared a wait
+            # for resume) or a done manifest is still being written, so any
+            # deadline an earlier read set is cleared and the worker is waited
+            # on as before rather than ended on a withdrawn or half-written
+            # delivery's clock.
+            deadline = None
+        if deadline is not None and signalled_at is None and now >= deadline:
+            signal_worker(
+                pid,
+                signal.SIGTERM,
+                reason="worker-lingered-after-terminal-manifest",
+                run_dir=run_directory,
+            )
+            signalled_at = now
+        elif signalled_at is not None and now - signalled_at >= _WORKER_GRACE_KILL_SECONDS:
+            # The worker ignored the grace signal. SIGKILL cannot be ignored,
+            # and the record names this second, harder signal.
+            signal_worker(
+                pid,
+                signal.SIGKILL,
+                reason="worker-ignored-the-terminal-grace-signal",
+                run_dir=run_directory,
+            )
+            signalled_at = now
+        time.sleep(_WORKER_MANIFEST_POLL_SECONDS)
+
+
 def _run_supervisor(spec_path: Path) -> int:
     """Take the snapshot, launch the worker, collect its exit, and stop.
 
@@ -8363,6 +9014,7 @@ def _run_supervisor(spec_path: Path) -> int:
     if not isinstance(spec, Mapping):
         return 0
     run_directory = Path(str(spec.get("run_directory") or ""))
+    run_id = str(spec.get("run_id") or "")
     try:
         attempt = int(spec.get("attempt") or 1)
     except (TypeError, ValueError):
@@ -8392,20 +9044,21 @@ def _run_supervisor(spec_path: Path) -> int:
         try:
             pid = _supervisor_spawn_worker(spec)
         except (OSError, ValueError, KeyError, CrewError) as exc:
+            failure_record = _supervisor_exit_record(
+                run_id=str(spec.get("run_id") or ""),
+                attempt=attempt,
+                worker_pid=None,
+                launched_at=launched_at,
+                status=None,
+                run_directory=run_directory,
+            ) | {"detail": f"worker did not spawn: {type(exc).__name__}: {exc}"}
             _write_attempt_artifact(
                 run_directory,
                 EXIT_RECORD_NAME,
-                _supervisor_exit_record(
-                    run_id=str(spec.get("run_id") or ""),
-                    attempt=attempt,
-                    worker_pid=None,
-                    launched_at=launched_at,
-                    status=None,
-                    run_directory=run_directory,
-                )
-                | {"detail": f"worker did not spawn: {type(exc).__name__}: {exc}"},
+                failure_record,
                 attempt=attempt,
             )
+            _publish_stored_phase(spec, ended=True, exit_record=failure_record)
             return 0
     finally:
         signal.pthread_sigmask(signal.SIG_SETMASK, previous_mask)
@@ -8424,12 +9077,17 @@ def _run_supervisor(spec_path: Path) -> int:
         attempt=attempt,
     )
     _publish_stored_phase(spec, ended=False)
-    try:
-        _, status = os.waitpid(pid, 0)
-    except ChildProcessError:
-        status = None
-    except OSError:
-        status = None
+    status = _reap_worker_on_its_terminal_manifest(
+        pid,
+        run_directory=run_directory,
+        manifest_path=_supervisor_manifest_path(run_id),
+        grace_seconds=_terminal_manifest_grace_seconds(),
+        baseline_ns=_supervisor_manifest_baseline_ns(
+            run_id, spec, supervisor_started_at=launched_at
+        ),
+        stop_requested=stop_requested,
+        stop_grace_seconds=_stop_grace_seconds(),
+    )
     exit_record = _supervisor_exit_record(
         run_id=str(spec.get("run_id") or ""),
         attempt=attempt,
@@ -8478,6 +9136,24 @@ def attach(run_id: str, task: str) -> dict[str, Any]:
     return _mutate_pointer(run_id, bind)
 
 
+def _terminal_phase_survives(stored_phase: str, observed_phase: str) -> bool:
+    """Whether a fold keeps a terminal phase the supervisor already stored.
+
+    The supervisor is the one writer of a terminal stored phase: it sets the
+    delivered manifest's status once the worker exits, and a run that has
+    finished stays finished. A late observation reads the run's own stream, and
+    a stream that was rewritten or truncated, or a stream whose terminal event
+    the observer did not reach, reports a live phase for a run that has already
+    ended. Folding that over the stored terminal phase would show a finished
+    run as still running, so a terminal stored phase is kept against a
+    non-terminal observation.
+    """
+    return (
+        stored_phase in _TERMINAL_RUN_PHASES
+        and observed_phase not in _TERMINAL_RUN_PHASES
+    )
+
+
 def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str, Any]:
     from reckon.crew.query import _resumability
     from reckon.crew.recovery import _apply_budget_watchdog
@@ -8503,7 +9179,8 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
         record["manifest_present"] = manifest_fresh
         record["process_alive"] = record_process_alive(record, process_alive)
         record["observed_at"] = _utc_now()
-        stopped = record.get("phase") == "stopped"
+        stored_phase = str(record.get("phase") or "")
+        stopped = stored_phase == "stopped"
 
         if record.get("launch") == "cli":
             backend = _backend_settings(record, config)
@@ -8518,7 +9195,12 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
             record["exit_status"] = data["exit_status"]
             record["final_message"] = data["final_message"]
             record["throughput"] = data["throughput"]
-            record["phase"] = "stopped" if stopped else data["phase"]
+            observed_phase = "stopped" if stopped else data["phase"]
+            if _terminal_phase_survives(stored_phase, observed_phase):
+                # The run finished under the supervisor's terminal phase; a
+                # stream that reports it as live does not reopen it.
+                observed_phase = stored_phase
+            record["phase"] = observed_phase
             if (
                 not stopped
                 and record.get("attempt_kind") == "resume"
@@ -8536,10 +9218,13 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
                 not stopped
                 and data["phase"] in ("starting", "working")
                 and record["process_alive"] is False
+                and not _terminal_phase_survives(stored_phase, "orphaned")
             ):
                 # A dead process with no terminal event is a recoverable orphan,
                 # not a finished run. An empty log counts because argument
-                # failures can exit before the first event is written.
+                # failures can exit before the first event is written. A run the
+                # supervisor already finished is neither: its terminal stored
+                # phase stands and a spent pid does not reopen it.
                 record["phase"] = "orphaned"
                 record["detail"] = (
                     "process exited without a terminal event in its log; "
@@ -8549,7 +9234,9 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
             manifest_status = str(
                 parse_manifest(manifest.read_text()).get("status") or ""
             ).strip()
-            if manifest_status:
+            if manifest_status and not _terminal_phase_survives(
+                stored_phase, manifest_status
+            ):
                 record["phase"] = manifest_status
 
         _apply_budget_watchdog(record, config)
@@ -9309,14 +9996,17 @@ def resume_plan(
     )
     attempt_started_at = _utc_now()
     manifest_path = _recorded_manifest_path(record, run_id)
+    resumed_prompt = (
+        _lane_prompt(record, advice, fresh_reason["reason"], continued=False)
+        if fresh_reason
+        else advice
+    )
     plan = resolve_launch_executable(
         _backends.launch_plan(
             backend_name=str(record.get("backend") or ""),
             backend=backend,
-            prompt=(
-                _lane_prompt(record, advice, fresh_reason["reason"], continued=False)
-                if fresh_reason
-                else advice
+            prompt=_restate_time_fence(
+                resumed_prompt, record, attempt_started_at=attempt_started_at
             ),
             worktree=str(record.get("worktree") or "."),
             manifest_path=manifest_path,
@@ -9559,6 +10249,32 @@ def _lane_prompt(
     )
 
 
+def _restate_time_fence(
+    prompt: str, record: Mapping[str, Any], *, attempt_started_at: str
+) -> str:
+    """Restate the resumed attempt's own time fence on its launch prompt.
+
+    The prompt a resumed attempt launches with — the same-session advice, or a
+    fresh-start prompt — was composed for the attempt that already ended, so
+    its fence names that attempt's clock. The resumed attempt is given its own
+    launch instant and the deadline the recorded budget puts it under, from the
+    same instant the launch records as this attempt's start.
+    """
+    node = record.get("node")
+    budget = ""
+    if isinstance(node, Mapping):
+        budget = str(node.get("time_budget") or "")
+    if not budget:
+        return prompt
+    statement = time_fence_statement(
+        time_budget=budget, launch_instant=attempt_started_at
+    )
+    fence = f"FENCE — TIME (resumed attempt)\n  {statement}\n"
+    if not prompt.strip():
+        return fence
+    return f"{prompt.rstrip()}\n\n{fence}"
+
+
 def change_lane(
     run_id: str,
     backend_name: str,
@@ -9787,7 +10503,12 @@ def change_lane(
         return preview
 
     if source_process_alive:
-        _signal_process_group(int(record["pid"]), record.get("pid_start_time"))
+        _signal_process_group(
+            int(record["pid"]),
+            record.get("pid_start_time"),
+            run_dir=directory,
+            reason="lane-change",
+        )
 
     directory.mkdir(parents=True, exist_ok=True)
     prompt_path.write_text(prompt, encoding="utf-8")
@@ -9912,7 +10633,12 @@ def terminate(run_id: str) -> dict[str, Any]:
         if not pid:
             raise CrewError(f"run {run_id!r} has no process to stop")
         try:
-            _signal_process_group(int(pid), record.get("pid_start_time"))
+            _signal_process_group(
+                int(pid),
+                record.get("pid_start_time"),
+                run_dir=run_dir(run_id),
+                reason="run-stop",
+            )
         except (ProcessLookupError, PermissionError, OSError) as exc:
             record["detail"] = f"could not signal pid {pid} — {exc}"
         else:

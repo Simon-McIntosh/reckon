@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="Five claim and placement ids met by moving the assertion to the shipped guards">
+  <meta name="plan-summary" content="Five ids across three test files failed at head. Two shipped guards moved what the tests observe and the tests were not updated when each guard closed: inside a compute allocation the launch search path carries the scheduler shims ahead of the inherited PATH, and a dispatch now claims its own landing fragment. All five are stale assertions and the behaviour is unchanged. Base 5 failed / 14 passed; head 19 passed; zero added failures.">
+  <meta name="plan-evidence-for" content="the-suite-is-green-at-head">
+  <meta name="plan-recorded-at" content="2026-10-01">
+  <meta name="plan-verdict" content="passed">
+  <title>Five claim and placement ids met | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Five claim and placement ids met by moving the assertion to the shipped guards</h1>
+
+    <section id="suite-dispatch-claim-and-placement-tests-cause">
+      <h2>Cause repaired</h2>
+      <p>All five ids are the stale-expectation class: two recently shipped guards moved what the
+        tests observe and the tests were not updated when each guard closed. Neither guard is a
+        defect, so <strong>every repair moves the assertion, not the behaviour</strong>. No file
+        under <code>reckon/</code> is touched.</p>
+
+      <p><strong>Group A: the launch search path carries the scheduler shims inside an
+        allocation.</strong> Commit <code>a690ab924</code> <em>carry compute host contract into
+        workers</em> rewrote <code>reckon/crew/dispatch.py</code> <code>launch_search_path</code>
+        (now line&nbsp;6647) to prepend the worker git shim and, inside an allocation, the scheduler
+        shims ahead of the inherited PATH. <code>apply_backend_placement</code> resolves the
+        declared scheduler through that same path, so on a compute node <code>srun</code> resolves
+        to <code>reckon/host_shims/srun</code> rather than <code>/usr/bin/srun</code>, and it is
+        always resolvable there because the shim directory supplies the name. Three ids pin this:
+        the two prefix cases asserted <code>/usr/bin/srun</code>, and the refusal case asserted that
+        an <code>srun</code> absent from <code>/nonexistent-scheduler-bin</code> cannot resolve when
+        the shims supply it anyway.</p>
+
+      <p><strong>Group B: a dispatch now claims its own landing fragment.</strong> Commit
+        <code>f6e41cc7d</code> <em>give each node its own landing fragment by default</em> makes
+        <code>_grant_landing_write_paths</code> (<code>reckon/crew/dispatch.py</code> line&nbsp;1710)
+        append <code>docs/evidence/fragments/&lt;plan&gt;/&lt;node&gt;.html</code> to the node's
+        write scope. Two dispatches of one node now first overlap on that fragment, so
+        <code>ScopeConflict</code> (<code>reckon/crew/node.py</code> line&nbsp;348) names it as the
+        candidate and claimed path. Two ids pin this and asserted
+        <code>"src/claimed.py" in str(refusal)</code> &mdash; a declared path the refusal no longer
+        reaches because the derived fragment is the first scope entry the two live claims overlap
+        on.</p>
+    </section>
+
+    <section id="suite-dispatch-claim-and-placement-tests-changes">
+      <h2>What changed</h2>
+      <ol>
+        <li><code>tests/test_crew_placement.py</code> &mdash; a module helper pins the allocation
+          host contract so the reading is the same on a login node and on a compute node.
+          <code>test_a_declared_placement_prefixes_the_resolved_launch</code> asserts the scheduler
+          the launch's own search path resolves first, <code>str(shim_directory() / "srun")</code>.
+          <code>test_an_unresolvable_scheduler_is_refused_before_launch</code> names a scheduler the
+          shims do not provide (<code>srun-absent</code>), exercising the refusal and its sentence
+          (naming the scheduler and the searched PATH) without weakening it.</li>
+        <li><code>tests/test_crew_lane_agnostic_placement.py</code> &mdash; the loop over backend
+          names reads the same allocation contract and asserts the shim head for every backend
+          name, so the lane-agnostic claim is unchanged: adding a backend stays a configuration
+          change.</li>
+        <li><code>tests/test_dispatch_launch_is_not_its_own_conflict.py</code> &mdash; a module
+          constant <code>LANDING_FRAGMENT</code> names the fragment the node's granted scope
+          carries, and both claim cases assert the refusal names it.</li>
+      </ol>
+      <p>No test is skipped, xfailed, deleted or weakened: every repaired id still asserts the full
+        property it did before, against the value the shipped code produces.</p>
+    </section>
+
+    <section id="suite-dispatch-claim-and-placement-tests-evidence">
+      <h2>Evidence</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Base, three files at <code>ddff8e4f6</code></td>
+            <td>5 failed, 14 passed, exit 1 &mdash; the five named ids</td></tr>
+          <tr><td>Head, three files</td>
+            <td>19 passed, exit 0 &mdash; five prior failures gone, zero added failures</td></tr>
+          <tr><td>Declared mutation: restore each repaired assertion to its base text: every named
+            id fails again</td>
+            <td>5 failed, exit 1</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="suite-dispatch-claim-and-placement-tests-provenance">
+      <h2>Reproduction</h2>
+      <table>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Base revision</td>
+            <td><code>ddff8e4f6a726bcce8bd1bdb2da233422fc40e09</code></td></tr>
+          <tr><td>Head commit</td><td><code>1ebf00886</code></td></tr>
+          <tr><td>Gate logs</td>
+            <td><code>base-arm.log</code>, <code>head-arm.log</code>,
+            <code>negative-control.log</code> in the run directory, each headed by revision, tree,
+            cwd, <code>module.__file__</code> and the literal command, ending in a bare
+            <code>EXIT=</code> line</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

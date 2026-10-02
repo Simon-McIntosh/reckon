@@ -4,10 +4,8 @@ import json
 import subprocess
 from pathlib import Path
 
-import pytest
-
 from reckon import serve
-from tests.spa_browser_harness import _evaluate_browser_url, installed_browser
+from tests.spa_browser_harness import _evaluate_browser_url, installed_browser_or_skip
 
 ROOT = Path(__file__).parents[1]
 UI_ROOT = ROOT / "docs" / "ui"
@@ -329,11 +327,7 @@ function assertExports(moduleName, names) {
 
 
 def test_inlined_bundle_renders_from_a_file_url_without_reference_errors(tmp_path):
-    browser = installed_browser()
-    if browser is None:
-        pytest.fail(
-            "a supported headless browser is required for the module-scope gate"
-        )
+    browser = installed_browser_or_skip()
 
     compiled = _compiled_modules()
     scripts = [

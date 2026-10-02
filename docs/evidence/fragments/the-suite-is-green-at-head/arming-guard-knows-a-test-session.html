@@ -1,0 +1,57 @@
+<section id="arming-guard-knows-a-test-session">
+  <h2>arming-guard-knows-a-test-session — the watch-arming guard refuses a producer from any pytest session, whatever its basetemp is called</h2>
+
+  <p><strong>Defect.</strong> <code>_refuse_arming_under_a_throwaway_home</code>
+  (<code>reckon/crew/dispatch.py</code>) stood down whenever the resolved configuration
+  home did not sit under a directory whose name matched <code>_PYTEST_TEMPORARY_ROOT</code>
+  (<code>^(pytest-of-.+|pytest-\d+)$</code>) — pytest's default base temp. A session given an
+  explicit <code>--basetemp</code> whose directory carries no pytest name, such as
+  <code>/tmp/anything</code>, therefore armed a detached <code>crew watch</code> producer that
+  outlives the run and polls a home the session is about to delete. The suite worked around
+  this by planting a pytest-named directory above each home it places under a custom base temp
+  (repair merge <code>b5f20abe8</code>), so the guard's rule and the test's scaffolding disagreed
+  about which temporary root is pytest's.</p>
+
+  <p><strong>Fix, one commit.</strong> The guard now recognises the throwaway home from the
+  running pytest session as well as from a pytest-named ancestor. <code>_running_under_pytest</code>
+  reads <code>PYTEST_CURRENT_TEST</code>/<code>PYTEST_VERSION</code>;
+  <code>_declared_basetemp</code> reads the temporary root the session declares on its own command
+  line (<code>--basetemp=X</code> or <code>--basetemp X</code>) from this process and its
+  ancestors' <code>/proc/&lt;pid&gt;/cmdline</code> — the process itself in a serial run, the
+  session master under <code>pytest-xdist</code>, whose workers carry argv <code>['-c']</code>.
+  <code>_temporary_home_root</code> returns the declared root when the home lies under it, which
+  is a path test on both sides: an ordinary home outside the declared root is still armed, so the
+  guard stays bound to the throwaway home rather than to pytest itself.</p>
+
+  <p><strong>Evidence.</strong> <code>tests/test_arming_guard_knows_a_test_session.py</code>:
+  <strong>4 passed, EXIT=0</strong>. The refusal case drives a real child pytest session with
+  <code>--basetemp</code> at a directory directly under the system temp root (no pytest name),
+  places <code>RECKON_HOME</code> inside it, removes <code>RECKON_WATCH_ARMING</code>, and reads
+  the guard's verdict from disk: the guard refuses, naming the root and <em>outlive</em>. The
+  ordinary-home case clears the session markers and asserts the guard does not raise. Two unit
+  cases pin the parsing and the root boundary (a home outside the declared root is not a throwaway).</p>
+
+  <p><strong>Measured base vs head, <code>tests/test_watch_arming_isolation.py</code> and
+  <code>tests/test_crew_dispatch_arming.py</code>.</strong> Base revision
+  <code>c8087d0bc</code>, extracted with <code>git archive</code>: <strong>14 passed, EXIT=0</strong>.
+  Head, same two files at the worktree: <strong>14 passed, EXIT=0</strong> — zero added failures.
+  The guard's recognition of a custom base temp changes no case in either file, because both bind
+  their homes to roots they name.</p>
+
+  <p><strong>Declared negative control, executed and logged. Declared string:</strong> “recognise
+  only a pytest-of ancestor again; the custom-basetemp case is not refused and the test fails”.
+  Applied by making <code>_declared_basetemp</code>'s call site yield no declared root, then
+  restored: log <code>logs/negative-control.log</code>: <strong>2 failed, 2 passed, EXIT=1</strong>,
+  failing ids
+  <code>test_the_guard_refuses_a_session_with_a_custom_basetemp</code> and
+  <code>test_a_home_under_the_declared_root_is_a_throwaway_home</code> — the refusal case sees the
+  guard arm the custom-basetemp home, which is the defect the node repairs.</p>
+
+  <p><strong>Ruff.</strong> The change adds no lint or format findings: <code>reckon/crew/dispatch.py</code>
+  reports 303 findings at both base and head; the new test file is clean under
+  <code>ruff check</code> and <code>ruff format --check</code>.</p>
+
+  <p><strong>Scope.</strong> Two files: <code>reckon/crew/dispatch.py</code> (four helpers and the
+  guard's root test) and the new test file. No plan, index or sprint state is touched. The merged
+  full-suite result belongs to a separately dispatched test node.</p>
+</section>

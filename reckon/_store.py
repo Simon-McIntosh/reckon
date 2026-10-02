@@ -1790,6 +1790,8 @@ def append_to_list(
             **item,
             "prompt": _validate_new_followup_prompt(item.get("prompt", "")),
         }
+        if _followup_is_open(item):
+            _refuse_hiding_followup(cur_data, item, project=project)
     lst = list(cur_data.get(field, []))
     if isinstance(item, dict) and item.get("id"):
         _refuse_duplicate_id(lst, field, str(item["id"]))
@@ -2505,6 +2507,10 @@ def _apply_append(working: dict, op: dict, is_index: bool, warnings: list[str]) 
         if missing:
             raise OpError(f"followup missing required fields: {missing}")
         fu["prompt"] = _validate_new_followup_prompt(fu["prompt"])
+        if _followup_is_open(fu):
+            _refuse_hiding_followup(
+                working, fu, project=str(working.get("project") or "")
+            )
         followups = working.setdefault("followups", [])
         _refuse_duplicate_id(followups, target, fu["id"])
         followups.append(fu)
@@ -2866,6 +2872,35 @@ CONTINUATION_REQUIRED = (
 )
 
 
+def _refuse_hiding_followup(
+    plan: dict[str, Any], followup: dict[str, Any], *, project: str = ""
+) -> None:
+    """Refuse one open followup whose invocation hides work on its own plan.
+
+    One definition for the ops writer, the append tool and the HTTP patch
+    writer, so the three cannot disagree about what a followup does not name:
+    work the roadmap can dispatch on this plan.
+    """
+    from reckon.followup_pointers import classify_followup
+
+    verdict = classify_followup(
+        plan,
+        followup,
+        project=project,
+        declarations=plan.get("section_declarations"),
+    )
+    if not verdict.hides_work:
+        return
+    ident = str(followup.get("id") or "")
+    raise OpError(
+        f"followup {ident!r} hides work ({verdict.reason}): its invocation "
+        "names no work the roadmap can dispatch — add the work as a section "
+        "of this plan, or create a new plan when this one is complete and "
+        "point the followup at it; a step that needs authority is recorded "
+        "as an open decision instead"
+    )
+
+
 def _followup_is_open(followup: dict[str, Any]) -> bool:
     """Whether a followup is still carrying the chain.
 
@@ -2901,6 +2936,41 @@ def continuation_present(state: dict[str, Any]) -> bool:
     return any(_chain_closed(f.get("outcome")) for f in followups)
 
 
+def _followups_before_the_patch(state: dict[str, Any]) -> list[dict[str, Any]]:
+    """The plan's stored followups, read before the patch is written.
+
+    A patch carries the whole followups list, so telling an appended followup
+    from one already in the plan needs the state that preceded the write.
+    """
+    project = str(state.get("project") or "")
+    slug = str(state.get("slug") or "")
+    if not project or not slug:
+        return []
+    try:
+        data, _version = read_plan(project, slug)
+    except (OSError, CorruptEnvelopeError, ValueError):
+        return []
+    return [f for f in (data.get("followups") or []) if isinstance(f, dict)]
+
+
+def _refuse_appended_hiding_followups(
+    state: dict[str, Any], patch: dict[str, Any]
+) -> None:
+    """Refuse the open followups a patch introduces that hide work."""
+    if "followups" not in patch:
+        return
+    stored = {str(f.get("id") or "") for f in _followups_before_the_patch(state)}
+    project = str(state.get("project") or "")
+    for followup in state.get("followups") or []:
+        if not isinstance(followup, dict):
+            continue
+        if str(followup.get("id") or "") in stored:
+            continue
+        if not _followup_is_open(followup):
+            continue
+        _refuse_hiding_followup(state, followup, project=project)
+
+
 def validate_landing_patch(state: dict[str, Any], patch: dict[str, Any]) -> None:
     """Refuse a merge patch that lands a plan without naming a continuation.
 
@@ -2911,6 +2981,7 @@ def validate_landing_patch(state: dict[str, Any], patch: dict[str, Any]) -> None
     """
     if str(state.get("type", "plan") or "plan") != "plan":
         return
+    _refuse_appended_hiding_followups(state, patch)
     requested_status = str(patch.get("status", "")).lower()
     if requested_status in TERMINAL_STATUSES:
         _require_transition_verdict(state, "plan-terminal")

@@ -230,22 +230,27 @@ def test_a_terminal_record_landing_after_exit_is_folded_into_the_row(
     _write_terminal_stream_pointer(repository, run_id, stream, manifest)
     stream.write_text(PARTIAL_BODY, encoding="utf-8")
 
-    real_newest = promotion._newest_stream_mtime
-    # The harness that wrote the manifest finishes its terminal record at a
-    # moment the settle's file-touching drives, so the append is exactly one
-    # quiet observation after promotion first reads the stream. The first call
-    # also reports a freshly written stream, so the settle's already-quiet
-    # check cannot conclude the tail is over before it has begun.
+    # The freshness the settle polls is supplied by the patched observation
+    # rather than by the stream's filesystem mtime: a real mtime is neither
+    # dependable across filesystems nor fine-grained enough to place the
+    # append moment inside the settle's window, so reading it makes the test
+    # an instrument of the storage rather than of the settle. The first
+    # observation is fresh, so the already-quiet check cannot conclude the
+    # tail is over before it has begun; the second advances once as the
+    # terminal record lands; every later observation is a fixed stale value,
+    # so the settle observes the stream quit and returns.
     reads = {"count": 0}
+    settled_mtime = time.time() - 10.0
 
     def writer_finishes_after_first_observation(paths: list[Path]) -> float:
         reads["count"] += 1
         if reads["count"] == 1:
-            os.utime(stream, None)
-        elif reads["count"] == 2:
-            with stream.open("a", encoding="utf-8") as handle:
-                handle.write(_terminal_lines())
-        return real_newest(paths)
+            return time.time()
+        if reads["count"] == 2:
+            with stream.open("a", encoding="utf-8") as fh:
+                fh.write(_terminal_lines())
+            return time.time()
+        return settled_mtime
 
     monkeypatch.setattr(
         promotion, "_newest_stream_mtime", writer_finishes_after_first_observation

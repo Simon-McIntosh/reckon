@@ -52,6 +52,7 @@ describes the whole run and can legitimately exceed that window many times over.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import queue
@@ -958,6 +959,12 @@ class Dialect:
     """
 
     name = ""
+    # Whether a lane speaking this dialect authenticates with the operator's
+    # stored subscription login, which must be bound writable into the run's
+    # harness home. False for a lane whose account lives elsewhere — the local
+    # clive lane authenticates against its own server — so no credential bind
+    # is composed for it.
+    subscription_login = False
     # Whether the harness needs its prompt on stdin. Both probed harnesses do,
     # and for the same reason: a prompt passed as an argument can be swallowed
     # by a preceding variadic option, which fails as "no input provided" with
@@ -1493,6 +1500,9 @@ class _ClaudeDialect(Dialect):
     """Claude Code: `-p` stream-json, session ids, rate-limit headroom."""
 
     name = "claude"
+    # A claude subscription lane reads the operator's stored login, so the
+    # fence binds it writable into the run's harness home.
+    subscription_login = True
 
     def argv(
         self,
@@ -1918,6 +1928,17 @@ def _phase(obs: Observation) -> str:
     return "working" if obs.events else "starting"
 
 
+class _CliveDialect(_ClaudeDialect):
+    """clive — the local lane's claude wrapper, pointed at the GPU server.
+
+    It speaks claude's flags and stream, so it shares the claude dialect's
+    translation, but it authenticates against its own server and keeps no
+    subscription login, so the fence composes no credential bind for it.
+    """
+
+    subscription_login = False
+
+
 _DIALECTS: dict[str, Dialect] = {
     _CodexDialect.name: _CodexDialect(),
     _ClaudeDialect.name: _ClaudeDialect(),
@@ -1925,7 +1946,7 @@ _DIALECTS: dict[str, Dialect] = {
     # (ANTHROPIC_BASE_URL, ANTHROPIC_AUTH_TOKEN, ANTHROPIC_MODEL). Its flags
     # and JSON-lines event stream are identical to claude's since it passes
     # all args through via `exec claude "${ARGS[@]}"`.
-    "clive": _ClaudeDialect(),
+    "clive": _CliveDialect(),
 }
 
 
@@ -1986,6 +2007,12 @@ _HARNESS_HOME = {
 # by the worker, so the login the operator refreshes elsewhere could be
 # shadowed by its own stale copy.
 CODEX_AUTH_FILENAME = "auth.json"
+
+# The claude credential a subscription lane binds into its run's harness home.
+# Named the same as the operator's file because the harness looks for the fixed
+# ``.credentials.json`` name under ``CLAUDE_CONFIG_DIR``, so the bind's
+# destination is that name inside the run home rather than the operator's path.
+CLAUDE_CREDENTIAL_FILENAME = ".credentials.json"
 
 # The harness command the fence composes. Named once so the argv a reader sees
 # and the capability a refusal names are the same string.
@@ -2128,10 +2155,10 @@ def seed_harness_home(
     Three properties bound the copy, all read from the operator's home and
     never written back. A config-dir file already in the run home is never
     overwritten, so a resumed run keeps its own state. The operator home is
-    never modified — only read. And a credential is never copied: the codex
-    login is bound read-only by the fence (:func:`codex_auth_source`), and the
-    declarations name no credential file, so the run directory never holds a
-    writable copy of the operator's login.
+    never modified — only read. And a credential is never copied: the login the
+    run needs is bound writable by the fence (:func:`_harness_credential_binds`),
+    and the declarations name no credential file, so the run directory never
+    holds a writable copy of the operator's login.
 
     A resumed run also needs the session's own transcript beside its home,
     because the harness looks for it under the home its variable names; the
@@ -2414,31 +2441,56 @@ def codex_auth_source(home: str | Path | None = None) -> Path | None:
     return candidate if candidate.is_file() else None
 
 
+def claude_credential_source(home: str | Path | None = None) -> Path | None:
+    """Return the operator's claude subscription login to bind, or None.
+
+    Absent login is None and no bind is composed, so a machine without the
+    credential produces a fence that is short one file rather than one that
+    refuses to start. The local clive lane authenticates against its own
+    server, so it never reaches this source.
+    """
+    root = Path(home) if home is not None else Path.home()
+    candidate = root / ".claude" / CLAUDE_CREDENTIAL_FILENAME
+    return candidate if candidate.is_file() else None
+
+
 def _harness_credential_binds(
-    dialect_name: str,
+    dialect: Dialect,
     harness: Path | None,
     home: str | Path | None,
 ) -> list[tuple[Path, Path]]:
     """Return the writable file binds a run's harness home needs, if any.
 
-    Only codex requires a credential file: it is exposed into the run's own
-    codex home so the harness authenticates from its run directory. The bind is
-    writable rather than read-only because codex rewrites ``auth.json`` in
-    place on a token refresh (``OpenOptions::truncate(true).write(true)``, the
-    same inode, no rename), so a read-only exposure rotates the login
-    server-side and then cannot persist it, burning the operator's single-use
-    refresh token. Binding the operator's one file writable — rather than
-    copying it into the run — is what lets the refresh survive without giving
-    the worker its own stale shadow of the login.
+    A dialect whose lane authenticates with a stored credential has that one
+    file exposed into the run's own harness home, so the harness authenticates
+    from its run directory rather than from the operator's sealed dot
+    directory. Codex reads ``auth.json``; a claude subscription lane reads
+    ``.credentials.json`` under ``CLAUDE_CONFIG_DIR``. The local clive lane
+    needs neither, because its server holds the account.
 
-    The list is empty for a dialect that needs no credential, for a run with no
-    harness home, and for a machine with no login — the fence is then short one
-    bind rather than refusing to start.
+    The bind is writable rather than read-only because both harnesses rewrite
+    the credential in place on a token refresh (``OpenOptions::truncate(true).
+    write(true)`` for codex, the same inode, no rename), so a read-only
+    exposure rotates the login server-side and then cannot persist it, burning
+    the operator's single-use refresh token. Binding the operator's one file
+    writable — rather than copying it into the run — is what lets the refresh
+    survive without giving the worker its own stale shadow of the login.
+
+    The list is empty for a dialect that needs no credential (the clive lane),
+    for a run with no harness home, and for a machine with no login — the fence
+    is then short one bind rather than refusing to start.
     """
-    if dialect_name != "codex" or harness is None:
+    if harness is None:
         return []
-    auth = codex_auth_source(home)
-    return [] if auth is None else [(auth, harness / CODEX_AUTH_FILENAME)]
+    if dialect.name == "codex":
+        auth = codex_auth_source(home)
+        return [] if auth is None else [(auth, harness / CODEX_AUTH_FILENAME)]
+    if dialect.subscription_login:
+        credential = claude_credential_source(home)
+        if credential is None:
+            return []
+        return [(credential, harness / CLAUDE_CREDENTIAL_FILENAME)]
+    return []
 
 
 # The flight keys that tune the fence's protected set. ``protected_paths``
@@ -2942,7 +2994,7 @@ def launch_plan(
             manifest_path=manifest,
             home=fence_home,
             read_write_binds=_harness_credential_binds(
-                dialect.name, harness, fence_home
+                dialect, harness, fence_home
             ),
             config=fence_config,
         )
@@ -3363,6 +3415,88 @@ def classify_stream_failure(
 
 _STREAM_BOUNDARY_CHUNK = 64 * 1024
 
+# How much of a stream's opening a cursor records, so a later read can tell an
+# append from a rewrite. The inode and the size together catch a stream replaced
+# or truncated, but a stream rewritten in place at the same inode to a size at or
+# above the recorded offset — which is what a producer's stream does between
+# in-place rewrites — is otherwise indistinguishable from an append by stat
+# alone. The digest covers a bounded opening rather than the whole consumed
+# prefix, so the check costs a fixed small read rather than re-reading the bytes
+# the cursor exists to skip.
+_STREAM_HEAD_SAMPLE = 8 * 1024
+
+
+def _stream_head_size(offset: int) -> int:
+    """How many opening bytes a cursor at ``offset`` records for the rewrite check."""
+    return max(0, min(int(offset), _STREAM_HEAD_SAMPLE))
+
+
+def stream_head_fingerprint(path: str | Path, *, offset: int) -> dict[str, Any]:
+    """Digest a stream's opening bytes, for a later read to confirm they hold.
+
+    ``offset`` is the cursor the digest is recorded for: the sample is bounded by
+    both the sample size and that offset, so a file shorter than the sample is
+    identified by its whole prefix exactly. The digest is returned with the byte
+    count it covered, and a later read compares against that same count rather
+    than the sample size, so an appended stream that has since grown past the
+    sample is not mistaken for one whose opening moved.
+    """
+    limit = _stream_head_size(offset)
+    try:
+        with Path(path).open("rb") as handle:
+            head = handle.read(limit) if limit else b""
+    except OSError:
+        return {"bytes": 0, "digest": ""}
+    return {"bytes": len(head), "digest": hashlib.sha256(head).hexdigest()}
+
+
+def _stream_head_intact(path: str | Path, recorded: object) -> bool:
+    """Whether a stream's opening is the one the cursor recorded.
+
+    A resume is valid only while the bytes the cursor already consumed are the
+    ones it consumed. A stream whose opening is not what the cursor recorded was
+    rewritten under it, so the offset means nothing and the read starts at the
+    first record; an absent or empty fingerprint is unverifiable and equally
+    refuses the resume rather than resuming blind.
+    """
+    if not isinstance(recorded, Mapping):
+        return False
+    try:
+        count = int(recorded.get("bytes") or 0)
+    except (TypeError, ValueError):
+        return False
+    digest = str(recorded.get("digest") or "")
+    if count <= 0 or not digest:
+        return False
+    try:
+        with Path(path).open("rb") as handle:
+            head = handle.read(count)
+    except OSError:
+        return False
+    if len(head) != count:
+        return False
+    return hashlib.sha256(head).hexdigest() == digest
+
+# Bytes of stream records the readers have consumed since the count was last
+# taken. A producer takes it once a poll to report how much of the fleet's
+# stream traffic that poll actually parsed; no other reader consults it, and a
+# poll that resumes from every cursor and finds nothing appended leaves it at
+# nothing. It is a one-element cell so the two readers below mutate it without a
+# module-level global statement.
+_PARSED_STREAM_BYTES = [0]
+
+
+def _count_parsed_bytes(count: int) -> None:
+    if count > 0:
+        _PARSED_STREAM_BYTES[0] += count
+
+
+def take_parsed_stream_bytes() -> int:
+    """Bytes of stream records read since this was last taken, then reset."""
+    value = _PARSED_STREAM_BYTES[0]
+    _PARSED_STREAM_BYTES[0] = 0
+    return value
+
 
 def _last_line_boundary(path: Path) -> int:
     """The byte after the last complete record in a stream, 0 when there is none.
@@ -3406,6 +3540,7 @@ def _stream_lines_from(path: Path, offset: int) -> tuple[list[str], int]:
     if cut < 0:
         return [], offset
     text = data[: cut + 1].decode("utf-8", errors="replace")
+    _count_parsed_bytes(cut + 1)
     return text.splitlines(keepends=True), offset + cut + 1
 
 
@@ -3426,10 +3561,12 @@ def observe_log(
     client rollout the caller has already read.
 
     ``resume`` is a previous observation of this stream — its ``stream_state``
-    together with the byte offset that observation reached — so a stream that
-    has only grown since is read from that offset rather than from the first
-    record. An offset past the end of the file, or one with no state to extend,
-    reads the stream whole, which is what a truncated or replaced stream needs.
+    together with the byte offset that observation reached and the fingerprint of
+    the stream's opening it read — so a stream that has only grown since is read
+    from that offset rather than from the first record. An offset past the end of
+    the file, one with no state to extend, or one whose stream's opening is no
+    longer the recorded one reads the stream whole, which is what a truncated,
+    replaced or in-place-rewritten stream needs.
     """
     path = Path(log_path)
     if not path.exists():
@@ -3451,7 +3588,7 @@ def observe_log(
             size = path.stat().st_size
         except OSError:
             size = 0
-        if offset <= size:
+        if offset <= size and _stream_head_intact(path, carried.get("head")):
             lines, end = _stream_lines_from(path, offset)
             obs = observe_stream(
                 backend_name=backend_name,
@@ -3471,5 +3608,7 @@ def observe_log(
             elapsed_seconds=elapsed_seconds,
             receipt=receipt,
         )
-    obs.stream_state.update({"offset": _last_line_boundary(path)})
+    boundary = _last_line_boundary(path)
+    obs.stream_state.update({"offset": boundary})
+    _count_parsed_bytes(boundary)
     return obs

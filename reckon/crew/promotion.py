@@ -14,7 +14,15 @@ from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
-from reckon import _backends, _store, capabilities, clones, flight, ledger, review_tiers
+from reckon import (
+    _backends,
+    _store,
+    capabilities,
+    clones,
+    flight,
+    ledger,
+    review_tiers,
+)
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew import review as review_module
 from reckon.crew import rollout
@@ -50,6 +58,7 @@ from reckon.crew.routing import (
     RECLAIMABLE_CLASSES,
     WITHHELD_REASONS,
     _boundary_tree_roots,
+    _disposable_member_id,
     _git,
     _inspect_workspace,
     _repository_tree_snapshot,
@@ -57,6 +66,7 @@ from reckon.crew.routing import (
     _shadow_worktree_records,
     _signal_process_group,
     mounted_repository_projects,
+    run_directory_of,
     section_anchor,
     section_record_id,
 )
@@ -67,7 +77,7 @@ from reckon.crew.runs import (
     _shared_write_paths,
     _utc_now,
     _write_json,
-    drain,
+    drain,  # noqa: F401 - importable so a caller can substitute the fleet reading's drain
     list_live,
     pointer_path,
     process_alive,
@@ -626,8 +636,16 @@ def _worktree_untracked_paths(tree: Path) -> tuple[str, ...]:
     dispatch rule plants in every worktree is not the run's work and is
     dropped.
     """
+    listed = _worktree_git_paths(tree, "ls-files", "--others", "--exclude-standard")
+    if not listed:
+        # A worktree whose directory is gone yields ``None`` rather than an empty
+        # list, and the honest reading of an unmeasurable tree is the empty set:
+        # a commitless run whose tree has been reclaimed holds no untracked path
+        # this check can see, so it reads as no repository change rather than
+        # raising on the iteration.
+        return ()
     untracked: list[str] = []
-    for line in _worktree_git_paths(tree, "ls-files", "--others", "--exclude-standard"):
+    for line in listed:
         path = line.strip().strip('"')
         if not path:
             continue
@@ -2278,15 +2296,74 @@ def _promoted_revision(run_tree: Path, commit_list: Sequence[str]) -> str:
     branch, so recording the commit the promotion makes instead would make the
     ancestry question true by construction and unable to fail for any reason.
 
-    The worker's cited tip is preferred over the worktree's ``HEAD`` because a
-    shared checkout can advance under other runs between the commit and the
-    promotion, and the cited tip is the revision whose diff promotion already
-    measured.
+    The revision is the presented commit that descends from all the others, so
+    the order a manifest lists its commits in never decides which revision the
+    run's work reached. The cited commits are preferred over the worktree's
+    ``HEAD`` because a shared checkout can advance under other runs between the
+    commit and the promotion, and a cited commit is the revision whose diff
+    promotion already measured.
     """
     if commit_list:
-        return str(commit_list[-1])
+        return _descendant_commit(run_tree, commit_list)
     head = _commit_canonical_id(run_tree, "HEAD")
     return head or ""
+
+
+def _descendant_commit(run_tree: Path, presented: Sequence[str]) -> str:
+    """The presented commit that descends from all the presented commits.
+
+    A run's manifest lists the commits it made in whatever order its worker
+    wrote them, and a promotion that read a position out of that list promoted
+    a revision the run never reached: the newest-first order prints the tip
+    first, so the last position named the run's first commit and a promotion
+    following the printed order was refused against a mis-selected revision.
+
+    Each entry is resolved to the canonical object id its spelling names, so an
+    abbreviation, a full sha and a branch name for one commit collapse to one
+    candidate. An entry naming no commit cannot be placed in the history, so it
+    takes no part in the comparison and is left for the citation check that
+    reports it. The remaining candidates are compared with git, and the one
+    that every other candidate is an ancestor of is the run's tip. A set whose
+    commits have no such single member is refused, naming every presented
+    commit, because the revision the run's work reached cannot be told from the
+    list and any pick would be a guess recorded as the promoted revision.
+    """
+    entries: list[str] = []
+    resolvable: list[str] = []
+    seen: set[str] = set()
+    for entry in presented:
+        text = str(entry).strip()
+        if not text:
+            continue
+        canonical = _commit_canonical_id(run_tree, text)
+        value = canonical or text
+        if value in seen:
+            continue
+        seen.add(value)
+        entries.append(value)
+        if canonical:
+            resolvable.append(value)
+    if len(entries) == 1:
+        return entries[0]
+    if not resolvable:
+        return entries[-1]
+    descendants = [
+        candidate
+        for candidate in resolvable
+        if all(
+            other == candidate or _revision_is_ancestor(run_tree, other, candidate)
+            for other in resolvable
+        )
+    ]
+    if len(descendants) == 1:
+        return descendants[0]
+    listed = ", ".join(entries)
+    raise CrewError(
+        "the commits presented for this promotion have no single descendant: "
+        f"{listed}; none of them descends from all the others, so the revision "
+        "the run's work reached cannot be told from the list. Present the "
+        "commit the run's work ended at"
+    )
 
 
 def _repository_scope_paths(
@@ -3160,6 +3237,7 @@ _OPEN_OPERATION_MARKERS: tuple[tuple[str, str], ...] = (
     ("rebase-merge", "rebase"),
     ("rebase-apply", "rebase"),
     ("CHERRY_PICK_HEAD", "cherry-pick"),
+    ("REVERT_HEAD", "revert"),
 )
 
 
@@ -3167,7 +3245,7 @@ def _open_operation_state(checkout: Path) -> str | None:
     """The git operation the checkout has open, or ``None`` when none has.
 
     Promotion commits the stores it writes into the checkout's index. An open
-    merge, rebase or cherry-pick means another session is mid-operation there:
+    merge, rebase, cherry-pick or revert means another session is mid-operation there:
     a landing commit would move that operation's first parent under it and a
     whole-index commit could take its staged work. The marker path is resolved
     with ``git rev-parse --git-path`` so a linked worktree, whose ``.git`` is a
@@ -3191,8 +3269,8 @@ def _require_committable_checkout(checkout: Path | None, run_id: str) -> None:
 
     Promotion writes two tracked stores (the ledger row and the plan landing
     comment) and commits them as one landing. A checkout that is not a git
-    worktree cannot host that commit, and one with an open merge, rebase or
-    cherry-pick is owned by another operation, so promotion refuses here,
+    worktree cannot host that commit, and one with an open merge, rebase,
+    cherry-pick or revert is owned by another operation, so promotion refuses here,
     before either store is written, rather than writing stores it could not
     commit or committing into a peer's operation.
     """
@@ -3235,6 +3313,142 @@ def _path_differs_from_head(checkout: Path, path: Path) -> bool:
         return True
     diff = _git(checkout, "diff", "--quiet", "HEAD", "--", relative, check=False)
     return diff.returncode != 0
+
+
+def _plan_differs_only_by_the_stores_own_writes(
+    checkout: Path, plan_file: Path
+) -> bool:
+    """Whether the plan file's working copy differs from HEAD only by writes
+    the plan store itself makes.
+
+    The store is the sole writer of a plan's reckon-owned content: the
+    ``plan-*`` scalars (``impl``, ``status``, the version stamps and the rest)
+    and every element carrying ``data-reckon``. That marker declares the store's
+    own region whatever the tag, so the admitted class is every ``data-reckon``
+    element the store writes — the section records, the sections such as gates,
+    decisions, followups, questions, research and comments, and the landed and
+    landing notes are examples rather than an exhaustive list. Every one of
+    those is a plan-state write the store makes, so a change confined to them —
+    an impl or status move, a resolved followup, an appended landing comment, a
+    collapsed section's landed note, a re-encoded entity — is the run's own
+    bookkeeping and is admitted. The comparison therefore reads each side as
+    parsed HTML and keeps only the authored content outside those store-owned
+    regions; an authored prose edit, which the store never regenerates, survives
+    on both sides and is the only thing that refuses.
+
+    Parsing both sides through the same HTML reader also normalises a
+    re-encoded entity, so the store's canonical re-encoding does not read as an
+    authored change. A body-resident comment the working copy holds and HEAD
+    does not is a landing record the store appended outside its comments
+    section and is dropped before comparing, while one HEAD already carries
+    survives on both sides.
+    """
+    from bs4 import BeautifulSoup
+
+    try:
+        relative = plan_file.resolve().relative_to(checkout.resolve()).as_posix()
+    except ValueError:
+        return False
+    head = _git(checkout, "show", f"HEAD:{relative}", check=False)
+    if head.returncode != 0:
+        return False
+    try:
+        head_text = head.stdout
+        disk_text = plan_file.read_text(encoding="utf-8", errors="replace")
+        head_soup = BeautifulSoup(head_text, "html.parser")
+        disk_soup = BeautifulSoup(disk_text, "html.parser")
+    except Exception:  # noqa: BLE001 - an unreadable plan is not provably clean
+        return False
+    head_ids = {
+        str(element.get("data-id") or "") for element in head_soup.select(".r-comment")
+    }
+    # A body-resident comment the store appended for this landing is not
+    # authored, so drop disk elements HEAD does not already carry.
+    for element in disk_soup.select(".r-comment"):
+        if str(element.get("data-id") or "") not in head_ids:
+            element.decompose()
+    for soup in (head_soup, disk_soup):
+        _strip_store_owned_content(soup)
+    # Removing the store's records leaves the whitespace between the tags that
+    # held them, which is not authorship either side carried. Collapse
+    # whitespace between adjacent tags so the removed records do not read as a
+    # change; text inside a tag is untouched, so prose edits still differ.
+    left = _collapse_inter_tag(str(head_soup))
+    right = _collapse_inter_tag(str(disk_soup))
+    return left == right
+
+
+_RECORD_ATTRIBUTES = frozenset(
+    {
+        "data-effort-hours",
+        "data-attempts",
+        "data-status",
+        "data-links",
+    }
+)
+
+
+def _strip_store_owned_content(soup) -> None:
+    """Remove the plan store's regenerate-from-state content in place.
+
+    Leaves only authored prose: the ``plan-*`` scalars and every element the
+    store marks as its own region are detached, so a difference that survives
+    is one the store does not own. Every element carrying ``data-reckon`` is
+    such a region, whatever its tag — the section records, the sections such
+    as gates, decisions, followups, questions, research and comments, and the
+    landed and landing notes are examples rather than an exhaustive list.
+    """
+    for meta in soup.find_all("meta"):
+        if (meta.get("name") or "").lower().startswith("plan-"):
+            meta.decompose()
+    for element in soup.select("[data-reckon]"):
+        element.decompose()
+    for element in soup.find_all(True):
+        for attribute in list(element.attrs):
+            if attribute in _RECORD_ATTRIBUTES or attribute.startswith(
+                "data-capability-"
+            ):
+                del element[attribute]
+
+
+def _collapse_inter_tag(text: str) -> str:
+    """Drop whitespace that sits directly between a closing and an opening tag."""
+    return re.sub(r"(?<=>)\s+(?=<)", "", text)
+
+
+def _refuse_unrelated_plan_edit(
+    *,
+    project: str,
+    plan: str,
+    root: str | Path | None,
+    checkout: Path,
+) -> None:
+    """Refuse a landing while the plan file carries an unrelated uncommitted
+    change that the landing commit would sweep in.
+
+    Runs before the landing writes either store, so a refused promotion leaves
+    neither a ledger row nor a plan comment for the next promotion to read as
+    an unrelated edit. A plan whose working copy matches HEAD, or differs only
+    by the store's own writes, passes untouched.
+    """
+    if not str(plan):
+        return
+    plan_file = _store._resolve_html_file(
+        project, str(plan), root, artifact_type="plan"
+    )
+    if plan_file is None or not _path_differs_from_head(checkout, plan_file):
+        return
+    if _plan_differs_only_by_the_stores_own_writes(checkout, plan_file):
+        return
+    raise CrewError(
+        f"the plan file {plan_file} carries an uncommitted change that is not a "
+        "plan-state write the store made (an impl or status move, a resolved "
+        "followup or other section record, an appended landing comment, a "
+        "version stamp or the store's own re-encoding); the refused difference "
+        "is authored content outside those store-owned regions, so refusing to "
+        "sweep it into the landing commit. Commit or discard the unrelated "
+        "edit, then re-promote."
+    )
 
 
 def _plan_comment_store_path(
@@ -3664,7 +3878,12 @@ def _end_live_writer_for_settle(record: Mapping[str, Any]) -> bool:
     if record_process_alive(record, process_alive) is not True:
         return False
     try:
-        _signal_process_group(int(pid), record.get("pid_start_time"))
+        _signal_process_group(
+            int(pid),
+            record.get("pid_start_time"),
+            run_dir=run_directory_of(record),
+            reason="promotion-settle",
+        )
     except (ProcessLookupError, PermissionError, OSError, CrewError):
         return False
     return True
@@ -4489,6 +4708,21 @@ def _rebuild_record_from_run_directory(
         "fenced": supervisor.get("fenced") is True,
         "rebuilt_from_run_directory": True,
     }
+    # The pointer carries the run's assigned write scope, and a discard removes
+    # it with the pointer. The durable manifest is the one scope declaration
+    # that survives that removal: its ``changed_paths`` names the paths the run
+    # says it delivered, so a rebuilt record presents that declaration in place
+    # of the lost assignment. Without it a run citing its own commit is refused
+    # for changing paths no surviving declaration contains, which is exactly the
+    # discarded run that reached main through a follow-on.
+    if manifest.is_file():
+        try:
+            manifest_data = parse_manifest(manifest.read_text(encoding="utf-8"))
+        except (OSError, KeyError, ValueError):
+            manifest_data = {}
+        declared = list(_changed_paths_inside_repository(manifest_data, record))
+        if declared:
+            record["node"] = {"write_paths": declared}
     attempt = attempt_record.get("attempt") or worker.get("attempt")
     if attempt is not None:
         record["attempt"] = attempt
@@ -4518,6 +4752,49 @@ def _read_pointer_or_rebuild(run_id: str, *, root: str | Path | None) -> dict[st
             "run directory survives to rebuild it from"
         )
     return rebuilt
+
+
+def _complete_withdrawn_run(run_id: str, record: Mapping[str, Any]) -> dict[str, Any]:
+    """Report and retire a run that names no project.
+
+    A dispatch refused before a project is resolved leaves a run with an empty
+    project: the pointer never carried one, or the reconstruction of a
+    pointerless run directory finds no supervisor record to read one from.
+    There is no project ledger to append a row to, so ``crew complete`` reports
+    the withdrawal and writes no row rather than failing validation on the empty
+    project name.
+
+    The withdrawal still retires what a promotion retires. A run whose pointer
+    survives is otherwise left reading as in flight, and nothing reconciles it
+    — so the pointer is removed and the workspace released through the same
+    release path a promotion uses, without the ledger row a promotion's release
+    receipt would need a project to hold. The run's own record is returned so a
+    reader sees what survived of the launch; ``status`` and ``withdrawn`` both
+    state the word the fleet vocabulary already uses for a departure that
+    records no landing.
+    """
+    capture = _capture_member_session(record)
+    pointer_existed = pointer_path(run_id).exists()
+    pointer_path(run_id).unlink(missing_ok=True)
+    release = _release_after_promotion(run_id, record)
+    release.update(_retire_disposable_identity(record))
+    return {
+        "run_id": run_id,
+        "project": "",
+        "withdrawn": True,
+        "status": "withdrawn",
+        "promoted": False,
+        "ledger_row_written": False,
+        "pointer_removed": pointer_existed and not pointer_path(run_id).exists(),
+        "reason": (
+            "the run names no project, so its dispatch was refused before a "
+            "project was resolved; the run is withdrawn, its pointer retired "
+            "and its workspace released, and no ledger row is written"
+        ),
+        "release": release,
+        "session_capture": capture,
+        "record": dict(record),
+    }
 
 
 def _manifest_relative_path(value: Any, *, manifest_path: str) -> Path:
@@ -4645,6 +4922,15 @@ def complete(
     commit_list = tuple(str(sha) for sha in commits if str(sha).strip())
     with _pointer_lock(run_id):
         record = _read_pointer_or_rebuild(run_id, root=root)
+        # A dispatch whose launch was refused leaves a run that names no
+        # project: the refusal removed the pointer or never let it carry a
+        # project, and the run directory it left behind holds no supervisor
+        # record either, so reconstruction resolves no project from it. There
+        # is nothing to promote and no project ledger to hold a row, so the run
+        # is reported as the withdrawal it is rather than failing validation on
+        # the empty project name further down.
+        if not str(record.get("project") or "").strip():
+            return _complete_withdrawn_run(run_id, record)
         # A review run's outcome is the review it stored, so the operator's
         # hand is not the only source for a non-passing gate's summary; the
         # refusal below stands for every run with no stored review to read.
@@ -5238,6 +5524,96 @@ def _release_scratch_when_release_raised(record: Mapping[str, Any]) -> dict[str,
         }
 
 
+def _manifest_reads_blocked(record: Mapping[str, Any]) -> bool:
+    """Whether the run's manifest is a blocked delivery kept for resume.
+
+    A blocked run stopped without finishing, so a resume may still continue the
+    work. Its process group and its per-run identity are therefore part of what
+    a resume finds, and the release keeps both rather than reclaiming them. The
+    status is read from the delivered manifest, which is the same source the
+    release already consults to decide whether a writer may be signalled.
+    """
+    manifest = _fresh_manifest(record)
+    return (
+        manifest is not None
+        and str(manifest.get("status") or "").strip().lower() == "blocked"
+    )
+
+
+def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Remove a run's own disposable roster identity once its work is accepted.
+
+    A dispatch that names no member carries a per-run identity and registers no
+    roster row, so the ordinary run retires nothing here: there is no row to
+    remove. The row is removed when one exists — a run hand-registered, or
+    dispatched by an earlier revision — so acceptance leaves no disposable
+    identity standing in the committed roster, which is the same guarantee the
+    dispatch side gives by registering none.
+
+    Only the run's own disposable identity is eligible. A run that names a
+    member explicitly carries no disposable identity, so the release reports
+    nothing about one and adds no key a reader could mistake for a retirement
+    that was considered. A blocked run is kept: it may still be resumed, and its
+    identity is part of what a resume finds.
+
+    The removal runs after the release receipt is committed, so no later write
+    amends a run file and leaves the aggregate behind; the roster write's own
+    union read keeps the run-count guard satisfied and re-encodes every per-run
+    file it copies, so the two copies stay identical.
+    """
+    run_id = str(record.get("run_id") or "")
+    member_id = str(record.get("member") or "").strip()
+    if not member_id or member_id != _disposable_member_id(run_id):
+        return {}
+    if _manifest_reads_blocked(record):
+        return {
+            "identity_retired": False,
+            "identity_withheld": "manifest is blocked; identity kept for resume",
+        }
+    project = str(record.get("project") or "").strip()
+    root = str(record.get("repo") or "").strip() or None
+    if not project:
+        return {
+            "identity_retired": False,
+            "identity_withheld": "the run names no project to retire the identity from",
+        }
+    try:
+        for _attempt in range(8):
+            data, version = ledger.load(project, root)
+            if not any(str(entry.get("id")) == member_id for entry in data["members"]):
+                return {
+                    "identity_retired": False,
+                    "identity_absent": True,
+                    "identity_absent_member": member_id,
+                }
+            data["members"] = [
+                entry
+                for entry in data["members"]
+                if str(entry.get("id")) != member_id
+            ]
+            try:
+                ledger.write(
+                    project,
+                    data,
+                    version,
+                    root=root,
+                    allow_member_removal=True,
+                    commit=True,
+                )
+            except ledger.LedgerError:
+                continue
+            return {"identity_retired": True, "identity_member": member_id}
+    except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
+        return {
+            "identity_retired": False,
+            "identity_withheld": f"identity retirement raised: {exc}",
+        }
+    return {
+        "identity_retired": False,
+        "identity_withheld": "could not retire the disposable identity after retries",
+    }
+
+
 def _release_run_workspace(
     record: Mapping[str, Any],
     retention: Mapping[str, str] | None = None,
@@ -5245,6 +5621,7 @@ def _release_run_workspace(
     process_already_ended: bool = False,
     release_worktree: bool = True,
     worktree_withheld: str = "",
+    keep_process: bool = False,
 ) -> dict[str, Any]:
     """Release a promoted run's own worktree, process, and scratch directory.
 
@@ -5317,7 +5694,13 @@ def _release_run_workspace(
                 result["worktree_released"] = True
 
     pid = record.get("pid")
-    if not _release_terminal_manifest(record):
+    if keep_process:
+        # A blocked run may still be resumed, so its process group is left
+        # standing rather than reclaimed: the resume continues the process the
+        # block interrupted, and signalling it here would end what the resume
+        # was going to continue.
+        result["process_withheld"] = "manifest is blocked; process kept for resume"
+    elif not _release_terminal_manifest(record):
         result["process_withheld"] = "no terminal manifest was delivered"
     elif record_process_alive(record, process_alive) is not True:
         if process_already_ended:
@@ -5330,11 +5713,19 @@ def _release_run_workspace(
             result["process_withheld"] = "process is not alive"
     else:
         try:
-            _signal_process_group(int(pid), record.get("pid_start_time"))
+            _signal_process_group(
+                int(pid),
+                record.get("pid_start_time"),
+                run_dir=run_directory_of(record),
+                reason="promotion-release",
+            )
         except (ProcessLookupError, PermissionError, OSError, CrewError) as exc:
             result["process_withheld"] = f"could not signal pid {pid} — {exc}"
         else:
             result["process_signalled"] = True
+            # The pid rides the release result so the record names the process
+            # that was stopped rather than only that some process was signalled.
+            result["process_stopped_pid"] = int(pid)
 
     result["worktree_audit"] = _worktree_audit(record, retention)
     # The scratch directory a run owned dies with it. Both promotion and
@@ -5371,6 +5762,7 @@ def _release_after_promotion(
     report that outcome instead of a process that is merely absent.
     """
     verdict = str(gate).strip().lower()
+    blocked_for_resume = _manifest_reads_blocked(record)
     if verdict in {"blocked", "failed"}:
         try:
             return _release_run_workspace(
@@ -5382,6 +5774,7 @@ def _release_after_promotion(
                     f"gate verdict {verdict!r} is not passing; worktree retained "
                     "for recovery"
                 ),
+                keep_process=blocked_for_resume,
             )
         except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
             fallback = {
@@ -5393,7 +5786,10 @@ def _release_after_promotion(
             return fallback
     try:
         return _release_run_workspace(
-            record, retention, process_already_ended=process_already_ended
+            record,
+            retention,
+            process_already_ended=process_already_ended,
+            keep_process=blocked_for_resume,
         )
     except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
         fallback = {
@@ -5689,20 +6085,51 @@ def _harvest_lane_receipt(
     return result
 
 
+def _unreconciled_live_runs(pointers: Iterable[Mapping[str, Any]]) -> int:
+    """Count the live pointers no closure disposition excuses.
+
+    The closure drain derives its ``unreconciled_runs`` by the same predicate
+    over the same pointers, so this agrees with the drain on a given fleet
+    without reading the plan inventory the drain also serves: a promotion stamps
+    a reading on its row and never consumes the drain's closure count or plan
+    remainder. Liveness is taken through the host-gated reading the drain uses,
+    so a pointer whose classification turns on a live process reads the same
+    either way rather than being measured against a stored answer.
+    """
+    from reckon.crew import recovery
+
+    unreconciled = 0
+    for pointer in pointers:
+        alive, proven = recovery.local_liveness(pointer)
+        row = recovery.classify_pointer(
+            {**pointer, "process_alive": alive if proven else None}
+        )
+        recorded = pointer.get("closure_disposition")
+        disposition = (
+            str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
+        )
+        classification = str(
+            row.get("classification") or row.get("recovery_classification") or ""
+        )
+        if not recovery.closure_disposition_valid(disposition, classification):
+            unreconciled += 1
+    return unreconciled
+
+
 def _fleet_state_reading(project: str) -> dict[str, Any]:
     """Return a bounded current reading of the project's fleet state.
 
-    The live-pointer and drain projections own their respective derivations;
-    promotion only composes their already-derived facts into the result that an
-    orchestrator is about to read. The reading deliberately stays outside the
-    ledger because it describes the fleet at this moment, not this run.
+    The live-pointer projection owns the pointer classification, and the
+    unreconciled count is derived from those pointers alone; promotion composes
+    the already-derived facts into the result that an orchestrator is about to
+    read. The reading deliberately stays outside the ledger because it describes
+    the fleet at this moment, not this run.
     """
     observed_at = _utc_now()
     try:
         from reckon.crew import recovery
 
         pointers = list_live(project=project)
-        closure = drain(project)
         classified = [recovery.classify_pointer(pointer) for pointer in pointers]
         actionable = [
             str(row.get("recovery_classification") or "")
@@ -5719,7 +6146,7 @@ def _fleet_state_reading(project: str) -> dict[str, Any]:
             "fleet_state": "measured",
             "observed_at": observed_at,
             "live_runs": len(pointers),
-            "unreconciled_runs": int(closure["unreconciled_runs"]),
+            "unreconciled_runs": _unreconciled_live_runs(pointers),
             "actionable_runs": len(actionable),
             "actionable_classifications": sorted(set(actionable)),
             "occupied_lanes": len(lanes),
@@ -5784,17 +6211,15 @@ def _run_promoted_revision(
 
     The same reading the promoted row records, taken before the review gate
     reads the store so the gate compares against the revision this promotion
-    will name rather than against whatever the store holds newest. The cited tip
-    is canonicalised as the row canonicalises it, so a citation that names the
-    revision symbolically or in abbreviation still matches the full sha a review
-    recorded reading.
+    will name rather than against whatever the store holds newest. Every cited
+    commit is canonicalised as the row canonicalises it, so a citation that
+    names the revision symbolically or in abbreviation still matches the full
+    sha a review recorded reading, and the tip is selected by descent rather
+    than by the position the citation was written in.
     """
     worktree = Path(str(record.get("worktree") or ""))
     tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
-    if commit_list:
-        tip = str(commit_list[-1])
-        return _promoted_revision(tree, [_commit_canonical_id(tree, tip) or tip])
-    return _promoted_revision(tree, [])
+    return _promoted_revision(tree, commit_list)
 
 
 def plan_impl_at(
@@ -6678,6 +7103,17 @@ def _complete_locked(
     _require_committable_checkout(checkout, run_id)
     worktree = Path(str(record.get("worktree") or ""))
     tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
+    # A landing that will carry the plan file must not sweep an unrelated
+    # uncommitted edit into its commit. The check runs here, before either
+    # store is written, so a refusal leaves no ledger row and no plan comment
+    # for the next promotion to read as an unrelated edit.
+    if not shadow:
+        _refuse_unrelated_plan_edit(
+            project=project,
+            plan=str(node.get("plan") or ""),
+            root=ledger_root,
+            checkout=checkout,
+        )
     ledger_data, ledger_version = ledger.load(project, root=ledger_root)
     existing = next(
         (
@@ -6742,6 +7178,7 @@ def _complete_locked(
                 release=release,
                 checkout=checkout,
             )
+            release.update(_retire_disposable_identity(record))
             if recorded is not None:
                 existing = recorded
             result = {
@@ -7229,6 +7666,7 @@ def _complete_locked(
             release=release,
             checkout=checkout,
         )
+        release.update(_retire_disposable_identity(record))
         if recorded is not None:
             written["run"] = recorded
         # This is a bounded fleet reading, not a readiness recommendation: the

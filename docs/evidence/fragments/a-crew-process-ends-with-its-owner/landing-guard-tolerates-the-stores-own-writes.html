@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A landing guard tolerates the store's own writes">
+  <meta name="plan-summary" content="The landing guard compares the plan's parsed state, so a re-encoded entity, a moved version stamp or an unrelated uncommitted edit, and a refused promotion writes neither a ledger row nor a plan comment.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,promotion,landing,guard">
+  <title>A landing guard tolerates the store's own writes — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A landing guard tolerates the store's own writes</h1>
+
+    <section id="lgt-what-changed">
+      <h2>What changed</h2>
+      <p><code>reckon.crew.promotion</code> gains
+      <code>_plan_differs_only_by_the_stores_own_writes</code>: the plan's
+      working copy is compared to HEAD through its <em>parsed state</em>, not
+      its bytes. Both sides are rendered through the store's own writer and
+      parsed as documents; comment elements HEAD does not already carry are
+      appended landing records and are dropped, the two version stamps are
+      stripped, and whitespace left between the tags that held a removed
+      section is collapsed. A re-encoded entity, an appended comment or a moved
+      stamp is therefore not an authored change, while an added paragraph, an
+      edited scalar, an edited section record or a changed existing comment
+      still refuses.</p>
+      <p><code>_refuse_unrelated_plan_edit</code> is called from
+      <code>_complete_locked</code> before either store is written, so a refused
+      promotion leaves no ledger row and no plan comment for the next promotion
+      to mistake for an unrelated edit. Commit <code>fc83a491a</code>.</p>
+    </section>
+
+    <section id="lgt-why">
+      <h2>Why</h2>
+      <p>An earlier guard (commit <code>4e2c05ce7</code>, reverted at
+      <code>e70bb91cb</code>) decided inclusion by rebuilding an expected
+      working copy and matching it byte for byte. That refused every later
+      promotion on a plan holding a re-encoded entity, a moved stamp or an
+      earlier run's recorded comment, so a first refusal left its own comment on
+      disk and the next promotion read it as an unrelated edit.</p>
+    </section>
+
+    <section id="lgt-gate">
+      <h2>Gate</h2>
+      <p>Head <code>fc83a491a</code>: <code>tests/test_landing_commit_carries_only_its_own_comment.py</code>
+      (four cases), <code>tests/test_repromotion_commits_its_recorded_comment.py</code>
+      and <code>tests/test_crew_promotion.py</code>: <strong>56 passed</strong>.
+      Base <code>e70bb91cb</code> over the two shared modules:
+      <strong>52 passed</strong> — zero added failures.</p>
+      <p>The declared negative control replaces the parsed-state comparison with
+      a byte comparison. The canonical-encoding case is then refused and fails,
+      together with the already-recorded comment case: <strong>2 failed, 2
+      passed, EXIT=1</strong>. Receipts under
+      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T004443680689-landing-guard-tolerates-the-stores-own-writes/logs/</code>.</p>
+    </section>
+
+    <section id="lgt-scope">
+      <h2>Scope</h2>
+      <p>Changed: <code>reckon/crew/promotion.py</code> and
+      <code>tests/test_landing_commit_carries_only_its_own_comment.py</code>.
+      This is a worker landing record; review, integration, the merged gate and
+      deployment remain coordinator-owned, and the driving followup stays open.</p>
+    </section>
+  </main>
+</body>
+</html>

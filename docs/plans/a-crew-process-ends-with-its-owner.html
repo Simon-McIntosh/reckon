@@ -22,10 +22,10 @@
   <title>A crew process ends with its owner | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="172">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="263">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -199,6 +199,7 @@
     </div>
 
     <h2 id="s3">&sect;3 &mdash; A producer holds a lease, not a lifetime</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="4.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
     <p>Per-project <code>crew watch</code> producers are detached with
     <code>start_new_session=True</code> and ppid 1 by design, and nothing ends them. On the
     night they were 21 h to 3.5 days old. The imas-codex producer used 21% of a core for
@@ -480,31 +481,11 @@
     disappears from every later count of what failed and why. A case sweeps one stale pointer
     and asserts that a ledger row exists for it, carrying the classification.</p>
 
-    <h2 id="s7">&sect;7 &mdash; The skills say what a session owns and when it ends</h2>
-    <p>Guidance cannot replace &sect;2&ndash;&sect;6, but three failures were instruction
-    failures, and they recur until the skills name them. The reckon-ship skill and the
-    Claude Code harness reference gain the following:</p>
-    <ul>
-      <li>One follower per session, stopped before it is re-armed, and a session-end step
-      that runs <code>reckon crew census</code> for its own session.</li>
-      <li>No backgrounded dispatch loop or wave script. A wave is a sequence of dispatch
-      calls in the coordinator's own turns, so it ends when the session does. A nova
-      <code>wave7.sh</code> kept dispatching for seven hours after its session stopped.</li>
-      <li>A search names its subtree or absolute path and is bounded on the producer side,
-      with <code>timeout</code> or <code>-maxdepth</code>. <code>| head</code> is not a
-      bound: it limits the output, and a search that finds nothing is exactly the one that
-      then walks the whole tree. That is how <code>find / -name wall.h5 | head</code> ran for
-      10 h 49 min. A brief names the absolute data path rather than describing the file,
-      since a described file is what sends a worker searching.</li>
-    </ul>
-    <p>A backgrounded tool call is silent from its two-minute boundary until it dies, so its
-    owner has usually moved on. The harness offers no heartbeat for that. The host dashboard
-    in imas-codex's <code>host-dashboard-covers-every-agent-process</code> carries it instead,
-    as a per-session list of long-running background processes.</p>
-    <p><strong>Done when</strong> the three rules above are in the reckon-build skill
-    (<code>skills/reckon-build/</code>, renamed from reckon-ship) and the Claude Code harness
-    reference (<code>skills/reckon-build/references/orchestrator-harness/claude-code.md</code>),
-    each beside the measurement that motivates it.</p>
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-01</span>
+    <h2 id="s7">&sect;7 &mdash; The skills say what a session owns and when it ends</h2></header>
+  <p class="landed-summary">Landed the three session-ownership rules in the reckon-build process reference (§17) and the Claude Code harness reference, each beside its measurement, with a session-end process listing until §6's census exists. A guard test pins each rule's anchor in both files (4 passed; removing a rule fails it). Commits <code>20940412d</code>, <code>0f758772a</code>. <a href="s7">full record</a></p>
+</section>
 
     <h2 id="s8">&sect;8 &mdash; Done when, for the plan</h2>
     <p>&sect;2&ndash;&sect;7 have each met their own done-when. On a working day with the
@@ -672,358 +653,15 @@
     sentences were revised on 2026-10-01, and the revision adds the declared-against-published
     path check. That revision was material, and the read-backs above restated it.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-02</span>
     <h2 id="s10">&sect;10 &mdash; A run can always be reconciled from what survives</h2>
-    <p>On 2026-09-23 and 24, runs across four repositories reached states that no command could
-    reconcile. Discarding one is irreversible, and never-discard was the only guard left. Five
-    cases were measured:</p>
-    <ul>
-      <li><strong>A discarded run.</strong> <code>crew complete</code> refuses a run with no live
-      pointer. <code>crew repair-completion</code> repairs only rows that already exist. Yet
-      <code>crew/runs/&lt;run&gt;/</code> keeps <code>prompt.txt</code>, <code>stderr.log</code>
-      and <code>stream.jsonl</code>. imas-ambix has six discarded llac runs from 2026-09-23 on
-      disk, which repair-completion lists none of.</li>
-      <li><strong>A written row with a live pointer.</strong> A run whose ledger row and landing
-      comment are written can still classify as unreconciled. <code>complete</code> then refuses
-      it ("ledger row already written; landing comment already contains a different
-      narrative"). reckon-e4 held one and imas-ambix-f6 holds two.</li>
-      <li><strong>A stale run with no worktree.</strong> imas-codex-0d's run has landed commits,
-      <code>5ac5e0fa6</code> and <code>923daf733</code>. <code>complete</code> refuses it on a
-      stray-write check naming 85 paths, none of them the run's: its worktree is gone and its
-      base is seven days old, so the check compares today's main against a week of everyone's
-      work. The only remedy, one <code>--accept-path</code> per path, would write 85 false
-      claims. That is recorded in imas-codex as f-srr-stale-run-cannot-be-reconciled
-      (<code>31c5a102d</code>).</li>
-      <li><strong>Gate evidence the manifest already names.</strong> Promotion requires
-      <code>--gate-command</code>, <code>--gate-exit-status</code>, <code>--gate-log-path</code>
-      and <code>--commit</code> by hand, even when the manifest states all of them. It also
-      refuses repo-relative log paths. Coordinators repointed manifests by hand repeatedly.</li>
-      <li><strong>A promotion walking every tree.</strong> <code>crew complete</code>'s boundary
-      check walked every retained worktree with <code>--untracked-files=all</code>, which took
-      3 h 07 m under degraded storage (&sect;4 owns the walk).</li>
-    </ul>
-    <p><strong>The fix.</strong> <code>crew complete</code> becomes an idempotent reconcile, with
-    four behaviours:</p>
-    <ul>
-      <li>A run with no live pointer is completed from its run directory, reconstructing
-      measurements from the surviving stream as repair-completion already does. The
-      classification and outcome are given by hand. It never writes a ledger row by hand.</li>
-      <li>A run whose row already exists has its pointer retired, and the refusal is not
-      repeated.</li>
-      <li>A boundary check with no surviving worktree, or a base older than a stated bound, says
-      it has no referent and asks for one acknowledgement, not one per path.</li>
-      <li>Gate command, exit status, log path and commits default to what the manifest states,
-      with absolute paths resolved under the run directory.</li>
-    </ul>
-    <p><strong>Done when</strong> <code>tests/test_a_run_can_always_be_reconciled.py</code>, in a
-    temporary <code>RECKON_HOME</code>, covers four cases. A run with only its run directory
-    left promotes to a ledger row carrying the given classification. A run with a row and a
-    live pointer ends with the pointer gone and exactly one row. A run whose worktree is gone
-    promotes with one no-referent acknowledgement. A passing run whose manifest names its gate
-    promotes with no gate flags. The negative control is executed and logged: with the
-    no-pointer path removed, the first case is refused and the test fails. The write path is
-    <code>reckon/crew/promotion.py</code>, plus that test. This section is not in the
-    root-fix set. It recovers history and does not stop a recurrence, so it dispatches with
-    general work.</p>
-
-    <div data-reckon="landing" data-node="ticker-fixture-reads-withdrawn" data-when="2026-09-25">
-      <h3>Landing record &mdash; ticker departure fixtures read the ledger</h3>
-      <p>The ticker fixtures now model both departure outcomes introduced by the liveness
-      gate. The completed <code>r-new</code> fixture writes its promotion row and still emits
-      <code>promoted</code>; the vanished <code>r-existing</code> fixture writes no row and emits
-      <code>withdrawn</code>. The blocked departure fixture also reads the ledger and expects
-      <code>withdrawn</code> while still clearing its stale explanation.</p>
-      <p>Commits <code>5f31e8fb</code> and <code>902dc899</code> add the ledger-row fixture and
-      update the two expectations. The named gate receipt recorded <strong>34 passed and 3
-      pre-existing colour-environment failures</strong> across
-      <code>tests/test_crew_ticker.py</code> and
-      <code>tests/test_a_live_run_never_reads_dead.py</code>; the declared forced-promotion
-      mutation is red in <code>negative-control.log</code>. Full record:
-      <code>a-crew-process-ends-with-its-owner-landed.html#s10-ticker-fixture-reads-withdrawn</code>.</p>
-    </div>
-
-    <div data-reckon="landing" data-node="producer-shares-the-classifier-verdict" data-when="2026-09-25">
-      <h3>Landing record — producer consumes the shared classifier verdict</h3>
-      <p>Commit <code>7bcd27ac</code> moves the producer's stream/death/stall verdict into
-      <code>classify_pointer</code>, returned as <code>fleet_verdict</code>. The snapshot
-      copies that verdict, and emitted transitions carry the classifier's lifecycle
-      classification, process liveness and liveness provenance. Existing lifecycle fields
-      retain their compatibility meaning; fleet state and recovery words have one owner.</p>
-      <p>The live-supervisor-exited case was already correct at base <code>c1c1f7e9</code>:
-      <code>classifier=running snapshot=working transition=working</code> with a live worker
-      and one commit beyond base. The new parity instrument did expose a separate verdict
-      in the snapshot for a completed turn without a manifest. That fleet verdict now comes
-      from the classifier too. All <strong>12 new checks pass</strong>, including every
-      pointer-bearing case in the existing liveness module. The scoped gate records
-      <strong>191 passed / 8 failed</strong> against <strong>179 passed / the same 8 failed</strong>
-      at base: <strong>zero added failures</strong>. Restoring a snapshot-local pid probe
-      produces <code>blocked</code> for the live worker and fails the declared control.</p>
-      <p><a href="/reckon/evidence/archive/a-crew-process-ends-with-its-owner-landed#producer-classifier-verdict">Evidence, receipts and compatibility boundary</a>.
-      This is a worker landing record; review, integration, the merged gate and deployment
-      remain coordinator-owned, and the driving followup stays open.</p>
-    </div>
-    <div data-reckon="landing" data-node="every-attempt-is-supervised" data-when="2026-09-25">
-      <h3>Landing record &mdash; every execution attempt keeps a supervisor</h3>
-      <p>Commit <code>ce1f6281</code> routes command-line resume and lane-change redispatch
-      through the per-run supervisor already used by fresh dispatch. The pointer pid now names
-      the supervisor on both Claude/Clive-shaped and Codex-shaped harnesses; the worker pid and
-      its exit are written as attempt-numbered immutable receipts, while canonical
-      <code>worker.json</code> and <code>exit.json</code> expose only the current attempt.</p>
-      <p>The five-case gate passed in 5.57 s. A live repair with a predecessor's complete
-      manifest and a dirty worktree classified <code>running</code>, was neither scoring nor
-      promotable, and dispatched no reflex review. The dispatch/resume/recovery comparison
-      moved from 270 to 275 passing tests while retaining the same three failures and one skip,
-      so the added failure count is zero. The declared direct-launch mutation failed all five
-      cases; its killed-resume case produced no current-attempt exit record. Full record:
-      <code>a-crew-process-ends-with-its-owner-landed.html#s10-every-attempt-is-supervised</code>;
-      sequence figure:
-      <code>docs/figures/a-crew-process-ends-with-its-owner/attempt_supervision_sequence.svg</code>.</p>
-    </div>
-
-    <div data-reckon="landing" data-node="stall-clock-starts-at-the-attempt" data-when="2026-09-25">
-      <h3>Landing record &mdash; a resumed run's stall clock starts at its attempt</h3>
-      <p>Commit <code>40102f8b</code> caps a run's quiet time in
-      <code>_run_stream_quiet_seconds</code> at the age of the attempt now running, read from the
-      pointer's <code>attempt_started_at</code> or, for a pointer that predates the field, from
-      the run directory's current <code>attempt.json</code>. Quiet time is the earlier of the
-      stream's silence and that age, so a resume or redispatch cannot inherit its superseded
-      attempt's silence. An attempt at least as old as its last stream record gains nothing from
-      the floor and still stalls at its measured age; a run with no attempt clock reads the
-      stream alone, unchanged.</p>
-      <p>The reported defect reproduces: with a 1919-second-old stream and an attempt started 30
-      seconds before now, the run classified <code>stalled</code> though the live attempt means it
-      is working. After the change it classifies <code>working</code>, while the same silence under
-      an attempt at or before the last stream record still classifies <code>stalled</code>. The
-      focused gate ran <strong>116 passed</strong> on
-      <code>40102f8b</code>; base <code>311bfc62</code> runs the same four regression suites at
-      <strong>112 passed</strong>, so the added failure count is zero. The declared negative
-      control drops the attempt start and the freshly resumed case fails, exit 1. Full record:
-      <code>a-crew-process-ends-with-its-owner-landed.html#s10-stall-clock-starts-at-the-attempt</code>;
-      figure:
-      <code>docs/figures/a-crew-process-ends-with-its-owner/stall_clock_starts_at_the_attempt.svg</code>.</p>
-    </div>
-    <div data-reckon="landing" data-node="watch-suite-green-after-departures" data-when="2026-09-25">
-      <h3>Landing record &mdash; eight watch and follower tests return to green</h3>
-      <p>At base <code>ac7e9e50</code> the eight ids:
-      <code>test_cold_watch_holds_an_already_stale_terminal_pointer</code>,
-      <code>test_dispatch_is_admitted_during_the_stale_terminal_window</code>,
-      <code>test_empty_fleet_still_waits_for_its_first_pointer</code>,
-      <code>test_an_empty_observed_set_render_is_byte_identical_to_today</code>,
-      <code>test_rows_from_an_observed_session_carry_the_foreign_marker_and_own_rows_do_not</code>,
-      <code>test_an_observed_session_named_identically_to_the_owning_session_adds_no_duplicate</code>,
-      <code>test_a_stream_that_ended_in_a_result_record_is_not_a_death</code> and
-      <code>test_every_unit_template_in_the_tree_is_covered_here</code>.</p>
-      <p>Adjudicating each against the departure rule (<code>9f55e200</code>) and the shared
-      classifier verdict (<code>7bcd27ac</code>), all eight reddened on a <em>test</em>
-      expectation superseded by a landed design change, so no executable code changed:
-      <code>reckon/crew/recovery.py</code> is byte-identical to base. The three watch-lifetime
-      fixtures now record the promotion row a landing writes (the rule that a rowless departure
-      reads <code>withdrawn</code> is the code's, and stays); the three observed-session cases
-      move off the retired ticker owner glyph onto the surviving render-path distinction; the
-      death case asserts the typed <code>recovery_classification</code> rather than the
-      lifecycle <code>state</code> that <code>11ad0a89</code> deliberately grouped as
-      <code>blocked</code>; and the unit-template inventory accounts for the newly added
-      <code>Type=oneshot</code> timer publisher that systemd refuses a restart policy.</p>
-      <p><strong>Delivered.</strong> The eight named ids pass (8 passed); the four changed files
-      pass together (24 passed); the four comparison files add zero failures (119 passed). The
-      declared negative control forced every departure to <code>withdrawn</code> and failed
-      <code>test_cold_watch_holds_an_already_stale_terminal_pointer</code> (1 failed, exit 1),
-      reverted before finishing. Receipts under
-      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T170440473739-watch-suite-green-after-departures/logs/</code>:
-      <code>named-eight.log</code>, <code>gate.log</code>, <code>compare-four.log</code> and
-      <code>negative-control.log</code>. Full record:
-      <code>a-crew-process-ends-with-its-owner-landed.html#s10-watch-suite-green-after-departures</code>.</p>
-      <p><strong>Delivery blocker.</strong> The worker sandbox ro-binds the shared checkout, so a
-      worktree's <code>git commit</code> fails on <code>index.lock</code> with Read-only file
-      system. The worktree edits stand on disk for the coordinator to commit; this worker
-      recorded no commit and did not close the followup.</p>
-    </div>
-
-    <div data-reckon="landing" data-node="complete-refuses-a-live-run" data-when="2026-09-26">
-      <h3>Landing record &mdash; promotion refuses a run whose own worker is still running</h3>
-      <p>Commit <code>dc47da0a</code> makes <code>crew complete</code> refuse a run whose
-      recorded worker process is alive <em>and</em> whose manifest status is not terminal. The
-      refusal fires before any store is written, names the live pid and the manifest status, and
-      leaves the pointer and the ledger untouched. A new <code>--waive-live-run REASON</code>
-      lets an operator land such a run anyway; the reason rides the promoted row as
-      <code>live_run_waiver</code> beside the pid and status it waived, so a deliberate promotion
-      of a live worker is distinguishable afterwards from the orphan this refusal prevents. A
-      waiver offered against a run with nothing to waive is itself refused.</p>
-      <p>The guard fires only on the conjunction the measured defect turned on. A run whose
-      process has exited, or whose manifest reads <code>complete</code>, <code>blocked</code> or
-      <code>failed</code>, promotes as before; a run whose manifest is absent or not fresh states
-      no status, so a live process with no manifest is left to the recovery arms rather than
-      judged here. The release step that signals a finished writer already keys on a fresh
-      terminal manifest, so the refusal and the release draw the same line on which live process
-      belongs to closed work.</p>
-      <p><strong>Delivered.</strong> <code>tests/test_complete_refuses_a_live_run.py</code> passes
-      (6 passed): the live, in-progress run is refused naming the pid and status with the pointer
-      kept and no row written; the same run promotes under a waiver and records the reason; a
-      dead process with a non-terminal manifest, a live process with a terminal manifest, and a
-      live process with no manifest all promote as before; and a waiver with no live worker is
-      refused. The live process is a stub the test starts and stops itself, under a synthetic
-      <code>RECKON_HOME</code> and repository. The named gate adds zero failures: base
-      <code>9fafad1f</code> runs <code>tests/test_crew_promotion.py</code> and
-      <code>tests/test_crew_promotion_scope.py</code> at <strong>76 passed</strong>, and at
-      <code>dc47da0a</code> the same two modules plus the new one reach <strong>82 passed</strong>.
-      The declared negative control removes the liveness check and the live in-progress case then
-      promotes, failing its refusal assertion (<code>DID NOT RAISE CrewError</code>, exit 1).
-      Full record: <code>a-crew-process-ends-with-its-owner-landed.html#s10-complete-refuses-a-live-run</code>;
-      decision figure:
-      <code>docs/figures/a-crew-process-ends-with-its-owner/complete_refuses_a_live_run.svg</code>.</p>
-    </div>
-
-    <div data-reckon="landing" data-node="a-discard-never-reads-promoted" data-when="2026-09-25">
-      <h3>Landing record &mdash; a departure is promoted only from a recorded ledger row</h3>
-      <p>Commit <code>ddf4509f</code> makes the departure fold in
-      <code>fleet_transitions</code> resolve its run ids against the project ledger instead of
-      against whether a caller happened to pass a reader. At 22:31:52 on 2026-09-25 the ticker
-      rendered a run as <code>blocked &rarr; promoted</code> after another session removed its
-      pointer with <code>crew discard</code>, though nothing was promoted. The fold chose
-      <code>promoted</code> whenever no ledger set was available, and the fleet-stream producer
-      supplies none, so a discard and a promotion read alike.</p>
-      <p>The reported defect reproduces at base <code>132a7d4b</code>: a blocked run's pointer
-      removed with <code>crew discard</code>, folded through the producer's own call shape
-      <code>fleet_transitions(known, {})</code> with no reader, returned the to-state
-      <code>promoted</code>. After the change the same departure reads <code>withdrawn</code>, a
-      departure the ledger records still reads <code>promoted</code>, and a record that cannot be
-      resolved withdraws rather than promoting. The snapshot now carries the run's
-      <code>project</code>, which is what lets the reader-less producer resolve the ledger without
-      any change to <code>reckon/crew/runs.py</code>. The focused gate ran <strong>4 passed</strong>
-      at the committed head; base <code>132a7d4b</code> runs the four regression suites at
-      <strong>3 failed / 107 passed</strong> and the committed implementation at
-      <strong>3 failed / 107 passed</strong> with identical failure ids, so the added failure count
-      is zero; the four new cases are measured separately in the focused module. The three
-      pre-existing failures are in a suite outside this node's fence. The
-      declared negative control restores the base rule and the discard case fails reading
-      <code>promoted</code>, exit 1. Full record:
-      <code>a-crew-process-ends-with-its-owner-landed.html#s10-a-departure-reads-only-a-recorded-promotion</code>;
-      figure:
-      <code>docs/figures/a-crew-process-ends-with-its-owner/departure_reads_a_recorded_promotion.svg</code>.
-      A distinct <code>discarded</code> word for a run whose directory records a discard needs a
-      discard marker to record and a ticker state to render, neither of which lives in a file
-      inside this node's fence, so it is left as a follow-on.</p>
-    </div>
-
-    <div data-reckon="landing" data-node="watch-suite-green-on-main" data-when="2026-09-26">
-      <h3>Landing record &mdash; three follower-counter tests return to green; eight were already green</h3>
-      <p>The eleven ids were reported red in the sibling follower run's
-      <code>gate-follow-watch-head.log</code>, taken at that branch's head
-      <code>e21cb520</code> whose base <code>80d55621</code> predates the main-line test
-      repair. Reproducing them at base <code>0391d7fa</code> measures
-      <strong>3 failed / 17 passed</strong>: the eight ids in the watch-lifetime,
-      observed-session, death and unit-inventory files already pass, because
-      <code>63f40039</code> (the promoted-departure test repair) is an ancestor of the base
-      and carries their fix. Only the three <code>test_follow_counts_its_session.py</code>
-      ids were red.</p>
-      <p><strong>Adjudication.</strong> The eight pass at the measured base and no file was
-      touched for them. The three reddened because the <em>test</em> encoded a superseded
-      renderer format, so the test changed and no executable code changed:
-      <code>5ef9ee49</code> dropped the <code>·</code> separator between the fleet counters,
-      and the block is now the fixed two-column
-      <code>&lt;n&gt;w &lt;n&gt;b &lt;n&gt;u &lt;n&gt;q</code> the ticker always prints. The
-      regex now matches the whole block rather than a prefix, so a bucket added later cannot
-      slip past it. <code>reckon/crew/recovery.py</code> is byte-identical to base.</p>
-      <p><strong>Delivered.</strong> The eleven named ids pass (20 passed); the focused module
-      passes (4 passed); the four comparison files
-      (<code>test_crew_recovery.py</code>, <code>test_crew_watch_stream.py</code>,
-      <code>test_a_discard_never_reads_promoted.py</code>,
-      <code>test_producer_shares_the_classifier_verdict.py</code>) pass with zero added
-      failures (111 passed). The declared negative control forced every departure to
-      <code>withdrawn</code> and failed
-      <code>test_cold_watch_holds_an_already_stale_terminal_pointer</code> (1 failed, exit 1),
-      reverted before finishing. Receipts under
-      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T090019682272-follow-watch-suite-green-on-main/logs/</code>.
-      Full record:
-      <code>a-crew-process-ends-with-its-owner-landed.html#s10-watch-suite-green-on-main</code>;
-      figure:
-      <code>docs/figures/a-crew-process-ends-with-its-owner/watch_tests_red_by_commit.svg</code>.
-      This gate measures only this node's own change; verifying the merged result belongs to a
-      separately dispatched test node, and the driving followup stays open.</p>
-    </div>
-    <div data-reckon="landing" data-node="crew-discard-reads-discarded" data-when="2026-09-26">
-      <h3>Landing record &mdash; a discard reads discarded, distinct from a vanished pointer</h3>
-      <p>Commit <code>88bd5e41</code> writes a discard marker into the run directory before
-      the live pointer is removed, and has the departure fold emit <code>discarded</code> for
-      a run the ledger does not record when that marker is present. The follow-on this
-      section's previous record left open was the recording half: a discard and a vanished
-      pointer both produced <code>withdrawn</code>, so a reader could not tell a coordinator's
-      own act from an unexplained disappearance.</p>
-      <p><code>discard()</code> in <code>reckon/crew/promotion.py</code> now writes
-      <code>discard.json</code>, carrying the discard time, before it unlinks the pointer, so
-      a reader that sees the absence finds the record behind it. A run directory that has
-      already gone is left alone and the write reports <code>None</code>: the run's home is
-      not recreated, following the supervisor's rule that a write must not bring a discarded
-      run back into existence. The departure rule in <code>reckon/crew/recovery.py</code>
-      resolves the marker behind a lazy reader, consulted only for a departure, so an ordinary
-      observation opens no run directory. Promotion keeps first claim &mdash; a run the ledger
-      records still reads <code>promoted</code>, whatever else the run directory holds &mdash;
-      and a departure with neither trail still reads <code>withdrawn</code>. The ticker paints
-      the new word in both themes and the departure is dropped from the running set like its
-      two siblings.</p>
-      <p><strong>Gate.</strong> New module
-      <code>tests/test_crew_discard_reads_discarded.py</code>: <strong>6 passed</strong>,
-      covering the discard marker and its absence from the public interface. The scoped
-      comparison over <code>tests/test_a_discard_never_reads_promoted.py</code>,
-      <code>tests/test_crew_recovery.py</code> and
-      <code>tests/test_crew_watch_stream.py</code> measures <strong>99 passed</strong> at base
-      <code>9fafad1f</code> and <strong>105 passed</strong> at the committed head, so the added
-      failure count is <strong>zero</strong>. The declared negative control makes
-      <code>_write_discard_record</code> return without writing: the discard case fails
-      <code>assert 'withdrawn' == 'discarded'</code> (<strong>1 failed, 5 passed, exit
-      1</strong>), the departure falling back to the bare withdrawal the marker exists to
-      replace. Lint adds no findings over the four changed paths (21 at base, 21 at head).
-      Receipts under
-      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T103152965782-crew-discard-reads-discarded/logs/</code>:
-      <code>gate.log</code>, <code>base-arm.log</code> and <code>negative-control.log</code>.
-      Full record: <code>a-crew-process-ends-with-its-owner-landed.html#s10-discard-reads-discarded</code>;
-      figure:
-      <code>docs/figures/a-crew-process-ends-with-its-owner/discard_reads_discarded.svg</code>.
-      This is a worker landing record; review, integration, the merged gate and deployment
-      remain coordinator-owned, and the driving followup stays open.</p>
-    </div>
-
-    <div data-reckon="landing" data-node="discard-releases-a-clean-worktree" data-when="2026-09-26">
-      <h3>Landing record &mdash; a discard releases the clean worktree its node would rerun in</h3>
-      <p>A run that died at launch and was discarded left its worktree on disk. When
-      the tree held nothing, a redispatch of the same node was refused because the
-      worktree path already existed, and the coordinator removed the tree by hand.
-      This section's previous records closed the departure<em>word</em>; this one closes
-      the <em>workspace</em> the departure leaves behind.</p>
-      <p><code>discard()</code> in <code>reckon/crew/promotion.py</code> now releases the
-      run's worktree through the same audit promotion applies on release
-      (<code>_release_run_workspace</code> &mdash; one classifier, not a second). A tree with an
-      empty <code>git status --porcelain</code> whose head the integration branch
-      contains is removed with <code>git worktree remove</code>; a dirty or unintegrated
-      tree survives and the audit's own withheld reason is named on the discard
-      result. A release failure is caught and reported, so it can never obscure the
-      pointer removal that already succeeded.</p>
-      <p><strong>Gate.</strong> New module
-      <code>tests/test_discard_releases_a_clean_worktree.py</code>: <strong>4 passed</strong>
-      &mdash; a clean integrated worktree is gone after discard and absent from
-      <code>git worktree list</code>; a dirty worktree survives with the
-      uncommitted-changes reason; a worktree carrying a commit the integration
-      branch lacks survives with the not-reachable reason; every crew path resolves
-      under the synthetic home. The scoped comparison over
-      <code>tests/test_crew_promotion.py</code> and
-      <code>tests/test_a_discard_never_reads_promoted.py</code> measures <strong>54
-      passed</strong> at base <code>10749306</code> and <strong>54 passed</strong> at the
-      committed head, so the added failure count is <strong>zero</strong>. The declared
-      negative control makes <code>_remove_discarded_worktree</code> a no-op: the
-      clean-worktree case fails on the surviving path (<strong>1 failed, 3 passed,
-      exit 1</strong>). Lint adds no findings over the two changed paths (13 at base,
-      12 at head, none in the added region) and the format delta is identical at
-      base and head (40 changed lines each). Receipts under
-      <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T152959325320-discard-releases-a-clean-worktree/logs/</code>:
-      <code>gate.log</code>, <code>base-arm.log</code>, <code>head-arm.log</code> and
-      <code>negative-control.log</code>. Full record:
-      <code>a-crew-process-ends-with-its-owner-landed.html#s10-discard-releases-a-clean-worktree</code>;
-      figure:
-      <code>docs/figures/a-crew-process-ends-with-its-owner/discard_releases_a_clean_worktree.svg</code>.
-      This is a worker landing record; review, integration, the merged gate and
-      deployment remain coordinator-owned, and the driving followup stays open.</p>
-    </div>
+<section data-reckon="section" data-id="s10" data-effort-hours="9.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">crew complete reconciles a run from whatever survives it: a run directory alone, a row with a live pointer, a lost worktree, or a manifest that names its own gate. Every signal leaves one attribution record and one outcome record from a single writer. A finished worker exits within a bounded grace. An unknown departure reads departed. <a href="s10">full record</a></p>
+</section>
 
     <h2 id="s11">&sect;11 &mdash; A live producer reads only what changed since its last poll</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links="reckon:the-obligations-hook-reads-a-snapshot"></section>
     <p><strong>The defect.</strong> &sect;3 ends a producer that nobody uses. &sect;4 stops
     whole-tree <code>git status</code> walks. Neither covers a producer that is legitimately
     alive, and that producer is itself expensive. The per-poll cost comes from the design, not
@@ -1104,6 +742,10 @@
 <section data-reckon="section" data-id="s12" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
 <p>On 2026-09-29, /tmp on the fleet node filled to 100%. Bash failed with ENOSPC, and a ctime sweep freed 31.4 GB. The space was not in the per-run scratch directories. Dispatch already points a worker's <code>TMPDIR</code> at <code>/tmp/reckon-crew-scratch/&lt;run&gt;</code> (<code>reckon/crew/dispatch.py:6128</code>), and promotion's release step removes that directory after the ledger row is written. The space was in trees workers made at explicit <code>/tmp/&lt;name&gt;</code> paths their briefs named: git-archive extractions for base and head arms, and pytest basetemps of about 900 MB each. Those paths bypass the run's scratch, so nothing that knows the run removes them. Separately, on 2026-10-01, /tmp/reckon-crew-scratch held 8,548 directories (20 MB) left by runs that never promoted.</p><p><strong>A run is revisited after its age says it is idle, so age is never the signal.</strong> Before promotion, the review-repair reflex resumed two complete-but-unpromoted runs nine hours after their workers exited (load-sensitive-ids-hold-under-load and a-served-thread-leaves-no-memo-behind, 2026-10-01 06:33). An age-keyed reaper would have deleted the worktrees and scratch those resumes needed. After promotion, nothing returns to the scratch. verify-gate re-runs a promoted run's gate from the checkout, and its logs live in the run directory under <code>~/.config/reckon/crew/runs</code>. A repair of a promoted run is a new run with its own worktree and scratch. Evidence readers read the run directory, never the scratch. So the terminal record (a ledger row written by promotion, or a discard) is the one signal that licenses removal, and a live pointer forbids it whatever its age.</p><p><strong>The design.</strong> First, a worker's temporary trees live under its <code>$TMPDIR</code>: the composed worker contract says so, and a brief names <code>$TMPDIR/&lt;name&gt;</code>, never a bare <code>/tmp/&lt;name&gt;</code>, so promotion's existing removal covers archives and basetemps. Second, <code>reckon crew gc --scratch</code> lists every scratch directory with its run's state. It removes one only when that run has no live pointer and has a ledger row or a discard record, printing each path and its size before deleting, and it is a dry run unless <code>--apply</code> is given. Third, a /tmp tree owned by the user that no run can be attributed to is reported, with its ctime, its size and any process holding it as its cwd or an open file. It is never removed automatically. Fourth, promotion records the scratch directory's size on the ledger row and warns above a stated budget, so a run that writes gigabytes is visible at the moment it lands.</p><p><strong>Done when</strong> tests/test_a_runs_scratch_ends_with_the_run.py, in a temporary RECKON_HOME with a scratch root under the test's own tmp, covers five cases. 1: a promoted run's scratch is removed by gc. 2: a complete-but-unpromoted run's scratch, older than any age bound, is kept, and gc reports it as live. 3: a discarded run's scratch is removed. 4: an unattributable tree is reported and kept, even with --apply. 5: the composed worker contract names <code>$TMPDIR</code> for temporary trees. The declared negative control is executed and logged: make gc decide by age, and case 2 fails. The write paths are <code>reckon/crew/gc.py</code> or the module that owns <code>crew gc</code> today, <code>reckon/cli.py</code> for the flag, <code>reckon/crew/prompts.py</code> for the contract sentence, <code>reckon/crew/promotion.py</code> for the size record, and that test.</p>
 
+    <h2 id="s13">§13 — A promotion reads only what it promotes</h2>
+<section data-reckon="section" data-id="s13" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<p><b>The defect.</b> <code>crew complete</code> routinely took more than 120 s on nova and in this sprint, and coordinators' shells backgrounded it. Run r-20261002T063243409702-crew-complete-time-is-attributed profiled one real promotion with cProfile. The setup was a scratch repository of 3,637 tracked files and 205 plan HTML files, carrying 131 registered worktrees, on node-local disk. Report: <code>~/.config/reckon/crew/reports/reckon/complete-profile.md</code>.</p><p>Wall time was <b>81.9 s</b>, and 202 s under the worker git shim. The per-worktree boundary scan the reports suspected is only <b>1.6%</b> (134 tree reads, 1.3 s). Three repository-wide reads spend the rest, and none of them depends on what the run changed:</p><ul><li><b>Clone scan, 49%.</b> <code>promotion_clone_matches</code> (reckon/clones.py:278) fingerprints every function in the repository (<code>functions_in</code>, :117; 951 calls; 5.3 M <code>ast.walk</code> nodes) on every promotion.</li><li><b>Plan metadata, 35%.</b> <code>_plan_html.read_state</code> (reckon/_plan_html.py:482) parses all 205 plan and doc files, mainly through <code>metadata_index._plan_record</code> (reckon/metadata_index.py:411).</li><li><b>Fleet state, 22%.</b> <code>_fleet_state_reading</code> (reckon/crew/promotion.py:5971) runs a full <code>runs.drain</code> (reckon/crew/runs.py:1069) to stamp a reading on the row.</li></ul><p><b>Done when</b> each read is bounded by what the promotion consumes:</p><ul><li>The clone scan fingerprints only the functions the promoted diff touches, or reads cached per-revision fingerprints.</li><li>The metadata index reuses a digest-keyed cache for files whose bytes are unchanged.</li><li>The fleet-state reading takes only the fields the row records.</li></ul><p>Each is its own node with a test that the bounded read gives the same answer as the full read on a synthetic repository, and a negative control. The measure is the same profile repeated at the merged head, stating wall time and each site's share beside the 81.9 s baseline.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-acpewio-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-24" data-recommends-skill="/reckon-build" data-resolved-at="2026-09-28T14:44:15+00:00" data-resolved-by="s21-coord">
@@ -1112,10 +754,11 @@
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner</pre>
     <p class="r-fu-outcome">Partly done, then superseded by f-acpewio-remaining-after-audit. Per the S21 currency audit at 76e1bf93, §2 is done (796583a4, 5194657a; test_follower_checks_its_owner.py 5 passed and test_orphaned_follower_releases.py 2 passed). §4 is done (c676b011; test_promotion_releases_its_worktree.py 4 passed), and so is §5 (d026717e; test_mcp_reads_have_deadlines.py 8 passed). §3, §6, §7, §9, §10's own gate and §11 remain.</p>
     </article>
-<article class="r-fu" data-id="f-20260924T192222968622" data-status="open" data-written-by="reckon-edit" data-written-at="2026-09-24" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-20260924T192222968622" data-status="resolved" data-written-by="reckon-edit" data-written-at="2026-09-24" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-02T01:39:29+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land the producer lease, then make a live producer incremental</h4>
     <div class="r-fu-body"><p><strong>Order.</strong> First §3, the producer lease. It is not landed: its review promoted as not-run at <code>cdc62a25</code>, and <code>tests/test_producer_holds_a_lease.py</code> does not exist. Then §11, the incremental stream reads, stat-gated snapshots, git keyed by head, and the published snapshot. Both edit <code>reckon/crew/recovery.py</code>, so they run in sequence. §4's git scoping touches disjoint files and can run beside either. §11's landing record states the fleet-node <code>pidstat</code> reading of the producer before and after, over a nine-worker wave. The before figure is 60–66% of a core.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §3</pre>
+    <p class="r-fu-outcome">§3's lease landed as three nodes: producer-holds-a-lease (320061aff), registration-survives-an-unlink (149783489) with its superseded-producer corrective (1e683b3d7), and idle-producer-backs-off (2f0b3a088). §11 landed as producer-reads-only-what-changed (bebae5a7a) with a-rewritten-stream-is-read-from-zero (fa9d13176). §11's fleet-node pidstat before-and-after measure waits for a cycle of the shared producer onto that code. §3's lease corrective waits for reckon/crew/runs.py, which a peer's blocked run claims.</p>
     </article>
 <article class="r-fu" data-id="f-acpewio-first-commit-gone" data-status="resolved" data-written-by="reckon-build s21-coord" data-written-at="2026-09-24T19:42:00Z" data-recommends-skill="" data-resolved-at="2026-09-30T19:26:47+00:00" data-resolved-by="s21-1c">
     <h4 class="r-fu-title">A live worker reads as gone right after its first commit</h4>
@@ -1129,15 +772,17 @@
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §4</pre>
     <p class="r-fu-outcome">Landed as promotion-releases-its-worktree on codex-luna (c676b011, ed020ee5, c35d6f7e, 5069a24d, ad2cc9ad, b08b27ca), merged at f45260c4. The dsv4.1 review scored 86 and found the release unreachable for runs holding a live session, plus a dropped failed-promotion signal; both were repaired and the re-review scored 95. Three legacy retention tests were updated to the new rule, with no added failures.</p>
     </article>
-<article class="r-fu" data-id="f-acpewio-worker-retired-at-acceptance" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §4" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acpewio-worker-retired-at-acceptance" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §4" data-resolved-at="2026-10-02T02:58:06+00:00" data-resolved-by="s21-fin coordinator">
     <h4 class="r-fu-title">A worker is retired once its work is accepted</h4>
     <div class="r-fu-body"><p>Lead directive, 2026-09-25: no slot limit, and a worker is removed once its work is accepted (reviewed and promoted). The dispatch half is new-work-gets-a-new-worker §4 (S22): each no-member dispatch gets a disposable identity recorded on the run, and nothing is registered in the committed roster. This node is the acceptance half, in <code>reckon/crew/promotion.py</code>. It runs after S22's ledger §1b and its never-amend corrective, so the three changes to that file land one after another. <b>Measured defect:</b> today's workers kept their process alive 1–2 h after writing a terminal manifest. For example, the review of the design scout and the review-node-utility review were still running long after their final records, holding their member slot the whole time. <b>The change:</b> promotion's release step deletes the run's disposable identity, and it signals and reaps any process group still alive for that run, printing what it stopped. Separately, a worker whose manifest turns terminal exits within a bounded grace period without waiting for promotion. That second part may sit in the supervisor; if so, the node names the file. <b>Done when</b> a test drives a stub run through terminal manifest, then promotion, and asserts four things: the process has exited within the grace period after the terminal manifest (measured from the manifest's terminal write to process exit, not only the state at promotion); the disposable identity is gone after promotion; an explicitly named member is not deleted; and a blocked run's process and identity are kept for resume. The negative control skips the release step's identity deletion, and the disposable-identity case then fails.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §4</pre>
+    <p class="r-fu-outcome">Both halves landed. The acceptance half is promotion-retires-a-disposable-identity: release deletes the disposable identity, reaps a live process group, keeps a named member, and keeps a blocked run for resume. The grace half is a-terminal-worker-exits-within-its-grace (merge 03b124f52, review 96): the supervisor ends a worker whose complete or failed manifest has stood for the grace, measured from the manifest's write, and only a write after the attempt's baseline counts. Evidence anchor s10-grace-callers-departure. The deadline-clearing refinement, a-withdrawn-delivery-clears-the-grace, is in review.</p>
     </article>
-<article class="r-fu" data-id="f-acpewio-phase-writer" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acpewio-phase-writer" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="2026-10-02T01:39:29+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A pointer&#x27;s stored phase advances past starting</h4>
     <div class="r-fu-body"><p>Finding 2 of the review (85) of a-live-run-never-reads-dead, merged at 40e24067. The node derives an effective phase for classifier consumers, but nothing rewrites the stored <code>pointer["phase"]</code>. At review time 26 of 41 live pointers still read <code>starting</code>, and every other reader of the pointer (the follower's re-arm replay, the MCP views, peers' tooling) still sees the pre-spawn label. The writer side is in <code>reckon/crew/dispatch.py</code>, where the supervisor observes worker.json and the first stream record; it writes <code>working</code> when the worker starts, and the terminal phase comes from the manifest or exit record. Done when a test drives a stub run from launch, through its first stream record, to a terminal manifest, and asserts that the stored pointer phase reads starting, then working, then its terminal phase. The negative control removes the writer, and the stored phase stays starting. It runs on dispatch.py once shared claims are live, beside new-work §4. Deployment note: the fleet's long-lived producer (pid 853019, armed 2026-09-24 19:00Z) runs the code it was started with, so this fix and 40e24067 only show on the follower after the producer restarts on the merged head.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
+    <p class="r-fu-outcome">done — no followup: stored-phase-advances-past-starting (merge 96fb7fd51) makes the supervisor write starting, then working, then terminal. stored-phase-covers-a-failed-spawn (60d490c2e) publishes launch-failed on both pre-spawn exits. observe-keeps-a-terminal-stored-phase (c7069fe9b) stops a late observe() fold from reopening a terminal phase.</p>
     </article>
 <article class="r-fu" data-id="f-acpewio-producer-shares-the-verdict" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-25" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="2026-09-25T14:25:06+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The watcher producer uses the classifier&#x27;s liveness verdict</h4>
@@ -1163,20 +808,23 @@
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
     <p class="r-fu-outcome">Landed at merge 92de3b39 (commits 88bd5e41, 05548a14, review 93). discard() now writes a discard record in the run directory before removing the live pointer, and the departure rule reads it as discarded, distinct from withdrawn, while a ledger-recorded promotion still reads promoted. The ticker has a discarded hue in both themes. The review found two defects. The node's new signature in promotion.py and its call in recovery.py are not ruff-format-stable, two formatting hunks against the repository's clean-format target. And the recorded gate omitted the ticker suites, which the reviewer ran green (37 and 70). The formatting is left for the next node that touches promotion.py to fix.</p>
     </article>
-<article class="r-fu" data-id="f-acpewio-complete-refuses-an-open-merge" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26T14:40:00+02:00" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acpewio-complete-refuses-an-open-merge" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-26T14:40:00+02:00" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="2026-10-02T01:39:29+00:00" data-resolved-by="">
     <h4 class="r-fu-title">crew complete refuses while the checkout has a merge open</h4>
     <div class="r-fu-body"><p>On 2026-09-26 at 14:31, s21's <code>crew complete</code> of a review run committed <code>8dd34128</code> and <code>1b652060</code> into the shared checkout while s23 had a merge open there (MERGE_HEAD <code>df7e400d</code>, one file unmerged). Only the promotion's own paths were committed, and s23's staged files were not swept in, so no harm resulted. But a promotion should not write into a checkout mid-merge: it changes the merge's first parent under another session, and a whole-index commit would have taken the peer's staged work. <code>complete</code> should refuse while <code>.git/MERGE_HEAD</code>, or a rebase or cherry-pick state, exists, naming the state, so the coordinator retries after the peer concludes.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
+    <p class="r-fu-outcome">done — no followup: crew complete refuses, before any store is written, while MERGE_HEAD, a rebase state, CHERRY_PICK_HEAD (complete-refuses-an-open-merge, 789008c63) or REVERT_HEAD (complete-refuses-an-open-revert, ee2d6e1f4) is open.</p>
     </article>
-<article class="r-fu" data-id="f-acpewio-predecessor-commits-reach-the-ledger" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26T14:40:00+02:00" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acpewio-predecessor-commits-reach-the-ledger" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-26T14:40:00+02:00" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="2026-10-02T01:39:29+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A predecessor&#x27;s commits carried by a follow-on reach the ledger</h4>
     <div class="r-fu-body"><p>When a run is discarded to free its claim and a follow-on node is dispatched on its head, the predecessor's commits reach main through the follow-on's merge. They have no ledger row, because the predecessor was never promoted and <code>complete</code> refuses to cite commits at or before the follow-on's base. Measured three times on 2026-09-26: context-estimate-reads-declared-files (<code>318ec2b6</code>, carried by context-estimate-tests-assert-fixed-figures), fence-never-grants-a-main-git-dir (<code>74e6c86d</code> and <code>7f68e6cc</code>, carried by a-fence-refuses-a-protected-worktree), and s23's first unmanaged-producer node (<code>75007b74</code> and <code>7ddc2a4b</code>). The ledger then undercounts landed work and loses its provenance. A follow-on should record the predecessor's commits it carries, or a discarded run whose commits later land should be promotable after the fact.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
+    <p class="r-fu-outcome">done — no followup: discarded-run-promotes-after-its-commits-land (04370843a) promotes a discarded run whose commit reached main through a follow-on, from its run directory. The test shows one row citing the run's own commit, with the follow-on's row unchanged.</p>
     </article>
-<article class="r-fu" data-id="f-acpewio-nongit-test-stays-outside-a-repo" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26T16:15:00+02:00" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acpewio-nongit-test-stays-outside-a-repo" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-26T16:15:00+02:00" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner §10" data-resolved-at="2026-10-02T01:39:29+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The non-git promotion test cannot commit into an enclosing repository</h4>
     <div class="r-fu-body"><p><code>tests/test_crew_promotion.py::test_a_checkout_that_cannot_commit_refuses_before_any_store_is_written</code> (near line 1623) builds a directory it treats as a non-git checkout, <code>tmp_path / 'nongit'</code>, and drives a real promotion there. Git discovers a repository by walking up, so when pytest's basetemp sits inside a repository, the promotion finds the enclosing repo and commits into it. On 2026-09-26 complete-refuses-a-live-run ran pytest with <code>--basetemp=bt-after</code> inside its worktree, and the test committed a fake promote and release (<code>ca3d7ca3</code>, <code>aeabb778</code>) with <code>bt-after/</code> scratch into the worker's branch. Its review caught it before merge. Run with a basetemp inside the main checkout, it would commit into main. The test should set <code>GIT_CEILING_DIRECTORIES</code> to the parent of its non-git root, or assert that <code>git rev-parse</code> fails there, so it can never reach an enclosing repository. Worker briefs should also say never to put a basetemp inside a repository.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
+    <p class="r-fu-outcome">done — no followup: nongit-promotion-test-stays-outside-a-repo (e8182a53d) pins GIT_CEILING_DIRECTORIES and asserts that git finds no work tree at the non-git root. Under a basetemp inside a scratch repository, that repository's HEAD is unchanged.</p>
     </article>
 <article class="r-fu" data-id="f-acpewio-discard-releases-a-clean-worktree" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner" data-resolved-at="2026-09-26T16:52:38+00:00" data-resolved-by="">
     <h4 class="r-fu-title">crew discard releases a clean worktree, so a redispatch of the node is not refused</h4>
@@ -1196,25 +844,29 @@
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner attribute-a-sigterm-to-its-sender</pre>
     <p class="r-fu-outcome">Superseded by f-acpewio-every-signal-leaves-a-sender-record. The investigation fleet-spawn-and-the-cancelled-step (r-20260926T185215633094) showed launcher fields alone cannot attribute a kill. The fleet spawn route never ran (0 spawned.json against 656 supervisor.json), the cancelled step came through the placement route, and no signalling path leaves a sender-side record.</p>
     </article>
-<article class="r-fu" data-id="f-acpewio-every-signal-leaves-a-sender-record" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acpewio-every-signal-leaves-a-sender-record" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-26" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner" data-resolved-at="2026-10-02T02:58:06+00:00" data-resolved-by="s21-fin coordinator">
     <h4 class="r-fu-title">Every signalling path records its sender in the target run before it signals</h4>
     <div class="r-fu-body"><p>On 2026-09-26 several runs were killed, and none of the kills could be attributed. Two reflex-launched reviews in s21-coord ended by SIGTERM mid-turn (16:26:58Z, 17:25:12Z). Two lingering, finished reviews in s23-coord exited 143 (13:41:35Z, 14:08:40Z). imas-ambix's srun step 1276262.103 was cancelled, recorded by sacct as <q>CANCELLED by 39486</q>, 0:9. The investigation fleet-spawn-and-the-cancelled-step ruled out the fleet spawn route (it never ran in the allocation) and the unwatch path (by ordering). Nothing can name the sender, because no path that signals a run writes anything before it does. The candidates are <code>routing._signal_process_group</code> (routing.py, reached via <code>signal_worker</code> and <code>dispatch.terminate</code>), <code>recovery.unwatch</code>, the budget watchdog, completion's release, dispatch rollback and <code>change_lane</code>. Done when every one of them writes <code>{sender pid, sender argv[0], target pid, target pgid, reason, time}</code> into the target run's directory before it signals. A test drives <code>_signal_process_group</code> against a synthesised live run in tmp_path and asserts the record exists and names the caller's reason. The negative control removes the write, and the record assertion must fail. With it in place, the next SIGTERM or SIGKILL of any run is attributed from that run's own directory.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner every-signal-leaves-a-sender-record</pre>
+    <p class="r-fu-outcome">Every signalling path writes a sender record into the target run's directory before it signals: every-signal-leaves-a-sender-record, then unwatch-leaves-a-sender-record. Each record carries its outcome (a-refused-signal-records-its-refusal), and every production caller passes its run directory (every-signal-caller-names-its-run-directory, merge 61536bc56), so a refused signal is attributable too. Evidence anchors s10-sender-record-follow-ons and s10-grace-callers-departure. The duplicate attribution line and unwatch's outcome go to a-signal-leaves-one-attribution-and-one-outcome, which is in flight.</p>
     </article>
-<article class="r-fu" data-id="f-acpewio-unknown-departure-word" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T13:40:00Z" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acpewio-unknown-departure-word" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="s22-coord" data-written-at="2026-09-28T13:40:00Z" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner" data-resolved-at="2026-10-02T02:58:06+00:00" data-resolved-by="s21-fin coordinator">
     <h4 class="r-fu-title">A departure with no ledger evidence: the code says withdrawn, a test still says promoted</h4>
     <div class="r-fu-body"><p>tests/test_a_live_run_never_reads_dead.py::test_a_departure_with_no_ledger_evidence_keeps_the_promoted_word has failed on main since ddf4509f (2026-09-25, node a-discard-never-reads-promoted). It asserts promoted at :581, and recovery.py:5599 now returns withdrawn. That commit deliberately made a departure with no resolvable project fail closed to withdrawn ("unknown is never promoted"). The test's docstring argues the opposite ("no reader is told a run was withdrawn on no evidence"). An s22 attribution run measured the flip on both sides of ddf4509f: 1 passed before, 1 failed at it. Neither word is honest about an unknown departure. Decide the contract: either update the test to the fail-closed rule, or give an unknown departure its own word, which neither promises nor withdraws. Then make the test assert that decision.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner</pre>
+    <p class="r-fu-outcome">Decided 2026-10-01: an unknown departure gets its own word. Landed as an-unknown-departure-reads-departed (merge 39d0f58a0): departed when no ledger evidence resolves and no discard marker exists, discarded from a marker, promoted from a recorded row, and withdrawn when a ledger resolves and records no row. The renamed test asserts departed, and the suite's departure-word id passes. Evidence anchor s10-grace-callers-departure.</p>
     </article>
-<article class="r-fu" data-id="f-acpewio-remaining-after-audit" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-28T14:55:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acpewio-remaining-after-audit" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-28T14:55:00Z" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-02T01:39:29+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Producer lease first, then census, pause hold, reconcile gate, incremental reads and skill rules</h4>
     <div class="r-fu-body"><p>The S21 currency audit at <code>76e1bf93</code> (report <code>~/.config/reckon/crew/reports/reckon/s21-audit-dispatch.{json,md}</code>) leaves these open:</p><ul><li><b>§3: producer lease.</b> No lease mechanism exists anywhere in <code>reckon/</code>, and <code>tests/test_producer_holds_a_lease.py</code> is absent. §11 follows §3.</li><li><b>§6: crew census of orphans.</b> <code>tests/test_crew_census.py</code> is absent, and <code>death_census.py</code> is a different census.</li><li><b>§9: dispatch holds while the lane is paused.</b> <code>tests/test_dispatch_holds_while_the_lane_is_paused.py</code> is absent. <code>lane_document.py</code> models a paused lane, but no hold path exists.</li><li><b>§10: its own gate.</b> Five sibling cases landed and pass, but <code>tests/test_a_run_can_always_be_reconciled.py</code> is absent. Write that gate, or re-point it at the five sibling files.</li><li><b>§11: incremental producer reads,</b> after §3.</li><li><b>§7: skill rules</b>, now named at reckon-build.</li></ul><p>§3, §6, §9 and §7 touch disjoint files. Open side followups: worker-retired-at-acceptance, phase-writer, complete-refuses-an-open-merge, predecessor-commits-reach-the-ledger, nongit-test-stays-outside-a-repo and every-signal-leaves-a-sender-record.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner</pre>
+    <p class="r-fu-outcome">S21 worked the audit's list on 2026-10-01 and 2026-10-02. §3 lease: landed, three nodes. §7 skill rules: landed and collapsed. §10 gate: present. §11 incremental reads: landed. §6 census: deferred out of S21 by the operator. §9 is declared done. Of the side followups, phase-writer, complete-refuses-an-open-merge, predecessor-commits, nongit-test, reflex-detach and already-recorded-comment are resolved. worker-retired-at-acceptance and every-signal-leaves-a-sender-record have their last nodes running, and unknown-departure-word waits on a peer's claim on runs.py.</p>
     </article>
-<article class="r-fu" data-id="f-acpewio-reflex-dispatch-detaches-from-its-follower" data-status="open" data-written-by="s21-coord" data-written-at="2026-09-29T07:40:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acpewio-reflex-dispatch-detaches-from-its-follower" data-status="resolved" data-written-by="s21-coord" data-written-at="2026-09-29T07:40:00Z" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-02T01:39:29+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A review the follower&#x27;s reflex launches does not die when that follower&#x27;s Monitor is stopped</h4>
     <div class="r-fu-body"><p>This has now been measured in two sessions. In s21-coord, four reflex-launched reviews (on 2026-09-26 and 2026-09-28) each died by SIGTERM at the second their follower's Monitor expired. On 2026-09-29, imas-ambix-67's reflex review r-20260929T071650132500 was dispatched at 07:17:04Z and SIGTERMed at 07:19:55Z, when its follower's 30-minute Monitor expired. Hand-dispatched reviews survive, because their supervisor detaches. s22-coord measured the distinguishing fact: a follower that exits on its own <code>--lifetime</code> leaves its reflex reviews alive, but a Monitor stop or expiry takes them down. So the reflex launches its supervisor inside the follower's process tree, and the harness signals that tree.</p><p>Done when a reflex-launched review's supervisor is detached from the follower exactly as a hand dispatch is, with its own session and ppid 1. Alternatively, once RECKON_FLEET_SPAWN is live, it goes through the fleet spawn lane. A test SIGTERMs a follower's whole process group after its reflex has launched a review, and asserts the review's supervisor and worker survive. A negative control launches the reflex review in-tree and shows it dies. The workaround until then is to arm followers with <code>--lifetime</code> shorter than the Monitor's timeout.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner</pre>
+    <p class="r-fu-outcome">done — no followup: reflex-review-outlives-its-follower (505735d94) sends SIGTERM to a real follower's process group after its reflex has launched a review, and asserts the review supervisor survives in its own session. The mechanism is 149d3c29a.</p>
     </article>
 <article class="r-fu" data-id="f-acpewio-landing-comment-apostrophe" data-status="resolved" data-written-by="s21-1c" data-written-at="2026-10-01T05:12:00Z" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner" data-resolved-at="2026-10-01T07:25:39+00:00" data-resolved-by="s21-1c">
     <h4 class="r-fu-title">A landing narrative with an apostrophe cannot be re-promoted after its landing commit fails</h4>
@@ -1222,10 +874,11 @@
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
     <p class="r-fu-outcome">Fixed at merge a8957c20e (run r-20261001T062920607606, reviewed at 95, verify-gate pending at main). A re-promotion after a failed landing commit now accepts a stored landing comment whose unescaped text equals the narrative. Its negative control, the escaped-against-unescaped comparison restored, refuses the apostrophe case under pytest. The field test came the same day: this run's own first promotion lost its landing commit to a peer's index lock, and the re-promotion, running this code, found the comment already recorded and promoted. done — the one gap that remained is filed as f-acpewio-already-recorded-comment-stays-uncommitted.</p>
     </article>
-<article class="r-fu" data-id="f-acpewio-already-recorded-comment-stays-uncommitted" data-status="open" data-written-by="s21-1c" data-written-at="2026-10-01T07:25:00Z" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-acpewio-already-recorded-comment-stays-uncommitted" data-status="resolved" data-written-by="s21-1c" data-written-at="2026-10-01T07:25:00Z" data-recommends-skill="/reckon-build a-crew-process-ends-with-its-owner" data-resolved-at="2026-10-02T01:39:29+00:00" data-resolved-by="">
     <h4 class="r-fu-title">A re-promotion that finds its landing comment already recorded leaves it uncommitted</h4>
     <div class="r-fu-body"><p>Measured 2026-10-01 promoting r-20261001T062920607606-a-run-can-always-be-reconciled. The first <code>crew complete</code> wrote the landing comment into the plan HTML, and its landing commit then failed on a peer's <code>.git/index.lock</code>. The re-promotion found the comment already recorded and returned <code>already_recorded: true</code>. It wrote the ledger row and released the pointer, but it never committed the plan file, so the comment stayed a dirty working-tree edit in the shared checkout until the coordinator committed it by hand (684f80218). Done when a re-promotion that finds its landing comment already recorded, with the plan file differing from HEAD, includes that file in its landing commit. A case drives the failed-commit path and asserts the plan file is clean at HEAD after the re-promotion. The negative control, that file left out of the landing commit, leaves it dirty and fails the case.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-crew-process-ends-with-its-owner §10</pre>
+    <p class="r-fu-outcome">done — no followup: repromotion-commits-its-recorded-comment (39ac930c7) carries the plan file into the landing commit whenever it differs from HEAD. landing-guard-tolerates-the-stores-own-writes (433a63d2a) then refuses only an unrelated edit, judged on parsed plan state, before any store is written.</p>
     </article>
 <article class="r-fu" data-id="f-acpewio-ledger-row-names-its-crew-session" data-status="resolved" data-written-by="s21-1c" data-written-at="2026-10-01T13:55:00Z" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-01T15:39:32+00:00" data-resolved-by="s21-1c">
     <h4 class="r-fu-title">A promoted ledger row names the crew session that dispatched it</h4>
@@ -1298,6 +951,9 @@
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260926T160521199125-review-of-discard-releases-a-clean-worktree" data-who="reckon-build" data-when="2026-09-26T16:59:15.756Z">
     <div class="r-comment-body"><p>review stored at head 5c867c25, total 92; a review is not gated by a suite</p></div>
 </div>
+<div class="r-comment" data-section="_top" data-id="c-20261002T021008503435" data-who="s21-fin coordinator" data-when="2026-10-02">
+    <div class="r-comment-body">§10 sender-record follow-ons: unwatch-leaves-a-sender-record and a-refused-signal-records-its-refusal landed (evidence anchor s10-sender-record-follow-ons). The refused outcome is not yet reachable in production, so every-signal-caller-names-its-run-directory is in flight to close it. a-terminal-worker-exits-within-its-grace was resumed before review on two defects I found reading the diff. First, the supervisor ignores the pointer's manifest_baseline_mtime_ns, so a resumed run whose earlier attempt wrote complete would have its new worker signalled on the first poll. Second, it reparses manifest.md on GPFS every 0.25 s. f-acpewio-worker-retired-at-acceptance and f-acpewio-every-signal-leaves-a-sender-record stay open until those two nodes land.</div>
+</div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260924T081323251327-review-of-the-pause-hold-contract" data-who="reckon-ship" data-when="2026-09-24T08:26:05.983Z">
     <div class="r-comment-body"><p>read-back of section 9 found F1 blocking and F3 to F5 material; all applied at f4291476 with imas-ambix-af's two gate guards</p></div>
 </div>
@@ -1346,6 +1002,48 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261001T201628120600-review-of-producer-holds-a-lease" data-who="reckon-build" data-when="2026-10-01T20:42:28.978Z">
     <div class="r-comment-body"><p>review of r-20261001T191601352899-producer-holds-a-lease stored at the review store: total 81 over 5 dimensions (goal_fidelity 18, evidence 15, scope_discipline 17, durability 14, fit 17), added_failure_count 0 at head d39b7e8be over base 2c49c0457, three follow-on findings and no blocker</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261001T211026575764-registration-survives-an-unlink" data-who="reckon-build" data-when="2026-10-01T22:14:03.370Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/a-crew-process-ends-with-its-owner/registration-survives-an-unlink.html</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261001T221437532957-review-of-registration-survives-an-unlink" data-who="reckon-build" data-when="2026-10-01T22:37:57.430Z">
+    <div class="r-comment-body"><p>stored a parsed five-dimension review of run r-20261001T211026575764-registration-survives-an-unlink at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261001T211026575764-registration-survives-an-unlink.json and its revision-keyed twin .at-6ed195be4b31c594ea7beebcaed914fa6683e3f4.json; reviewed_base_sha 60b808f5f3b12faf446c1c356c3da8c5fb830e92, reviewed_head_sha 6ed195be4b31c594ea7beebcaed914fa6683e3f4, scores {goal_fidelity 18, evidence 13, scope_discipline 17, durability 15, fit 17}, total 80, added_failure_count 0</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261001T225558094476-a-superseded-producer-ends" data-who="reckon-build" data-when="2026-10-01T23:26:54.267Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-superseded-producer-ends.html</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261001T232822197811-review-of-a-superseded-producer-ends" data-who="reckon-build" data-when="2026-10-01T23:48:17.083Z">
+    <div class="r-comment-body"><p>stored a parsed five-dimension review of run r-20261001T225558094476-a-superseded-producer-ends at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261001T225558094476-a-superseded-producer-ends.json and its revision-keyed twin .at-0b109d9fbeb54b0e6001d07a1531c19103c51b97.json; reviewed_base_sha df6a40b5c8e077c9f74517ff52f1858bac2c6011, reviewed_head_sha 0b109d9fbeb54b0e6001d07a1531c19103c51b97, scores {goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 19}, total 98, added_failure_count 0</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261001T225527233219-idle-producer-backs-off" data-who="reckon-build" data-when="2026-10-01T23:34:08.904Z">
+    <div class="r-comment-body"><p>An idle producer doubles its recorded poll_interval_seconds from the armed base to a 30 s cap on each wake that sees no live run pointer, returns to the base on the first wake that sees one, and never sleeps past the lease remainder; in a temporary RECKON_HOME the recorded interval runs 1, 2, 4, 8, 16, 30 then back to 1.0, and with RECKON_PRODUCER_LEASE_SECONDS=3 a backed-off producer still exits within a second of the lapse.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261001T233417850426-review-of-idle-producer-backs-off" data-who="reckon-build" data-when="2026-10-01T23:52:13.305Z">
+    <div class="r-comment-body"><p>Independent review of idle-producer-backs-off stored: total 93 over five dimensions (goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 19), no blocking findings, one follow-on on the negative-control log's test revision, added_failure_count 0 at head 06873739f over base df6a40b5c.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261002T033230658134-review-of-lease-renewal-is-counted-by-its-writes" data-who="reckon-build" data-when="2026-10-02T03:42:23.484Z">
+    <div class="r-comment-body"><p>review of r-20261002T032210779037-lease-renewal-is-counted-by-its-writes stored — total 91 over 5 dimensions (goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 19), reviewed_base_sha 3b883745b reviewed_head_sha 05c81f326, added_failure_count 0, one follow-on finding: the node's negative control fails on the shared is_alive assertion rather than the tightened renewals&gt;=5 count, so it does not isolate the counting change</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261002T032210779037-lease-renewal-is-counted-by-its-writes" data-who="reckon-build" data-when="2026-10-02T03:48:27.223Z">
+    <div class="r-comment-body"><p>lease renewal is counted by the write it lands — renewal case reads lease_renewed_at back after each call and counts only an advanced instant, so its renewals &gt;= 5 assertion measures writes; base 3b883745b 3 passed EXIT=0, head 363c96b38 3 passed EXIT=0, zero added failures; fragment docs/evidence/fragments/a-crew-process-ends-with-its-owner/lease-renewal-is-counted-by-its-writes.html</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261002T034900673621-review-of-lease-renewal-is-counted-by-its-writes" data-who="reckon-build" data-when="2026-10-02T03:56:28.904Z">
+    <div class="r-comment-body"><p>review of r-20261002T032210779037-lease-renewal-is-counted-by-its-writes at head 7e4066af6 stored as a parsed five-dimension record (goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 19; total 92), reviewed_base_sha 3b883745b, reviewed_head_sha 7e4066af6, added_failure_count 0; one follow-on finding on the non-isolating negative control</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261002T074643034614-review-of-stale-producer-warning-waits-for-its-reload" data-who="reckon-build" data-when="2026-10-02T08:06:30.868Z">
+    <div class="r-comment-body"><p>review stored for r-20261002T062817109981 at reviews/reckon/&lt;run&gt;.json and &lt;run&gt;.at-3213f8dd64f8e6f287fbd5834408766c48475088.json — status parsed, scores goal_fidelity 19/evidence 18/scope_discipline 20/durability 19/fit 19, total 95, reviewed_base_sha e89a94bd reviewed_head_sha 3213f8dd, added_failure_count 0</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261002T062817109981-stale-producer-warning-waits-for-its-reload" data-who="reckon-build" data-when="2026-10-02T08:37:09.914Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/a-crew-process-ends-with-its-owner/stale-producer-warning-waits-for-its-reload.html — an in-place-reload stamp mismatch is deferred for a reload window derived from the import-proof timeout plus the producer's idle poll interval cap plus a producer margin, keyed on the image having reloaded in place; gate 5 passed, arms 8/8 zero added, three negative controls red</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261002T083744406205-review-of-stale-producer-warning-waits-for-its-reload" data-who="reckon-build" data-when="2026-10-02T08:59:47.926Z">
+    <div class="r-comment-body"><p>review of r-20261002T062817109981 stored at reviews/reckon/&lt;run&gt;.json and .at-a1146a6e578dc2b01081e47f4b3e03ed72132f9c.json — parsed record, scores goal_fidelity 19/evidence 18/scope_discipline 20/durability 18/fit 19, total 94, reviewed_base_sha e89a94bd reviewed_head_sha a1146a6e, added_failure_count 0; both prior-review follow-ons at head 3213f8dd are resolved, three new follow-ons raised</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261002T090303908712-stale-warning-wiring-is-tested-end-to-end" data-who="reckon-build" data-when="2026-10-02T09:26:01.971Z">
+    <div class="r-comment-body"><p>stale-warning-wiring-is-tested-end-to-end adds two cases to tests/test_stale_producer_warning_waits_for_its_reload.py: the reloader's own environment hand-off, adopted into crew_follow's computation, defers the mismatch; a fresh arming reports it at once. Gate 12 passed (base 10, zero added failures); declared mutation (read reloaded_in_place after the pop) fails the reload case only. Fragment: docs/evidence/fragments/a-crew-process-ends-with-its-owner/stale-warning-wiring-is-tested-end-to-end.html</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261002T092727403582-review-of-stale-warning-wiring-is-tested-end-to-end" data-who="reckon-build" data-when="2026-10-02T09:58:05.361Z">
+    <div class="r-comment-body"><p>review of r-20261002T090303908712-stale-warning-wiring-is-tested-end-to-end stored — parsed, scores goal_fidelity 20 / evidence 19 / scope_discipline 20 / durability 18 / fit 20, total 97, reviewed_base_sha 62ff7422 reviewed_head_sha 29f90192b, added_failure_count 0, one follow-on (the fresh-arming case's falsification is structural only).</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260924T123648020169-consumers-reach-into-reckon-internals" data-who="reckon-ship" data-when="2026-09-24T13:14:17.145Z">
     <div class="r-comment-body"><p>inventory of consumers reaching into reckon internals across five repositories: 1,537 config-home path lines, 151 crew CLI lines, 91 lane.json lines; recorded as consumers-read-reckon-through-verbs</p></div>
 </div>
@@ -1369,6 +1067,12 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260925T104257218002-re-review-of-promotion-releases-its-worktree" data-who="reckon-build" data-when="2026-09-25T11:25:46.320Z">
     <div class="r-comment-body"><p>review stored; findings routed to the implementer's repair round</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261002T063243409702-crew-complete-time-is-attributed" data-who="reckon-build" data-when="2026-10-02T07:57:59.551Z">
+    <div class="r-comment-body"><p>One crew complete (unfenced, 131 registered worktrees) profiled under cProfile at 81.86 s wall, exit 0: the per-worktree boundary+audit scan is 1.31 s of that (1.6%, 134 _tree_state calls), while repository-wide analyses dominate — clone scan 40.2 s (49%), document metadata index 29.0 s over 205 reads (35%), fleet-state drain 17.9 s (22%); report complete-profile.md names each hot path with file:line and four bounding follow-ons.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261002T081042567920-review-of-crew-complete-time-is-attributed" data-who="reckon-build" data-when="2026-10-02T08:31:21.565Z">
+    <div class="r-comment-body"><p>Review stored for r-20261002T063243409702-crew-complete-time-is-attributed: 90/100 (goal_fidelity 19, evidence 18, durability 16, fit 18, scope_discipline 19), one follow-on recorded for the unsupported ~40x git-shim multiplier and one for the node-local-only raw profile; the read-only attribution is sound and every headline figure reconciles with the run's own summary-unfenced.json.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-20260925T092500-liveness-gate" data-who="reckon-build s21-coord" data-when="2026-09-25T07:25:00Z">
     <div class="r-comment-body">Gate for a wider fleet release (lead, 2026-09-25): no live run reads as dead or finished. One node on reckon/crew/recovery.py, dispatched when S22's tail-window run frees the file, covers three misreads that share the classifier. (1) f-acpewio-first-commit-gone, and its duplicate f-asrswtwl-live-worker-read-dead on a-stalled-row-says-whether-the-worker-lives: a live worker reads 'process gone, worktree carries N commits' after its first commit. It hit every implement run on 2026-09-24/25 across S21, S22 and S23, clive and codex alike. At 09:13–09:17 the producer (pid 853019, same host as the workers) classified two live workers as dead-pid-with-retained-work while crew(view=live) read them alive. The interruption branch fires only once commits_beyond_base is nonzero and the stored or probed liveness reads false. So the defect is in how the producer derives process_alive for a run whose pointer pid is the supervisor while the worker's pid lives in worker.json; the node finds which. (2) f-adrwiw-launch-flicker: a run whose supervisor is alive but has not yet spawned (no worker.json) reads 'abandoned'. (3) A resumed run inherits its previous manifest's complete status and reads 'unpromoted' while the resume process is alive and working. Seen on every S21 resume. Done when one test module drives the producer's classification over four stub runs and asserts none reads abandoned, dead or unpromoted: a live supervisor with no worker.json yet; a live worker with commits beyond base; a resumed run whose resume process is alive and whose old manifest reads complete; and a codex run whose pid is a wrapper process. A genuinely dead worker with commits still reads dead-pid-with-retained-work. A negative control per case is executed and logged.</div>
@@ -1475,6 +1179,159 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261001T200725784182-review-of-reflex-review-outlives-its-follower" data-who="reckon-build" data-when="2026-10-01T20:30:46.308Z">
     <div class="r-comment-body"><p>attached an independent review of r-20261001T191814388880-reflex-review-outlives-its-follower at head 168455b582; stored record status=parsed, all 6 checklist items present, scores goal_fidelity 19 / evidence 18 / scope_discipline 19 / durability 18 / fit 18, total 92, reviewed_base_sha 2c49c045748 and reviewed_head_sha 168455b582, added_failure_count 0 derived from the reviewed run's armed baseline_suite and after_suite gate logs; no blocking and no follow-on findings.</p></div>
 </div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261001T225731677612-complete-refuses-an-open-revert" data-who="reckon-build" data-when="2026-10-01T23:07:56.300Z">
+    <div class="r-comment-body"><p>REVERT_HEAD joins _OPEN_OPERATION_MARKERS in reckon/crew/promotion.py so crew complete refuses, naming a revert, before writing the ledger row or plan landing comment; the parametrised open-state test gains the revert case — head arm 7 passed, baseline arm 6 passed zero added failures, dropping the marker makes the revert case promote and fails it (EXIT=1). Landing record: docs/evidence/fragments/a-crew-process-ends-with-its-owner/complete-refuses-an-open-revert.html</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261001T230810406150-review-of-complete-refuses-an-open-revert" data-who="reckon-build" data-when="2026-10-01T23:29:10.988Z">
+    <div class="r-comment-body"><p>Independent review of r-20261001T225731677612-complete-refuses-an-open-revert (head 2175ba3edaebc129b6f02724e80283786dc3968f, base df6a40b5c8e077c9f74517ff52f1858bac2c6011) stored at reviews/reckon/&lt;run&gt;.json and &lt;run&gt;.at-2175ba3edaebc129b6f02724e80283786dc3968f.json: 5 dimensions scored (goal_fidelity 19, evidence 16, scope_discipline 20, durability 19, fit 19; total 93), added_failure_count 0, two follow-on findings on the reviewed run's own revision labels.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261001T235723947675-review-of-stored-phase-covers-a-failed-spawn" data-who="reckon-build" data-when="2026-10-02T00:08:21.516Z">
+    <div class="r-comment-body"><p>review-of-stored-phase-covers-a-failed-spawn: independent review of run r-20261001T233204211772 at head 8b9dd16df scored parsed 19/17/19/18/18 = 91 (goal_fidelity/evidence/scope_discipline/durability/fit), zero added failures; one follow-on finding (a new branch test drives the real supervisor and leaves SIGTERM/SIGHUP handlers replaced for the rest of the pytest process).</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T000325288419-review-of-observe-keeps-a-terminal-stored-phase" data-who="reckon-build" data-when="2026-10-02T00:27:51.569Z">
+    <div class="r-comment-body"><p>Independent review of r-20261001T233234436223-observe-keeps-a-terminal-stored-phase stored parsed (total 82): parsed record scores goal_fidelity 13, evidence 15, scope_discipline 20, durability 16, fit 18; reviewed_base_sha c8087d0bc5cf9f821cee71bed4ea006e7ffa9261, reviewed_head_sha eff7c2b9d894284927eee5c5b740ba64a3c795f5; added_failure_count 0 over the reviewed run's baseline_suite and after_suite (11 passed each); one blocking finding - observe()'s orphaned branch at reckon/.../dispatch.py:8567 overwrites a terminal stored phase with orphaned (reproduced: pointer complete + dead pid + live stream yields orphaned), so the node goal does not hold - and one follow-on, the head arm records revision c8087d0bc (the base) rather than eff7c2b9.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261001T233204211772-stored-phase-covers-a-failed-spawn" data-who="reckon-build" data-when="2026-10-02T00:12:59.375Z">
+    <div class="r-comment-body"><p>stored-phase-covers-a-failed-spawn: both supervisor paths that end a launch before a worker exists (spawn failure in _run_supervisor, and _record_launch_abandoned_before_spawn) now publish the stored phase from the run's own launch-failure record, so the live pointer reads launch-failed instead of starting; tests/test_stored_phase_advances.py gains three cases (spawn failure, abandoned launch, plus the attempt and discard guards asserted), each supervisor-driving case restoring and asserting the SIGTERM/SIGHUP handlers it installs; head arm 15 passed, base arm 11 passed, declared negative control 1 failed/4 passed EXIT=1, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T001324515775-review-of-stored-phase-covers-a-failed-spawn" data-who="reckon-build" data-when="2026-10-02T00:32:07.890Z">
+    <div class="r-comment-body"><p>review-of-stored-phase-covers-a-failed-spawn: independent review of r-20261001T233204211772 stored a parsed record at reviewed head 3f07fc003 over base c8087d0bc; both pre-spawn-end branches of the stored-phase writer now publish launch-failed, the earlier review's leaked-SIGTERM/SIGHUP follow-on is fixed and asserted, total 94/100 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 18), added_failure_count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261001T233303222152-landing-commit-carries-only-its-own-comment" data-who="reckon-build" data-when="2026-10-02T00:18:25.500Z">
+    <div class="r-comment-body"><p>A landing commit now carries the plan file only when the working copy differs from HEAD by this run's own landing comment, rebuilt from HEAD plus that one comment and the version stamps; an unrelated uncommitted edit refuses before the fix commits, names the plan file, and leaves the edit in place. Head arm 54 passed (base arm 52 passed), zero added failures and zero failures both arms; negative control red at 1 failed.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T002018472087-review-of-landing-commit-carries-only-its-own-comment" data-who="reckon-build" data-when="2026-10-02T00:41:00.549Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261001T233303222152-landing-commit-carries-only-its-own-comment (node landing-commit-carries-only-its-own-comment) stored a parsed five-dimension record at base c8087d0bc5cf9f821cee71bed4ea006e7ffa9261 / head 4e2c05ce73f21b46714c8203be304fcc81c578d3 (goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 18; total 91) with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own base_arm.log (52 passed EXIT=0) and head_arm.log (54 passed EXIT=0); two follow-on findings, no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261001T233234436223-observe-keeps-a-terminal-stored-phase" data-who="reckon-build" data-when="2026-10-02T00:36:20.150Z">
+    <div class="r-comment-body"><p>observe() keeps a terminal stored phase (complete/failed/stopped/interrupted) against a non-terminal observation at every phase-write site including the orphaned branch, so no late fold reopens a finished run; guards _terminal_phase_survives cover the stream fold, the in-harness manifest fold and the orphaned write; gate 3 passed, base and head arms of tests/test_stored_phase_advances.py + tests/test_crew_interrupted_phase.py 11 passed each (0 added failures), negative control (guard removed at the orphaned branch) 1 failed 2 passed EXIT=1; record in docs/evidence/fragments/a-crew-process-ends-with-its-owner/observe-keeps-a-terminal-stored-phase.html.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T003648572307-review-of-observe-keeps-a-terminal-stored-phase" data-who="reckon-build" data-when="2026-10-02T00:46:08.809Z">
+    <div class="r-comment-body"><p>Independent review of r-20261001T233234436223-observe-keeps-a-terminal-stored-phase stored parsed (total 91): goal_fidelity 19, evidence 18, scope_discipline 18, durability 18, fit 18; reviewed_base_sha c8087d0bc5cf9f821cee71bed4ea006e7ffa9261, reviewed_head_sha 6a0e2cfa3a7027acc7d8484733b9387dea182f44; added_failure_count 0 over the reviewed run's baseline_suite and after_suite (11 passed each, EXIT=0); the prior review's blocking finding is closed - observe()'s orphaned branch (dispatch.py:8563) now consults _terminal_phase_survives, reproduced by unguarding only that branch (1 failed test_a_dead_pid_does_not_orphan_a_finished_run, 2 passed, EXIT=1); two follow-ons: the declared figure directory was not delivered, and the deliberate resume-override reopen (dispatch.py:8552) is untested at that boundary.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261001T233335429161-promotion-retires-a-disposable-identity" data-who="reckon-build" data-when="2026-10-02T00:37:29.246Z">
+    <div class="r-comment-body"><p>promotion retires a run's disposable roster identity at acceptance, signals and reaps a live process group recording the stopped pid, and keeps both identity and process for a blocked run; gate 3 passed, base arm 9 passed, head arm 9 passed, added failures 0.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T003833350758-review-of-promotion-retires-a-disposable-identity" data-who="reckon-build" data-when="2026-10-02T00:48:40.826Z">
+    <div class="r-comment-body"><p>independent review of r-20261001T233335429161-promotion-retires-a-disposable-identity stored; the record parses, scores all five dimensions in 0..20 (goal_fidelity 18, evidence 18, scope_discipline 19, durability 17, fit 19; total 91), names reviewed base c8087d0bc and head 790f296ca, and carries added_failure_count 0 with no added ids; one follow-on finding: the identity keys are not persisted on the run row.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-20261002T005500Z-s10-landing-guard-reverted" data-who="s21-fin" data-when="2026-10-02T00:55:00Z">
+    <div class="r-comment-body">landing-commit-carries-only-its-own-comment was merged at 03a28cd8d (reviewed at 91) and reverted at e70bb91cb about two minutes later. Its guard compared the plan file's bytes against HEAD plus the run's own comment. Live, it refused the landing commit of the very run that introduced it, after that run's ledger row and plan comment were already written. Every later promotion on this plan then refused too, because the stranded comment read as an unrelated edit. The two stranded landing records were committed as they stood (40d9e54d9). The corrective node landing-guard-tolerates-the-stores-own-writes re-lands the guard. It compares parsed plan state rather than bytes, refuses before any store is written, and adds the measured cascade and a non-canonical-encoding plan as test cases. Already landed in §10 today: nongit-promotion-test-stays-outside-a-repo, repromotion-commits-its-recorded-comment, complete-refuses-an-open-merge, complete-refuses-an-open-revert, stored-phase-advances-past-starting, stored-phase-covers-a-failed-spawn, observe-keeps-a-terminal-stored-phase, reflex-review-outlives-its-follower, and promotion-retires-a-disposable-identity.</div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T003351727134-discarded-run-promotes-after-its-commits-land" data-who="reckon-build" data-when="2026-10-02T00:57:41.801Z">
+    <div class="r-comment-body"><p>a discarded run whose commit is carried into main by a follow-on merge promotes from its run directory after the fact; the rebuild recovers the run's declared scope from the durable manifest's changed_paths, and the gate shows one ledger row citing the run's own commit with the follow-on's row unchanged (1 passed)</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T005818516493-review-of-discarded-run-promotes-after-its-commits-land" data-who="reckon-build" data-when="2026-10-02T01:07:29.397Z">
+    <div class="r-comment-body"><p>independent review of r-20261002T003351727134-discarded-run-promotes-after-its-commits-land stored; the record parses, scores all five dimensions in 0..20 (goal_fidelity 18, evidence 18, scope_discipline 18, durability 17, fit 18; total 89), names reviewed base 973630e79 and head 871e598cc, and carries added_failure_count 0 with no added ids; one follow-on finding: the reviewed manifest omits the machine-readable baseline_suite and after_suite fields.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T005050382463-every-signal-leaves-a-sender-record" data-who="reckon-build" data-when="2026-10-02T01:15:10.982Z">
+    <div class="r-comment-body"><p>every signalling path writes a sender record {sender_pid, sender_argv0, target_pid, target_pgid, reason, time} into the target run's directory before it signals, through one shared writer; gate 4 passed, base/head arms 10 passed each, 0 added failures, negative control 2 failed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T011537207400-review-of-every-signal-leaves-a-sender-record" data-who="reckon-build" data-when="2026-10-02T01:22:08.323Z">
+    <div class="r-comment-body"><p>independent review of run r-20261002T005050382463-every-signal-leaves-a-sender-record stored at reviews/reckon/&lt;run&gt;.json (and head-keyed at 346d49cd); five dimensions scored, total 86, three follow-on findings (unwatch unwired, refused-signal still recorded, manifest omits suite fields); reviewed head's own gate re-ran 4 passed and 0 added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T004443680689-landing-guard-tolerates-the-stores-own-writes" data-who="reckon-build" data-when="2026-10-02T01:22:21.455Z">
+    <div class="r-comment-body"><p>A landing commit now compares the plan's parsed state, so a re-encoded entity, a moved version stamp or an earlier run's recorded comment is not an unrelated edit while an added paragraph or edited state still refuses; the refusal runs before either store is written, so a refused promotion strands nothing. Head arm 56 passed (base arm 52 passed, zero added failures); negative control red at 2 failed EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T012312523662-review-of-landing-guard-tolerates-the-stores-own-writes" data-who="reckon-build" data-when="2026-10-02T01:31:07.353Z">
+    <div class="r-comment-body"><p>Review of run r-20261002T004443680689 stored: scores goal_fidelity 18, evidence 19, scope_discipline 19, durability 17, fit 18, total 91, over base e70bb91cb959b9514414530e2202c4151314510f to head f459f83dcacc6edfa8f382f3ce723e0f51fbd3d5; added_failure_count 0, added_failure_ids []; one non-blocking follow-on finding on the guard's tolerance boundary.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-20261002T013800Z-s10-last-folds" data-who="s21-fin" data-when="2026-10-02T01:38:00Z">
+    <div class="r-comment-body">Three more nodes are folded into §10 from the drain. a-terminal-worker-exits-within-its-grace is the supervisor half of f-acpewio-worker-retired-at-acceptance; it was named in the 20:30Z fold but not dispatched until now. unwatch-leaves-a-sender-record comes from the every-signal node's own follow-on: a watcher has no run directory, so its record goes beside the watch registration. a-refused-signal-records-its-refusal comes from the every-signal review: a record written before the guard refuses a signal must say it was refused. The departure word (f-acpewio-unknown-departure-word) and §3's lease corrective both still need reckon/crew/runs.py, which s22-coord's blocked run the-producer-publishes-the-snapshot claims.</div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T013653567853-unwatch-leaves-a-sender-record" data-who="reckon-build" data-when="2026-10-02T01:46:50.510Z">
+    <div class="r-comment-body"><p>crew unwatch now writes the shared sender record through routing._write_sender_record into the watch registration's directory, naming the watcher pid and reason="unwatch", before it signals; tests/test_unwatch_leaves_a_sender_record.py passes 2, its declared mutation fails the record assertion (EXIT=1), and base/head arms of the three named sibling files each pass 10 with zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T014803396556-review-of-unwatch-leaves-a-sender-record" data-who="reckon-build" data-when="2026-10-02T01:54:51.954Z">
+    <div class="r-comment-body"><p>Independent review of r-20261002T013653567853-unwatch-leaves-a-sender-record stored at head c1e0d6a0e (base f91fa54e): status parsed/complete, all five dimensions scored in 0..20 (goal_fidelity 18, evidence 17, scope_discipline 20, durability 19, fit 18; total 92), added_failure_count 0 with no added ids derived from the reviewed run's own base-arms.log/head-arms.log; two follow-on findings, no blocking findings — the pre-signal sender-record write meets its goal, is scoped to the three declared paths, and its negative control reddens the record assertion.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T013733477149-a-refused-signal-records-its-refusal" data-who="reckon-build" data-when="2026-10-02T01:48:26.908Z">
+    <div class="r-comment-body"><p>A sender record now carries an outcome — `_write_sender_record` gained `outcome`/`detail`, `signal_worker` appends delivered or failed after the signal attempt, and each refusing guard in `_signal_process_group` writes refused with its reason, so a refusal is no longer read as a SIGTERM that went out (base 9 passed / head 10 passed / 0 added failures).</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T014836035032-review-of-a-refused-signal-records-its-refusal" data-who="reckon-build" data-when="2026-10-02T01:56:42.352Z">
+    <div class="r-comment-body"><p>Independent review of r-20261002T013733477149 stores a parsed record (goal_fidelity 11, evidence 17, scope_discipline 19, durability 13, fit 18; total 78) — the outcome mechanism is correct and its negative control reproduces, but no production caller of _signal_process_group passes run_dir, so the refused record is never written outside the test.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T013611170301-a-terminal-worker-exits-within-its-grace" data-who="reckon-build" data-when="2026-10-02T02:19:27.871Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-terminal-worker-exits-within-its-grace.html</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T022036568785-review-of-a-terminal-worker-exits-within-its-grace" data-who="reckon-build" data-when="2026-10-02T02:28:04.042Z">
+    <div class="r-comment-body"><p>review of a-terminal-worker-exits-within-its-grace (head b68b72c55, base f91fa54eeb) scored goal_fidelity 20, evidence 18, durability 19, fit 19, scope_discipline 20, total 96/100; added_failure_count 0; one follow-on (the evidence fragment misnames the head-arm revision as f91fa54eeb+worktree where its cited log reads b68b72c55); stored to ~/.config/reckon/crew/reviews/reckon/r-20261002T013611170301-a-terminal-worker-exits-within-its-grace.json and its .at-b68b72c556... pin.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T022425437685-review-of-every-signal-caller-names-its-run-directory" data-who="reckon-build" data-when="2026-10-02T02:32:07.114Z">
+    <div class="r-comment-body"><p>review of r-20261002T020552815246-every-signal-caller-names-its-run-directory at base 1880dac7 / head 8753de02f stores a parsed five-dimension record (goal_fidelity 13, evidence 16, scope_discipline 18, durability 15, fit 18; total 80) with zero added failures, recording one blocking finding: _stop_delivered_reviews (recovery.py:867, via the signal_run alias) is an in-scope production caller that still passes neither run_dir nor reason, so a guard refusal lands nowhere on the delivered-review path.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T022516263918-review-of-an-unknown-departure-reads-departed" data-who="reckon-build" data-when="2026-10-02T02:36:28.768Z">
+    <div class="r-comment-body"><p>review-of-an-unknown-departure-reads-departed — stored a parsed review of run r-20261002T021115444941-an-unknown-departure-reads-departed over 8652b7e1..6b7a0540: goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19 (total 97), added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own baseline_suite/after_suite gate logs, one follow-on finding on the discard-marker precedence at reckon/crew/recovery.py:8072.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T020552815246-every-signal-caller-names-its-run-directory" data-who="reckon-build" data-when="2026-10-02T02:41:57.464Z">
+    <div class="r-comment-body"><p>eight production signalling call sites now name the directory their sender record was written to - the six wired in the first commit plus the delivered-review stop at _stop_delivered_reviews, whose default call now passes run_dir and reason while its test seam keeps its two-argument shape; the unwatch record names its watched project; tests/test_every_signal_caller_names_its_run_directory.py drives one caller per module plus the delivered-review stop against a stale recorded start time and asserts the run's sender file ends refused (4 passed, zero added failures on the five-file arms)</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T024254367022-review-of-every-signal-caller-names-its-run-directory" data-who="reckon-build" data-when="2026-10-02T02:50:20.313Z">
+    <div class="r-comment-body"><p>the reviewed run's repair commit a276d44b8 closes the prior review's blocking miss — the delivered-review stop at reckon/crew/recovery.py:867 now calls _signal_process_group with run_dir and reason on its default path — so seven of eight production call sites pass run_dir and the review stores a parsed record scoring all five dimensions (total 95), head a276d44b8, zero added failures</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T021115444941-an-unknown-departure-reads-departed" data-who="reckon-build" data-when="2026-10-02T02:41:07.489Z">
+    <div class="r-comment-body"><p>an-unknown-departure-reads-departed — _departure_word now resolves a departing run's word from evidence in order: promoted only from a recorded ledger row, discarded when the run directory holds a discard marker (which outranks an unresolvable ledger), departed only when no marker exists and no ledger evidence resolves at all (no reader supplied and no project named), and withdrawn when a resolved ledger records no row; the ticker paints departed in both themes and FLEET_UNPROMOTED_STATES names it so the fold's vocabulary is complete while a departing run is still dropped before the counts; five modules 67 passed at head vs 65 passed/1 failed at base (zero added failures), and both declared negative controls fail their case (EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T024146823723-review-of-an-unknown-departure-reads-departed" data-who="reckon-build" data-when="2026-10-02T02:53:13.385Z">
+    <div class="r-comment-body"><p>Reviewed r-20261002T021115444941 at base 8652b7e11..head 82ad91ec5 (parsed record, total 94/100): all four departure words are implemented and each is covered by a case; I reproduced the head gate (67 passed, EXIT=0) and the declared negative control (branch-removed tree fails, EXIT=1). One follow-on finding: the change left two comments in recovery.py documenting the superseded three-word contract, which now contradict the code (fit 17).</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T023036394378-a-withdrawn-delivery-clears-the-grace" data-who="reckon-build" data-when="2026-10-02T02:47:19.396Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/a-crew-process-ends-with-its-owner/a-withdrawn-delivery-clears-the-grace.html — _reap_worker_on_its_terminal_manifest now clears the grace deadline when the manifest is rewritten to a non-done status (blocked/in-progress), so a worker that withdraws a complete delivery is waited on as before instead of ended on the withdrawn delivery's clock; commit b4879d8b3; gate tests/test_a_terminal_worker_exits_within_its_grace.py 6 passed, EXIT=0, the new rewrite-blocked case among them.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T024758493229-review-of-a-withdrawn-delivery-clears-the-grace" data-who="reckon-build" data-when="2026-10-02T02:59:56.588Z">
+    <div class="r-comment-body"><p>independent review of r-20261002T023036394378-a-withdrawn-delivery-clears-the-grace (node a-withdrawn-delivery-clears-the-grace, plan reckon:a-crew-process-ends-with-its-owner §10) scored goal_fidelity 20, evidence 19, durability 19, fit 19, scope_discipline 20, total 97/100, added_failure_count 0; no findings. The one else-branch fix clearing the supervisor grace deadline on a withdrawn (done -&gt; non-done) manifest is correct and the guard fires; stored to the review directory and its .at-b4879d8b3 pin.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T025629689856-departure-comments-state-the-departed-rule" data-who="reckon-build" data-when="2026-10-02T03:01:53.437Z">
+    <div class="r-comment-body"><p>Rewrote the four departure-fold comments in reckon/crew/recovery.py — the _watch_snapshot project-field comment, the _departure_recorded_run_ids docstring, and the fleet_transitions departure block — so they state the rule _departure_word follows: promoted from a recorded row, discarded from a discard marker, departed when no ledger resolves and no marker exists, withdrawn when a ledger resolves and records no row; comment-only, no behaviour change. Measure: grep receipt shows no comment in recovery.py still says an unresolvable departure withdraws (0 hits for the four superseded phrases); base and head arms of tests/test_a_live_run_never_reads_dead.py + tests/test_a_discard_never_reads_promoted.py each show 17 passed, EXIT=0, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T030242179151-review-of-departure-comments-state-the-departed-rule" data-who="reckon-build" data-when="2026-10-02T03:07:45.381Z">
+    <div class="r-comment-body"><p>Independent review of departure-comments-state-the-departed-rule at head c4ad902d8: 88/100 (goal_fidelity 20, evidence 15, scope_discipline 20, durability 13, fit 20), zero added failures derived from the run's own base/head arms; two follow-on findings on the done-when's grep receipt (its superseded-phrase list is empty so its "expect no matches" zero is vacuous, and it stamps the base revision d3cedc615 while its body reflects the head).</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T025540727797-a-signal-leaves-one-attribution-and-one-outcome" data-who="reckon-build" data-when="2026-10-02T03:11:21.551Z">
+    <div class="r-comment-body"><p>_signal_process_group now owns the attribution alone (callers' pre-writes removed; a delivered signal leaves one attribution and one delivered outcome, a refusal one refused record) and unwatch routes through it naming the watch directory and its project; tests assert the exact record set per path (8 + 3 passed), five-file arms 21 passed base / 25 passed head, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T031153576906-review-of-a-signal-leaves-one-attribution-and-one-outcome" data-who="reckon-build" data-when="2026-10-02T03:17:40.660Z">
+    <div class="r-comment-body"><p>Independent review of r-20261002T025540727797-a-signal-leaves-one-attribution-and-one-outcome stores a parsed record scoring all five dimensions (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19; total 96), reviewed_base_sha d3cedc615e609f6b7f17476bc673cc7dce2d6d3b, reviewed_head_sha 9da3d4ba9c3572ae8cdf49e8f3bc39600bd6a6c1, added_failure_count 0; the goal is met — routing.signal_worker is the sole writer of the attribution and all eight _signal_process_group call sites pass run_dir — and the single finding is an overcounted caller-path test total in the evidence fragment and manifest.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T054333505753-a-vanished-worktree-reads-as-no-referent" data-who="reckon-build" data-when="2026-10-02T06:17:37.879Z">
+    <div class="r-comment-body"><p>fixed _worktree_untracked_paths to return the empty tuple when the worktree listing is absent, so a commitless promotion over a worktree directory removed while git still lists it reads as no repository change and promotes (payload names "tree is no longer available") instead of raising TypeError: 'NoneType' object is not iterable at promotion.py:640; a promotion citing a commit still reaches the single no-referent acknowledgement; new test tests/test_a_vanished_worktree_reads_as_no_referent.py passes 2/2, base and head arms of the three named suites both 59/59 with zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T053625485821-a-resumed-worker-outlives-its-earlier-delivery" data-who="reckon-build" data-when="2026-10-02T06:17:09.267Z">
+    <div class="r-comment-body"><p>Floored the supervisor's delivery baseline at the current attempt's own start in reckon/crew/dispatch.py so a resumed worker cannot be ended on its previous attempt's manifest; head gate 46 passed over the four named files with zero added failures against base; the declared negative control (prefer the pointer's baseline) exits 1 with test_a_resumed_worker_is_not_ended_by_its_earlier_attempts_baseline failing.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T061752726592-review-of-a-vanished-worktree-reads-as-no-referent" data-who="reckon-build" data-when="2026-10-02T06:39:03.389Z">
+    <div class="r-comment-body"><p>stored a parsed independent review for run r-20261002T054333505753-a-vanished-worktree-reads-as-no-referent: all five dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 19; total 94), reviewed_base_sha fd667e1c52e1026dcdf86f650e2e42bb5e9fb54f and reviewed_head_sha c7cbffd76672ba8d6bc55ce7ed56f990573e542b recorded, added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own base arm (base-base-arm.log, revision fd667e1, 59 passed, EXIT=0) and head arm (base-head-arm.log, 59 passed, EXIT=0, no FAILED or ERROR id) gate logs; the defect reproduces at promotion.py:640 as TypeError in repro-prefix.log and again in negative-control.log when the guard is removed; the gate tests/test_a_vanished_worktree_reads_as_no_referent.py passes 2/2 on my re-run at the reviewed head.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T061717454373-review-of-a-resumed-worker-outlives-its-earlier-delivery" data-who="reckon-build" data-when="2026-10-02T06:45:26.386Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261002T053625485821-a-resumed-worker-outlives-its-earlier-delivery at base 233f442b0 head 75f28efdd and stored a parsed review (goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 19; total 92); the fix floors the supervisor's delivery baseline at the attempt's own start, the new resume case passes at the head and fails under the declared prefer-pointer-baseline mutation, and zero failures are added against the base.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T071141966192-review-of-a-withdrawn-run-completes-as-withdrawn" data-who="reckon-build" data-when="2026-10-02T07:45:46.148Z">
+    <div class="r-comment-body"><p>Independent review of r-20261002T062545063005-a-withdrawn-run-completes-as-withdrawn (base e89a94bde, head dcd95ee5): stored a parsed record scoring 92/100 over five dimensions (goal 19, evidence 18, scope 20, durability 16, fit 19), added_failure_count 0, one follow-on finding (a project-less pointer survives complete() and the run keeps reading running).</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T062545063005-a-withdrawn-run-completes-as-withdrawn" data-who="reckon-build" data-when="2026-10-02T07:49:26.702Z">
+    <div class="r-comment-body"><p>crew complete returns a withdrawn payload for a run whose record names no project and now retires what a promotion retires - it removes the live pointer and releases the workspace, writing no ledger row - so a project-less run no longer reads as running forever; the gate reports 2 passed with the pointer gone after completion, the declared mutation that skips the retirement reddens the pointer case, and the base/head arms of the two named suites each report 55 passed with zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T075029866672-review-of-a-withdrawn-run-completes-as-withdrawn" data-who="reckon-build" data-when="2026-10-02T08:05:43.743Z">
+    <div class="r-comment-body"><p>Independent review of r-20261002T062545063005-a-withdrawn-run-completes-as-withdrawn stored a parsed record scoring 95/100 over all five dimensions (goal 19, evidence 18, scope 20, durability 19, fit 19), reviewed_base_sha e89a94bde, reviewed_head_sha 046c8ebaf, added_failure_count 0, added_failure_ids []; the fence's done-when is met and the first review's follow-on (a project-less pointer left live) is closed by commit 046c8ebaf, with two non-blocking notes.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T074830041084-review-of-a-stopped-run-ends-its-supervisor" data-who="reckon-build" data-when="2026-10-02T08:09:10.539Z">
+    <div class="r-comment-body"><p>review stored for reviewed run r-20261002T062658036346 at base e89a94bde / head e1f64d7a7; scores goal_fidelity 19, evidence 15, scope_discipline 19, durability 15, fit 19 (total 87); added_failure_count 0; gate met — a stopped run's supervisor is now bounded by the stop grace plus the reap poll plus the exit-record write, and the bound case reddens when the escalation is withheld.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T074804768878-the-grace-never-cuts-a-manifest-write" data-who="reckon-build" data-when="2026-10-02T08:52:10.842Z">
+    <div class="r-comment-body"><p>_reap_worker_on_its_terminal_manifest now ends a lingering worker only on a whole, quiet terminal manifest — a done status over an unclosed list field, or a manifest whose mtime keeps advancing, is deferred rather than signalled — with a stated overall ceiling; head arm 19 passed (base 17 passed, zero added failures), negative control 2 failed EXIT=1</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T085347760539-review-of-the-grace-never-cuts-a-manifest-write" data-who="reckon-build" data-when="2026-10-02T09:15:48.476Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261002T074804768878-the-grace-never-cuts-a-manifest-write stored as a parsed record at both fence paths: five dimensions scored 0..20 (goal_fidelity 19, evidence 19, scope_discipline 20, durability 17, fit 19; total 94), reviewed revision pair 65f3795c73f1625bd67b9ed6c9c044ad655f993e..e9f13206a634480147119e0d9f348950a31cc7a2, added_failure_count 0 and added_failure_ids [] derived through the store's own annotate reader from the reviewed run's own baseline_suite and after_suite gate logs; one follow-on finding (the ceiling bounds only a whole manifest, so an incomplete one defers without bound; dispatch.py:8891); no blocking finding — the change is fit to promote.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T090234660917-review-of-a-stopped-run-ends-its-supervisor" data-who="reckon-build" data-when="2026-10-02T09:24:23.338Z">
+    <div class="r-comment-body"><p>independent review of r-20261002T062658036346-a-stopped-run-ends-its-supervisor at head a58929261 (base e89a94bde) stored at /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261002T062658036346-a-stopped-run-ends-its-supervisor.json and the at-head copy .at-a58929261....json; total 89 over five dimensions, added_failure_count 0, three follow-on findings (unreadable after_suite in the reviewed manifest, two unreachable elapsed assertions, and the production stop-grace default left untested).</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T062658036346-a-stopped-run-ends-its-supervisor" data-who="reckon-build" data-when="2026-10-02T09:47:01.324Z">
+    <div class="r-comment-body"><p>a stopped run's supervisor is now bounded - dispatch.py's reap loop consults the recorded crew-stop and, if the worker has not ended within the stop grace (default 10s, RECKON_WORKER_STOP_GRACE_SECONDS), SIGKILLs it before writing the exit record; the same loop signals a lingering worker only on a done manifest that reads whole and has rested for the quiet period, within main's 600s ceiling; the head arm over the stopped-run, terminal-grace, supervisor-outlives-launcher and worker-signal-reach modules is 22 passed at the merged head, and the test's mutation withholds the escalation so the bounded wait fails.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T100138260846-review-of-a-stopped-run-ends-its-supervisor" data-who="reckon-build" data-when="2026-10-02T10:27:51.549Z">
+    <div class="r-comment-body"><p>Reviewed r-20261002T062658036346-a-stopped-run-ends-its-supervisor at merged head 798f3d107 against base e89a94bde: the stop-grace escalation is present in dispatch.py at head, the node's own change is dispatch.py (+67/-1) and the new test module (+305) inside its declared paths, and all four gate arms were independently reproduced in scratch trees (gate 3 passed, base 16 passed, four-module head arm 22 passed, negative control 1 failed/2 passed), giving zero added failures; the repair also closed the prior review's after_suite placeholder and its untested production-stop-grace gap. Score 96.</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1655-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:55:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch). The plan carried no section declarations, so these are now recorded from the audit:</p><ul><li><b>Done:</b> §1 (narrative), §2, §4 and §5, each with a passing test cited in the resolution of f-acpewio-001.</li><li><b>Implementable:</b> §3, §6, §7, §9, §10 and §11.</li><li><b>Deferred:</b> §8, which is the plan-level done-when rather than work. It closes when the others do.</li></ul><p>The computed impl therefore falls from the authored 0.75 to the share of sections actually evidenced. §7's skill paths now name reckon-build.</p></div>
 </div>
@@ -1495,6 +1352,57 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261001T194935947912-review-of-skill-rules-say-what-a-session-owns" data-who="reckon-build" data-when="2026-10-01T19:58:34.288Z">
     <div class="r-comment-body"><p>an independent review of run r-20261001T191628687658-skill-rules-say-what-a-session-owns is stored as a parsed 5-dimension record (total 79/100: goal_fidelity 18, evidence 15, scope_discipline 20, durability 8, fit 18) at both the legacy path and the head-keyed path for reviewed head 20940412dfdbe4a8bd724da417a085555764ef4c.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261001T225700735488-skill-rules-are-asserted" data-who="reckon-build" data-when="2026-10-01T23:16:00.436Z">
+    <div class="r-comment-body"><p>§7's three session-ownership rules now have a guard: tests/test_skill_session_ownership_rules.py pins one anchor phrase per rule in both sprint-orchestration.md §17 and orchestrator-harness/claude-code.md, and pins SKILL.md's pointer at §17; gate 4 passed at head, and the declared mutation (the wave-script rule removed from a copy) fails 1 of 4, EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261001T211059037154-producer-reads-only-what-changed" data-who="reckon-build" data-when="2026-10-01T22:37:41.810Z">
+    <div class="r-comment-body"><p>§11 — the producer carries each run's stream cursor: a poll parses only the bytes appended since the last (recorded as bytes_parsed_last_poll in the registration), spawns no git while the worktree head holds still, re-reads from zero on a replaced or truncated stream, and yields the same transitions as the whole-file path; 3 gate tests pass.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261001T223744958039-review-of-producer-reads-only-what-changed" data-who="reckon-build" data-when="2026-10-01T22:50:34.512Z">
+    <div class="r-comment-body"><p>Independent review of r-20261001T211059037154-producer-reads-only-what-changed stored at base 60b808f5 head 2af1c934f: goal_fidelity 18, evidence 16, scope_discipline 19, durability 13, fit 17, total 83; three follow-on findings (the inode-gate assertion is not discriminating, an in-place rewrite at the same inode is not detected, the commits-beyond-base cache is unbound); added_failure_count 0 over the reviewed run's own base/head arms (25/25 both).</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261001T232140088383-a-rewritten-stream-is-read-from-zero" data-who="reckon-build" data-when="2026-10-01T23:59:56.269Z">
+    <div class="r-comment-body"><p>§11 — the producer's cursor records a bounded fingerprint of each stream's opening beside the offset and resumes only while the opening still holds, so a stream replaced at a new inode or rewritten in place re-reads from its first record; gate tests/test_producer_reads_only_what_changed.py 6 passed (3 new), both new cases fail under the declared mutation, base/head arms 25/28 with zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261002T000020525600-review-of-a-rewritten-stream-is-read-from-zero" data-who="reckon-build" data-when="2026-10-02T00:27:58.703Z">
+    <div class="r-comment-body"><p>review of r-20261001T232140088383-a-rewritten-stream-is-read-from-zero stored for base 2a2848b51741c2cd995ac1eaf224a1fc9aa0b480 head 35e69097b32631a1b09b0038c741347c7d6a7a10 — goal_fidelity 19, evidence 16, scope_discipline 19, durability 16, fit 17, total 87; three follow-on findings; added_failure_count 0 over the reviewed run's own base/head arms (25 passed base, 28 passed head across three files).</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261002T070205632287-review-of-producer-cpu-before-and-after-incremental-reads" data-who="reckon-build" data-when="2026-10-02T07:41:54.844Z">
+    <div class="r-comment-body"><p>Independent review of r-20261002T053133584643-producer-cpu-before-and-after-incremental-reads stored at base == head c47424bd75e134cee6fa51e3b30948a11253372d (a read-only measurement that lands no commit): goal_fidelity 17, evidence 14, scope_discipline 19, durability 10, fit 17, total 77; one blocking finding (the report's candidate 2 argues the registration carries no bytes_parsed_last_poll, read from the wrong file, driver.py:324); added_failure_count 0 over the reviewed run's own base/head arms (43 passed base, 49 passed head).</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261002T053133584643-producer-cpu-before-and-after-incremental-reads" data-who="reckon-build" data-when="2026-10-02T07:58:22.128Z">
+    <div class="r-comment-body"><p>producer CPU over nine streams each growing about 2 MB across a 60 s window: before 25.35 per cent mean / 49 peak, after 25.22 / 51 (pidstat -u 1 60, ratio 0.995), after-arm re-run 24.77 / 51; no measurable improvement, while the change's own registered counter shows the incremental stream reader engaged during growth (mean 466,162 B parsed per poll sample against 328,800 B appended); the residual whole-fleet re-read (1.69-1.77 GB per window, about 90 times appended) is attributable to the per-poll whole-stream scan in recovery.py _admission_refusal, present in both revisions; corrected report in this run directory.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261002T065704186701-the-live-producer-reads-only-what-changed" data-who="reckon-build" data-when="2026-10-02T08:06:33.742Z">
+    <div class="r-comment-body"><p>§11 — the producer's admission check reads only what changed: the whole-stream scan is taken only where the process is gone and memoised by stream stat identity; gate head 50 passed / base 49 passed with zero added failures; fleet-node nine-stream window rchar 1788 MB → 169 MB, read/appended 90.7× → 8.6×, mean CPU 24.5% → 6.25%, steady window 800 MB → 31 MB.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261002T081013402487-review-of-the-live-producer-reads-only-what-changed" data-who="reckon-build" data-when="2026-10-02T08:34:05.010Z">
+    <div class="r-comment-body"><p>independent review of run r-20261002T065704186701-the-live-producer-reads-only-what-changed stored at base 65370f6d04f7b3ed383d6c154375a957f94afd9b head 12bf0903059a2c04c4dc8f48814c1054d208391c: goal_fidelity 18, evidence 16, scope_discipline 19, durability 17, fit 17, total 87; one follow-on finding (the driver arm JSONs carrying the landing's rchar figures live only on node-local scratch); added_failure_count 0 over the reviewed run's own base/head arms (49 passed base, 50 passed head).</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T083645178761-the-metadata-index-reuses-unchanged-plans" data-who="reckon-build" data-when="2026-10-02T09:13:32.961Z">
+    <div class="r-comment-body"><p>The metadata index now keys row reuse on a sha256 content digest of each file instead of its stat identity (reckon/metadata_index.py); a rebuild over an unchanged docs tree re-parses 0 of 16 covered rows, a rebuild after one plan changes re-parses exactly that plan, and a build whose only change is a moved mtime re-parses 0.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T091523623566-review-of-the-metadata-index-reuses-unchanged-plans" data-who="reckon-build" data-when="2026-10-02T09:35:45.202Z">
+    <div class="r-comment-body"><p>Independent review of r-20261002T083645178761-the-metadata-index-reuses-unchanged-plans stored: five dimensions goal_fidelity 20, evidence 19, scope_discipline 20, durability 18, fit 19 (total 96), reviewed base 57dfae03..head 2b0e8135, zero added failures from the run's own gate logs, one follow-on finding (reckon/metadata_index.py:160 stale docstring) and no blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T092301014468-review-of-the-clone-scan-reads-only-the-promoted-diff" data-who="reckon-build" data-when="2026-10-02T09:54:29.603Z">
+    <div class="r-comment-body"><p>review attached to run r-20261002T083614262845-the-clone-scan-reads-only-the-promoted-diff at head 76c09104 (base 57dfae0345): total 90/100 (goal_fidelity 19, evidence 17, scope_discipline 20, durability 16, fit 18), zero added failures, two follow-on findings (the on-disk cache round trip is untested; a cache-write failure disables the clone scan).</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T092656510580-review-of-a-promotion-reads-only-the-fleet-fields-it-records" data-who="reckon-build" data-when="2026-10-02T10:04:19.130Z">
+    <div class="r-comment-body"><p>review scored 91, 2 finding(s)</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T083614262845-the-clone-scan-reads-only-the-promoted-diff" data-who="reckon-build" data-when="2026-10-02T10:00:31.224Z">
+    <div class="r-comment-body"><p>The clone scan parses only the promoted diff's files and reads every other corpus file from a cache keyed by path and content digest, so an unchanged file is never re-parsed; a warm promotion's scan parse falls from 42.6 s to 0.54 s (1 functions_in call vs 868 cold), the on-disk round-trip is asserted lossless, and an unwritable cache directory degrades to an uncached scan rather than an unmeasured report.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T100241202020-review-of-the-clone-scan-reads-only-the-promoted-diff" data-who="reckon-build" data-when="2026-10-02T10:21:25.741Z">
+    <div class="r-comment-body"><p>Stored a parsed review of r-20261002T083614262845-the-clone-scan-reads-only-the-promoted-diff at head 6e7c645a (base 57dfae03): total 92/100 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 17), zero added failures from the run's own gate logs, two follow-on findings (the corpus cache is never pruned; head_functions/_index are typed Any/_Function while now holding _CachedFunction) and no blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T100841220627-review-of-a-promotion-reads-only-the-fleet-fields-it-records" data-who="reckon-build" data-when="2026-10-02T10:40:02.391Z">
+    <div class="r-comment-body"><p>review attached to run r-20261002T083717645045-a-promotion-reads-only-the-fleet-fields-it-records at head af59c36403a5f24a8709404c15de1f782a0c9f84 (base 57dfae0345a5d8ecee9377da3706e8b1ea5dee3b): total 92 (goal_fidelity 20, evidence 17, scope_discipline 19, durability 19, fit 17), added_failure_count 0, two follow-on findings</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T083717645045-a-promotion-reads-only-the-fleet-fields-it-records" data-who="reckon-build" data-when="2026-10-02T10:42:01.780Z">
+    <div class="r-comment-body"><p>perf(crew): _fleet_state_reading derives unreconciled_runs from the live pointers alone via _unreconciled_live_runs (the same closure_disposition_valid predicate and host-gated local_liveness as runs.drain), dropping the full drain and its plan-inventory read that was 22 percent of an 81.9 s promotion; the test asserts the bounded reading equals runs.drain on synthetic fleets, including a still-working pointer that exercises the classification-dependent branch, and that promotion.drain is never invoked</p></div>
 </div>
 </section>
 </main>

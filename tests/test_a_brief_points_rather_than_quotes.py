@@ -307,5 +307,12 @@ def test_a_report_changes_no_other_dry_run_field(
     quiet = _payload(_invoke(dispatch_repo, monkeypatch, done_when))
 
     assert _overlap_reports(reported) == ["done-when reproduces fixture prose"]
-    reported["warnings"] = []
+    # With the overlap report removed, everything else must match the quiet run:
+    # a dry run also carries this plan's report-only review-gate warning, and
+    # that warning is present in both, so only the report itself is subtracted.
+    reported["warnings"] = [
+        warning
+        for warning in reported["warnings"]
+        if not warning.startswith("done-when reproduces")
+    ]
     assert _without_clock_stamps(reported) == _without_clock_stamps(quiet)

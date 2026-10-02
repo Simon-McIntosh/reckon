@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="work-scheduling-surface">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
   <title>Section contract and computed impl | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="56">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="61">
 <meta name="plan-impl" content="0.84">
 </head>
 <body>
@@ -467,8 +467,20 @@
     failures are pre-existing at that base and are not this node's).</p>
 
     <h2 id="s8">§8 — impl is derived only when the records cover every declared section</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
 <p><code>derive_impl_from_sections</code> in <code>reckon/_plan_html.py</code> divides done effort by done plus implementable effort over the section records alone. A plan whose earlier sections were declared before records existed carries declarations without records, so adding one record to it derives impl over that single section. On 2026-10-01 s22-coord appended one implementable record each to six plans whose done sections have none. Each plan's derived impl fell to 0, though its stored <code>plan-impl</code> meta was unchanged: crew-observability-truth from 0.57, scoring-should-stop-a-promotion from 0.98, dependency-edge-semantics from 0.97, a-review-dies-where-nobody-is-looking from 0.88, the-ledger-is-one-file-per-run from 0.5, and crew-runtime-positive-controls from 1.0. The S22 roadmap's implementation figure fell from 67.7% to 58.8%, and its critical path moved to crew-runtime-positive-controls at 20 hours. The function's own docstring promises to keep the authored figure rather than report a fabricated zero, and partial coverage is exactly that case.</p><p>The derivation takes the plan's section declarations too. It returns None, so the authored figure stands, whenever a section declared done or implementable has no record. Once every declared non-deferred section carries one, it derives as today.</p><p><strong>Done when</strong> a test builds a plan with three sections declared done and no records, plus one implementable record, and asserts that the read impl is the authored meta value. It also asserts that the same plan with records on all four derives done over done plus implementable. Both callers in <code>_plan_html.py</code> pass the declarations. Run over reckon's own <code>docs/plans</code>, the six plans above read their authored impl again, and the count of plans whose derived impl changes is recorded. The negative control drops the coverage check, and the partial-coverage case must then read 0.</p>
+
+    <h2 id="s9">§9 — The authored impl stays authorable while records are partial, and a first record says it changes the rule</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>Since §8, a plan whose section records do not cover every declared section keeps its authored impl. The store still refuses <code>set impl</code> on any plan that carries one record (<code>reckon/_store.py</code> near line 2261), so that authored figure can no longer be changed. Reported on 2026-10-02 by nova's S21 coordinator, and met by s22-coord: on the-obligations-hook-reads-a-snapshot the authored figure was 0 and could not be set, and records had to be attached to its done sections instead. A plan also switches to computed impl silently on its first record.</p><p><code>set impl</code> is refused only when the records cover every declared non-deferred section, the same condition under which <code>derive_impl_from_sections</code> answers. An append or insert that gives a plan its first section record carries a warning saying that impl becomes computed once the records cover every declared section.</p><p><strong>Done when</strong> tests show three things: <code>set impl</code> succeeds on a plan with partial records; it is refused on a plan with full coverage; and a first record's append returns the warning. The negative control restores the refusal on any record, and the partial case is then refused.</p>
+
+    <h2 id="s10">§10 — collapse_section finds a section whose id sits on its wrapper</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>Reported on 2026-10-02 by nova's S21 coordinator. <code>collapse_section</code> refused with "no section with id 's2'" on nova-portfolio-replan, although <code>&lt;section id="s2"&gt;&lt;h2&gt;</code> is in the file (plan version 5), and the coordinator had to collapse by text mode. Some plans carry the section id on a wrapping <code>section</code> element rather than on the <code>h2</code>, and a-review-dies-where-nobody-is-looking is one of them. <code>read_plan(view='section')</code> has the same blindness: it reported "available sections: none" for that plan on 2026-10-01.</p><p><strong>Done when</strong> collapse and the section read both resolve an id carried on the wrapper as well as on the <code>h2</code>. Tests over both shapes collapse and read the section. The negative control restores the <code>h2</code>-only lookup, and the wrapper case is then refused.</p>
+
+    <h2 id="s11">§11 — Land §1 and §2 together (the schema and its refusal), then §3, then §4 and §5, then §6</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>The schema without the refusal is a suggestion; the refusal without the schema has nothing to refuse. §3 depends on §1. §5 depends on §4. §6 is documentation and an audit warning and can run beside any of them.</p><p><strong>Done when</strong> the refusal lands with the schema it refuses for.</p><p>Moved from followup f-scci-001 on section-contract-and-computed-impl by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.84; §1+§2 as one node, §3 after §1, §5 after §4, §6 documentation and an audit warning</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -492,10 +504,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-scci-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-build section-contract-and-computed-impl §1" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-scci-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-build section-contract-and-computed-impl §1" data-resolved-at="2026-10-02T08:46:02+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land §1 and §2 together (the schema and its refusal), then §3, then §4 and §5, then §6</h4>
     <div class="r-fu-body"><p>The schema without the refusal is a suggestion; the refusal without the schema has nothing to refuse. §3 depends on §1. §5 depends on §4. §6 is documentation and an audit warning and can run beside any of them.</p></div>
     <pre class="r-fu-prompt">/reckon-build section-contract-and-computed-impl §1</pre>
+    <p class="r-fu-outcome">Moved into §11 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
 <article class="r-fu" data-id="f-scci-wiring-refusal-findings" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="nova-s19-coordinator" data-written-at="2026-09-19T12:35:00Z" data-recommends-skill="/reckon-build section-contract-and-computed-impl §7" data-resolved-at="2026-09-19T13:26:00+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Close the four review findings on the wiring refusal and register standalone on the write path</h4>
@@ -539,6 +552,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260926T123754674978-review-of-section-contract-and-computed-impl-currency-audit" data-who="reckon-build" data-when="2026-09-26T15:15:08.743Z">
     <div class="r-comment-body"><p>review node: stored a 94/100 record; a review has no gate of its own</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-scci-s8-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>§8 landed. impl-needs-every-section-recorded was merged at 4b43272ac and promoted. <code>derive_impl_from_sections</code> now takes the plan's section declarations, on both read paths. It returns None, so the authored impl stands, while any section declared done or implementable has no record. The six zeroed plans read 0.57, 0.98, 0.97, 0.88, 0.5 and 1.0 again. Over the real tree 14 plans changed figure: 11 to their authored value, and 3 to no figure because none is authored. The negative control fails the partial-coverage case. The gate fails the same 2 pre-existing ids at base and head, and the review scored 94.</p><p>One consequence for authors: a plan whose authored impl is 0 and whose records cover only some sections now reads 0 until the rest carry records. the-obligations-hook-reads-a-snapshot was such a plan. Attaching records to its two record-less done sections made it derive 0.41.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260919T114226411288-scci-wiring-asserted-at-creation" data-who="reckon-ship" data-when="2026-09-19T12:08:30.455Z">
     <div class="r-comment-body"><p>An unwired implementable plan is refused at creation and audit unless it declares itself standalone; review 83/100 with four findings queued</p></div>
@@ -662,6 +678,12 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261001T012746674434-review-of-doccheck-section-ref-warning" data-who="reckon-build" data-when="2026-10-01T01:33:38.556Z">
     <div class="r-comment-body"><p>independent review of run r-20261001T004632831263-doccheck-section-ref-warning stored as a parsed five-dimension record (goal_fidelity 17, evidence 16, scope_discipline 19, durability 18, fit 19; total 89) with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own gate-base.log and gate-head.log; two follow-on findings recorded (the evidence fragment cites the head arm at b7a67a3c4 while gate-head.log and the manifest name c8075f0fa; the check keys only on the consumer's own section declarations, not the target's gated_sections), no blocking findings</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261001T200501469930-impl-needs-every-section-recorded" data-who="reckon-build" data-when="2026-10-01T20:59:37.186Z">
+    <div class="r-comment-body"><p>derive_impl_from_sections takes the plan's section declarations and returns None, keeping the authored impl, whenever a section declared done or implementable carries no record; the six named plans read their authored figures again (0.57, 0.98, 0.97, 0.88, 0.5, 1.0) and 14 plans change figure over the real docs tree (11 to a numeric authored value, 3 to no figure where none is authored), with the negative control failing the partial-coverage case (1 failed, 1 passed, EXIT=1).</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261001T210014618333-review-of-impl-needs-every-section-recorded" data-who="reckon-build" data-when="2026-10-01T21:35:26.760Z">
+    <div class="r-comment-body"><p>review of r-20261001T200501469930-impl-needs-every-section-recorded stored at both review paths: 94/100 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 18), status parsed, added_failure_count 0 against the reviewed run's own gateway (the same two launch-claim ids fail on both arms), one follow-on finding on the evidence fragment's moving plan-count figure.</p></div>
 </div>
 </section>
 </main>

@@ -10,7 +10,6 @@ from reckon.serve import discover_plans
 from tests.spa_browser_harness import (
     BrowserProbeError,
     file_spa,
-    installed_browser,
     installed_browser_or_skip,
     run_browser_probe,
     served_spa,
@@ -103,9 +102,7 @@ def test_stylesheets_have_no_fixed_canvas_width() -> None:
 
 @pytest.fixture(scope="module")
 def rendered_browser(tmp_path_factory) -> str:
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip("no supported browser binary is installed")
+    browser = installed_browser_or_skip()
     try:
         run_browser_probe(
             tmp_path_factory.mktemp("browser-capability"),

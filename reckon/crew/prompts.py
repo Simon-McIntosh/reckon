@@ -4,6 +4,7 @@ import json
 import re
 import sys
 from collections.abc import Iterable, Mapping
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from reckon.crew.node import (
@@ -11,6 +12,7 @@ from reckon.crew.node import (
     TaskNode,
     is_test_path,
     negative_control_is_none,
+    parse_duration,
 )
 
 # The commit-and-manifest-early contract, embedded in every composed prompt.
@@ -360,6 +362,28 @@ INVARIANT_PROMPT_BOUNDARY = len(INVARIANT_PROMPT_PREFIX)
 # ── Prompt composition ──────────────────────────────────────────────────────
 
 
+def _utc_instant(moment: datetime) -> str:
+    """Render an instant in the ISO-8601 UTC form attempt records write."""
+    return moment.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def time_fence_statement(*, time_budget: str, launch_instant: str) -> str:
+    """State an attempt's launch instant, its deadline, and the clock to check.
+
+    The deadline is the launch instant plus the declared budget, rendered in the
+    same ISO-8601 UTC form the attempt record writes, so a worker measures
+    elapsed time from a stated instant rather than estimating it from the work
+    it has done.
+    """
+    launch = datetime.fromisoformat(launch_instant)
+    deadline = _utc_instant(launch + timedelta(seconds=parse_duration(time_budget)))
+    return (
+        f"Launched {launch_instant} UTC; deadline {deadline} — {time_budget} from "
+        "launch. Check the current time with `date -u`, and measure elapsed time "
+        "against that deadline rather than estimating it from the work done."
+    )
+
+
 def compose_prompt(
     *,
     node: TaskNode,
@@ -368,6 +392,7 @@ def compose_prompt(
     working_directory: str,
     manifest_path: str,
     time_budget: str,
+    launch_instant: str = "",
     needs_help_after_failures: int,
     peer_scopes: Mapping[str, Iterable[str]] | None = None,
     run_id: str = "",
@@ -388,6 +413,9 @@ def compose_prompt(
     and the landing contract sends the record to the run directory rather than
     to a plan section. A brief is carried verbatim, so a later reader can diff
     the brief's own bytes against the prompt that read them.
+
+    ``launch_instant`` is the attempt's own recorded start; the FENCE — TIME
+    line states it, the deadline it sets, and the clock that checks them.
     """
     peers = peer_scopes or {}
     peer_lines = (
@@ -527,6 +555,17 @@ RUNTIME FILESYSTEM
             "a failure outside this node's declared scope is reported under "
             "follow_ons rather than triaged or fixed."
         )
+    # The attempt's own launch instant is what the fence is measured against,
+    # so it is stated beside the deadline it sets rather than only carried in
+    # the record: a worker estimates elapsed time from the work it has done
+    # when the fence gives it a duration and nothing to measure it against. A
+    # caller that names no launch instant (a direct composition with no attempt
+    # behind it) keeps the bare duration.
+    time_fence = (
+        time_fence_statement(time_budget=time_budget, launch_instant=launch_instant)
+        if launch_instant
+        else str(time_budget)
+    )
     return f"""{_invariant_prompt_prefix()}{node.id}
 GOAL     {node.goal}
 {task_authority}
@@ -551,7 +590,7 @@ PEER CHANNEL — knowledge only; write scopes never transfer. Run {run_id}; endp
   Reads block on filesystem events; expiry writes NEEDS-HELP to the manifest.
 
 FENCE — TIME
-  {time_budget}. Exceeding it means stop and report, never push on. Your process ends when this turn ends: never wait across a backgrounded command. Write your manifest with what you know now before starting one, and update it afterward if a later turn arrives — that is keyed to starting the wait, not to finishing the work. A run that ends mid-wait is resumable, so if you run out of turns, leave a record naming exactly what you were waiting for — set status: waiting and fill the wait_condition, wait_probe, wait_terminal and resume_brief keys in the manifest block so a resume sweep can wake you. Declaration is for a wait you hold: the wait block states something you are actually waiting on, never a note about where you are. A resumed worker whose wait is met has nothing left to wait on: record where work stands under the checkpoint key and continue, rather than writing the wait block again. So does any worker recording progress at any point, not only a resumed one.
+  {time_fence}. Exceeding it means stop and report, never push on. Your process ends when this turn ends: never wait across a backgrounded command. Write your manifest with what you know now before starting one, and update it afterward if a later turn arrives — that is keyed to starting the wait, not to finishing the work. A run that ends mid-wait is resumable, so if you run out of turns, leave a record naming exactly what you were waiting for — set status: waiting and fill the wait_condition, wait_probe, wait_terminal and resume_brief keys in the manifest block so a resume sweep can wake you. Declaration is for a wait you hold: the wait block states something you are actually waiting on, never a note about where you are. A resumed worker whose wait is met has nothing left to wait on: record where work stands under the checkpoint key and continue, rather than writing the wait block again. So does any worker recording progress at any point, not only a resumed one.
 
 FENCE — EVIDENCE (this measure is the done-when; state it quantitatively)
   {node.done_when}{evidence_role_note}

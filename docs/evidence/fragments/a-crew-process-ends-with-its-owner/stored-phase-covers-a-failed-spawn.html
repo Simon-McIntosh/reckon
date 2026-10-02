@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A failed spawn leaves the stored phase at launch-failed">
+  <meta name="plan-summary" content="Both supervisor paths that end a launch before any worker reaches a model — a spawn failure and a launch abandoned by a pre-spawn stop — publish the stored phase, so the live pointer reads launch-failed rather than staying at the pre-spawn starting.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,pointer,phase,supervisor,launch-failed">
+  <title>A failed spawn leaves the stored phase at launch-failed — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="stored-phase-covers-a-failed-spawn" data-reckon="landed" data-when="2026-10-02">
+  <h2>A failed spawn leaves the stored phase at launch-failed</h2>
+  <p>The supervisor's stored-phase writer advanced the pointer on the normal life — <code>working</code> once the worker was spawned, and the delivered manifest's terminal status once it exited — but the two branches that end a launch before any worker exists wrote their launch-failure record and returned without publishing. Those runs were left reading the pre-spawn <code>starting</code>, so a reader could not tell a launch that never reached a model from one still being placed. The spawn-failure branch (<code>_run_supervisor</code>, when the spawn raises) and the abandoned-before-spawn path (<code>_record_launch_abandoned_before_spawn</code>, a pre-spawn stop) now each call the writer with their own exit record, which carries <code>ended_during: "launch"</code> and so resolves to <code>launch-failed</code>. The writer's attempt guard and its discard guard — a spec for a different attempt, and a pointer a discard removed — are unchanged and now asserted: a foreign attempt leaves the phase as the successor wrote it, and a removed pointer is not recreated.</p>
+  <p>The gate at <code>tests/test_stored_phase_advances.py</code> adds three cases: a spawn failure and an abandoned launch each read <code>launch-failed</code>; a stale attempt's exit record does not move the phase; a discarded pointer stays absent. Head arm <b>15 passed</b> (<code>EXIT=0</code>); base arm <b>11 passed</b> (<code>EXIT=0</code>) — the defect reproduces as the two branch cases failing against base source (<b>2 failed / 3 passed</b>). The declared control removes the spawn-failure branch's publish and that case reads <code>starting</code>: <b>1 failed / 4 passed</b> (<code>EXIT=1</code>). <b>Zero added failures</b> across <code>tests/test_stored_phase_advances.py</code> and <code>tests/test_crew_interrupted_phase.py</code>.</p>
+</article>
+</body>
+</html>

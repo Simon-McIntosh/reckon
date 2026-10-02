@@ -183,6 +183,23 @@ def _finish_after_reconciliation(ticker, pool: ThreadPoolExecutor) -> None:
         pool.submit(next, ticker).result(timeout=5)
 
 
+def _wait_until_watcher_live(project: str, *, bound: float) -> dict:
+    """Wait, bounded, for the armed producer's seat to become visible.
+
+    The former fixed window measured the time from the producer's first emitted
+    row to its seat record being readable; the seat fact is observable, so wait
+    for it and stop as soon as it holds, bounded by the same window.
+    """
+    deadline = time.monotonic() + bound
+    visibility = project_watch_visibility(project)
+    while time.monotonic() < deadline and not (
+        visibility["watcher_live"] and visibility["pointer_count"] == 1
+    ):
+        time.sleep(0.005)
+        visibility = project_watch_visibility(project)
+    return visibility
+
+
 def test_cold_watch_holds_an_already_stale_terminal_pointer(home: Path) -> None:
     """The classifier reports completed_unpromoted for an unreviewed complete run."""
     record = _write_stale_terminal_pointer(home)
@@ -208,9 +225,7 @@ def test_cold_watch_holds_an_already_stale_terminal_pointer(home: Path) -> None:
             "completed_unpromoted",
             1,
         )
-        time.sleep(0.25)
-
-        visibility = project_watch_visibility("sample")
+        visibility = _wait_until_watcher_live("sample", bound=0.25)
         assert producer.poll() is None
         assert visibility["watcher_live"] is True
         assert visibility["pointer_count"] == 1

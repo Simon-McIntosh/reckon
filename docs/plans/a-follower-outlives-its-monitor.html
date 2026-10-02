@@ -17,15 +17,15 @@
   <meta name="plan-capability-risk" content="moderate">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
-  <meta name="plan-modified" content="2026-10-01">
-  <meta name="plan-version" content="58">
+  <meta name="plan-modified" content="2026-10-02">
+  <meta name="plan-version" content="59">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-impl" content="0.86">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -537,12 +537,17 @@
     landed record</a>.</p>
     </div>
 
+    <h2 id="s11">§11 — Keep the follower attached across the host&#x27;s expiry</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>§2, §3 and §6 are independent. §4 shares <code>reckon/cli.py</code> with §3 and runs after it. §5 waits on the measurement plan's staleness census.</p><p><strong>Done when</strong> a follower survives its host's expiry (§2, §3, §6 independent; §4 after §3).</p><p>Moved from followup f-afoim-001 on a-follower-outlives-its-monitor by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.86; §2/§3/§4/§6 named in body</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-afoim-001" data-status="open" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-follower-outlives-its-monitor" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-afoim-001" data-status="resolved" data-written-by="reckon-create" data-written-at="2026-09-22" data-recommends-skill="/reckon-build a-follower-outlives-its-monitor" data-resolved-at="2026-10-02T08:45:06+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Keep the follower attached across the host&#x27;s expiry</h4>
     <div class="r-fu-body"><p>§2, §3 and §6 are independent. §4 shares <code>reckon/cli.py</code> with §3 and runs after it. §5 waits on the measurement plan's staleness census.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-follower-outlives-its-monitor</pre>
+    <p class="r-fu-outcome">Moved into §11 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
 <article class="r-fu" data-id="f-afoim-handoff-01" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="ship-s20-20260923" data-written-at="2026-09-24" data-recommends-skill="/reckon-build a-follower-outlives-its-monitor" data-resolved-at="2026-10-01T07:03:46+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Bound the follower lifetime against a long poll, and fix three follow-ons</h4>
@@ -679,7 +684,7 @@
     <div class="r-comment-body"><p>follower-bounds-its-lifetime: the arming's deadline now bounds a poll (the sweep runs on its own thread and is abandoned at the deadline — measured exact with an injected clock: end within 1 s of the deadline with the poll still blocked), the deadline is converted to the watch loop's clock once at arming so a replacement image spends the original grant (base fails the deterministic case at 2.300 s past the instant; head passes in 0.86 s), the reader checkpoint travels only in the re-exec mapping and the arming variable is dropped at start (base arm: a child inherited RECKON_WATCH_ARMING; head: neither variable in any probe child), a dispatch refused on follower conditions names every unmet condition in one refusal beside the one follower command (two conditions plus the delivering peer's session name in one payload, exit 8), and a launch kind that carries no session delivery is still refused for a missing producer (its guard case fails when the refusal is removed: 1 failed in 6.57 s, the in-harness dispatch admitted at exit_code 0)</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261001T063129170778-review-of-follower-bounds-its-lifetime" data-who="reckon-build" data-when="2026-10-01T06:46:58.524Z">
-    <div class="r-comment-body"><p>independent review of r-20261001T031827152052-follower-bounds-its-lifetime stored at the legacy and head-keyed review paths: status parsed, all five dimensions scored in 0..20 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19; total 97), added_failure_count 0 / added_failure_ids [] derived from the run&#x27;s own baseline_suite (33c5e761d, 6 failed) and after_suite (4536c411c, 0 failed) gate logs, one follow-on finding (a second copy of the watcher remedy sentence at reckon/crew/dispatch.py:1050 duplicating reckon/crew/node.py:441), and no blocking finding.</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261001T031827152052-follower-bounds-its-lifetime stored at the legacy and head-keyed review paths: status parsed, all five dimensions scored in 0..20 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19; total 97), added_failure_count 0 / added_failure_ids [] derived from the run's own baseline_suite (33c5e761d, 6 failed) and after_suite (4536c411c, 0 failed) gate logs, one follow-on finding (a second copy of the watcher remedy sentence at reckon/crew/dispatch.py:1050 duplicating reckon/crew/node.py:441), and no blocking finding.</p></div>
 </div>
 </section>
 </main>

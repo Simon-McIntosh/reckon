@@ -51,6 +51,7 @@ from reckon.crew.runs import (
     list_live,
     producer_lease_seconds,
     read_pointer,
+    update_watch_registration,
     watch_lease_renewed_at,
     watch_lock_path,
 )
@@ -830,7 +831,7 @@ def _stop_delivered_reviews(
     pointers: Sequence[Mapping[str, Any]],
     *,
     grace_seconds: float = DELIVERED_REVIEW_GRACE_SECONDS,
-    signal_run: Callable[[int, str | None], None] | None = None,
+    signal_run: Callable[..., None] | None = None,
 ) -> list[dict[str, Any]]:
     """Stop each review whose stream has outlived its delivery by the grace.
 
@@ -843,7 +844,6 @@ def _stop_delivered_reviews(
     rather than recorded as one, because a record claiming a stopped process
     that is still running is worse than no record at all.
     """
-    signal_run = signal_run or _signal_process_group
     stopped: list[dict[str, Any]] = []
     for pointer in pointers:
         delivered = review_delivered(pointer)
@@ -858,7 +858,15 @@ def _stop_delivered_reviews(
             continue
         pid = pointer.get("pid")
         try:
-            signal_run(int(pid), pointer.get("pid_start_time"))
+            if signal_run is None:
+                _signal_process_group(
+                    int(pid),
+                    pointer.get("pid_start_time"),
+                    run_dir=_run_directory(pointer),
+                    reason="delivered-review-outlived-grace",
+                )
+            else:
+                signal_run(int(pid), pointer.get("pid_start_time"))
         except (
             CrewError,
             ProcessLookupError,
@@ -3031,7 +3039,12 @@ def _apply_budget_watchdog(
         return
     pid = record.get("pid")
     try:
-        _signal_process_group(int(pid), record.get("pid_start_time"))
+        _signal_process_group(
+            int(pid),
+            record.get("pid_start_time"),
+            run_dir=_run_directory(record),
+            reason="budget-watchdog",
+        )
     except (
         CrewError,
         ProcessLookupError,
@@ -3125,12 +3138,12 @@ def _observed_stream(
     second classification of an unchanged run cost no parse at all.
 
     The memo's stream entry is served only while the file it was read from is
-    still that file by identity. When it is not, the read starts at the byte
-    offset the last one reached, so a stream that has only grown costs the
-    records appended since rather than the whole file. An offset past the end of
-    the file, or one whose stream was replaced, reads from the first record: a
-    resume writes a new stream, and an offset into a predecessor's bytes means
-    nothing in a file that never held them.
+    still that file by identity. When it is not, the cursor carries the byte
+    offset the last read reached and a fingerprint of the stream's opening, so the read
+    resumes only while the stream still opens with that same fingerprint: an
+    offset past the end of the file, a replaced stream, or one rewritten in place
+    to a new opening all read from the first record, because an offset into a
+    predecessor's bytes means nothing in a file that no longer holds them.
     """
     if record.get("launch") != "cli":
         return None
@@ -3140,14 +3153,23 @@ def _observed_stream(
     command = _harness_command(record, record.get("argv"))
     if not command:
         return None
+    from reckon import _backends
+
     stored = memo.get("stream") if memo is not None else None
     resume: dict[str, Any] | None = None
     if isinstance(stored, Mapping) and str(stored.get("path") or "") == str(log):
         state = stored.get("state")
-        if isinstance(state, Mapping):
+        # An offset only means the same thing in the file it was reached in: a
+        # stream replaced at this path since means nothing here, so a changed
+        # inode re-reads from the first record while a grown one resumes.
+        if (
+            isinstance(state, Mapping)
+            and str(stored.get("inode") or "") == _file_inode(log)
+        ):
             resume = {
                 "offset": int(stored.get("offset") or 0),
                 "state": state,
+                "head": stored.get("head"),
             }
         # What an observation is a function of is the file it was read from and
         # the lane it was translated for, so those are what an entry is served
@@ -3161,7 +3183,6 @@ def _observed_stream(
             and isinstance(stored.get("observation"), Mapping)
         ):
             return dict(stored.get("observation") or {})
-    from reckon import _backends
 
     try:
         observation = _backends.observe_log(
@@ -3176,12 +3197,15 @@ def _observed_stream(
         return None
     seen = observation.as_dict()
     if memo is not None:
+        offset = int(observation.stream_state.get("offset") or 0)
         memo["stream"] = {
             "path": str(log),
             "ident": _file_identity(log),
+            "inode": _file_inode(log),
+            "head": _backends.stream_head_fingerprint(log, offset=offset),
             "command": command,
             "backend": str(record.get("backend") or ""),
-            "offset": int(observation.stream_state.get("offset") or 0),
+            "offset": offset,
             "state": observation.stream_state,
             "observation": seen,
         }
@@ -3357,7 +3381,9 @@ def _result_turned_no_tokens(event: Mapping[str, Any]) -> bool:
     return True
 
 
-def _admission_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
+def _admission_refusal(
+    record: Mapping[str, Any], *, memo: dict[str, Any] | None = None
+) -> dict[str, Any] | None:
     """The marks of a run the backend refused before serving its first turn.
 
     A refusal at admission ends the run in three lines: an assistant record
@@ -3375,18 +3401,32 @@ def _admission_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
     None, and an ordinary failed turn — which reports the tokens it spent —
     cannot reach this reading. None means the ordinary dead-process arms
     classify the run, so this gate never widens them.
+
+    The scan's result is memoised against the stream's stat identity, because a
+    producer polls every live run every second and the marks remain the same
+    until the stream moves. A stream that has only grown is read again from the
+    start — the marks can sit anywhere in it — but one nothing has appended to
+    answers from the memo without opening the file, and the bytes a scan does
+    consume are counted so a stat-only poll reads nothing here.
     """
     if record.get("launch") != "cli":
         return None
     log = Path(str(record.get("log_path") or ""))
     if not log.is_file():
         return None
+    ident = _file_identity(log)
+    cached = memo.get("admission") if memo is not None else None
+    if isinstance(cached, Mapping) and str(cached.get("ident") or "") == ident:
+        refusal = cached.get("refusal")
+        return dict(refusal) if isinstance(refusal, Mapping) else None
     refusal_reason = ""
     terminal_reason = ""
     zero_token_error = False
+    consumed = 0
     try:
         with log.open(encoding="utf-8", errors="replace") as handle:
             for line in handle:
+                consumed += len(line.encode("utf-8", errors="replace"))
                 try:
                     event = json.loads(line)
                 except (ValueError, TypeError):
@@ -3411,16 +3451,16 @@ def _admission_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
                         zero_token_error = True
     except OSError:
         return None
-    if (
-        not refusal_reason
-        or terminal_reason != "blocking_limit"
-        or not zero_token_error
-    ):
-        return None
-    return {
-        "reason": refusal_reason,
-        "terminal_reason": terminal_reason,
-    }
+    _count_admission_bytes(consumed)
+    refusal: dict[str, Any] | None = None
+    if refusal_reason and terminal_reason == "blocking_limit" and zero_token_error:
+        refusal = {
+            "reason": refusal_reason,
+            "terminal_reason": terminal_reason,
+        }
+    if memo is not None:
+        memo["admission"] = {"ident": ident, "refusal": refusal}
+    return refusal
 
 
 def _budget_hold_block(
@@ -4587,6 +4627,7 @@ def _observed_phase(
     *,
     alive: bool | None,
     worker_alive: bool | None,
+    worker_record_names_pid: bool,
     ended_exit: Mapping[str, Any] | None,
     manifest_status: str,
     commits_beyond_base: int,
@@ -4620,7 +4661,12 @@ def _observed_phase(
     record that names no pid leaves the label standing. Reading the answer as
     proof only while it was ``True`` let the phase fall back to the pre-spawn
     label the moment the worker exited, so a run that had already been reported
-    working was reported dispatched again.
+    working was reported dispatched again. Presence is the launch evidence and
+    is read without the host gate that liveness carries: whether the pid can be
+    probed *here* decides only whether the worker is alive now, while a record
+    sitting in the run's directory proves the launch happened wherever it did,
+    so a run whose launching host is another machine still advances past
+    starting and is never rendered dispatched for it.
 
     An assistant record in the run's newest stream answers the same way, and it
     is the evidence left when nothing else has been written: the phase advances
@@ -4636,7 +4682,7 @@ def _observed_phase(
         return "working" if alive is True else "complete"
     if ended_exit is not None:
         return "complete"
-    if worker_alive is not None or commits_beyond_base:
+    if worker_record_names_pid or commits_beyond_base:
         return "working"
     if stream_shows_work:
         return "working"
@@ -4707,21 +4753,25 @@ def _worker_record_liveness(record: Mapping[str, Any]) -> bool | None:
     naming no pid. Reported as its own fact rather than folded into the
     pointer's answer, because a supervisor that has exited before its worker
     takes the pointer pid with it while the work continues.
+
+    The worker record carries no host of its own, so its pid is meaningful only
+    on the machine that issued it: a number live here is no evidence about a run
+    launched *elsewhere*, and reading it as one hands a foreign run a life this
+    host cannot support. The read is therefore refused only for a run whose own
+    launching host names a different machine. An unnamed host is not refused:
+    the resumed-attempt deferral this fact exists for reads a run whose pointer
+    cannot be resolved here, and a pointer written before the launching host was
+    recorded names none, so refusing it would leave exactly the resumed run the
+    deferral was built for with no liveness at all. The pid itself is decided by
+    ``runs.record_process_alive``, which owns the start-tick comparison that
+    keeps a recycled number from reading as the registered worker.
     """
     data = _worker_record(record)
     if data is None:
         return None
-    pid = data.get("pid")
-    if not pid:
+    if _record_is_known_foreign(record):
         return None
-    alive = runs.process_alive(pid)
-    if alive is True:
-        expected = data.get("pid_start_time")
-        if expected is not None:
-            actual = _process_start_time(pid)
-            if actual is not None:
-                alive = actual == expected
-    return alive
+    return runs.record_process_alive(data, process_alive)
 
 
 def _worker_launched_after_manifest(record: Mapping[str, Any], manifest: Path) -> bool:
@@ -5190,6 +5240,21 @@ def _launched_on_this_host(record: Mapping[str, Any]) -> bool:
     )
 
 
+def _record_is_known_foreign(record: Mapping[str, Any]) -> bool:
+    """Whether the record names a launching host that is a different machine.
+
+    Distinct from :func:`_launched_on_this_host`, which also answers false for
+    an unnamed host. A pointer with no launching host cannot be *shown* to be
+    this host, but neither can it be shown to be another one, so a pid read that
+    is safe to refuse on proof of a foreign machine is left to run on the mere
+    absence of a name: an unnamed pointer predates the field, and its records
+    are read as they always were rather than being refused for a host that was
+    never written down.
+    """
+    host = record.get("launcher_host")
+    return host is not None and str(host) != _reading_host()
+
+
 def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
     """The liveness this host can stand behind for one live pointer.
 
@@ -5537,6 +5602,27 @@ CLASSIFICATION_MEMO_VERSION = 1
 # calls that consult this run's stream and withdrawn when they return.
 _CLASSIFICATION_MEMO_IN_FLIGHT: tuple[str, dict[str, Any]] | None = None
 
+# Bytes of stream records the admission check has consumed since the count was
+# last taken. The admission refusal reads raw events rather than the dialect
+# fold, so it has its own cursor-by-identity cache and its own accounting: a
+# poll that finds every stream unchanged reads nothing here, and a reader can
+# tell a stat-only poll from one that rescanned a stream. A one-element cell so
+# the counter is mutated without a module-level global statement.
+_ADMISSION_STREAM_BYTES = [0]
+
+
+def take_admission_stream_bytes() -> int:
+    """Bytes of stream records the admission check read since last taken, reset."""
+    value = _ADMISSION_STREAM_BYTES[0]
+    _ADMISSION_STREAM_BYTES[0] = 0
+    return value
+
+
+def _count_admission_bytes(count: int) -> None:
+    if count > 0:
+        _ADMISSION_STREAM_BYTES[0] += count
+
+
 # The run directory's records the classification consults, named here so the
 # memo's key covers them: each is a file whose content moves the row.
 _CLASSIFICATION_RUN_RECORDS = (
@@ -5558,6 +5644,20 @@ def _file_identity(path: str | Path) -> str:
     except OSError:
         return "absent"
     return f"{stat.st_dev}:{stat.st_ino}:{stat.st_size}:{stat.st_mtime_ns}"
+
+
+def _file_inode(path: str | Path) -> str:
+    """A file's device and inode, the identity that moves when it is replaced.
+
+    A stream that has only grown keeps its inode and may be resumed; a stream
+    written anew at the same path is a different file, and an offset into a
+    predecessor's bytes means nothing in a file that never held them.
+    """
+    try:
+        info = Path(path).stat()
+    except OSError:
+        return "absent"
+    return f"{info.st_dev}:{info.st_ino}"
 
 
 def _classification_memo_path(record: Mapping[str, Any]) -> Path | None:
@@ -5601,9 +5701,16 @@ def _read_classification_memo(record: Mapping[str, Any]) -> dict[str, Any]:
 def _write_classification_memo(
     record: Mapping[str, Any], memo: Mapping[str, Any]
 ) -> None:
-    """Persist a memo beside the pointer, atomically and best-effort.
+    """Persist one run's memo in its directory, atomically and best-effort.
 
-    Every reader of the live fleet shares this directory, so the write lands
+    The memo is a cache written by a read, so it never brings a run's home into
+    being: a directory that is absent or empty is not yet the run's home, and a
+    memo written into it would make it one — leaving a run directory behind a
+    pointer that never had any, which a discard then finds a marker's place in,
+    reading a deliberate discard for a pointer that only ever vanished. A
+    directory that already holds the run's records is left to keep its memo.
+
+    Every reader of the live fleet shares these files, so the write lands
     through a rename: a reader either sees the previous memo or this one, never
     half of either. A memo that cannot be written is not an error — it costs
     the next reader a recomputation, which is the state the fleet was in before
@@ -5612,11 +5719,12 @@ def _write_classification_memo(
     path = _classification_memo_path(record)
     if path is None:
         return
+    if not path.parent.is_dir() or not any(path.parent.iterdir()):
+        return
     payload = dict(memo)
     payload["version"] = CLASSIFICATION_MEMO_VERSION
     written: str | None = None
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
         with tempfile.NamedTemporaryFile(
             "w",
             encoding="utf-8",
@@ -6046,11 +6154,19 @@ def classify_pointer(
     # A refusal at admission is read from the stream's own marks, not from the
     # budget block: it is not a spend refusal — nothing was requested — and the
     # block carries no budget to refuse from. It is resolved here so the
-    # dead-process chain consults the stream once for the shape.
+    # dead-process chain consults the stream once for the shape. Only a run whose
+    # process is gone can reach that arm, so the read is taken only when it can
+    # be used: a live run never pays for a scan whose verdict the chain discards.
     admission_refusal = (
         None
-        if (refusal_block or retry_block or exhaustion_block or budget_hold)
-        else _admission_refusal(record)
+        if (
+            refusal_block
+            or retry_block
+            or exhaustion_block
+            or budget_hold
+            or alive is not False
+        )
+        else _admission_refusal(record, memo=memo)
     )
     terminal = phase in ("complete", "failed")
     wait = _manifest_wait(
@@ -6873,6 +6989,7 @@ def classify_pointer(
         phase,
         alive=alive,
         worker_alive=worker_alive,
+        worker_record_names_pid=_worker_record_pid(record) is not None,
         ended_exit=ended_exit,
         manifest_status=manifest_status,
         commits_beyond_base=commits_beyond_base,
@@ -7033,6 +7150,49 @@ def classify_pointer(
     return classified
 
 
+# Commits-beyond-base per (worktree, base), keyed against the worktree head it
+# was taken at. A tree that has not moved answers from here, so an unchanged
+# poll spawns no git; a moved head is recounted. Placeholder head identities
+# (no tree, no git dir, no head) are never cached, because they name a state
+# that will change once the tree or its git directory appears.
+_COMMITS_BEYOND_BASE_CACHE: dict[tuple[str, str], tuple[str, int]] = {}
+
+# A live producer classifies the whole fleet on every poll, so this cache gains
+# an entry per (worktree, base) it has ever classified. A worktree that has been
+# reclaimed leaves its entries behind, and without a bound a long-lived producer
+# accumulates one per run's worktree for as long as it runs. Past this many
+# entries the cache drops the counts whose worktree is no longer on disk, then
+# the oldest of what remains, so it stays bounded by the live fleet rather than
+# by every run the producer has ever seen.
+_COMMITS_BEYOND_BASE_CACHE_LIMIT = 256
+
+
+def _evict_gone_worktrees() -> None:
+    """Drop cached commit counts whose worktree is no longer on disk.
+
+    A reclaimed worktree cannot move its head again, so its count can never be
+    answered from the cache; the entry is dead weight the moment the directory
+    goes. Removing it is the cheapest half of keeping the cache bounded, done
+    only when the cache is at its ceiling so an ordinary poll pays nothing for
+    it.
+    """
+    cache = _COMMITS_BEYOND_BASE_CACHE
+    for key in [key for key in cache if not Path(key[0]).is_dir()]:
+        cache.pop(key, None)
+
+
+def _remember_commits(key: tuple[str, str], head: str, count: int) -> None:
+    """Store one commit count, keeping the cache bounded first."""
+    cache = _COMMITS_BEYOND_BASE_CACHE
+    if len(cache) >= _COMMITS_BEYOND_BASE_CACHE_LIMIT and key not in cache:
+        _evict_gone_worktrees()
+        # Still full of live worktrees: drop the oldest so a fleet larger than
+        # the ceiling evicts rather than growing without bound.
+        while len(cache) >= _COMMITS_BEYOND_BASE_CACHE_LIMIT:
+            cache.pop(next(iter(cache)), None)
+    cache[key] = (head, count)
+
+
 def _commits_beyond_base(record: Mapping[str, Any]) -> int:
     """Count commits in the worktree past the pointer's recorded base.
 
@@ -7042,11 +7202,23 @@ def _commits_beyond_base(record: Mapping[str, Any]) -> int:
     by a missing or unreported manifest. Zero when the worktree or base is
     absent or the count cannot be read — an unreadable tree proves nothing, so
     it must not fabricate a rescue.
+
+    The count is a function of the worktree's revision, which is read from the
+    git directory as files rather than by a subprocess, so it is cached against
+    that revision. A run whose tree has not moved is answered without spawning
+    git again; when the head moves the count is taken afresh.
     """
     worktree = Path(str(record.get("worktree") or ""))
     base = str(record.get("base_sha") or record.get("base") or "").strip()
     if not base or not worktree.is_dir():
         return 0
+    head = _worktree_head_identity(worktree)
+    cacheable = head not in {"no-tree", "no-git", "no-head"}
+    key = (str(worktree), base)
+    if cacheable:
+        cached = _COMMITS_BEYOND_BASE_CACHE.get(key)
+        if cached is not None and cached[0] == head:
+            return cached[1]
     count = subprocess.run(
         ["git", "rev-list", "--count", f"{base}..HEAD"],
         cwd=worktree,
@@ -7056,9 +7228,12 @@ def _commits_beyond_base(record: Mapping[str, Any]) -> int:
     if count.returncode != 0:
         return 0
     try:
-        return max(0, int(count.stdout.decode().strip()))
+        resolved = max(0, int(count.stdout.decode().strip()))
     except (ValueError, UnicodeDecodeError):
         return 0
+    if cacheable:
+        _remember_commits(key, head, resolved)
+    return resolved
 
 
 def _worktree_diff_paths(record: Mapping[str, Any]) -> list[str]:
@@ -7254,8 +7429,11 @@ def _watch_registration(project: str, stall_window: str):
                     "parent_start_time": _process_start_time(parent_pid),
                 }
             )
-            with watch_lock_path(project).open("r+b") as handle:
-                _write_watch_record(handle, watcher)
+            # The record is written through the seat handle the claim holds,
+            # never by reopening the path: an unlink in the moment between
+            # taking the seat and this write would make the reopen raise
+            # FileNotFoundError and end the producer before it polls once.
+            _write_watch_record(runs._WATCH_SEAT_HANDLES[project], watcher)
         yield acquired, watcher
 
 
@@ -7282,8 +7460,21 @@ def unwatch(project: str) -> dict[str, Any]:
                     "the locked registration has no valid pid"
                 ) from exc
 
+            # A watcher has no run directory, so the watch directory the seat
+            # registration sits in is the sender file's home. The shared writer
+            # owns the attribution and outcome records, so unwatch names that
+            # directory and the project the watcher serves rather than writing
+            # an attribution of its own: the project rides its own field, which
+            # a reader of the shared directory can act on without parsing a
+            # message.
             try:
-                _signal_process_group(pid, watcher.get("pid_start_time"))
+                _signal_process_group(
+                    pid,
+                    watcher.get("pid_start_time"),
+                    run_dir=path.parent,
+                    reason="unwatch",
+                    project=project,
+                )
             except ProcessLookupError:
                 stopped = False
                 reason = "watcher-exited"
@@ -7401,10 +7592,15 @@ def _promote_record_holds(record: Mapping[str, Any]) -> bool:
 
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
-    if not run_id or not project:
+    # The row is read from the run's own repository, so a pointer that records
+    # none cannot say where the row would be. Resolving a default root instead
+    # would answer a promotion from a directory the run does not own — a row
+    # another run or a fixture left there would read as this run's landing.
+    repo = str(record.get("repo") or "")
+    if not run_id or not project or not repo:
         return False
     try:
-        return ledger_module.run_path(project, run_id, record.get("repo")).is_file()
+        return ledger_module.run_path(project, run_id, repo).is_file()
     except (OSError, ValueError):
         return False
 
@@ -7703,7 +7899,7 @@ def _watch_snapshot(
         # departure fold can resolve the ledger that decides its word when its
         # caller supplies no reader. A snapshot written before this field existed
         # carries none, which leaves a departure's record unknown and therefore
-        # withdrawn rather than promised as promoted.
+        # departed rather than promised as promoted.
         "project": str(pointer.get("project") or ""),
         # The dispatching session, so a reader can tell its own fleet from a
         # peer's on a stream that is necessarily project-wide.
@@ -7767,7 +7963,12 @@ def _watch_snapshot(
 # keeping healthy waits out of both work-in-progress and needs-action figures.
 # Every snapshot belongs to exactly one bucket, so the figures still add up.
 FLEET_WORKING_STATES = ("dispatched", "working", "running")
-FLEET_UNPROMOTED_STATES = ("complete", "completed_unpromoted")
+# ``departed`` is the word a departure with no resolvable ledger carries: the
+# run has gone and no record says whether it landed. It sits with the delivered
+# family here so the state vocabulary names every word the fold can emit, while
+# a departing run is still dropped from the counted fleet before the counts are
+# taken — the word is known, not counted.
+FLEET_UNPROMOTED_STATES = ("complete", "completed_unpromoted", "departed")
 FLEET_WAITING_STATES = tuple(sorted(WAITING_STATES))
 # The blocked bucket is the action set minus the waiting family. The action set
 # is the marker set — every state whose row a reader should look at, an overdue
@@ -7891,7 +8092,7 @@ def _departure_recorded_run_ids(
     the reader, promotion still requires a recorded row.
 
     A departure whose snapshot names no project leaves the record unknown rather
-    than empty, and unknown is answered by the withdrawal word, never by a
+    than empty, and unknown is answered by the ``departed`` word, never by a
     promotion: the alternative asserts a fact no reader established.
     """
     reader = ledger_run_ids
@@ -7910,15 +8111,22 @@ def _departure_word(run_id: str, recorded: set[str] | None) -> str:
     """The word a departing run's absence carries.
 
     Promotion has first claim, because a recorded ledger row is the fleet's
-    evidence that work landed and a run directory cannot argue with it. Where
-    no row records the run, a marker the run's directory holds from a
-    deliberate discard names the departure for what it was; without one the
-    word stays the bare withdrawal a reaped or hand-removed pointer earns.
+    evidence that work landed and a run directory cannot argue with it. Failing
+    that, a marker the run's directory holds from a deliberate discard names the
+    departure discarded whatever else is known: the discard is a fact the run's
+    own home records, so it outranks a ledger that cannot be resolved. Only when
+    no such marker exists does an unresolvable ledger decide the word — the
+    caller supplies no reader and the run names no project to resolve one from —
+    and then the departure reads ``departed``, which promises neither a landing
+    nor a withdrawal. A ledger that resolves and records no row leaves the run
+    the bare withdrawal a reaped or hand-removed pointer earns.
     """
     if recorded is not None and run_id in recorded:
         return "promoted"
     if _discard_recorded(run_id):
         return "discarded"
+    if recorded is None:
+        return "departed"
     return "withdrawn"
 
 
@@ -7956,13 +8164,27 @@ def fleet_transitions(
     left, and three simultaneous landings would all claim the third one's
     totals.
 
-    Departures first, then arrivals, then state changes — a promotion frees its
-    slot before the next dispatch is counted into it, which is the order a
-    reader infers from the numbers. A manifest rewrite that leaves the state
-    unchanged is folded after the state changes of the same observation: its
-    classification word did not move, so nothing else about the run could have
-    either.
+    Departures first, then arrivals, then state changes — a run removed only by
+    its own departure leaves the fleet before the next dispatch is counted into
+    its slot, which is the order a reader infers from the numbers. A manifest
+    rewrite that leaves the state unchanged is folded after the state changes of
+    the same observation: its classification word did not move, so nothing else
+    about the run could have either. A promoted run whose live pointer remains
+    is not a departure: its slot is held while the pointer lives, so the landing
+    is announced once rather than re-read as a fresh dispatch each tick.
     """
+    if ledger_run_ids is None:
+        # The published-stream fold supplies no ledger reader: it is the tick
+        # the producer runs to append its transitions to the stream, and the
+        # guard in ``_publish_watch_stream`` defers the whole tick when the
+        # resolved configuration will not load, so a following reader gets the
+        # previous image rather than a transition priced against a layer nobody
+        # could read. This read is what lets that guard fire. The reader is
+        # strict here only; every other caller of the fold either supplies a
+        # ledger reader (the seat's own ticker, which pre-reads the rates and
+        # keeps its degradation) or is a direct test of the fold.
+        quota_weight.backend_rate_statuses(strict=True)
+
     running = {run_id: dict(snapshot) for run_id, snapshot in known.items()}
     changes: list[tuple[Mapping[str, Any], str | None, str]] = []
 
@@ -7974,13 +8196,16 @@ def fleet_transitions(
     # acts on the word, and each of the three asks for a different response, so
     # the fold resolves all three. A promotion is read from the ledger alone and
     # claims the run whenever a row records it; failing that, a discard marker
-    # in the run directory names the departure discarded; failing both, the word
-    # is withdrawn. A promotion is never inferred from a missing row's absence,
-    # so an unrecorded departure cannot read as work that landed. The ledger is
-    # read at most once per observation and only when something departed; a
-    # reader the caller cannot supply is resolved from the departing run's own
-    # project, and a departure with no project at all still withdraws — the safe
-    # direction, because the alternative promises a landing nobody recorded.
+    # in the run directory names the departure discarded. With neither, a ledger
+    # that resolves and records no row leaves the word withdrawn, while a ledger
+    # that cannot be resolved leaves it departed — the honest unknown, which
+    # promises neither a landing nor a withdrawal. A promotion is never inferred
+    # from a missing row's absence, so an unrecorded departure cannot read as
+    # work that landed. The ledger is read at most once per observation and only
+    # when something departed; a reader the caller cannot supply is resolved
+    # from the departing run's own project, and a departure whose snapshot names
+    # no project at all still reads departed, because the alternative asserts a
+    # fact no reader established.
     if departures:
         recorded = _departure_recorded_run_ids(known, departures, ledger_run_ids)
     else:
@@ -8028,7 +8253,16 @@ def fleet_transitions(
     events: list[tuple[dict[str, Any], str | None, str, dict[str, int]]] = []
     for snapshot, previous, state in changes:
         run_id = str(snapshot.get("run_id") or "")
-        if state in {"promoted", "withdrawn", "discarded"}:
+        # A run present in the fleet is remembered, so the next observation
+        # compares it against itself rather than reading it as an arrival. A
+        # run absent from the fleet has departed and gives up its slot. The
+        # one state that needs the distinction drawn explicitly is promoted:
+        # promotion writes the ledger row before it removes the live pointer,
+        # so a promoted run is still observed while its pointer lives. Held in
+        # the fleet rather than dropped, it is not read as an arrival the fold
+        # would word ``dispatched`` — the landing re-announced every tick until
+        # the pointer goes; it leaves only on its own pointer's disappearance.
+        if run_id not in current:
             running.pop(run_id, None)
         elif not snapshot.get("manifest_rewritten"):
             running[run_id] = dict(snapshot)
@@ -8312,13 +8546,69 @@ def _refuse_unresolvable_watch(project: str) -> None:
     assert_routable_backends_resolvable(project, _resolved_review_config(project, None))
 
 
+def _recreate_unlinked_registration(project: str, watcher: Mapping[str, Any]) -> bool:
+    """Restore the seat record when an unlink took its path out from under us.
+
+    The seat record is the file ``crew unwatch`` opens to find the producer it
+    must stop. Its record holds the advisory lock the process table reads
+    liveness from and carries the pid unwatch signals. A record unlinked under a
+    live producer leaves nothing at the path,
+    so a later ``unwatch`` opens a fresh inode, takes the lock the producer
+    believes it still holds, and reports there is nothing to stop while the
+    producer runs on unwatched — it can only be reached by pid. Writing the
+    record back to its own path on the producer's next wake-up restores what the
+    path is for, so unwatch finds the producer again.
+
+    A path that a replacement producer has meanwhile taken is left alone and
+    this returns False, so a superseded producer ends rather than overwrite a
+    seat that is no longer its own.
+    """
+    path = watch_lock_path(project)
+    handle = runs._WATCH_SEAT_HANDLES.get(project)
+    if handle is None:
+        return True
+    try:
+        held = os.fstat(handle.fileno())
+    except OSError:
+        return False
+    try:
+        current = os.stat(path)
+    except FileNotFoundError:
+        current = None
+    if current is not None:
+        return (current.st_dev, current.st_ino) == (held.st_dev, held.st_ino)
+
+    try:
+        replacement = path.open("a+b")
+    except OSError:
+        return False
+    try:
+        fcntl.flock(replacement.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        # Another producer holds this path: the seat is no longer ours.
+        replacement.close()
+        return False
+    _write_watch_record(replacement, dict(watcher))
+    runs._WATCH_SEAT_HANDLES[project] = replacement
+    return True
+
+
+# An idle producer — one whose project has no live run pointer — doubles its
+# poll interval on each wake-up, from the base it was armed with to this
+# ceiling, so a project nobody is watching costs one wake a minute rather than
+# one a second. A wake that sees a live run returns the interval to the base in
+# the same pass. The value is written into the registration as
+# ``poll_interval_seconds``, which is what a reader sees.
+IDLE_POLL_INTERVAL_CAP_SECONDS = 30.0
+
+
 def watch_ticker(
     project: str,
     *,
     stall_window: str = DEFAULT_WATCH_STALL_WINDOW,
     poll_interval: float = 1.0,
     sleeper: Callable[[float], None] = time.sleep,
-    signal_run: Callable[[int, str | None], None] | None = None,
+    signal_run: Callable[..., None] | None = None,
 ) -> Iterator[dict[str, Any]]:
     """Yield a baseline and then every observed fleet state transition.
 
@@ -8374,10 +8664,31 @@ def watch_ticker(
             }
             return
 
+        # The interval actually slept grows while the project has no live run
+        # pointer and returns to the base on the first wake that sees one. The
+        # producer records it each pass so a reader sees how far it has backed
+        # off without asking the process.
+        poll_interval_current = poll_interval
         while True:
+            # An unlinked seat record is rewritten before anything else, so a
+            # producer whose file was removed is findable by unwatch again, and
+            # one superseded by a replacement producer ends here.
+            if not _recreate_unlinked_registration(project, watcher):
+                return
             remaining = _lease_remaining()
             if remaining is not None and remaining <= 0:
                 return
+            # Every stream the tick reads is counted, so the registration
+            # carries what this poll actually parsed. An unchanged fleet
+            # resumes from every cursor and parses nothing, which is the value
+            # a reader uses to see the poll is stat-only rather than re-reading
+            # the whole of every transcript. The admission check's own reads are
+            # counted and reset on the same beat, so the two counters describe
+            # one poll each.
+            from reckon import _backends
+
+            _backends.take_parsed_stream_bytes()
+            take_admission_stream_bytes()
             pointers = list_live(project=project)
             _stop_delivered_reviews(pointers, signal_run=signal_run)
             moment = _utc_seconds()
@@ -8388,9 +8699,21 @@ def watch_ticker(
                 for pointer in pointers
                 if pointer.get("run_id")
             }
+            if current:
+                # A wake that sees a live run ends any back-off: the producer's
+                # interval is its base again from this pass.
+                poll_interval_current = poll_interval
+            update_watch_registration(
+                project,
+                poll_interval_seconds=poll_interval_current,
+                bytes_parsed_last_poll=_backends.take_parsed_stream_bytes(),
+            )
             if not current and not fleet_seen:
-                if _wait(poll_interval):
+                if _wait(poll_interval_current):
                     return
+                poll_interval_current = min(
+                    poll_interval_current * 2.0, IDLE_POLL_INTERVAL_CAP_SECONDS
+                )
                 continue
 
             counts = _fleet_counts(current)
@@ -8432,8 +8755,12 @@ def watch_ticker(
                 if not current:
                     return
                 continue
-            if _wait(poll_interval):
+            if _wait(poll_interval_current):
                 return
+            if not current:
+                poll_interval_current = min(
+                    poll_interval_current * 2.0, IDLE_POLL_INTERVAL_CAP_SECONDS
+                )
 
 
 def watch_follow(

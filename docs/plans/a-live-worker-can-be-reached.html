@@ -21,11 +21,12 @@
   <title>A Live Worker Can Be Reached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-24">
-<meta name="plan-version" content="18">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="19">
 <meta name="plan-impl" content="0.7">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-blocks" content="an-orchestrator-is-bound-by-its-inbox#s5">
+<meta name="plan-section-declarations" content="{&quot;s7&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -167,6 +168,10 @@
     <p>A second transport of any kind. The run directory is already the durable,
     audited, per-run surface both sides agree on.</p>
 
+    <h2 id="s7">§7 — Land the inbox and clear two ledger rows</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+The document half and the guard are done; the inbox is what remains of the locked scope. Both its halves are blocked on contention rather than on design: the worker read contract needs the prompt-composing module, held by another coordinator, and the coordinator-side writer needs the CLI module, held by this plan's own unreconciled guard run. Two ledger rows are outstanding behind two separate defects in the promotion surface, each reproduced and owned elsewhere with a repair dispatched: a gate check that greps a cited log for a shell diagnostic its own test file writes as fixture data, and a predicate that demands a commit for any changed path without asking whether the path is inside the repository. Neither was worked around; the runs stay unreconciled so the record stays honest.<p><strong>Done when</strong> the worker read contract and the coordinator-side writer land and the two held ledger runs reconcile.</p><p>Moved from followup land-the-inbox-and-clear-two-ledger-rows on a-live-worker-can-be-reached by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.7; the two halves are blocked on files held elsewhere, not on design (body)</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="channel-scope" data-choice="guard-docs-inbox" data-by="Simon McIntosh" data-when="2026-09-15T06:06:47+00:00">
@@ -206,10 +211,11 @@
     <pre class="r-fu-prompt">/reckon-build a-live-worker-can-be-reached</pre>
     <p class="r-fu-outcome">All five sites are resolved. The out-of-scope correction step now dispatches a corrective worker under a new node id and names resume for an ended run whose correction stays in declared scope; case-sensitive 'Ask the worker' over the reference fell from one to zero, and the surviving case-insensitive match is a prohibition against asking a worker to shrink its work, correctly left. The coordinator authority clause was left unchanged with its criterion stated: it sits inside an enumeration of what the coordinator may do, so it grants a capability rather than instructing an action. The fifth site belongs to another plan, whose coordinator has marked its measure blocked rather than shipping a protection that cannot be delivered.</p>
     </article>
-<article class="r-fu" data-id="land-the-inbox-and-clear-two-ledger-rows" data-status="open" data-written-by="Simon McIntosh" data-written-at="2026-09-15" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="land-the-inbox-and-clear-two-ledger-rows" data-status="resolved" data-written-by="Simon McIntosh" data-written-at="2026-09-15" data-recommends-skill="" data-resolved-at="2026-10-02T08:45:14+00:00" data-resolved-by="">
     <h4 class="r-fu-title">The inbox, and two ledger rows held on promotion defects</h4>
     <div class="r-fu-body">The document half and the guard are done; the inbox is what remains of the locked scope. Both its halves are blocked on contention rather than on design: the worker read contract needs the prompt-composing module, held by another coordinator, and the coordinator-side writer needs the CLI module, held by this plan's own unreconciled guard run. Two ledger rows are outstanding behind two separate defects in the promotion surface, each reproduced and owned elsewhere with a repair dispatched: a gate check that greps a cited log for a shell diagnostic its own test file writes as fixture data, and a predicate that demands a commit for any changed path without asking whether the path is inside the repository. Neither was worked around; the runs stay unreconciled so the record stays honest.</div>
     <pre class="r-fu-prompt">/reckon-build a-live-worker-can-be-reached</pre>
+    <p class="r-fu-outcome">Moved into §7 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
 </section>
 

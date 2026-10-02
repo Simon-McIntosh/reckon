@@ -698,13 +698,13 @@ def derive_routing(
     measurements remain unknown rather than becoming zero-cost work.
     """
 
-    source_versions: dict[str, int] = {}
+    source_versions: dict[str, str] = {}
     records: list[dict[str, Any]] = []
     excluded: dict[str, int] = defaultdict(int)
     for project, raw_docs in sorted(mounted_docs.items()):
         docs_dir = Path(raw_docs).expanduser().resolve()
         data, version = ledger.load(str(project), root=docs_dir.parent)
-        source_versions[str(project)] = version
+        source_versions[str(project)] = ledger.history_version(data, version)
         for ledger_index, raw_run in enumerate(data["runs"]):
             run = dict(raw_run)
             run["_project"] = str(project)
@@ -937,12 +937,12 @@ def derive_capabilities(
             "invalid": 0,
         }
     )
-    source_versions: dict[str, int] = {}
+    source_versions: dict[str, str] = {}
     for project, raw_docs in sorted(mounted_docs.items()):
         docs_dir = Path(raw_docs).expanduser().resolve()
         estimates = _plan_estimates(docs_dir)
         data, version = ledger.load(str(project), root=docs_dir.parent)
-        source_versions[str(project)] = version
+        source_versions[str(project)] = ledger.history_version(data, version)
         runs_by_id = {
             str(run.get("run_id") or ""): run
             for run in data["runs"]
@@ -1131,14 +1131,14 @@ def load_capabilities(path: str | Path | None = None) -> dict[str, Any]:
 
 def _current_ledger_versions(
     mounts: Mapping[str, str | Path],
-) -> dict[str, int]:
-    """Read the current ledger version of every mounted project once."""
+) -> dict[str, str]:
+    """Read the current ledger freshness key of every mounted project once."""
 
-    versions: dict[str, int] = {}
+    versions: dict[str, str] = {}
     for project, raw_docs in sorted(mounts.items()):
         docs_dir = Path(raw_docs).expanduser().resolve()
-        _data, version = ledger.load(str(project), root=docs_dir.parent)
-        versions[str(project)] = version
+        data, version = ledger.load(str(project), root=docs_dir.parent)
+        versions[str(project)] = ledger.history_version(data, version)
     return versions
 
 
@@ -1320,5 +1320,6 @@ def project_cache_status(
     versions = cache.get("ledger_versions")
     if not isinstance(versions, Mapping) or project not in versions:
         return "untracked"
-    _data, current = ledger.load(project, root=root)
+    data, current = ledger.load(project, root=root)
+    current = ledger.history_version(data, current)
     return "fresh" if versions.get(project) == current else "stale"

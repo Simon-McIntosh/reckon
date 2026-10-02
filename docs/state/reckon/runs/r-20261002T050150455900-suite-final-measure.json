@@ -1,0 +1,336 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 480000,
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "903f6e9911d87b94f28f2b05b7c125973b65a0cc",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "detail": "no events yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": null,
+    "utilisation_pct": null
+  },
+  "changed_lines": null,
+  "clone_matches": {
+    "reason": "the run asserted no revision pair to compare",
+    "status": "unmeasured"
+  },
+  "commit_resolution": null,
+  "commits": [],
+  "completed_at": "2026-10-02T05:53:52.001Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-02T05:02:08Z",
+  "dispute_count": 0,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest -n",
+    "override": false,
+    "role": "test",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "not-run",
+  "gate_check": null,
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.98,
+    "plan": "the-suite-is-green-at-head",
+    "reason": "gate-not-passing",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-02T06:01:50.799795+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-02T05:01:50Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 0,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 0,
+    "headroom": 30,
+    "mean_context": 120000,
+    "observed_at": "2026-10-02T05:01:50Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-02T05:53:52.001Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T050150455900-suite-final-measure/manifest.md",
+  "member": "disposable-r-20261002T050150455900-suite-final-measure",
+  "negative_control": {
+    "reason": "node-writes-no-test-path",
+    "verdict": "exempt"
+  },
+  "no_commit": "read-and-measure node; the report lives at ~/.config/reckon/crew/reports/reckon/suite-final.md",
+  "node": "suite-final-measure",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1525,
+          "cached_input_tokens": 506543,
+          "input_tokens": 508070,
+          "output_tokens": 1337,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 509407,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "dea7b557-cbf3-46c1-bbfe-33166244c4a3",
+      "session_id": "s21-fin"
+    },
+    "done_when": "Measure only; no tracked file changes. (1) Run the whole suite once at the worktree HEAD: PYTHONPATH=\"$PWD\" /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -n 8 -p no:cacheprovider -q --basetemp=$TMPDIR/suite-final-bt tests/ > the run directory as suite-final.log 2>&1, recording wall time, pass, fail, error and skip counts, the revision, and every failing id with its first error line. (2) Re-run each failing id solo in one serial process with its own basetemp and classify it deterministic or load-only. (3) Attribute each deterministic id: a commit on main since 3b883745b found by git log -S on the asserted name or pinned file, or unknown. (4) Compare against the 27 deterministic ids in ~/.config/reckon/crew/reports/reckon/suite-remeasure.json: fixed, remaining, new. suite-final.md (one section per step) and suite-final.json ({revision, wall_seconds, counts, deterministic: [{id, first_error, attribution}], load_only, fixed_since_3b883745b, new}) are written to the run directory and copied to ~/.config/reckon/crew/reports/reckon/; the basetemp is deleted in a separate call.",
+    "estimated_hours": 1.0,
+    "goal": "One attributed full-suite measurement at the integrated head after the second repair round",
+    "id": "suite-final-measure",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-02T05:01:50Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 0,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 0,
+      "headroom": 30,
+      "mean_context": 120000,
+      "observed_at": "2026-10-02T05:01:50Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T050150455900-suite-final-measure/manifest.md",
+    "negative_control": "none: a measurement node with no product change to falsify; the comparison against the 3b883745b ids is the check",
+    "plan": "the-suite-is-green-at-head",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "test",
+    "section": "§2",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T050150455900-suite-final-measure"
+    ]
+  },
+  "orientation_input_tokens": 308067.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "suite-final-measure",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-02T05:01:59.699231+00:00",
+    "score": 0.55,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-suite-is-green-at-head",
+  "plan_impl_at_dispatch": 0.98,
+  "plan_link": null,
+  "promoted_revision": "903f6e9911d87b94f28f2b05b7c125973b65a0cc",
+  "release": {
+    "process_signalled": false,
+    "process_withheld": "process is not alive",
+    "scratch_bytes": 154339,
+    "scratch_path": "/tmp/reckon-crew-scratch/r-20261002T050150455900-suite-final-measure",
+    "scratch_removed": true,
+    "scratch_withheld": "",
+    "worktree_audit": {
+      "counts": {
+        "dirty": 0,
+        "disposable": 0,
+        "integrated": 0,
+        "live-referenced": 0,
+        "retained-for-resume": 0,
+        "unintegrated": 0
+      },
+      "worktrees": [
+        {
+          "available": false,
+          "detail": "tree is no longer available",
+          "path": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-fin/suite-final-measure"
+        }
+      ]
+    },
+    "worktree_released": true
+  },
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "3b883745b34d85fe612736519ded2a6ada178f25",
+    "reviewed_head_sha": "903f6e9911d87b94f28f2b05b7c125973b65a0cc",
+    "scores": {
+      "durability": 18,
+      "evidence": 16,
+      "fit": 18,
+      "goal_fidelity": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 91
+  },
+  "review_tier": "none",
+  "role": "test",
+  "run_id": "r-20261002T050150455900-suite-final-measure",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session": "s21-fin",
+  "session_harness": "claude",
+  "session_id": "1ac4d09c-fb72-4847-aa6d-632e11b3205d",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "time_budget": "60m",
+  "tool_steps": 54.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 3104,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 137,
+    "exited_at": "2026-10-02T05:54:13Z",
+    "last_record_type": "assistant",
+    "launched_at": "2026-10-02T05:02:12Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261002T050150455900-suite-final-measure",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 20490,
+    "worker_pid": 2917420
+  },
+  "worker_seconds": 3053,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}

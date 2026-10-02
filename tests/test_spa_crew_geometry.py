@@ -6,7 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from tests.spa_browser_harness import BrowserProbeError, ServedSpa, installed_browser
+from tests.spa_browser_harness import (
+    BrowserProbeError,
+    ServedSpa,
+    installed_browser_or_skip,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 CREW_CSS = ROOT / "docs" / "ui" / "crew.css"
@@ -99,9 +103,7 @@ def _crew_fixture_document(styles: str, card_count: int) -> str:
 
 
 def test_crew_view_scrolls_a_dozen_runs_within_the_viewport(tmp_path: Path) -> None:
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip("an installed browser is required for rendered geometry")
+    browser = installed_browser_or_skip()
 
     stylesheets = [
         ROOT / "docs/_shared/foundation.css",

@@ -23,9 +23,9 @@
   <title>Work Is A Section, Not A Followup | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
-<meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="1">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="12">
 </head>
 <body>
   <main class="plan-doc">
@@ -78,7 +78,7 @@
     </p>
 
     <h2 id="s2">§2 — One predicate names a followup that hides work, and the roadmap reports it</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       Write one function that takes a parsed plan and one open followup and answers whether the
       followup is a pointer or hides work. It is a pointer when its invocation names a different
@@ -109,7 +109,7 @@
     </p>
 
     <h2 id="s3">§3 — The write path refuses a new followup that hides work</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       Appending a followup through <code>edit_plan</code>, or through the HTTP patch path, is
       refused when §2's predicate says the new followup hides work. The refusal names the reason
@@ -167,6 +167,10 @@
       fifteen are converted at once, before §2 lands, because they are known now.
     </p>
 
+    <h2 id="s6">§6 — The HTTP landing patch&#x27;s refusal has a test</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>§3 wired the refusal into <code>validate_landing_patch</code>, and no test passes a followups key through it. Dropping that call, or misreading the ids it stores, would leave the suite green.</p><p><strong>Done when</strong> a test sends a landing patch carrying a followup that hides work and asserts it is refused with the reason word, and the same patch with a pointer followup is accepted. The negative control removes the call from <code>validate_landing_patch</code>, and the refused case must then be accepted.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="scope" data-choice="all-three" data-by="lead" data-when="2026-10-01">
@@ -184,15 +188,60 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-wisnaf-001" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-01" data-recommends-skill="/reckon-build work-is-a-section-not-a-followup §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-wisnaf-001" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-01" data-recommends-skill="/reckon-build work-is-a-section-not-a-followup §2" data-resolved-at="2026-10-02T05:29:43+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Land the predicate and the roadmap finding</h4>
     <div class="r-fu-body"><p>§2 first: it is read-only and gives §4 its worklist. §3 and §4 follow side by side.</p></div>
     <pre class="r-fu-prompt">/reckon-build work-is-a-section-not-a-followup §2</pre>
+    <p class="r-fu-outcome">§2 merged at 8ce9b4ca4; the roadmap now reports every followup that hides work.</p>
+    </article>
+<article class="r-fu" data-id="f-wisnaf-002" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build work-is-a-section-not-a-followup §3" data-resolved-at="2026-10-02T07:33:52+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Refuse a new followup that hides work, and migrate the open ones</h4>
+    <div class="r-fu-body"><p>§3 next: measure what the refusal rests on first, then land it. §4 runs beside it from the followup-hides-work finding list, coordinated with the S21 and S25 coordinators for the rows they wrote.</p></div>
+    <pre class="r-fu-prompt">/reckon-build work-is-a-section-not-a-followup §3</pre>
+    <p class="r-fu-outcome">§3 merged at 700321a7c. The migration of the open followups that hide work is §4. Superseded by f-wisnaf-003.</p>
+    </article>
+<article class="r-fu" data-id="f-wisnaf-003" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build work-is-a-section-not-a-followup §4" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Migrate the 66 open followups that hide work</h4>
+    <div class="r-fu-body"><p>The worklist is the followup-hides-work finding: 66 rows on 2026-10-02 at 07:35Z (35 no-section, 16 section-not-implementable, 14 host-complete, 1 unparseable). A read-only investigation node proposes a disposition per row against main. The coordinator applies them, sending each peer session its own rows first: 7 written by S21, 3 by S25 and 3 by nova. §6 is the HTTP-path test.</p></div>
+    <pre class="r-fu-prompt">/reckon-build work-is-a-section-not-a-followup §4</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-wisnaf-s22-conversions-and-two-more-hiding-shapes" data-who="" data-when="">
     <div class="r-comment-body"><p>s22-coord's fifteen are disposed (034172a37, d3245613e). Eight became implementable sections:</p><ul><li>crew-observability-truth §24</li><li>scoring-should-stop-a-promotion §8</li><li>the-ledger-is-one-file-per-run §5</li><li>dependency-edge-semantics §9 and §10</li><li>a-review-dies-where-nobody-is-looking §10</li><li>plan-writes-are-not-fenced §6</li><li>crew-runtime-positive-controls §21, held by the new section-scoped decision unresolvable-declared-sha</li></ul><p>Five were already met on main and are resolved with the commits that met them: four on a-window-paces-the-lane and one on crew-runtime-positive-controls. f-ssp-triage-remaining-followups folds into this section. f-acpewio-unknown-departure-word stays with S21: the lead settled its contract at 19:56Z, and S21 resolves it when its node lands. The roadmap now lists every converted section.</p><p>The conversion exposed two more ways work hides from the roadmap. First, a section heading with no declaration is not scheduled. crew-observability-truth had an h2 §23 "A launch is not its own conflict" with no classification, which is why the new section there is §24. Second, appending one section record to a plan whose done sections predate records zeroes its derived impl. That moved six plans' impl to 0 and the sprint's implementation figure from 67.7% to 58.8%. The second is section-contract-and-computed-impl §8, dispatched as impl-needs-every-section-recorded. The first belongs with §2's finding: a section heading with no declaration is reported beside a followup that hides work.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-wisnaf-s2-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>§2 landed. a-followup-that-hides-work-is-found was merged at 8ce9b4ca4 and promoted. <code>reckon/followup_pointers.py</code> classifies an open followup as a pointer or as hiding work, with a fixed reason word. The roadmap reports each followup that hides work as the warn finding <code>followup-hides-work</code>, on every plan it inventories and on the MCP summary path. Over reckon's plans at the time, 68 of 115 open followups hide work, against §1's heuristic count of 102 of 129. The fixtures in tests/test_roadmap.py now point their followups at another plan, so those tests keep their own subject, and the frozen summary snapshot was rebuilt from the fixture. The head arm passes 449 tests, and the review scored 86.</p><p>§3 (the write-time refusal) and §4 (migration) are next. §4 now reads its worklist from the finding, not from §1's heuristic.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-wisnaf-s3-authority-steps-are-decisions" data-who="" data-when="">
+    <div class="r-comment-body"><p>From nova's S21 coordinator, 2026-10-02. A followup's prompt must be a /reckon-build line, so an authority-required next step, such as a dissent adjudication or a lead decision, cannot recommend /reckon-edit. On this plan's model that step is a decision, not a followup. An open decision is an element the roadmap reads: it reports it in <code>decision_blockers</code> and holds the sections it names. A followup recommending /reckon-edit would be invisible in the same way work is. §2's predicate therefore rightly calls such a followup hiding work. §3's refusal names two remedies: add the work as a section, or record the authority step as an open decision (<code>{"op":"append","target":"decisions","key":…}</code>, scoped to its sections). If the running §3 node lands without the decision remedy, it is added at merge.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-wisnaf-s3-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>§3 landed. a-followup-that-hides-work-is-refused was merged at 700321a7c and promoted. Appending an open followup that hides work is refused on edit_plan's append op, the append tool and the HTTP landing-patch validator, through one refusal built on <code>classify_followup</code>. The refusal names both remedies: add the work as a section, or record an authority step as an open decision. Measured first: the refusal rested on 5 fixtures, three append tests in tests/test_edit_plan.py and two continuation-chain tests in tests/test_continuation.py. Each was repaired to keep its subject. The continuation fixtures now name an implementable section. The gate passed 436 tests and the review scored 89. The S21 and nova coordinators were told the rule is live.</p><p>The review's follow-on is §6 of this plan: no test passes a followups key through <code>validate_landing_patch</code>, so the HTTP path's refusal is unverified.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-wisnaf-s4-worklist" data-who="" data-when="">
+    <div class="r-comment-body"><p>The §4 worklist, from the merged predicate at 700321a7c, has 66 open followups that hide work out of 105 classified. By reason: 35 no-section, 16 section-not-implementable, 14 host-complete and 1 unparseable. By writer:</p><ul><li>ship sessions and plan-creation seeds: 44, from reckon-ship, reckon-create, ship-*, agent and Simon McIntosh;</li><li>S21 sessions: 7;</li><li>S25: 3;</li><li>nova: 3;</li><li>reckon-ee and reckon-e5: 5;</li><li>s22-coord: 2, both retargeted at 07:36Z;</li><li>others: 2.</li></ul><p>§1's heuristic had found 102 of 129. The difference is chiefly 23 followups converted or resolved between then and now, plus rows the heuristic misread.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-wisnaf-s4-applied" data-who="" data-when="">
+    <div class="r-comment-body"><p>§4 is applied for everything outside the held rows: f65cc8edf, across 42 plans. The read-only investigation migration-dispositions proposed a disposition for each of the 64 rows, checked against main, and its review scored 93. The proposals were 41 SECTION, 8 MOVE, 9 DECISION, 4 MET, 1 NEW-PLAN and 1 STALE, and one MOVE was a foreign-owned pointer. They were applied through <code>edit_plan</code>, so every write passed the §3 refusal. S21's coordinator approved its rows. Six completed hosts first refused the resolution for leaving no continuation. Two of them gained a pointer to their new section, and four closed their chain with "done — no followup".</p><p>Open followups that hide work fell from 66 to 7, all held deliberately:</p><ul><li>three on S25's plans, awaiting S25's coordinator: f-arist-001, f-ascsn-001 and f-tccfor-001;</li><li>three authority steps on shipped plans, put to the lead rather than recorded on plans the roadmap no longer reads: f-ifv-002 and f-nso-002, the shared-service restart, and f-pcg-002, the suite command;</li><li>one that needs a new plan: f-ascocw-003.</li></ul></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261001T194951171857-a-followup-that-hides-work-is-found" data-who="reckon-build" data-when="2026-10-01T21:51:26.927Z">
+    <div class="r-comment-body"><p>section 2 landed in 0545d84952bc6a3680d3c922d001a75b6e9951fe; 68 of 115 real open followups hide work, beside section 1 record of 102 of 129</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261001T215152805082-review-of-a-followup-that-hides-work-is-found" data-who="reckon-build" data-when="2026-10-01T22:25:50.959Z">
+    <div class="r-comment-body"><p>independent review of run r-20261001T194951171857-a-followup-that-hides-work-is-found stored as a parsed record at both fence paths - five dimensions scored 0..20 (goal_fidelity 18, evidence 15, scope_discipline 18, durability 17, fit 18; total 86), reviewed revision pair 73a6cdc48..7fecea42, added_failure_count 0 and added_failure_ids [] derived through the store's own annotate reader from the reviewed run's own baseline_suite and after_suite logs, one follow-on finding (the real-tree disagreement arm's reconstruction is not retained, so its single-row disagreement list cannot be re-derived); no blocking finding, the change is fit to promote.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261002T053311899319-a-followup-that-hides-work-is-refused" data-who="reckon-build" data-when="2026-10-02T07:11:06.792Z">
+    <div class="r-comment-body"><p>appending an open followup whose invocation hides work is refused on edit_plan's append op, the append tool and the HTTP patch validator through one refusal built on classify_followup; measured at base it refused 5 appending tests, each repaired to keep its subject, and the head arm passes with no failure id beyond the base's</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261002T071141388102-review-of-a-followup-that-hides-work-is-refused" data-who="reckon-build" data-when="2026-10-02T07:41:09.137Z">
+    <div class="r-comment-body"><p>review of a-followup-that-hides-work-is-refused at d6ed3c8e0, score 89, added 0 against 233f442b0; follow-on: the HTTP landing-patch refusal has no test, recorded as work-is-a-section-not-a-followup §6; the reviewed run merged at 700321a7c; manifest repaired by the coordinator (the worker was killed mid-write, leaving changed_paths truncated; as-delivered copy kept)</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261002T074522380140-migration-dispositions" data-who="reckon-build" data-when="2026-10-02T08:29:22.558Z">
+    <div class="r-comment-body"><p>Every open followup on the §4 worklist disposed: 64 rows (2 s22-coord rows skipped per the brief) → 41 SECTION, 8 MOVE, 9 DECISION, 4 MET, 1 NEW-PLAN, 1 STALE, written to /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-migration-dispositions.md; no plan file changed.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261002T083055811250-review-of-migration-dispositions" data-who="reckon-build" data-when="2026-10-02T08:52:41.733Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261002T074522380140-migration-dispositions stored as a parsed record at both fence paths: five dimensions scored 0..20 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 19; total 93), reviewed revision pair 7c1e578da99e4a45ae561b7690024d129318f895..7c1e578da99e4a45ae561b7690024d129318f895 (the reviewed run made no commit past its base), added_failure_count null (unmeasured) and added_failure_ids [] derived through the store&#x27;s own annotate reader from the reviewed run&#x27;s own manifest, which names no baseline_suite or after_suite gate log because the node ran no test by its brief; one finding (the report&#x27;s line-number citations drift on current main at 57dfae034); no blocking finding — the report is fit to promote.</p></div>
 </div>
 </section>
 </main>

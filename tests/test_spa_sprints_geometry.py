@@ -8,7 +8,7 @@ from tests.spa_browser_harness import (
     BrowserProbeError,
     ServedSpa,
     file_spa,
-    installed_browser,
+    installed_browser_or_skip,
 )
 
 ROOT = Path(__file__).parents[1]
@@ -155,9 +155,7 @@ def test_sprint_detail_geometry_declares_stage_and_stats() -> None:
 def test_sprint_detail_cards_render_the_layout_values_and_depth_labels(
     tmp_path: Path,
 ) -> None:
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip("an installed browser is required for rendered geometry")
+    browser = installed_browser_or_skip()
 
     inventory = [
         {
@@ -310,9 +308,7 @@ def test_undated_sprint_is_never_filtered_from_the_table() -> None:
 def test_constrained_viewport_reaches_last_element_of_each_sprint_surface(
     tmp_path: Path, surface_class: str, last_class: str
 ) -> None:
-    browser = installed_browser()
-    if browser is None:
-        pytest.skip("an installed browser is required for rendered geometry")
+    browser = installed_browser_or_skip()
 
     stylesheets = [
         ROOT / "docs/_shared/foundation.css",

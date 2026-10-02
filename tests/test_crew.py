@@ -67,10 +67,16 @@ def _node_manifest_directory(tmp_path):
     dispatch-to-complete window and that run reads a foreign delivery. Each test
     therefore names its manifests under its own pytest temporary directory,
     which no other process holds.
+
+    The fixture only binds that directory; ``_node_manifest_path`` creates it on
+    demand. A module anywhere in the suite may declare ``pytest_plugins`` naming
+    this module, which registers it as a plugin and makes this autouse fixture
+    run for every test in the session. Creating the directory here rather than
+    on demand would then drop an unexpected ``node-manifests`` entry into every
+    other module's temporary tree.
     """
     previous = _NODE_MANIFEST["directory"]
     _NODE_MANIFEST["directory"] = tmp_path / "node-manifests"
-    _NODE_MANIFEST["directory"].mkdir(parents=True, exist_ok=True)
     yield
     _NODE_MANIFEST["directory"] = previous
 
@@ -80,12 +86,15 @@ def _node_manifest_path() -> str:
 
     Under pytest the path lives under the running test's temporary directory.
     Called outside a test run the helper falls back to a per-process directory,
-    so two concurrent processes never share one path either way.
+    so two concurrent processes never share one path either way. The directory
+    is created here, where a test has actually asked for a path, so a fixture
+    promoted to a session-wide plugin leaves the temporary tree of a test that
+    asks for nothing untouched.
     """
     directory = _NODE_MANIFEST["directory"]
     if directory is None:
         directory = Path(tempfile.gettempdir()) / f"reckon-node-manifests-{os.getpid()}"
-        directory.mkdir(parents=True, exist_ok=True)
+    directory.mkdir(parents=True, exist_ok=True)
     return str(directory / "node-a-manifest.md")
 
 
@@ -2676,9 +2685,9 @@ def test_pointer_write_failure_terminates_process_and_removes_dispatch_artifacts
             raise OSError("forced pointer write failure")
         return original_write(path, payload)
 
-    def record_signal(pid, expected_start_time):
+    def record_signal(pid, expected_start_time, **kwargs):
         events.append("signal")
-        original_signal(pid, expected_start_time)
+        original_signal(pid, expected_start_time, **kwargs)
 
     def record_remove(root, path):
         events.append("remove")
@@ -3703,7 +3712,11 @@ def test_opt_in_budget_watchdog_stops_and_records_the_run_phase(
     signalled = []
     monkeypatch.setattr(crew, "process_alive", lambda pid: True)
     monkeypatch.setattr(
-        crew, "_signal_process_group", lambda pid, started_at: signalled.append(pid)
+        crew,
+        "_signal_process_group",
+        lambda pid, started_at, *, reason="", **kwargs: signalled.append(
+            (pid, reason)
+        ),
     )
     config = {
         "fences": {
@@ -3715,7 +3728,7 @@ def test_opt_in_budget_watchdog_stops_and_records_the_run_phase(
     observed = crew.observe(run_id, config=config)
     row = crew.classify_pointer(observed)
 
-    assert signalled == [4242]
+    assert signalled == [(4242, "budget-watchdog")]
     assert observed["watchdog_enforced"] is True
     assert observed["phase"] == "stopped"
     assert row["classification"] == "stopped"
@@ -3730,7 +3743,13 @@ def test_resume_answers_in_the_same_session(home, repo) -> None:
     plan = crew.resume_plan(record["run_id"], "take the second option")
     subcommand = plan.argv.index("resume")
     assert plan.argv[subcommand + 1] == "019ff509-8a60-7723-94fd-65942a6d8faa"
-    assert plan.stdin_text == "take the second option"
+    # The coordinator's advice leads the resumed turn byte for byte; the
+    # attempt's own time fence follows it, restated for this attempt, so the
+    # worker measures elapsed time against the resumed attempt's clock rather
+    # than the one the exhausted attempt ran on.
+    assert plan.stdin_text.startswith("take the second option")
+    restated = plan.stdin_text[len("take the second option") :]
+    assert restated.startswith("\n\nFENCE — TIME (resumed attempt)\n")
     assert crew.read_pointer(record["run_id"])["session_id"] == (
         "019ff509-8a60-7723-94fd-65942a6d8faa"
     )

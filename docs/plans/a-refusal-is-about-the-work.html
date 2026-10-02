@@ -25,8 +25,8 @@
   <title>A Refusal Is About The Work | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-28">
-<meta name="plan-version" content="32">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="33">
 <meta name="plan-commits" content="601e51e5,74dc4774,3ff3237b,ee6fb313,fafbbe1f,5ad7eae0,27b4def6,956f91dd,d78ae0f3,5cb0fc39">
 <meta name="plan-artifacts" content="reckon/crew/node.py,tests/test_goal_contract_lint.py,reckon/crew/dispatch.py,reckon/crew/runs.py,tests/test_expired_follower_keeps_dispatching.py">
 <meta name="plan-impl" content="0.33">
@@ -139,10 +139,11 @@
     <pre class="r-fu-prompt">/reckon-build a-refusal-is-about-the-work</pre>
     <p class="r-fu-outcome">All four refusal sections landed 2026-09-28: the contract lint narrowed (s2, and s5's hyphenated-noun fix), a released follower keeps dispatching with the dry run reaching the same judgement (s3), and promotion's bookkeeping follows the run with the --repairs declaration (s4, 4c046fbf).</p>
     </article>
-<article class="r-fu" data-id="f-20260928T191524372983" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-coord" data-written-at="2026-09-28" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-20260928T191524372983" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="s25-coord" data-written-at="2026-09-28" data-recommends-skill="" data-resolved-at="2026-10-02T08:48:23+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Measure the narrowed refusals a week after release</h4>
     <div class="r-fu-body"><p>Section 4's done-when names a follow-up measure, not a release gate: a week of coordinator transcripts read for operator uses of --no-impl-change on corrective runs and --outcome on review runs, against the counts in the coordinator-overhead census. The target is zero. Due from 2026-10-05.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-refusal-is-about-the-work</pre>
+    <p class="r-fu-outcome">done — no followup: Moved into an-orchestrator-can-discharge-a-refusal §8 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -213,7 +214,7 @@
     <div class="r-comment-body"><p>§4 — `reckon crew dispatch` gains `--repairs RUN_ID`; the named run must be a promoted run of the project's own ledger and an unknown run, a run not yet promoted, a run from another project, or an unreadable ledger is refused before launch with its own reason named; the declaration is recorded as `repairs: RUN_ID` beside `attempt_kind`, and `reckon/crew/promotion.py` reads it through the existing corrective-attempt check so the promotion records `impl_move` as exempt (reason `corrective-run:repairs:&lt;run_id&gt;`) with no `--no-impl-change`; the node's evidence fragment is docs/evidence/fragments/a-refusal-is-about-the-work/dispatch-declares-the-run-it-repairs.html</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20260928T191137074264-review-of-dispatch-declares-the-run-it-repairs" data-who="reckon-build" data-when="2026-09-28T19:31:42.816Z">
-    <div class="r-comment-body"><p>independent review of run r-20260928T175645048110-dispatch-declares-the-run-it-repairs at head 707e852b59aac5fd13b05f9480fc9930f4b794fe over base 9e727bd0c6e92841a4980ae139dfd4319d135ee9, against plan a-refusal-is-about-the-work §4: the stored record parses over all five dimensions (goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19; total 92), carries all six checklist items with 7 production call sites, holds two findings, and derives zero added failures from the reviewed run&#x27;s own gate logs</p></div>
+    <div class="r-comment-body"><p>independent review of run r-20260928T175645048110-dispatch-declares-the-run-it-repairs at head 707e852b59aac5fd13b05f9480fc9930f4b794fe over base 9e727bd0c6e92841a4980ae139dfd4319d135ee9, against plan a-refusal-is-about-the-work §4: the stored record parses over all five dimensions (goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19; total 92), carries all six checklist items with 7 production call sites, holds two findings, and derives zero added failures from the reviewed run's own gate logs</p></div>
 </div>
 </section>
 </main>

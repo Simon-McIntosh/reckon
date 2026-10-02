@@ -551,8 +551,10 @@ def test_fitting_and_unbounded_backends_dispatch_without_context_refusal(
     assert context_fit["inputs"]["repository_files"]["write_paths"]
     write_paths = record["node"]["write_paths"]
     assert "tests/large_context.py" in write_paths
-    assert "docs/evidence/archive/visible-work-landed.html" in write_paths
-    assert "docs/figures/visible-work" in write_paths
+    # A node's landing scope is its own fragment, keyed by node id so two nodes
+    # on one plan hold disjoint scopes rather than the plan's shared record.
+    assert "docs/evidence/fragments/visible-work/fitting-reader.html" in write_paths
+    assert "docs/figures/visible-work/fitting-reader" in write_paths
     assert record["agent"]["usable_input_window"] == 492_288
 
     unbounded = {

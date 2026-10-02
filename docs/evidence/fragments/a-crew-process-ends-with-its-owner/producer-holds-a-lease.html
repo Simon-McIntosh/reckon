@@ -21,7 +21,7 @@
   <main class="plan-doc">
     <h1>A producer holds a lease, not a lifetime</h1>
 
-    <section id="changes">
+    <section id="producer-holds-a-lease-changes">
       <h2>What changed</h2>
       <ul>
         <li><code>reckon.crew.runs</code> gains the producer's lease
@@ -49,7 +49,7 @@
       </ul>
     </section>
 
-    <section id="evidence">
+    <section id="producer-holds-a-lease-evidence">
       <h2>Evidence</h2>
       <p><code>tests/test_producer_holds_a_lease.py</code> runs in a temporary
         <code>RECKON_HOME</code> with <code>RECKON_PRODUCER_LEASE_SECONDS=3</code>
@@ -84,6 +84,24 @@
           within its bound — the load-dependent shape recorded for that module
           elsewhere; it fails identically at base).</li>
       </ul>
+      <p><strong>Re-measured after the renewal count was tightened</strong>
+        (<code>lease-renewal-is-counted-by-its-writes</code>, 2026-10-02): the
+        renewal case now counts a renewal only when <code>lease_renewed_at</code>
+        advances, so its <code>renewals &gt;= 5</code> assertion measures writes
+        rather than non-None returns. Arms over
+        <code>tests/test_producer_holds_a_lease.py</code> at revision
+        <code>3b883745b</code> (base, <code>git archive</code> extraction) and
+        <code>363c96b38</code> (head): base <strong>3 passed in 20.20 s,
+        EXIT=0</strong>; head <strong>3 passed in 19.05 s, EXIT=0</strong>;
+        <strong>added failures: 0</strong>. Negative control, executed and
+        logged: a scratch <code>renew_producer_lease</code> was throttled on a
+        subset of calls, and no ratio (period/keep <code>2/1</code>,
+        <code>3/1</code>, <code>3/2</code>, <code>4/3</code>,
+        <code>5/4</code>) separates the counts while keeping the producer
+        alive — every partial throttle lapses the lease and fails both arms at
+        the <code>thread.is_alive</code> assertion, so the tightened count
+        cannot be isolated by throttling alone. Detail and logs:
+        <code>docs/evidence/fragments/a-crew-process-ends-with-its-owner/lease-renewal-is-counted-by-its-writes.html</code>.</p>
       <p><strong>Negative control</strong>, executed and logged: with the
         lease-expiry check removed from the producer loop —
         <code>watch_ticker._lease_remaining()</code> reduced to
@@ -98,7 +116,7 @@
         <code>ruff check</code> and <code>ruff format --check</code>.</p>
     </section>
 
-    <section id="landing">
+    <section id="producer-holds-a-lease-landing">
       <h2>Landing line</h2>
       <p><code>landing: docs/evidence/fragments/a-crew-process-ends-with-its-owner/producer-holds-a-lease.html</code></p>
     </section>

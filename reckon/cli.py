@@ -2371,6 +2371,29 @@ FOLLOWER_FORMAT_EVENT = "follower-format-changed"
 # it travels as its own event and is never rendered as a run's row.
 FOLLOWER_STALE_PRODUCER_EVENT = "stale-producer"
 
+# A producer re-executes in place when its code stamp moves, and the two things
+# that bound how long a healthy reload takes are the throwaway import proof it
+# runs before the exec (``_FOLLOWER_RELOAD_PROBE_TIMEOUT``) and the slowest gap
+# between its wake-ups, which is the producer's idle poll interval cap. The
+# window a mismatch is deferred for must exceed both plus a scheduling margin,
+# or a slow reload would still trip the cycle advice. The cap is mirrored from
+# ``reckon.crew.recovery.IDLE_POLL_INTERVAL_CAP_SECONDS`` because that module is
+# imported lazily; a test asserts the two figures agree so this cannot drift.
+PRODUCER_POLL_INTERVAL_CAP_SECONDS = 30.0
+PRODUCER_RELOAD_WINDOW_MARGIN_SECONDS = 5.0
+PRODUCER_RELOAD_WINDOW_SECONDS = (
+    _FOLLOWER_RELOAD_PROBE_TIMEOUT
+    + PRODUCER_POLL_INTERVAL_CAP_SECONDS
+    + PRODUCER_RELOAD_WINDOW_MARGIN_SECONDS
+)
+FOLLOWER_PRODUCER_RELOADING_EVENT = "producer-reloading"
+
+# The window is granted on the in-place-reload path only: a producer mid-reload
+# is rendered as a note, and only a mismatch that outlasts the window earns the
+# cycle advice. A fresh arming carries no such proof -- it never saw the code
+# move, so a mismatch it finds may have stood for hours -- and is reported at
+# once, the same event a reload emits once the window has passed.
+
 
 def _needs_you_runs(project: str, *, session: str | None) -> list[dict[str, str]]:
     """List the owning session's runs whose state needs the coordinator now.
@@ -2494,6 +2517,13 @@ def _follow_resume_plan(
         ):
             return "continue", max(0, offset), recorded
         return "baseline", 0, recorded
+
+    if session is None:
+        # A session-less follower observes the whole fleet in one pass and has
+        # no pane to restore, so it has no durable place. Reading one would find
+        # a place a concurrent session-less follower wrote, resume mid-stream,
+        # and deliver a resume event and rows the pane already showed.
+        return "baseline", 0, {}
 
     record = follow_checkpoint.read(project, session)
     if not record:
@@ -2709,6 +2739,8 @@ def _follow_watch_lines(
     lifetime: float | None = None,
     lifetime_deadline: float | None = None,
     registration=None,
+    producer_reload_window: float | None = None,
+    reloaded_in_place: bool = False,
 ):
     """Yield this follower's transitions for as long as its session lives.
 
@@ -2868,6 +2900,11 @@ def _follow_watch_lines(
         from reckon.crew import follow_checkpoint
 
         nonlocal written_place
+        if session is None:
+            # A session-less follower has no pane to restore, so it keeps no
+            # durable place: writing one would hand a concurrent session-less
+            # follower a spot to resume from, which is a place it never had.
+            return
         try:
             resolved_identity: Mapping[str, Any] | None = (
                 identity
@@ -2998,6 +3035,96 @@ def _follow_watch_lines(
     # needed to know; re-announcing it would replay the history on every poll.
     first_attach = True
 
+    # A producer whose recorded stamp differs from this follower's is either
+    # mid-reload or a seat genuinely left behind, and the record does not say
+    # which. An in-place reload proves the code moved moments ago, so a mismatch
+    # first seen on that path is granted the producer's reload window before it
+    # is reported as staleness; a mismatch that outlasts the window is reported
+    # with the cycle advice. A fresh arming has no such proof, so it is reported
+    # at once. The window is only consulted while a decision is pending, so the
+    # stamp comparison is not paid on every idle poll.
+    reload_window = (
+        PRODUCER_RELOAD_WINDOW_SECONDS
+        if producer_reload_window is None
+        else float(producer_reload_window)
+    )
+    producer_stale_since: float | None = None
+    producer_reload_deferred = False
+    producer_stale_advised = False
+
+    def _producer_stale_event(identity: Mapping[str, Any]) -> dict[str, Any]:
+        """Name a producer running old code and the command that cycles it."""
+        remedy = runs.watch_cycle_line(project)
+        return {
+            "event": FOLLOWER_STALE_PRODUCER_EVENT,
+            "project": project,
+            "session": session or "",
+            "run_id": None,
+            "code_stamp": identity.get("code_stamp"),
+            "current_stamp": identity.get("current_stamp"),
+            "remedy": remedy,
+            "line": (
+                f"producer {project} runs older code than this follower "
+                f"({_short_code_stamp(identity.get('code_stamp'))} vs "
+                f"{_short_code_stamp(identity.get('current_stamp'))}); "
+                f"cycle it with: {remedy}"
+            ),
+        }
+
+    def _producer_reloading_event(identity: Mapping[str, Any]) -> dict[str, Any]:
+        """Name a producer still catching up, before the window has passed."""
+        return {
+            "event": FOLLOWER_PRODUCER_RELOADING_EVENT,
+            "project": project,
+            "session": session or "",
+            "run_id": None,
+            "code_stamp": identity.get("code_stamp"),
+            "current_stamp": identity.get("current_stamp"),
+            "line": (
+                f"producer {project} runs older code than this follower "
+                f"({_short_code_stamp(identity.get('code_stamp'))} vs "
+                f"{_short_code_stamp(identity.get('current_stamp'))}); "
+                "it is reloading itself, waiting for it to catch up"
+            ),
+        }
+
+    def _producer_code_events(identity: Mapping[str, Any]) -> list[dict[str, Any]]:
+        """Lines about a producer whose code the follower has outrun.
+
+        A mismatch first seen after this image reloaded is deferred for the
+        reload window, one line saying the producer is reloading; the cycle
+        advice follows only once the window has passed with the mismatch
+        still standing. A fresh arming reports the advice at once, because it
+        never saw the code move and cannot vouch that the mismatch is fresh.
+        The deferral keys on ``reloaded_in_place`` rather than on a non-empty
+        checkpoint: the fact that matters is that this image replaced another,
+        and a reload whose checkpoint was empty is still a reload.
+        """
+        nonlocal producer_stale_since, producer_reload_deferred, producer_stale_advised
+        if not identity.get("stale"):
+            producer_stale_since = None
+            producer_reload_deferred = False
+            producer_stale_advised = False
+            return []
+        if producer_stale_advised:
+            return []
+        moment = clock()
+        if producer_stale_since is None:
+            producer_stale_since = moment
+            if reloaded_in_place:
+                producer_reload_deferred = True
+                return [_producer_reloading_event(identity)]
+        if not producer_reload_deferred:
+            producer_stale_advised = True
+            return [_producer_stale_event(identity)]
+        if moment - producer_stale_since < reload_window:
+            return []
+        producer_stale_advised = True
+        return [_producer_stale_event(identity)]
+
+    def _producer_reload_pending() -> bool:
+        return producer_stale_since is not None and not producer_stale_advised
+
     # A config layer a merge left momentarily malformed must cost this arming a
     # tick, never the stream. The reader is called every tick; without this it
     # would raise out of the loop and end the pane, so a transient config error
@@ -3037,31 +3164,13 @@ def _follow_watch_lines(
             continue
         deferred_config = False
         producer = cursor["producer"]
-        if first_attach and producer.get("stale"):
-            # The producer imports its detection module once and runs for hours
-            # on the image it was armed with, so a fix that landed afterwards is
-            # inert on that seat, and every row it writes is composed by code the
-            # reader's own is not. One event, on attach, naming the gap and the
-            # remedy: the seat is cycled by releasing it and arming again. It
-            # travels as an event rather than being printed here so a JSON reader
-            # receives an object like every other line, and the caller decides
-            # how it is rendered.
-            remedy = runs.watch_cycle_line(project)
-            yield {
-                "event": FOLLOWER_STALE_PRODUCER_EVENT,
-                "project": project,
-                "session": session or "",
-                "run_id": None,
-                "code_stamp": producer.get("code_stamp"),
-                "current_stamp": producer.get("current_stamp"),
-                "remedy": remedy,
-                "line": (
-                    f"producer {project} runs older code than this follower "
-                    f"({_short_code_stamp(producer.get('code_stamp'))} vs "
-                    f"{_short_code_stamp(producer.get('current_stamp'))}); "
-                    f"cycle it with: {remedy}"
-                ),
-            }
+        # A producer whose code this follower has outrun is named once: a
+        # reloading line inside its reload window, or the cycle advice a fresh
+        # arming owes at once — see ``_producer_code_events``. It travels as an
+        # event rather than being printed here so a JSON reader receives an
+        # object like every other line, and the caller decides how it renders.
+        for event in _producer_code_events(producer):
+            yield event
         # The baseline is the fleet report: one transition per live run, in the
         # ticker's own vocabulary. Nothing about the follower itself goes on this
         # stream — a reader wants worker transitions and the fleet posture, not
@@ -3199,6 +3308,15 @@ def _follow_watch_lines(
             if _stopped():
                 return
             _tick()
+            if _producer_reload_pending():
+                # A deferred mismatch is re-read on the wait pass rather than
+                # only on attach: the producer's reload window can close while
+                # the follower waits, and the same pass that renews the lease is
+                # where the escalation is owed.
+                for event in _producer_code_events(
+                    runs.watch_producer_identity(project)
+                ):
+                    yield event
             if lifetime_elapsed or consumer_gone:
                 break
             sleeper(poll_interval)
@@ -3247,6 +3365,15 @@ def _follow_watch_lines(
                     offset=stream.tell(),
                     identity=stream_file_identity,
                 )
+                if _producer_reload_pending():
+                    # The idle wait pass is where a deferred mismatch is
+                    # re-read: the producer's reload window can close while the
+                    # stream is quiet, and the follower is not otherwise looking
+                    # at the seat on a busy stream.
+                    for event in _producer_code_events(
+                        runs.watch_producer_identity(project)
+                    ):
+                        yield event
                 # A held opener is released on elapsed time, not on the next
                 # row, so the wait pass is where its window can close while the
                 # fleet is quiet. Without this a held row would wait for a
@@ -3633,6 +3760,12 @@ def crew_follow(
 
     delivery = runs_module.delivery_mode()
     grid = _ticker_grid(width, theme, no_color)
+    # Whether this image replaced a previous follower in place. The reloader
+    # sets the checkpoint variable for exactly that replacement, so its presence
+    # -- not a non-empty checkpoint -- is what says so: a reload whose checkpoint
+    # came through empty is still a reload, and the staleness deferral keys on
+    # the reload rather than on the checkpoint's contents.
+    reloaded_in_place = _FOLLOWER_CHECKPOINT_ENV in os.environ
     resume = _take_follower_checkpoint(project)
     from reckon.crew.dispatch import (
         WATCH_ARMING_ENV,
@@ -3697,6 +3830,7 @@ def crew_follow(
             lifetime=lifetime_seconds,
             lifetime_deadline=lifetime_deadline,
             registration=registration,
+            reloaded_in_place=reloaded_in_place,
         ):
             # An attach event carries the states the pane already showed, so the
             # grid is seeded from the same remembered map the follower filtered
@@ -3761,12 +3895,17 @@ def crew_follow(
                     if burst:
                         _echo_follow_line(burst)
                 continue
-            if event.get("event") == FOLLOWER_STALE_PRODUCER_EVENT:
-                # The seat's producer runs older code than this follower. Like
-                # the format marker it is about the pane rather than the fleet,
-                # so it is never rendered as a run's row: JSON mode emits the
-                # object with the stamps and the remedy, and text mode prints
-                # the one dim line.
+            if event.get("event") in (
+                FOLLOWER_STALE_PRODUCER_EVENT,
+                FOLLOWER_PRODUCER_RELOADING_EVENT,
+            ):
+                # The seat's producer runs older code than this follower — with
+                # the cycle remedy once it is confirmed stale, or a line saying
+                # it is still catching up inside its reload window. Like the
+                # format marker it is about the pane rather than the fleet, so
+                # it is never rendered as a run's row: JSON mode emits the
+                # object with the stamps (and the remedy when there is one), and
+                # text mode prints the one dim line.
                 if json_output:
                     _emit({"ok": True, **event}, pretty)
                 else:

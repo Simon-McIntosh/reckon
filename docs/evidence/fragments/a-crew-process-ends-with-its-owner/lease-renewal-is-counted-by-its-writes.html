@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="A lease renewal is counted by its writes">
+  <meta name="plan-summary" content="The renewal case counts a renewal only when lease_renewed_at advances in the registration, so a throttled non-None return is no longer mistaken for a write.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s3">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,watch,producer,lease,test">
+  <title>A lease renewal is counted by its writes — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A lease renewal is counted by its writes</h1>
+
+    <section id="lease-renewal-is-counted-by-its-writes-changes">
+      <h2>What changed</h2>
+      <p><code>tests/test_producer_holds_a_lease.py</code> — the renewal case
+        counted a renewal whenever <code>renew_producer_lease</code> returned
+        non-None. That call also returns the existing registration on a
+        throttled pass, so a no-op counted as a renewal and the
+        <code>renewals &gt;= 5</code> assertion could be satisfied without five
+        writes landing. The case now reads <code>lease_renewed_at</code> back
+        from the registration after each call and counts a renewal only when
+        the instant advanced. The assertion now measures writes rather than
+        return values. <code>reckon/crew/runs.py</code> is unchanged: the
+        defect was in what the test read, not in the renewal itself.</p>
+    </section>
+
+    <section id="lease-renewal-is-counted-by-its-writes-evidence">
+      <h2>Evidence</h2>
+      <p><strong>Gate</strong> — <code>tests/test_producer_holds_a_lease.py</code>:
+        <strong>3 passed in 19.05 s, EXIT=0</strong>.</p>
+      <p><strong>Arms</strong>, one invocation each over
+        <code>tests/test_producer_holds_a_lease.py</code>:</p>
+      <ul>
+        <li><strong>Base</strong>, revision <code>3b883745b</code>
+          (<code>git archive</code> extraction in a scratch tree):
+          <strong>3 passed in 20.20 s, EXIT=0</strong>.</li>
+        <li><strong>Head</strong>, revision <code>363c96b38</code>:
+          <strong>3 passed in 19.05 s, EXIT=0</strong>.</li>
+        <li><strong>Added failures: 0.</strong></li>
+      </ul>
+      <p>The scratch arms ran the interpreter with <code>-P</code>, so the
+        module under test is the scratch tree's <code>reckon/crew/runs.py</code>
+        and not the worktree's; each arm's log header names the imported module
+        path.</p>
+      <p><strong>Negative control</strong>, declared and swept:
+        <em>count throttled returns as renewals; a run with throttled renewals
+        satisfies the old assertion.</em> A scratch copy of
+        <code>renew_producer_lease</code> was made to write only on a scheduled
+        subset of calls and return the existing record (a throttled no-op) on
+        the rest. The ratios tried were period/keep
+        <code>2/1</code>, <code>3/1</code>, <code>3/2</code>, <code>4/3</code>
+        and <code>5/4</code> — every partial throttle — plus
+        <code>1/1</code> (no throttle) as the positive control. No ratio
+        separates the two counts while keeping the producer alive. Because the
+        producer exits once <code>lease_renewed_at</code> falls one lease
+        interval (3.0 s) behind, and the test calls once per half interval
+        (1.5 s), any skipped write leaves a 3.0 s gap: every partial throttle
+        lapses the lease, and both the base and head arms fail at their
+        <code>thread.is_alive</code> assertion — base at line 110, head at line
+        119 — before either count is reached. Under <code>1/1</code> both arms
+        pass. So the tightened count cannot be isolated by throttling alone in
+        this case: the lease's own liveness requirement already forces at least
+        one write per half interval, which is the very floor
+        <code>renewals &gt;= 5</code> asserts, and the head warning is that a
+        failure to write is caught by the liveness assertion rather than by the
+        count. The test is left unchanged; the ratios tried are recorded in
+        <code>negative-control.log</code>.</p>
+    </section>
+
+    <section id="lease-renewal-is-counted-by-its-writes-landing">
+      <h2>Landing line</h2>
+      <p><code>landing: docs/evidence/fragments/a-crew-process-ends-with-its-owner/lease-renewal-is-counted-by-its-writes.html</code></p>
+    </section>
+  </main>
+</body>
+</html>

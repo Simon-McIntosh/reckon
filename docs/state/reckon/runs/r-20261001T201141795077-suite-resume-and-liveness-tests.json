@@ -1,0 +1,728 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 480000,
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 480000
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "ddff8e4f6a726bcce8bd1bdb2da233422fc40e09",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 19146968,
+      "input_tokens_cumulative": 19146968,
+      "output_tokens": 86055,
+      "output_tokens_cumulative": 86055,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 224,
+    "files": 4,
+    "removed": 23
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 19,
+        "name": "_waiting_pointer",
+        "path": "tests/test_a_met_wait_is_ready_not_abandoned.py"
+      },
+      "run_function": {
+        "line": 57,
+        "name": "build",
+        "path": "tests/test_a_resume_does_not_inherit_its_baseline.py"
+      },
+      "window_line": 98
+    },
+    {
+      "existing_function": {
+        "line": 51,
+        "name": "_build_run",
+        "path": "tests/test_recovery_reads_the_exit_record.py"
+      },
+      "run_function": {
+        "line": 57,
+        "name": "build",
+        "path": "tests/test_a_resume_does_not_inherit_its_baseline.py"
+      },
+      "window_line": 98
+    },
+    {
+      "existing_function": {
+        "line": 126,
+        "name": "_parked_pointer",
+        "path": "tests/test_resume_sweep_needs_an_observed_death.py"
+      },
+      "run_function": {
+        "line": 57,
+        "name": "build",
+        "path": "tests/test_a_resume_does_not_inherit_its_baseline.py"
+      },
+      "window_line": 100
+    },
+    {
+      "existing_function": {
+        "line": 121,
+        "name": "test_a_met_dead_wait_is_walked_by_the_resume_sweep",
+        "path": "tests/test_a_met_wait_is_ready_not_abandoned.py"
+      },
+      "run_function": {
+        "line": 179,
+        "name": "test_a_parked_resume_stays_in_the_resume_sweep",
+        "path": "tests/test_a_resume_does_not_inherit_its_baseline.py"
+      },
+      "window_line": 194
+    },
+    {
+      "existing_function": {
+        "line": 331,
+        "name": "test_a_genuine_wait_is_still_a_resume_candidate_when_its_probe_terminates",
+        "path": "tests/test_wait_marker_is_not_a_stub.py"
+      },
+      "run_function": {
+        "line": 179,
+        "name": "test_a_parked_resume_stays_in_the_resume_sweep",
+        "path": "tests/test_a_resume_does_not_inherit_its_baseline.py"
+      },
+      "window_line": 194
+    },
+    {
+      "existing_function": {
+        "line": 97,
+        "name": "_pointer",
+        "path": "tests/test_a_live_worker_never_reads_gone_after_its_first_commit.py"
+      },
+      "run_function": {
+        "line": 75,
+        "name": "_stub_resumed_run",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "window_line": 96
+    },
+    {
+      "existing_function": {
+        "line": 61,
+        "name": "_stub_pointer",
+        "path": "tests/test_stall_clock_starts_at_the_attempt.py"
+      },
+      "run_function": {
+        "line": 75,
+        "name": "_stub_resumed_run",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "window_line": 134
+    },
+    {
+      "existing_function": {
+        "line": 195,
+        "name": "test_a_resumed_run_with_a_recorded_attempt_start_is_not_stalled",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "run_function": {
+        "line": 169,
+        "name": "test_a_just_resumed_run_is_not_stalled_on_its_predecessors_stream",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "window_line": 170
+    },
+    {
+      "existing_function": {
+        "line": 216,
+        "name": "test_a_resumed_run_whose_own_log_is_quiet_still_stalls",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "run_function": {
+        "line": 169,
+        "name": "test_a_just_resumed_run_is_not_stalled_on_its_predecessors_stream",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "window_line": 178
+    },
+    {
+      "existing_function": {
+        "line": 239,
+        "name": "test_the_attempt_record_clock_beats_an_old_pointer",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "run_function": {
+        "line": 169,
+        "name": "test_a_just_resumed_run_is_not_stalled_on_its_predecessors_stream",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "window_line": 178
+    },
+    {
+      "existing_function": {
+        "line": 169,
+        "name": "test_a_just_resumed_run_is_not_stalled_on_its_predecessors_stream",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "run_function": {
+        "line": 195,
+        "name": "test_a_resumed_run_with_a_recorded_attempt_start_is_not_stalled",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "window_line": 196
+    },
+    {
+      "existing_function": {
+        "line": 216,
+        "name": "test_a_resumed_run_whose_own_log_is_quiet_still_stalls",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "run_function": {
+        "line": 195,
+        "name": "test_a_resumed_run_with_a_recorded_attempt_start_is_not_stalled",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "window_line": 199
+    },
+    {
+      "existing_function": {
+        "line": 239,
+        "name": "test_the_attempt_record_clock_beats_an_old_pointer",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "run_function": {
+        "line": 195,
+        "name": "test_a_resumed_run_with_a_recorded_attempt_start_is_not_stalled",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "window_line": 199
+    },
+    {
+      "existing_function": {
+        "line": 169,
+        "name": "test_a_just_resumed_run_is_not_stalled_on_its_predecessors_stream",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "run_function": {
+        "line": 216,
+        "name": "test_a_resumed_run_whose_own_log_is_quiet_still_stalls",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "window_line": 222
+    },
+    {
+      "existing_function": {
+        "line": 195,
+        "name": "test_a_resumed_run_with_a_recorded_attempt_start_is_not_stalled",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "run_function": {
+        "line": 216,
+        "name": "test_a_resumed_run_whose_own_log_is_quiet_still_stalls",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "window_line": 222
+    },
+    {
+      "existing_function": {
+        "line": 239,
+        "name": "test_the_attempt_record_clock_beats_an_old_pointer",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "run_function": {
+        "line": 216,
+        "name": "test_a_resumed_run_whose_own_log_is_quiet_still_stalls",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "window_line": 222
+    },
+    {
+      "existing_function": {
+        "line": 143,
+        "name": "test_a_stale_attempt_with_no_newer_record_still_stalls",
+        "path": "tests/test_stall_clock_starts_at_the_attempt.py"
+      },
+      "run_function": {
+        "line": 216,
+        "name": "test_a_resumed_run_whose_own_log_is_quiet_still_stalls",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "window_line": 230
+    },
+    {
+      "existing_function": {
+        "line": 169,
+        "name": "test_a_just_resumed_run_is_not_stalled_on_its_predecessors_stream",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "run_function": {
+        "line": 239,
+        "name": "test_the_attempt_record_clock_beats_an_old_pointer",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "window_line": 241
+    },
+    {
+      "existing_function": {
+        "line": 195,
+        "name": "test_a_resumed_run_with_a_recorded_attempt_start_is_not_stalled",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "run_function": {
+        "line": 239,
+        "name": "test_the_attempt_record_clock_beats_an_old_pointer",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "window_line": 241
+    },
+    {
+      "existing_function": {
+        "line": 216,
+        "name": "test_a_resumed_run_whose_own_log_is_quiet_still_stalls",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "run_function": {
+        "line": 239,
+        "name": "test_the_attempt_record_clock_beats_an_old_pointer",
+        "path": "tests/test_resume_is_aged_from_its_own_start.py"
+      },
+      "window_line": 241
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "20fa5862732c48e23e75d17c82940807378390a7",
+    "584b211b5e014b646de27c85f042140d9b754833"
+  ],
+  "completed_at": "2026-10-01T21:21:18.058Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-01T20:12:02Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": "pre-existing-failure",
+  "follow_on_paths": [
+    "reckon/crew/recovery.py:4638",
+    "tests/test_crew_record_liveness.py::test_no_module_decides_record_liveness_with_a_bare_pid"
+  ],
+  "gate": "failed",
+  "gate_check": null,
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.98,
+    "plan": "the-suite-is-green-at-head",
+    "reason": "gate-not-passing",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-01T21:01:42.821947+00:00",
+    "horizon_seconds": 3000,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-01T20:11:42Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 15,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 4,
+    "headroom": 12,
+    "mean_context": 146667,
+    "observed_at": "2026-10-01T20:11:27Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-01T21:21:18.058Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T201141795077-suite-resume-and-liveness-tests/manifest.md",
+  "member": "disposable-r-20261001T201141795077-suite-resume-and-liveness-tests",
+  "negative_control": {
+    "reason": "gate-not-passing",
+    "test_paths": [
+      "tests/test_a_resume_does_not_inherit_its_baseline.py",
+      "tests/test_crew_record_liveness.py",
+      "tests/test_resume_is_aged_from_its_own_start.py"
+    ],
+    "verdict": "exempt"
+  },
+  "no_commit": null,
+  "node": "suite-resume-and-liveness-tests",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 372,
+          "cached_input_tokens": 381683,
+          "input_tokens": 382057,
+          "output_tokens": 356,
+          "reasoning_output_tokens": 0,
+          "total_tokens": 382413,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "dea7b557-cbf3-46c1-bbfe-33166244c4a3",
+      "session_id": "s21-fin"
+    },
+    "done_when": "Named ids: tests/test_a_resume_does_not_inherit_its_baseline.py::test_a_parked_resume_stays_in_the_resume_sweep; tests/test_resume_is_aged_from_its_own_start.py::test_a_resumed_run_whose_own_log_is_quiet_still_stalls; tests/test_crew_record_liveness.py::test_a_pointer_whose_process_is_gone_stops_working; tests/test_crew_record_liveness.py::test_no_module_decides_record_liveness_with_a_bare_pid. Each named id passes at the node's head. The landing record names, for each id, its cause (the shipped change it pins, by file and line or commit) and whether the repair moved the assertion or the behaviour. Base and head arms of every file the node writes show zero added failures. No test is skipped, xfailed, deleted or weakened, and a product defect goes to follow_ons with its id, file:line and evidence rather than being repaired in place. The first error line of each id at 6a3fab27 is in ~/.config/reckon/crew/runs/r-20261001T185615824468-s21-currency-suite/solo-rerun.log.",
+    "estimated_hours": 0.8,
+    "goal": "The 4 red ids in test_a_resume_does_not_inherit_its_baseline.py, test_crew_record_liveness.py, test_resume_is_aged_from_its_own_start.py pass at head",
+    "id": "suite-resume-and-liveness-tests",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-01T20:11:42Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 15,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 4,
+      "headroom": 12,
+      "mean_context": 146667,
+      "observed_at": "2026-10-01T20:11:27Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T201141795077-suite-resume-and-liveness-tests/manifest.md",
+    "negative_control": "restore each repaired assertion to its base text; every named id fails again",
+    "plan": "the-suite-is-green-at-head",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§2",
+    "spec_level": "guided",
+    "time_budget": "50m",
+    "token_budget": null,
+    "write_paths": [
+      "tests/test_a_resume_does_not_inherit_its_baseline.py",
+      "tests/test_crew_record_liveness.py",
+      "tests/test_resume_is_aged_from_its_own_start.py",
+      "docs/evidence/fragments/the-suite-is-green-at-head/suite-resume-and-liveness-tests.html",
+      "docs/figures/the-suite-is-green-at-head/suite-resume-and-liveness-tests"
+    ]
+  },
+  "orientation_input_tokens": 6738877.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "suite-resume-and-liveness-tests",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-01T20:11:53.963001+00:00",
+    "score": 0.7375,
+    "source": null,
+    "state": "unknown"
+  },
+  "plan": "the-suite-is-green-at-head",
+  "plan_impl_at_dispatch": 0.98,
+  "plan_link": null,
+  "promoted_revision": "584b211b5e014b646de27c85f042140d9b754833",
+  "release": {
+    "process_signalled": false,
+    "process_withheld": "process is not alive",
+    "scratch_bytes": 4238137,
+    "scratch_path": "/tmp/reckon-crew-scratch/r-20261001T201141795077-suite-resume-and-liveness-tests",
+    "scratch_removed": true,
+    "scratch_withheld": "",
+    "worktree_audit": {
+      "counts": {
+        "dirty": 0,
+        "disposable": 0,
+        "integrated": 0,
+        "live-referenced": 0,
+        "retained-for-resume": 1,
+        "unintegrated": 0
+      },
+      "worktrees": [
+        {
+          "artifact_classification": "integrated",
+          "available": true,
+          "claimed_by_live_runs": [],
+          "classification": "retained-for-resume",
+          "dirty": [],
+          "head": "584b211b5e014b646de27c85f042140d9b754833",
+          "integrated_into": "HEAD",
+          "path": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-fin/suite-resume-and-liveness-tests",
+          "reclaimable": false,
+          "retention": {
+            "classification": "retained-for-resume",
+            "retained_at": "2026-10-01T21:21:18.058Z",
+            "session_id": "f6ec2438-2e09-423a-af10-140379d047bc",
+            "session_source": "stream",
+            "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-fin/suite-resume-and-liveness-tests"
+          },
+          "shadow_patch": "",
+          "shadow_run_id": "",
+          "status_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "status_entries": [],
+          "withheld": "this worktree is the working directory of recoverable session f6ec2438-2e09-423a-af10-140379d047bc"
+        }
+      ]
+    },
+    "worktree_released": false,
+    "worktree_withheld": "gate verdict 'failed' is not passing; worktree retained for recovery"
+  },
+  "resume_waiver": null,
+  "review": null,
+  "review_tier": "none",
+  "role": "implement",
+  "run_id": "r-20261001T201141795077-suite-resume-and-liveness-tests",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§2",
+  "session": "s21-fin",
+  "session_harness": "claude",
+  "session_id": "f6ec2438-2e09-423a-af10-140379d047bc",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 0,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 19146968,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 480000",
+    "elapsed_seconds": 4148.362,
+    "generated_tokens": 86055,
+    "generation_seconds": 3823.726,
+    "input_budget_tokens": 480000,
+    "input_utilisation_pct": 48.9,
+    "machine_seconds": 324.636,
+    "peak_input_tokens": 234560,
+    "tokens_per_second": 22.51,
+    "wall_tokens_per_second": 20.74
+  },
+  "time_budget": "50m",
+  "tool_steps": 128.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3600,
+        "classification": "scoring",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion, but no independent review is attached; an independent review must be produced before promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 3195,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-10-01T19:51:59Z",
+          "last_record_type": "result",
+          "launched_at": "2026-10-01T19:18:37Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20261001T191814388880-reflex-review-outlives-its-follower",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 10861,
+          "worker_pid": 2498185
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "review",
+          "recovery_classification": "scoring",
+          "state": "completed_unpromoted"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": true,
+        "log_age_seconds": 1188,
+        "log_fresh": false,
+        "manifest_commits": [
+          "dbaff2b09",
+          "168455b58"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "82e8b51c04166516bc2afa9ef0bb5b5f9cca8b931b4ff52db5b24ce48c323678",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T191814388880-reflex-review-outlives-its-follower/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew dispatch --project reckon --plan a-crew-process-ends-with-its-owner --section '§10' --role review --spec-level exact --node review-of-reflex-review-outlives-its-follower --goal 'attach an independent review to run r-20261001T191814388880-reflex-review-outlives-its-follower' --done-when 'the review for r-20261001T191814388880-reflex-review-outlives-its-follower stores a parsed record scoring all 5 dimensions in the range 0..20, recording the revision it read as reviewed_base_sha and reviewed_head_sha, and carrying added_failure_count and added_failure_ids derived from the reviewed run'\"'\"'s own baseline_suite and after_suite gate logs; the turn ends once that record is stored and the manifest reads complete' --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261001T191814388880-reflex-review-outlives-its-follower.json --write-path /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261001T191814388880-reflex-review-outlives-its-follower.at-168455b582e0daa885b06ce4b48c3b0e10f0e242.json --time-budget 60m --session s21-fin --allow-unreconciled-runs --local",
+        "node": "reflex-review-outlives-its-follower",
+        "phase": "complete",
+        "plan": "a-crew-process-ends-with-its-owner",
+        "process_alive": false,
+        "process_descendant_alive": null,
+        "project": "reckon",
+        "recovery": "review",
+        "recovery_classification": "scoring",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": false,
+        "review_status": null,
+        "run_id": "r-20261001T191814388880-reflex-review-outlives-its-follower",
+        "session": "s21-fin",
+        "stored_phase": "starting",
+        "terminal_age_seconds": 1221,
+        "terminal_at": "2026-10-01T19:51:26Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-fin/reflex-review-outlives-its-follower"
+      }
+    ]
+  },
+  "wall_seconds": 4156,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-01T21:21:19Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-01T20:12:05Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261001T201141795077-suite-resume-and-liveness-tests",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 20018,
+    "worker_pid": 3018192
+  },
+  "worker_seconds": 4137,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": {
+    "classification": "retained-for-resume",
+    "retained_at": "2026-10-01T21:21:18.058Z",
+    "session_id": "f6ec2438-2e09-423a-af10-140379d047bc",
+    "session_source": "stream",
+    "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s21-fin/suite-resume-and-liveness-tests"
+  }
+}

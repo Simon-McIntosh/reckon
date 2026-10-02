@@ -547,7 +547,7 @@ def test_append_followup(setup):
         "written_at": "2026-01-01",
         "title": "next",
         "body": "do it",
-        "prompt": "/reckon-build plan-a §2",
+        "prompt": "/reckon-build plan-b §1",
     }
     r = mcp_module._edit_plan(
         project, "plan-a", [{"op": "append", "target": "followups", "item": fu}], 0
@@ -565,7 +565,7 @@ def test_append_duplicate_followup_id_rejected(setup):
         "written_at": "2026-01-01",
         "title": "existing",
         "body": "already recorded",
-        "prompt": "/reckon-build plan-a",
+        "prompt": "/reckon-build plan-b §1",
     }
     _make_plan_html(docs_dir, "plan-a", {"version": 0, "followups": [existing]})
     duplicate = {**existing, "title": "collision"}
@@ -680,7 +680,7 @@ def test_append_followup_autogen_id(setup):
         "written_at": "2026-01-01",
         "title": "next",
         "body": "do it",
-        "prompt": "/reckon-build plan-a §2",
+        "prompt": "/reckon-build plan-b §1",
     }
     r = mcp_module._edit_plan(
         project, "plan-a", [{"op": "append", "target": "followups", "item": fu}], 0

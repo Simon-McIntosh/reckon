@@ -18,8 +18,10 @@ reports what is still owed.
 
 from __future__ import annotations
 
+import json
+import re
 import shlex
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -217,6 +219,154 @@ def _live_worktrees(project: str) -> set[Path]:
     return trees
 
 
+# A run id is minted as ``r-<stamp>-<node id>``; the stamp is the dispatch
+# instant to microsecond precision, which is what tells a run id from any other
+# name a file in the run directory might carry.
+_RUN_STAMP = re.compile(r"\d{8}T\d{12}")
+
+
+def _run_id_names_node(run_id: str, node_id: str) -> bool:
+    """Whether a run id was minted for a node id.
+
+    A dispatched run carries the node id it was minted for (see
+    :func:`reckon.crew.runs.new_run_id`), so the per-run files that can name one
+    retained tree are selected from the id rather than by reading every
+    recorded run. A run whose id carries no node id is left to the whole-ledger
+    fallback, which resolves it without this selection.
+    """
+    if not node_id or not run_id.startswith("r-"):
+        return False
+    stamp, separator, token = run_id[2:].partition("-")
+    return (
+        bool(separator) and token == node_id and _RUN_STAMP.fullmatch(stamp) is not None
+    )
+
+
+def _run_file_record(source: Path) -> Mapping[str, Any] | None:
+    """Read one per-run ledger file, or None when it cannot stand for a run.
+
+    A file that is absent, unreadable, or not the run it is named for reads as
+    no per-run file at all: its tree is then resolved against the whole ledger,
+    which refuses a damaged record exactly where the whole-ledger reader always
+    has. Treating it as a record here would answer from a file the ledger
+    itself would not.
+    """
+    try:
+        record = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if (
+        not isinstance(record, Mapping)
+        or str(record.get("run_id") or "") != source.stem
+    ):
+        return None
+    return record
+
+
+def _names_worktree(record: Mapping[str, Any], worktree: Path) -> bool:
+    """Whether a run's record names this retained tree.
+
+    Two fields name a tree, and both are read exactly as the whole-ledger scan
+    reads them: the path a promotion retained, and the node id the tree is
+    named for.
+    """
+    retention = record.get("worktree_retention")
+    if isinstance(retention, Mapping):
+        value = str(retention.get("worktree") or "").strip()
+        if value and Path(value).expanduser().resolve() == worktree:
+            return True
+    node = record.get("node")
+    node_id = (
+        str(node.get("id") or "") if isinstance(node, Mapping) else str(node or "")
+    )
+    return bool(node_id) and worktree.name == node_id
+
+
+# The rows crew.json holds, keyed by the stat identity of the file they were
+# parsed from. A ledger that has not moved answers from memory, so a call stats
+# it once and parses it only when a promotion rewrote it.
+_AGGREGATE_ROWS: dict[
+    Path, tuple[tuple[int, int, int, int], tuple[Mapping[str, Any], ...]]
+] = {}
+
+
+def _aggregate_rows(project: str, repository: Path) -> tuple[Mapping[str, Any], ...]:
+    """The rows crew.json holds, parsed once per stat identity of that file.
+
+    A row lives here while the split has written it no per-run file, so a tree
+    is named from both sources; the parse covers the whole file, which is what
+    made the whole-ledger read expensive, so an unchanged ledger is served from
+    memory instead of parsed again.
+    """
+    path = ledger.ledger_path(project, repository)
+    try:
+        status = path.stat()
+    except OSError:
+        return ()
+    identity = (status.st_dev, status.st_ino, status.st_size, status.st_mtime_ns)
+    cached = _AGGREGATE_ROWS.get(path)
+    if cached is not None and cached[0] == identity:
+        return cached[1]
+    data, _version = ledger._load_aggregate(project, repository)
+    rows = tuple(data["runs"])
+    _AGGREGATE_ROWS[path] = (identity, rows)
+    return rows
+
+
+def _ledger_order_key(record: Mapping[str, Any]) -> tuple[str, str]:
+    """The position one row takes in the reader that merges both sources.
+
+    That reader orders the runs it merges by completion and breaks a tie on the
+    run id, so the last row naming a tree carries the greatest key — which is
+    not the per-run file with the greatest name, that name being the dispatch
+    stamp rather than the completion.
+    """
+    return (
+        str(record.get("completed_at") or record.get("run_id") or ""),
+        str(record.get("run_id") or ""),
+    )
+
+
+def _holding_record(
+    worktree: Path,
+    rows: Sequence[Mapping[str, Any]],
+    sources: Sequence[Path],
+    *,
+    merged_order: bool,
+) -> Mapping[str, Any] | None:
+    """The run the whole-ledger reader attributes a tree to, or None.
+
+    Records are taken from both sources: the aggregate rows, which carry a run
+    the split has written no file for, and the per-run files minted for the node
+    the tree is named for. A run both sources carry is read once, at the
+    position the merged reader gives it, and a file whose row the aggregate
+    already holds is never opened.
+    """
+    candidates = [
+        row
+        for row in rows
+        if isinstance(row, Mapping) and _names_worktree(row, worktree)
+    ]
+    known = {
+        str(row.get("run_id"))
+        for row in rows
+        if isinstance(row, Mapping) and row.get("run_id")
+    }
+    for source in sources:
+        if source.stem in known or not _run_id_names_node(source.stem, worktree.name):
+            continue
+        record = _run_file_record(source)
+        if record is not None and _names_worktree(record, worktree):
+            candidates.append(record)
+    if not candidates:
+        return None
+    if merged_order:
+        # Stable: rows of one completion keep the merged reader's own order,
+        # which reaches an aggregate row before a file-only one.
+        candidates.sort(key=_ledger_order_key)
+    return candidates[-1]
+
+
 def _held_worktrees_by_session(
     project: str, *, now: datetime
 ) -> dict[str, list[dict[str, Any]]]:
@@ -226,6 +376,15 @@ def _held_worktrees_by_session(
     ledger record still names it under the same node id, but the tree belongs
     to the live run and the collector will not take it, so naming the promoted
     run would send a coordinator at the wrong run for a tree it cannot free.
+
+    Each inspected tree is resolved from the ledger file of the run that named
+    it, so the derivation pays for the runs it inspects rather than for the
+    project's whole recorded history. Two kinds of tree fall back to the whole
+    ledger, and the read happens at most once for the session however many
+    trees need it: a tree no per-run file names, because a run recorded before
+    the ledger was split into one file per run still lives there, and a tree
+    more than one per-run file names, because which of those runs holds it
+    turns on the order the whole-ledger reader lists them in.
     """
     docs_dir = _store._docs_dir_for_project(project)
     if docs_dir is None:
@@ -247,24 +406,34 @@ def _held_worktrees_by_session(
             "--apply",
         )
     )
-    records = ledger.runs(project, root=repository)
     occupied = _live_worktrees(project)
+    inspected = sorted(registered - occupied)
+    sources = ledger._run_files(project, repository)
+    rows = _aggregate_rows(project, repository)
+    known = {
+        str(row.get("run_id"))
+        for row in rows
+        if isinstance(row, Mapping) and row.get("run_id")
+    }
+    # The reader that merges both sources re-sorts the merged list only when it
+    # appends a run the aggregate does not carry; without one the aggregate's own
+    # order is the answer, so the candidates keep the order they were gathered in.
+    merged_order = any(source.stem not in known for source in sources)
     matched: dict[Path, Mapping[str, Any]] = {}
-    for record in records:
-        retention = record.get("worktree_retention")
-        if isinstance(retention, Mapping):
-            value = str(retention.get("worktree") or "").strip()
-            if value:
-                retained = Path(value).expanduser().resolve()
-                if retained in registered and retained not in occupied:
-                    matched[retained] = record
-        node = record.get("node")
-        node_id = (
-            str(node.get("id") or "") if isinstance(node, Mapping) else str(node or "")
-        )
-        for worktree in registered:
-            if node_id and worktree.name == node_id and worktree not in occupied:
-                matched[worktree] = record
+    unresolved: list[Path] = []
+    for worktree in inspected:
+        record = _holding_record(worktree, rows, sources, merged_order=merged_order)
+        if record is None:
+            unresolved.append(worktree)
+        else:
+            matched[worktree] = record
+    if unresolved:
+        # A tree neither source names by the node its run id carries is left to
+        # the whole-ledger scan, which matches on every recorded row.
+        for record in ledger.runs(project, root=repository):
+            for worktree in unresolved:
+                if _names_worktree(record, worktree):
+                    matched[worktree] = record
 
     by_session: dict[str, list[dict[str, Any]]] = {}
     for worktree, record in matched.items():

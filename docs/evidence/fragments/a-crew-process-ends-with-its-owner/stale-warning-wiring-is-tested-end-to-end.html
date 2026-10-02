@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="The stale-producer deferral is tested through the reload's own wiring">
+  <meta name="plan-summary" content="The stale-producer deferral checked reloaded_in_place where crew_follow computes it from the reloader's own environment hand-off, and covers a fresh arming that reports the mismatch at once.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s3">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,follower,reload,producer,staleness,test-coverage">
+  <title>The stale-producer deferral is tested through the reload's own wiring &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The stale-producer deferral is tested through the reload's own wiring</h1>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <p>The review of the landed stale-producer deferral found two coverage
+        gaps in <code>tests/test_stale_producer_warning_waits_for_its_reload.py</code>.
+        The deferral flag the loop reads,
+        <code>_follow_watch_lines(reloaded_in_place=...)</code>, was always
+        injected directly by the existing cases, so nothing exercised the place
+        the flag is actually computed: <code>crew_follow</code> reads
+        <code>_FOLLOWER_CHECKPOINT_ENV in os.environ</code> before it pops the
+        checkpoint value, and <code>_FollowerReloader.poll</code> is what puts
+        that variable into the environment the replacement image receives on a
+        non-seat reload. No case covered a fresh arming
+        either, which must report the mismatch at once rather than defer it.
+        Only the test file changes; no product source is touched.</p>
+      <ul>
+        <li><code>tests/test_stale_producer_warning_waits_for_its_reload.py</code>:
+          a helper <code>_reload_environment</code> constructs a real
+          <code>_FollowerReloader</code> for a non-seat follower, stubs its
+          import proof and <code>os.execve</code>, and returns the mapping the
+          reloader composed for the replacement. A helper
+          <code>_follow_events</code> drives the real <code>crew follow</code>
+          click command with <code>--json</code>, so the deferral is decided
+          inside <code>crew_follow</code> and not by an injected flag.
+          <code>test_a_reload_handed_through_crew_follow_defers_the_mismatch</code>
+          runs the reloader's hand-off, adopts only the checkpoint variable
+          into this process's environment exactly as a replacement image would,
+          and asserts the reloading note appears while the stale advice does
+          not. <code>test_a_fresh_arming_through_crew_follow_reports_the_mismatch_at_once</code>
+          removes the checkpoint variable and asserts the opposite: the stale
+          advice appears at once and no reloading note does.</li>
+      </ul>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <p><strong>Gate</strong> &mdash;
+        <code>tests/test_stale_producer_warning_waits_for_its_reload.py</code>
+        and <code>tests/test_follower_checks_its_owner.py</code> in one
+        invocation:</p>
+      <ul>
+        <li><strong>Base</strong>, revision <code>62ff7422d4</code>, clean tree:
+          <strong>10 passed</strong>, EXIT=0, 18.24&nbsp;s.
+          Log: <code>base-arm.log</code>.</li>
+        <li><strong>Head</strong>, revision <code>6676887c85</code> (the base
+          plus this node's test additions): <strong>12 passed</strong>, EXIT=0,
+          20.27&nbsp;s. Log: <code>head-arm.log</code>.</li>
+        <li><strong>Added failures: 0.</strong></li>
+      </ul>
+      <p><strong>Negative control</strong>, executed and logged. The declared
+        mutation reads <code>reloaded_in_place</code> after the checkpoint is
+        popped, so the presence check can no longer see a reload. Applied to
+        <code>reckon/cli.py</code> and run over the gate test file:
+        <strong>1 failed, 6 passed, EXIT=1</strong>, the failing id being
+        <code>test_a_reload_handed_through_crew_follow_defers_the_mismatch</code>
+        &mdash; with the mutation the end-to-end case reports the producer as
+        <code>stale-producer</code> at once, where the head arm shows
+        <code>producer-reloading</code>. The fresh-arming case still passes
+        under the mutation, as it must: the mutation disables only the reload
+        arm. The failing id is not failed by the head arm. The mutation was
+        reverted and <code>reckon/cli.py</code> verified byte-identical
+        (sha256 <code>7966474168c0</code>, zero diff lines). Log:
+        <code>negative-control.log</code>.</p>
+    </section>
+
+    <section id="landing">
+      <h2>Landing line</h2>
+      <p><code>landing: docs/evidence/fragments/a-crew-process-ends-with-its-owner/stale-warning-wiring-is-tested-end-to-end.html</code></p>
+    </section>
+  </main>
+</body>
+</html>

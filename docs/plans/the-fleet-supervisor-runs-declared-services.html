@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-fleet-supervisor-runs-declared-services">
+  <meta name="plan-title" content="The Fleet Supervisor Runs Declared Services">
+  <meta name="plan-summary" content="The fleet allocation&#x27;s supervisor starts, keeps alive and reloads standing services a user config declares, generalising the health sampler.">
+  <meta name="plan-status" content="shipped">
+  <meta name="plan-roi" content="mid">
+  <meta name="plan-effort-hours" content="2.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S22">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-standalone" content="A new capability of the fleet supervisor that a consuming project&#x27;s telemetry ingest will run under; no reckon plan&#x27;s sections wait on it and it consumes no plan&#x27;s pending evidence.">
+  <title>The Fleet Supervisor Runs Declared Services | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;}">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="5">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="lead">
+        The fleet allocation holds one node for every orchestrator and its workers, and its batch
+        step runs <code>reckon/crew/fleet_supervisor.py</code>. That supervisor already starts one
+        standing child, the health sampler, through <code>start_health_sampler</code>. On
+        2026-10-01 the lead decided that a project's telemetry ingest runs as a standing 60-second
+        loop under this supervisor, rather than as a SLURM job on the GPU reservation. One ingest tick
+        measures 0.29 s, about 0.5% of a core. This plan generalises the health sampler's pattern
+        into services that a user config declares, so the supervisor runs any such loop without
+        reckon naming the project that owns it.
+      </p>
+    </header>
+
+    <h2 id="s1">§1 — Declared services start once, restart with backoff, and reload</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
+    <p>
+      A user config file, <code>~/.config/fleet/services.json</code>, maps each service name to an
+      argv list. The supervisor starts each declared service as its own-session child of the batch
+      step. Each service holds a lock in the fleet runtime directory, so a reload or a second
+      supervisor never starts a second copy. A service that exits is restarted with exponential
+      backoff: 5 s at first, doubling to a 300 s cap, and reset after 10 minutes of steady running.
+      A service is restarted only when it exits, never on a liveness timeout. A long tick is the
+      service working: the consuming project measured a cold catch-up tick of 862 s after a fleet
+      requeue. Each service's stdout and stderr are appended to a size-bounded log at
+      <code>~/.local/state/fleet/services/&lt;name&gt;.log</code>, which is on the shared filesystem, so
+      a later reader can open the last ticks after the fleet node is gone; output never goes to
+      DEVNULL. A service is started with the batch step's environment and needs no working
+      directory of its own. On
+      <code>reload</code>, a newly declared service starts, and a service removed from the file is
+      stopped by the pid the supervisor recorded for it, never by a pattern. The supervisor never
+      names a project. The first entry a consuming project will declare is
+      <code>ambix-ingest</code>, whose argv runs that project's ingest every 60 s; that entry lives
+      in the user's config, not in reckon.
+    </p>
+    <p>
+      <strong>Done when</strong> tests, run against a temporary runtime directory and a temporary
+      config home, show five things. A declared service starts as its own session, with a lock held.
+      A second start, or a reload, while it runs starts no second copy. A service that exits is
+      restarted after the backoff and not before. A reload starts a newly declared service and stops
+      a removed one by its recorded pid. The health sampler still starts as before. The negative
+      control removes the lock check; the no-second-copy case must then fail.
+    </p>
+
+    
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-tfsrds-001" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-01" data-recommends-skill="/reckon-build the-fleet-supervisor-runs-declared-services §1" data-resolved-at="2026-10-02T08:11:37+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Land the declared services</h4>
+    <div class="r-fu-body"><p>One node for §1, dispatched once the local lane has worker slots.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-fleet-supervisor-runs-declared-services §1</pre>
+    <p class="r-fu-outcome">done — no followup: §1 merged at 971ef8450; the first live start is the consuming project's reload, reported on this plan when it lands.</p>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261002T053135752847-fleet-supervisor-runs-declared-services" data-who="reckon-build" data-when="2026-10-02T07:47:03.723Z">
+    <div class="r-comment-body"><p>Declared services land in reckon/crew/fleet_supervisor.py: the batch step reads fleet/services.json from the configuration home and runs each declared service as its own-session child holding a lock in the runtime directory, restarts an exited one with 5 s doubling to a 300 s cap reset after 600 s steady running, appends stdout and stderr to one size-bounded log under the state directory, and on reload starts a newly declared service and stops a removed one by its recorded pid; gate base 52 passed / EXIT=0, head 59 passed / EXIT=0 with no added failure id.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261002T074714574031-review-of-fleet-supervisor-runs-declared-services" data-who="reckon-build" data-when="2026-10-02T08:03:05.258Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261002T053135752847-fleet-supervisor-runs-declared-services stored: parsed record, all five dimensions scored in 0..20 (goal_fidelity 20, evidence 17, scope_discipline 19, durability 19, fit 19, total 94), reviewed_base_sha c47424bd75e134cee6fa51e3b30948a11253372d and reviewed_head_sha 3a27d21428b101e33b42a296d8f7c77918312640, added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline_suite/after_suite logs; one follow-on finding (manifest tests: line carries placeholders).</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-tfsrds-s1-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>§1 landed. fleet-supervisor-runs-declared-services was merged at 971ef8450 and promoted. The fleet supervisor reads <code>fleet/services.json</code> from the configuration home and runs each declared service as an own-session child of the batch step, under a per-service lock in the runtime directory. An exited service restarts with backoff from 5 s, doubling to a 300 s cap and resetting after 600 s of steady running, and never on a liveness timeout. stdout and stderr append to a size-bounded log under the state directory. A reload starts newly declared services and stops removed ones by their recorded pid. The gate passed 59 tests at head against 52 at base, with none added, and the review scored 94. The consuming project's coordinator verified the module in a scratch tree and schedules the first live start, ambix-ingest, through a supervisor reload at about 08:15Z on 2026-10-02. The plan ships once that start is reported healthy.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-tfsrds-first-live-start" data-who="" data-when="">
+    <div class="r-comment-body"><p>First live start, 2026-10-02 at about 08:15Z. The consuming project's coordinator reloaded the fleet supervisor of job 1277272. The batch process re-executed as <code>python -m reckon.crew.fleet_supervisor</code> (pid 3505774) and started the declared service ambix-ingest (pid 1739949, 60 s cadence) as its child. All 18 worker steps that existed before the reload (1277272.731 to .788) kept running, and none ended. s22-coord confirmed independently that the service's parent is the supervisor. The service's log at <code>~/.local/state/fleet/services/ambix-ingest.log</code> is empty only because that ingest loop prints nothing on a tick, which the consuming project is fixing on its side. The service is healthy by its index: 1.80 GB to 1.88 GB between 08:17:04Z and 08:18:53Z, through a cold catch-up of about 550 MB. Landed record: <code>docs/evidence/archive/the-fleet-supervisor-runs-declared-services-landed.html</code>.</p></div>
+</div>
+</section>
+</main>
+</body>
+</html>

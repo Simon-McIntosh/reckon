@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-fleet-supervisor-runs-declared-services">
+  <meta name="plan-title" content="Declared services start once, restart with backoff, and reload">
+  <meta name="plan-summary" content="The batch step runs the services a user fleet config declares: each starts once behind a runtime-directory lock, restarts with exponential backoff when it exits, appends both output streams to a size-bounded log, and is started or stopped on reload.">
+  <meta name="plan-evidence-for" content="reckon:the-fleet-supervisor-runs-declared-services">
+  <meta name="plan-verifies" content="reckon:the-fleet-supervisor-runs-declared-services#s1">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fleet,services">
+  <title>Declared services start once, restart with backoff, and reload — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="fleet-supervisor-runs-declared-services" data-reckon="landed" data-when="2026-10-02">
+  <h2>Declared services start once, restart with backoff, and reload</h2>
+  <p>The batch step reads <code>&lt;config home>/fleet/services.json</code> (configuration home resolved through <code>$XDG_CONFIG_HOME</code>, otherwise <code>~/.config</code>) and starts each declared service as its own-session child behind an exclusive lock in the runtime directory: the wrapper takes the lock on a descriptor that survives the <code>exec</code>, so a second start, a reload or a second supervisor is refused by the lock rather than by bookkeeping. A service that exits is restarted with exponential backoff — 5&nbsp;s at first, doubling to a 300&nbsp;s cap, reset after 600&nbsp;s of steady running — driven by a supervision tick and never by a liveness timeout. stdout and stderr append to one log at <code>&lt;state dir>/services/&lt;name&gt;.log</code>, trimmed in place to an 8&nbsp;MiB bound keeping the newest 4&nbsp;MiB, cut at a line boundary.</p>
+  <p>On <code>reload</code> the config is applied before the module re-executes: a newly declared service starts, and a service no longer declared is stopped by the pid the supervisor recorded for it (nothing is signalled unless its lock is held). The health sampler still starts through its own unchanged path, and reckon names no project.</p>
+  <p>Seven cases in <code>tests/test_fleet_supervisor_runs_declared_services.py</code> run against a temporary configuration home, runtime directory and state directory throughout, with an injected clock for every backoff and a synthetic service; every child is stopped by its recorded pid and none survives a case. They cover: own session and held lock; no second copy from a second start or a reload; restart on the backoff and not before; reload starts the new service and stops the removed one by its recorded pid; the health sampler still starts beside a declared service; both output streams append to the size-bounded log; and the backoff sequence doubles to its cap and resets after steady running.</p>
+  <p>Gate, <code>-n 8 --timeout=300</code> with a per-arm basetemp. Base arm (<code>git archive c47424bd75e134cee6fa51e3b30948a11253372d</code>; <code>tests/test_fleet_supervisor.py</code>, <code>tests/test_fleet_lane_carries_the_dispatch_environment.py</code>, <code>tests/test_writer_callers_first_wave.py</code>): 52 passed, <code>EXIT=0</code>, no failure ids. Head arm (the same three files plus the new test file): 59 passed, <code>EXIT=0</code>, no failure ids — the head arm adds none. Logs: <code>base-fleet-supervisor.log</code>, <code>head-fleet-supervisor.log</code> in this run directory. This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+  <p>Negative control as declared: with the per-service lock check removed (its <code>BlockingIOError</code> suppressed, so the wrapper runs on regardless), the no-second-copy case fails — a second copy starts and lives, <code>EXIT=1</code>, one failing id the head arm does not fail; log <code>negative-control-lock-removed.log</code>. The check was reverted by an edit afterwards and the case passes again.</p>
+</article>
+</body>
+</html>

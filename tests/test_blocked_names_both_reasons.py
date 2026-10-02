@@ -224,8 +224,11 @@ def test_a_run_with_neither_a_manifest_reason_nor_a_refusal_reads_as_today(
     row = _classify(pointer)
 
     assert row["classification"] == "abandoned"
+    # The run's session resolves from the pointer, so the shipped detail names
+    # that the turns survive beside the reason; a run with no manifest reason
+    # and no refusal still gains no "must clear first" gate.
     assert row["detail"] == (
         "the process is gone without a complete manifest; nothing is eligible "
-        "for promotion"
+        "for promotion; session 'sess-1' survives in the pointer record"
     )
     assert "must clear first" not in row["detail"]

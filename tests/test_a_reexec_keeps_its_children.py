@@ -54,6 +54,23 @@ time.sleep({sleep})
 print('finished', flush=True)
 """
 
+# A worker that holds itself alive until the test releases it rather than
+# sleeping a fixed span. A fixed sleep races the reloader's pre-exec import
+# probe: the probe compiles the whole package and can outlast a short sleep
+# under load, so the worker is reaped before the handover export reads the
+# registry and the carrier crosses the boundary empty. Waiting on a release
+# file bounds the wait on the condition the test actually needs — the pid is
+# still outstanding at the moment of the export.
+_WAITING_WORKER = """\
+import os, time
+print('launched-worker-ran', flush=True)
+release = {release!r}
+deadline = time.monotonic() + {timeout}
+while not os.path.exists(release) and time.monotonic() < deadline:
+    time.sleep(0.05)
+print('finished', flush=True)
+"""
+
 
 def _live_reaper_count() -> int:
     """Live reaper threads in this process, whatever their origin.
@@ -106,7 +123,11 @@ def _wait_reaped(*pids: int) -> None:
 
 
 def _spawn_worker(
-    tree: Path, marker: str, sleep: float = 2.0, log_dir: Path | None = None
+    tree: Path,
+    marker: str,
+    sleep: float = 2.0,
+    log_dir: Path | None = None,
+    worker_code: str | None = None,
 ) -> tuple[int, Path]:
     """Launch one real worker through the production spawn path and return it.
 
@@ -114,7 +135,9 @@ def _spawn_worker(
     child with it is what the launched-worker set and the reaper own. The
     worker's stream lands in ``log_dir`` (defaulting to ``tree``); a stream
     placed inside a run directory is what makes the launch carry the metadata
-    the reaper writes a launch failure up from.
+    the reaper writes a launch failure up from. ``worker_code`` overrides the
+    fixed-sleep worker for a caller that must hold the child alive against a
+    condition rather than a wall-clock span.
     """
     plan = _backends.LaunchPlan(
         backend="probe",
@@ -122,7 +145,7 @@ def _spawn_worker(
         argv=[
             sys.executable,
             "-c",
-            _WORKER.format(sleep=sleep) + f"print({marker!r})",
+            (worker_code or _WORKER.format(sleep=sleep)) + f"print({marker!r})",
         ],
         cwd=str(tree),
         stdin_text="",
@@ -348,6 +371,8 @@ def test_the_reloader_exports_launched_pids_beside_the_checkpoint(
     the reader checkpoint written just before ``os.execve`` — the call site the
     follower actually reaches. The pids appear in the environment the
     replacement image inherits, next to the checkpoint it will resume from.
+    The worker is held alive until this test releases it, so its lifetime
+    cannot race the reloader's own pre-exec import probe.
     """
     from reckon import cli
     from reckon.crew import runs as runs_module
@@ -360,7 +385,13 @@ def test_the_reloader_exports_launched_pids_beside_the_checkpoint(
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     run_directory = runs_module.run_dir("r-handover")
     run_directory.mkdir(parents=True)
-    pid, _ = _spawn_worker(tree, "handed", sleep=2.0, log_dir=run_directory)
+    release = tmp_path / "handover-released"
+    pid, _ = _spawn_worker(
+        tree,
+        "handed",
+        log_dir=run_directory,
+        worker_code=_WAITING_WORKER.format(release=str(release), timeout=30.0),
+    )
 
     stamps = iter(["old-stamp", "new-stamp"])
     monkeypatch.setattr(runs_module, "follower_code_stamp", lambda: next(stamps))
@@ -385,4 +416,7 @@ def test_the_reloader_exports_launched_pids_beside_the_checkpoint(
     carried = json.loads(captured[0])
     assert carried["pids"] == [pid]
     assert str(pid) in carried["runs"]
+    # Release the held worker and let the reaper collect it, leaving no corpse
+    # for a successor test.
+    release.write_text("release\n", encoding="utf-8")
     _wait_reaped(pid)

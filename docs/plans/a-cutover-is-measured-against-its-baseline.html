@@ -22,9 +22,9 @@
   <title>A cutover is measured against its baseline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-09-29">
-<meta name="plan-version" content="8">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="9">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -198,6 +198,10 @@
       launcher.</li>
     </ol>
 
+    <h2 id="s5">§5 — Place the fleet and show the re-hold</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>Place workers from at least two projects and prove it by showing a live worker's <strong>job id is the job id of the published reservation</strong> — resolving its host is not enough, since a per-worker allocation lands on the same node. Report the <strong>throttled fraction of the CPU time the agents themselves consume</strong>, read from whichever cgroup is running them, naming the counter file on each side, and print the baseline <code>0.3366</code> (imas-ambix <em>slurm-hosted-agent-fleet</em>, <code>f-shaf-003</code>) beside it. Exercise the allocation-death path once at a moment chosen so the workers lost are ones nobody needs, and <strong>show</strong> that the next dispatch re-holds and later workers join it. Move every background crew process in the order §4 sets: first prove that a zellij server started by the allocation's batch script survives the loss of its login-side viewer, that a session run as its own step from a pane gets a working runtime directory and cross-session messaging, and that ending that step reaps a detached child; then move producers under their lease, proven by job id, with none left on the login node; then move all sessions in one operation, with the login node's census showing none of the fleet left; and a placed session runs <code>uv run --no-sync</code> through the launcher. Claim login-node relief only, not reduced GPFS pressure.</p><p><strong>Done when</strong> two projects' live job ids equal the published reservation's, the throttled fraction is printed beside baseline 0.3366, and the allocation-death path is shown to re-hold.</p><p>Moved from followup f-cmb-001 on a-cutover-is-measured-against-its-baseline by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code>; no placement/measure section exists; the body names the full done-when</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="allocation-death-recovery" data-choice="auto-rehold" data-by="Simon McIntosh" data-when="2026-09-23T14:11:46+00:00">
@@ -213,10 +217,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-cmb-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-cmb-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-09-23" data-recommends-skill="" data-resolved-at="2026-10-02T08:45:04+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Place the fleet, measure the throttled fraction, and show the re-hold</h4>
     <div class="r-fu-body"><p>Place workers from at least two projects and prove it by showing a live worker's <strong>job id is the job id of the published reservation</strong> — resolving its host is not enough, since a per-worker allocation lands on the same node. Report the <strong>throttled fraction of the CPU time the agents themselves consume</strong>, read from whichever cgroup is running them, naming the counter file on each side, and print the baseline <code>0.3366</code> (imas-ambix <em>slurm-hosted-agent-fleet</em>, <code>f-shaf-003</code>) beside it. Exercise the allocation-death path once at a moment chosen so the workers lost are ones nobody needs, and <strong>show</strong> that the next dispatch re-holds and later workers join it. Move every background crew process in the order §4 sets: first prove that a zellij server started by the allocation's batch script survives the loss of its login-side viewer, that a session run as its own step from a pane gets a working runtime directory and cross-session messaging, and that ending that step reaps a detached child; then move producers under their lease, proven by job id, with none left on the login node; then move all sessions in one operation, with the login node's census showing none of the fleet left; and a placed session runs <code>uv run --no-sync</code> through the launcher. Claim login-node relief only, not reduced GPFS pressure.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-cutover-is-measured-against-its-baseline</pre>
+    <p class="r-fu-outcome">Moved into §5 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
 </section>
 

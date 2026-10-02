@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:scoring-should-stop-a-promotion">
+  <meta name="plan-verifies" content="reckon:scoring-should-stop-a-promotion#s9">
+  <meta name="evidence-verdict" content="pass-with-limitation">
+  <meta name="evidence-date" content="2026-10-02">
+  <meta name="evidence-commit" content="0f2700d03">
+  <title>A promotion promotes the presented commit that descends from all others</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="descendant-selection">
+  <h2>The presented commit that descends from all the others is the revision promoted</h2>
+  <p>The promoted revision was the last <code>--commit</code> value, so a manifest
+  listing its commits newest first — the order the promotable obligation prints — asserted
+  the run's first commit and was refused against a review of the tip the run produced.
+  The revision is now selected by descent: every presented commit is resolved to its
+  canonical object id, and the one every other candidate is an ancestor of is promoted.
+  A presentation whose commits have no single descendant is refused, naming every
+  presented commit.</p>
+  <p>Changed: <code>reckon/crew/promotion.py</code> (<code>_promoted_revision</code> and
+  <code>_run_promoted_revision</code> now resolve and compare the whole cited list) and
+  <code>tests/test_promotion_picks_the_descendant_commit.py</code>.</p>
+</section>
+<section id="cases">
+  <h2>Cases, run in a synthesised repository</h2>
+  <p>Four cases pass in the node's focused run (<strong>4 passed</strong>,
+  commit <code>0f2700d03</code>): a presentation with the reviewed head first and its
+  parent last promotes the head; the same commits oldest first promote the same head; two
+  commits on divergent branches are refused with the reason and both shas named; and the
+  obligation's printed remedy line, run as printed with only its documented verdict
+  placeholder filled, promotes the reviewed head.</p>
+</section>
+<section id="negative-control">
+  <h2>Negative control</h2>
+  <p>Restoring last-position selection in a scratch copy of the promoted tree
+  (<code>return str(commit_list[-1])</code> in <code>_promoted_revision</code>) reddens
+  the newest-first case, the divergent-set case and the remedy-line case
+  (3 failed, 1 passed, <code>EXIT=1</code>). The newest-first failure is the incident's
+  own shape, quoting the newest-first remedy line against a review of the tip:
+  <em>the stored review read revision 5b6c09839b3f and this promotion asserts
+  d67a93b77124</em>. Red log:
+  <code>r-20261002T053524312179-promotion-picks-the-descendant-commit/gate-negative-control.log</code>.</p>
+</section>
+<section id="limitation">
+  <h2>Limitation</h2>
+  <p>The head arm of the suite gate over the 195 files naming <code>crew.complete</code>,
+  <code>complete_run</code>, <code>promotion</code> or <code>--commit</code> ran to its
+  summary at head <code>0f2700d03</code>: <strong>2737 passed</strong>, no failed id at
+  all, one teardown error
+  (<code>test_a_foreign_pid_never_reads_dead.py::test_a_death_read_elsewhere_is_not_enough_for_the_retained_work_clause</code>),
+  <code>EXIT=1</code> from that single error, in 2154 s). The teardown error is that case's own isolation
+  receipt: it asserts the fingerprint of the real <code>~/.config/reckon</code> is
+  unchanged across the case, and under the 36-minute 16-worker arm the live fleet's own
+  writes moved a directory mtime there. It passes standalone on both the head tree and the
+  base tree (9 passed each), and it is unrelated to the merits of the change; it is recorded
+  as a follow-on.</p>
+  <p>The base arm (base <code>233f442b0</code>, extracted under the run's
+  <code>/tmp</code> scratch) was stopped by the harness at its background limit near
+  40 percent and reached no summary, so no base-versus-head failure delta is claimed; the
+  head arm's own fact — no failing id — is what the gate reads. Logs:
+  <code>gate-head.log</code> (<code>-n 8 --timeout=300</code>, its own basetemp under the
+  run's scratch) and <code>gate-base.log</code>.</p>
+</section>
+</main>
+</body>
+</html>

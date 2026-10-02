@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="Promotion retires a run's disposable identity and reaps its process group">
+  <meta name="plan-summary" content="Promotion's release step removes the run's disposable roster identity once its work is accepted, signals and reaps any live process group for the run, and records the pid it stopped, while an explicitly named member and a blocked run keep both.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,promotion,identity,process">
+  <title>Promotion retires a disposable identity &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Promotion retires a run's disposable identity and reaps its process group</h1>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <p>Promotion's release step now retires the run's own disposable identity
+        and keeps a blocked run's identity and process group. This is the
+        acceptance half of <code>f-acpewio-worker-retired-at-acceptance</code>.</p>
+      <ul>
+        <li><code>reckon/crew/promotion.py</code>: <code>_release_run_workspace</code>
+          gains <code>keep_process</code>, so a run whose manifest reads
+          <code>blocked</code> keeps its process group for a resume; the signal
+          branch records <code>process_stopped_pid</code>. A new
+          <code>_retire_disposable_identity</code> removes the run's own
+          <code>disposable-&lt;run-id&gt;</code> roster row — and only that row —
+          once the release receipt is committed, and
+          <code>_manifest_reads_blocked</code> reads the resume-relevant status.
+          <code>_release_after_promotion</code> threads the blocked decision.</li>
+        <li><code>tests/test_promotion_retires_a_disposable_identity.py</code>: three
+          cases — the disposable identity is gone and an explicitly named member is
+          kept; a live process group is signalled, reaped and its pid recorded; a
+          blocked run keeps its identity and process.</li>
+      </ul>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <p><strong>Gate</strong> &mdash;
+        <code>tests/test_promotion_retires_a_disposable_identity.py</code>:
+        <strong>3 passed</strong>, EXIT=0, in the run worktree.</p>
+      <p><strong>Arms</strong>, one invocation each over
+        <code>tests/test_promotion_release.py</code> and
+        <code>tests/test_promotion_releases_its_worktree.py</code>:</p>
+      <ul>
+        <li><strong>Base</strong>, revision <code>c8087d0bc</code> (a
+          <code>git archive</code> extraction in a scratch tree):
+          <strong>9 passed</strong>, EXIT=0.</li>
+        <li><strong>Head</strong>, revision <code>c8087d0bc</code> plus the
+          working tree: <strong>9 passed</strong>, EXIT=0.</li>
+        <li><strong>Added failures: 0.</strong></li>
+      </ul>
+      <p><strong>Negative control</strong>, executed and logged
+        (<code>PROMOTION_NEGATIVE_IDENTITY=1</code>): with the release step's
+        identity deletion skipped, the disposable case fails &mdash;
+        <strong>1 failed, 2 passed, EXIT=1</strong>, the failing id being
+        <code>test_promotion_retires_a_disposable_identity_and_keeps_a_named_one</code>,
+        which the head arm does not fail. Log:
+        <code>negative-control-identity.log</code>.</p>
+    </section>
+
+    <section id="landing">
+      <h2>Landing line</h2>
+      <p><code>landing: docs/evidence/fragments/a-crew-process-ends-with-its-owner/promotion-retires-a-disposable-identity.html</code></p>
+    </section>
+  </main>
+</body>
+</html>
