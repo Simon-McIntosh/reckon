@@ -1873,37 +1873,67 @@ def _reviewed_run_is_busy(record: Mapping[str, Any]) -> str:
 _RECORD_PATH_PREFIXES = ("docs/evidence/", "docs/figures/")
 
 
-def _is_record_path(path: str) -> bool:
+def _within_fence(path: str, fence: Sequence[str] | None) -> bool:
+    """Whether a path sits inside a fence the reviewed run was itself granted.
+
+    A fence entry matches the path itself or the directory a finding's file lies
+    under, so a finding naming ``docs/figures/x/run.json`` is inside a fence
+    granting ``docs/figures/x``. A leading ``./`` is dropped so the two
+    spellings of one path compare alike. An absent or empty fence grants nothing.
+    """
+    text = str(path or "").strip().removeprefix("./").rstrip("/")
+    if not text:
+        return False
+    for granted in fence or ():
+        entry = str(granted or "").strip().removeprefix("./").rstrip("/")
+        if entry and (text == entry or text.startswith(entry + "/")):
+            return True
+    return False
+
+
+def _is_record_path(path: str, *, fence: Sequence[str] | None = None) -> bool:
     """Whether a finding's path names the fleet's own record, not a source file.
 
     Run directories, manifests, gate logs and the review store all live outside
     the repository under review — an absolute path or a home-relative one is a
     record for that reason — and the evidence fragments and figures live inside
-    it under their own subtrees. Everything else is a repository source or test
-    path a repair may be granted.
+    it under their own subtrees. A path inside the reviewed run's own declared
+    fence is the exception: that run was granted the subtree, so a finding under
+    it is work however it is spelled and the record prefixes apply only outside
+    the fence. Everything else is a repository source or test path a repair may
+    be granted.
     """
     text = str(path or "").strip()
     if not text:
         return True
+    if _within_fence(text, fence):
+        return False
     if text.startswith("~") or Path(text).is_absolute():
         return True
     return text.startswith(_RECORD_PATH_PREFIXES)
 
 
-def _repairable_scope(paths: Iterable[str]) -> list[str]:
+def _repairable_scope(
+    paths: Iterable[str], *, fence: Sequence[str] | None = None
+) -> list[str]:
     """The repository source and test paths among a repair's finding paths.
 
     Duplicates collapse to their first occurrence and record paths are dropped,
-    so the repair is never granted a run directory or a review-store path. Empty
-    answers "every finding cites only run records or evidence documents", which
-    the caller reads as no repair to dispatch. The scope is the findings' own
-    paths rather than the reviewed run's whole fence, so an unrelated test file
-    the reviewed run held is not carried into the repair.
+    so the repair is never granted a record outside its run's fence — a run
+    directory, a manifest, a gate log or a review-store path. A path inside the
+    reviewed run's own fence is kept whatever its spelling, so a finding under
+    the run's granted ``docs/figures/`` or ``docs/evidence/`` subtree is
+    repairable rather than mistaken for the fleet's own record. Empty answers
+    "every finding cites only run records or evidence documents", which the
+    caller reads as no repair to dispatch. The population is the caller's: the
+    decline decision passes the blocking findings' own cited paths, and the
+    composed scope passes the node's write paths, so the two can never disagree
+    about which paths are records.
     """
     scope: list[str] = []
     for path in paths:
         text = str(path or "").strip()
-        if text and text not in scope and not _is_record_path(text):
+        if text and text not in scope and not _is_record_path(text, fence=fence):
             scope.append(text)
     return scope
 
@@ -2288,10 +2318,11 @@ def dispatch_repair_for_run(
         section=str(fields["section"]),
         session=str(fields["session"]),
         time_budget=str(fields["time_budget"]),
-        # Keep the reviewed run's own test paths in the repair's scope: the
-        # repair's gate is the run's tests, and a finding citing only source
-        # would otherwise leave the check that covers it unwritable.
-        fence=repair_module.reviewed_run_test_paths(record),
+        # The reviewed run's own fence is laid into the scope: its test paths
+        # are the repair's gate, and a finding under the run's granted
+        # ``docs/figures/`` or ``docs/evidence/`` subtree is work the run
+        # already held rather than the fleet's own record.
+        run_record=record,
         suite_command=inherited_suite,
     )
     if composed is None:
@@ -2336,14 +2367,22 @@ def dispatch_repair_for_run(
         }
     node_id = str(composed["node_id"])
     round_id = str(composed["round_id"])
-    # The round is decline-only when no *finding* cites a repository path. The
-    # composed scope below also carries the reviewed run's test paths, granted so
-    # the repair can run the reviewed gate, so a decision read from that scope is
-    # never empty for a run holding a test path: a round whose findings name only
-    # a manifest, a gate log or a review-store path would dispatch a repair with
-    # nothing in the repository to answer. The decision is read from the
-    # findings' own cited paths, which is the only place the cited files appear.
-    if not _repairable_scope(str(finding.get("file") or "") for finding in findings):
+    run_fence = repair_module._run_fence(record)
+    blocking = repair_module.blocking_findings(review)
+    # The round is decline-only when no *blocking finding cites a repairable
+    # path. The decision must read the blocking findings, the same population the
+    # scope is composed from: reading every finding let a follow-on citing a
+    # source path carry a round through whose blocking findings cited only the
+    # fleet's own record, so the scope came out empty. The composed scope below
+    # also carries the reviewed run's whole fence, granted so the repair can run
+    # the reviewed gate, so a decision read from that scope is never empty for a
+    # run holding a test path; the cited paths are the only place the findings'
+    # own files appear, and they are read here. A path inside the run's own fence
+    # is repairable whatever its spelling, so an in-fence figure or evidence
+    # finding is not mistaken for the fleet's own record.
+    if not _repairable_scope(
+        (str(finding.get("file") or "") for finding in blocking), fence=run_fence
+    ):
         reason = "no finding cites a repository path, so the round is decline-only"
         _record_repair_dispatch(
             run_id,
@@ -2359,7 +2398,30 @@ def dispatch_repair_for_run(
             "round_id": round_id,
             "reason": reason,
         }
-    scope = _repairable_scope(composed["write_paths"])
+    scope = _repairable_scope(composed["write_paths"], fence=run_fence)
+    # A composed scope that filters to empty while blocking findings exist is a
+    # dead end: the round would otherwise resume with the advice line "Write
+    # scope for this round: none", which is no scope for work the review's
+    # blocking findings named. Record it declined instead of resuming it.
+    if not scope:
+        reason = (
+            "the composed write scope filtered to empty, so the round is decline-only"
+        )
+        _record_repair_dispatch(
+            run_id,
+            status="decline-only",
+            reason=reason,
+            round_id=round_id,
+            node_id=node_id,
+        )
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "node_id": node_id,
+            "round_id": round_id,
+            "reason": reason,
+            "blocking_findings": len(blocking),
+        }
     standing = _repair_in_flight(record, node_id=node_id, project=project)
     if standing:
         return {
