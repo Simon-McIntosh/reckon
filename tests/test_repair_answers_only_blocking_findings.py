@@ -115,6 +115,45 @@ def test_a_finding_with_no_severity_key_is_repaired() -> None:
     assert NO_SEVERITY["file"] in node["write_paths"]
 
 
+# A severity the vocabulary does not name — a word written directly into a
+# record, or an empty value — is not a declaration: the reflex now reads it
+# through the shared predicate and repairs it as blocking, rather than filing it
+# as a follow-on that is never answered.
+OUT_OF_VOCABULARY = {
+    "file": "reckon/crew/typo.py",
+    "line": "5",
+    "text": "a severity word outside the vocabulary",
+    "severity": "minor",
+}
+EMPTY_SEVERITY = {
+    "file": "reckon/crew/blank.py",
+    "line": "6",
+    "text": "an empty severity value",
+    "severity": "",
+}
+
+
+@pytest.mark.parametrize("finding", [OUT_OF_VOCABULARY, EMPTY_SEVERITY])
+def test_an_unreadable_severity_blocks_and_is_repaired(
+    finding: dict[str, str],
+) -> None:
+    node = repair.compose_repair_node(_review([finding]))
+
+    assert node is not None
+    assert _expected_id(finding) in node["brief"]
+    assert finding["file"] in node["write_paths"]
+
+
+def test_only_a_declared_follow_on_composes_no_repair() -> None:
+    """Control: the unreadable-severity repair does not sweep a declared follow-on in.
+
+    A lone declared follow-on still composes no repair, so the rule above cannot
+    pass by treating every finding as blocking.
+    """
+    assert repair.compose_repair_node(_review([FOLLOW_ON])) is None
+    assert repair.compose_repair_node(_review([OUT_OF_VOCABULARY])) is not None
+
+
 def test_review_findings_keeps_the_severity_and_blocking_findings_filters() -> None:
     review = _review([BLOCKING, FOLLOW_ON, NO_SEVERITY])
 
@@ -284,7 +323,9 @@ def test_an_all_follow_on_round_names_its_cause_and_the_follow_on_count(
     round the reflex considered is not indistinguishable from one it never saw.
     The count is read from this file's own finding list, so a reason naming no
     figure — or the re-read-differs reason the same branch otherwise covers —
-    fails here.
+    fails here. A finding with no readable severity blocks, so a round reaching
+    this branch carries no unmarked finding; the reason must state no unmarked
+    count, which could only ever read zero.
     """
     config_home, repo, head_sha = dispatch_project
     record = _reviewed_pointer(config_home, repo)
@@ -296,6 +337,7 @@ def test_an_all_follow_on_round_names_its_cause_and_the_follow_on_count(
     assert calls == []
     assert "the review round carried no blocking finding" in report["reason"]
     assert "1 follow-on" in report["reason"]
+    assert "unmarked" not in report["reason"]
 
     recorded = runs.read_pointer(RUN_ID)["repair_dispatch"]
     assert recorded["status"] == "decline-only"

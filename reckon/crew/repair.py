@@ -186,15 +186,17 @@ def _finding_kind(finding: Mapping[str, Any]) -> str:
 
     A declared blocking severity blocks; any other declared severity is a
     follow-on, recorded on the review rather than repaired. A finding that
-    declares nothing blocks too: the store admits such a finding rather than
-    refusing it, so an absent severity is a judgement the reviewer left
-    unstated, not a follow-on, and repairing it is what keeps a finding a
-    reviewer raised from being discarded.
+    declares nothing — no key, an empty value, or a word outside the vocabulary
+    — blocks too: the store admits such a finding rather than refusing it, so an
+    unreadable severity is a judgement the reviewer left unstated, not a
+    follow-on, and repairing it is what keeps a finding a reviewer raised from
+    being discarded. Which values count as a declaration is
+    :func:`declared_severity`'s decision, shared with the write-time audit.
     """
-    severity = finding.get("severity")
+    severity = review_module.declared_severity(finding)
     if severity is None:
         return _BLOCKING
-    if str(severity).strip() == review_module.BLOCKING_FINDING_SEVERITY:
+    if severity == review_module.BLOCKING_FINDING_SEVERITY:
         return _BLOCKING
     return _FOLLOW_ON
 
@@ -226,16 +228,20 @@ def unmarked_findings(review: Mapping[str, Any]) -> list[dict[str, Any]]:
     These are reported, not dropped: the write-time severity audit flags such a
     finding to the reviewer but does not refuse the write, so a record stamped
     after the audit that still carries one is a record whose reviewer left the
-    severity unstated. The finding is repaired as blocking anyway; listing it
-    here lets the composed node name it for the coordinator. A record stamped
-    before the audit predates the instruction, so it carries no such flag.
+    severity unstated. A finding declares nothing when it has no key, an empty
+    value, or a word outside the vocabulary — the same decision the audit reads
+    through :func:`declared_severity`, so the two never disagree about a record
+    one calls unmarked and the other repairs. The finding is repaired as
+    blocking anyway; listing it here lets the composed node name it for the
+    coordinator. A record stamped before the audit predates the instruction, so
+    it carries no such flag.
     """
     if _record_predates_unmarked_audit(review):
         return []
     return [
         finding
         for finding in review_findings(review)
-        if finding.get("severity") is None
+        if review_module.declared_severity(finding) is None
     ]
 
 
