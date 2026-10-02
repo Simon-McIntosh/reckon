@@ -220,6 +220,37 @@ def test_an_unrelated_edit_to_the_plan_refuses_before_committing(
     assert _git(repository, "rev-parse", "HEAD") == head_before
 
 
+# ── The store's own plan-state write is the run's bookkeeping, not a refusal ─
+
+
+def test_a_store_written_impl_move_lands_as_the_runs_own_bookkeeping(
+    repository: Path,
+) -> None:
+    """A plan-state change the plan store made — here an impl move — is the
+    run's own bookkeeping, so the landing admits it and carries it into the
+    landing commit rather than refusing it as an unrelated edit."""
+    narrative = "a landing whose plan differs by a store-written impl move"
+    _pointer(repository)
+
+    # Move the impl through the plan store, exactly as a plan-state write does,
+    # and commit nothing more.
+    state, version = _store.read_plan(PROJECT, PLAN, repository, artifact_type="plan")
+    state["impl"] = 0.75
+    _store.write_plan(PROJECT, PLAN, state, version, repository, artifact_type="plan")
+
+    plan_path = repository / PLAN_RELATIVE
+    assert _dirty(repository, plan_path), "the store write should be dirty"
+
+    result = _promote(repository, narrative)
+
+    assert result["plan_comment"]["recorded"] is True
+    assert _dirty(repository, plan_path) == ""
+    assert PLAN_RELATIVE in _promotion_commit_files(repository)
+    assert 'name="plan-impl" content="0.75"' in _git(
+        repository, "show", f"HEAD:{PLAN_RELATIVE}"
+    )
+
+
 # ── The cascade: a refusal strands nothing for the next promotion ────────────
 
 
