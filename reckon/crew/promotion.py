@@ -2296,15 +2296,74 @@ def _promoted_revision(run_tree: Path, commit_list: Sequence[str]) -> str:
     branch, so recording the commit the promotion makes instead would make the
     ancestry question true by construction and unable to fail for any reason.
 
-    The worker's cited tip is preferred over the worktree's ``HEAD`` because a
-    shared checkout can advance under other runs between the commit and the
-    promotion, and the cited tip is the revision whose diff promotion already
-    measured.
+    The revision is the presented commit that descends from all the others, so
+    the order a manifest lists its commits in never decides which revision the
+    run's work reached. The cited commits are preferred over the worktree's
+    ``HEAD`` because a shared checkout can advance under other runs between the
+    commit and the promotion, and a cited commit is the revision whose diff
+    promotion already measured.
     """
     if commit_list:
-        return str(commit_list[-1])
+        return _descendant_commit(run_tree, commit_list)
     head = _commit_canonical_id(run_tree, "HEAD")
     return head or ""
+
+
+def _descendant_commit(run_tree: Path, presented: Sequence[str]) -> str:
+    """The presented commit that descends from all the presented commits.
+
+    A run's manifest lists the commits it made in whatever order its worker
+    wrote them, and a promotion that read a position out of that list promoted
+    a revision the run never reached: the newest-first order prints the tip
+    first, so the last position named the run's first commit and a promotion
+    following the printed order was refused against a mis-selected revision.
+
+    Each entry is resolved to the canonical object id its spelling names, so an
+    abbreviation, a full sha and a branch name for one commit collapse to one
+    candidate. An entry naming no commit cannot be placed in the history, so it
+    takes no part in the comparison and is left for the citation check that
+    reports it. The remaining candidates are compared with git, and the one
+    that every other candidate is an ancestor of is the run's tip. A set whose
+    commits have no such single member is refused, naming every presented
+    commit, because the revision the run's work reached cannot be told from the
+    list and any pick would be a guess recorded as the promoted revision.
+    """
+    entries: list[str] = []
+    resolvable: list[str] = []
+    seen: set[str] = set()
+    for entry in presented:
+        text = str(entry).strip()
+        if not text:
+            continue
+        canonical = _commit_canonical_id(run_tree, text)
+        value = canonical or text
+        if value in seen:
+            continue
+        seen.add(value)
+        entries.append(value)
+        if canonical:
+            resolvable.append(value)
+    if len(entries) == 1:
+        return entries[0]
+    if not resolvable:
+        return entries[-1]
+    descendants = [
+        candidate
+        for candidate in resolvable
+        if all(
+            other == candidate or _revision_is_ancestor(run_tree, other, candidate)
+            for other in resolvable
+        )
+    ]
+    if len(descendants) == 1:
+        return descendants[0]
+    listed = ", ".join(entries)
+    raise CrewError(
+        "the commits presented for this promotion have no single descendant: "
+        f"{listed}; none of them descends from all the others, so the revision "
+        "the run's work reached cannot be told from the list. Present the "
+        "commit the run's work ended at"
+    )
 
 
 def _repository_scope_paths(
@@ -6069,17 +6128,15 @@ def _run_promoted_revision(
 
     The same reading the promoted row records, taken before the review gate
     reads the store so the gate compares against the revision this promotion
-    will name rather than against whatever the store holds newest. The cited tip
-    is canonicalised as the row canonicalises it, so a citation that names the
-    revision symbolically or in abbreviation still matches the full sha a review
-    recorded reading.
+    will name rather than against whatever the store holds newest. Every cited
+    commit is canonicalised as the row canonicalises it, so a citation that
+    names the revision symbolically or in abbreviation still matches the full
+    sha a review recorded reading, and the tip is selected by descent rather
+    than by the position the citation was written in.
     """
     worktree = Path(str(record.get("worktree") or ""))
     tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
-    if commit_list:
-        tip = str(commit_list[-1])
-        return _promoted_revision(tree, [_commit_canonical_id(tree, tip) or tip])
-    return _promoted_revision(tree, [])
+    return _promoted_revision(tree, commit_list)
 
 
 def plan_impl_at(
