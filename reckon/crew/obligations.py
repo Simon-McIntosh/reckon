@@ -217,9 +217,9 @@ def _live_worktrees(project: str) -> set[Path]:
     return trees
 
 
-def _held_worktrees(
-    project: str, session: str, *, now: datetime
-) -> list[dict[str, Any]]:
+def _held_worktrees_by_session(
+    project: str, *, now: datetime
+) -> dict[str, list[dict[str, Any]]]:
     """Return promoted runs whose retained tree remains in Git's registry.
 
     A registered path a live run now occupies is skipped: the promoted run's
@@ -229,12 +229,10 @@ def _held_worktrees(
     """
     docs_dir = _store._docs_dir_for_project(project)
     if docs_dir is None:
-        return []
+        return {}
     repository = docs_dir.parent.resolve()
     registered = {
-        path
-        for path in _registered_worktrees(repository)
-        if path != repository and path.parent.name == session
+        path for path in _registered_worktrees(repository) if path != repository
     }
     command = " ".join(
         shlex.quote(part)
@@ -268,13 +266,13 @@ def _held_worktrees(
             if node_id and worktree.name == node_id and worktree not in occupied:
                 matched[worktree] = record
 
-    items: list[dict[str, Any]] = []
-    for record in matched.values():
+    by_session: dict[str, list[dict[str, Any]]] = {}
+    for worktree, record in matched.items():
         retention = record.get("worktree_retention")
         retained_at = (
             retention.get("retained_at") if isinstance(retention, Mapping) else None
         )
-        items.append(
+        by_session.setdefault(worktree.parent.name, []).append(
             {
                 "kind": "worktree-held",
                 "run_id": str(record.get("run_id") or ""),
@@ -287,7 +285,14 @@ def _held_worktrees(
                 "next_command": command,
             }
         )
-    return items
+    return by_session
+
+
+def _held_worktrees(
+    project: str, session: str, *, now: datetime
+) -> list[dict[str, Any]]:
+    """One session's held worktrees, sliced from the fleet-wide derivation."""
+    return _held_worktrees_by_session(project, now=now).get(session, [])
 
 
 def _reviewed_tree(pointer: Mapping[str, Any]) -> Path | None:
@@ -310,13 +315,12 @@ def _reviewed_tree(pointer: Mapping[str, Any]) -> Path | None:
     return None
 
 
-def _sub_floor_items(
+def _sub_floor_items_by_session(
     project: str,
-    session: str,
     floors: Mapping[str, Any],
     *,
     now: datetime,
-) -> list[dict[str, Any]]:
+) -> dict[str, list[dict[str, Any]]]:
     """Return one duty per undisposed review dimension below its declared floor.
 
     The review is selected through the same rule the classifier and the
@@ -334,11 +338,10 @@ def _sub_floor_items(
     for.
     """
     if not floors:
-        return []
-    items: list[dict[str, Any]] = []
+        return {}
+    by_session: dict[str, list[dict[str, Any]]] = {}
     for pointer in runs.list_live(project=project):
-        if str(pointer.get("session") or "") != session:
-            continue
+        session = str(pointer.get("session") or "")
         run_id = str(pointer.get("run_id") or "")
         if not run_id:
             continue
@@ -352,7 +355,7 @@ def _sub_floor_items(
         if not record:
             continue
         node = pointer.get("node") or {}
-        items.extend(
+        by_session.setdefault(session, []).extend(
             {
                 "kind": SUB_FLOOR_DUTY_KIND,
                 "run_id": run_id,
@@ -371,7 +374,18 @@ def _sub_floor_items(
             }
             for finding in review_module.sub_floor_dimensions(record, floors)
         )
-    return items
+    return by_session
+
+
+def _sub_floor_items(
+    project: str,
+    session: str,
+    floors: Mapping[str, Any],
+    *,
+    now: datetime,
+) -> list[dict[str, Any]]:
+    """One session's sub-floor duties, sliced from the fleet-wide derivation."""
+    return _sub_floor_items_by_session(project, floors, now=now).get(session, [])
 
 
 def obligations(project: str, session: str) -> dict[str, Any]:

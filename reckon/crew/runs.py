@@ -11,10 +11,11 @@ import socket
 import stat
 import subprocess
 import sys
+import threading
 import time
 from collections.abc import Callable, Iterable, Mapping
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -1066,6 +1067,29 @@ def _project_executable_remainder(project: str) -> tuple[int | None, int | None]
     return (sum(remainders) if remainders else None), uncovered_plans
 
 
+def _drain_row(pointer: Mapping[str, Any]) -> dict[str, Any]:
+    """One live pointer's closure row, the drain's own classification."""
+    from reckon.crew.recovery import (
+        classify_pointer,
+        closure_disposition_valid,
+        local_liveness,
+    )
+
+    alive, proven = local_liveness(pointer)
+    row = classify_pointer({**pointer, "process_alive": alive if proven else None})
+    recorded = pointer.get("closure_disposition")
+    disposition = (
+        str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
+    )
+    valid = closure_disposition_valid(disposition, row["classification"])
+    return {
+        **row,
+        "disposition": dict(recorded) if isinstance(recorded, Mapping) else None,
+        "disposition_valid": valid,
+        "unreconciled": not valid,
+    }
+
+
 def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     """Return the closure drain derived from one project's live pointers.
 
@@ -1078,44 +1102,21 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
     malformed, unknown or expired disposition therefore contributes to
     ``unreconciled_runs``.
     """
-    from reckon.crew.recovery import (
-        _partition_session_rows,
-        classify_pointer,
-        closure_disposition_valid,
-        local_liveness,
-    )
+    from reckon.crew.recovery import _partition_session_rows
 
-    rows: list[dict[str, Any]] = []
-    for pointer in list_live(project=project):
-        # ``still-working`` is a current liveness claim, so the classification
-        # rechecks it rather than letting a historical ``process_alive`` field
-        # keep the closure fence open after a terminal manifest arrives. The
-        # recheck is the host-gated reading, and only a reading this host
-        # stands behind counts: this host asks the process table only for a run
-        # it launched, and a pid number it happens to hold from another host's
-        # run belongs to some other process. A local probe here would hand that
-        # foreign run a live reading it never earned — the same borrowed life
-        # the directory row and the retained-work clause refuse — and an
-        # unproven answer is carried no further than the row, because the
-        # closure fence turns on whether the worker lives now rather than on
-        # what a pointer's writer recorded at launch.
-        alive, proven = local_liveness(pointer)
-        row = classify_pointer({**pointer, "process_alive": alive if proven else None})
-        recorded = pointer.get("closure_disposition")
-        disposition = (
-            str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
-        )
-        valid = closure_disposition_valid(disposition, row["classification"])
-        rows.append(
-            {
-                **row,
-                "disposition": dict(recorded)
-                if isinstance(recorded, Mapping)
-                else None,
-                "disposition_valid": valid,
-                "unreconciled": not valid,
-            }
-        )
+    # ``still-working`` is a current liveness claim, so the classification
+    # rechecks it rather than letting a historical ``process_alive`` field
+    # keep the closure fence open after a terminal manifest arrives. The
+    # recheck is the host-gated reading, and only a reading this host
+    # stands behind counts: this host asks the process table only for a run
+    # it launched, and a pid number it happens to hold from another host's
+    # run belongs to some other process. A local probe here would hand that
+    # foreign run a live reading it never earned — the same borrowed life
+    # the directory row and the retained-work clause refuse — and an
+    # unproven answer is carried no further than the row, because the
+    # closure fence turns on whether the worker lives now rather than on
+    # what a pointer's writer recorded at launch.
+    rows = [_drain_row(pointer) for pointer in list_live(project=project)]
 
     counted, peers = _partition_session_rows(rows, session)
     unreconciled = sum(1 for row in counted if row["unreconciled"])
@@ -1142,6 +1143,24 @@ def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
             }
         )
     return result
+
+
+def drain_unreconciled_by_session(project: str) -> dict[str, int]:
+    """The drain's unreconciled count for every session, derived once.
+
+    A sweep needs the count for each session it publishes for, and deriving the
+    rows once and partitioning them per session keeps that from repeating every
+    pointer's classification for each reader. Rows with no recorded owner count
+    for every session, exactly as :func:`drain` counts them.
+    """
+    from reckon.crew.recovery import _partition_session_rows
+
+    rows = [_drain_row(pointer) for pointer in list_live(project=project)]
+    counts: dict[str, int] = {}
+    for session in {str(row.get("session") or "") for row in rows} | {""}:
+        counted, _peers = _partition_session_rows(rows, session)
+        counts[session] = sum(1 for row in counted if row["unreconciled"])
+    return counts
 
 
 def _read_watch_record(handle) -> dict[str, Any]:
@@ -1286,11 +1305,14 @@ class _WatchStreamProducer:
     # not load. Held so the deferral is announced once per episode rather than
     # on every retry, and cleared the moment a tick reads the config cleanly.
     tick_deferred: bool = False
-    # Whether this producer is inside a sweep. The obligations a sweep
-    # publishes are derived from live pointers, and that derivation reads them
-    # through ``list_live``, which is itself a publish point, so without this
-    # every sweep would re-enter the one it is already running.
-    publishing: bool = False
+    # The sweep runs off the producer's transition path: a transition is
+    # written the moment it is detected, and the derivation the sessions'
+    # snapshots are sliced from runs behind it. The lock keeps a trigger that
+    # arrives while a sweep is in flight from starting a second one — the
+    # trigger is skipped, not queued — and the thread reference is what a
+    # caller waits on when it needs the published state to have settled.
+    sweep_lock: threading.Lock = field(default_factory=threading.Lock)
+    sweep_thread: threading.Thread | None = None
 
 
 _WATCH_STREAM_PRODUCERS: dict[str, _WatchStreamProducer] = {}
@@ -1519,23 +1541,49 @@ def _publish_watch_transitions(
         return False
 
 
+_SWEEP_LOCAL = threading.local()
+
+
 def _publish_watch_stream(project: str, records: Iterable[Mapping[str, Any]]) -> None:
-    """Fold this sweep's fleet state, then republish the sessions' snapshots.
+    """Fold this sweep's fleet state, then publish the sessions' snapshots.
 
     A sweep publishes the obligations it derives from the same live pointers,
     and that derivation reads them through :func:`list_live` — one of this
-    function's own callers — so a sweep that is already running is left to
-    finish rather than re-entered by the reads it performs.
+    function's own callers — so a call made from inside a running sweep is left
+    to that sweep rather than re-entered. The transition write never waits on
+    the derivation: the sweep runs in its own thread, one at a time, and a
+    trigger arriving while one is in flight is skipped.
     """
-    producer = _WATCH_STREAM_PRODUCERS.get(project)
-    if producer is None or producer.publishing:
+    if getattr(_SWEEP_LOCAL, "in_sweep", False):
         return
-    producer.publishing = True
+    producer = _WATCH_STREAM_PRODUCERS.get(project)
+    if producer is None:
+        return
+    transition_fired = _publish_watch_transitions(project, producer, records)
+    if not producer.sweep_lock.acquire(blocking=False):
+        return
+    producer.sweep_thread = threading.Thread(
+        target=_run_obligation_sweep,
+        args=(project, producer, transition_fired),
+        name=f"reckon-obligations-sweep-{project}",
+        daemon=True,
+    )
+    producer.sweep_thread.start()
+
+
+def _run_obligation_sweep(
+    project: str, producer: _WatchStreamProducer, transition_fired: bool
+) -> None:
+    """Run one obligations sweep on the thread its trigger started."""
+    _SWEEP_LOCAL.in_sweep = True
     try:
-        transition_fired = _publish_watch_transitions(project, producer, records)
-        _publish_obligation_snapshots(project, transition_fired=transition_fired)
+        _publish_obligation_snapshots(
+            project, transition_fired=transition_fired
+        )
     finally:
-        producer.publishing = False
+        _SWEEP_LOCAL.in_sweep = False
+        producer.sweep_thread = None
+        producer.sweep_lock.release()
 
 
 def _producer_snapshot_identity(project: str) -> dict[str, Any]:

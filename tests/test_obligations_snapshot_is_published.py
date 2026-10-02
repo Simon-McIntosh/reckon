@@ -20,6 +20,7 @@ import json
 import os
 import subprocess
 import sys
+import threading
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -142,9 +143,21 @@ def _write_pointer(
     )
 
 
+def _wait_for_sweep() -> None:
+    """Wait for the producer's sweep thread to finish publishing."""
+    for _ in range(600):
+        producer = runs._WATCH_STREAM_PRODUCERS.get(PROJECT)
+        thread = None if producer is None else producer.sweep_thread
+        if thread is None:
+            return
+        thread.join(timeout=0.1)
+    raise AssertionError("the sweep did not settle")
+
+
 def _sweep() -> None:
-    """Drive exactly one producer sweep."""
+    """Drive exactly one producer sweep and wait for it to publish."""
     runs.list_live(project=PROJECT)
+    _wait_for_sweep()
 
 
 def test_a_pointer_transition_is_in_the_snapshot_by_the_next_sweep(
@@ -157,6 +170,7 @@ def test_a_pointer_transition_is_in_the_snapshot_by_the_next_sweep(
         runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
     ):
         assert acquired is True
+        _wait_for_sweep()
         first = obligation_snapshot.read_snapshot(PROJECT, SESSION)
         assert first is not None, "the producer's first sweep publishes a baseline"
         kinds_before = [item["kind"] for item in first["obligations"]]
@@ -193,6 +207,7 @@ def test_the_snapshot_carries_the_derivation_over_unmodified_files(
         runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
     ):
         assert acquired is True
+        _wait_for_sweep()
         stored = obligation_snapshot.read_snapshot(PROJECT, SESSION)
 
     assert stored is not None
@@ -221,6 +236,7 @@ def test_a_writer_stopped_before_the_rename_leaves_the_previous_snapshot(
         runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
     ):
         assert acquired is True
+        _wait_for_sweep()
         previous = obligation_snapshot.read_snapshot(PROJECT, SESSION)
     assert previous is not None
     path = obligation_snapshot.snapshot_path(PROJECT, SESSION)
@@ -313,6 +329,7 @@ def test_a_file_change_and_the_floor_tick_each_republish(fleet: dict[str, Any]) 
         runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
     ):
         assert acquired is True
+        _wait_for_sweep()
         first = obligation_snapshot.read_snapshot(PROJECT, SESSION)
         assert first is not None
 
@@ -371,6 +388,7 @@ def test_only_a_live_registration_gets_a_snapshot(fleet: dict[str, Any]) -> None
         runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
     ):
         assert acquired is True
+        _wait_for_sweep()
         rows = {row["session"]: row for row in runs.list_followers(PROJECT)}
         assert rows["released-fixture"]["live"] is False, "the fixture must be released"
         assert rows[SESSION]["live"] is True
@@ -441,3 +459,41 @@ def test_a_zombie_producer_is_not_fresh(fleet: dict[str, Any]) -> None:
         )
     finally:
         zombie.wait()
+
+
+
+def test_a_slow_sweep_does_not_hold_the_next_transition(
+    fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A sweep in flight is skipped over, and a transition never waits on it."""
+    _write_pointer(fleet, "r-before", phase="working", status="working")
+    started = threading.Event()
+    release = threading.Event()
+    calls = {"n": 0}
+    real_sweep = obligation_snapshot.sweep
+
+    def slow_sweep(*args: object, **kwargs: object) -> object:
+        calls["n"] += 1
+        started.set()
+        release.wait(timeout=30.0)
+        return real_sweep(*args, **kwargs)
+
+    monkeypatch.setattr(obligation_snapshot, "sweep", slow_sweep)
+    try:
+        with (
+            runs.follower_registration(PROJECT, SESSION, delivery="stream"),
+            runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
+        ):
+            assert acquired is True
+            assert started.wait(timeout=30.0), "the claim starts the first sweep"
+            _write_pointer(fleet, "r-after", phase="working", status="working")
+            moment = time.monotonic()
+            runs.list_live(project=PROJECT)
+            elapsed = time.monotonic() - moment
+            assert elapsed < 5.0, "a transition write waited on the sweep"
+            assert calls["n"] == 1, "a trigger during a sweep is skipped"
+            stream = runs.watch_stream_path(PROJECT).read_text(encoding="utf-8")
+            assert "r-after" in stream
+    finally:
+        release.set()
+        _wait_for_sweep()

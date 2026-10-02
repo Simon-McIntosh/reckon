@@ -474,6 +474,9 @@ class FleetState:
     rows: list[dict[str, Any]]
     acknowledged: dict[str, dict[str, Any]]
     reviews_in_flight: dict[str, set[str]]
+    sub_floor: dict[str, list[dict[str, Any]]]
+    held_worktrees: dict[str, list[dict[str, Any]]]
+    unreconciled: dict[str, int]
 
 
 def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
@@ -490,15 +493,19 @@ def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
         run_id = str(pointer.get("run_id") or "")
         if session and run_id and module._current_review_in_flight(pointer):
             reviews_in_flight.setdefault(session, set()).add(run_id)
+    floors = module.review_module.declared_dimension_floors(config)
     return FleetState(
         project=project,
         now=instant,
         config=config,
         grace=grace,
-        floors=module.review_module.declared_dimension_floors(config),
+        floors=floors,
         rows=module._classified_rows(project),
         acknowledged=module._acknowledgements_in_force(project, now=instant),
         reviews_in_flight=reviews_in_flight,
+        sub_floor=module._sub_floor_items_by_session(project, floors, now=instant),
+        held_worktrees=module._held_worktrees_by_session(project, now=instant),
+        unreconciled=module.runs.drain_unreconciled_by_session(project),
     )
 
 
@@ -540,10 +547,8 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
         kind = _duty_kind(module, state, row, in_flight)
         if kind:
             items.append(module._live_item(row, kind=kind, now=state.now))
-    items.extend(
-        module._sub_floor_items(state.project, session, state.floors, now=state.now)
-    )
-    items.extend(module._held_worktrees(state.project, session, now=state.now))
+    items.extend(state.sub_floor.get(session, []))
+    items.extend(state.held_worktrees.get(session, []))
     items, acknowledged = module._partition_acknowledged(items, state.acknowledged)
     items.sort(
         key=lambda item: (
@@ -555,7 +560,6 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
     acknowledged.sort(
         key=lambda item: (str(item["until"]), str(item["run_id"]), str(item["kind"]))
     )
-    closure = module.runs.drain(state.project, session=session)
     return {
         "project": state.project,
         "session": session,
@@ -566,7 +570,9 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             "oldest_age_seconds": max(
                 (int(item["age_seconds"]) for item in items), default=0
             ),
-            "unreconciled_runs": int(closure["unreconciled_runs"]),
+            "unreconciled_runs": int(
+                state.unreconciled.get(session, state.unreconciled.get("", 0))
+            ),
         },
     }
 
