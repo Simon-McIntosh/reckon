@@ -3126,12 +3126,12 @@ def _observed_stream(
     second classification of an unchanged run cost no parse at all.
 
     The memo's stream entry is served only while the file it was read from is
-    still that file by identity. When it is not, the read starts at the byte
-    offset the last one reached, so a stream that has only grown costs the
-    records appended since rather than the whole file. An offset past the end of
-    the file, or one whose stream was replaced, reads from the first record: a
-    resume writes a new stream, and an offset into a predecessor's bytes means
-    nothing in a file that never held them.
+    still that file by identity. When it is not, the cursor carries the byte
+    offset the last read reached and a fingerprint of the stream's opening, so the read
+    resumes only while the stream still opens with that same fingerprint: an
+    offset past the end of the file, a replaced stream, or one rewritten in place
+    to a new opening all read from the first record, because an offset into a
+    predecessor's bytes means nothing in a file that no longer holds them.
     """
     if record.get("launch") != "cli":
         return None
@@ -3141,6 +3141,8 @@ def _observed_stream(
     command = _harness_command(record, record.get("argv"))
     if not command:
         return None
+    from reckon import _backends
+
     stored = memo.get("stream") if memo is not None else None
     resume: dict[str, Any] | None = None
     if isinstance(stored, Mapping) and str(stored.get("path") or "") == str(log):
@@ -3155,6 +3157,7 @@ def _observed_stream(
             resume = {
                 "offset": int(stored.get("offset") or 0),
                 "state": state,
+                "head": stored.get("head"),
             }
         # What an observation is a function of is the file it was read from and
         # the lane it was translated for, so those are what an entry is served
@@ -3168,7 +3171,6 @@ def _observed_stream(
             and isinstance(stored.get("observation"), Mapping)
         ):
             return dict(stored.get("observation") or {})
-    from reckon import _backends
 
     try:
         observation = _backends.observe_log(
@@ -3183,13 +3185,15 @@ def _observed_stream(
         return None
     seen = observation.as_dict()
     if memo is not None:
+        offset = int(observation.stream_state.get("offset") or 0)
         memo["stream"] = {
             "path": str(log),
             "ident": _file_identity(log),
             "inode": _file_inode(log),
+            "head": _backends.stream_head_fingerprint(log, offset=offset),
             "command": command,
             "backend": str(record.get("backend") or ""),
-            "offset": int(observation.stream_state.get("offset") or 0),
+            "offset": offset,
             "state": observation.stream_state,
             "observation": seen,
         }
@@ -7063,6 +7067,41 @@ def classify_pointer(
 # that will change once the tree or its git directory appears.
 _COMMITS_BEYOND_BASE_CACHE: dict[tuple[str, str], tuple[str, int]] = {}
 
+# A live producer classifies the whole fleet on every poll, so this cache gains
+# an entry per (worktree, base) it has ever classified. A worktree that has been
+# reclaimed leaves its entries behind, and without a bound a long-lived producer
+# accumulates one per run's worktree for as long as it runs. Past this many
+# entries the cache drops the counts whose worktree is no longer on disk, then
+# the oldest of what remains, so it stays bounded by the live fleet rather than
+# by every run the producer has ever seen.
+_COMMITS_BEYOND_BASE_CACHE_LIMIT = 256
+
+
+def _evict_gone_worktrees() -> None:
+    """Drop cached commit counts whose worktree is no longer on disk.
+
+    A reclaimed worktree cannot move its head again, so its count can never be
+    answered from the cache; the entry is dead weight the moment the directory
+    goes. Removing it is the cheapest half of keeping the cache bounded, done
+    only when the cache is at its ceiling so an ordinary poll pays nothing for
+    it.
+    """
+    cache = _COMMITS_BEYOND_BASE_CACHE
+    for key in [key for key in cache if not Path(key[0]).is_dir()]:
+        cache.pop(key, None)
+
+
+def _remember_commits(key: tuple[str, str], head: str, count: int) -> None:
+    """Store one commit count, keeping the cache bounded first."""
+    cache = _COMMITS_BEYOND_BASE_CACHE
+    if len(cache) >= _COMMITS_BEYOND_BASE_CACHE_LIMIT and key not in cache:
+        _evict_gone_worktrees()
+        # Still full of live worktrees: drop the oldest so a fleet larger than
+        # the ceiling evicts rather than growing without bound.
+        while len(cache) >= _COMMITS_BEYOND_BASE_CACHE_LIMIT:
+            cache.pop(next(iter(cache)), None)
+    cache[key] = (head, count)
+
 
 def _commits_beyond_base(record: Mapping[str, Any]) -> int:
     """Count commits in the worktree past the pointer's recorded base.
@@ -7103,7 +7142,7 @@ def _commits_beyond_base(record: Mapping[str, Any]) -> int:
     except (ValueError, UnicodeDecodeError):
         return 0
     if cacheable:
-        _COMMITS_BEYOND_BASE_CACHE[key] = (head, resolved)
+        _remember_commits(key, head, resolved)
     return resolved
 
 
