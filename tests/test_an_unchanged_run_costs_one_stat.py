@@ -3,26 +3,32 @@
 The producer reduces every live pointer to a snapshot on every poll. Each run's
 pointer, manifest, stream and exit record are files, and when nothing has moved
 between two polls the snapshot they produced cannot have changed either, so a
-poll should open none of them and read only what a stat reports. The cases here
-hold that contract: an unchanged run's poll opens no file and stats each of the
-four, a manifest rewrite, a stream append and an exit record each drop the
-cached snapshot and classify afresh, and the snapshots a reusing producer yields
-over a sequence of file changes are the ones a full recompute yields over the
-same sequence.
+poll should open none of them and read only what a stat reports. The reuse key
+is the classification's own input composition — the review store's candidates
+and the worktree's git head included — so a stored review landing on a watched
+run, or a run's head moving, drops the entry as surely as a rewrite does.
+
+The cases hold that contract: an unchanged run's poll opens none of the four
+and stats each; a manifest rewrite, a stream append, an exit record, a stored
+review and a moved head each recompute; and the whole snapshot a reusing
+producer yields over a file sequence is the one a full recompute yields.
 
 The negative control recomputes every snapshot on every poll again, never
-reusing one; the unchanged-run case then opens files and fails.
+reusing one; the unchanged-run case then opens the four files and fails.
 """
 
 from __future__ import annotations
 
 import json
+import os
 import pathlib
+import subprocess
 from pathlib import Path
 
 import pytest
 
 from reckon.crew import recovery, runs
+from reckon.crew import review as review_module
 
 PROJECT = "snapshot-stat"
 FOREIGN_HOST = "a-login-node-that-is-not-this-one"
@@ -49,9 +55,7 @@ def _record(run_id: str, *, chars: int, tag: int) -> str:
     )
 
 
-def _pointer(run_id: str, *, status: str | None) -> dict:
-    directory = runs.run_dir(run_id)
-    directory.mkdir(parents=True, exist_ok=True)
+def _base_pointer(run_id: str, directory: Path, *, status: str | None) -> dict:
     return {
         "run_id": run_id,
         "project": PROJECT,
@@ -90,6 +94,24 @@ def _exit_path(record: dict) -> Path:
     return Path(record["manifest_path"]).parent / recovery.EXIT_RECORD_NAME
 
 
+def _git(tree: Path, *args: str) -> str:
+    return subprocess.check_output(
+        ["git", "-C", str(tree), *args], text=True, stderr=subprocess.DEVNULL
+    ).strip()
+
+
+def _git_tree(tmp_path: Path) -> Path:
+    tree = tmp_path / "git-tree"
+    tree.mkdir()
+    _git(tree, "init", "-q")
+    _git(tree, "config", "user.email", "fixture@example.invalid")
+    _git(tree, "config", "user.name", "fixture")
+    (tree / "delivery.txt").write_text("base\n", encoding="utf-8")
+    _git(tree, "add", "delivery.txt")
+    _git(tree, "commit", "-q", "-m", "base")
+    return tree
+
+
 def _watched(record: dict) -> set[str]:
     """The four files the section names, at their resolved paths."""
     return {
@@ -112,10 +134,15 @@ class _IoCounter:
 @pytest.fixture
 def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> list[dict]:
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
-    records = [
-        _pointer(f"r-s{index}", status=None if index == 0 else "running")
-        for index in range(NINE)
-    ]
+    records = []
+    for index in range(NINE):
+        directory = runs.run_dir(f"r-s{index}")
+        directory.mkdir(parents=True, exist_ok=True)
+        records.append(
+            _base_pointer(
+                f"r-s{index}", directory, status=None if index == 0 else "running"
+            )
+        )
     for record in records:
         _seed(record)
     recovery._SNAPSHOT_CACHE.clear()
@@ -150,7 +177,7 @@ def _snapshot(record: dict, *, moment: float) -> dict:
 def test_an_unchanged_poll_opens_no_file_and_stats_each(
     fleet, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The second poll over untouched files reads nothing and stats each one."""
+    """The second poll over untouched files reads none of the four, and stats each."""
     record = fleet[0]
     # The first call misses the cache and classifies, warming the entry.
     _snapshot(record, moment=MOMENT)
@@ -199,14 +226,97 @@ def test_an_exit_record_recomputes(fleet, monkeypatch: pytest.MonkeyPatch) -> No
     snapshot = _snapshot(record, moment=MOMENT + 1)
 
     assert counter.opens > 0, "an exit record must be reread"
-    assert snapshot["run_id"] and snapshot["run_id"] == record["run_id"]
+    assert snapshot["run_id"] == record["run_id"]
+
+
+def _store_complete_review(run_id: str, tokens: str) -> None:
+    """Store a parsed review for one run, naming the head it read."""
+    emitted = "\n".join(
+        f"SCORE {dimension}: 20" for dimension in review_module.REVIEW_DIMENSIONS
+    )
+    record = review_module.parse_review(emitted)
+    record.update(
+        {
+            "project": PROJECT,
+            "reviewed_run_id": run_id,
+            "review_run_id": f"review-of-{run_id}",
+            "reviewed_base_sha": tokens,
+            "reviewed_head_sha": tokens,
+        }
+    )
+    review_module.store_review(record)
+
+
+def _completed_git_record(tmp_path: Path, run_id: str) -> tuple[dict, Path, str]:
+    """A run with a completed manifest over a real git worktree."""
+    tree = _git_tree(tmp_path)
+    head = _git(tree, "rev-parse", "HEAD")
+    directory = runs.run_dir(run_id)
+    directory.mkdir(parents=True, exist_ok=True)
+    record = _base_pointer(run_id, directory, status="complete")
+    record["worktree"] = str(tree)
+    record["base_sha"] = head
+    _seed(record)
+    return record, tree, head
+
+
+def test_a_stored_review_recomputes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A review landing with the four files untouched changes the classification.
+
+    The run is complete with no review attached, so it reads ``scoring``; a
+    review stored for its head moves it to ``promotable`` on the next poll. If
+    the reuse key covered only the four named files the stale ``scoring`` row
+    would be served and the review reflex would arm a second review.
+    """
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    recovery._SNAPSHOT_CACHE.clear()
+    record, _tree, head = _completed_git_record(tmp_path, "r-review")
+    before = _snapshot(record, moment=MOMENT)
+    assert before["classification"] == "scoring", before["classification"]
+
+    _store_complete_review("r-review", head)
+    counter = _counting(monkeypatch, _watched(record))
+    after = _snapshot(record, moment=MOMENT + 1)
+
+    assert counter.opens > 0, "a stored review must be reread"
+    assert after["classification"] == "promotable", after["classification"]
+
+
+def test_a_moved_worktree_head_recomputes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A head that moves with the four files untouched drops the snapshot."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    recovery._SNAPSHOT_CACHE.clear()
+    record, tree, _head = _completed_git_record(tmp_path, "r-head")
+    _snapshot(record, moment=MOMENT)
+    before_tokens = recovery._worktree_head_identity(tree)
+
+    (tree / "delivery.txt").write_text("moved\n", encoding="utf-8")
+    _git(tree, "add", "delivery.txt")
+    _git(tree, "commit", "-q", "-m", "moved")
+    assert recovery._worktree_head_identity(tree) != before_tokens
+
+    counter = _counting(monkeypatch, _watched(record))
+    after = _snapshot(record, moment=MOMENT + 1)
+
+    assert counter.opens > 0, "a moved head must reclassify"
+    assert after["run_id"] == record["run_id"]
 
 
 def test_reuse_matches_full_recompute_over_a_file_sequence(
     fleet, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A reusing poll yields the snapshots a full recompute yields."""
+    """The whole snapshot a reusing poll yields is the one a full recompute yields.
+
+    Only ``quiet_seconds`` is derived from the poll's own moment by design and
+    is excluded from the comparison; everything else, the stall-derived state
+    and detail included, must be broken by nothing.
+    """
     record = fleet[4]
+    moment_derived = {"quiet_seconds"}
 
     def flip_manifest() -> None:
         record["status"] = "complete" if record["status"] == "running" else "running"
@@ -227,8 +337,11 @@ def test_reuse_matches_full_recompute_over_a_file_sequence(
         out = []
         moment = MOMENT
         for mutate in mutations:
-            mutate()
             moment += 30
+            mutate()
+            # A fixed write instant per step, so both arms see the same stream
+            # clock and the snapshots are comparable field for field.
+            os.utime(record["log_path"], (moment - 45, moment - 45))
             out.append(_snapshot(record, moment=moment))
         return out
 
@@ -242,9 +355,11 @@ def test_reuse_matches_full_recompute_over_a_file_sequence(
     whole = drive()
 
     assert reusing, "the case must produce snapshots to compare"
-    # Compare the readings a reader acts on rather than the raw stat instants,
-    # which differ between arms only because the two runs rewrite the fixture
-    # files at different wall-clock moments.
-    assert [
-        (row["run_id"], row["state"], row["classification"]) for row in reusing
-    ] == [(row["run_id"], row["state"], row["classification"]) for row in whole]
+    for reusing_row, whole_row in zip(reusing, whole):
+        trimmed_reusing = {
+            key: value for key, value in reusing_row.items() if key not in moment_derived
+        }
+        trimmed_whole = {
+            key: value for key, value in whole_row.items() if key not in moment_derived
+        }
+        assert trimmed_reusing == trimmed_whole

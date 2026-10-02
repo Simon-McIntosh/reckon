@@ -7942,42 +7942,31 @@ def _quiet_clock_latest(record: Mapping[str, Any], *, moment: float) -> float:
     return moment if created is None else created.timestamp()
 
 
-def _snapshot_stat_key(
-    record: Mapping[str, Any],
-    *,
-    stall_seconds: int,
-    stream_path: Path | None,
-) -> str | None:
-    """The stat identity of every file a snapshot is a function of.
+def _snapshot_reuse_key(record: Mapping[str, Any]) -> str | None:
+    """The identity of every input a run's classification is a function of.
 
-    The pointer, manifest, stream and exit record the section names, plus the
-    run directory's own identity — which moves when a stream or a record is
-    created or removed, so a resumed attempt is seen without listing the
-    directory. Every element is a stat: the key is computed without opening a
-    file, which is what lets an unchanged poll reuse a snapshot for the cost of
-    a few stats rather than a reread. Liveness is deliberately not here — it is
-    not a file, so it is read fresh through the shared host-gated reader on the
-    reuse path itself.
+    The classification's own composition, as :func:`_classification_inputs`
+    resolves it: the pointer, manifest, stream, the run's exit, worker and
+    attempt records, the review store's candidates for this run, and the
+    worktree's git head. A review landing on a reviewer's target, or its head
+    moving, drops the snapshot exactly as it moves the classification. The
+    promotion ledger row joins the composition because a promotion writes it
+    while the pointer still exists and no other input moves with it. Liveness
+    is deliberately not here: it is not a file, so the reuse path reads it
+    fresh through the shared host-gated reader.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id:
         return None
-    parts = [f"stall={stall_seconds}"]
-    parts.append(f"pointer={_file_identity(runs.pointer_path(run_id))}")
-    manifest = str(record.get("manifest_path") or "")
-    parts.append(f"manifest={_file_identity(manifest) if manifest else 'absent'}")
-    log = str(record.get("log_path") or "")
-    parts.append(f"log={_file_identity(log) if log else 'absent'}")
-    directory = _run_directory(record)
-    for name in _CLASSIFICATION_RUN_RECORDS:
-        parts.append(f"{name}={_file_identity(directory / name)}")
-    parts.append(f"dir={_directory_identity(directory)}")
-    if stream_path is not None:
-        parts.append(f"stream={_file_identity(stream_path)}")
-
-    # The promotion ledger row is part of what a verdict is a function of: the
-    # row's appearance while the pointer still exists is what turns a completed
-    # run into a promoted one, and no other input moves with it.
+    log = Path(str(record.get("log_path") or ""))
+    parts = [_classification_key(_classification_inputs(record, log))]
+    # The newest stream a run has may differ from the pointer's own log once a
+    # resume or a lane change writes beside it; its identity joins the key so a
+    # record appended to a resumed stream drops the snapshot.
+    found = _record_newest_stream(record)
+    parts.append(
+        f"stream={_file_identity(found[0]) if found is not None else 'absent'}"
+    )
     project = str(record.get("project") or "")
     repo = str(record.get("repo") or "")
     if project and repo:
@@ -7998,8 +7987,15 @@ _SNAPSHOT_CACHE_LIMIT = 256
 
 
 def _remember_snapshot(run_id: str, key: str, snapshot: dict[str, Any]) -> None:
-    """Store one run's snapshot, keeping the cache bounded."""
+    """Store one run's snapshot, keeping the cache bounded.
+
+    Re-storing a run moves it to the most-recent position: a plain assignment
+    keeps a key at its original insertion place, so a run stored early and
+    updated every poll would sit at the front and be the first evicted by a
+    busy process once the cache filled — the entry the poll just wrote.
+    """
     cache = _SNAPSHOT_CACHE
+    cache.pop(run_id, None)
     cache[run_id] = (key, snapshot)
     if len(cache) <= _SNAPSHOT_CACHE_LIMIT:
         return
@@ -8204,14 +8200,7 @@ def _watch_snapshot(
     """
     run_id = str(pointer.get("run_id") or "")
     served = _SNAPSHOT_CACHE.get(run_id)
-    stream_path: Path | None = None
-    if served is not None:
-        stored_path = served[1].get("stall_stream_path")
-        if stored_path:
-            stream_path = Path(str(stored_path))
-    key = _snapshot_stat_key(
-        pointer, stall_seconds=stall_seconds, stream_path=stream_path
-    )
+    key = _snapshot_reuse_key(pointer)
     if run_id and served is not None and key is not None and served[0] == key:
         stored = served[1]
         # A snapshot is reused only while the process reading it was built from
@@ -8229,18 +8218,8 @@ def _watch_snapshot(
         pointer, moment=moment, stall_seconds=stall_seconds
     )
     refreshed = _refresh_snapshot(snapshot, moment=moment)
-    if run_id:
-        # The stored key carries the resolved stream, which is only known after
-        # the snapshot is built; recomputing it here keeps the next poll's key
-        # — computed with that same stream — equal to the one stored.
-        resolved = refreshed.get("stall_stream_path")
-        store_key = _snapshot_stat_key(
-            pointer,
-            stall_seconds=stall_seconds,
-            stream_path=Path(str(resolved)) if resolved else None,
-        )
-        if store_key is not None:
-            _remember_snapshot(run_id, store_key, refreshed)
+    if run_id and key is not None:
+        _remember_snapshot(run_id, key, refreshed)
     return refreshed
 
 
