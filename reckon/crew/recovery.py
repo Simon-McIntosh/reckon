@@ -12,10 +12,11 @@ import socket
 import subprocess
 import tempfile
 import time
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
-from datetime import UTC, datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
+from typing import Any
 
 from reckon import review_tiers
 from reckon._timestamps import parse_utc
@@ -948,6 +949,12 @@ REPAIR_DISPATCH_FIELD = "repair_dispatch"
 # from the pointer's durable repair record, not from the entry-time mapping.
 REPAIR_RESUME_LIMIT = 2
 
+# The line every composed repair advice carries, and the marker a retry reads to
+# tell a refusal from a mid-work death: a manifest quoting it has read a round's
+# advice. It is written by :func:`_repair_resume_advice` from this one constant,
+# so the marker and the advice it recognises cannot drift apart.
+REPAIR_ADVICE_SCOPE_LINE = "Write scope for this round: "
+
 # The pointer field recording every repair round the reflex has *opened* for a
 # run. A round opens only when a repair actually starts — a resume or a
 # dispatch — so a refusal, an awaiting-lane hold, a decline-only round and an
@@ -1838,6 +1845,37 @@ def _repair_source_refusal(record: Mapping[str, Any]) -> str:
     return ""
 
 
+def _reviewed_run_refused_the_round(record: Mapping[str, Any]) -> bool:
+    """Whether the reviewed run's own manifest refused a repair round's advice.
+
+    A resumed turn can end in two ways the busy guard cannot tell apart: it can
+    die mid-work, leaving the run's manifest untouched, or it can read the
+    round's advice, refuse the dead end it names, and write a terminal manifest
+    quoting that advice as its blocker. Only the second is a dead end — a retry
+    would re-send byte-identical advice into the same refusal — so the retry is
+    suppressed exactly when the manifest already answers the round. The scope
+    line every composed repair advice carries is the marker, so a manifest that
+    states it has read this round's advice; a manifest without it may belong to
+    any earlier turn and does not settle the retry. A manifest that cannot be
+    read, or one carrying no recognised status, is not evidence of a refusal, so
+    the guard degrades toward the retry rather than suppressing it.
+    """
+    path = str(record.get("manifest_path") or "")
+    if not path:
+        return False
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except OSError:
+        return False
+    if REPAIR_ADVICE_SCOPE_LINE not in text:
+        return False
+    try:
+        parsed = parse_manifest(text, path=path)
+    except Exception:  # noqa: BLE001 - an unreadable manifest is not a refusal
+        return False
+    return manifest_status_is_terminal(parsed.get("status"))
+
+
 def _reviewed_run_is_busy(record: Mapping[str, Any]) -> str:
     """Why the reviewed run's own worker still holds its finding, or empty.
 
@@ -2041,7 +2079,7 @@ def _repair_resume_advice(composed: Mapping[str, Any], scope: Sequence[str]) -> 
         "",
         str(composed.get("brief") or ""),
         "",
-        "Write scope for this round: " + (", ".join(scope) if scope else "none"),
+        REPAIR_ADVICE_SCOPE_LINE + (", ".join(scope) if scope else "none"),
         "",
         f"Done when: {composed.get('done_when') or ''}",
         f"Negative control: {composed.get('negative_control') or ''}",
@@ -2509,6 +2547,31 @@ def dispatch_repair_for_run(
             recorded.get("round_id") or ""
         ) == str(round_id or "")
         prior = int((recorded or {}).get("attempt") or 0) if same_round else 0
+        if (
+            same_round
+            and prior >= 1
+            and _reviewed_run_refused_the_round(durable or record)
+        ):
+            reason = (
+                "the ended turn refused this round's advice; a retry would "
+                "re-send it into the same dead end"
+            )
+            attempt = _record_repair_dispatch(
+                run_id,
+                status="exhausted",
+                reason=reason,
+                round_id=round_id,
+                node_id=node_id,
+            )
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "exhausted": True,
+                "node_id": node_id,
+                "round_id": round_id,
+                "attempt": attempt,
+                "reason": reason,
+            }
         if prior >= REPAIR_RESUME_LIMIT:
             reason = "the round was resumed twice without answering its findings"
             if same_round and str(recorded.get("status") or "") == "exhausted":
@@ -3474,9 +3537,8 @@ def _observed_stream(
         # An offset only means the same thing in the file it was reached in: a
         # stream replaced at this path since means nothing here, so a changed
         # inode re-reads from the first record while a grown one resumes.
-        if (
-            isinstance(state, Mapping)
-            and str(stored.get("inode") or "") == _file_inode(log)
+        if isinstance(state, Mapping) and str(stored.get("inode") or "") == _file_inode(
+            log
         ):
             resume = {
                 "offset": int(stored.get("offset") or 0),
@@ -5205,9 +5267,7 @@ def _process_reading(
 
 def _record_newest_stream(record: Mapping[str, Any]) -> tuple[Path, float] | None:
     """A record's newest stream, through the shared reader."""
-    return newest_stream(
-        _run_directory(record), include=(record.get("log_path"),)
-    )
+    return newest_stream(_run_directory(record), include=(record.get("log_path"),))
 
 
 def _run_stream_mtime(record: Mapping[str, Any]) -> float | None:
@@ -5259,9 +5319,7 @@ def _attempt_started_seconds(record: Mapping[str, Any]) -> float | None:
     return started.timestamp()
 
 
-def _run_stream_quiet_seconds(
-    record: Mapping[str, Any], *, now_seconds: float
-) -> int:
+def _run_stream_quiet_seconds(record: Mapping[str, Any], *, now_seconds: float) -> int:
     """Quiet time for a run, from its current attempt's own log and launch.
 
     Two clocks bound the reading, and the later of them decides. One is the
@@ -5425,9 +5483,7 @@ def _manifest_wait(
         if reason
     )
     if files and declared_probe:
-        missing.append(
-            "either wait_probe or wait_file, not both: a wait has one shape"
-        )
+        missing.append("either wait_probe or wait_file, not both: a wait has one shape")
     if declared_probe and _wait_probe_cannot_fail(declared_probe):
         # A probe that runs but cannot differ is satisfied unconditionally, so
         # a wait resting on it reads the same however the awaited work is
@@ -6595,7 +6651,7 @@ def classify_pointer(
     if manifest_status in TERMINAL_MANIFEST_STATUSES and not deferred_outcome:
         terminal_seconds = manifest.stat().st_mtime
         terminal_at = (
-            datetime.fromtimestamp(terminal_seconds, tz=timezone.utc)
+            datetime.fromtimestamp(terminal_seconds, tz=UTC)
             .isoformat(timespec="seconds")
             .replace("+00:00", "Z")
         )
@@ -7759,7 +7815,7 @@ def overdue_unreconciled_runs(
 
 def _utc_seconds() -> float:
     """Current time as epoch seconds, matching a file mtime's clock."""
-    return datetime.now(tz=timezone.utc).timestamp()
+    return datetime.now(tz=UTC).timestamp()
 
 
 @contextmanager
@@ -8595,15 +8651,11 @@ def _watch_snapshot(
             stored.get("liveness_proven"),
             stored.get("process_descendant_alive"),
         ):
-            return _refresh_snapshot(
-                stored, moment=moment, stall_seconds=stall_seconds
-            )
+            return _refresh_snapshot(stored, moment=moment, stall_seconds=stall_seconds)
     snapshot = _compute_watch_snapshot(
         pointer, moment=moment, stall_seconds=stall_seconds
     )
-    refreshed = _refresh_snapshot(
-        snapshot, moment=moment, stall_seconds=stall_seconds
-    )
+    refreshed = _refresh_snapshot(snapshot, moment=moment, stall_seconds=stall_seconds)
     if run_id and key is not None:
         _remember_snapshot(run_id, key, refreshed, cache=store)
     return refreshed
@@ -8875,9 +8927,9 @@ def fleet_transitions(
         # state it left. Carrying one forward reports a block on the line
         # announcing that the block is over.
         departed = {**known[run_id], "detail": "", "needs_help_complete": None}
-        changes.append((departed, str(known[run_id]["state"]), _departure_word(
-            run_id, recorded
-        )))
+        changes.append(
+            (departed, str(known[run_id]["state"]), _departure_word(run_id, recorded))
+        )
     for run_id in (item for item in current if item not in known):
         changes.append(
             (
@@ -8931,8 +8983,7 @@ def fleet_transitions(
         if run_id not in current:
             running.pop(run_id, None)
         elif (
-            run_id in running
-            and str(running[run_id].get("state") or "") == "promoted"
+            run_id in running and str(running[run_id].get("state") or "") == "promoted"
         ):
             # Settled on its terminal ledger row: hold the promoted memory
             # rather than adopting a later pointer reading.
@@ -9371,7 +9422,9 @@ def watch_ticker(
             moment = _utc_seconds()
             current = {
                 str(pointer.get("run_id") or ""): _watch_snapshot(
-                    pointer, moment=moment, stall_seconds=stall_seconds,
+                    pointer,
+                    moment=moment,
+                    stall_seconds=stall_seconds,
                     cache=snapshot_cache,
                 )
                 for pointer in pointers
