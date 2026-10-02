@@ -76,6 +76,7 @@ def replay(
                 records=records,
                 snapshotter=snapshotter,
                 verdict_inputs=shared_inputs,
+                budget_snapshot=budget_snapshot,
             )
             rows.append(
                 {
@@ -140,7 +141,5 @@ def _summary(
         "median_jev_latency_ms": (
             statistics.median(jev_latencies) if jev_latencies else None
         ),
-        "cost_usd": sum(
-            row["selection"]["usage"].get("cost", 0) or 0 for row in rows
-        ),
+        "cost_usd": sum(row["selection"]["usage"].get("cost", 0) or 0 for row in rows),
     }

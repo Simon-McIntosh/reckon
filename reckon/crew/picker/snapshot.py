@@ -15,7 +15,6 @@ from reckon.crew.dispatch import (
     _lane_worker_allowance,
 )
 from reckon.crew.node import NodeValidation
-from reckon.crew.pace import policy as pace_policy
 
 from .types import Candidate, PickRequest
 
@@ -116,9 +115,24 @@ def _fit(
 
 
 def budget_view(
-    project: str, config: dict[str, Any], repo: Path, records: list[dict[str, Any]]
+    project: str,
+    config: dict[str, Any],
+    repo: Path,
+    records: list[dict[str, Any]],
+    *,
+    cached_only: bool = False,
 ) -> dict[str, Any]:
     """Compose one dated live budget view using its existing state and pace readers."""
+    if cached_only:
+        # Budget preflight may refresh an undated refusal with a serving request.
+        # Disable that refresh; candidate availability comes from the cache below.
+        config = {
+            **config,
+            "backends": {
+                name: {**backend, "budget_check": False}
+                for name, backend in config.get("backends", {}).items()
+            },
+        }
     windows = budget.recorded_windows(project, config, root=repo, records=records)
     # Every configured backend is budget-probed; nothing is filtered by name, so a
     # refusal can only come from a live serving observation, never a fixed list.
@@ -133,6 +147,7 @@ def budget_view(
         windows=windows,
         records=records,
         now=datetime.now(UTC),
+        **({"probe_runner": lambda _: {}} if cached_only else {}),
     )
 
 
@@ -145,6 +160,7 @@ def candidates(
     availability_cache: dict[tuple[str, str | None], dict[str, Any]] | None = None,
     budget_snapshot: dict[str, Any] | None = None,
     verdict_inputs: dict[str, Any] | None = None,
+    cached_only: bool = False,
 ) -> list[Candidate]:
     """Read a fresh snapshot; never dispatch or change routing configuration."""
     now = datetime.now(UTC)
@@ -157,7 +173,7 @@ def candidates(
     view = (
         budget_snapshot
         if budget_snapshot is not None
-        else budget_view(request.project, config, repo, rows)
+        else budget_view(request.project, config, repo, rows, cached_only=cached_only)
     )
     budget_by_backend = {row["backend"]: row for row in view["backends"]}
     group_by_backend = {
@@ -180,23 +196,21 @@ def candidates(
             "state": budget.BudgetState(name).as_dict(),
         }
         state = verdict["state"]
-        if verdict["held"]:
-            reasons.append("budget-held: " + verdict["reason"])
-        metered = not local and not ledger.is_unmetered_backend(name)
-        if (
-            metered
-            and state.get("burn_multiple") is not None
-            and state["burn_multiple"] > pace_policy(config).pace_multiple
-        ):
-            reasons.append("burn-exceeds-pace-multiple")
+        budget_facts = (
+            state
+            if state.get("headroom") == "known" and not state.get("expired")
+            else {}
+        )
+        utilisation = budget_facts.get("utilisation_pct")
+        ceiling = budget.policy(config)["utilisation_ceiling_pct"]
+        if utilisation is not None and utilisation >= ceiling:
+            reasons.append(f"budget-ceiling: {utilisation:g}% at or above {ceiling:g}%")
         gate = _dispatch_lane_gate(backend)
         if gate["state"] in {"paused", "unreadable"}:
             reasons.append("lane-gate: " + gate["state"])
-        slots, congestion, allowance = (
+        slots, congestion, _ = (
             _lane(backend, request.session) if local else (None, None, {})
         )
-        if local and allowance.get("held"):
-            reasons.append("local-lane-no-worker-slots")
         # Already-excluded candidates need no repository census or serving probe.
         if not reasons:
             reasons.extend(_fit(request, name, backend, repo, verdict_inputs=shared))
@@ -205,6 +219,9 @@ def candidates(
         else:
             cache_key = (name, model)
             observation = (availability_cache or {}).get(cache_key)
+            if observation is None and cached_only:
+                observation = resumption._read_lane_probe_cache(request.project, name)
+                observation = observation or {"status": "unavailable"}
             if observation is None:
                 serving_backend = {
                     **config["backends"][name],
@@ -216,18 +233,17 @@ def candidates(
                 )
                 if availability_cache is not None:
                     availability_cache[cache_key] = observation
-            availability = observation["status"]
-            if availability != "served":
+            availability = str(observation.get("status") or "unavailable")
+            if availability in {"refused", "unavailable", "logged-out"}:
                 reasons.append("availability: " + availability)
         try:
             family = "local" if local else _backends.dialect_for(backend).name
         except _backends.BackendError:
             family = str(backend.get("launch") or name)
         group_allowance = (group_by_backend.get(name) or {}).get("allowance") or {}
-        budget_facts = (
-            state
-            if state.get("headroom") == "known" and not state.get("expired")
-            else {}
+        reset = parse_utc(str(budget_facts.get("resets_at") or ""))
+        days_to_reset = (
+            max(0.0, (reset - now).total_seconds() / 86400) if reset else None
         )
         result.append(
             Candidate(
@@ -241,6 +257,7 @@ def candidates(
                 burn_multiple=budget_facts.get("burn_multiple"),
                 pace_allowance=group_allowance.get("effective_limit"),
                 resets_at=budget_facts.get("resets_at"),
+                days_to_reset=days_to_reset,
                 worker_slots=slots,
                 congestion=congestion,
                 outcomes=recent_outcomes(rows, request, name, model, now=now),
