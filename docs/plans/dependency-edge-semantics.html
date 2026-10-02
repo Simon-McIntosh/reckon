@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="44">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+<meta name="plan-impl" content="0.99">
+<meta name="plan-version" content="45">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="fd0b1d4,bea76f1,ec8fb56d">
 </head>
 <body>
@@ -619,7 +619,7 @@
 <p>The review of f129b456 found two defects. First, the section rows that <code>read_plan</code> appends to <code>deps</code> (<code>reckon/mcp.py</code> lines 942 to 952) fold into the typed summary view's blocking list, through <code>mcp.py</code> line 1360, <code>mcp_views._blocking</code> and <code>lifecycle.unresolved_dependencies</code> (<code>mcp_views.py</code> line 1916). So a summary reports the whole plan blocked when only one section waits. Second, a wholly malformed <code>plan-section-depends-on</code> value (invalid JSON, or JSON that is not an object) returns None at <code>_schema.py</code> line 389 with no finding, and every declared wait disappears silently. The plan also asks the skills to say that the gate op covers the evidence-shaped case and this edge covers the plan-shaped case, and that sentence is not yet written.</p><p><strong>Done when</strong> a summary of a plan with one waiting section reports that section held and the plan not blocked, a malformed mapping produces a named finding, and the skills carry the sentence. Each repair has a test that fails before it.</p>
 
     <h2 id="s10">§10 — A decision carries a recommendation the lead accepts, and a section-scoped decision is checked</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
 <p>Carried from f-des-section-scoped-decisions after the sections list landed at f300cd33. First, a decision gains an optional recommended value with <code>recommended_by</code>, which the lead accepts in one action. A recommendation never becomes the choice by default: an unanswered one stays open and blocking. Second, at <code>roadmap.py</code> line 2371 a decision scoped to a section the plan never declares (a typo, or a later rename) enters <code>decision_section_blockers</code> unchecked; it should be refused or reported. Third, <code>is_blocked</code> (<code>roadmap.py</code> line 2287) no longer counts a scoped open decision, while the persisted-blocked fallback at line 2259 still tests the unfiltered list. So a plan persisted as blocked by only a scoped decision reads inconsistently.</p><p><strong>Done when</strong> accepting a recommendation sets the choice and leaving it unanswered keeps the decision open, a decision scoped to an undeclared section is refused or reported, and both blocked readings agree for a plan held only by a scoped decision. Each item has a test that fails before it.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
@@ -812,7 +812,7 @@
     <div class="r-comment-body"><p>review for r-20261002T113050890295-section-wait-stays-off-the-summary stored as a parsed record (status parsed, all 5 dimensions scored 0..20, total 91), reviewed_base_sha ff112f9f01e00ca5d0ea338a5b60cafb821e5e18 and reviewed_head_sha b6c99bcfe413a4da1959eef78a7322a340b3ebe3, added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline_suite (3 failures) and after_suite (0 failures) gate logs.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T181154804680-review-of-a-decision-recommendation-is-accepted" data-who="reckon-build" data-when="2026-10-02T18:12:27Z">
-    <div class="r-comment-body"><p>Launch failed at 18:12:30Z (exit 1, no stream records): bwrap: Can&#x27;t bind mount ~/.claude.json: No such file or directory. A fresh review of the same run follows.</p></div>
+    <div class="r-comment-body"><p>Launch failed at 18:12:30Z (exit 1, no stream records): bwrap: Can't bind mount ~/.claude.json: No such file or directory. A fresh review of the same run follows.</p></div>
 </div>
 </section>
 </main>
