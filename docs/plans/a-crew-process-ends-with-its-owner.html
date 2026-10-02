@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="228">
+<meta name="plan-version" content="229">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -1017,7 +1017,10 @@
     <div class="r-comment-body"><p>Independent review of idle-producer-backs-off stored: total 93 over five dimensions (goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 19), no blocking findings, one follow-on on the negative-control log's test revision, added_failure_count 0 at head 06873739f over base df6a40b5c.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261002T033230658134-review-of-lease-renewal-is-counted-by-its-writes" data-who="reckon-build" data-when="2026-10-02T03:42:23.484Z">
-    <div class="r-comment-body"><p>review of r-20261002T032210779037-lease-renewal-is-counted-by-its-writes stored — total 91 over 5 dimensions (goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 19), reviewed_base_sha 3b883745b reviewed_head_sha 05c81f326, added_failure_count 0, one follow-on finding: the node&#x27;s negative control fails on the shared is_alive assertion rather than the tightened renewals&gt;=5 count, so it does not isolate the counting change</p></div>
+    <div class="r-comment-body"><p>review of r-20261002T032210779037-lease-renewal-is-counted-by-its-writes stored — total 91 over 5 dimensions (goal_fidelity 19, evidence 15, scope_discipline 20, durability 18, fit 19), reviewed_base_sha 3b883745b reviewed_head_sha 05c81f326, added_failure_count 0, one follow-on finding: the node's negative control fails on the shared is_alive assertion rather than the tightened renewals&gt;=5 count, so it does not isolate the counting change</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261002T032210779037-lease-renewal-is-counted-by-its-writes" data-who="reckon-build" data-when="2026-10-02T03:48:27.223Z">
+    <div class="r-comment-body"><p>lease renewal is counted by the write it lands — renewal case reads lease_renewed_at back after each call and counts only an advanced instant, so its renewals &gt;= 5 assertion measures writes; base 3b883745b 3 passed EXIT=0, head 363c96b38 3 passed EXIT=0, zero added failures; fragment docs/evidence/fragments/a-crew-process-ends-with-its-owner/lease-renewal-is-counted-by-its-writes.html</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260924T123648020169-consumers-reach-into-reckon-internals" data-who="reckon-ship" data-when="2026-09-24T13:14:17.145Z">
     <div class="r-comment-body"><p>inventory of consumers reaching into reckon internals across five repositories: 1,537 config-home path lines, 151 crew CLI lines, 91 lane.json lines; recorded as consumers-read-reckon-through-verbs</p></div>
