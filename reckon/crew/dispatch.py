@@ -8497,12 +8497,9 @@ def _worker_manifest_done_status(manifest_path: Path) -> str:
 
 def _iso_stamp_to_ns(stamp: str) -> int | None:
     """An ISO-8601 instant as epoch nanoseconds, or None for an unreadable one."""
-    try:
-        parsed = datetime.fromisoformat(str(stamp))
-    except (TypeError, ValueError):
+    parsed = parse_utc(stamp)
+    if parsed is None:
         return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=UTC)
     return int(parsed.timestamp() * 1_000_000_000)
 
 
