@@ -38,7 +38,7 @@ from reckon.crew.reports import (
     manifest_status_is_template,
     parse_manifest,
 )
-from reckon.crew.routing import _signal_process_group
+from reckon.crew.routing import _signal_process_group, _write_sender_record
 from reckon.crew.runs import (
     _manifest_freshness,
     _mutate_pointer,
@@ -859,6 +859,11 @@ def _stop_delivered_reviews(
             continue
         pid = pointer.get("pid")
         try:
+            _write_sender_record(
+                _run_directory(pointer),
+                target_pid=int(pid),
+                reason="delivered-review-outlived-grace",
+            )
             signal_run(int(pid), pointer.get("pid_start_time"))
         except (
             CrewError,
@@ -3032,6 +3037,11 @@ def _apply_budget_watchdog(
         return
     pid = record.get("pid")
     try:
+        _write_sender_record(
+            _run_directory(record),
+            target_pid=int(pid),
+            reason="budget-watchdog",
+        )
         _signal_process_group(int(pid), record.get("pid_start_time"))
     except (
         CrewError,

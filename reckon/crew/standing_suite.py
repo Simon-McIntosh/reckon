@@ -33,7 +33,6 @@ declares — pytest prints no collection line at all.
 from __future__ import annotations
 
 import contextlib
-import os
 import re
 import signal
 import subprocess
@@ -46,6 +45,7 @@ from typing import Any
 from reckon._store import state_path
 from reckon.crew.promotion import _RUNNER_SUMMARY
 from reckon.crew.review import _pytest_failure_ids
+from reckon.crew.routing import signal_worker
 from reckon.flight import SuiteDeclaration
 
 # The two tiers the standing suite holds back. A full review reads the run for
@@ -147,7 +147,7 @@ def _kill_process_group(proc: subprocess.Popen) -> None:
     session for exactly this, so its group id is its own pid.
     """
     with contextlib.suppress(ProcessLookupError):
-        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        signal_worker(proc.pid, signal.SIGKILL, reason="standing-suite-kill")
 
 
 def _collected(log_text: str) -> int | None:

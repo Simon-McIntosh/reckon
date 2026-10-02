@@ -59,6 +59,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon._store import write_json_atomically
+from reckon.crew.routing import signal_worker
 
 RUNTIME_DIR_ENV = "FLEET_RUNTIME_DIR"
 STATE_DIR_ENV = "FLEET_STATE_DIR"
@@ -726,12 +727,12 @@ def _run_session_copy(name: str, layout: str, environ: Mapping[str, str] | None)
             "and was stopped"
         )
         with suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGTERM)
+            signal_worker(process.pid, signal.SIGTERM, reason="session-start-timeout")
         try:
             process.wait(timeout=DETACH_GRACE_SECONDS * 2)
         except subprocess.TimeoutExpired:
             with suppress(ProcessLookupError):
-                os.killpg(process.pid, signal.SIGKILL)
+                signal_worker(process.pid, signal.SIGKILL, reason="session-start-timeout")
             process.wait()
         return 1
 
