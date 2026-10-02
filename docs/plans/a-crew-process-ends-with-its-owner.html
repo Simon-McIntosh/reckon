@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="276">
+<meta name="plan-version" content="277">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -1441,7 +1441,10 @@
     <div class="r-comment-body"><p>Review of a-promotion-walks-the-docs-tree-once (base 5d35145dfb2bc3f85c598b8730df0131b86a9dd1, head 73e10feac3673aef1e920929834d83737e8db326) scored 79/100 (goal_fidelity 14, evidence 14, scope_discipline 20, durability 15, fit 16): one blocking finding that the process-wide docs-tree scan reuse serves a stale Resource identity after an in-place content change, so resolve_resource of the new slug returns None and of the old slug the file where a full scan gives the opposite, breaking the done-when's bounded-read-equals-full-read guarantee, plus two follow-ons on the reviewed logs.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261002T112357206741-a-removed-file-leaves-the-clone-cache" data-who="reckon-build" data-when="2026-10-02T12:20:08.916Z">
-    <div class="r-comment-body"><p>A clone cache entry records the scan ordinal at which its path was last part of a scan&#x27;s corpus and the prune cap counts a cached path only while a recent scan read it, so a removed or renamed path is evicted within _STALE_PATH_SCANS scans; each repository now has its own cache under the configured base, keyed by the resolved git common directory, so one repository&#x27;s scans never age another&#x27;s paths and worktrees of one repository share. The node test is 4 passed, the focused gate (node test plus the five named suites) 25 passed EXIT=0, base and head arms 21 passed EXIT=0 with zero added failures, and both declared negative controls fail their case at EXIT=1.</p></div>
+    <div class="r-comment-body"><p>A clone cache entry records the scan ordinal at which its path was last part of a scan's corpus and the prune cap counts a cached path only while a recent scan read it, so a removed or renamed path is evicted within _STALE_PATH_SCANS scans; each repository now has its own cache under the configured base, keyed by the resolved git common directory, so one repository's scans never age another's paths and worktrees of one repository share. The node test is 4 passed, the focused gate (node test plus the five named suites) 25 passed EXIT=0, base and head arms 21 passed EXIT=0 with zero added failures, and both declared negative controls fail their case at EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T122056055562-review-of-a-removed-file-leaves-the-clone-cache" data-who="reckon-build" data-when="2026-10-02T12:48:13.448Z">
+    <div class="r-comment-body"><p>Attached an independent review to r-20261002T112357206741-a-removed-file-leaves-the-clone-cache; the parsed record scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19 (total 97), records reviewed base 5c7f69358 and head e0221456c, carries added_failure_count 0 with empty added_failure_ids derived from the run&#x27;s own baseline_suite and after_suite gate logs, and carries one follow-on finding.</p></div>
 </div>
 </section>
 </main>
