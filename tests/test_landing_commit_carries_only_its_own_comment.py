@@ -8,15 +8,16 @@ an unrelated uncommitted edit to the plan was swept into the landing commit.
 Promotion now parses each side as HTML and keeps only the authored content
 outside the store-owned regions. The admitted class is any change confined to
 those regions — the ``plan-*`` scalars (impl, status, the version stamps and
-the rest), the section records, and every ``data-reckon`` section the store
-writes, such as gates, decisions, followups, questions, research, comments,
-landed notes, sprint items and evidence. The store is the sole writer of every
-one of those regions. A change confined to them is the run's own bookkeeping
-and is carried into the landing commit, as is the store's own re-encoding,
-which parsing normalises. Only authored content outside those store-owned
-regions refuses, and it refuses before either store is written, so a refused
-promotion leaves neither a ledger row nor a comment for the next promotion to
-read as an unrelated edit.
+the rest) and every ``data-reckon`` element the store writes, such as the
+section records, the gates, decisions, followups, questions, research and
+comments sections, and the landed and landing notes. Every element carrying
+``data-reckon`` is the store's own region whatever its tag, so the store is
+the sole writer of every one of them. A change confined to them is the run's
+own bookkeeping and is carried into the landing commit, as is the store's own
+re-encoding, which parsing normalises. Only authored content outside those
+store-owned regions refuses, and it refuses before either store is written, so
+a refused promotion leaves neither a ledger row nor a comment for the next
+promotion to read as an unrelated edit.
 
 These tests synthesise a fixture repository and crew home per case and assert
 the real plan and crew directories are untouched, because an isolated read
@@ -276,6 +277,48 @@ def test_a_store_written_impl_move_lands_as_the_runs_own_bookkeeping(
     assert _dirty(repository, plan_path) == ""
     assert PLAN_RELATIVE in _promotion_commit_files(repository)
     assert 'name="plan-impl" content="0.75"' in _git(
+        repository, "show", f"HEAD:{PLAN_RELATIVE}"
+    )
+
+
+def test_a_store_written_collapse_of_one_section_lands_as_the_runs_own_bookkeeping(
+    repository: Path,
+) -> None:
+    """A section's landed note is a non-section element the store writes —
+    ``<div data-reckon="landed">``, as a collapse records it. When the only
+    uncommitted difference is the store rewriting that note for one section,
+    the landing admits it rather than reading its content as an authored edit.
+    A strip that removed only ``section[data-reckon]`` left the note's content
+    behind on one side, so a collapse read as an unrelated edit."""
+    narrative = "a landing whose only difference is a store-written collapse note"
+    plan_path = repository / PLAN_RELATIVE
+
+    # An earlier store write left the section's landed note in HEAD.
+    text = plan_path.read_text(encoding="utf-8")
+    seeded = text.replace(
+        "</main>",
+        '<div class="r-note" data-reckon="landed" data-node="s2"'
+        ' data-when="2026-09-17">the earlier landed note</div></main>',
+    )
+    plan_path.write_text(seeded, encoding="utf-8")
+    _git(repository, "add", PLAN_RELATIVE)
+    _git(repository, "commit", "-q", "-m", "test: seed a section landed note")
+
+    # The store collapses the section again, rewriting that note and touching no
+    # authored prose, and leaves it uncommitted as a failed landing would.
+    plan_path.write_text(
+        seeded.replace("the earlier landed note", "the collapse summary for s2"),
+        encoding="utf-8",
+    )
+    assert _dirty(repository, plan_path), "the store-written note must be dirty"
+
+    _pointer(repository)
+    result = _promote(repository, narrative)
+
+    assert result["plan_comment"]["recorded"] is True
+    assert _dirty(repository, plan_path) == ""
+    assert PLAN_RELATIVE in _promotion_commit_files(repository)
+    assert "the collapse summary for s2" in _git(
         repository, "show", f"HEAD:{PLAN_RELATIVE}"
     )
 
