@@ -84,8 +84,14 @@ def repository(tmp_path: Path, home: Path) -> Path:
         ("config", "user.email", "worker@example.invalid"),
         ("config", "user.name", "Worker"),
         ("add", "docs", "package"),
-        ("commit", "-q", "-m", "chore: seed landing gate repository", "-m",
-         "Provide the plan and deliverable the contract resolves against."),
+        (
+            "commit",
+            "-q",
+            "-m",
+            "chore: seed landing gate repository",
+            "-m",
+            "Provide the plan and deliverable the contract resolves against.",
+        ),
     ):
         _git(root, *arguments)
     (home / "mounts.json").write_text(
@@ -138,9 +144,7 @@ def test_every_default_role_agrees_with_the_promotion_gate(home, tmp_path, repos
     disagreements: list[str] = []
     for role in sorted(config["roles"]):
         run_directory = run_dir(f"r-agree-{role}")
-        write_paths = (
-            [str(run_directory)] if role == "test" else ["package/out.py"]
-        )
+        write_paths = [str(run_directory)] if role == "test" else ["package/out.py"]
         resolution = crew.plan_dispatch(
             node=_node(role, write_paths, str(run_directory / "manifest.md")),
             config=config,
