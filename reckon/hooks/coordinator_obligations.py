@@ -3,15 +3,20 @@
 
 A coordinator's duties live in its own context, so a coordinator forgets: a
 turn can end over an unpromoted run, an unanswered blocker, or a review nobody
-dispatched. This hook binds the harness to the derived list instead. The
-obligations are recomputed from state at the moment the hook runs, injected as
-a checklist at the open of every turn, and re-raised when the session tries to
-stop with duties remaining.
+dispatched. This hook binds the harness to the list the project's watch
+producer derives and publishes for each session, injected as a checklist at
+the open of every turn, and re-raised when the session tries to stop with
+duties remaining.
 
 Two modes, selected by ``--hook``:
 
-- ``prompt`` — wired as SessionStart and UserPromptSubmit. Prints the checklist
-  as ``additionalContext`` so the duties open the turn and survive compaction.
+- ``prompt`` — wired as SessionStart and UserPromptSubmit. Reads the session's
+  published snapshot and prints its checklist as ``additionalContext`` so the
+  duties open the turn and survive compaction. Nothing is derived here: the
+  snapshot module is loaded by file path and the derivation modules are never
+  imported, so a turn's opening costs one stat, one small JSON read and a
+  formatting pass. A snapshot that is not fresh is answered by one line naming
+  the reason and the remedy, and the hook never writes the snapshot itself.
   It speaks when the duties *change* and stays quiet otherwise: a checklist
   repeated at the open of every turn is one a coordinator learns to skip. The
   session's last-injected set of ``(kind, run_id)`` pairs is kept beside that
@@ -22,13 +27,13 @@ Two modes, selected by ``--hook``:
   duty that went away and returned would otherwise match the set left behind
   and never be spoken again.
 - ``stop`` — wired as Stop. Prints ``{"decision": "block", "reason": ...}``
-  while duties remain, so the turn cannot end into forgotten work. The block
-  fires at most once per list: ``stop_hook_active`` marks a turn that already
-  continued on a blocking reason, and the hook then stays silent rather than
-  looping. Stopping is read by the harness as a verdict on the turn, so this
-  mode's verdict never consults the digest; it clears that record when the list
-  is empty, because whichever event first sees the emptying is the last one
-  that can notice it.
+  while duties remain, so the turn cannot end into forgotten work. It derives
+  from state at the moment of the stop. The block fires at most once per list:
+  ``stop_hook_active`` marks a turn that already continued on a blocking
+  reason, and the hook then stays silent rather than looping. Stopping is read
+  by the harness as a verdict on the turn, so this mode's verdict never consults
+  the digest; it clears that record when the list is empty, because whichever
+  event first sees the emptying is the last one that can notice it.
 
 A command the hook prints is one a coordinator may type, so it follows the
 configured local lane rather than whichever backend the run was carried on: the
@@ -54,17 +59,46 @@ session after itself reads back.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import os
 import shlex
 import sys
 from collections.abc import Mapping, Sequence
+from functools import cache
 from pathlib import Path
 from typing import Any
 
 # The checklist's framing, wording fixed by the plan section this hook serves.
 # It is repeated verbatim in the tests, so a change here is a contract change.
 AUTHORITY_LINE = "mirror these into your task list; reckon's list is the authority"
+
+# The snapshot reader is loaded from its file rather than imported as
+# ``reckon.crew.obligation_snapshot``: reaching it through the crew facade --
+# ``reckon/crew.py`` -- would import every concern module, the plan, backend and
+# ledger derivations included, which is the cost this hook exists to avoid. The
+# module is stdlib-only, so loading it by path keeps the prompt path inside the
+# standard library plus the formatting here.
+_SNAPSHOT_MODULE_NAME = "reckon.crew.obligation_snapshot"
+
+
+@cache
+def snapshot_module() -> Any:
+    """The snapshot reader, loaded by file path and registered in sys.modules.
+
+    Registration precedes ``exec_module`` so the module's own name resolves
+    while its body runs. Nothing else in this process imports the loader, so
+    the key is this loading's alone.
+    """
+    path = Path(__file__).resolve().parents[1] / "crew" / "obligation_snapshot.py"
+    specification = importlib.util.spec_from_file_location(_SNAPSHOT_MODULE_NAME, path)
+    if specification is None or specification.loader is None:
+        raise ImportError(f"cannot load the snapshot reader from {path}")
+    module = importlib.util.module_from_spec(specification)
+    sys.modules[_SNAPSHOT_MODULE_NAME] = module
+    specification.loader.exec_module(module)
+    return module
+
 
 # How far up a process tree the ownership walk climbs before giving up. The
 # measured shape is arming shell -> claude process, so one hop covers it; the
@@ -248,9 +282,9 @@ def _session_from_followers(
     is the identity the session used, and whether delivery is live is the
     follower's own reported state, not this hook's question.
     """
-    from reckon.crew import runs
+    module = snapshot_module()
 
-    for row in runs.list_followers(project):
+    for row in module.read_followers(project):
         record = row.get("session")
         if not isinstance(record, str) or not record:
             continue
@@ -293,9 +327,8 @@ _DIGEST_SUFFIX = ".obligations"
 
 def digest_path(project: str, session: str) -> Path:
     """The file holding the duty set one session was last injected with."""
-    from reckon.crew import runs
-
-    return runs.follower_lock_path(project, session).with_suffix(_DIGEST_SUFFIX)
+    lock = snapshot_module().follower_lock_path(project, session)
+    return lock.with_suffix(_DIGEST_SUFFIX)
 
 
 def duty_digest(items: Sequence[Mapping[str, Any]]) -> str:
@@ -482,6 +515,49 @@ def resolve(payload: dict[str, Any]) -> dict[str, Any] | None:
     return obligations
 
 
+def not_fresh_line(
+    state: str, *, project: str, session: str, document: Mapping[str, Any] | None
+) -> str:
+    """One line naming why the session's snapshot is not fresh, and the remedy.
+
+    The reason is one of the module's three not-fresh states, said in words a
+    coordinator reads at the open of a turn: no producer, a producer running
+    older code, or the age of the snapshot. The remedy is the one command that
+    publishes a snapshot again.
+    """
+    module = snapshot_module()
+    if state == module.STALE_CODE:
+        reason = "the producer is running older code"
+    elif state == module.STALE_SNAPSHOT:
+        age = module.snapshot_age_seconds(document)
+        reason = (
+            "the snapshot is stamped with no readable age"
+            if age is None
+            else f"the snapshot is {age}s old"
+        )
+    else:
+        reason = "no producer"
+    return (
+        f"reckon obligations for session {session} (project {project}) are not "
+        f"current: {reason}; run `reckon crew watch --ensure --project {project}`"
+    )
+
+
+def inject(payload: dict[str, Any], text: str) -> None:
+    """Write one prompt-mode additionalContext object, dismissing nothing."""
+    event = str(payload.get("hook_event_name") or "UserPromptSubmit")
+    sys.stdout.write(
+        json.dumps(
+            {
+                "hookSpecificOutput": {
+                    "hookEventName": event,
+                    "additionalContext": text,
+                }
+            }
+        )
+    )
+
+
 def emit(mode: str, payload: dict[str, Any], obligations: dict[str, Any]) -> None:
     """Write the one JSON object the mode produces, if any."""
     checklist = format_checklist(obligations)
@@ -490,17 +566,90 @@ def emit(mode: str, payload: dict[str, Any], obligations: dict[str, Any]) -> Non
             return
         sys.stdout.write(json.dumps({"decision": "block", "reason": checklist}))
         return
-    event = str(payload.get("hook_event_name") or "UserPromptSubmit")
-    sys.stdout.write(
-        json.dumps(
-            {
-                "hookSpecificOutput": {
-                    "hookEventName": event,
-                    "additionalContext": checklist,
-                }
-            }
-        )
+    inject(payload, checklist)
+
+
+def _prompt(payload: dict[str, Any]) -> int:
+    """Answer one prompt turn from the session's published snapshot.
+
+    The snapshot is read, never written: a fresh one is formatted and injected
+    exactly as a derivation would have been, and a not-fresh one is answered by
+    one line saying why and how to publish it again. Everything this function
+    imports is loaded before the read -- the snapshot module by file path --
+    so no derivation module reaches a turn's opening.
+    """
+    cwd = Path(
+        str(payload.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd())
     )
+    project = resolve_project(cwd)
+    if project is None:
+        return 0
+    session = _session_from_followers(
+        project,
+        harness_session=str(payload.get("session_id") or ""),
+        claude_pid=_claude_pid(),
+    )
+    if session is None:
+        return 0
+    module = snapshot_module()
+    document = module.read_snapshot(project, session)
+    state = module.freshness(document)
+    if state != module.FRESH:
+        inject(
+            payload,
+            not_fresh_line(state, project=project, session=session, document=document),
+        )
+        return 0
+    obligations = module.live_payload(document)
+    for item in obligations.get("obligations") or ():
+        if isinstance(item, dict):
+            item["next_command"] = follow_local_lane(
+                str(item.get("next_command") or ""), project=project
+            )
+    items = obligations.get("obligations") or ()
+    digest_file = digest_path(project, session)
+    if not items:
+        # An empty list is the one change the digest cannot record by
+        # comparison: there is nothing to compare it with, so the set that was
+        # last injected has to be cleared instead. Left in place, it makes the
+        # same duties *returning* read as a repeat of what the session was
+        # already shown, and the duty that emptied and came back is never
+        # spoken again.
+        if _read_digest(digest_file):
+            _store_digest(digest_file, "")
+        return 0
+    digest = duty_digest(items)
+    if _read_digest(digest_file) == digest:
+        return 0
+    inject(payload, format_checklist(obligations))
+    _store_digest(digest_file, digest)
+    return 0
+
+
+def _stop(payload: dict[str, Any]) -> int:
+    """Answer one stop turn from a derivation at the moment of the stop."""
+    resolved = resolve(payload)
+    if resolved is None:
+        return 0
+    items = resolved.get("obligations") or ()
+    digest_file = digest_path(
+        str(resolved.get("project") or ""), str(resolved.get("session") or "")
+    )
+    if not items:
+        # An empty list is the one change the digest cannot record by
+        # comparison: there is no checklist to inject and nothing to compare
+        # it with, so the set that was last injected has to be cleared instead.
+        # Left in place, it makes the same duties *returning* read as a repeat
+        # of what the session was already shown, and the duty that emptied and
+        # came back is never spoken again. Either mode clears it, because
+        # whichever event first sees the list empty is the last one that can
+        # notice it went away: a duty drained over a stop and returned before
+        # the next prompt is exactly the case a prompt-only clear would swallow.
+        if _read_digest(digest_file):
+            _store_digest(digest_file, "")
+        return 0
+    emit("stop", payload, resolved)
+    return 0
 
 
 def _read_payload() -> dict[str, Any]:
@@ -530,40 +679,12 @@ def main(argv: list[str] | None = None) -> int:
     if mode not in {"prompt", "stop"}:
         return 0
     try:
-        resolved = resolve(payload)
+        if mode == "prompt":
+            return _prompt(payload)
+        return _stop(payload)
     except Exception as exc:  # noqa: BLE001 - a hook never kills the session it guards
         sys.stderr.write(f"coordinator_obligations: {exc}\n")
         return 0
-    if resolved is None:
-        return 0
-    items = resolved.get("obligations") or ()
-    digest_file = digest_path(
-        str(resolved.get("project") or ""), str(resolved.get("session") or "")
-    )
-    if not items:
-        # An empty list is the one change the digest cannot record by
-        # comparison: there is no checklist to inject and nothing to compare
-        # it with, so the set that was last injected has to be cleared instead.
-        # Left in place, it makes the same duties *returning* read as a repeat
-        # of what the session was already shown, and the duty that emptied and
-        # came back is never spoken again. Either mode clears it, because
-        # whichever event first sees the list empty is the last one that can
-        # notice it went away: a duty drained over a stop and returned before
-        # the next prompt is exactly the case a prompt-only clear would swallow.
-        if _read_digest(digest_file):
-            _store_digest(digest_file, "")
-        return 0
-    digest = duty_digest(items)
-    if mode == "prompt" and _read_digest(digest_file) == digest:
-        return 0
-    try:
-        emit(mode, payload, resolved)
-    except Exception as exc:  # noqa: BLE001 - emission failure is silence, not a session fault
-        sys.stderr.write(f"coordinator_obligations: {exc}\n")
-        return 0
-    if mode == "prompt":
-        _store_digest(digest_file, digest)
-    return 0
 
 
 if __name__ == "__main__":

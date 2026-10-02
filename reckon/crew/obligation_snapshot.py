@@ -83,9 +83,65 @@ def _config_home() -> Path:
     return Path.home() / "docs-server"
 
 
+def crew_home() -> Path:
+    """Directory holding the fleet's transient state — runs, watch, snapshots."""
+    return _config_home() / "crew"
+
+
 def obligations_home() -> Path:
     """Directory holding every project's published session snapshots."""
-    return _config_home() / "crew" / "obligations"
+    return crew_home() / "obligations"
+
+
+def _token(name: str, fallback: str) -> str:
+    """The filesystem-safe stem ``runs`` gives a project or session name."""
+    return re.sub(r"[^A-Za-z0-9._-]", "-", name).strip("-") or fallback
+
+
+def _lock_stem(name: str, fallback: str) -> str:
+    """The ``<readable>-<digest>`` stem a name's advisory-lock path carries."""
+    return f"{_token(name, fallback)}-{hashlib.sha256(name.encode()).hexdigest()[:12]}"
+
+
+def follower_dir(project: str) -> Path:
+    """Directory holding one delivery registration per session of a project.
+
+    Repeated here rather than read through ``runs`` for the same reason the
+    config home is: the prompt hook must resolve the session without importing
+    the crew package, whose facade loads every derivation module.
+    """
+    return crew_home() / "watch" / f"{_lock_stem(project, 'project')}.followers"
+
+
+def follower_lock_path(project: str, session: str) -> Path:
+    """Advisory-lock path naming one session's delivery registration."""
+    return follower_dir(project) / f"{_lock_stem(session, 'session')}.lock"
+
+
+def read_followers(project: str) -> list[dict[str, Any]]:
+    """Read every registration in one project's watch directory, as stored.
+
+    Each row carries the session name (the record's own, falling back to the
+    file's stem) and the stored record itself, so a reader resolves a session
+    exactly as ``runs.list_followers`` would without loading the crew package.
+    An unreadable or malformed registration resolves to no row rather than
+    raising into a hook.
+    """
+    directory = follower_dir(project)
+    if not directory.is_dir():
+        return []
+    rows: list[dict[str, Any]] = []
+    for path in sorted(directory.glob("*.lock")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8") or "{}")
+        except (OSError, ValueError):
+            record = {}
+        if not isinstance(record, dict):
+            record = {}
+        rows.append(
+            {"session": str(record.get("session") or path.stem), "follower": record}
+        )
+    return rows
 
 
 def _project_token(project: str) -> str:
@@ -260,6 +316,19 @@ def freshness(
     if (instant - computed).total_seconds() > FRESHNESS_WINDOW_SECONDS:
         return STALE_SNAPSHOT
     return FRESH
+
+
+def snapshot_age_seconds(
+    document: Mapping[str, Any] | None, *, now: datetime | None = None
+) -> int | None:
+    """A stored snapshot's age in whole seconds, or None when it has no stamp."""
+    if not isinstance(document, Mapping):
+        return None
+    computed = _parse_instant(document.get("computed_at"))
+    if computed is None:
+        return None
+    instant = _utc_now() if now is None else now
+    return max(0, int((instant - computed).total_seconds()))
 
 
 # ── Ages ────────────────────────────────────────────────────────────────────
