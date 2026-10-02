@@ -13,6 +13,12 @@ Each case reads one unchanged run through the shared cache twice with two
 different windows, in both orders, and asserts each read equals the full
 recompute for its own window.
 
+One further case holds a live child under the worker, the shape whose window
+widens past the caller's to the run's own declared budget. It reads the run
+past a short window and inside that budget and asserts the reused snapshot
+keeps the widened verdict, because the budget the snapshot carries is what a
+producer that reuses it recomputes the window from.
+
 The negative control recomputes the window from the frozen snapshot field
 rather than from the caller's ``stall_seconds``; the long-window read then
 reports the short window's verdict and the case fails.
@@ -100,6 +106,33 @@ def _full_state(record: dict, *, stall_seconds: int) -> str:
     return snapshot["state"]
 
 
+def _seed_live_child(run_id: str) -> dict:
+    """Seed a live worker holding a live child, with a declared budget.
+
+    The child is what widens the run's stall window from the caller's to the
+    run's own declared allowance; the budget is declared far above the short
+    caller window, so a read past the short window and inside the budget is the
+    one that widening decides.
+    """
+    record = _seed(run_id)
+    record["pid"] = os.getpid()
+    record["attempt_budget_seconds"] = LONG_WINDOW
+    runs.pointer_path(run_id).write_text(json.dumps(record))
+    return record
+
+
+@pytest.fixture
+def live_child_record(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    recovery._SNAPSHOT_CACHE.clear()
+    # Substitute the process table for the two liveness readings the stall
+    # window widens on, so the case exercises the window a live child earns and
+    # the reuse that must carry its budget, not this host's process table.
+    monkeypatch.setattr(recovery, "local_liveness", lambda record: (True, True))
+    monkeypatch.setattr(recovery, "_live_descendant", lambda pid: True)
+    return _seed_live_child("r-live-child-budget")
+
+
 def test_short_then_long_window_matches_the_full_recompute(run_record: dict) -> None:
     """A short-window entry served to a long-window caller is judged long."""
     short = _reused(run_record, stall_seconds=SHORT_WINDOW)
@@ -126,3 +159,30 @@ def test_long_then_short_window_matches_the_full_recompute(run_record: dict) -> 
     assert short["state"] == _full_state(run_record, stall_seconds=SHORT_WINDOW)
     assert short["state"] == "stalled", short["state"]
     assert short["stall_window_seconds"] == SHORT_WINDOW
+
+
+def test_a_live_child_keeps_the_budget_window_on_reuse(
+    live_child_record: dict,
+) -> None:
+    """A reused snapshot keeps the widest window a live child earns.
+
+    A live child under the worker widens the run's window to its own declared
+    budget, so the storing read — quiet past the caller's short window but
+    inside the budget — is working and the stored window is the budget. A
+    reused snapshot recomputes the window the same way for either caller, so
+    its state must equal a full recompute's and not the short window's stall:
+    a snapshot that carried no budget would widen to nothing, judge the run by
+    ``SHORT_WINDOW`` and read stalled.
+    """
+    first = _reused(live_child_record, stall_seconds=SHORT_WINDOW)
+    assert first["state"] == "working", first["state"]
+    assert first["process_descendant_alive"] is True, first
+    assert first["stall_window_seconds"] == LONG_WINDOW, first["stall_window_seconds"]
+
+    again = _reused(live_child_record, stall_seconds=SHORT_WINDOW)
+
+    assert again["state"] == _full_state(
+        live_child_record, stall_seconds=SHORT_WINDOW
+    )
+    assert again["state"] == "working", again["state"]
+    assert again["stall_window_seconds"] == LONG_WINDOW, again["stall_window_seconds"]
