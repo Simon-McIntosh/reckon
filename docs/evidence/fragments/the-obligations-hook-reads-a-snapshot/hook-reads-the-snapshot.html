@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-verifies" content="reckon:the-obligations-hook-reads-a-snapshot#s3">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-02">
+  <meta name="evidence-commit" content="740ce5c63">
+  <title>The prompt hook reads the session's published snapshot | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="hook-reads-the-snapshot">
+  <h2>The prompt hook reads the session's published snapshot</h2>
+  <p>The prompt path now reads what the watch producer published instead of deriving. It resolves
+  its session as before, then loads <code>reckon/crew/obligation_snapshot.py</code> by file path
+  (<code>importlib.util.spec_from_file_location</code>, registered in <code>sys.modules</code>
+  before <code>exec_module</code>) because reaching it through <code>reckon/crew.py</code> would run
+  the crew facade, which eagerly imports every concern module, the three derivation modules
+  included. Session resolution reads the follower registrations directly
+  (<code>read_followers</code>, the same registration directory <code>runs</code> writes, mirroring
+  <code>follower_lock_path</code> for the digest file) so no part of the prompt path imports the
+  crew package. A fresh snapshot goes through the hook's existing formatting, injection and digest
+  unchanged — including the local-lane rewrite of a printed dispatch — and its ages are recomputed
+  at read time from the stored measurement instants.</p>
+
+  <p>A snapshot that is not fresh is answered by one line naming the reason and the remedy,
+  <code>reckon crew watch --ensure --project &lt;project&gt;</code>: <em>no producer</em> (nothing
+  published, or the recorded pid is gone or reused), <em>the producer is running older code</em>,
+  or <em>the snapshot is N s old</em>. The hook never writes the snapshot file, and it exits 0 on
+  every path. The stop path is untouched by this node and still derives at the moment of the stop.
+  The measurement target for a turn's opening is under 250&nbsp;ms; the 20-run figure below is
+  <strong>112.7&nbsp;ms</strong> (second-slowest of 20).</p>
+
+  <h3>What the new test file checks</h3>
+  <ul>
+    <li>a fresh subprocess runs the prompt path against a temporary configuration home and lists
+    <code>sys.modules</code>: none of <code>reckon._plan_html</code>, <code>reckon._backends</code>
+    or <code>reckon.ledger</code> is present, nor is <code>reckon.crew</code> itself, while
+    <code>reckon.crew.obligation_snapshot</code> is — the positive control that the drive reached
+    the snapshot read. The case also asserts the injected list carries a <code>--backend</code>
+    dispatch, so the lane rewrite (the one place the path imports a reckon module,
+    <code>reckon.flight</code>) is exercised and still loads no derivation;</li>
+    <li>each not-fresh reason emits exactly one line naming the reason and the remedy, and the
+    snapshot file is byte-identical afterwards — including the never-published case, where no file
+    exists before or after;</li>
+    <li>a pid that is alive but carries a different start time from the one recorded reads as not
+    fresh, with the same pid and the true start time reading as fresh immediately before it;</li>
+    <li>a fresh snapshot is injected as the derived checklist is, ages normalised, and a repeated
+    drive is silent (the digest);</li>
+    <li>a snapshot naming a duty the live fleet does not have is injected as it stands, and the
+    fleet's own run id does not appear — the list comes from the file, not a derivation.</li>
+  </ul>
+
+  <h3>The existing hook cases move to the snapshot</h3>
+  <p>Every prompt drive in <code>tests/test_coordinator_obligations_hook.py</code> now publishes the
+  current state's snapshot first, through <code>obligation_snapshot</code>'s own
+  <code>document_for</code> / <code>write_snapshot</code>, into the case's temporary configuration
+  home; the shared drive helper and the bare-harness wrapper both publish for prompt mode, so a
+  drive sees the state exactly as a producer's next sweep would publish it. No case was deleted and
+  no assertion weakened; the assertions now hold against the snapshot rather than a derivation. The
+  stop-path cases are unchanged. The file passes 17/17.</p>
+
+  <h3>Gate — both arms over the named surface</h3>
+  <p>The gate is the new test file plus every <code>tests/</code> file naming
+  <code>coordinator_obligations</code>, found by a text search: three files at the base and four at
+  the head. The base arm runs from a <code>git archive</code> extraction of
+  <code>e23f6cc6</code> under the run's scratch directory, provisioned with the shared environment
+  the way a worktree is; each arm uses its own basetemp outside any repository and its own log.
+  The head arm adds <strong>no</strong> failure id: both arms carry the same two ids, and the head
+  passes five more tests than the base — this node's new cases — so
+  <strong>97 passed, 2 failed</strong> against <strong>92 passed, 2 failed</strong>.</p>
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th><th>failure ids</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>e23f6cc6</code></td><td>2 failed, 92 passed in 11.84 s</td><td>the two skill-contract ids below</td></tr>
+      <tr><td>head</td><td><code>740ce5c63</code></td><td>2 failed, 97 passed in 12.12 s</td><td>the same two ids</td></tr>
+    </tbody>
+  </table>
+  <p>The two ids in both arms are
+  <code>tests/test_skill_contracts.py::test_no_routing_identifier_leaks_into_skills_or_source</code>
+  and <code>::test_every_registered_crew_verb_is_documented_or_exempt</code>. They are
+  <strong>pre-existing at the base</strong>, and they name
+  <code>reckon/crew/picker/replay.py</code> and <code>reckon/crew/picker/snapshot.py</code>, files
+  this node never touched, so they are reported rather than triaged here. The first base arm run
+  added a third id — <code>test_hook_installer.py::test_the_coordinator_commands_name_the_repository_interpreter</code>,
+  which resolves the checkout's own <code>.venv/bin/python</code> — because the bare extraction
+  carried no provisioned <code>.venv</code> symlink; with the extraction provisioned as a worktree
+  is, that id clears, and the provisioned arm is the base recorded above.</p>
+
+  <h3>Negative control</h3>
+  <p>The declared mutation — make the prompt path derive obligations again instead of reading the
+  snapshot — was applied to <code>coordinator_obligations.py</code> at <code>d31eaab81</code> and
+  the new test file run: <strong>4 failed, 1 passed, EXIT=1</strong>, including
+  <code>test_the_prompt_path_loads_no_derivation_module</code> (which finds
+  <code>reckon._plan_html</code> in <code>sys.modules</code>) and the not-fresh, reused-pid and
+  source-provenance cases. The mutation was reverted by edit and the file re-verified green
+  (5 passed) before the manifest was written. The log is
+  <code>negative-control-d31eaab81-mutated.log</code> in the run directory.</p>
+
+  <h3>Twenty consecutive prompt-hook invocations</h3>
+  <p>One fresh snapshot in a scratch configuration home, one fresh process per invocation, the
+  snapshot's producer being the measuring process so the recorded pid stays live throughout. Run 1
+  injected the checklist (the digest is empty); runs 2–20 were silent over an unchanged list, which
+  is the steady state a coordinator sees. Second-slowest <strong>112.7 ms</strong> against the
+  plan's 250 ms target; fastest 91.4 ms, median 95.5 ms. The log is
+  <code>prompt-hook-timings.log</code> in the run directory; module under test
+  <code>obligation_snapshot.py</code> in this worktree.</p>
+  <table>
+    <thead><tr><th>run</th><th>ms</th><th>run</th><th>ms</th></tr></thead>
+    <tbody>
+      <tr><td>1 (injects)</td><td>148.7</td><td>11</td><td>91.4</td></tr>
+      <tr><td>2</td><td>95.3</td><td>12</td><td>94.6</td></tr>
+      <tr><td>3</td><td>96.0</td><td>13</td><td>94.9</td></tr>
+      <tr><td>4</td><td>95.3</td><td>14</td><td>97.9</td></tr>
+      <tr><td>5</td><td>94.7</td><td>15</td><td>96.4</td></tr>
+      <tr><td>6</td><td>112.7</td><td>16</td><td>93.9</td></tr>
+      <tr><td>7</td><td>93.6</td><td>17</td><td>93.1</td></tr>
+      <tr><td>8</td><td>95.5</td><td>18</td><td>110.4</td></tr>
+      <tr><td>9</td><td>99.0</td><td>19</td><td>98.5</td></tr>
+      <tr><td>10</td><td>95.3</td><td>20</td><td>98.5</td></tr>
+    </tbody>
+  </table>
+</section>
+</main>
+</body>
+</html>
