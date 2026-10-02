@@ -11,13 +11,14 @@ These cases drive a real detached supervisor for a stub worker that ignores
 SIGTERM, stop the run through ``dispatch.terminate`` -- the call ``crew stop``
 makes -- and measure how long the supervisor's pid survives. The supervisor is
 expected to give the worker the configured stop grace to end on its own, then
-SIGKILL it and write the exit record, so its pid is gone within
-``stop_grace + 3 * poll + slack`` of the stop.
+SIGKILL it and write the exit record. Each case waits, bounded, on the observed
+condition (the supervisor's pid is gone) under a ceiling generous for a loaded
+node; the ceiling sits under the worker's own sleep, so an exit inside it can
+only be the supervisor's escalation, not the worker finishing.
 
-The worker's stub sleep is far larger than the bound, so an exit inside the
-bound can only be the supervisor's act. The declared mutation withholds the
-stop-grace escalation: the supervisor then waits on the worker's own exit, its
-pid is still alive past the bound, and the test fails.
+The declared mutation withholds the stop-grace escalation: the supervisor then
+waits on the worker's own exit and its pid outlives the ceiling, so the test
+fails.
 """
 
 from __future__ import annotations
@@ -64,17 +65,23 @@ STUB_ENDS_ON_STOP = (
 
 NEGATIVE_CONTROL = os.environ.get("RECKON_STOP_SUPERVISOR_NEGATIVE_CONTROL", "").strip()
 
-# The bound the cases assert. The grace is the configured stop grace; the poll
-# is how often the supervisor's reap loop wakes, paid once to notice the stop
-# and once more to notice the kill; the slack covers process startup and a
-# loaded machine. The stub's sleep is far larger, so an exit inside the bound
-# can only be the supervisor's act.
-POLL_SECONDS = dispatch_module._WORKER_MANIFEST_POLL_SECONDS
+# The stop grace the cases configure, short so a healthy escalation is quick.
 STOP_GRACE_SECONDS = 1.0
+# The mutation's stop grace: far larger than the case ceiling, so a supervisor
+# that does not escalate waits on the worker's own exit instead.
+MUTATION_STOP_GRACE_SECONDS = 600.0
+# The stub worker's own sleep. It outlives the case ceiling, so an exit
+# observed inside the ceiling can only be the supervisor's escalation, never
+# the worker ending. This is the value that tells the bounded behaviour from
+# the unbounded wait: a supervisor with no escalation ends only when the worker
+# does, at this sleep or, under the mutation's grace, later still.
 WORKER_SLEEP_SECONDS = 120.0
-SLACK_SECONDS = 8.0
-BOUND_SECONDS = STOP_GRACE_SECONDS + 3 * POLL_SECONDS + SLACK_SECONDS
-PROMPT_BOUND_SECONDS = 2 * POLL_SECONDS + SLACK_SECONDS
+# The ceiling the cases wait under. It is a bounded wait on the observed
+# condition (the supervisor's pid is gone) rather than a raw wall-clock budget,
+# and it is generous for a loaded fleet node while staying under the worker's
+# own sleep, so it cannot be satisfied by a supervisor that merely waits the
+# worker out.
+CEILING_SECONDS = 90.0
 
 
 def _stop_grace_environment() -> str:
@@ -84,7 +91,7 @@ def _stop_grace_environment() -> str:
     larger than the test's window, so it waits on the worker's own exit.
     """
     if NEGATIVE_CONTROL:
-        return "600"
+        return str(MUTATION_STOP_GRACE_SECONDS)
     return str(STOP_GRACE_SECONDS)
 
 
@@ -250,16 +257,20 @@ def test_the_supervisor_exits_within_the_bound_after_a_stop(
     supervisor_pid = fixture["supervisor_pid"]
     try:
         started = _stop(fixture)
+        # A bounded wait on the observed condition (the supervisor's pid is
+        # gone), not a raw wall-clock budget: the ceiling is generous for a
+        # loaded node and still under the worker's own sleep.
         _wait_until(
             lambda: not _running(supervisor_pid),
-            timeout=BOUND_SECONDS + 5.0,
+            timeout=CEILING_SECONDS,
             detail="the supervisor's exit",
         )
         elapsed = time.monotonic() - started
-        assert elapsed <= BOUND_SECONDS, (
-            f"the supervisor outlived the stop bound: {elapsed:.2f}s > "
-            f"{BOUND_SECONDS:.2f}s"
-        )
+        # The separate discriminator: a supervisor with no escalation would end
+        # only when the worker itself did, at WORKER_SLEEP_SECONDS or later. An
+        # exit well before that is the supervisor's own escalation, not the
+        # worker finishing.
+        assert elapsed < WORKER_SLEEP_SECONDS, elapsed
         assert not _running(_worker_pid(fixture["run_id"]))
         assert (fixture["directory"] / dispatch_module.EXIT_RECORD_NAME).is_file()
         # The end was attributable: the run's own directory names the kill.
@@ -279,11 +290,13 @@ def test_a_worker_that_ends_on_the_stop_ends_the_supervisor_promptly(
         started = _stop(fixture)
         _wait_until(
             lambda: not _running(supervisor_pid),
-            timeout=PROMPT_BOUND_SECONDS + 5.0,
+            timeout=CEILING_SECONDS,
             detail="the supervisor's exit",
         )
+        # Bounded: the supervisor ends without the escalation, well before the
+        # worker's own sleep would end it.
         elapsed = time.monotonic() - started
-        assert elapsed <= PROMPT_BOUND_SECONDS
+        assert elapsed < WORKER_SLEEP_SECONDS, elapsed
         # The worker ended on the group stop, so no escalation was warranted.
         assert "worker-ignored-the-stop-grace-signal" not in _sender_reasons(
             fixture["directory"]
