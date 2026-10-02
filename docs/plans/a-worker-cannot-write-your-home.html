@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-modified" content="2026-10-01">
-<meta name="plan-version" content="115">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
+<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-version" content="116">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="9125b986,984c4f05,78e179c5">
 <meta name="plan-impl" content="0.99">
 </head>
@@ -1487,6 +1487,10 @@
       <p><strong>Falsifier.</strong> A grep of the composed worker prompt finds the rule and its
       reason. The AGENTS.md passage names the fence and this plan.</p>
     </section>
+
+    <h2 id="s5">§5 — A fenced claude worker carries the operator&#x27;s login</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p><strong>Defect, measured 2026-10-01 21:23–21:25Z on two nova runs</strong> (<code>r-20261001T212425544685-ecq-per-layout-vertex-capacity</code>, and <code>r-20261001T205923375369-s22-wave1-reuse-map</code> in <code>lane-change-2.jsonl</code>). Every fenced worker on a claude subscription lane (<code>claude</code>, <code>claude-opus</code>) ends about 6 s after launch. The assistant record reads <code>Not logged in · Please run /login</code> with <code>error: authentication_failed</code>, zero tokens and <code>terminal_reason: api_error</code>. The same CLI and model serve from the operator's own home, so the account is fine; the run home is not.</p><p><strong>Mechanism.</strong> <code>_harness_credential_binds</code> in <code>reckon/_backends.py</code> returns an empty list for every dialect except codex. A claude run's <code>CLAUDE_CONFIG_DIR</code> (<code>&lt;run&gt;/harness</code>) is therefore seeded with the <code>settings.json</code> hooks and <code>CLAUDE.md</code>, but never with <code>~/.claude/.credentials.json</code>. Clive is unaffected because its local server needs no OAuth login. Copying the file in through <code>harness_home_files</code> is not a fix. A copy is writable by the worker, so a token refresh inside the run rotates the operator's single-use refresh token and leaves the operator's own file holding a dead one. That is the reason the codex <code>auth.json</code> is bound rather than copied.</p><p><strong>Repair.</strong> Bind the operator's <code>~/.claude/.credentials.json</code> writable at <code>&lt;run&gt;/harness/.credentials.json</code> for the claude dialect, exactly as the codex login is bound. The bind is skipped when the file is absent, so a fence is then short one bind rather than refusing to start. Clive keeps no bind, and so does every dialect whose lane needs no subscription login.</p><p><strong>Done when:</strong> a test asserts that a fenced claude launch composes the credential bind from the operator home to <code>&lt;run&gt;/harness/.credentials.json</code>, writable, and that the operator file's inode is the bound one; the same test asserts no bind for clive and none when the operator file is absent; the declared negative control (removing the claude branch from <code>_harness_credential_binds</code>) turns that test red, and its log is recorded; no failure is added, against a stated base, in the fence and harness-home test modules, run in fresh processes; and one real fenced claude smoke dispatch on a one-file node completes, with a nonzero token count in its stream and the sha256 of <code>~/.claude/.credentials.json</code> recorded before and after.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
