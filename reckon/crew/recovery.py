@@ -7986,7 +7986,13 @@ _SNAPSHOT_CACHE: dict[str, tuple[str, dict[str, Any]]] = {}
 _SNAPSHOT_CACHE_LIMIT = 256
 
 
-def _remember_snapshot(run_id: str, key: str, snapshot: dict[str, Any]) -> None:
+def _remember_snapshot(
+    run_id: str,
+    key: str,
+    snapshot: dict[str, Any],
+    *,
+    cache: dict[str, tuple[str, dict[str, Any]]] | None = None,
+) -> None:
     """Store one run's snapshot, keeping the cache bounded.
 
     Re-storing a run moves it to the most-recent position: a plain assignment
@@ -7994,16 +8000,16 @@ def _remember_snapshot(run_id: str, key: str, snapshot: dict[str, Any]) -> None:
     updated every poll would sit at the front and be the first evicted by a
     busy process once the cache filled — the entry the poll just wrote.
     """
-    cache = _SNAPSHOT_CACHE
-    cache.pop(run_id, None)
-    cache[run_id] = (key, snapshot)
-    if len(cache) <= _SNAPSHOT_CACHE_LIMIT:
+    store = _SNAPSHOT_CACHE if cache is None else cache
+    store.pop(run_id, None)
+    store[run_id] = (key, snapshot)
+    if len(store) <= _SNAPSHOT_CACHE_LIMIT:
         return
-    for rid in list(cache):
+    for rid in list(store):
         if rid != run_id and not runs.run_dir(rid).is_dir():
-            del cache[rid]
-    while len(cache) > _SNAPSHOT_CACHE_LIMIT:
-        cache.pop(next(iter(cache)))
+            del store[rid]
+    while len(store) > _SNAPSHOT_CACHE_LIMIT:
+        store.pop(next(iter(store)))
 
 
 def _fresh_liveness(pointer: Mapping[str, Any]) -> tuple[Any, Any, Any]:
@@ -8188,18 +8194,25 @@ def _compute_watch_snapshot(
 
 
 def _watch_snapshot(
-    pointer: Mapping[str, Any], *, moment: float, stall_seconds: int
+    pointer: Mapping[str, Any],
+    *,
+    moment: float,
+    stall_seconds: int,
+    cache: dict[str, tuple[str, dict[str, Any]]] | None = None,
 ) -> dict[str, Any]:
     """Reduce one pointer to the state and reason a ticker compares.
 
-    A run whose pointer, manifest, stream and exit record are all unchanged
-    since the last poll serves its previous snapshot: the stat identity is the
-    only work the poll then costs, and only the silence is recomputed from the
-    stream's stat. Any change to one of those files, or a liveness change the
-    snapshot reports, drops the entry and a full classification is taken again.
+    A run whose classification inputs are all unchanged since the last poll
+    serves its previous snapshot: only the silence is recomputed, from the
+    stream's stat and the poll's own moment. Any change to an input, or a
+    liveness change the snapshot reports, drops the entry and a full
+    classification is taken again. ``cache`` is the producer's own store, so a
+    cache never carries an answer across two independently armed watchers; the
+    module-level cache serves callers that pass none.
     """
+    store = _SNAPSHOT_CACHE if cache is None else cache
     run_id = str(pointer.get("run_id") or "")
-    served = _SNAPSHOT_CACHE.get(run_id)
+    served = store.get(run_id)
     key = _snapshot_reuse_key(pointer)
     if run_id and served is not None and key is not None and served[0] == key:
         stored = served[1]
@@ -8219,7 +8232,7 @@ def _watch_snapshot(
     )
     refreshed = _refresh_snapshot(snapshot, moment=moment)
     if run_id and key is not None:
-        _remember_snapshot(run_id, key, refreshed)
+        _remember_snapshot(run_id, key, refreshed, cache=store)
     return refreshed
 
 
@@ -8934,6 +8947,10 @@ def watch_ticker(
         # producer records it each pass so a reader sees how far it has backed
         # off without asking the process.
         poll_interval_current = poll_interval
+        # The snapshots one armed watcher carries between its polls. It lives
+        # only as long as this watcher, so an independently armed producer
+        # starting later can never be served an earlier watcher's reading.
+        snapshot_cache: dict[str, tuple[str, dict[str, Any]]] = {}
         while True:
             # An unlinked seat record is rewritten before anything else, so a
             # producer whose file was removed is findable by unwatch again, and
@@ -8959,7 +8976,8 @@ def watch_ticker(
             moment = _utc_seconds()
             current = {
                 str(pointer.get("run_id") or ""): _watch_snapshot(
-                    pointer, moment=moment, stall_seconds=stall_seconds
+                    pointer, moment=moment, stall_seconds=stall_seconds,
+                    cache=snapshot_cache,
                 )
                 for pointer in pointers
                 if pointer.get("run_id")
