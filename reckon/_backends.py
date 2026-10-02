@@ -959,6 +959,12 @@ class Dialect:
     """
 
     name = ""
+    # Whether a lane speaking this dialect authenticates with the operator's
+    # stored subscription login, which must be bound writable into the run's
+    # harness home. False for a lane whose account lives elsewhere — the local
+    # clive lane authenticates against its own server — so no credential bind
+    # is composed for it.
+    subscription_login = False
     # Whether the harness needs its prompt on stdin. Both probed harnesses do,
     # and for the same reason: a prompt passed as an argument can be swallowed
     # by a preceding variadic option, which fails as "no input provided" with
@@ -1494,6 +1500,9 @@ class _ClaudeDialect(Dialect):
     """Claude Code: `-p` stream-json, session ids, rate-limit headroom."""
 
     name = "claude"
+    # A claude subscription lane reads the operator's stored login, so the
+    # fence binds it writable into the run's harness home.
+    subscription_login = True
 
     def argv(
         self,
@@ -1919,6 +1928,17 @@ def _phase(obs: Observation) -> str:
     return "working" if obs.events else "starting"
 
 
+class _CliveDialect(_ClaudeDialect):
+    """clive — the local lane's claude wrapper, pointed at the GPU server.
+
+    It speaks claude's flags and stream, so it shares the claude dialect's
+    translation, but it authenticates against its own server and keeps no
+    subscription login, so the fence composes no credential bind for it.
+    """
+
+    subscription_login = False
+
+
 _DIALECTS: dict[str, Dialect] = {
     _CodexDialect.name: _CodexDialect(),
     _ClaudeDialect.name: _ClaudeDialect(),
@@ -1926,7 +1946,7 @@ _DIALECTS: dict[str, Dialect] = {
     # (ANTHROPIC_BASE_URL, ANTHROPIC_AUTH_TOKEN, ANTHROPIC_MODEL). Its flags
     # and JSON-lines event stream are identical to claude's since it passes
     # all args through via `exec claude "${ARGS[@]}"`.
-    "clive": _ClaudeDialect(),
+    "clive": _CliveDialect(),
 }
 
 
@@ -1987,6 +2007,12 @@ _HARNESS_HOME = {
 # by the worker, so the login the operator refreshes elsewhere could be
 # shadowed by its own stale copy.
 CODEX_AUTH_FILENAME = "auth.json"
+
+# The claude credential a subscription lane binds into its run's harness home.
+# Named the same as the operator's file because the harness looks for the fixed
+# ``.credentials.json`` name under ``CLAUDE_CONFIG_DIR``, so the bind's
+# destination is that name inside the run home rather than the operator's path.
+CLAUDE_CREDENTIAL_FILENAME = ".credentials.json"
 
 # The harness command the fence composes. Named once so the argv a reader sees
 # and the capability a refusal names are the same string.
@@ -2129,10 +2155,10 @@ def seed_harness_home(
     Three properties bound the copy, all read from the operator's home and
     never written back. A config-dir file already in the run home is never
     overwritten, so a resumed run keeps its own state. The operator home is
-    never modified — only read. And a credential is never copied: the codex
-    login is bound read-only by the fence (:func:`codex_auth_source`), and the
-    declarations name no credential file, so the run directory never holds a
-    writable copy of the operator's login.
+    never modified — only read. And a credential is never copied: the login the
+    run needs is bound writable by the fence (:func:`_harness_credential_binds`),
+    and the declarations name no credential file, so the run directory never
+    holds a writable copy of the operator's login.
 
     A resumed run also needs the session's own transcript beside its home,
     because the harness looks for it under the home its variable names; the
@@ -2415,31 +2441,56 @@ def codex_auth_source(home: str | Path | None = None) -> Path | None:
     return candidate if candidate.is_file() else None
 
 
+def claude_credential_source(home: str | Path | None = None) -> Path | None:
+    """Return the operator's claude subscription login to bind, or None.
+
+    Absent login is None and no bind is composed, so a machine without the
+    credential produces a fence that is short one file rather than one that
+    refuses to start. The local clive lane authenticates against its own
+    server, so it never reaches this source.
+    """
+    root = Path(home) if home is not None else Path.home()
+    candidate = root / ".claude" / CLAUDE_CREDENTIAL_FILENAME
+    return candidate if candidate.is_file() else None
+
+
 def _harness_credential_binds(
-    dialect_name: str,
+    dialect: Dialect,
     harness: Path | None,
     home: str | Path | None,
 ) -> list[tuple[Path, Path]]:
     """Return the writable file binds a run's harness home needs, if any.
 
-    Only codex requires a credential file: it is exposed into the run's own
-    codex home so the harness authenticates from its run directory. The bind is
-    writable rather than read-only because codex rewrites ``auth.json`` in
-    place on a token refresh (``OpenOptions::truncate(true).write(true)``, the
-    same inode, no rename), so a read-only exposure rotates the login
-    server-side and then cannot persist it, burning the operator's single-use
-    refresh token. Binding the operator's one file writable — rather than
-    copying it into the run — is what lets the refresh survive without giving
-    the worker its own stale shadow of the login.
+    A dialect whose lane authenticates with a stored credential has that one
+    file exposed into the run's own harness home, so the harness authenticates
+    from its run directory rather than from the operator's sealed dot
+    directory. Codex reads ``auth.json``; a claude subscription lane reads
+    ``.credentials.json`` under ``CLAUDE_CONFIG_DIR``. The local clive lane
+    needs neither, because its server holds the account.
 
-    The list is empty for a dialect that needs no credential, for a run with no
-    harness home, and for a machine with no login — the fence is then short one
-    bind rather than refusing to start.
+    The bind is writable rather than read-only because both harnesses rewrite
+    the credential in place on a token refresh (``OpenOptions::truncate(true).
+    write(true)`` for codex, the same inode, no rename), so a read-only
+    exposure rotates the login server-side and then cannot persist it, burning
+    the operator's single-use refresh token. Binding the operator's one file
+    writable — rather than copying it into the run — is what lets the refresh
+    survive without giving the worker its own stale shadow of the login.
+
+    The list is empty for a dialect that needs no credential (the clive lane),
+    for a run with no harness home, and for a machine with no login — the fence
+    is then short one bind rather than refusing to start.
     """
-    if dialect_name != "codex" or harness is None:
+    if harness is None:
         return []
-    auth = codex_auth_source(home)
-    return [] if auth is None else [(auth, harness / CODEX_AUTH_FILENAME)]
+    if dialect.name == "codex":
+        auth = codex_auth_source(home)
+        return [] if auth is None else [(auth, harness / CODEX_AUTH_FILENAME)]
+    if dialect.subscription_login:
+        credential = claude_credential_source(home)
+        if credential is None:
+            return []
+        return [(credential, harness / CLAUDE_CREDENTIAL_FILENAME)]
+    return []
 
 
 # The flight keys that tune the fence's protected set. ``protected_paths``
@@ -2943,7 +2994,7 @@ def launch_plan(
             manifest_path=manifest,
             home=fence_home,
             read_write_binds=_harness_credential_binds(
-                dialect.name, harness, fence_home
+                dialect, harness, fence_home
             ),
             config=fence_config,
         )
