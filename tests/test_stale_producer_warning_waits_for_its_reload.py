@@ -81,7 +81,9 @@ class _Clock:
         return self.value
 
 
-def _events(monkeypatch, *, catch_up_on=None, stop_after=3) -> list[dict]:
+def _events(
+    monkeypatch, *, catch_up_on=None, stop_after=3, resume=None, reloaded_in_place=True
+) -> list[dict]:
     """Drive a reload attach and return the events it yields.
 
     ``producer_live`` is pinned True so the seat is judged by its recorded
@@ -90,6 +92,9 @@ def _events(monkeypatch, *, catch_up_on=None, stop_after=3) -> list[dict]:
     consumer while the driven clock advances. ``catch_up_on`` names the wait
     pass at which the seat is rewritten to the follower's current stamp,
     standing in for a producer that has reloaded itself inside its window.
+    ``reloaded_in_place`` is the fact a real replacement image carries; passing
+    it True with ``resume={}`` drives a reload whose checkpoint came through
+    empty, which is still a reload.
     """
     clock = _Clock()
     stop = threading.Event()
@@ -114,7 +119,8 @@ def _events(monkeypatch, *, catch_up_on=None, stop_after=3) -> list[dict]:
         cli_module._follow_watch_lines(
             PROJECT,
             session=SESSION,
-            resume={"offset": 0, "reported": {}},
+            resume={"offset": 0, "reported": {}} if resume is None else resume,
+            reloaded_in_place=reloaded_in_place,
             producer_reload_window=WINDOW,
             poll_interval=STEP,
             sleeper=sleeper,
@@ -197,3 +203,46 @@ def test_a_current_seat_says_nothing(isolated_home, monkeypatch) -> None:
     assert cli_module.FOLLOWER_PRODUCER_RELOADING_EVENT not in kinds, kinds
     assert cli_module.FOLLOWER_STALE_PRODUCER_EVENT not in kinds, kinds
     assert kinds.count(cli_module.FOLLOWER_PRODUCER_RELOADING_EVENT) == 0
+
+
+def test_the_default_window_covers_a_slow_reload() -> None:
+    """The shipped window exceeds the worst case a healthy reload can take.
+
+    A producer notices the code on its stamp poll and then proves the
+    replacement importable before it re-executed, and it can be asleep for its
+    idle poll interval cap in between. The shipped default must exceed both
+    bounds, or a slow but healthy reload would still be reported as stale and
+    cycled by hand. The mirrored cap is asserted against the producer's own so
+    the derivation cannot drift from the figure it is built on.
+    """
+    from reckon.crew import recovery
+
+    worst_case = (
+        cli_module._FOLLOWER_RELOAD_PROBE_TIMEOUT
+        + recovery.IDLE_POLL_INTERVAL_CAP_SECONDS
+    )
+    assert cli_module.PRODUCER_POLL_INTERVAL_CAP_SECONDS == (
+        recovery.IDLE_POLL_INTERVAL_CAP_SECONDS
+    ), "the mirrored poll interval cap has drifted from the producer's"
+    assert worst_case < cli_module.PRODUCER_RELOAD_WINDOW_SECONDS, (
+        "the default reload window must exceed a slow reload's worst case"
+    )
+
+
+def test_an_empty_checkpoint_reload_still_defers(isolated_home, monkeypatch) -> None:
+    """A reload whose checkpoint came through empty still defers.
+
+    The reloader marks a replacement by setting the checkpoint variable, and the
+    checkpoint inside it can be empty. The deferral keys on the reload having
+    happened, not on the checkpoint's contents, so the mismatch inside a
+    producer's window is still shown as a reloading note rather than reported
+    as stale at once.
+    """
+    _plant_seat(code_stamp=STALE_STAMP)
+    events = _events(monkeypatch, catch_up_on=1, resume={})
+
+    kinds = _kinds(events)
+    assert cli_module.FOLLOWER_PRODUCER_RELOADING_EVENT in kinds, kinds
+    assert cli_module.FOLLOWER_STALE_PRODUCER_EVENT not in kinds, (
+        "an empty-checkpoint reload reported the producer as stale at once"
+    )

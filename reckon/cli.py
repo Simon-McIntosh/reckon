@@ -2371,20 +2371,28 @@ FOLLOWER_FORMAT_EVENT = "follower-format-changed"
 # it travels as its own event and is never rendered as a run's row.
 FOLLOWER_STALE_PRODUCER_EVENT = "stale-producer"
 
-# A producer polls its own code stamp every ``runs.FOLLOWER_FRESHNESS_SECONDS``
-# and re-executes in place when the code stamp moves, so a mismatch a follower
-# sees moments after its own in-place reload is almost always the producer
-# mid-reload rather than a seat genuinely left behind. This is the window
-# granted to that case: inside it the follower shows one line saying the
-# producer is reloading, and only a mismatch that outlasts it earns the cycle
-# advice. It is a small multiple of the stamp poll cadence plus the reload's
-# throwaway import proof, which is what bounds a healthy producer's catch-up.
-PRODUCER_RELOAD_WINDOW_SECONDS = 5.0
+# A producer re-executes in place when its code stamp moves, and the two things
+# that bound how long a healthy reload takes are the throwaway import proof it
+# runs before the exec (``_FOLLOWER_RELOAD_PROBE_TIMEOUT``) and the slowest gap
+# between its wake-ups, which is the producer's idle poll interval cap. The
+# window a mismatch is deferred for must exceed both plus a scheduling margin,
+# or a slow reload would still trip the cycle advice. The cap is mirrored from
+# ``reckon.crew.recovery.IDLE_POLL_INTERVAL_CAP_SECONDS`` because that module is
+# imported lazily; a test asserts the two figures agree so this cannot drift.
+PRODUCER_POLL_INTERVAL_CAP_SECONDS = 30.0
+PRODUCER_RELOAD_WINDOW_MARGIN_SECONDS = 5.0
+PRODUCER_RELOAD_WINDOW_SECONDS = (
+    _FOLLOWER_RELOAD_PROBE_TIMEOUT
+    + PRODUCER_POLL_INTERVAL_CAP_SECONDS
+    + PRODUCER_RELOAD_WINDOW_MARGIN_SECONDS
+)
 FOLLOWER_PRODUCER_RELOADING_EVENT = "producer-reloading"
 
-# A fresh arming carries no such proof: it never saw the code move, so a
-# mismatch it finds may have stood for hours. It is reported at once, the same
-# event a reload emits once the window has passed.
+# The window is granted on the in-place-reload path only: a producer mid-reload
+# is rendered as a note, and only a mismatch that outlasts the window earns the
+# cycle advice. A fresh arming carries no such proof -- it never saw the code
+# move, so a mismatch it finds may have stood for hours -- and is reported at
+# once, the same event a reload emits once the window has passed.
 
 
 def _needs_you_runs(project: str, *, session: str | None) -> list[dict[str, str]]:
@@ -2732,6 +2740,7 @@ def _follow_watch_lines(
     lifetime_deadline: float | None = None,
     registration=None,
     producer_reload_window: float | None = None,
+    reloaded_in_place: bool = False,
 ):
     """Yield this follower's transitions for as long as its session lives.
 
@@ -3087,6 +3096,9 @@ def _follow_watch_lines(
         advice follows only once the window has passed with the mismatch
         still standing. A fresh arming reports the advice at once, because it
         never saw the code move and cannot vouch that the mismatch is fresh.
+        The deferral keys on ``reloaded_in_place`` rather than on a non-empty
+        checkpoint: the fact that matters is that this image replaced another,
+        and a reload whose checkpoint was empty is still a reload.
         """
         nonlocal producer_stale_since, producer_reload_deferred, producer_stale_advised
         if not identity.get("stale"):
@@ -3099,7 +3111,7 @@ def _follow_watch_lines(
         moment = clock()
         if producer_stale_since is None:
             producer_stale_since = moment
-            if reloading:
+            if reloaded_in_place:
                 producer_reload_deferred = True
                 return [_producer_reloading_event(identity)]
         if not producer_reload_deferred:
@@ -3748,6 +3760,12 @@ def crew_follow(
 
     delivery = runs_module.delivery_mode()
     grid = _ticker_grid(width, theme, no_color)
+    # Whether this image replaced a previous follower in place. The reloader
+    # sets the checkpoint variable for exactly that replacement, so its presence
+    # -- not a non-empty checkpoint -- is what says so: a reload whose checkpoint
+    # came through empty is still a reload, and the staleness deferral keys on
+    # the reload rather than on the checkpoint's contents.
+    reloaded_in_place = _FOLLOWER_CHECKPOINT_ENV in os.environ
     resume = _take_follower_checkpoint(project)
     from reckon.crew.dispatch import (
         WATCH_ARMING_ENV,
@@ -3812,6 +3830,7 @@ def crew_follow(
             lifetime=lifetime_seconds,
             lifetime_deadline=lifetime_deadline,
             registration=registration,
+            reloaded_in_place=reloaded_in_place,
         ):
             # An attach event carries the states the pane already showed, so the
             # grid is seeded from the same remembered map the follower filtered
