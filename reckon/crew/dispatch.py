@@ -2854,6 +2854,7 @@ class DispatchPlan:
     lane_allowance: dict[str, Any] | None = None
     lane_advisory: dict[str, Any] | None = None
     open_endedness: float | None = None
+    picker_selection: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         agent = _stamp_agent_display(
@@ -2865,6 +2866,7 @@ class DispatchPlan:
         payload = {
             "agent": agent,
             "backend": self.backend,
+            "picker_selection": self.picker_selection,
             "default_backend": self.default_backend,
             "execution_fit": self.execution_fit.as_dict(),
             "launch": self.launch,
@@ -4136,6 +4138,74 @@ def _brief_text(node: TaskNode) -> str:
         raise CrewError(f"the brief {node.brief!r} is not readable: {exc}") from exc
 
 
+PICKER_DISPATCH_TIMEOUT_SECONDS = 5.0
+
+
+def dispatch_picker_selection(
+    *,
+    node: TaskNode,
+    config: Mapping[str, Any],
+    project: str,
+    repo: Path,
+    session: str = "",
+    comment: str = "",
+) -> dict[str, Any]:
+    """Ask the picker without letting its latency or failure stop dispatch."""
+    finished = threading.Event()
+    result: dict[str, Any] = {}
+    started = time.monotonic()
+
+    def ask() -> None:
+        try:
+            from reckon.crew.picker import PickRequest, pick
+
+            selection = pick(
+                PickRequest(project, node, comment=comment, session=session),
+                dict(config),
+                repo=repo,
+                cached_only=True,
+            )
+            result["selection"] = selection.as_dict()
+        except Exception as exc:  # noqa: BLE001 - shadow routing cannot block dispatch
+            result["error"] = f"{type(exc).__name__}: {exc}"
+        finally:
+            finished.set()
+
+    threading.Thread(target=ask, name="dispatch-picker", daemon=True).start()
+    if not finished.wait(PICKER_DISPATCH_TIMEOUT_SECONDS):
+        result["error"] = "timeout"
+    if "selection" in result and "error" not in result:
+        return result["selection"]
+    client = sys.modules.get("reckon.crew.picker.client")
+
+    return {
+        "action": "fallback",
+        "backend": None,
+        "family": None,
+        "model": None,
+        "effort": None,
+        "probabilities": {},
+        "confidence": None,
+        "jev_model": getattr(client, "JEV_MODEL", None),
+        "fallback_reason": result.get("error") or "picker returned no selection",
+        "latency_ms": round((time.monotonic() - started) * 1000, 3),
+        "offered": [],
+        "excluded": [],
+        "comment": comment,
+    }
+
+
+def _picker_refusal_reasons(selection: Mapping[str, Any]) -> str:
+    reasons = [
+        str(reason)
+        for candidate in selection.get("excluded") or ()
+        for reason in candidate.get("reasons") or ()
+    ]
+    return "; ".join(reasons) or str(
+        selection.get("fallback_reason") or "no eligible backend"
+    )
+
+
 def plan_dispatch(
     *,
     node: TaskNode,
@@ -4160,6 +4230,8 @@ def plan_dispatch(
     watch_override: bool = False,
     repairs: str = "",
     accept_directory_claim: bool = False,
+    route: str = "shadow",
+    picker_selection: Mapping[str, Any] | None = None,
 ) -> DispatchPlan:
     """Resolve routing and defaults for one node and judge it. No side effects.
 
@@ -4197,6 +4269,32 @@ def plan_dispatch(
     if repairs:
         _require_repairs_target(project, repairs, authority=authority)
     requested_backend = str(backend_override or default_backend_override or "").strip()
+    if route not in {"shadow", "picker"}:
+        raise CrewError(f"unknown dispatch route {route!r}")
+    if route == "picker" and picker_selection is None:
+        raise CrewError("picker route has no selection")
+    if route == "picker" and picker_selection is not None:
+        action = str(picker_selection.get("action") or "")
+        if action == "hold":
+            raise BudgetHold(
+                {
+                    "held": True,
+                    "reason": _picker_refusal_reasons(picker_selection),
+                    "picker_selection": dict(picker_selection),
+                }
+            )
+        if action == "refuse" or (
+            action == "route" and not picker_selection.get("backend")
+        ):
+            raise CrewError(
+                "picker refused dispatch: " + _picker_refusal_reasons(picker_selection)
+            )
+        if action == "route":
+            requested_backend = str(picker_selection["backend"])
+        elif action == "fallback":
+            requested_backend = str(config.get("default_backend") or "")
+        else:
+            raise CrewError(f"picker returned unknown action {action!r}")
     # The configured local lane, named here so a ``--local`` dispatch has one
     # concrete backend to agree or disagree with. The CLI has already merged it
     # into ``default_backend``, so this is the same value role routing would
@@ -4558,6 +4656,7 @@ def plan_dispatch(
         lane_allowance=lane_allowance,
         lane_advisory=lane_advisory,
         open_endedness=open_endedness,
+        picker_selection=(None if picker_selection is None else dict(picker_selection)),
     )
     if verdict.ok and repo is not None:
         resolution.competence = _competence_verdict(
@@ -5350,6 +5449,8 @@ def dispatch(
     repairs: str = "",
     accept_directory_claim: bool = False,
     no_fence_reason: str = "",
+    route: str = "shadow",
+    comment: str = "",
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -5411,6 +5512,14 @@ def dispatch(
     # asked for rather than carrying the held backend's defaults forward.
     caller_time_budget = node.time_budget
     caller_write_paths = list(node.write_paths)
+    picker_selection = dispatch_picker_selection(
+        node=node,
+        config=config,
+        project=project,
+        repo=repo_root,
+        session=session,
+        comment=comment,
+    )
     resolution = plan_dispatch(
         node=node,
         config=config,
@@ -5428,6 +5537,8 @@ def dispatch(
         allow_unreviewed_plan=unreviewed_plan_override,
         repairs=repairs,
         session=session,
+        route=route,
+        picker_selection=picker_selection,
     )
     if not resolution.validation.ok:
         raise CrewError(
@@ -5505,17 +5616,49 @@ def dispatch(
         # Before the worktree, not after: a hold that had already cut a worktree
         # would leave write scope claimed by a node nobody is running.
         requested_backend_name = resolution.backend
+        budget_config = config
+        if route == "picker":
+            budget_config = {
+                **config,
+                "budget": {
+                    **(config.get("budget") or {}),
+                    "resume_reserve_pct": 0,
+                    "coordinator_reserve_pct": 0,
+                },
+            }
         verdict = _budget_verdict(
             project=project,
             root=ledger_root,
-            config=config,
+            config=budget_config,
             backend_name=resolution.backend,
             backend=resolution.backend_settings,
             purpose="dispatch",
             budget_state=budget_state,
         )
+        if route == "picker":
+            state = verdict.get("state") or {}
+            from reckon import budget as budget_module
+
+            ceiling = float(budget_module.policy(config)["utilisation_ceiling_pct"])
+            utilisation = state.get("utilisation_pct")
+            if (
+                state.get("headroom") == "known"
+                and isinstance(utilisation, (int, float))
+                and utilisation >= ceiling
+            ):
+                verdict = {
+                    **verdict,
+                    "held": True,
+                    "reason": (
+                        f"backend {resolution.backend!r} is at {utilisation:g}% "
+                        f"utilisation, at or above the provider's {ceiling:g}% "
+                        "hard ceiling"
+                    ),
+                }
         budget_warnings.extend(verdict.get("warnings") or ())
         if verdict["held"]:
+            if route == "picker":
+                raise _actionable_budget_hold(verdict, config=budget_config)
             substitute = resolve_budget_fallback(
                 config,
                 node.role,
@@ -5553,6 +5696,8 @@ def dispatch(
                 ),
                 allow_unreviewed_plan=unreviewed_plan_override,
                 session=session,
+                route=route,
+                picker_selection=picker_selection,
             )
             resolution.requested_backend = requested_backend
             if not resolution.validation.ok:
@@ -5652,7 +5797,7 @@ def dispatch(
         root=ledger_root,
         hold=None if budget_fallback is None else budget_fallback["hold"],
     )
-    if check_budget:
+    if check_budget and route != "picker":
         _refuse_against_the_bookend_reserve(
             config=config, role=node.role, pace_record=pace_record
         )
@@ -6101,6 +6246,7 @@ def dispatch(
             "dialect": None,
             "budget": _backends.unknown_budget("no events yet"),
             "budget_fallback": budget_fallback,
+            "picker_selection": picker_selection,
             "pace": pace_record,
             "warnings": [
                 *resolution.warnings,

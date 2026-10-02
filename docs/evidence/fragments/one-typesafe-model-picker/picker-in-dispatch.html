@@ -1,0 +1,15 @@
+<article class="r-evidence" data-plan="one-typesafe-model-picker" data-node="picker-in-dispatch">
+  <h3>Dispatch selection and route evidence</h3>
+  <p>A dry run of <code>reckon crew dispatch --route picker</code> for the real
+  <code>picker-in-dispatch</code> node printed this selection:</p>
+  <pre>"picker_selection": {"action": "fallback", "backend": null,
+"fallback_reason": "TypeError: pick() got an unexpected keyword argument 'cached_only'",
+"jev_model": "typesafe/jev-1.13", "latency_ms": 96.897}</pre>
+  <p>The quoted selection came from the live plan and flight configuration in
+  <code>real-picker-selection.log</code>. It shows the bounded fallback while the
+  concurrent picker change has not reached this worktree. The first command
+  exited 2 on an unrelated node-contract wording check. After correcting that
+  wording, scope validation attempted a recovery lock in the registered
+  checkout and was refused by this worker's read-only fence. A successful real
+  dry run remains to be measured after integration.</p>
+</article>

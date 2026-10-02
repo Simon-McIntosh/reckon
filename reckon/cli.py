@@ -1302,6 +1302,13 @@ def crew_preflight(
     help="Backend name resolved through flight config.",
 )
 @click.option(
+    "--route",
+    type=click.Choice(["picker"]),
+    default=None,
+    help="Use the picker's backend selection for this dispatch.",
+)
+@click.option("--comment", default="", help="Context passed verbatim to the picker.")
+@click.option(
     "--spec-level",
     type=click.Choice(["exact", "guided", "open"]),
     default=None,
@@ -1467,6 +1474,8 @@ def crew_dispatch(
     section,
     role,
     backend,
+    route,
+    comment,
     spec_level,
     negative_control,
     node_id,
@@ -1517,6 +1526,10 @@ def crew_dispatch(
             "--brief and --section are mutually exclusive; a brief names no "
             "committed plan section"
         )
+    if route == "picker" and (backend or local):
+        raise click.UsageError(
+            "--route picker cannot be combined with --backend or --local"
+        )
 
     config = _dispatch_resolved_flight(flight_module, project, checkout_path, overrides)
     flight_backend_override = _flight_default_backend_override(
@@ -1556,8 +1569,10 @@ def crew_dispatch(
         peer_scopes=_peer_scopes(peers),
     )
 
-    availability_refusal = _model_availability_refusal(
-        crew_module, flight_module, config, node
+    availability_refusal = (
+        None
+        if route == "picker"
+        else _model_availability_refusal(crew_module, flight_module, config, node)
     )
     if availability_refusal is not None:
         from reckon.crew.refusals import format_refusal
@@ -1575,6 +1590,19 @@ def crew_dispatch(
 
     if dry_run:
         try:
+            from reckon.crew.dispatch import (
+                dispatch_picker_selection,
+                resolve_project_repository,
+            )
+
+            picker_selection = dispatch_picker_selection(
+                node=node,
+                config=config,
+                project=project,
+                repo=resolve_project_repository(project, repo),
+                session=session,
+                comment=comment,
+            )
             resolution = crew_module.plan_dispatch(
                 node=node,
                 config=config,
@@ -1595,7 +1623,21 @@ def crew_dispatch(
                 watch_override=no_watch,
                 repairs=repairs,
                 accept_directory_claim=accept_directory_claim,
+                route=route or "shadow",
+                picker_selection=picker_selection,
             )
+        except crew_module.BudgetHold as exc:
+            _emit(
+                {
+                    "ok": False,
+                    "dry_run": True,
+                    "error": "budget-hold",
+                    "detail": str(exc),
+                    "hold": exc.verdict,
+                },
+                pretty,
+            )
+            raise click.exceptions.Exit(3) from exc
         except crew_module.PlanVisibilityError as exc:
             _emit(
                 {"ok": False, "error": "plan-unavailable", "detail": str(exc)},
@@ -1730,6 +1772,8 @@ def crew_dispatch(
             repairs=repairs,
             accept_directory_claim=accept_directory_claim,
             no_fence_reason=no_fence_reason,
+            route=route or "shadow",
+            comment=comment,
         )
     except crew_module.PlanVisibilityError as exc:
         _emit(
