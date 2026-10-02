@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="196">
+<meta name="plan-version" content="197">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1654,6 +1654,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261002T001203961905-suite-worker-digests-are-current" data-who="reckon-build" data-when="2026-10-02T00:28:10.634Z">
     <div class="r-comment-body"><p>Regenerated the four committed role digests under reckon/crew/digests/ from the canonical policy ~/.agents/AGENTS.md with the repository's own generator `python -m reckon.crew.worker_digest` (never hand-edited), making a stale generated artifact current; the five canonical doc edits since the last generation were dotfiles agents/AGENTS.md 5969d4f, b3c87d2, fffaaaa, 758c41f, 232d07d (base canonical 56607d2). Both named ids pass at head: tests/test_worker_digest.py 22 passed, exit 0, zero added failures against the base arm (2 failed, 20 passed, exit 1).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20261002T013000Z-s2-integrated-measure" data-who="s21-fin" data-when="2026-10-02T01:30:00Z">
+    <div class="r-comment-body">Integrated measurement at b5dbaaa2 (node suite-at-integrated-head, run r-20261002T005154949318, report ~/.config/reckon/crew/reports/reckon/suite-integrated.md). Under -n 8 on the fleet node: 10 failed, 9815 passed, 76 skipped, 0 errors, in 1360.89 s. All 10 reproduce serially, so none is load-only, and the node-manifests leak no longer reproduces. 41 of the 43 deterministic ids measured at 6a3fab27 are fixed. Two remain, both named owners: the departure word, which is a-crew-process-ends-with-its-owner §10 and is blocked on runs.py, and tests/test_crew_obligations.py, owned by s22-coord's obligations plan. Eight are new. Six came from 8259af866 (the worker-record host gate, whose fixtures carry a foreign or unnamed launcher_host) and go to node worker-liveness-fixtures-follow-the-host-gate. Two came from 5bd8460fb (the classification memo in the run directory: a read creates the run directory) and go to node a-classification-read-creates-no-run-directory. §3's bounded-run row reads 1361 s under -n 8, which meets the time bound and not yet the zero-failure clause.</div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
