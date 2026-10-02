@@ -155,6 +155,7 @@ RECORD_FIELDS = (
     # promoted. Always present so a reader can tell an accepted row is
     # distinguishable from one whose value was never written.
     "promoted_by",
+    "picker_selection",
     "unreconciled_override",
     # A brief run's authority in place of a plan section: the digest and stored
     # path of the brief it read, the plan an unplanned implement landing changed,
@@ -1564,6 +1565,18 @@ def promoted_pace_row(run_id: str) -> dict[str, Any] | None:
     return dict(pace)
 
 
+def promoted_picker_selection(run_id: str) -> dict[str, Any] | None:
+    """Read the dispatch-time picker answer before promotion removes its pointer."""
+    from reckon.crew import runs
+
+    try:
+        pointer = runs.read_pointer(run_id)
+    except runs.CrewError:
+        return None
+    selection = pointer.get("picker_selection")
+    return dict(selection) if isinstance(selection, Mapping) else None
+
+
 def is_unmetered_backend(backend: str) -> bool:
     """Whether a named backend has no metered per-token price."""
     return str(backend or "").strip() in UNMETERED_BACKENDS
@@ -1788,6 +1801,7 @@ def build_record(
         # two never read alike. Present on every row, like the other declared
         # fields, so a reader can tell an absent value from one never written.
         "promoted_by": str(promoted_by).strip() or None,
+        "picker_selection": promoted_picker_selection(run_id),
     }
     # Both of these are absent from a record that has nothing to say about them,
     # which is why they are set after the literal rather than in it. The rate a
