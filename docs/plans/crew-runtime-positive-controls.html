@@ -21,13 +21,13 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="crew-observability-truth">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;implementable&quot;}">
   <title>Crew runtime positive controls | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="168">
+<meta name="plan-version" content="169">
 </head>
 <body>
   <main class="plan-doc">
@@ -1141,6 +1141,10 @@
 <h2 id="s21">§21 — An unresolvable declared commit is reported, or its silence is explained</h2>
 <section data-reckon="section" data-id="s21" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
 <p>From the review of control-gate-repairs (score 88). Promotion now refuses an unresolvable presented commit by value. An unresolvable value in the manifest's declared commits, beside presented commits that do resolve, is still dropped from the shortfall comparison without a word. Two existing tests pin that silence: <code>tests/test_a_short_commit_list_is_reported.py</code> near line 209 (a declared first commit plus a 40-character sha that resolves to nothing, with the first commit presented, asserts None) and <code>test_a_declared_revision_that_does_not_resolve_is_not_named_missing</code>. Which behaviour is right is the decision <code>unresolvable-declared-sha</code>, and this section waits on it.</p><p><strong>Done when</strong> the case is first shown to still reproduce at main. Then, under the choice made, either an unresolvable declared sha is reported the way a presented one is, and the two pinning tests change with the reason stated, or it stays silent, with the reason it differs from the presented case written beside the pinning tests. The negative control for the report branch restores the silent drop, and the new report case must then fail.</p>
+
+<h2 id="s22">§22 — check-manifest verifies that every named commit resolves</h2>
+<section data-reckon="section" data-id="s22" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>Reported on 2026-10-02 by nova's S21 coordinator. A worker manifest cited a commit sha that resolves to no object: 4f1bfbddae5b…, where the real commit is 4f1bfbdda3737…, in r-20261001T191426544316-replan-currency-depth-b. Promotion now refuses an unresolvable presented commit, but <code>check-manifest</code>, the check a worker runs on itself before it ends its turn, does not look. A fabricated sha therefore survives to the coordinator. This is the earlier, cheaper half of what §21 settles at promotion, and it does not wait on that section's decision.</p><p><strong>Done when</strong> <code>check-manifest</code> reports each <code>commits</code> entry that does not resolve in the run's repository, naming the value. A test gives one manifest a resolvable sha and a 40-character sha that resolves to nothing, and asserts that exactly the second is reported. The negative control removes the resolution check, and the unresolvable case then passes silently.</p>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>

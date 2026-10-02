@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 </head>
 <body>
   <main class="plan-doc">
@@ -202,6 +202,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-wisnaf-s2-landed" data-who="" data-when="">
     <div class="r-comment-body"><p>§2 landed. a-followup-that-hides-work-is-found was merged at 8ce9b4ca4 and promoted. <code>reckon/followup_pointers.py</code> classifies an open followup as a pointer or as hiding work, with a fixed reason word. The roadmap reports each followup that hides work as the warn finding <code>followup-hides-work</code>, on every plan it inventories and on the MCP summary path. Over reckon's plans at the time, 68 of 115 open followups hide work, against §1's heuristic count of 102 of 129. The fixtures in tests/test_roadmap.py now point their followups at another plan, so those tests keep their own subject, and the frozen summary snapshot was rebuilt from the fixture. The head arm passes 449 tests, and the review scored 86.</p><p>§3 (the write-time refusal) and §4 (migration) are next. §4 now reads its worklist from the finding, not from §1's heuristic.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-wisnaf-s3-authority-steps-are-decisions" data-who="" data-when="">
+    <div class="r-comment-body"><p>From nova's S21 coordinator, 2026-10-02. A followup's prompt must be a /reckon-build line, so an authority-required next step, such as a dissent adjudication or a lead decision, cannot recommend /reckon-edit. On this plan's model that step is a decision, not a followup. An open decision is an element the roadmap reads: it reports it in <code>decision_blockers</code> and holds the sections it names. A followup recommending /reckon-edit would be invisible in the same way work is. §2's predicate therefore rightly calls such a followup hiding work. §3's refusal names two remedies: add the work as a section, or record the authority step as an open decision (<code>{"op":"append","target":"decisions","key":…}</code>, scoped to its sections). If the running §3 node lands without the decision remedy, it is added at merge.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261001T194951171857-a-followup-that-hides-work-is-found" data-who="reckon-build" data-when="2026-10-01T21:51:26.927Z">
     <div class="r-comment-body"><p>section 2 landed in 0545d84952bc6a3680d3c922d001a75b6e9951fe; 68 of 115 real open followups hide work, beside section 1 record of 102 of 129</p></div>
