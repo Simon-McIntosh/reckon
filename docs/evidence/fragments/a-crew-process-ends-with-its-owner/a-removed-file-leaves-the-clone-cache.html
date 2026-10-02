@@ -26,26 +26,28 @@
         <li>The ordinal is derived from the entries themselves (<code>_current_scan</code> is one greater than the highest <code>seen</code>), so it survives the in-memory cache being cleared and the store re-read &mdash; no separate versioned field in the document. Successive scans advance it even when every file is a cache hit.</li>
         <li><code>_STALE_PATH_SCANS = 5</code>, in scans rather than seconds so it is exercised without sleeping: large enough that a partial scan between two full scans never ages a still-present path out, small enough that a departed path is reclaimed within a few scans.</li>
         <li>The reading is unchanged: the freshness filter bounds only the prune cap, never the fingerprint index, so the matches a warm scan reports equal a cold scan's.</li>
+        <li>The cache is per repository: <code>_corpus_directory</code> places it in a subdirectory of the configured base keyed by a digest of the resolved git common directory. Every repository promoting on a host previously shared one <code>corpus.json</code> and one ordinal, so a project quiet while others promoted had every path aged out and paid the cold parse again; separate caches also separate the caps. Worktrees of one repository share the common directory and so share one cache; <code>RECKON_CLONE_CACHE</code> and an explicit <code>cache_root</code> remain the base.</li>
       </ul>
     </section>
 
     <section id="the-gate">
       <h2>The gate</h2>
-      <p><code>tests/test_a_removed_file_leaves_the_clone_cache.py</code> scans a five-file corpus, removes one file, runs <code>_STALE_PATH_SCANS + 1</code> scans of the remaining four, and asserts the removed path's entry is gone while the entry count equals the current corpus. A second case keeps the partial-scan guarantee: a full scan, a one-file scan, and a full scan again re-parse nothing.</p>
+      <p><code>tests/test_a_removed_file_leaves_the_clone_cache.py</code> scans a five-file corpus, removes one file, runs <code>_STALE_PATH_SCANS + 1</code> scans of the remaining four, and asserts the removed path's entry is gone while the entry count equals the current corpus. A second case keeps the partial-scan guarantee: a full scan, a one-file scan, and a full scan again re-parse nothing. A third scans repository A once, scans repository B past the span, then scans A again and asserts A re-parses nothing; a fourth asserts a worktree and its main checkout resolve to one repository key.</p>
       <table>
         <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
         <tbody>
           <tr><td>Base at <code>5c7f69358</code>, the five named clone suites</td><td>21 passed, <code>EXIT=0</code>; base failing ids &mdash; none</td><td><code>logs/base-arm.log</code></td></tr>
-          <tr><td>This tree at <code>fa76fa3b7</code>, the same five suites</td><td>21 passed, <code>EXIT=0</code>; zero added failures</td><td><code>logs/head-arm.log</code></td></tr>
-          <tr><td>New node test at head</td><td>2 passed, <code>EXIT=0</code></td><td><code>logs/new-test.log</code></td></tr>
+          <tr><td>This tree at <code>f497c5eb9</code>, the same five suites</td><td>21 passed, <code>EXIT=0</code>; zero added failures</td><td><code>logs/head-arm.log</code></td></tr>
+          <tr><td>Focused gate at head: the node test and the five suites</td><td>25 passed, <code>EXIT=0</code></td><td><code>logs/gate.log</code></td></tr>
           <tr><td>Declared negative control: count every cached path toward the cap again</td><td>1 failed (<code>test_a_removed_file_leaves_no_cache_entry</code>), <code>EXIT=1</code>; the removed path's entry survives</td><td><code>logs/negative-control.log</code></td></tr>
+          <tr><td>Second negative control: share one cache again</td><td>1 failed (<code>test_one_repository_scan_does_not_age_another</code>), <code>EXIT=1</code>; A's five paths are re-parsed</td><td><code>logs/negative-control-shared-cache.log</code></td></tr>
         </tbody>
       </table>
     </section>
 
     <section id="negative-control">
       <h2>The declared negative control</h2>
-      <p>The mutation restores the pre-change cap &mdash; every cached path counted, stale ones included &mdash; and the removed-file case fails with the removed path still held beside the four live ones, which is the defect the node exists to prevent. The three other suites plus the partial-scan case pass in both arms.</p>
+      <p>The first mutation restores the pre-change cap &mdash; every cached path counted, stale ones included &mdash; and the removed-file case fails with the removed path still held beside the four live ones. The second mutation makes both repositories share one cache again, and repository A's second scan then re-parses all five of its paths: the cross-repository aging the per-repository cache exists to prevent.</p>
     </section>
   </main>
 </body>
