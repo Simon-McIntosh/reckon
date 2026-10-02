@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-fleet-supervisor-runs-declared-services">
   <meta name="plan-title" content="The Fleet Supervisor Runs Declared Services">
   <meta name="plan-summary" content="The fleet allocation&#x27;s supervisor starts, keeps alive and reloads standing services a user config declares, generalising the health sampler.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="mid">
   <meta name="plan-effort-hours" content="2.0">
   <meta name="plan-capability-version" content="1.0">
@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;}">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 </head>
 <body>
   <main class="plan-doc">
@@ -92,6 +92,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-tfsrds-s1-landed" data-who="" data-when="">
     <div class="r-comment-body"><p>§1 landed. fleet-supervisor-runs-declared-services was merged at 971ef8450 and promoted. The fleet supervisor reads <code>fleet/services.json</code> from the configuration home and runs each declared service as an own-session child of the batch step, under a per-service lock in the runtime directory. An exited service restarts with backoff from 5 s, doubling to a 300 s cap and resetting after 600 s of steady running, and never on a liveness timeout. stdout and stderr append to a size-bounded log under the state directory. A reload starts newly declared services and stops removed ones by their recorded pid. The gate passed 59 tests at head against 52 at base, with none added, and the review scored 94. The consuming project's coordinator verified the module in a scratch tree and schedules the first live start, ambix-ingest, through a supervisor reload at about 08:15Z on 2026-10-02. The plan ships once that start is reported healthy.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-tfsrds-first-live-start" data-who="" data-when="">
+    <div class="r-comment-body"><p>First live start, 2026-10-02 at about 08:15Z. The consuming project's coordinator reloaded the fleet supervisor of job 1277272. The batch process re-executed as <code>python -m reckon.crew.fleet_supervisor</code> (pid 3505774) and started the declared service ambix-ingest (pid 1739949, 60 s cadence) as its child. All 18 worker steps that existed before the reload (1277272.731 to .788) kept running, and none ended. s22-coord confirmed independently that the service's parent is the supervisor. The service's log at <code>~/.local/state/fleet/services/ambix-ingest.log</code> is empty only because that ingest loop prints nothing on a tick, which the consuming project is fixing on its side. The service is healthy by its index: 1.80 GB to 1.88 GB between 08:17:04Z and 08:18:53Z, through a cold catch-up of about 550 MB. Landed record: <code>docs/evidence/archive/the-fleet-supervisor-runs-declared-services-landed.html</code>.</p></div>
 </div>
 </section>
 </main>
