@@ -179,6 +179,16 @@ def candidates(
     group_by_backend = {
         member: group for group in view["groups"] for member in group["members"]
     }
+    # A review never runs on a backend the flight configuration withdraws from
+    # review routing, so the candidate is removed here rather than offered for
+    # Jev to weigh: an exclusion is a rule about what cannot run, not a
+    # pressure signal. Read through the recovery helper so the key name and its
+    # parsing have one source of truth.
+    review_excluded: set[str] = set()
+    if request.node.role == "review":
+        from reckon.crew import recovery
+
+        review_excluded = recovery._review_excluded_backends(config)
     result = []
     for name in config.get("backends", {}):
         local = name == config.get("local_backend")
@@ -191,6 +201,8 @@ def candidates(
         )
         model = backend.get("model")
         reasons = []
+        if name in review_excluded:
+            reasons.append("review-excluded-backend")
         verdict = budget_by_backend.get(name) or {
             "held": False,
             "state": budget.BudgetState(name).as_dict(),

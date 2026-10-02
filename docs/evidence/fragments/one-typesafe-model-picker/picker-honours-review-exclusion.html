@@ -1,0 +1,29 @@
+<article class="r-evidence" data-plan="one-typesafe-model-picker" data-node="picker-honours-review-exclusion">
+  <h3>picker-honours-review-exclusion — a review is never offered a backend review routing excludes</h3>
+  <p>
+    <strong>What changed.</strong>
+    <code>reckon/crew/picker/snapshot.py</code> now reads the resolved
+    <code>review_excluded_backends</code> flight key through
+    <code>recovery._review_excluded_backends</code> when the request's node role
+    is <code>review</code>, and gives every named backend the exclusion reason
+    <code>review-excluded-backend</code> before any competence, probe or budget
+    check. Such a candidate is filtered out rather than handed to Jev, because
+    an exclusion is a rule about what cannot run, not a pressure signal.
+  </p>
+  <p>
+    <strong>Measure.</strong> The new test in
+    <code>tests/test_picker_pressure.py</code> builds a review node over
+    <code>clive</code>, <code>codex</code> and <code>codex-astra</code> with
+    <code>review_excluded_backends: [codex, codex-astra]</code>: Jev is offered
+    exactly <code>{clive, hold}</code> and the two codex backends are excluded
+    with reason <code>review-excluded-backend</code>. The test fails at the base
+    revision and passes at head.
+  </p>
+  <p>
+    <strong>Gate.</strong> Every <code>tests/test_picker*.py</code> file at base
+    <code>5b5a14a12</code> (2 failed, 82 passed) and at head (1 failed, 83
+    passed): zero added failure ids. The one remaining failure,
+    <code>test_picker_return_time.py::test_lane_document_is_read</code>, is red
+    at base and head alike and lies outside this node's scope.
+  </p>
+</article>
