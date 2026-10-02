@@ -41,10 +41,12 @@ DEFINITIONS = (*FUNCTIONS, ast.ClassDef)
 # is keyed by the file's path and content digest, so a file whose bytes change
 # misses and is parsed again; an entry a newer shape of this module would not
 # write is discarded rather than read as current. Each entry records when it was
-# last used. Because every content a file ever had keeps its entry, and several
-# worktrees at different revisions share one cache root, the cache is pruned to
-# the least recently used once it exceeds a cap derived from the number of
-# corpus files it knows about (see ``_cap_for``).
+# last used. Because every content a file ever had keeps its entry, and every
+# worktree of a repository shares one cache, the cache is pruned to the least
+# recently used once it exceeds a cap derived from the number of corpus files it
+# knows about (see ``_cap_for``). Each repository gets its own cache under the
+# configured base, keyed by its git common directory, so one repository's scans
+# never age another's paths (see ``_corpus_directory``).
 #
 # The cap counts a cached path only while a recent scan read it: an entry also
 # records the scan ordinal at which its path was last part of a scan's corpus,
@@ -270,9 +272,11 @@ def _entry_path(entry: Any) -> str | None:
 def _seen_at(entry: Any) -> int:
     """The scan ordinal at which ``entry``'s path was last part of a scan.
 
-    Zero when the entry records none, which sorts it oldest. Entries written
-    before this module counted scans read as never seen and so age out on the
-    first prune.
+    Zero when the entry records none, which sorts it oldest. An entry written
+    before this module counted scans reads as never seen and is still counted
+    toward the cap until the ordinal reaches ``_STALE_PATH_SCANS``, at which
+    point it ages out like any path no scan has read, rather than being dropped
+    at the first prune.
     """
     if isinstance(entry, Mapping):
         seen = entry.get("seen")
@@ -383,11 +387,14 @@ def _cached_functions(
 
 
 def _cache_root(cache_root: str | Path | None = None) -> Path:
-    """The directory the corpus fingerprint cache lives under.
+    """The base directory the corpus fingerprint caches live under.
 
     Outside every repository, so a cache write never dirties a checkout. A
     caller that isolated its configuration through ``RECKON_HOME`` also isolated
-    its cache. ``RECKON_CLONE_CACHE`` names the location outright when set.
+    its cache. ``RECKON_CLONE_CACHE`` names the location outright when set. Each
+    repository's cache is a subdirectory of this base (see
+    ``_corpus_directory``), so two repositories promoting on one host do not
+    share a cache or an ordinal.
     """
     if cache_root is not None:
         return Path(cache_root)
@@ -401,6 +408,45 @@ def _cache_root(cache_root: str | Path | None = None) -> Path:
     if reckon_home:
         return Path(reckon_home) / "cache" / "clones"
     return Path.home() / ".cache" / "reckon" / "clones"
+
+
+def _repository_key(repo: str | Path) -> str:
+    """A stable identity for the repository ``repo`` belongs to.
+
+    Every worktree of one repository resolves its git common directory to the
+    same path, so keying on it gives one worktree family one cache while two
+    unrelated repositories get two. A caller whose repository is not a git tree
+    falls back to the path itself, which still separates it from every other
+    repository rather than sharing one global cache. The identity is hashed to a
+    fixed-length name usable as a directory component.
+    """
+    tree = Path(repo)
+    identity = tree
+    common = _git(tree, "rev-parse", "--git-common-dir")
+    if common.returncode == 0:
+        text = common.stdout.decode(errors="replace").strip()
+        if text:
+            candidate = Path(text)
+            if not candidate.is_absolute():
+                candidate = tree / candidate
+            identity = candidate
+    try:
+        resolved = identity.resolve()
+    except OSError:
+        resolved = identity
+    return _digest(str(resolved))
+
+
+def _corpus_directory(base: Path, repo: str | Path | None) -> Path:
+    """The directory ``repo``'s corpus cache lives in, under ``base``.
+
+    A named repository gets its own subdirectory, so one repository's scans and
+    their ordinals never age another's paths and two corpora never share a cap.
+    Without a named repository the cache lives directly under ``base``.
+    """
+    if repo is None:
+        return base
+    return base / _repository_key(repo)
 
 
 def _load_corpus_cache(root: Path) -> dict[str, Any]:
@@ -474,6 +520,7 @@ def clone_matches(
     base_sources: Mapping[str, str] | None = None,
     corpus_prefixes: Iterable[str] = ("reckon/", "tests/"),
     cache_root: str | Path | None = None,
+    repo: str | Path | None = None,
 ) -> list[dict[str, Any]]:
     """Report changed functions whose windows duplicate another function.
 
@@ -499,12 +546,18 @@ def clone_matches(
     is evicted rather than pinning the cap open for ever. That bound is what
     keeps ``corpus.json`` from growing with every revision or departed path that
     shares the cache root.
+
+    The cache is per repository: ``repo`` names the tree the sources come from,
+    and every worktree of one repository resolves to one cache, so a scan in
+    another repository never advances this one's ordinal and never ages its
+    paths out. Without ``repo`` the cache is shared, which suits callers that
+    already isolate it; a promotion passes its tree.
     """
     prefixes = tuple(corpus_prefixes)
     base_sources = dict(base_sources or {})
     changed = frozenset(changed_paths)
-    root = _cache_root(cache_root)
-    cache = _shared_cache(root)
+    directory = _corpus_directory(_cache_root(cache_root), repo)
+    cache = _shared_cache(directory)
     now = time.time()
     scan = _current_scan(cache)
     corpus_paths = [
@@ -545,7 +598,7 @@ def clone_matches(
             # The cache is a speed-up, not a dependency: a directory that
             # cannot be written leaves the scan reading every file, which still
             # reports the same matches.
-            _store_corpus_cache(root, cache)
+            _store_corpus_cache(directory, cache)
     corpus = [f for f in head_functions if f.path.startswith(prefixes)]
     index = _index(corpus)
     changed_names = _changed_base_names(base_sources, changed_paths)
@@ -653,6 +706,7 @@ def promotion_clone_matches(
             head,
             changed_paths=changed,
             base_sources=base,
+            repo=tree,
         )
     except (OSError, ValueError):
         return None

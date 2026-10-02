@@ -17,6 +17,7 @@ does not evict the warm entries the next full scan would reuse.
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -106,6 +107,29 @@ def _held_paths(stored: dict[str, object]) -> set[str]:
     }
 
 
+def _count_parses(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    parsed: list[str] = []
+    real = clones.functions_in
+
+    def counting(source: str, path: str):
+        parsed.append(path)
+        return real(source, path)
+
+    monkeypatch.setattr(clones, "functions_in", counting)
+    return parsed
+
+
+def _repo_corpus(tag: str) -> dict[str, str]:
+    """A five-file corpus whose paths are distinct per repository ``tag``."""
+    head = {
+        f"reckon/{tag}_original.py": ORIGINAL,
+        f"reckon/{tag}_copy.py": COPY,
+    }
+    for index in range(FILLER_COUNT):
+        head[f"reckon/{tag}_helper_{index}.py"] = _filler(index)
+    return head
+
+
 def test_a_removed_file_leaves_no_cache_entry(cache_root: Path) -> None:
     """A file scanned once and then removed from the corpus must not survive in
     the cache past the staleness span: its entry is evicted and the cache holds
@@ -137,13 +161,59 @@ def test_the_partial_scan_still_re_parses_nothing(
     clones.clone_matches(_full_corpus(), changed_paths=[], base_sources={})
     clones.clone_matches({ORIGINAL_PATH: ORIGINAL}, changed_paths=[], base_sources={})
 
-    parsed: list[str] = []
-    real = clones.functions_in
-
-    def counting(source: str, path: str):
-        parsed.append(path)
-        return real(source, path)
-
-    monkeypatch.setattr(clones, "functions_in", counting)
+    parsed = _count_parses(monkeypatch)
     clones.clone_matches(_full_corpus(), changed_paths=[], base_sources={})
     assert parsed == [], f"the warm corpus must not be re-parsed, parsed: {parsed}"
+
+
+def test_one_repository_scan_does_not_age_another(
+    cache_root: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Two repositories scanned alternately must not share an ordinal: B's many
+    scans, which age B's own stale paths out, must not touch A's, so A's second
+    scan re-parses nothing."""
+    repo_a = tmp_path / "repo-a"
+    repo_b = tmp_path / "repo-b"
+    repo_a.mkdir()
+    repo_b.mkdir()
+    corpus_a = _repo_corpus("a")
+    corpus_b = _repo_corpus("b")
+
+    clones.clone_matches(corpus_a, changed_paths=[], base_sources={}, repo=repo_a)
+    for _ in range(clones._STALE_PATH_SCANS + 1):
+        clones.clone_matches(corpus_b, changed_paths=[], base_sources={}, repo=repo_b)
+
+    parsed = _count_parses(monkeypatch)
+    clones.clone_matches(corpus_a, changed_paths=[], base_sources={}, repo=repo_a)
+    assert parsed == [], (
+        "repository A's warm corpus must not be re-parsed after B's scans; "
+        f"parsed: {parsed}"
+    )
+
+
+def test_worktrees_of_one_repository_share_one_cache(tmp_path: Path) -> None:
+    """A worktree and its main checkout resolve to the same repository identity,
+    so a scan in one keeps the other's cache warm."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    worktree = tmp_path / "worktree"
+
+    def run(*args: str, cwd: Path = repo) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["git", *args], cwd=cwd, capture_output=True, text=True, check=False
+        )
+
+    if run("init", "-q").returncode:
+        pytest.skip("git is unavailable, so a repository identity cannot be resolved")
+    run("config", "user.email", "t@example.invalid")
+    run("config", "user.name", "test")
+    (repo / "a.py").write_text("x = 1\n")
+    run("add", "a.py")
+    if run("commit", "-qm", "init").returncode:
+        pytest.skip("git cannot commit, so a worktree cannot be added")
+    if run("worktree", "add", "-q", str(worktree)).returncode:
+        pytest.skip("git cannot add a worktree")
+
+    assert clones._repository_key(repo) == clones._repository_key(worktree), (
+        "a worktree and its main checkout must resolve to one repository key"
+    )
