@@ -19,6 +19,7 @@ from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
 from reckon import review_tiers
 from reckon._timestamps import parse_utc
+from reckon.capabilities import _charged_input_from_usage
 from reckon.crew import lane_document as _lane_document
 from reckon.crew import metering, quota_weight, runs
 from reckon.crew import repair as repair_module
@@ -5018,6 +5019,130 @@ def newest_stream(
         return newest, newest.stat().st_mtime
     except OSError:
         return None
+
+
+def _request_input_tokens(event: Mapping[str, Any]) -> int | None:
+    """The charged input one stream record reports for a single request.
+
+    Only per-request records answer: an ``assistant`` record's own
+    ``message.usage`` on the claude grammar, and the ``turn.completed`` usage
+    on the codex grammar, which is that grammar's only usage record. A claude
+    ``result`` record is deliberately not consulted — its modelUsage is a
+    run-length aggregate of un-cached input, which grows with the run's length
+    rather than describing the context a resumed turn would re-send.
+    """
+    kind = event.get("type")
+    if kind == "assistant":
+        message = event.get("message")
+        usage = message.get("usage") if isinstance(message, Mapping) else None
+    elif kind == "turn.completed":
+        usage = event.get("usage")
+    else:
+        return None
+    charged = _charged_input_from_usage(usage)
+    if isinstance(charged, bool) or not isinstance(charged, (int, float)):
+        return None
+    return int(charged)
+
+
+def _last_recorded_input_tokens(run_id: str, record: Mapping[str, Any]) -> int | None:
+    """The session's last recorded request input, from the run's own streams.
+
+    Streams are read newest write first, and the first stream carrying a
+    per-request figure answers: a resume attempt that died before reaching the
+    model leaves a stream with no usage at all, and it must not blank the count
+    an earlier attempt recorded. None means no stream carried a figure, which
+    refuses nothing — an unmeasured session is not a session known to be too
+    large.
+    """
+    include = [record.get("log_path")] if record.get("log_path") else []
+    for path in stream_paths_newest_first(runs.run_dir(run_id), include=include):
+        measured: int | None = None
+        try:
+            handle = path.open(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        with handle:
+            for line in handle:
+                try:
+                    event = json.loads(line)
+                except (TypeError, ValueError):
+                    continue
+                if not isinstance(event, Mapping):
+                    continue
+                measured_value = _request_input_tokens(event)
+                if measured_value is not None:
+                    measured = measured_value
+        if measured is not None:
+            return measured
+    return None
+
+
+def _lane_input_window(
+    record: Mapping[str, Any],
+    backend: Mapping[str, Any],
+    config: Mapping[str, Any] | None,
+) -> int | None:
+    """The input window the run's lane publishes, or None when it publishes none.
+
+    Two figures narrow the gate, and the smaller wins for the same reason the
+    dispatch-time context-fit check takes the smaller: the declared
+    ``usable_input_window`` is what the lane says its endpoint accepts — already
+    net of the launcher's output reservation, so a count above it plus the
+    reservation exceeds the engine cap — while an ``effective_input_window`` is
+    the lowest input the lane's endpoint is recorded refusing. A lane declaring
+    neither the run record nor the configuration answers None, and an unstated
+    window refuses nothing.
+    """
+    backends = (config or {}).get("backends")
+    name = str(record.get("backend") or "")
+    configured = backends.get(name) if isinstance(backends, Mapping) else None
+    figures: list[int] = []
+    for source in (backend, configured):
+        if not isinstance(source, Mapping):
+            continue
+        for key in ("usable_input_window", "effective_input_window"):
+            value = source.get(key)
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                continue
+            if int(value) > 0:
+                figures.append(int(value))
+    return min(figures) if figures else None
+
+
+def resume_window_refusal(
+    run_id: str,
+    record: Mapping[str, Any],
+    *,
+    backend: Mapping[str, Any],
+    config: Mapping[str, Any] | None = None,
+) -> CrewError | None:
+    """The refusal a resume owes a session the lane's window cannot hold.
+
+    A resumed turn re-sends the session's whole context, so a session that has
+    grown past the lane's input window dies at launch: the endpoint refuses the
+    prompt after the attempt file is already open, and the opened attempt then
+    makes the delivered manifest read stale to promotion. The count is the
+    run's own last recorded request input; the window is the lane's published
+    input window. The gate is consulted before anything is written, so a
+    refused resume leaves no attempt behind and touches neither the run's
+    classification nor its manifest, and the remedy is a fresh repair node,
+    because the session itself cannot be continued on this lane.
+    """
+    window = _lane_input_window(record, backend, config)
+    if window is None:
+        return None
+    count = _last_recorded_input_tokens(run_id, record)
+    if count is None or count <= window:
+        return None
+    lane = str(record.get("backend") or "unknown")
+    return CrewError(
+        f"run {run_id!r} is not resumed: its session last carried {count} input "
+        f"tokens, above backend {lane!r}'s published input window of {window} "
+        "tokens, so the resumed turn would die at the endpoint's context limit "
+        "and leave an open attempt behind. Dispatch a fresh repair node instead "
+        "of resuming this session."
+    )
 
 
 # An engine writes one of these when a turn has run to its own conclusion, so
