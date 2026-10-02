@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="Every signalling path records its sender in the target run">
+  <meta name="plan-summary" content="Every path that signals a run appends a sender record — sender pid, sender argv0, target pid, target pgid, reason, time — into the target run's own directory before the signal, through one shared writer; os.kill and os.killpg live in a single function.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,signal,sender,attribution,recovery">
+  <title>Every signal leaves a sender record — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Every signalling path records its sender in the target run</h1>
+
+    <section id="every-signal-leaves-a-sender-record-changes">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon.crew.routing</code> gains the one shared writer,
+          <code>_write_sender_record(run_dir, target_pid, reason, sig,
+          target_pgid)</code>, and <code>run_directory_of(record)</code>, which
+          resolves a run's directory from its id or its stream path. The record
+          is one JSON line appended to <code>senders.jsonl</code> in that run's
+          directory, carrying
+          <code>{sender_pid, sender_argv0, target_pid, target_pgid, reason,
+          signal, time}</code>. It is written <em>before</em> the signal, so a
+          signal that also ends the sender still leaves the attribution behind;
+          a write that cannot land (a run directory a rollback already removed)
+          never withholds the signal.</li>
+        <li><code>routing.signal_worker</code> is now the only function in the
+          crew that calls <code>os.kill</code> or <code>os.killpg</code>. It
+          takes an optional <code>run_dir</code>/<code>reason</code> and writes
+          the record before delivering; <code>routing._signal_process_group</code>
+          forwards both, so the shared writer is reached from every run-signalling
+          path.</li>
+        <li>The run-signalling paths now name their reason through the writer:
+          <code>recovery._stop_delivered_reviews</code> and
+          <code>recovery._apply_budget_watchdog</code>,
+          <code>dispatch</code>'s rollback, <code>change_lane</code> and
+          <code>terminate</code>, and
+          <code>promotion._end_live_writer_for_settle</code> and the release step.
+          <code>fleet_supervisor</code>'s session-start copy and
+          <code>standing_suite._kill_process_group</code> now signal through
+          <code>signal_worker</code> too; they signal processes that are not
+          runs, so they name no run directory and write no record.</li>
+      </ul>
+    </section>
+
+    <section id="every-signal-leaves-a-sender-record-evidence">
+      <h2>Evidence</h2>
+      <p><strong>Gate</strong> —
+        <code>tests/test_every_signal_leaves_a_sender_record.py</code>: it drives
+        <code>_signal_process_group</code> against a synthesised live run (a real
+        child process plus a run directory under <code>tmp_path</code>) and asserts
+        the record exists and names the caller's reason, that
+        <code>target_pid</code>/<code>target_pgid</code> name the target and
+        <code>sender_pid</code> names the caller; it also shows the record
+        precedes the signal (it is on disk when delivery raises the way a vanished
+        process makes it raise), that a non-run target names no directory and
+        writes nothing, and that <code>run_directory_of</code> resolves from id or
+        log path. <strong>4 passed, EXIT=0</strong>.</p>
+      <p><strong>Grep receipt</strong> (<code>grep-receipt.log</code>): no
+        signal-delivering <code>os.kill</code>/<code>os.killpg</code> exists in
+        <code>reckon/crew/</code> outside <code>routing.py</code>. The only other
+        occurrence is <code>runs.py:3569: os.kill(pid, 0)</code>, a zero-signal
+        existence probe that delivers no signal and writes no record.</p>
+      <p><strong>Arms</strong>, one invocation each over
+        <code>tests/test_worker_signal_reach.py</code> and
+        <code>tests/test_promotion_release.py</code>:</p>
+      <ul>
+        <li><strong>Base</strong>, <code>b5dbaaa2f</code>
+          (<code>git archive</code> extraction in a scratch tree; no worktree, no
+          branch): <strong>10 passed, EXIT=0</strong>.</li>
+        <li><strong>Head</strong>, <code>b5dbaaa2f</code> + working tree:
+          <strong>10 passed, EXIT=0</strong>.</li>
+        <li><strong>Added failures: 0.</strong></li>
+      </ul>
+      <p><strong>Negative control</strong>, executed and logged
+        (<code>negative-control.log</code>): with the sender-record write removed
+        (<code>routing._write_sender_record</code> reduced to a no-op) the record
+        assertions fail — <strong>2 failed, 2 passed, EXIT=1</strong> — on
+        <code>test_signal_process_group_writes_a_sender_record_naming_the_reason</code>
+        and <code>test_signal_worker_writes_the_record_before_delivering</code>,
+        both green at head.</p>
+      <p><strong>Related suites at head, all green:</strong>
+        <code>test_crew_recovery.py</code> (92), <code>test_receipt_after_release.py</code>,
+        <code>test_terminal_run_elapsed.py</code>, <code>test_crew_lane_change.py</code>,
+        <code>test_standing_suite*.py</code>, <code>test_fleet_supervisor.py</code>,
+        <code>test_crew_orphan.py</code>, <code>test_worker_env_export.py</code>,
+        <code>test_dispatch_result_matches_launch.py</code>, and the two
+        touched <code>test_crew.py</code> cases (rollback, budget watchdog).
+        <strong>No new lint findings</strong>: <code>ruff check</code> over the six
+        changed modules is 28 at base and 27 at head with no rule added; the new
+        test file is clean under <code>ruff check</code> and
+        <code>ruff format --check</code>.</p>
+    </section>
+
+    <section id="every-signal-leaves-a-sender-record-landing">
+      <h2>Landing line</h2>
+      <p><code>landing: docs/evidence/fragments/a-crew-process-ends-with-its-owner/every-signal-leaves-a-sender-record.html</code></p>
+    </section>
+  </main>
+</body>
+</html>

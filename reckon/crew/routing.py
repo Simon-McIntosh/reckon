@@ -43,6 +43,7 @@ from reckon.crew.runs import (
     pointer_path,
     read_pointer,
     record_process_alive,
+    run_dir as _run_dir,
     runs_dir,
 )
 
@@ -1359,7 +1360,98 @@ def _remove_worktree(repo: Path, path: str) -> None:
     )
 
 
-def signal_worker(pid: int, sig: int = signal.SIGTERM) -> bool:
+# The run directory's own record of who signalled it. One line per signal,
+# appended rather than rewritten, because a run may be signalled more than once
+# and the order is part of the fact. The name is fixed so a reader — and the
+# attribution scan — looks in one place.
+SENDER_RECORD_NAME = "senders.jsonl"
+
+
+def run_directory_of(record: Mapping[str, Any] | None) -> Path | None:
+    """The directory a run's sender records land in, from its id or its log.
+
+    Returns ``None`` when the record names neither, so a caller that signals
+    something which is not a run (a session-start copy, a standing suite) can
+    still use the shared writer without inventing a location for it.
+    """
+    if not record:
+        return None
+    run_id = str(record.get("run_id") or "")
+    if run_id:
+        return Path(_run_dir(run_id))
+    log_path = str(record.get("log_path") or "")
+    if log_path:
+        return Path(log_path).parent
+    return None
+
+
+def _write_sender_record(
+    run_dir: str | Path | None,
+    *,
+    target_pid: int,
+    reason: str,
+    sig: int | None = None,
+    target_pgid: int | None = None,
+) -> Path | None:
+    """Append one sender record into the target run's directory.
+
+    This is the one writer every signalling path funnels through, so the next
+    unattributed SIGTERM is read from the run's own directory rather than
+    reconstructed from the survivors. The record is written BEFORE the signal
+    is delivered: a signal that ends the sender too must still leave the
+    attribution behind, which a write ordered after the signal cannot promise.
+
+    The target's process group is recorded as well as its pid, because the two
+    answer different questions — a group signal that reached unrelated work is
+    only visible from the group id. A path that cannot be written (a run
+    directory already removed by a rollback) is not raised: the signal is the
+    safety mechanism and the record is the attribution, so a failed write must
+    never withhold the signal. Returns the path written, or ``None``.
+    """
+    if run_dir is None:
+        return None
+    try:
+        pid = int(target_pid)
+    except (TypeError, ValueError):
+        return None
+    if target_pgid is None:
+        try:
+            target_pgid = os.getpgid(pid)
+        except (ProcessLookupError, PermissionError, OSError):
+            target_pgid = None
+    if sig is None:
+        sig = signal.SIGTERM
+    try:
+        signal_name = signal.Signals(sig).name
+    except (ValueError, TypeError):
+        signal_name = str(sig)
+    now = datetime.now(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
+    record = {
+        "sender_pid": os.getpid(),
+        "sender_argv0": sys.argv[0] if sys.argv else "",
+        "target_pid": pid,
+        "target_pgid": int(target_pgid) if target_pgid is not None else None,
+        "reason": str(reason or ""),
+        "signal": signal_name,
+        "time": now,
+    }
+    path = Path(run_dir) / SENDER_RECORD_NAME
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, sort_keys=True) + "\n")
+    except OSError:
+        return None
+    return path
+
+
+def signal_worker(
+    pid: int,
+    sig: int = signal.SIGTERM,
+    *,
+    reason: str = "",
+    run_dir: str | Path | None = None,
+) -> bool:
     """Signal one spawned process, never a group it does not lead.
 
     ``os.killpg`` takes a process GROUP id, and ``killpg(1, ...)`` is
@@ -1376,14 +1468,25 @@ def signal_worker(pid: int, sig: int = signal.SIGTERM) -> bool:
     signal exists for. Otherwise the process alone is signalled and its children
     are left running, because ending one worker is never worth the risk of
     ending everything. Returns whether a signal was delivered.
+
+    This is the only function in the crew that calls ``os.kill`` or
+    ``os.killpg``, so the attribution scan has one home to point at. A caller
+    that names the target's run directory gets a sender record written before
+    the signal goes out; a caller signalling something that is not a run passes
+    no directory and writes nothing.
     """
     try:
         group = os.getpgid(pid)
     except (ProcessLookupError, PermissionError):
         return False
     target_is_own_group_leader = group == pid and group > 1
+    signalled_as_group = target_is_own_group_leader and group != os.getpgid(0)
+    if run_dir is not None:
+        _write_sender_record(
+            run_dir, target_pid=pid, target_pgid=group, reason=reason, sig=sig
+        )
     try:
-        if target_is_own_group_leader and group != os.getpgid(0):
+        if signalled_as_group:
             os.killpg(group, sig)
         else:
             os.kill(pid, sig)
@@ -1392,7 +1495,13 @@ def signal_worker(pid: int, sig: int = signal.SIGTERM) -> bool:
     return True
 
 
-def _signal_process_group(pid: int, expected_start_time: str | None) -> None:
+def _signal_process_group(
+    pid: int,
+    expected_start_time: str | None,
+    *,
+    reason: str = "",
+    run_dir: str | Path | None = None,
+) -> None:
     """Signal a worker only while its pid still names the spawned process.
 
     A recorded pid is data from a run record, not a fact about who is calling
@@ -1401,6 +1510,10 @@ def _signal_process_group(pid: int, expected_start_time: str | None) -> None:
     a genuine spawned worker. os.killpg signals the whole process group, so
     signalling one's own group takes the caller down with it. Refuse before
     that lookup rather than let the OS enforce it as a self-inflicted SIGTERM.
+
+    A caller that names the target's run directory and reason gets a sender
+    record written before the signal, so a kill read from that run's own
+    directory names the caller rather than only the victim.
     """
     own_pid = os.getpid()
     if pid == own_pid or os.getpgid(pid) == os.getpgid(own_pid):
@@ -1415,7 +1528,7 @@ def _signal_process_group(pid: int, expected_start_time: str | None) -> None:
             f"refusing to signal pid {pid}: process identity changed "
             f"from {expected_start_time!r} to {actual_start_time!r}"
         )
-    signal_worker(pid, signal.SIGTERM)
+    signal_worker(pid, signal.SIGTERM, reason=reason, run_dir=run_dir)
 
 
 def _base_commit(repo: Path, base: str) -> str:

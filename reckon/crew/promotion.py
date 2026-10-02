@@ -57,7 +57,9 @@ from reckon.crew.routing import (
     _shadow_patch_retained,
     _shadow_worktree_records,
     _signal_process_group,
+    _write_sender_record,
     mounted_repository_projects,
+    run_directory_of,
     section_anchor,
     section_record_id,
 )
@@ -3666,6 +3668,11 @@ def _end_live_writer_for_settle(record: Mapping[str, Any]) -> bool:
     if record_process_alive(record, process_alive) is not True:
         return False
     try:
+        _write_sender_record(
+            run_directory_of(record),
+            target_pid=int(pid),
+            reason="promotion-settle",
+        )
         _signal_process_group(int(pid), record.get("pid_start_time"))
     except (ProcessLookupError, PermissionError, OSError, CrewError):
         return False
@@ -5444,6 +5451,11 @@ def _release_run_workspace(
             result["process_withheld"] = "process is not alive"
     else:
         try:
+            _write_sender_record(
+                run_directory_of(record),
+                target_pid=int(pid),
+                reason="promotion-release",
+            )
             _signal_process_group(int(pid), record.get("pid_start_time"))
         except (ProcessLookupError, PermissionError, OSError, CrewError) as exc:
             result["process_withheld"] = f"could not signal pid {pid} — {exc}"
