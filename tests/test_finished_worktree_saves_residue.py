@@ -61,8 +61,6 @@ def test_integrated_dirty_tree_saves_residue_and_releases(
     report = garbage_collect(repo=root, apply=True)
     row = next(item for item in report["worktrees"] if item["path"] == str(tree))
     assert not tree.exists()
-    assert row["residue_classes"]["source.py"] == case
-    assert row["residue_classes"]["notes.txt"] == "unique"
     patch = Path(row["residue_patch"])
     archive = Path(row["residue_tar"])
     assert patch.is_file() and archive.is_file()
@@ -71,6 +69,8 @@ def test_integrated_dirty_tree_saves_residue_and_releases(
     assert (replay / "source.py").read_text() == content
     with tarfile.open(archive) as saved:
         assert saved.extractfile("notes.txt").read() == b"untracked\n"
+    assert row["residue_classes"]["source.py"] == case
+    assert row["residue_classes"]["notes.txt"] == "unique"
     assert str(tree) in report["removed_worktrees"]
     if case == "unique":
         assert any(item["worktree"] == str(tree) for item in report["residue_report"])
