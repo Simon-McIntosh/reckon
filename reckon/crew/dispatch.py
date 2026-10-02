@@ -5367,6 +5367,7 @@ def _lane_allowance_unknown(detail: str) -> dict[str, Any]:
         "state": "unknown",
         "allowance": None,
         "source": "none",
+        "rests_on_observed_window": False,
         "held": False,
         "verdict": _lane_document.UNKNOWN,
         "headroom": None,
@@ -5401,6 +5402,13 @@ def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
     read holds nothing, because absence of a signal is not exhaustion. Reckon
     does no fairness arithmetic of its own: every figure carried here is one
     the router published.
+
+    The ``source`` label is prose for a reader. A caller that must decide
+    *whether* the figure rests on observed history reads
+    ``rests_on_observed_window`` instead: the structured field is true exactly
+    when the allowance was taken from a router slot figure inside the block
+    that states the window it was averaged over, and it stays true for every
+    spelling of the label, so no caller needs to match the label's text.
     """
     reading = _lane_document.read_lane_document(document)
     admission = _lane_document.read_lane_admission(document)
@@ -5444,6 +5452,11 @@ def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
             if share is not None:
                 allowance = share
                 source = "the global worker slots"
+    # Captured before the headroom fallback: only a figure taken inside the
+    # trusted-window block above rests on observed history, and headroom --
+    # which needs no window -- never does.
+    rests_on_observed_window = allowance is not None
+
     if allowance is None and headroom is not None:
         allowance = headroom
         source = "the request headroom"
@@ -5477,6 +5490,7 @@ def _lane_worker_allowance(document: object, *, session: str) -> dict[str, Any]:
         "state": state,
         "allowance": allowance,
         "source": source,
+        "rests_on_observed_window": rests_on_observed_window,
         "held": held,
         "verdict": verdict,
         "headroom": headroom,
