@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="257">
+<meta name="plan-version" content="258">
 <meta name="plan-impl" content="0.75">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;deferred&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
@@ -1385,6 +1385,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261002T092656510580-review-of-a-promotion-reads-only-the-fleet-fields-it-records" data-who="reckon-build" data-when="2026-10-02T10:04:19.130Z">
     <div class="r-comment-body"><p>review scored 91, 2 finding(s)</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261002T083614262845-the-clone-scan-reads-only-the-promoted-diff" data-who="reckon-build" data-when="2026-10-02T10:00:31.224Z">
+    <div class="r-comment-body"><p>The clone scan parses only the promoted diff&#x27;s files and reads every other corpus file from a cache keyed by path and content digest, so an unchanged file is never re-parsed; a warm promotion&#x27;s scan parse falls from 42.6 s to 0.54 s (1 functions_in call vs 868 cold), the on-disk round-trip is asserted lossless, and an unwritable cache directory degrades to an uncached scan rather than an unmeasured report.</p></div>
 </div>
 </section>
 </main>
