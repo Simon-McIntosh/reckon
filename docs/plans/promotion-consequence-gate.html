@@ -21,9 +21,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
-<meta name="plan-modified" content="2026-09-01">
+<meta name="plan-modified" content="2026-10-02">
 <meta name="plan-depends-on" content="crew-run-ledger">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="9">
 <meta name="plan-commits" content="648f28754a888b85d006a2790c1c135a66439cc9,62efee878d7898bd23ee29551b3530a928f88c65,b8b8b66c6d4fde9e998e67c0ecdaf00a6d869244">
 <meta name="plan-impl" content="1.0">
 <meta name="plan-artifacts" content="reckon/schema/flight.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/crew/prompts.py,reckon/crew/reports.py,reckon/crew/promotion.py,reckon/crew/dispatch.py,reckon/cli.py,reckon/ledger.py,skills/reckon-ship/references/worker-protocol.md,tests/test_gate_evidence.py,docs/evidence/promotion-consequence-gate-landed.html">
@@ -242,10 +242,11 @@
     <pre class="r-fu-prompt">/reckon-build promotion-consequence-gate</pre>
     <p class="r-fu-outcome">Shipped in three nodes (648f287, 62efee8, b8b8b66) after the three decisions were locked on 2026-09-01: opt-in gates.suite_command with typed baseline and after observations in the worker manifest; an armed promotion that refuses a non-empty added-failure set or absent evidence naming what is missing and accepts only a reasoned, ledger-recorded waiver; and the two incident regressions. Sprint placement in S9 confirmed. No project has yet declared a suite command, so the gate is built and unarmed everywhere; arming reckon's own project is the one open followup and needs the lead's choice of command and cost.</p>
     </article>
-<article class="r-fu" data-id="f-pcg-002" data-status="open" data-written-by="reckon-ship" data-written-at="2026-09-01" data-recommends-skill="/reckon-build promotion-consequence-gate" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-pcg-002" data-status="resolved" data-written-by="reckon-ship" data-written-at="2026-09-01" data-recommends-skill="/reckon-build promotion-consequence-gate" data-resolved-at="2026-10-02T09:20:26+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Arm the gate for reckon itself by declaring gates.suite_command</h4>
     <div class="r-fu-body"><p>The gate is shipped and unarmed everywhere: no project's flight config declares <code>gates.suite_command</code>. Arming reckon is one line in <code>docs/state/reckon/flight.yaml</code>, but the command choice is a cost decision the lead owns — the full suite measured 720–762 s here, and an armed node must produce a baseline and an after observation, so the whole-tree command costs each implementation node roughly 25 minutes of suite time against a typical 25–45 minute budget, while a scoped command (the node's fenced test files) is cheap and measures less. <strong>Exemption: authority-required</strong> — the choice of command and the accepted per-node cost are the lead's; recorded here as a pointer, not as hidden work.</p></div>
     <pre class="r-fu-prompt">/reckon-build promotion-consequence-gate</pre>
+    <p class="r-fu-outcome">done — no followup: the lead chose on 2026-10-02 to arm the gate with a scoped per-node command, the node's own fenced test files, with the coordinator measuring the whole suite once per wave. Arming it moved to scoring-should-stop-a-promotion §12.</p>
     </article>
 </section>
   <section data-reckon="research" id="research" class="r-research-list">
@@ -268,6 +269,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260901T232500-regressions-landed" data-who="reckon-ship" data-when="2026-09-01T23:25:00Z">
     <div class="r-comment-body">n-incident-regressions-and-suite-gate landed — commit b8b8b66 (merged 28618e9); gate passed; measure: the two incident regressions 2 passed, tests/test_gate_evidence.py 15 passed / 0 failed, scoped ruff 0 findings; full reckon suite at base 3e65685 4 failed / 2638 passed / 28 skipped in 720 s and at the commit 3 failed / 2641 passed / 28 skipped in 762 s — zero added failure ids, one base-only failure gone, and the three persisting ids (tests/test_service_unit.py, tests/test_spa_crew_stylesheet.py) belong to the concurrent ship-s14 node n-entry-point-shape-assertions, not to this plan. The known-bad fixture carries the pre-existing documentation-layout collection failure plus the exact twenty Standard Names failure ids the incident introduced and is refused naming them; the repair fixture runs fifteen sequential armed promotions with red baselines, red-or-equal afters and empty added-id sets and every one is accepted. That is the plan's §2 constraint, pinned in both directions. impl 3/3.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-pcg-002-section-correction" data-who="" data-when="">
+    <div class="r-comment-body"><p>Correction to the f-pcg-002 outcome. Arming the gate moved to scoring-should-stop-a-promotion §13, not §12: §12 there was already taken by another moved followup when the section was added.</p></div>
 </div>
 </section>
 </main>
