@@ -1428,6 +1428,12 @@ def withdraw_superseded_review(record: Mapping[str, Any]) -> dict[str, Any] | No
     to be re-reviewed — or carried — at its new head. A dispatch that already
     covers the current head, or a run not resumed since the attempt was
     recorded, is left standing.
+
+    Only an attempt that never started is withdrawn. A review whose worker has
+    launched is running, and a running review finishes: its verdict reaches the
+    run's new head through the carry-forward rule rather than being discarded
+    here, so the review run's own launch record decides and the age of the
+    dispatch record does not.
     """
     run_id = str(record.get("run_id") or "")
     recorded = record.get(REVIEW_DISPATCH_FIELD)
@@ -1441,6 +1447,11 @@ def withdraw_superseded_review(record: Mapping[str, Any]) -> dict[str, Any] | No
         return None
     at = parse_utc(recorded.get("at"))
     if at is not None and resumed_at <= at:
+        return None
+    if _review_worker_launched(str(recorded.get("run_id") or "")):
+        # The review's own worker already launched, so the review is running:
+        # it finishes and its verdict reaches the run's new head through the
+        # carry-forward rule rather than being withdrawn here.
         return None
     head = _run_head_for_review(record)
     if _review_head_covers(str(recorded.get("head") or ""), head):
@@ -1459,6 +1470,21 @@ def withdraw_superseded_review(record: Mapping[str, Any]) -> dict[str, Any] | No
         "review_run_id": str(recorded.get("run_id") or ""),
         "head": head,
     }
+
+
+def _review_worker_launched(review_run_id: str) -> bool:
+    """Whether the recorded review run ever spawned a worker to read the head.
+
+    A review whose worker already launched is running and finishes; only an
+    attempt that never started may be withdrawn when a resume moves the head
+    past it. The review run's own worker record is the fact that decides it —
+    the supervisor writes it at spawn, and it outlives the worker — so its
+    presence says a review started and its absence (a queued attempt, or one
+    refused before any worker existed) leaves the attempt open to withdrawal.
+    """
+    if not review_run_id:
+        return False
+    return _worker_record({"run_id": review_run_id}) is not None
 
 
 def _review_attempt_withdrawn_before_launch(run_id: str) -> bool:
