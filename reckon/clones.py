@@ -43,9 +43,10 @@ DEFINITIONS = (*FUNCTIONS, ast.ClassDef)
 # write is discarded rather than read as current. Each entry records when it was
 # last used. Because every content a file ever had keeps its entry, and several
 # worktrees at different revisions share one cache root, the cache is pruned to
-# the least recently used once it exceeds a cap derived from the corpus's file
-# count (see ``_cap_for``); without that bound an entry for every revision ever
-# scanned accumulates and corpus.json grows without limit.
+# the least recently used once it exceeds a cap derived from the number of
+# corpus files it knows about (see ``_cap_for``); without that bound an entry
+# for every revision ever scanned accumulates and corpus.json grows without
+# limit.
 _CLONE_CACHE_VERSION = 2
 _CORPUS_CACHES: dict[Path, dict[str, Any]] = {}
 
@@ -230,20 +231,49 @@ def _function_from_record(record: Mapping[str, Any]) -> _CachedFunction:
     )
 
 
-def _cap_for(corpus_file_count: int) -> int:
+def _entry_path(entry: Any) -> str | None:
+    """The corpus path a cache entry describes, if it records one.
+
+    An entry written by this module carries its path directly; older entries
+    carry only their functions, so the first function's path stands in. A file
+    defining nothing records no path and is counted only through the files the
+    scan itself reads.
+    """
+    if isinstance(entry, Mapping):
+        path = entry.get("path")
+        if isinstance(path, str):
+            return path
+        functions = entry.get("functions")
+        if isinstance(functions, list) and functions:
+            first = functions[0]
+            if isinstance(first, Mapping) and isinstance(first.get("path"), str):
+                return first["path"]
+    return None
+
+
+def _cached_paths(cache: Mapping[str, Any]) -> set[str]:
+    """The distinct corpus paths the cache currently holds entries for."""
+    return {
+        path for entry in cache.values() if (path := _entry_path(entry)) is not None
+    }
+
+
+def _cap_for(known_file_count: int) -> int:
     """The most cache entries a scan keeps.
 
-    The cap is one entry per corpus file, because one revision's worth of
-    fingerprints is all a scan can use: an entry is keyed by path and content
-    digest, so two revisions of the same file are two entries, and every entry
-    beyond the corpus's own file count is a revision the current scan did not
-    read. Deriving the cap from the corpus's file count rather than a fixed
-    literal keeps it correct as the corpus grows, and holding at most one
-    revision's worth bounds corpus.json no matter how many revisions or
-    worktrees share the cache root. The floor of one keeps an empty corpus from
-    disarming the prune.
+    The cap is one entry per corpus file the scan knows about, because one
+    revision's worth of fingerprints is all a scan can use: an entry is keyed by
+    path and content digest, so two revisions of the same file are two entries,
+    and every entry beyond the known file count is a revision the current scan
+    did not read. The scan's own paths and the paths already in the cache are
+    counted together, so a scan that reads only part of the corpus does not
+    shrink the cap to that part and evict the warm entries the next full scan
+    would reuse. Deriving the cap from the file count rather than a fixed literal
+    keeps it correct as the corpus grows, and holding at most one revision's
+    worth bounds corpus.json no matter how many revisions or worktrees share the
+    cache root. The floor of one keeps an empty corpus from disarming the prune.
     """
-    return max(1, corpus_file_count)
+    return max(1, known_file_count)
 
 
 def _used_at(entry: Any) -> float:
@@ -283,11 +313,12 @@ def _cached_functions(
             except (KeyError, TypeError, ValueError):
                 rebuilt = None
             if rebuilt is not None:
-                cache[key] = {"used": now, "functions": functions}
+                cache[key] = {"used": now, "path": path, "functions": functions}
                 return rebuilt
     functions = functions_in(source, path)
     cache[key] = {
         "used": now,
+        "path": path,
         "functions": [_function_record(function) for function in functions],
     }
     return functions
@@ -401,10 +432,12 @@ def clone_matches(
     that did not change contributes nothing and is not read at all.
 
     Each cache entry records when it was last used, and the cache is pruned to
-    the least recently used once it holds more than one entry per corpus file,
-    so the entry a scan just read survives and an entry for a superseded
-    revision is dropped. That bound is what keeps ``corpus.json`` from growing
-    with every revision that shares the cache root.
+    the least recently used once it holds more than one entry per known corpus
+    file — the paths this scan read and the paths the cache already holds — so
+    the entry a scan just read survives, a partial scan does not shrink the cap
+    to the subset it read, and an entry for a superseded revision is dropped.
+    That bound is what keeps ``corpus.json`` from growing with every revision
+    that shares the cache root.
     """
     prefixes = tuple(corpus_prefixes)
     base_sources = dict(base_sources or {})
@@ -431,6 +464,7 @@ def clone_matches(
                 if path.startswith(prefixes):
                     cache[_cache_key(path, source)] = {
                         "used": now,
+                        "path": path,
                         "functions": [
                             _function_record(function) for function in parsed
                         ],
@@ -441,7 +475,8 @@ def clone_matches(
                 dirty = True
         except (SyntaxError, ValueError):
             continue
-    evicted = _evict_to_cap(cache, _cap_for(len(corpus_paths)))
+    known_paths = set(corpus_paths) | _cached_paths(cache)
+    evicted = _evict_to_cap(cache, _cap_for(len(known_paths)))
     if dirty or evicted:
         with contextlib.suppress(OSError):
             # The cache is a speed-up, not a dependency: a directory that
