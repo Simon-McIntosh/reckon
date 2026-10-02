@@ -206,8 +206,11 @@ FENCE_WORKERS = True
 # old, 14 of them polling an already-deleted temporary home. So arming refuses
 # when the resolved configuration home lies under a pytest temporary
 # directory, and the refusal is raised at the caller rather than skipped
-# quietly. A test whose own subject is the producer lifecycle, and which reaps
-# what it starts, says so through this variable.
+# quietly. A pytest-named directory above the home is one signal; a pytest
+# session's own declared --basetemp is the other, so a custom base temp whose
+# directory carries no pytest name is still recognised. A test whose own
+# subject is the producer lifecycle, and which reaps what it starts, says so
+# through this variable.
 WATCH_ARMING_ENV = "RECKON_WATCH_ARMING"
 _PYTEST_TEMPORARY_ROOT = re.compile(r"^(pytest-of-.+|pytest-\d+)$")
 
@@ -960,11 +963,71 @@ def watch_arming_suppressed() -> bool:
     return _watch_arming_intent() == "off"
 
 
+def _running_under_pytest() -> bool:
+    """True when this process is a pytest session or one of its workers."""
+    return bool(
+        os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("PYTEST_VERSION")
+    )
+
+
+def _current_and_ancestor_argvs(limit: int = 12) -> list[list[str]]:
+    """The argv of this process and its ancestors, nearest first, bounded."""
+    argvs: list[list[str]] = []
+    pid = os.getpid()
+    for _ in range(limit):
+        try:
+            raw = Path(f"/proc/{pid}/cmdline").read_bytes()
+            stat = Path(f"/proc/{pid}/stat").read_text()
+        except OSError:
+            break
+        argvs.append([os.fsdecode(item) for item in raw.split(b"\0") if item])
+        rest = stat.rsplit(")", 1)[-1].split()
+        parent = int(rest[1]) if len(rest) > 1 else 2
+        if parent in (0, 1, pid):
+            break
+        pid = parent
+    return argvs
+
+
+def _declared_basetemp() -> Path | None:
+    """The temporary root the enclosing pytest session was told to use.
+
+    A session given a custom ``--basetemp`` names it on the command line, which
+    this process carries itself in a serial run and inherits from the session
+    master through its ancestors under ``pytest-xdist``. The default base temp
+    is discovered instead by the ``pytest-of-*`` ancestor name, so only a
+    declared one is read here, and only when a pytest session is running.
+    """
+    if not _running_under_pytest():
+        return None
+    for argv in _current_and_ancestor_argvs():
+        for index, arg in enumerate(argv):
+            if arg == "--basetemp" and index + 1 < len(argv):
+                return Path(argv[index + 1])
+            if arg.startswith("--basetemp="):
+                return Path(arg.split("=", 1)[1])
+    return None
+
+
 def _temporary_home_root(home: Path) -> Path | None:
-    """Return the throwaway test root containing ``home``, if there is one."""
+    """Return the throwaway test root containing ``home``, if there is one.
+
+    Two signals name a throwaway home: a pytest-named directory above it, and
+    the temporary root a running pytest session declared on its own command
+    line. The second is what carries a custom ``--basetemp`` such as
+    ``/tmp/anything``, whose directory carries no pytest name for the first to
+    match, and it is read from the running session so an ordinary home outside
+    that root is still armed.
+    """
     for candidate in (home, *home.parents, *home.resolve().parents):
         if _PYTEST_TEMPORARY_ROOT.match(candidate.name):
             return candidate
+    declared = _declared_basetemp()
+    if declared is not None:
+        root = declared.resolve()
+        resolved = home.resolve()
+        if resolved == root or root in resolved.parents:
+            return declared
     return None
 
 
