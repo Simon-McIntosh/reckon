@@ -38,7 +38,7 @@ from reckon.crew.reports import (
     manifest_status_is_template,
     parse_manifest,
 )
-from reckon.crew.routing import _signal_process_group, _write_sender_record
+from reckon.crew.routing import _signal_process_group
 from reckon.crew.runs import (
     _manifest_freshness,
     _mutate_pointer,
@@ -858,11 +858,6 @@ def _stop_delivered_reviews(
             continue
         pid = pointer.get("pid")
         try:
-            _write_sender_record(
-                _run_directory(pointer),
-                target_pid=int(pid),
-                reason="delivered-review-outlived-grace",
-            )
             if signal_run is None:
                 _signal_process_group(
                     int(pid),
@@ -3044,11 +3039,6 @@ def _apply_budget_watchdog(
         return
     pid = record.get("pid")
     try:
-        _write_sender_record(
-            _run_directory(record),
-            target_pid=int(pid),
-            reason="budget-watchdog",
-        )
         _signal_process_group(
             int(pid),
             record.get("pid_start_time"),
@@ -7425,20 +7415,21 @@ def unwatch(project: str) -> dict[str, Any]:
                     "the locked registration has no valid pid"
                 ) from exc
 
-            # A watcher has no run directory, so the sender record lands beside
-            # the seat registration unwatch read the pid from. It is written
-            # before the signal: the signal ends the watcher, and a write
-            # ordered after it would have nothing on disk to attribute the stop
-            # to. The record names the watcher pid, so a stop that could not be
-            # delivered is still readable as this command's attempt.
-            _write_sender_record(
-                path.parent,
-                target_pid=pid,
-                reason="unwatch",
-                detail=f"watcher for project {project}",
-            )
+            # A watcher has no run directory, so the watch directory the seat
+            # registration sits in is the sender file's home. The shared writer
+            # owns the attribution and outcome records, so unwatch names that
+            # directory and the project the watcher serves rather than writing
+            # an attribution of its own: the project rides its own field, which
+            # a reader of the shared directory can act on without parsing a
+            # message.
             try:
-                _signal_process_group(pid, watcher.get("pid_start_time"))
+                _signal_process_group(
+                    pid,
+                    watcher.get("pid_start_time"),
+                    run_dir=path.parent,
+                    reason="unwatch",
+                    project=project,
+                )
             except ProcessLookupError:
                 stopped = False
                 reason = "watcher-exited"

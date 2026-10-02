@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-crew-process-ends-with-its-owner">
+  <meta name="plan-title" content="a signal leaves one attribution and one outcome">
+  <meta name="plan-summary" content="The shared signal home is the single owner of a sender record: callers stop pre-writing an attribution beside it, so a delivered signal leaves exactly one attribution record and one delivered outcome, a refused signal leaves one refused record, and unwatch names the watch directory and its project so its outcome lands there too.">
+  <meta name="plan-evidence-for" content="reckon:a-crew-process-ends-with-its-owner">
+  <meta name="plan-verifies" content="reckon:a-crew-process-ends-with-its-owner#s10">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,signal,sender-record,attribution">
+  <title>a signal leaves one attribution and one outcome — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-signal-leaves-one-attribution-and-one-outcome" data-reckon="landed" data-when="2026-10-02">
+  <h2>a signal leaves one attribution and one outcome</h2>
+  <p><code>_signal_process_group</code> is the single writer that owns a signal's attribution: the six run-bearing callers no longer pre-write an attribution record of their own, so a delivered signal leaves exactly one attribution record and one delivered outcome in the target run's <code>senders.jsonl</code>, and a guard refusal leaves exactly one refused record. <code>crew unwatch</code> no longer hand-writes its record either — it names the watch directory as its sender file and passes the watched project, written as its own <code>project</code> field rather than folded into <code>outcome_detail</code>, so its delivered signal and its refusal both land there through the same writer. <code>tests/test_every_signal_caller_names_its_run_directory.py</code> drives a delivered and a refused signal through one caller from each of dispatch, promotion and recovery and asserts the exact record set (<strong>8 passed</strong>), and <code>tests/test_unwatch_leaves_a_sender_record.py</code> asserts the same on the unwatch path (<strong>3 passed</strong>). The declared mutation (restore the dispatch run-stop pre-written attribution) leaves two attribution records for one delivered signal and fails the delivered case, <code>EXIT=1</code>. Base and head arms of the five named sibling files report <strong>21 passed</strong> at base <code>d3cedc615</code> and <strong>25 passed</strong> at head with <strong>zero added failures</strong>.</p>
+</article>
+</body>
+</html>
