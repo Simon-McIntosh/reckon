@@ -46,37 +46,61 @@ STUB_WORKER = (
     "time.sleep(300)\n"
 )
 
-# The declared mutation, verbatim: the string the promotion audit matches
-# against the red log's facts.
+# A stub worker for a resumed run: it writes nothing until released, so the
+# manifest left by the previous attempt is the only one present while it waits,
+# then it rewrites the manifest complete and sleeps past the stub's own exit.
+STUB_RESUME = (
+    "import os, time\n"
+    "from pathlib import Path\n"
+    "trigger = Path(os.environ['RECKON_REWRITE_TRIGGER'])\n"
+    "while not trigger.exists():\n"
+    "    time.sleep(0.02)\n"
+    "Path(os.environ['RECKON_MANIFEST']).write_text(\n"
+    "    'node: stub-node\\nstatus: complete\\ncommits: []\\n'\n"
+    ")\n"
+    "time.sleep(300)\n"
+)
+
+# The two declared mutations, verbatim: the strings the promotion audit matches
+# against each red log's facts.
 DECLARED_MUTATION = (
     "remove the grace-period exit; the stub worker is still alive after the "
     "grace and the test fails"
+)
+DECLARED_RESUME_MUTATION = (
+    "drop the baseline comparison; the resumed-run case is killed and fails"
 )
 
 NEGATIVE_CONTROL = os.environ.get("RECKON_TERMINAL_GRACE_NEGATIVE_CONTROL", "").strip()
 
 # The grace the cases run with, and the slack they allow for the supervisor's
-# poll and for a loaded machine. The worker's own sleep is far larger, so an
-# exit within this bound can only be the supervisor's act.
-GRACE_SECONDS = 1
-SLACK_SECONDS = 12
+# coarse poll and for a loaded machine. The worker's own sleep is far larger,
+# so an exit within this bound can only be the supervisor's act.
+GRACE_SECONDS = 2
+SLACK_SECONDS = 15
 
 
 def _control(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Replace the grace exit with a plain wait, for the run that must go red."""
-    if not NEGATIVE_CONTROL:
-        return
+    """Apply the declared mutation that makes a case go red."""
+    if NEGATIVE_CONTROL in {"grace-exit", "1"}:
+        # Remove the grace-period exit: the supervisor waits for the worker's
+        # own exit, so a worker that lingers outlives the grace.
+        def _never_reaps(pid: int, **_kwargs: Any) -> int | None:
+            try:
+                _, status = os.waitpid(pid, 0)
+            except (ChildProcessError, OSError):
+                status = None
+            return status
 
-    def _never_reaps(pid: int, **_kwargs: Any) -> int | None:
-        try:
-            _, status = os.waitpid(pid, 0)
-        except (ChildProcessError, OSError):
-            status = None
-        return status
-
-    monkeypatch.setattr(
-        dispatch_module, "_reap_worker_on_its_terminal_manifest", _never_reaps
-    )
+        monkeypatch.setattr(
+            dispatch_module, "_reap_worker_on_its_terminal_manifest", _never_reaps
+        )
+    elif NEGATIVE_CONTROL == "baseline":
+        # Drop the baseline comparison: a manifest left by a previous attempt
+        # is read as this attempt's delivery, so a resumed worker is killed.
+        monkeypatch.setattr(
+            dispatch_module, "_supervisor_manifest_baseline_ns", lambda *a, **k: 0
+        )
 
 
 def _running(pid: int | None) -> bool:
@@ -116,8 +140,22 @@ def _kill(pid: int | None) -> None:
         os.kill(pid, signal.SIGKILL)
 
 
-def _stub_run(tmp_path: Path, *, status: str) -> dict[str, Any]:
-    """A live pointer, and the spec that supervises a stub worker for it."""
+def _stub_run(
+    tmp_path: Path,
+    *,
+    status: str,
+    stub: str = STUB_WORKER,
+    prewrite_mtime_ns: int | None = None,
+    baseline_ns: int | None = None,
+    extra_env: dict[str, str] | None = None,
+) -> dict[str, Any]:
+    """A live pointer, and the spec that supervises a stub worker for it.
+
+    ``prewrite_mtime_ns`` writes a complete manifest and stamps it with that
+    mtime, modelling a resumed run whose previous attempt left a terminal
+    manifest behind; ``baseline_ns`` is then recorded on the pointer as the
+    generation this attempt may claim.
+    """
     run_id = "r-terminal-grace"
     directory = runs.run_dir(run_id)
     directory.mkdir(parents=True)
@@ -128,36 +166,50 @@ def _stub_run(tmp_path: Path, *, status: str) -> dict[str, Any]:
     prompt = directory / "prompt.txt"
     prompt.write_text("stub prompt\n", encoding="utf-8")
 
-    runs._write_json(directory / dispatch_module.ATTEMPT_RECORD_NAME, {"attempt": 1})
-    runs._write_json(
-        runs.pointer_path(run_id),
-        {
-            "run_id": run_id,
-            "project": "terminal-grace-fixture",
-            "repo": str(worktree),
-            "worktree": str(worktree),
-            "backend": "alpha",
-            "launch": "cli",
-            "dialect": "claude",
-            "phase": "starting",
-            "pid": None,
-            "session": "coordinator-fixture",
-            "manifest_path": str(manifest),
-            "log_path": str(stream),
-            "stderr_path": str(directory / "stderr.log"),
-            "attempt": 1,
-            "attempt_kind": "dispatch",
-            "attempt_started_at": "2026-10-02T00:00:00Z",
-            "created_at": "2026-10-02T00:00:00Z",
-            "node": {
-                "id": "stub-node",
-                "plan": "fixture",
-                "time_budget": "20m",
-                "manifest_path": str(manifest),
-            },
-        },
-    )
+    if prewrite_mtime_ns is not None:
+        manifest.write_text(
+            "node: stub-node\nstatus: complete\ncommits: []\n", encoding="utf-8"
+        )
+        os.utime(manifest, ns=(prewrite_mtime_ns, prewrite_mtime_ns))
+        # The baseline is the manifest's own mtime as the filesystem records
+        # it, so a coarse mtime granularity cannot place it before the stamp
+        # and let the stale manifest read as fresh.
+        if baseline_ns is None:
+            baseline_ns = manifest.stat().st_mtime_ns
 
+    pointer: dict[str, Any] = {
+        "run_id": run_id,
+        "project": "terminal-grace-fixture",
+        "repo": str(worktree),
+        "worktree": str(worktree),
+        "backend": "alpha",
+        "launch": "cli",
+        "dialect": "claude",
+        "phase": "starting",
+        "pid": None,
+        "session": "coordinator-fixture",
+        "manifest_path": str(manifest),
+        "log_path": str(stream),
+        "stderr_path": str(directory / "stderr.log"),
+        "attempt": 1,
+        "attempt_kind": "dispatch",
+        "attempt_started_at": "2026-10-02T00:00:00Z",
+        "created_at": "2026-10-02T00:00:00Z",
+        "node": {
+            "id": "stub-node",
+            "plan": "fixture",
+            "time_budget": "20m",
+            "manifest_path": str(manifest),
+        },
+    }
+    if baseline_ns is not None:
+        pointer["manifest_baseline_mtime_ns"] = baseline_ns
+
+    runs._write_json(directory / dispatch_module.ATTEMPT_RECORD_NAME, {"attempt": 1})
+    runs._write_json(runs.pointer_path(run_id), pointer)
+
+    environment = {"RECKON_STUB_STATUS": status}
+    environment.update(extra_env or {})
     spec = {
         "run_id": run_id,
         "run_directory": str(directory),
@@ -165,9 +217,9 @@ def _stub_run(tmp_path: Path, *, status: str) -> dict[str, Any]:
         "worktree": str(worktree),
         "fenced": False,
         "plan": {
-            "argv": [sys.executable, "-c", STUB_WORKER],
+            "argv": [sys.executable, "-c", stub],
             "cwd": str(worktree),
-            "environment": {"RECKON_STUB_STATUS": status},
+            "environment": environment,
             "dialect": "claude",
             "backend": "alpha",
         },
@@ -331,6 +383,84 @@ def test_an_in_progress_manifest_keeps_the_worker_running(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _keeps_running_case(tmp_path, monkeypatch, status="in-progress")
+
+
+def test_a_manifest_left_by_a_previous_attempt_is_not_this_attempts_delivery(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A resumed run is not killed on its own previous attempt's manifest.
+
+    A run resumed after it wrote complete — the repair reflex does this to
+    answer a review — still has that complete manifest on disk when the new
+    worker starts. The supervisor must not read it as this attempt's delivery
+    and end the worker on its first poll; only a manifest written after the
+    attempt began counts.
+    """
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    monkeypatch.setenv(dispatch_module.TERMINAL_MANIFEST_GRACE_ENV, str(GRACE_SECONDS))
+    _control(monkeypatch)
+
+    stale_ns = time.time_ns() - 60 * 1_000_000_000
+    trigger = tmp_path / "rewrite"
+    fixture = _stub_run(
+        tmp_path,
+        status="complete",
+        stub=STUB_RESUME,
+        prewrite_mtime_ns=stale_ns,
+        extra_env={"RECKON_REWRITE_TRIGGER": str(trigger)},
+    )
+    run_id = fixture["run_id"]
+
+    failures: list[BaseException] = []
+    observed: list[str] = []
+
+    def driver() -> None:
+        pid: int | None = None
+        try:
+            _wait_until(
+                lambda: _worker_pid(run_id) is not None,
+                timeout=15,
+                detail="the stub worker's record",
+            )
+            pid = _worker_pid(run_id)
+            # The stale complete manifest must not end the worker: wait past
+            # the grace and its coarse poll, then confirm it is still running.
+            time.sleep(GRACE_SECONDS + 6)
+            if not _running(pid):
+                failures.append(
+                    AssertionError(
+                        "a complete manifest left by a previous attempt was read "
+                        "as this attempt's delivery; the resumed worker was killed"
+                    )
+                )
+                return
+            observed.append("kept")
+            # Now the worker rewrites the manifest complete; it must end within
+            # the grace measured from that rewrite.
+            trigger.write_text("go", encoding="utf-8")
+            deadline = time.time() + GRACE_SECONDS + SLACK_SECONDS
+            while time.time() < deadline:
+                if not _running(pid):
+                    observed.append("ended")
+                    return
+                time.sleep(0.05)
+            failures.append(
+                AssertionError(
+                    "the resumed worker was not ended within the grace after it "
+                    "rewrote the manifest complete"
+                )
+            )
+        except BaseException as exc:  # noqa: BLE001 - reported to the main thread
+            failures.append(exc)
+        finally:
+            _kill(pid)
+
+    _drive(fixture["spec_path"], driver)
+
+    assert failures == [], failures
+    assert observed == ["kept", "ended"]
 
 
 def test_the_done_status_set_excludes_blocked_and_non_terminal(tmp_path: Path) -> None:

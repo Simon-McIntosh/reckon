@@ -8431,7 +8431,11 @@ _WORKER_DONE_MANIFEST_STATUSES = frozenset({"complete", "failed"})
 TERMINAL_MANIFEST_GRACE_ENV = "RECKON_WORKER_TERMINAL_GRACE_SECONDS"
 TERMINAL_MANIFEST_GRACE_DEFAULT = 300.0
 # How often the supervisor rechecks a manifest while it waits for the worker.
-_WORKER_MANIFEST_POLL_SECONDS = 0.25
+# Coarse on purpose: the file lives on shared storage, and a manifest the
+# worker has not written again cannot have changed its status, so poll often
+# enough to notice a delivery against a multi-minute grace without reading the
+# manifest across the whole life of every worker.
+_WORKER_MANIFEST_POLL_SECONDS = 3.0
 # How long a worker gets to end on the grace signal before the supervisor
 # escalates to SIGKILL, so a worker ignoring SIGTERM cannot hold the slot.
 _WORKER_GRACE_KILL_SECONDS = 10.0
@@ -8492,24 +8496,47 @@ def _worker_manifest_done_status(manifest_path: Path) -> str:
     return status if status in _WORKER_DONE_MANIFEST_STATUSES else ""
 
 
-def _manifest_done_deadline(manifest_path: Path, grace_seconds: float) -> float:
-    """The monotonic instant a delivered manifest's grace ends.
+def _iso_stamp_to_ns(stamp: str) -> int | None:
+    """An ISO-8601 instant as epoch nanoseconds, or None for an unreadable one."""
+    try:
+        parsed = datetime.fromisoformat(str(stamp))
+    except (TypeError, ValueError):
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return int(parsed.timestamp() * 1_000_000_000)
 
-    Measured from the manifest's own write time, so a worker is given the full
-    grace from when it delivered rather than from when the supervisor happened
-    to notice. An unreadable write time falls back to now, which bounds the
-    wait from the observation instead of leaving it unbounded.
+
+def _supervisor_manifest_baseline_ns(run_id: str, spec: Mapping[str, Any]) -> int:
+    """The manifest generation an attempt may call its own.
+
+    A resumed run keeps its manifest path, so the previous attempt's terminal
+    manifest is still on disk when the new worker starts, with an old mtime. A
+    delivered manifest is therefore only the one written at or after the
+    attempt began: the pointer's recorded baseline, or the attempt's own start
+    when the pointer carries none, or 0 when the attempt clock is unreadable —
+    in which case a manifest is taken as delivery and the pre-existing bad case
+    cannot be recognised, which is the pre-existing behaviour rather than a
+    regression.
     """
     try:
-        written = manifest_path.stat().st_mtime
-    except OSError:
-        return time.monotonic()
-    # The age is subtracted unclamped: once it reaches the grace the deadline
-    # is in the past and the worker is ended at once. Clamping the remainder
-    # at zero would place the deadline a hair in the future on every call, so
-    # a deadline compared against an earlier ``now`` could never be reached.
-    age = time.time() - written
-    return time.monotonic() + grace_seconds - age
+        record: Mapping[str, Any] = read_pointer(run_id)
+    except CrewError:
+        record = {}
+    baseline = record.get("manifest_baseline_mtime_ns")
+    if baseline is not None:
+        try:
+            return int(baseline)
+        except (TypeError, ValueError):
+            pass
+    started = str(
+        spec.get("attempt_started_at") or record.get("attempt_started_at") or ""
+    )
+    if started:
+        parsed = _iso_stamp_to_ns(started)
+        if parsed is not None:
+            return parsed
+    return 0
 
 
 def _reap_worker_on_its_terminal_manifest(
@@ -8518,6 +8545,7 @@ def _reap_worker_on_its_terminal_manifest(
     run_directory: Path,
     manifest_path: Path,
     grace_seconds: float,
+    baseline_ns: int,
 ) -> int | None:
     """Collect a worker's exit, ending it once its manifest says it is done.
 
@@ -8529,7 +8557,15 @@ def _reap_worker_on_its_terminal_manifest(
     manifest is non-terminal, or blocked (kept for resume), is waited on as
     before. Returns the wait status, or ``None`` when the child was already
     reaped elsewhere.
+
+    The manifest is stat'd each poll and read for its status only when its
+    mtime has advanced past the attempt's baseline and changed since the last
+    read, so an unchanged manifest is never reparsed and a manifest left by a
+    previous attempt — a resumed run's own complete record — is not mistaken
+    for this attempt's delivery.
     """
+    seen_mtime_ns: int | None = None
+    deadline: float | None = None
     signalled_at: float | None = None
     while True:
         try:
@@ -8539,19 +8575,30 @@ def _reap_worker_on_its_terminal_manifest(
         if waited_pid == pid:
             return status
         now = time.monotonic()
-        if signalled_at is None:
-            if (
-                _worker_manifest_done_status(manifest_path)
-                and now >= _manifest_done_deadline(manifest_path, grace_seconds)
+        try:
+            mtime_ns = manifest_path.stat().st_mtime_ns
+        except OSError:
+            mtime_ns = None
+        if mtime_ns is not None and mtime_ns != seen_mtime_ns:
+            seen_mtime_ns = mtime_ns
+            if mtime_ns > baseline_ns and _worker_manifest_done_status(
+                manifest_path
             ):
-                signal_worker(
-                    pid,
-                    signal.SIGTERM,
-                    reason="worker-lingered-after-terminal-manifest",
-                    run_dir=run_directory,
-                )
-                signalled_at = now
-        elif now - signalled_at >= _WORKER_GRACE_KILL_SECONDS:
+                # The grace is measured from the manifest's own write time, so
+                # a delivery noticed late still ends on schedule. The age is
+                # subtracted unclamped: once it reaches the grace the deadline
+                # is already in the past and the worker is ended at once.
+                age = time.time() - (mtime_ns / 1_000_000_000)
+                deadline = now + grace_seconds - age
+        if deadline is not None and signalled_at is None and now >= deadline:
+            signal_worker(
+                pid,
+                signal.SIGTERM,
+                reason="worker-lingered-after-terminal-manifest",
+                run_dir=run_directory,
+            )
+            signalled_at = now
+        elif signalled_at is not None and now - signalled_at >= _WORKER_GRACE_KILL_SECONDS:
             # The worker ignored the grace signal. SIGKILL cannot be ignored,
             # and the record names this second, harder signal.
             signal_worker(
@@ -8649,6 +8696,7 @@ def _run_supervisor(spec_path: Path) -> int:
         run_directory=run_directory,
         manifest_path=_supervisor_manifest_path(run_id),
         grace_seconds=_terminal_manifest_grace_seconds(),
+        baseline_ns=_supervisor_manifest_baseline_ns(run_id, spec),
     )
     exit_record = _supervisor_exit_record(
         run_id=str(spec.get("run_id") or ""),
