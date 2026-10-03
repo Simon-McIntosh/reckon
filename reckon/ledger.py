@@ -129,6 +129,12 @@ RECORD_FIELDS = (
     "suite_delta",
     "failure_classification",
     "outcome",
+    # The verb a coordinator recorded for why this run's pointer outlived its
+    # session, carried onto the committed row because promotion deletes the
+    # pointer, which is the only other copy. Null on a row whose run carried no
+    # disposition, so a reader can tell a run that was disposed of deliberately
+    # from one whose field was never written.
+    "disposition",
     "worktree_retention",
     "manifest_path",
     "scope_changed",
@@ -1697,6 +1703,7 @@ def build_record(
     changed_lines: Mapping[str, Any] | None = None,
     tests_added: int | None = None,
     outcome: str = "",
+    disposition: str = "",
     manifest_path: str = "",
     scope_changed: bool = False,
     session: str | None = None,
@@ -1737,6 +1744,11 @@ def build_record(
     caller supplies them and silently absent otherwise, so a row promoted
     before this instrumentation keeps every existing field; the three new keys
     are additions, never replacements.
+
+    ``disposition`` is the verb a coordinator recorded for why the run's live
+    pointer outlived its session. It is stored on the row because promotion
+    deletes the pointer, which is the only other copy of it, and is null on a
+    run that carried no recorded disposition.
 
     ``review`` is the compact block a review record reduces to (see the review
     store's reducer), so an attached review survives the loss of the crew
@@ -1821,6 +1833,11 @@ def build_record(
         "suite_delta": None if suite_delta is None else dict(suite_delta),
         "failure_classification": classification or None,
         "outcome": str(outcome),
+        # The verb that disposed of the run, read from the live pointer before
+        # promotion removes it. The key is present and null on a run that
+        # carried no disposition, so a reader can tell an unrecorded verb apart
+        # from a row written before the field existed.
+        "disposition": str(disposition).strip() or None,
         "manifest_path": str(manifest_path),
         "scope_changed": bool(scope_changed),
         # The crew session that dispatched the run, distinct from ``session_id``
