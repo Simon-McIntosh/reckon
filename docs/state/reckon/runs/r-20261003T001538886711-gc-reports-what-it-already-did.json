@@ -6885,6 +6885,41 @@
     "plan": "a-finished-worktree-releases-without-a-force",
     "verdict": "moved"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "changed_paths_differing": null,
+    "checkout_descends_from_integrated_revision": false,
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "7a57be66d502a816d4b1cba70be0b80eb30ecdc3",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition",
+        "tests/test_dry_run_shows_each_set_override.py::test_a_held_lane_refusal_carries_each_set_resolution",
+        "tests/test_every_dry_run_refusal_carries_the_echo.py::test_a_dry_run_availability_refusal_carries_the_echo",
+        "tests/test_every_dry_run_refusal_carries_the_echo.py::test_a_dry_run_local_failure_carries_the_echo",
+        "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt"
+      ],
+      "integrated_revision": "7a57be66d502a816d4b1cba70be0b80eb30ecdc3",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision 7a57be66d502: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -n 8 --timeout=300 -p no:cacheprovider -q --basetemp=/tmp/s22-post-7a57 tests/test_gc_pin_flag.py tests/test_crew_gc.py tests/test_gc_pins_unique_commits_before_release.py tests/test_every_dry_run_refusal_carries_the_echo.py tests/test_dry_run_shows_each_set_override.py tests/test_crew_dryrun.py tests/test_a_brief_points_rather_than_quotes.py tests/test_crew_help_names_its_state.py tests/test_skill_contracts.py",
+    "gate_command_source": "option",
+    "integrated_revision": "7a57be66d502a816d4b1cba70be0b80eb30ecdc3",
+    "integrated_verdict": "failed",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T001538886711-gc-reports-what-it-already-did/verify-gate.log",
+    "ran": true,
+    "reason": null,
+    "recorded_gate_seconds": 69.32,
+    "replay_bound_seconds": 560.0,
+    "replay_bound_source": "explicit",
+    "timed_out": false,
+    "worktree_roots_rewritten": []
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
