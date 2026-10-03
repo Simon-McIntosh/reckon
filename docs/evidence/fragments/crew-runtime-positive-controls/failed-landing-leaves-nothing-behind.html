@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<title>A refused landing commit leaves nothing staged, written or stored behind</title>
+</head>
+<body>
+<main class="doc">
+
+<section id="measure">
+<h2>What this node measures</h2>
+<p>A landing writes three things before it commits them: the plan file carrying the
+run's comment, the run's own ledger file, and the run's row in the rebuildable store.
+When the commit is refused — a peer's <code>.git/index.lock</code> is the measured case
+— every one of the three must be taken back, or the next reader inherits a
+half-landing: a plan file no commit owns, a staged path a peer's next commit can sweep
+in, or a store row the retry's insert collides with. The guard is
+<code>tests/test_failed_landing_leaves_nothing_behind.py</code>: it holds a real
+<code>.git/index.lock</code> across a whole promotion, then asserts the plan file is
+byte-identical to its pre-promotion content, nothing is staged, no store row remains,
+and that a second promotion after the lock clears succeeds and leaves a clean
+worktree.</p>
+</section>
+
+<section id="mechanism">
+<h2>The two measured incidents, read from the source</h2>
+<figure>
+<img src="/reckon/figures/crew-runtime-positive-controls/failed-landing-leaves-nothing-behind/rollback-halves.svg" alt="The landing's writes meet a refusal from a peer's index lock; the one-shot restore is refused by the same lock, leaving the plan file modified and the store row in place. The repair splits the rollback: content comes back from HEAD's blob without touching the index, the index entry is read-only probed before any reset, and the store row is removed.">
+<figcaption>Where the one-shot rollback restore stopped, and the halves the repair splits it into. Neutral marks are the shared path; the amber branch is the pre-repair behaviour, the green branch the repaired one.</figcaption>
+</figure>
+<p>Both incidents have one cause. The rollback's restore is a single index-writing
+call, <code>git restore --source=HEAD --staged --worktree</code>, so the very lock that
+refused the landing's <code>git add</code> refuses the restore too. The old fallback
+then read the failure as &ldquo;nothing to do&rdquo; for a tracked path and reported it
+preserved while the plan file stayed modified in the shared working tree (the first
+incident: the run's comment and its incremented <code>plan-version</code> left
+uncommitted, where any peer's next commit could take it). For a path the promotion
+created it unlinked the file after a failed <code>git rm --cached</code>, leaving the
+index holding a staged path no longer on disk. And the store row inserted by
+<code>ledger.append_run</code> was never removed at all, so the retry's insert failed
+with <code>UNIQUE constraint failed: runs.run_id</code> instead of re-recording the
+run.</p>
+</section>
+
+<section id="repair">
+<h2>The repair</h2>
+<p>The rollback splits the two halves. The working tree comes back from HEAD's blob,
+read through the object store and written directly, so a held index lock cannot block
+it; only the index entry needs the lock, and a path whose entry is still staged is
+reported as not restored rather than as clean. A landing refused after its own append
+also removes the store row that append inserted. The index is read before it is
+written, so an attempt whose staging call was the one refused takes no unstage call at
+all.</p>
+</section>
+
+<section id="arms">
+<h2>Gate arms</h2>
+<p>Both arms ran with <code>pytest -n 8 --timeout=300</code>, one at a time in the
+foreground, each from its own basetemp outside any repository, each to its own log
+naming its revision on the first line and ending with a bare <code>EXIT=</code> line.
+Thirteen test files: the new guard plus every existing test carrying
+<code>_commit_landing_writes</code> or <code>rolled back</code>.</p>
+<ul>
+<li>Base arm (<code>git archive</code> extraction of
+<code>4efd4fdeae367f7f5c5931a24d41e674136c0c54</code> under /tmp): 1 failed, 64
+passed, EXIT=1. The single failure is the new guard at its plan-file assertion
+(&ldquo;the landing's plan write survives&rdquo;) — the defect reproduces.</li>
+<li>Head arm (worktree at <code>00abd9ad88f3d37d42598c342a14970f9e230d29</code>,
+carrying the repair and the guard): 4 failed, 61 passed, EXIT=1. The guard now passes;
+no base failure id remains.</li>
+<li><strong>The head arm adds four failure ids, so this node is blocked rather than
+complete.</strong> Each is a test that asserts the pre-repair behaviour and lives
+outside this node's write scope; each is recorded as a follow-on:</li>
+</ul>
+<ul>
+<li><code>tests/test_rollback_asks_head.py::test_head_path_survives_unrelated_restore_failure</code>
+— asserts a tracked path's landed content <em>survives</em> a refused restore and that
+exactly one restore call is made; both statements are the defect the plan removes.</li>
+<li><code>tests/test_receipt_names_the_rolled_back_row.py::test_survived_row_receipt_keeps_the_do_not_re_promote_wording</code>
+— seeds a run file at HEAD whose content the ledger refuses to load, and requires the
+row to survive a refused restore.</li>
+<li><code>tests/test_landing_commit_carries_only_its_own_comment.py::test_a_re_promotion_commits_a_plan_differing_only_by_its_own_comment</code>
+and
+<code>tests/test_repromotion_commits_its_recorded_comment.py::test_a_failed_landing_then_a_repromotion_commits_the_recorded_comment</code>
+— both assert the plan file is <em>dirty</em> after a refused landing, which is the
+first measured incident verbatim.</li>
+</ul>
+</section>
+
+<section id="control">
+<h2>Negative control</h2>
+<p>The declared control was applied, verbatim as declared: the working-tree restore was
+removed from the rollback (the <code>Path(path).write_bytes(content)</code> block of
+<code>_restore_one_landing_write</code>), and
+<code>tests/test_failed_landing_leaves_nothing_behind.py</code> was run against the
+mutated source. It fails at the plan-file assertion — &ldquo;the landing's plan write
+survives&rdquo; — with exit code 1 and a failing id the head arm does not fail. The
+mutation was applied to a <code>git archive</code> extraction of the head revision
+under /tmp, so the promoted file was never mutated; the log is
+<code>gate/negative-control.log</code>.</p>
+</section>
+
+<section id="followons">
+<h2>Follow-ons</h2>
+<ul>
+<li>Update the four tests above to assert the repaired contract, or replace them with
+the guard's assertions. They sit outside this node's exclusive write paths.</li>
+<li>The uncommitted plan write in the shared checkout at the time of the first incident
+was left by the pre-repair code; the repair takes the write back, but a plan file left
+dirty by an attempt that ran the old code still needs a manual look before the next
+peer commit in that checkout.</li>
+</ul>
+</section>
+
+</main>
+</body>
+</html>
