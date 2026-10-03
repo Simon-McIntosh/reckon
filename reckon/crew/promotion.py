@@ -1217,22 +1217,36 @@ def _zero_added_against_a_red_base(
 
     A gate is judged here by its delta against its base, so a nonzero exit
     beside a passing verdict is admitted only when the manifest records a
-    baseline observation that is itself red — a nonzero exit status — and whose
-    recorded failure ids include every id the head arm's log reports. That is
-    zero added against a red base, which is what the passing verdict then
-    states; anything less is refused by the caller.
+    baseline observation that is itself red — a nonzero exit status — whose
+    recorded failure ids include every id the head arm's log reports, and when
+    both arms declare their runs complete. That is zero added against a red
+    base, which is what the passing verdict then states; anything less is
+    refused by the caller.
 
-    Every condition is asked of the run's own records, never inferred: a
-    manifest that records no baseline, a baseline with no readable status or no
-    readable list of failure ids, and a head log that cannot be read each leave
-    the delta unmeasured, and an unmeasured delta cannot license the pair.
+    The head ids are read from the cited gate log's own ``FAILED``/``ERROR``
+    lines, never from the manifest's ``after_suite`` list: the manifest is the
+    run's own record, so a failure left out of it would read as zero added
+    while the log beside it names the id. Completion is asked of both arms as a
+    literal ``True``, never a truthy stand-in, the way the strict arm validator
+    asks it. An interrupted arm lists only the failures it reached before it
+    stopped: a short baseline then covers every id an unfinished head recorded
+    while the comparison itself says nothing about what the head added. Every
+    condition is asked of the run's own records, never inferred: a manifest
+    that records no arm, an arm that does not declare completion, a baseline
+    with no readable status or no readable list of failure ids, and a head log
+    that cannot be read each leave the delta unmeasured, and an unmeasured
+    delta cannot license the pair.
     """
     manifest = _fresh_manifest(record)
     if manifest is None:
         return False
     baseline = manifest.get("baseline_suite")
-    if not isinstance(baseline, Mapping):
+    after = manifest.get("after_suite")
+    if not isinstance(baseline, Mapping) or not isinstance(after, Mapping):
         return False
+    for arm in (baseline, after):
+        if arm.get("completed") is not True:
+            return False
     base_exit = baseline.get("exit_status")
     if isinstance(base_exit, bool) or not isinstance(base_exit, int) or base_exit == 0:
         return False
@@ -1248,6 +1262,26 @@ def _zero_added_against_a_red_base(
     if head_ids is None:
         return False
     return head_ids <= canonical_base
+
+
+def _arm_without_completion(manifest: Mapping[str, Any] | None) -> str | None:
+    """Name the first recorded suite arm that does not declare its run complete.
+
+    The refusal beside a nonzero exit status names the arm whose withheld
+    completion is what the admission turned on, so a reader knows which
+    observation to finish and record. Only an arm the manifest actually
+    records can be named: an arm that is absent is not an arm that omitted the
+    key, and calling it uncompleted would state a fact its absence does not.
+    """
+    if manifest is None:
+        return None
+    for name in ("baseline_suite", "after_suite"):
+        observation = manifest.get(name)
+        if not isinstance(observation, Mapping):
+            continue
+        if observation.get("completed") is not True:
+            return name
+    return None
 
 
 def _require_verdict_matches_exit_status(
@@ -1269,10 +1303,12 @@ def _require_verdict_matches_exit_status(
 
     The one pair admitted is the repository's own delta rule: an armed run
     whose manifest records a red baseline covering every id the head arm's log
-    reports measures zero added against that base, so its passing verdict is
-    the delta verdict and not a contradiction. The admission is read from the
-    run's records by ``_zero_added_against_a_red_base``; everything else
-    refuses, naming both the verdict and the status.
+    reports — both arms declaring their runs complete — measures zero added
+    against that base, so its passing verdict is the delta verdict and not a
+    contradiction. The admission is read from the run's records by
+    ``_zero_added_against_a_red_base``; everything else refuses, naming both
+    the verdict and the status, and naming the arm whose withheld completion is
+    what the admission turned on when there is one.
     """
     if verdict != "passed" or not isinstance(gate_check, Mapping):
         return
@@ -1281,16 +1317,26 @@ def _require_verdict_matches_exit_status(
         return
     if _zero_added_against_a_red_base(record, gate_check):
         return
+    incomplete = _arm_without_completion(_fresh_manifest(record))
+    withheld = (
+        ""
+        if incomplete is None
+        else (
+            f", and the {incomplete} arm it records does not declare "
+            "completed: true, so that arm never reached its suite's summary "
+            "line and its list of failures is not the set it measured"
+        )
+    )
     raise CrewError(
         f"run {run_id!r} asserts gate 'passed' beside exit status {asserted}: a "
         "passed verdict states the check succeeded and a nonzero exit status "
         "states it did not, so the row would record two contradictory readings "
-        "of one run. Found: gate 'passed' with a nonzero exit status, "
-        f"'{asserted}'. Re-promote with the verdict the evidence shows, or — "
-        "when the base this check measures against is itself red and the head "
-        "adds no failure to it — record the baseline_suite observation in the "
-        "manifest so the zero added against that base is what the passing "
-        "verdict states"
+        f"of one run. Found: gate 'passed' with a nonzero exit status, "
+        f"'{asserted}'{withheld}. Re-promote with the verdict the evidence "
+        "shows, or — when the base this check measures against is itself red, "
+        "the head adds no failure to it, and both suite arms record "
+        "completed: true — the passing verdict states the zero added against "
+        "that base"
     )
 
 

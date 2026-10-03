@@ -9,9 +9,15 @@ CLI in a fixture crew home and a fixture repository, and assert the refusal
 from the two values alone, whether or not the log carries its own exit record.
 
 One pair is admitted: the repository judges a gate by its delta against its
-base, so a run whose manifest records a red baseline covering every id the
-head arm's log reports measures zero added against that base, and its passing
-verdict is that delta. A run whose head adds an id to that base is refused.
+base, so a run whose manifest records both suite arms as complete, a red
+baseline among them, and a cited head log that adds no id to that base measures
+zero added against it, and its passing verdict is that delta. The head ids are
+read from the cited log's own ``FAILED``/``ERROR`` lines rather than the
+manifest's ``after_suite`` list, so a manifest that leaves out a head failure
+cannot pass a nonzero exit as zero added. A run whose head adds an id to that
+base is refused, and so is one whose baseline arm stopped before its suite
+finished — a short list that happens to cover every id the head records is not
+a measurement of what the head added.
 """
 
 from __future__ import annotations
@@ -34,6 +40,7 @@ COMMAND = f"{PROGRAM} -m pytest tests/test_passed_verdict_needs_exit_zero.py"
 BASELINE_FAILURE = "tests/test_verdict_fixture.py::test_the_guard_refuses"
 ADDED_FAILURE = "tests/test_verdict_fixture.py::test_the_guard_reports"
 BASE_SHA = "ca630c06e894d95111a8627b11d02a023aa270dd"
+HEAD_SHA = "9b0eac9cf4c1e0a1b5c2f0e6d3a7c1e9f2b4d6a8"
 
 
 def _git(repository: Path, *arguments: str) -> None:
@@ -101,22 +108,44 @@ def _write_pointer(run_id: str, repository: Path, manifest: str | None = None) -
     )
 
 
-def _red_baseline_manifest(base_log: str) -> str:
-    """A manifest whose baseline arm is red and already fails the named test."""
-    observation = {
+def _red_baseline_manifest(
+    base_log: str,
+    *,
+    baseline_completed: bool = True,
+) -> str:
+    """A manifest recording both arms: a red baseline and the head's own run.
+
+    The baseline's failure ids are the set the head is compared against. The
+    head ids themselves are read from the cited gate log, so the ``completed``
+    check is asked of the manifest while the ids are asked of the log — and
+    this manifest's empty ``after_suite`` list is what a record that simply
+    never listed any head failure would carry.
+    """
+    baseline = {
         "revision": BASE_SHA,
         "command": COMMAND,
         "exit_status": 3,
         "log_path": base_log,
         "log_digest": "",
-        "completed": True,
+        "completed": baseline_completed,
         "failure_count": 1,
         "failure_ids": [BASELINE_FAILURE],
+    }
+    after = {
+        "revision": HEAD_SHA,
+        "command": COMMAND,
+        "exit_status": 1,
+        "log_path": "",
+        "log_digest": "sha256:head-suite",
+        "completed": True,
+        "failure_count": 0,
+        "failure_ids": [],
     }
     return (
         "node: verdict-exit-fixture\n"
         "status: complete\n"
-        f"baseline_suite: {json.dumps(observation)}\n"
+        f"baseline_suite: {json.dumps(baseline)}\n"
+        f"after_suite: {json.dumps(after)}\n"
     )
 
 
@@ -214,15 +243,52 @@ def test_a_passing_verdict_with_a_zero_status_still_promotes(
     assert record["gate_check"]["exit_status"] == 0
 
 
+def test_an_interrupted_baseline_that_covers_every_head_id_is_refused(
+    repository: Path, tmp_path: Path
+) -> None:
+    """The baseline stopped before its suite finished, so its short list of
+    failures covers every id the head log records without stating anything
+    about it: the delta it appears to measure was never taken."""
+    run_id = "r-20261002T120800000000-interrupted-base"
+    base_log = tmp_path / "base-suite.log"
+    _write_pointer(
+        run_id,
+        repository,
+        _red_baseline_manifest(
+            str(base_log),
+            baseline_completed=False,
+        ),
+    )
+    head_log = tmp_path / "head-suite.log"
+    head_log.write_text(
+        f"FAILED {BASELINE_FAILURE} - AssertionError: boom\n"
+        "1 failed, 11 passed in 0.4s\n"
+        "EXIT=1\n",
+        encoding="utf-8",
+    )
+
+    result = _invoke(run_id, repository, head_log, exit_status=1, waive_review=True)
+
+    assert result.exit_code != 0, result.output
+    assert "gate 'passed'" in result.output
+    assert "exit status 1" in result.output
+    assert "baseline_suite" in result.output
+    assert pointer_path(run_id).is_file()
+
+
 def test_a_passing_verdict_on_a_red_base_that_adds_no_failure_promotes(
     repository: Path, tmp_path: Path
 ) -> None:
-    """The delta case: the base is red, the head log names only ids the
+    """The delta case: the base is red, the head arm records only ids the
     baseline already fails, so zero was added and the passing verdict is that
     delta."""
     run_id = "r-20261002T120600000000-red-base"
     base_log = tmp_path / "base-suite.log"
-    _write_pointer(run_id, repository, _red_baseline_manifest(str(base_log)))
+    _write_pointer(
+        run_id,
+        repository,
+        _red_baseline_manifest(str(base_log)),
+    )
     head_log = tmp_path / "head-suite.log"
     head_log.write_text(
         f"FAILED {BASELINE_FAILURE} - AssertionError: boom\n"
@@ -245,7 +311,11 @@ def test_a_head_that_adds_a_failure_beside_a_red_base_is_refused(
     fail: the delta is not zero, so the passing verdict is not the delta."""
     run_id = "r-20261002T120700000000-added-failure"
     base_log = tmp_path / "base-suite.log"
-    _write_pointer(run_id, repository, _red_baseline_manifest(str(base_log)))
+    _write_pointer(
+        run_id,
+        repository,
+        _red_baseline_manifest(str(base_log)),
+    )
     head_log = tmp_path / "head-suite.log"
     head_log.write_text(
         f"FAILED {BASELINE_FAILURE} - AssertionError: boom\n"
@@ -259,3 +329,33 @@ def test_a_head_that_adds_a_failure_beside_a_red_base_is_refused(
     assert result.exit_code != 0, result.output
     assert "gate 'passed'" in result.output
     assert "exit status 1" in result.output
+
+
+def test_an_empty_after_suite_failure_list_cannot_hide_an_id_the_head_log_names(
+    repository: Path, tmp_path: Path
+) -> None:
+    """The manifest's own head list is empty while the cited head log fails an
+    id the baseline lacks. Read from the manifest the delta would be zero and a
+    nonzero exit would pass as the measured delta; the log the promotion cites
+    names the added id, so the pair is refused."""
+    run_id = "r-20261002T120900000000-empty-head-list"
+    base_log = tmp_path / "base-suite.log"
+    _write_pointer(
+        run_id,
+        repository,
+        _red_baseline_manifest(str(base_log)),
+    )
+    head_log = tmp_path / "head-suite.log"
+    head_log.write_text(
+        f"FAILED {ADDED_FAILURE} - AssertionError: new boom\n"
+        "1 failed, 11 passed in 0.4s\n"
+        "EXIT=1\n",
+        encoding="utf-8",
+    )
+
+    result = _invoke(run_id, repository, head_log, exit_status=1)
+
+    assert result.exit_code != 0, result.output
+    assert "gate 'passed'" in result.output
+    assert "exit status 1" in result.output
+    assert pointer_path(run_id).is_file()
