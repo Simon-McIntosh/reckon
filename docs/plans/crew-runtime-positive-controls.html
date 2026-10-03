@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="263">
+<meta name="plan-version" content="264">
 </head>
 <body>
   <main class="plan-doc">
@@ -2066,6 +2066,9 @@
 </div>
 <div class="r-comment" data-section="s42" data-id="c-run-r-20261003T083128518544-node-claim-survives-a-corrupt-record" data-who="reckon-build" data-when="2026-10-03T09:24:05.594Z">
     <div class="r-comment-body"><p>An empty or unreadable node claim is given a 5-second grace period for its writer to land and is then reclaimed exactly as a dead holder's claim is, so a dispatcher killed between the exclusive create and its record write no longer wedges the node, and a pid beyond the kernel's int range now refuses under D12 instead of raising OverflowError out of the dispatch; eight cases in tests/test_concurrent_dispatch_of_one_node.py pass at head against the base arm's two failing new cases, ruff adds no finding, and the declared mutation reddens the fresh-empty case with 1 failed EXIT=1, while the record is blocked on one head-arm failure id the base arm did not carry and the evidence that it does not come from these commits is in the fragment at docs/evidence/fragments/crew-runtime-positive-controls/node-claim-survives-a-corrupt-record.html</p></div>
+</div>
+<div class="r-comment" data-section="s43" data-id="c-run-r-20261003T112155329835-review-of-reservation-reach-reaches-dispatch" data-who="reckon-build" data-when="2026-10-03T11:29:43.304Z">
+    <div class="r-comment-body"><p>An independent review of r-20261003T105036595106-reservation-reach-reaches-dispatch is stored as a parsed record scoring goal_fidelity 19, evidence 20, scope_discipline 20, durability 19, fit 19 (total 97), reading reviewed_base_sha bd621f63ce227fb31b8627fe9f4ac69d2115f90e and reviewed_head_sha c2c1bdf6782e2bf6ae413781d533402da8597d32, with added_failure_count 0 and no added_failure_ids derived from the reviewed run&#x27;s own gate logs.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
