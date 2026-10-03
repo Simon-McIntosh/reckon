@@ -5,6 +5,7 @@ import fcntl
 import hashlib
 import importlib
 import json
+import math
 import os
 import re
 import shlex
@@ -14,7 +15,9 @@ import tempfile
 import time
 from contextlib import contextmanager
 from datetime import UTC, datetime, timezone
+from functools import lru_cache
 from pathlib import Path
+from statistics import median
 from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence
 
 from reckon import review_tiers
@@ -3841,6 +3844,110 @@ def _generated_tokens(record: Mapping[str, Any]) -> int | None:
         return None
 
 
+def _positive_rate(value: Any) -> float | None:
+    """Read a measured rate without treating zero or a boolean as throughput."""
+    if isinstance(value, bool):
+        return None
+    try:
+        rate = float(value)
+    except (TypeError, ValueError):
+        return None
+    return rate if math.isfinite(rate) and rate > 0 else None
+
+
+@lru_cache(maxsize=64)
+def _historical_reference_rate(
+    project: str, backend: str, model: str, window_bucket: int
+) -> tuple[float | None, int]:
+    """Median recent committed rate for the same backend and model.
+
+    The five-minute bucket bounds repeated ledger reads by a live watcher. A
+    small or absent cohort is not a reference; a run then keeps an unknown
+    cause instead of inheriting another backend's or model's rate.
+    """
+    from reckon import ledger as ledger_module
+
+    try:
+        rows = ledger_module.load(project)[0]["runs"]
+    except (ledger_module.LedgerError, OSError, ValueError, KeyError, TypeError):
+        return None, 0
+    end = window_bucket * 300
+    start = end - 7 * 86400
+    rates: list[float] = []
+    for row in rows:
+        if not isinstance(row, Mapping) or row.get("backend") != backend:
+            continue
+        agent = row.get("agent")
+        if not isinstance(agent, Mapping) or agent.get("model") != model:
+            continue
+        completed = parse_utc(str(row.get("completed_at") or ""))
+        if completed is None or not start <= completed.timestamp() <= end:
+            continue
+        throughput = row.get("throughput")
+        if not isinstance(throughput, Mapping):
+            continue
+        rate = _positive_rate(throughput.get("tokens_per_second"))
+        if rate is not None:
+            rates.append(rate)
+    return (median(rates), len(rates)) if len(rates) >= 10 else (None, len(rates))
+
+
+def _budget_overrun_cause(
+    record: Mapping[str, Any],
+    timing: Mapping[str, Any],
+    *,
+    now_seconds: float | None = None,
+) -> dict[str, Any]:
+    """Attribute an overrun using its rate beside a same-model reference.
+
+    A slow generation rate is lane saturation in this operational vocabulary;
+    it can also reflect a serving defect, so the rate and reference travel with
+    the label. Normal-rate work is over-large only when its token allowance was
+    exceeded or its generated volume would exceed the seconds allowance even
+    at the reference rate. Anything unmeasured stays unknown.
+    """
+    if not timing.get("budget_overrun") and not timing.get("budget_overrun_seconds"):
+        return {}
+    throughput = record.get("throughput")
+    rate = (
+        _positive_rate(throughput.get("tokens_per_second"))
+        if isinstance(throughput, Mapping)
+        else None
+    )
+    project = str(record.get("project") or "")
+    backend = str(record.get("backend") or "")
+    agent = record.get("agent")
+    model = str(agent.get("model") or "") if isinstance(agent, Mapping) else ""
+    reference: float | None = None
+    count = 0
+    if rate is not None and project and backend and model:
+        moment = _utc_seconds() if now_seconds is None else float(now_seconds)
+        reference, count = _historical_reference_rate(
+            project, backend, model, int(moment // 300)
+        )
+    cause = "unknown"
+    if rate is not None and reference is not None:
+        if rate < reference / 2:
+            cause = "lane-saturated"
+        else:
+            tokens = _generated_tokens(record)
+            budget_seconds = timing.get("budget_seconds")
+            if timing.get("budget_overrun_tokens", 0) or (
+                tokens is not None
+                and isinstance(budget_seconds, (int, float))
+                and budget_seconds > 0
+                and tokens / reference > budget_seconds
+            ):
+                cause = "over-large"
+    return {
+        "budget_overrun_cause": cause,
+        "budget_overrun_rate": rate,
+        "budget_overrun_reference_rate": reference,
+        "budget_overrun_reference_runs": count,
+        "budget_overrun_reference_source": "recent committed runs, same backend and model",
+    }
+
+
 def _token_budget_timing(
     token_budget: int,
     generated_tokens: int | None,
@@ -3959,6 +4066,7 @@ def _apply_budget_watchdog(
 ) -> None:
     """Record deadline posture and optionally stop an over-grace CLI worker."""
     timing = _budget_timing(record)
+    timing.update(_budget_overrun_cause(record, timing))
     record.update(timing)
     fences = (config or {}).get("fences") or {}
     if not fences.get("enforce_budget_watchdog"):
@@ -8388,6 +8496,7 @@ def classify_pointer(
             lifting_condition = DEFAULT_LIFTING_CONDITIONS["paused"]
 
     timing = _budget_timing(record, now_seconds=now_seconds)
+    timing.update(_budget_overrun_cause(record, timing, now_seconds=now_seconds))
     observed_phase = _observed_phase(
         phase,
         alive=alive,
