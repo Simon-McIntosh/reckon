@@ -89,6 +89,28 @@ def without_dispatch_identity(monkeypatch):
         monkeypatch.delenv(name, raising=False)
 
 
+# The picker answers over OpenRouter and authenticates with a live credential.
+# Since routing.picker became ``route`` by default, any dispatch that names no
+# lane asks the live service; the whole suite then depends on an external
+# service, spends money on every run, and reads its judgement back as a test
+# outcome. Measured 2026-10-03: a whole-suite run failed
+# ``test_a_layer_removing_a_default_leaves_it_writable_and_records_it`` with a
+# real "BudgetHold: wave held on budget ... picker selected hold" — a live Jev
+# verdict, not a fact about the code under test. Isolation is closed here, in
+# one place bound to every test, and the credential file the checkout's real
+# ``.env`` supplies is replaced by a path that holds no key, so credential
+# resolution fails deterministically and the client raises ``LiveJevDisabled``
+# before it builds a request.
+@pytest.fixture(autouse=True)
+def no_live_jev(tmp_path_factory, monkeypatch):
+    """No test reaches the live picker service or reads the real credential."""
+    from reckon.crew.picker import client
+
+    monkeypatch.delenv("OPENROUTER_API_KEY_RECKON", raising=False)
+    absent = tmp_path_factory.mktemp("no-live-jev") / "absent-credential"
+    monkeypatch.setenv(client.CREDENTIAL_ENV, str(absent))
+
+
 # The served process's discovery walk-reuse window. ``serve.main`` assigns
 # ``reckon.serve._SIGNATURE_TTL_S`` on whichever thread runs the server and does
 # not restore it, so a test that starts the served process leaves a live
