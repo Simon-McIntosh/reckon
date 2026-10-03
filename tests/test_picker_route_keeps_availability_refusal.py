@@ -83,6 +83,36 @@ def _host_flight() -> str:
     )
 
 
+def _in_harness_flight() -> str:
+    """Two in-harness backends, both served, for a dispatch that can complete.
+
+    An in-harness backend needs no external command and reports no unserved
+    model, so the availability check passes and the dispatch runs to a
+    directive — the path the single-pick check is asserted on.
+    """
+    return (
+        "routing:\n"
+        "  picker: route\n"
+        "default_backend: alpha\n"
+        "backends:\n"
+        "  alpha:\n"
+        "    launch: in-harness\n"
+        "    model: alpha-model\n"
+        "    sandbox: worktree-full\n"
+        "    time_budget: 20m\n"
+        "  beta:\n"
+        "    launch: in-harness\n"
+        "    model: beta-model\n"
+        "    sandbox: worktree-full\n"
+        "    time_budget: 20m\n"
+        "roles:\n"
+        "  implement: {}\n"
+        "fences:\n"
+        "  time_budget: 20m\n"
+        "  needs_help_after_failures: 2\n"
+    )
+
+
 def _selection(action: str, backend: str | None):
     """A picker answer shaped like the object ``dispatch_picker_selection`` reads."""
     fields = {
@@ -247,3 +277,48 @@ def test_a_picker_route_to_a_served_backend_still_dispatches(
     assert payload["ok"] is True
     assert payload["backend"] == "server"
     assert payload["picker_selection"]["backend"] == "server"
+
+
+def test_a_picker_refusal_checks_the_unserved_default(
+    home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A refuse continues to the default backend, so the probe runs on it."""
+    (home / "flight.yaml").write_text(_host_flight(), encoding="utf-8")
+    _install_picker(monkeypatch, _selection("refuse", None))
+
+    result = CliRunner().invoke(cli_module.main, _arguments(repo, dry_run=True))
+
+    assert result.exit_code == 5, result.output
+    payload = json.loads(result.output)
+    assert payload["error"] == "competence-refusal"
+    assert payload["competence"]["backend"] == "worker"
+    assert payload["picker_selection"]["action"] == "refuse"
+    assert not list(crew.list_live(project="sample"))
+
+
+def test_one_pick_per_dispatch_and_the_checked_backend_is_dispatched(
+    home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The dispatcher reuses the caller's pick, so it probes what it dispatches.
+
+    A mock picker returns a different backend on a second call: were the pick
+    made again inside ``dispatch`` the dispatched backend would be the second
+    answer, which the availability check never saw. One call and a dispatched
+    backend equal to the checked one is the contract.
+    """
+    (home / "flight.yaml").write_text(_in_harness_flight(), encoding="utf-8")
+    calls: list[bool] = []
+
+    def pick(*_args, **_kwargs):
+        calls.append(True)
+        return _selection("route", "alpha" if len(calls) == 1 else "beta")
+
+    monkeypatch.setattr(picker_module, "pick", pick)
+
+    result = CliRunner().invoke(cli_module.main, _arguments(repo, dry_run=False))
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert len(calls) == 1, "the picker must be asked once per dispatch"
+    assert payload["picker_selection"]["backend"] == "alpha"
+    assert payload["backend"] == "alpha"

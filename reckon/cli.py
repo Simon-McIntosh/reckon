@@ -1116,15 +1116,17 @@ def _picker_routed_backend(config, selection):
     """The backend a picker selection sends the dispatch to, or ``""``.
 
     Mirrors the routing ``plan_dispatch`` applies to the same selection: a
-    ``route`` action names its own backend, a ``fallback`` falls through to the
-    configured default, and every other action (``hold``, ``refuse``, a
-    ``route`` with no backend) leaves the backend to the picker's own refusal
-    path rather than resolving one here.
+    ``route`` action names its own backend, while a ``fallback``, a ``refuse``
+    and a ``route`` carrying no backend all continue to the configured default.
+    A ``hold`` resolves no backend — it is a budget decision, not a lane — so it
+    is left to the picker's own hold path rather than resolving one here.
     """
     action = str(selection.get("action") or "")
     if action == "route":
-        return str(selection.get("backend") or "")
-    if action == "fallback":
+        return str(selection.get("backend") or "") or str(
+            config.get("default_backend") or ""
+        )
+    if action in {"fallback", "refuse"}:
         return str(config.get("default_backend") or "")
     return ""
 
@@ -2042,6 +2044,7 @@ def crew_dispatch(
             no_fence_reason=no_fence_reason,
             route=route,
             comment=comment,
+            picker_selection=picker_selection,
         )
     except crew_module.PlanVisibilityError as exc:
         _emit(
