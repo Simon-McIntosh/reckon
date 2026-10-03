@@ -18,6 +18,11 @@ is refused with status 97 unless one of two things holds:
   ``--jobid`` or a single task (``--ntasks=1`` / ``-n 1``), because such a
   launch names the one step it wants instead of inheriting the task count.
 
+Every refusal also names both routes out, so a worker that reads it does not
+take it for "no route exists": heavy work that does not belong in this
+allocation goes to a separate partition job, and a launch that is meant to be
+nested is the deliberate discharge above.
+
 Outside the allocation, and for every argv that is not refused, the shim
 forwards to the real binary with the argv unchanged. The real binary is the
 first one on ``PATH`` that is not a reckon shim (:mod:`reckon.shim_lookup`), so
@@ -46,6 +51,14 @@ MISSING_BINARY_STATUS = 127
 # The one discharge from the refusal. Set to a truthy value and the launch is
 # forwarded unchanged.
 OVERRIDE_ENV = "RECKON_ALLOW_NESTED_LAUNCH"
+
+# The other route, and the partitions that show what a separate partition job
+# looks like here. The opt-in above is for a launch that is meant to be nested;
+# work that simply does not belong inside this allocation goes to a job of its
+# own. Both are named in every refusal, so a reader learns where the work
+# should go rather than only that it was refused.
+PARTITION_ROUTE = "a separate partition job"
+PARTITION_EXAMPLES = ("all_debug", "betelgeuse")
 
 # Truthy values that are not the discharge. Anything else non-empty enables it.
 _OFF = frozenset({"", "0", "false", "no"})
@@ -117,9 +130,11 @@ def refuses_implicit_launch(
 def refusal_message(tool: str, facts: HostFacts) -> str:
     """The refusal an implicit nested launch composes.
 
-    It names the job and the node, says the work should run directly, states
-    the discharge and — for ``srun`` — the explicit form, and says outright
-    that the command line is not rewritten. It never invents a corrected argv.
+    It names the job and the node, says the work should run directly, names
+    both routes out — a separate partition job for heavy work, and the opt-in
+    for a deliberate nested launch — states the explicit single-step form for
+    ``srun``, and says outright that the command line is not rewritten. It
+    never invents a corrected argv.
     """
     job = facts.job_id or "an unknown job"
     node = facts.node or "an unknown node"
@@ -132,6 +147,11 @@ def refusal_message(tool: str, facts: HostFacts) -> str:
             f"An implicit {tool} inherits the job's task count and fans out across "
             "the allocation; run the command directly instead. This shim does not "
             "rewrite the command line for you."
+        ),
+        (
+            f"Heavy work that does not belong inside this job goes to "
+            f"{PARTITION_ROUTE} instead (for example on "
+            f"{' or '.join(PARTITION_EXAMPLES)})."
         ),
     ]
     if tool == _SRUN:

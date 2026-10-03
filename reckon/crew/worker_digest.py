@@ -32,6 +32,11 @@ canonical file, and :func:`missing_rules` names any a digest does not carry.
 digest must not carry. A role adds blocks on top of that floor; it never
 removes one.
 
+A retained block can also carry a sentence the digest composes itself:
+:data:`ADDED_SENTENCES` states the routes out where a canonical rule refuses a
+launch without naming one, so the brief does not leave a worker holding a
+refusal it cannot act on.
+
 The digests are generated artefacts committed under ``reckon/crew/digests/``.
 They are regenerated from the canonical file, not hand-edited, and
 :func:`generate` is pure so a test can assert that regeneration reproduces the
@@ -46,6 +51,8 @@ import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+
+from reckon.nested_launch import OVERRIDE_ENV, PARTITION_EXAMPLES, PARTITION_ROUTE
 
 CANONICAL_SOURCE = "~/.agents/AGENTS.md"
 
@@ -108,6 +115,26 @@ DROPPED_BLOCKS: tuple[str, ...] = (
     "### Stash Recovery Protocol",
     "### Pre-Edit Protocol for Shared Files",
 )
+
+# The fleet-allocation rule and the sentence the digest adds after it. The
+# canonical file states the rule and, because it lives outside this repository,
+# cannot be edited from here; a rule that refuses a nested launch without
+# naming a route out sends a worker back into the refusal it just read, so the
+# digest itself states both routes.
+FLEET_COMPUTE_HEADER = "### On the fleet allocation, run heavy work in place"
+
+COMPUTE_ROUTES_SENTENCE = (
+    "Heavy work that cannot run in place is discharged either as\n"
+    f"{PARTITION_ROUTE} (for example on {' or '.join(PARTITION_EXAMPLES)}) or, to\n"
+    f"submit from inside the allocation, by setting {OVERRIDE_ENV}=1."
+)
+
+# Canonical header -> the sentence the digest appends after that block's own
+# text. Keyed by header, so a role that does not retain the block receives no
+# sentence.
+ADDED_SENTENCES: dict[str, str] = {
+    FLEET_COMPUTE_HEADER: COMPUTE_ROUTES_SENTENCE,
+}
 
 EXCERPTS: dict[str, Excerpt] = {
     "banned-git-commands": Excerpt(
@@ -383,6 +410,14 @@ def _excerpt_chunk(name: str, blocks: Mapping[str, str]) -> str:
     return "\n".join([excerpt.header, "", *rendered]) + "\n"
 
 
+def _with_added_sentence(header: str, chunk: str) -> str:
+    """A retained block, followed by the sentence the digest adds for it."""
+    sentence = ADDED_SENTENCES.get(header)
+    if sentence is None:
+        return chunk
+    return f"{chunk.rstrip()}\n\n{sentence}\n\n"
+
+
 def select_blocks(keys: Iterable[str], text: str) -> list[tuple[str, str]]:
     """(canonical header, rendered chunk) for each key, in canonical order.
 
@@ -405,7 +440,10 @@ def select_blocks(keys: Iterable[str], text: str) -> list[tuple[str, str]]:
             selected.append((order[key], key, key, blocks[key]))
         else:
             raise UnknownBlockError(f"canonical source has no block {key!r}")
-    return [(header, chunk) for _, _, header, chunk in sorted(selected)]
+    return [
+        (header, _with_added_sentence(header, chunk))
+        for _, _, header, chunk in sorted(selected)
+    ]
 
 
 def retained_headers(keys: Iterable[str], text: str) -> list[str]:
