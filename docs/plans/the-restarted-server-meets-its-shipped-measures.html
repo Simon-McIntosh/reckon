@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 </head>
 <body>
   <main class="plan-doc">
@@ -104,6 +104,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20261003T155402319836" data-who="" data-when="">
     <div class="r-comment-body"><p>§3's phase half landed: merge 4c2388662 of 07b01365f (run r-20261003T145631922192-a-launched-run-reads-launched, commits 1f29f3112 and 07b01365f; reviewed at 85). <code>_crew_rows</code> in <code>reckon/serve.py</code> reports each run's phase from the crew live view's classification instead of the stream file's age. A launched run with a live supervisor and no stream yet now reads as launching, not idle. <code>tests/test_a_launched_run_reads_launched.py</code> pins that case, plus a fresh-stream run reading working and a terminal one reading done. Evidence: <code>docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/a-launched-run-reads-launched.html</code>.</p><p>Measured stacked over main 369105d47 on the 13 files naming <code>_crew_rows</code>, its helpers or the <code>/crew</code> route: 0 added, 3 new tests passing. The merged code equals the measured stack. The review counted one added failure from the worker's own population, the discovery-route 5 s client timeout the worker disclosed as load-only; it passed in both arms of the coordinator's measurement. §3 stays implementable for its second half: <code>GET /crew</code> answering in under one second on 40 live pointers. The live server still runs code from before this change and needs a restart to show it.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20261003T170359213287" data-who="" data-when="">
+    <div class="r-comment-body"><p>§4's main-side check landed: merge 12617a5c2 of 0879c3414 (run r-20261003T162906962061-a-sprint-that-exists-renders, commits 68c2e4f3a and 0879c3414; reviewed at 85). The test serves a fixture project through the real handler, with its sprint present only as a file on disk, and finds that sprint in the discovery payload. On this checkout, <code>discover_plans</code> returns S3 to S25. So main reads S25, and the live "No sprint." came from the served process running code from before 2026-10-02 11:18. The pin is <code>tests/test_a_sprint_that_exists_renders.py</code>; it passes on main merged with this head.</p><p>The review notes the pin asserts the sprint view's input (<code>/_discover</code>), not the rendered route, so a regression in <code>docs/ui/sprint.jsx</code>'s id match would escape it. §4 stays implementable for the last clause of its done-when: re-measure the sprint route on a server restarted onto main. That waits on the operator's restart of reckon.service.</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261003T132413476447-live-server-measures" data-who="reckon-build" data-when="2026-10-03T14:12:52.855Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html</p></div>
