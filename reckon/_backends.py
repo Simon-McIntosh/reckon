@@ -65,7 +65,7 @@ import time
 import urllib.request
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -2494,6 +2494,148 @@ def _harness_credential_binds(
     return []
 
 
+# The per-run record of the operator's codex login: the size the file held when
+# the launch composed the writable bind, and the size read back afterwards. The
+# writable bind is what lets a token refresh survive the run, and it is also
+# what lets a run blank the operator's only login — a zero on the size read
+# after the run is that loss. It is reported rather than left to be discovered
+# when the operator's next launch fails authentication, since nothing else
+# observes the file. Sizes only: the credential's contents are never read,
+# copied or printed.
+CODEX_LOGIN_RECORD_NAME = "codex-login.json"
+
+# The run's stderr log, where a post-run observation reports a login loss so a
+# reader of the run's live output is told without opening the run's record.
+RUN_STDERR_LOG_NAME = "stderr.log"
+
+
+def codex_login_record_path(run_directory: str | Path) -> Path:
+    """Return the run's login-size record path, whether or not it exists."""
+    return Path(run_directory) / CODEX_LOGIN_RECORD_NAME
+
+
+def codex_login_size(path: str | Path) -> int | None:
+    """Return the login file's size without opening it, or None if unreadable."""
+    try:
+        return Path(path).stat().st_size
+    except OSError:
+        return None
+
+
+def record_codex_login_size(
+    run_directory: str | Path, source: str | Path
+) -> dict[str, Any] | None:
+    """Record the login's size before a fenced launch, if not already recorded.
+
+    Written once per run: the size at the first composition is the one the
+    post-run reading is compared against, and a later composition — a resume,
+    or a preview of one taken after the damage — must not overwrite it with a
+    size measured on the wrong side of the run. A source that cannot be
+    measured leaves no record, because comparing against an unknown before-size
+    would report every later reading as unchanged.
+    """
+    destination = codex_login_record_path(run_directory)
+    if destination.exists():
+        return None
+    size_before = codex_login_size(source)
+    if size_before is None:
+        return None
+    record = {
+        "path": str(Path(source)),
+        "size_before": size_before,
+        "size_after": None,
+        "truncated": False,
+        "recorded_at": datetime.now(UTC).isoformat(),
+    }
+    write_json_atomically(destination, record, fsync=False)
+    return record
+
+
+def codex_login_truncation_detail(report: Mapping[str, Any]) -> str:
+    """The one-line report a truncated login produces, for a record or a log."""
+    return (
+        f"the operator's codex login {report.get('path')} held "
+        f"{report.get('size_before')} bytes before the run and "
+        f"{report.get('size_after')} bytes after it; the writable bind let the "
+        "run blank it"
+    )
+
+
+def observe_codex_login(
+    run_directory: str | Path, *, now: datetime | None = None
+) -> dict[str, Any] | None:
+    """Read the login's size after a run and report a truncation, or None.
+
+    The check compares the size the run recorded before its launch with the
+    size on this reading, two ``stat`` calls: it never opens, reads, copies or
+    prints the credential. A zero after a non-zero start is the truncation this
+    reports. A file back to a non-zero size clears a report taken while a
+    rewrite was mid-flight, because a token refresh truncates and writes the
+    same file in place, so a reading caught between the two is momentary and a
+    refresh that completed is not a loss.
+
+    The report is written into the run's own login record and, the first time a
+    truncation is seen, appended to the run's stderr log. Runs with no record —
+    every lane that binds no codex credential, and every run composed before
+    this check existed — are never reported on.
+    """
+    destination = codex_login_record_path(run_directory)
+    if not destination.is_file():
+        return None
+    try:
+        record = json.loads(destination.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(record, Mapping):
+        return None
+    try:
+        size_before = int(record.get("size_before") or 0)
+    except (TypeError, ValueError):
+        return None
+    size_after = codex_login_size(str(record.get("path") or ""))
+    if size_after is None:
+        return None
+    moment = (now or datetime.now(UTC)).isoformat()
+    if size_after == 0 and size_before > 0:
+        report = dict(record)
+        report["size_after"] = 0
+        report["truncated"] = True
+        report["detected_at"] = record.get("detected_at") or moment
+        write_json_atomically(destination, report, fsync=False)
+        if not record.get("truncated"):
+            _report_codex_login_truncation(run_directory, report)
+        return report
+    if record.get("truncated"):
+        healed = dict(record)
+        healed["size_after"] = size_after
+        healed["truncated"] = False
+        healed["healed_at"] = moment
+        write_json_atomically(destination, healed, fsync=False)
+        return None
+    if record.get("size_after") != size_after:
+        updated = dict(record)
+        updated["size_after"] = size_after
+        write_json_atomically(destination, updated, fsync=False)
+    return None
+
+
+def _report_codex_login_truncation(
+    run_directory: str | Path, report: Mapping[str, Any]
+) -> None:
+    """Append one truncation report to the run's stderr log.
+
+    The append is how a reader of the run's live output learns of the loss; the
+    record is the durable copy. A log the process cannot append to is not fatal
+    to the report, which the record still carries.
+    """
+    destination = Path(run_directory) / RUN_STDERR_LOG_NAME
+    try:
+        with destination.open("a", encoding="utf-8") as handle:
+            handle.write(codex_login_truncation_detail(report) + "\n")
+    except OSError:
+        return
+
+
 # The flight keys that tune the fence's protected set. ``protected_paths``
 # names paths a layer adds; ``unprotected_paths`` names defaults a layer leaves
 # writable. Declared here beside the built-in default so a reader sees the
@@ -3083,15 +3225,21 @@ def launch_plan(
     # cannot commit until those are granted writable; and its harness home does
     # not yet carry the operator's hooks or instruction files.
     if fence:
+        credential_binds = _harness_credential_binds(dialect, harness, fence_home)
+        # The login's size is recorded before the fence opens, so the post-run
+        # reading has a before-size to compare against; see
+        # :func:`observe_codex_login` for why the file needs one.
+        if dialect.name == "codex" and harness is not None:
+            source = codex_auth_source(fence_home)
+            if source is not None:
+                record_codex_login_size(run_directory, source)
         argv = fence_argv(
             argv,
             writable_directories=write_roots,
             worktree=worktree_path,
             manifest_path=manifest,
             home=fence_home,
-            read_write_binds=_harness_credential_binds(
-                dialect, harness, fence_home
-            ),
+            read_write_binds=credential_binds,
             config=fence_config,
         )
     return LaunchPlan(
@@ -3585,6 +3733,7 @@ def _stream_head_intact(path: str | Path, recorded: object) -> bool:
         return False
     return hashlib.sha256(head).hexdigest() == digest
 
+
 # Bytes of stream records the readers have consumed since the count was last
 # taken. A producer takes it once a poll to report how much of the fleet's
 # stream traffic that poll actually parsed; no other reader consults it, and a
@@ -3675,7 +3824,41 @@ def observe_log(
     the file, one with no state to extend, or one whose stream's opening is no
     longer the recorded one reads the stream whole, which is what a truncated,
     replaced or in-place-rewritten stream needs.
+
+    The run's login record is read alongside the stream, so a run that blanked
+    the operator's codex credential is reported wherever the run is observed
+    rather than only where its record is opened by hand; see
+    :func:`observe_codex_login`. Every post-run fold writes the observed detail
+    onto the run's record, so the truncation lands there as well as in the
+    stream's own reading.
     """
+    observation = _observe_run_stream(
+        backend_name=backend_name,
+        backend=backend,
+        log_path=log_path,
+        elapsed_seconds=elapsed_seconds,
+        receipt=receipt,
+        resume=resume,
+    )
+    report = observe_codex_login(Path(log_path).parent)
+    if report is not None:
+        note = codex_login_truncation_detail(report)
+        observation.detail = (
+            f"{observation.detail} | {note}" if observation.detail else note
+        )
+    return observation
+
+
+def _observe_run_stream(
+    *,
+    backend_name: str,
+    backend: Mapping[str, Any],
+    log_path: str | Path,
+    elapsed_seconds: float | None = None,
+    receipt: object | None = None,
+    resume: Mapping[str, Any] | None = None,
+) -> Observation:
+    """Read one run's event stream into an observation."""
     path = Path(log_path)
     if not path.exists():
         obs = Observation(
