@@ -734,13 +734,22 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
         roster_member = roster_by_project.get(name, {}).get(member_id, {})
         last_activity, age, lines = _log_activity(pointer)
         terminal = _stream_is_terminal(pointer, lines)
-        phase = (
-            "done"
-            if terminal
-            else "working"
-            if age is not None and age <= crew.LOG_STALE_AFTER_SECONDS
-            else "idle"
-        )
+        # The phase is the crew live view's own classification, read from the
+        # same judgement every other crew surface renders, so one run cannot
+        # read two ways. A dispatch writes its pre-spawn label at launch, so a
+        # run whose worker has not started yet reads as launching rather than
+        # waits for a stream that does not exist. The stream reading stands only
+        # where the classifier has no phase to give — a pointer recording no
+        # phase and carrying no evidence of a launch.
+        phase = str(crew.classify_pointer(pointer).get("phase") or "")
+        if not phase:
+            phase = (
+                "done"
+                if terminal
+                else "working"
+                if age is not None and age <= crew.LOG_STALE_AFTER_SECONDS
+                else "idle"
+            )
         plan_key = (name, plan)
         if plan_key not in details_by_plan:
             details_by_plan[plan_key] = _crew_plan_details(mounts[name], plan)
