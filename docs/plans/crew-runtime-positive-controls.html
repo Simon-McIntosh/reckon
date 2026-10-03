@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="245">
+<meta name="plan-version" content="246">
 </head>
 <body>
   <main class="plan-doc">
@@ -2009,6 +2009,9 @@
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261003T051508992595-review-of-concurrent-dispatch-of-one-node" data-who="reckon-build" data-when="2026-10-03T05:24:24.605Z">
     <div class="r-comment-body"><p>independent review of the one-worktree node claim landed; scores goal_fidelity 20 / evidence 18 / scope_discipline 20 / durability 15 / fit 19 (total 92), recorded in the review store keyed to base 06449805cf535c33f37f1a5688232d8429f851ea and head f60124000c4e3e71deec3751d190a882e7c77394, with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own gate logs</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261003T043715292121-concurrent-dispatch-of-one-node" data-who="reckon-build" data-when="2026-10-03T05:34:22.882Z">
+    <div class="r-comment-body"><p>reckon/crew/dispatch.py takes an exclusive per-node claim file under the crew store immediately before the worktree is cut, records the holder&#x27;s pid and kernel process start time, releases the claim when the dispatch finishes, and reclaims a claim whose holder process is gone or whose pid now names another process (rename aside, then exclusive create), naming the reclaimed holder on its result, so two dispatches of one node cannot both reach worktree creation and one killed dispatcher cannot block the node; measure - base arm 234 passed, 2 skipped, EXIT=0; head arm (revision 414233c8ee5ccea81b2395f52f0552add3e0c68a) 239 passed, 2 skipped, EXIT=0, no added failure id; declared negative control removes the claim and both dispatches reach worktree creation, 4 failed, EXIT=1 (measured, not modelled).</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
