@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 </head>
 <body>
@@ -250,6 +250,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261002T220528782430-review-of-section-record-moves-between-declarations" data-who="reckon-build" data-when="2026-10-02T22:14:22.321Z">
     <div class="r-comment-body"><p>An independent review of run r-20261002T213705240861-section-record-moves-between-declarations at base ca3a120f8 / head ec04b4cbf is stored as a parsed record (status parsed, total 91/100) scoring goal_fidelity 18, evidence 18, scope_discipline 18, durability 19, fit 18, with zero added failure ids and one follow-on finding on the plan's done-when wording.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261003T110041571435-every-edit-path-refuses-one-shape" data-who="reckon-build" data-when="2026-10-03T11:38:17.421Z">
+    <div class="r-comment-body"><p>No code change: re-measured at base, every op path of _edit_plan already returns the identical structured version-conflict refusal (ok false, error version_conflict, expected_version 0, current_version 1, message naming both) with the conflict raised inside its own store call, so the recorded escape does not reproduce; added tests/test_every_edit_path_refuses_one_shape.py guarding all four op kinds (6 passed at head; base arm 668 passed / 1 pre-existing failure, head arm 668 passed / 1 same failure, 0 added; race file 20/20 runs at -n 8 under a concurrent load).</p></div>
 </div>
 </section>
 </main>
