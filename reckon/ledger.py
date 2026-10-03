@@ -760,7 +760,18 @@ def input_stamp(project: str, root: str | Path | None = None) -> str | None:
     aggregate = ledger_path(project, root).resolve()
     snapshot = _run_snapshot(project, root)
     aggregate_identity = _file_identity(aggregate)
-    if aggregate_identity is None or any(stamp is None for _, stamp in snapshot):
+    if aggregate_identity is None:
+        # An absent aggregate is a valid empty roster; unreadable metadata is
+        # not evidence of absence and must forfeit caching.
+        try:
+            aggregate.stat()
+        except FileNotFoundError:
+            pass
+        except OSError:
+            return None
+        else:
+            return None
+    if any(stamp is None for _, stamp in snapshot):
         return None
     value = [
         str(aggregate),

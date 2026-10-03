@@ -723,3 +723,30 @@ def test_profile_does_not_cache_across_a_source_change(tmp_path, monkeypatch):
     assert lane_context._cached_run_time_profile("sample", now=NOW)["count"] == 2
     assert lane_context._cached_run_time_profile("sample", now=NOW)["count"] == 2
     assert calls == ["sample", "sample"]
+
+
+@pytest.mark.parametrize("with_run", [False, True])
+def test_absent_aggregate_retains_verdict_cache(tmp_path, monkeypatch, with_run):
+    from reckon.crew import routing
+
+    root, aggregate, directory = _fixture(tmp_path, monkeypatch)
+    aggregate.unlink()
+    if with_run:
+        _write(directory, _row("first"))
+    builds = []
+    monkeypatch.setattr(capabilities, "load_capabilities", dict)
+
+    def status(*args, **kwargs):
+        rows = ledger.runs("sample", root)
+        builds.append(rows)
+        return "observed"
+
+    monkeypatch.setattr(capabilities, "project_cache_status", status)
+    for _ in range(2):
+        assert (
+            routing.shared_verdict_inputs("sample", root)["cache_status"] == "observed"
+        )
+    assert len(builds) == 1
+    assert len(builds[0]) == int(with_run)
+    cache = capabilities.pick_input_cache_path("verdict-inputs-sample")
+    assert json.loads(cache.read_text())["value"]["cache_status"] == "observed"
