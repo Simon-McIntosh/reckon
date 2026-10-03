@@ -507,7 +507,6 @@ def _restore_seat_record_mirror(root: Path) -> None:
 def seat_records_mirror_is_hidden_from_the_running_tests(tmp_path_factory):
     """Only the session-end reap reads another test's mirrored seat records."""
     _set_aside_seat_record_mirror(tmp_path_factory.getbasetemp())
-    return
 
 
 @pytest.fixture(scope="session", autouse=True)
