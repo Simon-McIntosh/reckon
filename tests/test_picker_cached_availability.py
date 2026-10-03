@@ -71,6 +71,29 @@ def test_fresh_refused_cached_observation_still_excludes(
     assert by["remote"].reasons == ["availability: refused"]
 
 
+def test_in_harness_backend_is_never_offered(
+    live_facts, monkeypatch, request_node, config, tmp_path
+):
+    """A routed CLI dispatch cannot execute an in-harness lane.
+
+    Nothing spawns an in-harness backend, because only a coordinator
+    attaching the task it already runs can bind the harness. Its unknown
+    availability must not be read as offerable, while a CLI backend with the
+    same unknown availability stays offered.
+    """
+    config["backends"]["native"] = {
+        "launch": "in-harness",
+        "model": "native-model",
+        "effort": "high",
+    }
+    monkeypatch.setattr(snapshot.resumption, "_read_lane_probe_cache", lambda *a: {})
+    _no_probe(monkeypatch)
+    by = _by_backend(request_node, config, tmp_path)
+    assert by["native"].reasons == ["in-harness-backend"]
+    assert by["remote"].availability == "unknown"
+    assert by["remote"].reasons == []
+
+
 def test_endpoints_document_backend_reads_its_serving_verdict(
     live_facts, monkeypatch, request_node, config, tmp_path
 ):

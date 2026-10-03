@@ -8,7 +8,7 @@ from typing import Any
 
 from reckon import _backends, budget, capability, ledger
 from reckon._timestamps import parse_utc
-from reckon.crew import lane_document, resumption, routing
+from reckon.crew import lane_document, recovery, resumption, routing
 from reckon.crew.dispatch import (
     DispatchPlan,
     _dispatch_lane_gate,
@@ -247,8 +247,6 @@ def candidates(
     # parsing have one source of truth.
     review_excluded: set[str] = set()
     if request.node.role == "review":
-        from reckon.crew import recovery
-
         review_excluded = recovery._review_excluded_backends(config)
     result = []
     for name in config.get("backends", {}):
@@ -264,6 +262,13 @@ def candidates(
         reasons = []
         if name in review_excluded:
             reasons.append("review-excluded-backend")
+        # A routed CLI dispatch cannot execute an in-harness backend: nothing
+        # spawns it, because only a coordinator attaching the task it already
+        # runs can bind the harness, so the picker removes it rather than
+        # offering it for Jev to weigh. The launch is read from the resolved
+        # backend, so a role overlay that changes the launch is honoured.
+        if backend.get("launch") == recovery.IN_HARNESS_LAUNCH:
+            reasons.append("in-harness-backend")
         verdict = budget_by_backend.get(name) or {
             "held": False,
             "state": budget.BudgetState(name).as_dict(),
