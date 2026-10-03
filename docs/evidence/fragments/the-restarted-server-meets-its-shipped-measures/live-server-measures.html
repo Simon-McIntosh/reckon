@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-restarted-server-meets-its-shipped-measures">
+  <meta name="plan-verifies" content="reckon:the-restarted-server-meets-its-shipped-measures#s1">
+  <meta name="evidence-verdict" content="fail">
+  <meta name="evidence-date" content="2026-10-03">
+  <meta name="evidence-commit" content="5d9613c45">
+  <title>The four shipped in-flight measures on the restarted server | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-done">
+<section id="live-server-measures">
+  <h2>The four shipped in-flight measures on the restarted server</h2>
+
+  <p>Measured from <code>98dci4-clu-2018</code> against the systemd user unit
+  <code>reckon.service</code> on <code>98dci4-srv-1006</code>: <strong>MainPID
+  331604</strong>, started <strong>2026-10-02 11:18:06 CEST</strong> (09:18:06Z),
+  re-read at 13:46:35Z during the measurement window with
+  <code>NRestarts=0</code>. The host cannot be reached from this compute node, so every
+  server-side command (<code>curl</code>, <code>ss</code>) ran over
+  <code>ssh -o BatchMode=yes 98dci4-srv-1006 &lt;command&gt;</code>, and the browser views
+  came through <code>ssh -N -L 18765:127.0.0.1:8765 98dci4-srv-1006</code>. The server
+  serves reckon's docs from <code>/home/ITER/mcintos/Code/reckon/docs</code> (mounts),
+  and reports itself 12 files behind the code on disk since it started (its own banner at
+  13:45 local) — context for a server whose restart is the plan's premise; no restart or
+  signal was issued by this measurement. No dispatch was made by this node; eleven
+  dispatches of the fleet were observed from the shared live-pointer directory. Times in
+  the tables are UTC; the figures are local (CEST).</p>
+
+  <p>Each measurement below reads pass or a named finding, per §1's done-when. In summary:
+  measure 1 fails as written on its <code>working</code> half, with the mechanism named, and
+  its <code>done</code> half is measured on three dispatches; measure 2 passes; measure 3
+  passes with a named finding on the sprint view; measure 4 passes.</p>
+
+  <h3>Measure 1 — a dispatched run reads <code>working</code> within 3 s: fails, and the
+  cause is named</h3>
+
+  <p>Instrument: <code>~/.config/reckon/crew/live</code> watched at 0.25–0.5 s for pointer
+  appearances, and <code>GET /crew</code> polled <em>on the server's host</em> — a
+  continuous two-request poller plus a burst poller that fires the moment a new pointer
+  appears. Every response's own start, end and <code>time_total</code> is kept separately
+  from the delay it shows, so propagation is not confused with response time. The run's
+  stream file (the signal <code>_crew_rows</code> derives the phase from) was tracked at
+  1 s. Ten dispatches appeared inside the window; six are recorded in full below, four more
+  compactly after the finding, and an eleventh appeared and vanished without ever reading
+  <code>working</code>.</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>run</th><th>pointer appeared</th><th>attempt started</th>
+        <th>last response before working</th><th>first response reporting working</th>
+        <th>appearance→working</th><th>stream file present</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>r-…133913895731</code> review-of-pcrf-certificate-gate-is-a-live-test<br>nova / plasma-cell-read-fidelity</td>
+        <td>13:39:19.443</td><td>13:39:48 (attempt 2)</td>
+        <td>13:39:48.874–13:39:55.762, <em>idle</em> (6.89 s)</td>
+        <td>13:39:55.750–13:40:02.502 (6.75 s)</td>
+        <td><strong>43.1 s</strong> (to response end) / 36.3 s (to its start)</td>
+        <td>13:39:54.125</td>
+      </tr>
+      <tr>
+        <td><code>r-…134223505249</code> a-review-is-not-carried-over-its-own-deliverable<br>reckon / (no plan)</td>
+        <td>13:42:41.648</td><td>13:42:55</td>
+        <td>13:42:49.289–13:42:56.559, <em>idle</em> (7.27 s)</td>
+        <td>13:42:56.748–13:43:03.934 (7.19 s)</td>
+        <td><strong>22.3 s</strong> / 15.1 s</td>
+        <td>13:42:58.204</td>
+      </tr>
+      <tr>
+        <td><code>r-…134811157981</code> review-of-ticker-tests-hold-under-any-terminal<br>reckon / crew-observability-truth</td>
+        <td>13:48:31.296</td><td>13:48:55</td>
+        <td>13:48:53.675–13:49:01.090, <em>idle</em> (7.42 s)</td>
+        <td>13:49:01.290–13:49:08.573 (7.28 s)</td>
+        <td><strong>37.3 s</strong> / 30.0 s</td>
+        <td>13:49:00.688</td>
+      </tr>
+      <tr>
+        <td><code>r-…134835339850</code> cco-first-moment-test-stubs<br>nova / centroid-constrained-oracle-solve</td>
+        <td>13:48:40.807</td><td>13:48:55</td>
+        <td>13:48:53.675–13:49:01.090, <em>idle</em> (7.42 s)</td>
+        <td>13:49:01.290–13:49:08.573 (7.28 s)</td>
+        <td><strong>27.8 s</strong> / 20.5 s</td>
+        <td>13:49:00.662</td>
+      </tr>
+      <tr>
+        <td><code>r-…134919876724</code> review-of-fsri-lane-cache-guard-loads<br>nova / forward-solver-route-integrity</td>
+        <td>13:49:25.961</td><td>13:49:38</td>
+        <td>13:49:38.502–13:49:46.093, <em>idle</em> (7.59 s)</td>
+        <td>13:49:46.293–13:49:53.799 (7.51 s)</td>
+        <td><strong>27.8 s</strong> / 20.3 s</td>
+        <td>13:49:42.807</td>
+      </tr>
+      <tr>
+        <td><code>r-…134925738734</code> review-of-s22-currency-index-contract-review<br>reckon / the-page-paints-from-an-index</td>
+        <td>13:49:46.040</td><td>13:50:02</td>
+        <td>13:50:01.589–13:50:08.758, <em>idle</em> (7.17 s)</td>
+        <td>13:50:08.789–13:50:16.645 (7.70 s)</td>
+        <td><strong>30.6 s</strong> / 22.9 s</td>
+        <td>13:50:06.701</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Finding: no dispatch met the 3 s gate; the observed delay is 22.3–43.1 s, and it
+  is not response time.</strong> Response time alone (6.5–7.7 s per request here; 5.47 s in the
+  plan's own 15:11 sample) already exceeds 3 s, but even the delay to the <em>start</em> of
+  the first response reporting <code>working</code> is 15.1–36.3 s, so the gate fails on
+  propagation as well. The propagation is dominated by two steps that precede any server
+  read: the pointer appears at dispatch, and the run's own stream file does not exist until
+  its worker attempt starts. In all six rows the first response after the pointer already
+  contained the run — reported <code>idle</code>, not <code>working</code>. The phase is
+  derived in <code>serve._crew_rows</code>: <code>done</code> when the stream tail parses
+  terminal, else <code>working</code> when the stream file's mtime is fresh, else
+  <code>idle</code>; a dispatched run with no stream yet can only read <code>idle</code>.
+  So the watcher <em>does</em> show the run promptly — visibility holds — but its phase word
+  cannot say <code>working</code> until the worker exists (attempt start 12–29 s after the
+  pointer; stream file 3–6 s after the attempt). An unchanged instrument cannot satisfy the
+  gate as written.</p>
+
+  <table>
+    <thead>
+      <tr><th>further dispatch</th><th>pointer appeared</th><th>idle response before</th>
+      <th>first working response</th><th>appearance→working</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>r-…135124142622</code> review-of-cco-repaired-constrained-remeasure-receipt</td>
+        <td>13:59:00.008</td><td>idle (6.99 s)</td>
+        <td>13:59:30.584–13:59:37.495 (6.91 s)</td><td><strong>37.5 s</strong></td></tr>
+      <tr><td><code>r-…135140647796</code> roadmap-reports-section-edges</td>
+        <td>13:59:00.008</td><td>idle (6.91 s)</td>
+        <td>13:59:37.696–13:59:44.902 (7.21 s)</td><td><strong>44.9 s</strong></td></tr>
+      <tr><td><code>r-…135357283850</code> review-of-an-unmeasured-fleet-reading-names-its-cause</td>
+        <td>13:59:00.008</td><td>idle (6.79 s)</td>
+        <td>13:59:30.584–13:59:37.495 (6.91 s)</td><td><strong>37.5 s</strong></td></tr>
+      <tr><td><code>r-…135856151641</code> review-of-s22-currency-runtime-and-records</td>
+        <td>13:59:23.398</td><td>idle (7.32 s)</td>
+        <td>13:59:52.447–13:59:59.386 (6.94 s)</td><td><strong>36.0 s</strong></td></tr>
+    </tbody>
+  </table>
+
+  <p>The three rows sharing a first-sighting stamp at 13:59:00.008 were dispatched together
+  and the live-directory scan sees them in one pass at 0.5 s resolution; their individual
+  dispatch instants are finer than the instrument. Ten of ten observed dispatches missed the
+  3 s gate, with appearance→reading delays of <strong>22.3–44.9 s</strong>. An eleventh,
+  <code>r-…135900875990</code>, appeared at 13:59:31.961, was read <code>idle</code> in four
+  consecutive responses, and was gone at 13:59:46.749 — its run directory holds no stream
+  file at read time, so its worker never wrote one; it is named here rather than counted, as
+  no phase transition of its own occurred.</p>
+
+  <p>Second, smaller finding on the same rows: a response's phase reflects a read that
+  happens <em>inside</em> the request. The second row's first working response started at
+  13:42:56.748 while its stream file's mtime is 13:42:58.204, so the read instant cannot be
+  the request start; each transition above is bracketed by the last response that read
+  before the stream existed and the first that read after.</p>
+
+  <p>Positive control for the instrument: the burst poller's first response for row 1
+  contained the run as <code>idle</code> before it ever read <code>working</code>, so a
+  <code>working</code> reading is a phase change in the body, not a parser that only ever
+  says one word. Negative control honoured: every row names a run id that was present under
+  <code>~/.config/reckon/crew/live</code> at the sampled moment, and the process measured is
+  the MainPID/start re-read above — a reading from another server, or with no run live,
+  could not have produced these rows.</p>
+
+  <h3>Measure 1b — <code>done</code> after the terminal event: measured on three dispatches</h3>
+
+  <p>Three of the ten dispatched runs reached a terminal stream inside the window and were
+  read <code>done</code> afterwards. Their terminal write is the stream file's final mtime,
+  re-stat'ed at 14:05Z and unchanged since — a receipt that nothing has been written after
+  it. Each first-<code>done</code> response brackets the write (its window straddles the
+  terminal instant), so the read that saw <code>done</code> lies between the write and the
+  response's end: the delay from the terminal event to <code>done</code> being read is
+  therefore <strong>at most</strong> the response end minus the write, and no read in between
+  was possible for an equally-placed request:</p>
+
+  <table>
+    <thead>
+      <tr><th>run</th><th>terminal write</th><th>first response reporting <code>done</code></th>
+      <th>terminal→done (bounded)</th><th>pointer removed</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>r-…133913895731</code> review-of-pcrf-certificate-gate-is-a-live-test</td>
+        <td>13:53:54.847</td><td>13:53:52.379–13:53:58.655 (6.28 s)</td>
+        <td><strong>≤ 3.81 s</strong></td><td>13:56:44.181</td></tr>
+      <tr><td><code>r-…134919876724</code> review-of-fsri-lane-cache-guard-loads</td>
+        <td>13:58:23.889</td><td>13:58:18.153–13:58:24.286 (6.13 s)</td>
+        <td><strong>≤ 0.40 s</strong></td><td>13:59:03.088</td></tr>
+      <tr><td><code>r-…134925738734</code> review-of-s22-currency-index-contract-review</td>
+        <td>14:01:57.085</td><td>14:01:56.255–14:02:02.295 (6.04 s)</td>
+        <td><strong>≤ 5.21 s</strong></td><td>14:04:30.147</td></tr>
+    </tbody>
+  </table>
+
+  <p>Read instant, resolution, and what each bound means: the instrument polls every ~2 s
+  with 6 s responses, so a bound near 5 s is the response's own span, not a server-side wait
+  — the reply carrying <code>done</code> was already in flight when the run finished. The
+  tightest bound is the fsri row: a request spanning the terminal write read <code>done</code>
+  no later than 0.40 s after it, which meets a 3 s gate outright; the other two cannot be
+  <em>confirmed</em> within 3 s from this cadence, and are bounded at 3.81 s and 5.21 s.
+  Under the sentence's own grammar — the 3 s attaches to the <code>working</code> clause, the
+  done clause asks both latencies to be recorded — all three rows pass this half. The run's
+  pointer lingers after its done reading (166 s, 39 s and 148 s) until release removes it;
+  two runs that were already done when the window opened were removed during it (13:56:17,
+  13:58:02), so removal itself is also observed.</p>
+
+  <h3>Measure 2 — no second daemon: pass</h3>
+
+  <p><code>ss -ltnp</code> taken on <code>98dci4-srv-1006</code> at 13:36:27Z while the
+  watcher page was loaded and polling through the tunnel, and again at 13:37:06Z after it
+  closed, shows exactly one listener on <code>:8765</code>, owned by the service process:</p>
+
+  <pre>LISTEN 0 5 127.0.0.1:8765 0.0.0.0:* users:(("reckon",pid=331604,fd=5))</pre>
+
+  <p>While in use the watcher appears only as clients: established connections to
+  <code>127.0.0.1:8765</code> served by <code>reckon</code> fds 23–34, with the polling
+  <code>curl</code> clients visible too; no second listening port appears, before, during or
+  after, and the idle sample at 13:36:02Z lists the same single <code>:8765</code> entry. The
+  tunnel itself listens on the measurement node's <code>127.0.0.1:18765</code>, never on the
+  server. Raw captures:
+  <code>~/.config/reckon/crew/runs/r-20261003T132413476447-live-server-measures/ss-watcher-2.txt</code>,
+  <code>ss-after-2.txt</code>, <code>ss-idle-1.txt</code>.</p>
+
+  <h3>Measure 3 — navigable: pass</h3>
+
+  <p>Beyond the figure, the links were followed as navigation rather than read from the
+  markup. Taking a live working card (<code>disposable-r-…114532582934-dispatch-speed</code>,
+  plan <code>one-typesafe-model-picker</code>, sprint <code>S25</code>) and following its
+  plan href landed on the plan page with 60,511 characters of rendered text, its status
+  content present, and an in-flight band on the page (a run was targeting it at the time).
+  Following its sprint href landed on <code>#sprint/S25</code>, which renders the sprint
+  view — its chrome, heading and "Generate prompt" action — but reports
+  <strong>"No sprint."</strong> as its content, although
+  <code>docs/sprints/S25.html</code> exists in the served checkout (12,175 bytes, mtime
+  2026-10-02 11:30, on the main checkout the server mounts). The cause is not established
+  here; the served revision is the one its own banner reports as 12 files behind disk, so
+  the finding is recorded against that revision rather than interpreted. The sprint link is
+  therefore not dead — it resolves to the sprint route — while its target does not yet read
+  as a working sprint view, and the plan half is fully working. This measure passes with
+  that finding.</p>
+
+  <figure>
+    <img src="/reckon/figures/the-restarted-server-meets-its-shipped-measures/live-server-measures/crew-watcher-live-runs.png"
+         alt="The reckon crew tab rendering twelve live runs; each row carries a project code, a plan link, a section, a sprint link and a phase word">
+    <figcaption>The crew tab through the tunnel at 13:45:09 local: 12 runs, phases
+    <code>working</code> and <code>done</code>, each with its plan link
+    (e.g. <code>crew-observability-truth</code>, <code>crew-runtime-positive-controls</code>)
+    and <code>sprint</code> link. The plan links are the SPA's own <code>plan_href</code>
+    targets, followed by navigation in the link check above.</figcaption>
+  </figure>
+
+  <h3>Measure 4 — in-flight band: pass</h3>
+  <figure>
+    <img src="/reckon/figures/the-restarted-server-meets-its-shipped-measures/live-server-measures/plan-in-flight-band.png"
+         alt="A plan page with its in-flight band showing two dispatched runs with live elapsed times">
+    <figcaption>Plan <code>crew-runtime-positive-controls</code> at 13:45 local while two
+    runs target it: the band lists both (<code>@disposable-r-…132122413624</code>,
+    <code>20261003T132224666771</code>) as <code>WORKING</code>, each with elapsed time
+    against budget. The same page before/after shows the band appear and clear with the
+    runs, and the runs are the same ids the crew tab carried.</figcaption>
+  </figure>
+
+  <h3>Instruments, limits and where the raw captures live</h3>
+
+  <ul>
+    <li><code>GET /crew</code> answered in 5.3–7.9 s in every sample (37 KB, 20+ runs), so
+      every delay above is reported with its response time; a serial poller cannot resolve a
+      3 s window on this server, which is why the appearance trigger fires an immediate
+      request.</li>
+    <li>Appearance times are first-sighting stamps from the 0.25–0.5 s live-directory
+      watcher and carry that resolution. <em>Attempt started</em> is the pointer's own
+      <code>created_at</code>, read after the fact rather than witnessed.</li>
+    <li>The two <code>idle</code> readings before <code>working</code> were taken by
+      <em>different</em> concurrent requests in some rows (the continuous poller and the
+      burst overlap); the table names the last response that read idle and the first that
+      read working, which bracket the transition without pretending either float in the
+      request is a clock.</li>
+    <li>Raw instruments, logs and captures:
+      <code>~/.config/reckon/crew/runs/r-20261003T132413476447-live-server-measures/</code>
+      — <code>crew-poll.jsonl</code> (every response), <code>trigger-poll.jsonl</code>
+      (appearance bursts), <code>live-dir-watch.jsonl</code> (pointer appearances),
+      <code>stream-watch.jsonl</code> (stream mtimes), <code>ss-*.txt</code>,
+      <code>rows.out</code>.</li>
+    <li>Only the four §1 measures were in scope; nothing was restarted, signalled or
+      reconfigured. The tunnel and browser processes this node started were stopped before
+      the close of the run, listed with their pids in the manifest.</li>
+  </ul>
+</section>
+</main>
+</body>
+</html>
