@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="A run whose worktree is gone can be promoted">
+  <meta name="plan-summary" content="A released worktree took the run's promotion with it: promotion resolved every citation through the worktree path, so the first git call whose working directory no longer exists raised FileNotFoundError from _commit_canonical_id inside _require_gate_evidence, and a run whose worktree had been reclaimed could not be promoted at all. A run's commits are now read through its repository when the worktree path is not a directory, and _commit_canonical_id reports an unreadable root as unresolvable rather than invoking git in it. Base arm 43 passed; head arm 45 passed with no added failure id; the declared control fails both new cases with the FileNotFoundError naming the deleted worktree.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="pass">
+  <title>A run whose worktree is gone can be promoted &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A run whose worktree is gone can be promoted &mdash; evidence</h1>
+  <p>A completed run's worktree is released, and its commits survive in the repository, which shares the object store. Promotion resolved every citation through the worktree path, so the first git call whose working directory no longer existed raised <code>FileNotFoundError</code>: the reproducing base run failed both new cases with <code>FileNotFoundError: [Errno 2] No such file or directory: PosixPath('&hellip;/r-reclaimed-promotes-tree')</code> from <code>subprocess</code>, and the run could not be promoted at all. The recorded workaround was to re-create the worktree at the run's head before promoting.</p>
+  <section id="change">
+    <h2>What changed</h2>
+    <ul>
+      <li><code>reckon/crew/promotion.py</code> gains <code>_run_commit_directory</code>, which returns the run's worktree while it is a directory and its repository otherwise. <code>_require_gate_evidence</code> reads through it, so a reclaimed run's citations, the presented-versus-declared comparison and the unresolvable-citation refusal all resolve through the repository instead of going unmeasured.</li>
+      <li><code>_commit_canonical_id</code> returns <code>None</code> for a root that is not a readable directory, so no promotion step invokes git in a directory that has been removed.</li>
+      <li>The reading that asks whether the run's own <code>HEAD</code> moved stays on the worktree: the repository's head belongs to a tree the run never worked in, and consulting it would refuse a truthful promotion on another tree's movement. With no worktree there is nothing to ask, so that guard stays silent as before.</li>
+    </ul>
+  </section>
+  <section id="measure">
+    <h2>The measure</h2>
+    <p>The gate is the files that reach the change: <code>tests/test_a_short_commit_list_is_reported.py</code> and <code>tests/test_control_gate_repairs.py</code> name <code>_require_gate_evidence</code> and <code>_commit_canonical_id</code> directly, <code>tests/test_crew_promotion_scope.py</code> calls <code>crew.complete</code> over a detached worktree, and <code>tests/test_a_vanished_worktree_reads_as_no_referent.py</code> promotes runs whose worktree directory has been removed. Each arm ran with <code>-n 8 --timeout=300</code>, its own basetemp outside any repository, and its own log naming its revision, tree, command, <code>module.__file__</code> and working directory.</p>
+    <ul>
+      <li><strong>Base arm</strong> (<code>4efd4fdea</code>, <code>git archive</code> extraction at <code>$TMPDIR/base-tree</code>): <code>43 passed in 55.42s</code>, <code>EXIT=0</code> (<code>gate-base.log</code>).</li>
+      <li><strong>The defect at base</strong>, the new test file run against that extraction, with the same test file copied in: <code>2 failed in 6.90s</code>, <code>EXIT=1</code>, both failures the <code>FileNotFoundError</code> above (<code>gate-base-reproduction.log</code>).</li>
+      <li><strong>Head arm</strong> (<code>17c205ecb</code>, this worktree): <code>45 passed in 38.18s</code>, <code>EXIT=0</code> (<code>gate-head.log</code>) &mdash; the base&rsquo;s 43 plus this node&rsquo;s two, no added failure id.</li>
+      <li><strong>Negative control</strong> (the declared mutation: the unreadable-root guard removed and the gate-evidence tree resolution reverted to the raw worktree path, so <code>_commit_canonical_id</code> runs git in the deleted worktree again): <code>2 failed in 6.54s</code>, <code>EXIT=1</code>, the same two ids failing with <code>FileNotFoundError</code> against <code>r-reclaimed-promotes-tree</code> and <code>r-reclaimed-cites-tree</code> (<code>negative-control.log</code>). The worktree was restored from a copy immediately afterwards and <code>git status</code> is clean.</li>
+      <li><strong>Lint and format</strong>: <code>ruff check</code> reports 3 findings in <code>promotion.py</code> at both base and head (all pre-existing, none on a changed line, none in the new test file), and <code>ruff format --check --diff</code> produces the same hunk content at base and head &mdash; no finding the base did not have.</li>
+    </ul>
+  </section>
+  <section id="cases">
+    <h2>What the new cases pin</h2>
+    <ul>
+      <li><code>test_a_reclaimed_run_promotes_and_registers_its_commit</code> &mdash; the done-when: commit on a detached worktree, merge the commit, delete the worktree directory, and <code>crew complete</code> stores the row, registers the commit and removes the pointer.</li>
+      <li><code>test_a_reclaimed_run_cites_through_its_repository</code> &mdash; a fabricated commit presented by a reclaimed run is still refused by value, which is the positive evidence that the citations are read through the repository rather than skipped as unmeasured.</li>
+    </ul>
+  </section>
+ </main>
+</body>
+</html>
