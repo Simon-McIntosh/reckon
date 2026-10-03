@@ -2857,7 +2857,7 @@ def _build_roadmap(
                 _plan_declarations(plan, docs_dir, project, slug)
             ),
             "section_attempts": {
-                section: int((plan.get("section_attempts") or {}).get(section, 0))
+                section: (plan.get("section_attempts") or {}).get(section)
                 for section in implementable_sections(
                     _plan_declarations(plan, docs_dir, project, slug)
                 )

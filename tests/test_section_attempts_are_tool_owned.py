@@ -93,7 +93,19 @@ def _repository(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
     return root, plan
 
 
-def _dispatch(root: Path, node_id: str) -> dict:
+def _dispatch(root: Path, node_id: str, *, launcher=None) -> dict:
+    backend = (
+        {
+            "launch": "cli",
+            "command": "codex",
+            "model": "some-model",
+            "effort": "high",
+            "sandbox": "worktree-full",
+            "time_budget": "20m",
+        }
+        if launcher is not None
+        else {"launch": "in-harness", "sandbox": "worktree-full", "time_budget": "20m"}
+    )
     return crew.dispatch(
         node=TaskNode(
             id=node_id,
@@ -111,19 +123,14 @@ def _dispatch(root: Path, node_id: str) -> dict:
         repo=root,
         config={
             "default_backend": "native",
-            "backends": {
-                "native": {
-                    "launch": "in-harness",
-                    "sandbox": "worktree-full",
-                    "time_budget": "20m",
-                }
-            },
+            "backends": {"native": backend},
             "roles": {"implement": {}},
             "fences": {"time_budget": "20m"},
         },
         session=f"session-{node_id}",
         unreviewed_plan_override=True,
         check_budget=False,
+        launcher=launcher,
     )
 
 
@@ -234,3 +241,16 @@ def test_plan_edit_cannot_author_an_attempt(tmp_path: Path, monkeypatch) -> None
         _store.write_plan(
             "sample", "fixture", state, version, root, artifact_type="plan"
         )
+
+
+def test_refused_worker_start_does_not_count(tmp_path: Path, monkeypatch) -> None:
+    root, _plan = _repository(tmp_path, monkeypatch)
+
+    def refuse(*_args, **_kwargs):
+        raise OSError("unavailable")
+
+    with pytest.raises(crew.CrewError, match="could not start"):
+        _dispatch(root, "refused", launcher=refuse)
+    state, _version = _store.read_plan("sample", "fixture", root, artifact_type="plan")
+    assert state["sections"][0]["attempts"] == 0
+    assert state.get("comments", {}).get("work", []) == []

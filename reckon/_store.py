@@ -1261,6 +1261,7 @@ def _write_state(
     artifact_type: str | None = None,
     retire_preimages: list[str] | None = None,
     attempt_owner: bool = False,
+    empty_comment_id: str = "",
 ) -> int:
     """Atomically rewrite the semantic HTML state for a plan slug.
 
@@ -1282,6 +1283,7 @@ def _write_state(
             artifact_type,
             retire_preimages,
             attempt_owner,
+            empty_comment_id,
         )
 
 
@@ -1294,6 +1296,7 @@ def _write_state_locked(
     artifact_type: str | None = None,
     retire_preimages: list[str] | None = None,
     attempt_owner: bool = False,
+    empty_comment_id: str = "",
 ) -> int:
     """The version check and the replacement of one plan HTML file.
 
@@ -1442,7 +1445,9 @@ def _write_state_locked(
     authored_text_changed = source_text != text
     if state_type == "plan":
         _require_heading_for_section_records(source_text, new_data.get("sections"))
-    new_text = _plan_html.write_state(source_text, new_data)
+    new_text = _plan_html.write_state(
+        source_text, new_data, empty_comment_id=empty_comment_id
+    )
 
     # Idempotency guard: if the patch carries no real content change (e.g. a
     # no-op edit or a round-trip through BeautifulSoup entity-normalisation),
@@ -1720,6 +1725,7 @@ def remove_section_launch(
                 root,
                 "plan",
                 attempt_owner=True,
+                empty_comment_id=comment_id,
             )
         except VersionConflict:
             continue

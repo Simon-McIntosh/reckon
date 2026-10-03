@@ -6151,6 +6151,16 @@ def _commit_section_attempt_plan(
     repo_root: Path, plan_path: Path, *, undo: bool = False
 ) -> None:
     relative = plan_path.relative_to(repo_root)
+    subject = (
+        "chore(crew): undo refused section launch"
+        if undo
+        else "chore(crew): record section attempt"
+    )
+    body = (
+        "Remove the counted attempt because the worker did not start."
+        if undo
+        else "Keep the tool-owned launch count in committed section state."
+    )
     result = subprocess.run(
         [
             "git",
@@ -6159,9 +6169,9 @@ def _commit_section_attempt_plan(
             "commit",
             "--only",
             "-m",
-            "chore(crew): record section attempt",
+            subject,
             "-m",
-            "Keep the tool-owned launch count in the plan's committed state.",
+            body,
             "--",
             str(relative),
         ],

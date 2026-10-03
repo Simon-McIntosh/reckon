@@ -1336,7 +1336,22 @@ def _impl_is_carried_by_records(state: dict, html_text: str) -> bool:
     return bool(_section_record_elements(BeautifulSoup(html_text or "", "html.parser")))
 
 
-def write_state(html_text: str, state: dict) -> str:
+def _only_owned_comment_remains(html_text: str, comment_id: str) -> bool:
+    section = BeautifulSoup(html_text, "html.parser").select_one(
+        'section[data-reckon="comments"]'
+    )
+    if section is None:
+        return False
+    children = [child for child in section.children if getattr(child, "name", None)]
+    return (
+        len(children) == 1
+        and children[0].name == "div"
+        and "r-comment" in children[0].get("class", [])
+        and children[0].get("data-id") == comment_id
+    )
+
+
+def write_state(html_text: str, state: dict, *, empty_comment_id: str = "") -> str:
     """Regenerate the reckon-owned meta + sections from `state`.
 
     Authored prose (everything outside the data-reckon sections) is untouched.
@@ -1427,7 +1442,13 @@ def write_state(html_text: str, state: dict) -> str:
             collection = state[sid]
             if sid == "comments":
                 collection = _comments_in_section(collection, body_resident_comments)
-            _reject_emptying_unparsed_section(out, sid, collection)
+            if not (
+                sid == "comments"
+                and empty_comment_id
+                and not collection
+                and _only_owned_comment_remains(out, empty_comment_id)
+            ):
+                _reject_emptying_unparsed_section(out, sid, collection)
             out = _splice_section(out, sid, _RENDERERS[sid](collection))
     return out
 
