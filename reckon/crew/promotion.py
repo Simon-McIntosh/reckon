@@ -3779,9 +3779,11 @@ def _restore_one_landing_write(checkout: Path, path: Path) -> bool:
     fallback separates the halves: the working tree comes back from HEAD's
     blob, read through the object store and written directly, while only the
     index entry needs the lock — reset to HEAD for a tracked path, dropped
-    for a path this promotion created. A path whose entry is still staged
-    answers False even when its content was restored: a staged entry the next
-    commit can take is not nothing left behind.
+    for a path this promotion created. The index is read before it is
+    written, so an attempt that never staged anything (its staging call was
+    the one the lock refused) takes no index-writing call here. A path whose
+    entry is still staged answers False even when its content was restored: a
+    staged entry the next commit can take is not nothing left behind.
     """
     try:
         relative = Path(path).resolve().relative_to(checkout.resolve()).as_posix()
@@ -3796,6 +3798,8 @@ def _restore_one_landing_write(checkout: Path, path: Path) -> bool:
             Path(path).write_bytes(content)
         except OSError:
             return False
+        if not _path_has_a_staged_change(checkout, path):
+            return True
         _git(
             checkout,
             "restore",
@@ -3810,6 +3814,8 @@ def _restore_one_landing_write(checkout: Path, path: Path) -> bool:
             Path(path).unlink(missing_ok=True)
         except OSError:
             return False
+        if not _path_has_a_staged_change(checkout, path):
+            return True
         _git(checkout, "rm", "--cached", "--force", "--", str(path), check=False)
     return not _path_has_a_staged_change(checkout, path)
 
