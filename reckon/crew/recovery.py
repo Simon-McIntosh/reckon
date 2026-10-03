@@ -319,16 +319,21 @@ def select_review_for_head(
     the second is a head a non-matching record did name, empty when none, so a
     refusal can name the two revisions that disagree rather than report an
     absence. A record naming a different revision is not this run's review
-    however recently it was written.
+    however recently it was written. An empty ``head`` names no revision to
+    key a record on, and this selection accepts none for it: reading whatever
+    the store holds newest would let a review of an unknown revision stand as
+    this run's evidence. The classifier, which holds the record the head came
+    from, reads the newest record itself for the one empty-head case with no
+    reclaimed worktree behind it.
     """
-    stored = review_module.read_review(project, run_id, reviewed_head_sha=head or None)
+    if not head:
+        return None, ""
+    stored = review_module.read_review(project, run_id, reviewed_head_sha=head)
     if stored is not None:
         return stored, ""
     newest = review_module.read_review(project, run_id)
     if newest is None:
         return None, ""
-    if not head:
-        return newest, ""
     described = review_described_head(newest, tree=tree)
     if not described:
         # A record naming no revision predates the field; refusing every review
@@ -650,6 +655,27 @@ def _review_lane_hold_action(
     )
 
 
+def newest_review_for_headless_run(
+    project: str, run_id: str, *, reclaimed: bool
+) -> dict[str, Any] | None:
+    """The stored record to read for a run whose record resolves no head.
+
+    An empty head names no revision to select by, and the reading follows from
+    how it came to be empty, so every reader of a headless record takes it from
+    here rather than holding a rule of its own. ``reclaimed`` is the
+    classifier's case: a record naming a worktree that is no longer on disk
+    would resolve, through the shared checkout, a head its review is not about,
+    so nothing is read for it and the compose path refuses in turn naming the
+    missing head. Every other headless record — one naming no worktree at all,
+    or one whose tree resolves no head — has no checkout fallback to borrow and
+    never had one, so the store's newest record for the run is the only
+    evidence there is and it is read.
+    """
+    if reclaimed:
+        return None
+    return review_module.read_review(project, run_id)
+
+
 def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, str]:
     """Read the review of the head being classified, not just any record.
 
@@ -658,6 +684,10 @@ def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, st
     revision is not called promotable on evidence about code that no longer
     exists. The selection it uses is the one promotion uses, so the two agree
     on which stored record is evidence about a revision.
+
+    An empty head names no revision to select by; how it came to be empty
+    decides the reading, and every reader of a headless record takes it from
+    :func:`newest_review_for_headless_run`.
     """
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
@@ -665,7 +695,12 @@ def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, st
         return None, ""
     head, tree = _review_head_and_tree(record)
     try:
-        review, _stale = select_review_for_head(project, run_id, head, tree=tree)
+        if not head:
+            review = newest_review_for_headless_run(
+                project, run_id, reclaimed=_worktree_reclaimed(record)
+            )
+        else:
+            review, _stale = select_review_for_head(project, run_id, head, tree=tree)
     except (OSError, ValueError) as exc:
         return {}, str(exc)
     if review is not None and not isinstance(review, dict):
@@ -1216,15 +1251,44 @@ def _object_id(text: str) -> str:
     return text if re.fullmatch(r"[0-9A-Fa-f]{40,64}", text) else ""
 
 
+def _resolve_abbreviated_commit(repository: Path | None, text: str) -> str:
+    """``text`` resolved to its full commit id through ``repository``, or empty.
+
+    A manifest's commit entry is usually abbreviated, and the run's repository
+    shares the object store its worktree wrote into, so the abbreviation still
+    names the revision the run reached. An ambiguous or unknown abbreviation is
+    left unresolved rather than guessed.
+    """
+    if repository is None or not text:
+        return ""
+    try:
+        completed = subprocess.run(
+            ["git", "rev-parse", "--verify", f"{text}^{{commit}}"],
+            cwd=repository,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return ""
+    resolved = completed.stdout.strip()
+    if completed.returncode or not re.fullmatch(r"[0-9A-Fa-f]{40,64}", resolved):
+        return ""
+    return resolved
+
+
 def _record_carried_head(record: Mapping[str, Any]) -> str:
     """The head a run's own record names, for a worktree that has been reclaimed.
 
     A manifest's ``commits:`` field is a run's last word on the revisions it
-    landed, so its last object-id entry is the head the run reached. A citation
-    that is not already an object id cannot be resolved without a tree and is
-    skipped rather than guessed; the pointer's own recorded head is read after
-    the manifest, because a run that has not yet written one still names the
-    revision it was dispatched against.
+    landed, so its last resolvable entry is the head the run reached. An entry
+    that is already an object id stands as itself; a shorter citation is
+    resolved to its full id through the run's repository, whose object store it
+    wrote into while the worktree existed, because workers cite abbreviated
+    ids. An entry git cannot resolve unambiguously is skipped rather than
+    guessed, and the pointer's own recorded head is read after the manifest,
+    because a run that has not yet written one still names the revision it was
+    dispatched against.
     """
     manifest = Path(str(record.get("manifest_path") or ""))
     try:
@@ -1234,11 +1298,24 @@ def _record_carried_head(record: Mapping[str, Any]) -> str:
     entries = data.get("commits") or []
     if isinstance(entries, str):
         entries = [entries]
+    repo_raw = str(record.get("repo") or "").strip()
+    repository = Path(repo_raw) if repo_raw and Path(repo_raw).is_dir() else None
     for entry in reversed(list(entries)):
-        sha = _object_id(str(entry).strip())
+        text = str(entry).strip()
+        sha = _object_id(text)
         if sha:
             return sha
+        if re.fullmatch(r"[0-9A-Fa-f]{7,64}", text):
+            resolved = _resolve_abbreviated_commit(repository, text)
+            if resolved:
+                return resolved
     return _object_id(str(record.get("head") or "").strip())
+
+
+def _worktree_reclaimed(record: Mapping[str, Any]) -> bool:
+    """Whether the run named a worktree that is no longer on disk."""
+    worktree_raw = str(record.get("worktree") or "").strip()
+    return bool(worktree_raw) and not Path(worktree_raw).is_dir()
 
 
 def _review_head_and_tree(
@@ -1254,14 +1331,14 @@ def _review_head_and_tree(
     the run's own record supplies the head, and there is no tree left to
     reconstruct against — ``None`` is returned rather than the shared checkout,
     whose HEAD is not this run's head. A reclaimed worktree whose record names
-    no head of its own leaves the head to the repository fallback, the only
-    reading left, and the tree then matches it.
+    no resolvable head therefore reads as no head at all: falling through to
+    the repository would key the review on the checkout's HEAD, which is
+    exactly the revision this run's review is not about. A record naming no
+    worktree at all still resolves through its repository, the only reading
+    left for it.
     """
-    worktree_raw = str(record.get("worktree") or "").strip()
-    if worktree_raw and not Path(worktree_raw).is_dir():
-        carried = _record_carried_head(record)
-        if carried:
-            return carried, None
+    if _worktree_reclaimed(record):
+        return _record_carried_head(record), None
     return _reviewed_run_head(record), _review_tree(record)
 
 
@@ -1269,13 +1346,15 @@ def _run_head_for_review(record: Mapping[str, Any]) -> str:
     """The revision a review of this run is about: worktree head, or record head.
 
     The run's worktree is the authority while it is readable. Once that worktree
-    has been reclaimed, ``_review_tree`` falls back to the run's repository —
-    the shared main checkout — whose HEAD is whatever that repository carries
+    has been reclaimed, ``_review_tree`` would fall back to the run's repository
+    — the shared main checkout — whose HEAD is whatever that repository carries
     now rather than the revision this run reached, so a composed dispatch and a
     dropped-lane comparison would both key on the wrong commit. The run's own
-    record then supplies the head instead. A record that names no head of its
-    own, or names no worktree at all, still resolves through its repository,
-    which for such a record is the only tree left to read.
+    record then supplies the head instead, and a reclaimed record that names no
+    resolvable head of its own reads as empty rather than borrowing the
+    checkout's HEAD. A record that names no worktree at all still resolves
+    through its repository, which for such a record is the only tree left to
+    read.
     """
     return _review_head_and_tree(record)[0]
 
@@ -1330,11 +1409,16 @@ def review_head_move(record: Mapping[str, Any]) -> dict[str, Any]:
     through :func:`reckon.review_tiers.changes_runtime_source`, so the reflex
     and the promotion gate cannot split on whether a moved commit is runtime
     source — a second classifier here is exactly the drift this shares instead.
+
+    The head is the run's own — its worktree's while that is readable, its
+    record's once the worktree has been reclaimed. A reclaimed record that
+    names no resolvable head moves nowhere: reading the shared checkout's HEAD
+    in its place would carry a review to a revision the run never reached.
     """
     tree = _review_tree(record)
     if tree is None:
         return {}
-    head = _reviewed_run_head(record)
+    head = _run_head_for_review(record)
     if not head:
         return {}
     project = str(record.get("project") or "")
@@ -1917,6 +2001,26 @@ def dispatch_review_for_run(
     delta = move if move is not None else None
 
     fields = _review_dispatch_fields(record, delta=delta)
+    # A review keys on the pair it stands for — the run it reviews and the head
+    # it read — so a run whose worktree has been reclaimed and whose record
+    # names no resolvable head composes nothing. Falling through here would
+    # dispatch a review of the shared checkout's HEAD, which is not this run's
+    # head, and every review of that revision would leave the run still owing
+    # one: the loop this composition exists to refuse.
+    if not fields["head"] and _worktree_reclaimed(record):
+        reason = (
+            f"the run's worktree {str(record.get('worktree') or '').strip()} "
+            "has been reclaimed and its record names no resolvable head, so no "
+            "review composes; the run must name the head it reached before a "
+            "review can key on it"
+        )
+        _record_review_dispatch(run_id, status="refused", reason=reason)
+        return {
+            "run_id": run_id,
+            "dispatched": False,
+            "refused": True,
+            "reason": reason,
+        }
     project = fields["project"]
     repo = str(record.get("repo") or "")
     if not project or not repo:
