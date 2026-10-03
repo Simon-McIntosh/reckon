@@ -597,11 +597,12 @@ def _launcher_refusal(
     if record.get("launch") != "cli":
         return CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
     if record_process_alive(record, process_alive) is True:
-        pid = record.get("pid")
-        named = f" (pid {pid})" if pid else ""
+        # This guard's message is the launcher's own, held word for word by the
+        # prediction-parity test beside it, so it is not restated here. The pid
+        # naming lives on the observed-end gate below, whose reading is this
+        # module's and which is where the run's own worker record answers.
         return CrewError(
-            f"run {run_id!r} still has a live process{named}; observe or stop it "
-            "before resuming"
+            f"run {run_id!r} still has a live process; observe or stop it before resuming"
         )
     verdict = _readonly_budget_verdict(record, config=config)
     if verdict["held"]:

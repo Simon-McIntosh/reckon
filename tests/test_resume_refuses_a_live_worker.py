@@ -296,10 +296,15 @@ def _sweep_launching(monkeypatch: pytest.MonkeyPatch, pointers: list[dict]):
     return report, launches
 
 
-def test_the_sweep_refuses_a_live_pointer_process_naming_its_pid(
+def test_the_sweep_refuses_a_live_pointer_process_before_any_spawn(
     home, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A parked run whose supervisor still lives is refused before any spawn."""
+    """A parked run whose supervisor still lives is refused before any spawn.
+
+    The message is the launcher's own, held word for word by the prediction
+    parity test; what this case pins is that the sweep meets it, starts
+    nothing, and leaves the run reading as it did.
+    """
     with _live_worker() as pid:
         pointer = _pointer(tmp_path, "r-sweep-live-under-record", pid=pid, parked=True)
         before = _classification("r-sweep-live-under-record")
@@ -310,7 +315,7 @@ def test_the_sweep_refuses_a_live_pointer_process_naming_its_pid(
         skipped = {row["run_id"]: row for row in report["skipped"]}
         entry = skipped["r-sweep-live-under-record"]
         assert entry["reason"] == "resume-refused", entry
-        assert str(pid) in entry["detail"], entry
+        assert "still has a live process" in entry["detail"], entry
         # The refusal starts nothing and stops nothing: the run reads exactly
         # as it did before the sweep touched it, while its worker still lives.
         assert _classification("r-sweep-live-under-record") == before
