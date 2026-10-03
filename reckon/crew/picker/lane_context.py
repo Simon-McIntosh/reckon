@@ -22,14 +22,17 @@ would let the router weigh a lane it never heard from.
 
 from __future__ import annotations
 
+import contextlib
 import json
+import os
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from statistics import median
 from types import SimpleNamespace
 from typing import Any
 
-from reckon import budget
+from reckon import budget, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew import lane_document
 from reckon.crew.dispatch import _dispatch_lane_gate
@@ -221,6 +224,197 @@ def return_times(
     return blocks
 
 
+#: A project's run-time profile, memoized within one process. Each entry holds
+#: the freshness key the profile was read at beside the profile itself. This is
+#: a first layer only: a real dispatch is a fresh process, so the memo cannot
+#: carry a reading between dispatches and the persisted copy below is what makes
+#: the reuse survive.
+_PROFILE_CACHE: dict[str, tuple[str, Mapping[str, Any]]] = {}
+
+#: Persisted profile files hold this schema marker, so a file written by another
+#: version is treated as a cache miss rather than read as a profile.
+_PROFILE_FILE_SCHEMA = 1
+
+
+def _stat_stamp(path: Path) -> list[int] | None:
+    """Return a path's modification time and size, or ``None`` when absent.
+
+    A list rather than a tuple, so a stamp folded into a persisted key compares
+    equal to the same stamp read back from JSON, where a tuple would arrive as a
+    list and compare unequal.
+    """
+
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    return [info.st_mtime_ns, info.st_size]
+
+
+def _ledger_stamp(project: str) -> list[Any] | None:
+    """A cheap freshness key for one project's ledger.
+
+    Two ``stat`` calls cover every way the ledger changes from outside: a
+    promoted run lands as a new file in the runs directory beside the aggregate,
+    moving that directory's modification time, and an edit to an existing row
+    rewrites the aggregate, moving the aggregate file's. The file's size is
+    folded in beside its modification time so a change within the same clock
+    tick as the previous read is still visible where the filesystem's resolution
+    is coarse. Decoding the whole ledger takes 123-2948 ms across the five
+    projects the local lane shares, measured on this GPFS, while these two
+    stats take about 0.04 ms -- four orders of magnitude cheaper than the read
+    the stamp guards.
+
+    A project with no ledger has a stable stamp, which is correct: it has no
+    runs to profile until the first is written, and writing one moves the stamp.
+    A path that cannot be resolved returns ``None``, which forfeits the cache
+    rather than risk a stale hit.
+    """
+
+    try:
+        ledger_file = ledger.ledger_path(project)
+    except (ledger.LedgerError, OSError, ValueError):
+        return None
+    return [_stat_stamp(ledger_file), _stat_stamp(ledger_file.parent / "runs")]
+
+
+def _profile_cache_root() -> Path:
+    """The directory the persisted run-time profiles live under.
+
+    Outside every repository, so a cache write never dirties a checkout. The
+    resolution order is fixed so every caller on a host lands on one directory:
+
+    1. ``RECKON_RUN_TIME_PROFILE_CACHE``, when a caller names one;
+    2. ``RECKON_HOME``, as ``<RECKON_HOME>/cache/run-time-profile`` -- a home
+       that isolated the configuration has isolated the cache with it, which is
+       how the test suite keeps these writes inside its temporary tree;
+    3. ``XDG_CACHE_HOME``, as ``<XDG_CACHE_HOME>/reckon/run-time-profile``;
+    4. ``~/.cache/reckon/run-time-profile``.
+
+    ``RECKON_HOME`` outranks ``XDG_CACHE_HOME`` deliberately: the home is the
+    isolation hook a test or a sandbox sets, while a host commonly has
+    ``XDG_CACHE_HOME`` pointed at the real user cache, so the reverse order would
+    let an isolated run write into the live cache.
+    """
+
+    configured = os.environ.get("RECKON_RUN_TIME_PROFILE_CACHE")
+    if configured:
+        return Path(configured).expanduser()
+    reckon_home = os.environ.get("RECKON_HOME")
+    if reckon_home:
+        return Path(reckon_home) / "cache" / "run-time-profile"
+    cache_home = os.environ.get("XDG_CACHE_HOME")
+    if cache_home:
+        return Path(cache_home) / "reckon" / "run-time-profile"
+    return Path.home() / ".cache" / "reckon" / "run-time-profile"
+
+
+def _profile_cache_path(project: str) -> Path:
+    """One persisted profile per project, named by the project's own id."""
+
+    if not ledger._SAFE_ID.fullmatch(str(project)):
+        raise ValueError(f"project {project!r} is not a usable cache filename")
+    return _profile_cache_root() / f"{project}.json"
+
+
+def _profile_key(project: str, now: datetime) -> str | None:
+    """The freshness key a persisted profile is checked against, or ``None``.
+
+    The key folds the ledger stamp and the window's end date together and
+    serialises them, so the same stamp read back from JSON compares equal to the
+    one computed here. A ledger whose path cannot be resolved yields no key, and
+    the profile is then never cached.
+    """
+
+    stamp = _ledger_stamp(project)
+    if stamp is None:
+        return None
+    return json.dumps([stamp, now.date().isoformat()], sort_keys=True)
+
+
+def _read_persisted_profile(project: str, key: str) -> Mapping[str, Any] | None:
+    """Return a project's persisted profile when it matches ``key``.
+
+    A missing, unreadable, corrupt or foreign-schema file is a cache miss, never
+    an error: the profile can always be read again from the ledger, so a damaged
+    cache must not take a pick down with it.
+    """
+
+    try:
+        payload = json.loads(_profile_cache_path(project).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(payload, Mapping) or (
+        payload.get("schema") != _PROFILE_FILE_SCHEMA
+    ):
+        return None
+    if payload.get("key") != key:
+        return None
+    profile = payload.get("profile")
+    return profile if isinstance(profile, Mapping) else None
+
+
+def _write_persisted_profile(
+    project: str, key: str, profile: Mapping[str, Any]
+) -> None:
+    """Persist one project's profile summary for later processes to reuse.
+
+    The write is atomic -- a sibling temporary replaced over the target -- so a
+    reader never sees a half-written file, and a failure to write is swallowed:
+    the cache is an optimisation and the next process reads the ledger again.
+    Only the profile summary is written, never the rows it was derived from.
+    """
+
+    temporary: Path | None = None
+    try:
+        path = _profile_cache_path(project)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.parent / f".{path.name}.{os.getpid()}.tmp"
+        temporary.write_text(
+            json.dumps(
+                {"schema": _PROFILE_FILE_SCHEMA, "key": key, "profile": profile}
+            ),
+            encoding="utf-8",
+        )
+        os.replace(temporary, path)
+    except (OSError, ValueError):
+        if temporary is not None:
+            with contextlib.suppress(OSError):
+                temporary.unlink()
+
+
+def _cached_run_time_profile(project: str, *, now: datetime) -> Mapping[str, Any]:
+    """Return a project's run-time profile, reusing the last read while its
+    ledger is unchanged.
+
+    :func:`_expected_wait` asks for the profile of every distinct foreign
+    project with a live local worker on every pick, so reading each project's
+    whole ledger makes a pick's cost grow with the number of live foreign
+    projects -- the figure that pushes a pick past its five-second dispatch
+    bound. A real dispatch is a fresh process, so the reading is persisted
+    beside its freshness key: the in-process memo is checked first, then the
+    file on disk, and only a miss reads the ledger. The profile is a function of
+    the ledger's contents and the trailing window alone, and the key folds in
+    the window's end date beside the ledger stamp, so a profile is recomputed at
+    least once a day even for a project whose ledger stays still.
+    """
+
+    key = _profile_key(project, now)
+    if key is None:
+        return run_time_profile(project, now=now)
+    cached = _PROFILE_CACHE.get(project)
+    if cached is not None and cached[0] == key:
+        return cached[1]
+    persisted = _read_persisted_profile(project, key)
+    if persisted is not None:
+        _PROFILE_CACHE[project] = (key, persisted)
+        return persisted
+    profile = run_time_profile(project, now=now)
+    _PROFILE_CACHE[project] = (key, profile)
+    _write_persisted_profile(project, key, profile)
+    return profile
+
+
 def _expected_wait(
     *,
     project: str | None,
@@ -261,8 +455,9 @@ def _expected_wait(
         # null (or low) while the lane is genuinely busy with that project's
         # runs -- a wrong answer about load, not merely a slow one. The pick's
         # own records are reused rather than re-read; each other owner is read
-        # once from its own ledger, and only owners with live local workers are
-        # read at all.
+        # from its own ledger only when its ledger has moved since the last
+        # pick, so a repeated pick does not re-decode every foreign project's
+        # history, and only owners with live local workers are read at all.
         if owner not in profiles:
             if owner == project and records is not None:
                 recent = [
@@ -278,7 +473,7 @@ def _expected_wait(
                 ]
                 profiles[owner] = {"groups": _group_rows(recent)}
             else:
-                profiles[owner] = run_time_profile(owner, now=now)
+                profiles[owner] = _cached_run_time_profile(owner, now=now)
         shape = _as_mapping(row.get("node"))
         node = SimpleNamespace(
             role=shape.get("role") or row.get("role"),
@@ -391,7 +586,7 @@ def build(
             selected.append(row)
         profile = {"groups": _group_rows(selected)}
     elif project:
-        profile = run_time_profile(project, now=moment)
+        profile = _cached_run_time_profile(project, now=moment)
     return {
         "return_times": return_times(
             profile,
