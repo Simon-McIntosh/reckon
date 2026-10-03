@@ -1,0 +1,87 @@
+<!doctype html>
+<html><head>
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+<meta name="plan" content="crew-runtime-positive-controls">
+<meta name="node" content="an-early-exit-keeps-its-status">
+<title>an-early-exit-keeps-its-status</title>
+</head><body>
+
+<h2 id="landing">A worker reaped inside the launch retry's startup window keeps its exit</h2>
+
+<p>Landed at <code>fac9f9557</code> (the carry) and <code>c34c0ab97</code>
+(the carry stands beside another child) on
+<code>reckon/crew/dispatch.py</code> and
+<code>tests/test_an_early_exit_keeps_its_status.py</code>.</p>
+
+<p>The vanished-bind retry polls the worker it has just spawned for
+<code>SANDBOX_STARTUP_WINDOW_SECONDS</code>, and a poll of a child that has
+already exited collects its status and leaves the pid unwaitable. The spawn
+helper now converts a collected <code>Popen</code> return code back to the wait
+status the exit record is composed from — <code>_wait_status_from_returncode</code>
+— and carries it on the pid it returns as an <code>_WorkerPid</code>, an
+<code>int</code> that every other reader keeps seeing as the pid. The
+supervisor writes that carried status as the attempt's exit instead of waiting
+on a reaped pid, and the carried exit is final: the worker has been reaped, so
+nothing else parented to the supervisor is a still-running worker whose exit
+could end the attempt, and the leftover-child wait is the launcher path,
+entered only when no exit was carried. A worker that outlived the window
+carries nothing and is supervised exactly as before.</p>
+
+<h3 id="reproduction">The recorded defect, reproduced in the base tree</h3>
+
+<p>Probe run against the base revision
+<code>b67d70a288a4b3cf0ac05351e7223c8fb20714c3</code>, before any repair:
+<code>tests/test_a_killed_worker_resumes_to_completion.py::test_a_killed_worker_is_classified_resumed_and_completed</code>
+failed with <code>assert None == 0</code> — the worker killed inside the
+startup window left an exit record naming neither an exit code nor a signal,
+and the resume classification the test reads then saw nothing that ended the
+first attempt (<code>1 failed in 15.69s</code>, <code>EXIT=1</code>, log
+<code>base-named-reproduction.log</code>).</p>
+
+<h3 id="gate">Gate</h3>
+
+<p>Base arm (git archive of the revision above under the run's scratch tree):
+the three pre-existing test files naming
+<code>_spawn_worker_retrying_a_vanished_bind</code>,
+<code>_supervisor_spawn_worker</code> or
+<code>SANDBOX_STARTUP_WINDOW_SECONDS</code> — <code>15 passed in 50.39s</code>,
+<code>EXIT=0</code>. Head arm over the same population plus the new file:
+<code>18 passed in 48.68s</code>, <code>EXIT=0</code>
+(<code>head-population.log</code>). The named reproduction at head:
+<code>1 passed in 21.95s</code> alone and <code>1 passed in 21.18s</code> with
+its file, <code>EXIT=0</code> both; the new file alone,
+<code>3 passed in 5.60s</code>, <code>EXIT=0</code>. Base and head arms were
+run against their own trees, each header naming its revision, module and
+cwd.</p>
+
+<p>The new file's cases spawn through the run's own supervisor, let the worker
+end inside the shipped window, and read the attempt's exit record: a chosen
+non-zero code comes back as that code with <code>signal: null</code>, and a
+worker ended by <code>SIGTERM</code> comes back as that signal with
+<code>exit_code: null</code>. Each case first runs the production startup poll
+over its own argv and fails if the worker outlived the window, so a case that
+had stopped exercising the carried exit reports that rather than passing. The
+signal case runs the worker behind a fence-shaped argv rather than bubblewrap,
+which reports a signalled worker as <code>128+signal</code>; the shape is what
+puts the launch inside the polled window, and the signal is observed as the
+worker's own.</p>
+
+<p>Negative control — a scratch copy of head in which
+<code>_supervisor_spawn_worker</code> keeps only <code>process.pid</code> from
+the spawn helper: <code>3 failed in 7.18s</code>, <code>EXIT=1</code>. The code
+case reads <code>assert None == 7</code> — <code>exit_code</code> null on the
+record, exactly the recorded defect — and the signal case
+<code>assert None == 15</code>. The planted-child case reads
+<code>assert 0 == 7</code>: with no carry the launcher path runs and the
+leftover child's exit is taken for the attempt's, which the carry makes
+impossible. Log named in the manifest's <code>negative_control_log</code>.</p>
+
+<h3 id="unmet">Unmet within this node's write scope</h3>
+
+<p>None. The carry covers the exit the retry's poll collects; a worker that
+exits later is reaped by the supervisor's own wait, and a poll that never runs
+(a launch with no bind tokens) never collects anything, so both paths are
+unchanged.</p>
+
+</body></html>
