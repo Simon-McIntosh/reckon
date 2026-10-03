@@ -341,7 +341,11 @@ def candidates(
             and (group is None or group_allowance.get("state") == budget.OBSERVED)
             else {}
         )
-        utilisation = budget_facts.get("utilisation_pct")
+        utilisation = (
+            state.get("utilisation_pct")
+            if state.get("headroom") == "known" and not state.get("expired")
+            else None
+        )
         ceiling = budget.policy(config)["utilisation_ceiling_pct"]
         if utilisation is not None and utilisation >= ceiling:
             reasons.append(f"budget-ceiling: {utilisation:g}% at or above {ceiling:g}%")

@@ -7034,9 +7034,13 @@ def dispatch(
             "picker_selection": picker_selection,
             "route_mode": (
                 "explicit"
-                if local
-                or backend_override is not None
-                or default_backend_override is not None
+                if backend_name
+                == str(
+                    backend_override
+                    or default_backend_override
+                    or (config.get("local_backend") if local else "")
+                    or ""
+                )
                 else "picker"
                 if resolution.route == "picker"
                 and picker_selection is not None

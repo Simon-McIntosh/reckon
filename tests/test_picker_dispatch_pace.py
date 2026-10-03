@@ -10,7 +10,7 @@ import pytest
 
 from reckon.crew import picker
 from reckon.crew.node import TaskNode
-from reckon.crew.picker import PickRequest, snapshot
+from reckon.crew.picker import PickRequest, lane_context, snapshot
 
 dispatch = importlib.import_module("reckon.crew.dispatch")
 
@@ -125,9 +125,10 @@ def test_dispatch_candidates_match_direct_pick_from_recorded_window(
     reset = now + timedelta(days=7) - timedelta(hours=2)
     records = [_receipt_record(now, reset)]
     monkeypatch.setattr(snapshot.budget.crew, "list_live", list)
+    monkeypatch.setattr(snapshot.budget._backends, "probe_budget", lambda **_k: {})
     config = _config()
     dispatched = dispatch._picker_budget_snapshot("demo", config, tmp_path, records)
-    direct = snapshot.budget_view("demo", config, tmp_path, records, cached_only=True)
+    direct = snapshot.budget_view("demo", config, tmp_path, records)
     _candidates(monkeypatch, tmp_path, config, records, dispatched)
     selection = _dispatch_selection(monkeypatch, tmp_path, config, records, dispatched)
     dispatched_candidates = {
@@ -162,7 +163,12 @@ def test_missing_recorded_window_names_absence_without_inventing_figures(
     config = _config()
     monkeypatch.setattr(snapshot.budget.crew, "list_live", list)
     view = dispatch._picker_budget_snapshot("demo", config, tmp_path, [])
-    candidates = _candidates(monkeypatch, tmp_path, config, [], view)
+    _candidates(monkeypatch, tmp_path, config, [], view)
+    selection = _dispatch_selection(monkeypatch, tmp_path, config, [], view)
+    candidates = {
+        candidate["backend"]: candidate
+        for candidate in [*selection["offered"], *selection["excluded"]]
+    }
     for candidate in candidates.values():
         assert all(
             candidate[field] is None
@@ -190,6 +196,11 @@ def test_old_recorded_window_is_marked_stale(monkeypatch, tmp_path):
         assert backend["state"]["source"] == "ledger"
         assert backend["state"]["expired"] is True
         assert backend["state"]["observed_at"] == observed.isoformat()
+        budget_block = lane_context._budget_block(
+            backend["state"], moment=now, shelf_life_minutes=30
+        )
+        assert budget_block["stale"] is True
+        assert budget_block["budget_age_s"] == pytest.approx(86_400, abs=1)
     for candidate in candidates.values():
         assert candidate["burn_multiple"] is None
         assert candidate["pace_allowance"] is None

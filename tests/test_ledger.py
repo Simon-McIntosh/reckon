@@ -867,7 +867,7 @@ def test_dispatch_records_how_its_backend_was_chosen(home, repo, monkeypatch) ->
         repo,
         node_kwargs={"id": "named-lane"},
         backend_override="alpha",
-        route="picker",
+        route="deterministic",
         picker_selection=answer,
     )
     assert routed["route_mode"] == "picker"
