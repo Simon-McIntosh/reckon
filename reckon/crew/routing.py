@@ -2790,7 +2790,11 @@ def _standing_context_input(
     """Measure the instruction files loaded before repository work begins."""
 
     home = Path(os.environ.get("HOME") or Path.home()).expanduser()
-    manifest = agent_context.build_context_manifest(
+    # The manifest reads the instruction chain, whose repository lookup shells
+    # out to git, on every cold process. It is a pure function of the files it
+    # names, so the cached manifest is reused across processes while those files
+    # stand, and every candidate sharing an agent layout reuses one build.
+    manifest = agent_context.cached_context_manifest(
         agent_context.ContextRequest(
             target=repo,
             user_home=home,
@@ -3140,6 +3144,26 @@ def _measured_horizon_hours(value: Any) -> float | None:
     return hours if math.isfinite(hours) else None
 
 
+def _verdict_input_stamp(project: str, repo: Path) -> dict[str, Any]:
+    """A cheap stamp of the files one pick's shared verdict inputs read.
+
+    The capability cache file and the project's ledger are the only inputs, so
+    their mtime and size identify a change without reading either. The ledger's
+    run directory is stamped beside the aggregate because a promoted run lands
+    in its own file there and may not rewrite the aggregate.
+    """
+
+    aggregate = ledger.ledger_path(project, repo)
+    return {
+        # The ledger path is part of the key so two checkouts whose (absent)
+        # aggregate and run-directory stamps coincide never share an entry.
+        "aggregate_path": str(aggregate),
+        "capabilities": capabilities.file_stamp(capabilities.capabilities_path()),
+        "aggregate": capabilities.file_stamp(aggregate),
+        "run_dir": capabilities.file_stamp(aggregate.parent / "runs"),
+    }
+
+
 def shared_verdict_inputs(project: str, repo: Path) -> dict[str, Any]:
     """Load the inputs one pick's verdicts share across every candidate.
 
@@ -3147,13 +3171,26 @@ def shared_verdict_inputs(project: str, repo: Path) -> dict[str, Any]:
     the candidate, but computing the freshness key reloads the whole project
     ledger. A pick judges every configured backend, so reading it once per pick
     instead of once per candidate turns a per-candidate ledger read into one.
+
+    Both inputs are pure functions of files, so the result is cached across
+    processes under a stamp of those files: the second process skips the ledger
+    walk, and a changed capability cache or ledger is a miss.
     """
 
-    cache = capabilities.load_capabilities()
-    return {
-        "capability_cache": cache,
-        "cache_status": capabilities.project_cache_status(cache, project, root=repo),
-    }
+    def build() -> dict[str, Any]:
+        cache = capabilities.load_capabilities()
+        return {
+            "capability_cache": cache,
+            "cache_status": capabilities.project_cache_status(
+                cache, project, root=repo
+            ),
+        }
+
+    return capabilities.cached_pick_input(
+        f"verdict-inputs-{project}",
+        _verdict_input_stamp(project, repo),
+        build,
+    )
 
 
 def _competence_verdict(

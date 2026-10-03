@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="A fresh-process dispatch pick finishes inside its 5 s bound">
+  <meta name="plan-summary" content="A cross-process cache skips the picker's pure-function-of-files inputs — the instruction-chain context estimate and the shared verdict inputs — so a warm fresh-process pick does not re-walk the ledger or re-read the instruction chain, while a changed file, a corrupt entry or a version bump stays a miss.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s6">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="picker,crew,dispatch,latency,cache">
+  <title>A fresh-process dispatch pick finishes inside its 5 s bound — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="picker-fresh-process-pick" data-reckon="landed" data-when="2026-10-03">
+  <h2>A fresh-process dispatch pick finishes inside its 5 s bound</h2>
+  <p>Every <code>reckon crew dispatch</code> is a fresh CLI process, so the picker step that reaches <code>dispatch_picker_selection</code> is always a cold pick. Two of its inputs — the instruction-chain context estimate (<code>routing._standing_context_input</code>, whose repository lookup shells out to git) and the shared verdict inputs (<code>routing.shared_verdict_inputs</code>: <code>capabilities.load_capabilities</code> plus <code>capabilities.project_cache_status</code>, which walks the ledger) — are pure functions of files that change rarely. A new per-input cache file under <code>~/.cache/reckon/</code>, resolved through <code>RECKON_PICK_CACHE</code> so a test points it at a temp dir, makes the second process skip them: the entry is keyed on a cheap <code>[mtime_ns, size]</code> stamp of every file the input reads, written atomically, and read as a miss when absent, unreadable, corrupt or version-mismatched. Nothing live is cached: availability, lane load and budget pace are untouched, and a pick's answer is unchanged.</p>
+  <p>A small driver runs <code>dispatch_picker_selection</code> in a new python process exactly as <code>reckon crew dispatch</code> reaches it (the three dispatch-scope inputs built as dispatch builds them, then the bounded call), on project <code>reckon</code> at <code>98dci4-clu-2018</code>, one cold run then three back-to-back warm runs each arm. Wall time at the bounded call, warm median:</p>
+  <table>
+    <thead><tr><th>phase (warm median, ms)</th><th>before</th><th>after</th></tr></thead>
+    <tbody>
+      <tr><td>candidate snapshot</td><td>863.7</td><td>79.3</td></tr>
+      <tr><td>&nbsp;&nbsp;— instruction-chain manifest</td><td>795.2</td><td>0.0 (cache hit)</td></tr>
+      <tr><td>shared verdict inputs (ledger walk)</td><td>4050.5</td><td>14.4 (cache hit)</td></tr>
+      <tr><td>budget snapshot (live pace, not cached)</td><td>3915.8</td><td>3944.9</td></tr>
+      <tr><td>ledger rows (dispatch-scope, not cached)</td><td>3780.6</td><td>3815.1</td></tr>
+      <tr><td>template render</td><td>462.7</td><td>469.8</td></tr>
+      <tr><td>Jev call</td><td>316.7</td><td>396.7</td></tr>
+      <tr><td><strong>bounded pick (dispatch_picker_selection)</strong></td><td><strong>1672.7</strong></td><td><strong>916.3</strong></td></tr>
+      <tr><td>bounded pick, cold</td><td>1417.5</td><td>1496.8</td></tr>
+    </tbody>
+  </table>
+  <p>The bounded pick — the step the 5&nbsp;s bound wraps — has a warm median of <strong>916&nbsp;ms</strong>, below the 2.5&nbsp;s target, and its cold first pick is <strong>1497&nbsp;ms</strong>, inside the 5&nbsp;s bound. The cut is the candidate snapshot (≤105&nbsp;ms warm versus ~0.86&nbsp;s) and the verdict-inputs ledger walk (14&nbsp;ms versus ~4.1&nbsp;s), both served from the cache on the second process. The full fresh-process path still reads about 7.5–9&nbsp;s warm, dominated by the dispatch-scope ledger rows (<code>ledger.runs</code>) and the live budget snapshot (<code>budget.preflight → latest_recorded</code>); both are pure ledger reads the picker cannot cache in scope, and both belong to the files a concurrent node owns — see the follow-on.</p>
+  <figure>
+    <img src="/reckon/figures/one-typesafe-model-picker/picker-fresh-process-pick/pick-phases.png" alt="Left: warm-median wall time per picker phase before and after the cache. Right: the bounded dispatch_picker_selection against its 5 s bound and the 2.5 s target, cold and warm.">
+    <figcaption>Warm-median phase times and the bounded pick against its bound. Base = main checkout; head = the cache. Measured from the driver in the run directory, three warm runs each arm.</figcaption>
+  </figure>
+  <p>Equivalence is proven, not assumed: <code>tests/test_picker_fresh_process_pick.py</code> builds the shared verdict inputs once uncached and once through the cached reader on the same fixture and asserts the two agree, that a moved stamp recomputes, that a corrupt file is a miss, and that a real second process skips the build — counted through a spy file the build appends to.</p>
+  <p>Head gate: <code>pytest tests/test_picker_fresh_process_pick.py tests/test_picker*.py</code> at revision <code>06449805c</code> plus this change, 106 passed, <code>EXIT=0</code>. Base arm over the same existing picker tests at the main checkout, 101 passed, <code>EXIT=0</code> — zero added failures. The declared mutation — disable the cross-process cache — leaves the second-process skip test failing with two <code>built</code> lines. This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+  <p><strong>Follow-on.</strong> <code>_picker_ledger_rows</code> (<code>ledger.runs</code>, ~3.8&nbsp;s) and <code>_picker_budget_snapshot</code> (<code>budget.preflight</code>'s recorded-readings walk, ~3.9&nbsp;s) are the remaining dominant fresh-process costs and are pure ledger reads over files a concurrent node owns (<code>reckon/crew/dispatch.py</code> and <code>reckon/budget.py</code>). The same <code>capabilities.cached_pick_input</code> facility keyed on the ledger stamp would serve both; wiring them is a one-cache-call change at their call sites outside this node's scope.</p>
+</article>
+</body>
+</html>

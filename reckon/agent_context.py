@@ -6,6 +6,7 @@ import hashlib
 import os
 import subprocess
 import tomllib
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -130,6 +131,86 @@ def build_context_manifest(request: ContextRequest) -> dict[str, Any]:
     }
     manifest["ok"] = not any(item["severity"] == "error" for item in findings)
     return manifest
+
+
+def _manifest_file_paths(manifest: Mapping[str, Any]) -> list[str]:
+    """Every file or directory a built manifest's content depends on.
+
+    Stamping these lets a second process trust a cached manifest without
+    re-reading any of them: a changed instruction file, a skill added to a
+    scanned root, or a relocated repository root all move the stamp.
+    """
+
+    paths: set[str] = set()
+    for key in ("canonical_policy", "entrypoint"):
+        record = manifest.get(key)
+        if isinstance(record, Mapping):
+            for field in ("path", "resolved_path"):
+                value = record.get(field)
+                if value:
+                    paths.add(str(value))
+    instructions = manifest.get("instructions")
+    if isinstance(instructions, Mapping):
+        for item in instructions.get("effective_chain") or ():
+            if not isinstance(item, Mapping):
+                continue
+            for field in ("path", "resolved_path", "directory"):
+                value = item.get(field)
+                if value:
+                    paths.add(str(value))
+    repository = manifest.get("repository")
+    if isinstance(repository, Mapping) and repository.get("root"):
+        paths.add(str(repository["root"]))
+    skills = manifest.get("skills")
+    if isinstance(skills, Mapping):
+        for root in skills.get("metadata_roots") or ():
+            if isinstance(root, Mapping) and root.get("path"):
+                paths.add(str(root["path"]))
+        for item in skills.get("discovered") or ():
+            if isinstance(item, Mapping):
+                for field in ("path", "resolved_path"):
+                    value = item.get(field)
+                    if value:
+                        paths.add(str(value))
+    return sorted(paths)
+
+
+def manifest_file_stamp(manifest: Mapping[str, Any]) -> list[Any]:
+    """A cheap stamp of the files a manifest was built from."""
+
+    from reckon import capabilities
+
+    return [
+        [path, capabilities.file_stamp(path)] for path in _manifest_file_paths(manifest)
+    ]
+
+
+def cached_context_manifest(request: ContextRequest) -> dict[str, Any]:
+    """Return a context manifest, reusing a cached one while its files stand.
+
+    The manifest reads the instruction chain and its skill roots, a walk whose
+    repository lookup shells out to git. It is a pure function of those files,
+    so a fresh process reuses the cached manifest and re-stamps only the handful
+    of paths it names. A changed file, an added skill or a relocated root is a
+    miss and the manifest is rebuilt.
+    """
+
+    from reckon import capabilities
+
+    request_key = {
+        "agent": request.agent.lower(),
+        "target": str(_absolute(request.target)),
+        "user_home": str(_absolute(request.user_home)),
+        "agent_root": str(request.agent_root) if request.agent_root else None,
+        "project_doc_max_bytes": request.project_doc_max_bytes,
+        "activated_skills": list(request.activated_skills),
+    }
+    return capabilities.cached_pick_input_stamped(
+        "context-manifest",
+        request_key,
+        manifest_file_stamp,
+        lambda: build_context_manifest(request),
+    )
 
 
 def _absolute(path: Path) -> Path:
