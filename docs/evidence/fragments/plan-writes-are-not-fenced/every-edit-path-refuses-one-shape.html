@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="plan-writes-are-not-fenced">
+<title>every-edit-path-refuses-one-shape — landing record</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="every-edit-path-refuses-one-shape">Landing record — every edit path refuses a version conflict in one shape</h2>
+<p>The section recorded that the section-append and state-set paths of <code>_edit_plan</code> let the store's <code>VersionConflict</code> escape as a raised exception while the followup and comment paths returned a structured refusal (<code>ok false</code>, <code>error version_conflict</code>, <code>expected_version</code>, <code>current_version</code>, a message naming both). Re-measured at this node's base (<code>67b7db2d3</code>), the defect does not reproduce: all four op kinds leave the edit through the same structured refusal, including when a landing write commits between the edit's read and its write so the conflict is raised by the store inside the call (94 instrumented two-writer iterations under CPU load, zero raised; three xdist runs of <code>tests/test_landing_write_races_every_writer.py</code> under a concurrent load, zero failures). The reproduction is recorded in <code>gate/base-repro-run*.log</code> and the stress run printed <code>iterations=94 exceptions=0 outcomes={'dict': 94}</code>. The acceptance gate's premise that these two cases fail at the base therefore does not hold for this revision; the honest outcome is the missing guard, which is what landed.</p>
+<p><code>tests/test_every_edit_path_refuses_one_shape.py</code> drives followup append, section append, state set and comment append each with a real conflict — a landing write commits inside the edit's own store call, changing <code>owner</code> so the commutative comment merge cannot span it — and asserts the same refusal shape for each, plus a case that the four refusals are byte-identical as dicts and a positive control that a retry against the current version still lands, so a refusal-everything fence cannot pass.</p>
+<h3>Gate</h3>
+<p>Base arm <code>67b7db2d3</code> (git archive, <code>-n 8 --timeout=300</code>, the 38 test files reaching <code>edit_plan</code>): <strong>668 passed, 1 failed, 1 error</strong>. The failure is <code>tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code> — "reckon crew repair-status is registered and the skill never names it" — a verb-documentation gap unrelated to this change and outside this node's write scope; the error is <code>tests/conftest.py::test_temp_config_home</code>, collected only because conftest.py was passed explicitly (removed from the head arm's file list). Head arm <code>223cfbcca</code>: the same gate with the new test file; the base's failure id is the only one, and the new cases pass. Negative control: with the state-mode write's version-conflict conversion removed from <code>reckon/mcp.py</code>, the section-append and state-set cases fail — <code>6 failed</code>, <code>EXIT=1</code> — which shows the new test exercises the store's raise rather than the read-time pre-check. Logs: <code>gate/base-arm.log</code>, <code>gate/head-arm.log</code>, <code>gate/negative-control-section-append-raises-again.log</code>.</p>
+</main>
+</body>
+</html>
