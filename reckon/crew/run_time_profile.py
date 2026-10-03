@@ -49,6 +49,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from reckon import ledger
+from reckon._timestamps import parse_utc
 from reckon.crew import lane_document
 from reckon.crew.dispatch import _lane_worker_allowance
 from reckon.crew.paid_lanes import local_lane_path
@@ -215,23 +216,23 @@ def _wall_seconds(row: Mapping[str, Any]) -> float | None:
 def _completed_after(row: Mapping[str, Any], reference: datetime) -> bool:
     """True when the row's completion stamp is readable and after ``reference``.
 
-    A stamp the parser cannot read is not evidence that the row falls outside
-    the window, so it is left in rather than dropped; the ledger's own ``since``
-    filter has already refused a row with no usable completion stamp.
+    The stamp is read through :func:`reckon._timestamps.parse_utc`, the
+    repository's one timestamp parser, so a stamp read here and the same stamp
+    read in the ledger cannot resolve to different moments: a ``Z`` suffix, a
+    numeric offset and a naive instant are each read as UTC, and a numeric epoch
+    is a moment the way it is everywhere else. Only a string is accepted, the
+    shape the ledger writes. A stamp the parser cannot read is not evidence that
+    the row falls outside the window, so it is left in rather than dropped; the
+    ledger's own ``since`` filter has already refused a row with no usable
+    completion stamp.
     """
 
     value = row.get("completed_at")
     if not isinstance(value, str):
         return False
-    text = value.strip()
-    if not text:
+    stamp = parse_utc(value)
+    if stamp is None:
         return False
-    try:
-        stamp = datetime.fromisoformat(text)
-    except ValueError:
-        return False
-    if stamp.tzinfo is None:
-        stamp = stamp.replace(tzinfo=UTC)
     return stamp > reference
 
 
