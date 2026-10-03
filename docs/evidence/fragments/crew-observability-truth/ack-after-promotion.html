@@ -1,0 +1,39 @@
+<article class="landed-report" data-run-id="r-20261003T063805035021-ack-after-promotion">
+  <h3>ack-after-promotion &mdash; a promoted run's remainder can be acknowledged</h3>
+  <p>
+    A run promoted with its worktree retained leaves a duty the obligations reader raises from its
+    ledger record, and that duty outlives the live pointer. <code>crew ack</code> wrote only beside
+    the live pointer, so once the run was promoted the deferred remainder could not be recorded and
+    the stop hook blocked every turn on a remainder the coordinator held on purpose. At base the
+    refusal reproduces: acknowledging the promoted run raises
+    <code>reckon.crew.CrewError: no live run 'r-20261003T060000000000-promoted-remainder' (looked in
+    &hellip;/config/crew/live/r-20261003T060000000000-promoted-remainder.json)</code>, and the two
+    cases that record an acknowledgement fail on that line. The deferral is now written to the
+    run's own ledger record &mdash; the store that survives promotion, with the ledger's writer
+    keeping the aggregate copy identical to the per-run file &mdash; and the obligations reader
+    honours it through <code>_acknowledgements_in_force</code> and
+    <code>_partition_acknowledged</code>, exactly as it honours a live run's. An acknowledgement
+    with no reason is refused, and one past its <code>until</code> is not in force, so the duty
+    returns on the next read with no second write. Implemented in
+    <code>reckon/crew/runs.py</code> and <code>reckon/crew/obligations.py</code> at
+    <code>6f9bb1056</code>, with the reader's promoted lookup moved off the held-tree scan at
+    <code>bb0347100</code> (the scan cost about five seconds per obligations read on a
+    fleet-sized ledger and pushed the snapshot publisher's transition write past its latency
+    bound); <code>tests/test_ack_after_promotion.py</code>, 3 passed.
+  </p>
+  <p>
+    <strong>Measure.</strong> Gate: the new test plus every test naming <code>crew ack</code>,
+    <code>record_run_acknowledgement</code> and the acknowledgement readers &mdash; 12 files, run
+    <code>-n 8 --timeout=300</code> with a per-arm basetemp outside any repository. Base arm
+    (9e5081bb3): 2 failed / 76 passed, <code>EXIT=1</code>, the two failures being the new cases
+    that record the acknowledgement. Head arm (bb0347100): 78 passed, <code>EXIT=0</code>. The
+    gate carries a pre-existing load-sensitive pair in
+    <code>tests/test_obligations_snapshot_is_published.py</code>
+    (<code>test_a_slow_sweep_does_not_hold_the_next_transition</code>,
+    <code>test_a_file_change_and_the_floor_tick_each_republish</code>), whose arm duration swung
+    22&ndash;59&nbsp;s across identical runs; a base repeat under the same load failed both the
+    same ids (<code>flake-base-7.log</code>), so neither id is added by this change. The negative
+    control restores the live-pointer requirement in <code>record_run_acknowledgement</code>: the
+    promoted-run cases are refused and the file reads 2 failed / 1 passed, <code>EXIT=1</code>.
+  </p>
+</article>
