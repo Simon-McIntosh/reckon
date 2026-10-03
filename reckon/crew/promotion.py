@@ -4308,13 +4308,13 @@ def _terminal_stream_data(
             # would rate tokens against a clock that never ran for them.
             throughput = dict(observation.throughput)
         session_id = observation.session_id or session_id
-        with candidate.open(encoding="utf-8", errors="replace") as handle:
-            events, _malformed = _backends.parse_events(handle)
-        for event in events:
-            timestamp = event.get("timestamp")
-            parsed = _zone_aware_stream_timestamp(timestamp)
-            if parsed is not None:
-                timestamps.append((parsed, timestamp))
+        first, last = _backends.cached_stream_timestamp_bounds(
+            candidate, _zone_aware_stream_timestamp
+        )
+        if first is not None:
+            timestamps.append(first)
+        if last is not None:
+            timestamps.append(last)
     if timestamps:
         first = min(timestamps, key=lambda item: item[0])
         last = max(timestamps, key=lambda item: item[0])
