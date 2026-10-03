@@ -74,6 +74,16 @@
   near ten seconds in this worktree is recorded under follow-ons rather than
   repaired here.</p>
 
+  <p><strong>The pick's own project, in fresh processes.</strong> The same
+  test holds without a foreign project on the lane. A fresh
+  <code>build(&hellip;, records=None)</code> for project <code>reckon</code>,
+  the shape the dispatcher takes when it hands no records in, spent
+  4045.1&#8239;ms decoding reckon's own ledger (4029.0&#8239;ms of it) in the
+  first process and 13.7&#8239;ms in the second, which decoded nothing at all
+  while reporting the identical <code>expected_wait_s</code> of 783.0&#8239;s
+  (<code>measure-build-fresh.log</code>). That is the whole of the pick's
+  remaining ledger cost when nothing has moved: none.</p>
+
   <figure>
     <img src="/reckon/figures/one-typesafe-model-picker/picker-foreign-wait-bounded/foreign-read-cold-warm.png"
          alt="Foreign-ledger read cost on a pick, cold versus warm, with the two foreign projects stacked">
