@@ -116,6 +116,7 @@ from reckon.crew.runs import (
     _watch_attach_line,
     _write_json,
     capture_run_session,
+    crew_home,
     delivery_roots,
     list_live,
     new_run_id,
@@ -1571,6 +1572,134 @@ def _repository_scope_claims(
         claims,
         key=lambda claim: (claim.run_id, claim.node_id, claim.absolute_path.as_posix()),
     )
+
+
+# The exclusive claim that gates one node's worktree path. Two dispatches of
+# one node under one worktree identity would otherwise both reach
+# ``git worktree add`` on the same path, each creation losing directories the
+# other is writing. A read of the live pointers cannot close that window —
+# both dispatches can read before either publishes — so the claim is an
+# exclusive file create under the crew store: the kernel decides which
+# dispatch owns the path, and the loser reads the holder's record and refuses,
+# naming it, before it has touched the worktree.
+NODE_DISPATCH_CLAIM_DIRECTORY = "claims"
+
+# How long a refused dispatch re-reads the holder's record before naming it
+# without a run id. The holder writes its record immediately after the
+# exclusive create, so the window is microseconds; the bound exists so a
+# refusal still names the holder rather than a blank.
+_NODE_CLAIM_RECORD_ATTEMPTS = 20
+_NODE_CLAIM_RECORD_INTERVAL_SECONDS = 0.01
+
+
+def _node_dispatch_claim_path(
+    project: str, worktree_identity: str, node_id: str
+) -> Path:
+    """The file whose exclusive creation gates one node's worktree path."""
+    identity = f"{project}\x00{worktree_identity}\x00{node_id}"
+    digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:16]
+    label = re.sub(r"[^A-Za-z0-9._-]+", "-", node_id).strip("-")[:48] or "node"
+    return crew_home() / NODE_DISPATCH_CLAIM_DIRECTORY / f"{label}-{digest}.json"
+
+
+def _read_node_dispatch_claim(path: Path) -> Mapping[str, Any]:
+    """Read a holder's record, waiting briefly for its write to land."""
+    for attempt in range(_NODE_CLAIM_RECORD_ATTEMPTS):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8") or "{}")
+        except (OSError, ValueError):
+            payload = {}
+        if isinstance(payload, dict) and payload.get("run_id"):
+            return payload
+        if attempt + 1 < _NODE_CLAIM_RECORD_ATTEMPTS:
+            time.sleep(_NODE_CLAIM_RECORD_INTERVAL_SECONDS)
+    return {}
+
+
+def _node_dispatch_in_flight_text(
+    holder: Mapping[str, Any],
+    *,
+    node_id: str,
+    project: str,
+    worktree_identity: str,
+    claim_path: Path,
+) -> str:
+    """Name the in-flight dispatch a refusal is refusing against."""
+    run_id = str(holder.get("run_id") or "unknown")
+    holder_pid = holder.get("pid")
+    created_at = str(holder.get("created_at") or "")
+    observed = ""
+    if holder_pid:
+        observed = f", pid {holder_pid}"
+        if created_at:
+            observed += f" since {created_at}"
+    return (
+        f"a dispatch of node {node_id!r} for project {project!r} under worktree "
+        f"identity {worktree_identity!r} is already in flight as run {run_id!r}"
+        f"{observed}; its claim is {claim_path}"
+    )
+
+
+class _NodeDispatchClaim:
+    """The held exclusive claim over one node's worktree path."""
+
+    def __init__(self, path: Path, run_id: str) -> None:
+        self.path = path
+        self.run_id = run_id
+
+    def release(self) -> None:
+        """Give the path up, so the node can be dispatched again."""
+        self.path.unlink(missing_ok=True)
+
+
+def _claim_node_dispatch(
+    *,
+    project: str,
+    worktree_identity: str,
+    node_id: str,
+    run_id: str,
+    session: str,
+) -> _NodeDispatchClaim:
+    """Take the one claim that lets a dispatch cut a node's worktree.
+
+    The exclusive create is the whole arbitration: a second dispatch of the
+    same node, project and worktree identity loses it and refuses, naming the
+    in-flight dispatch, before any worktree exists for it to disturb.
+    """
+    path = _node_dispatch_claim_path(project, worktree_identity, node_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    record = {
+        "run_id": run_id,
+        "project": project,
+        "session": session,
+        "worktree_identity": worktree_identity,
+        "node": node_id,
+        "pid": os.getpid(),
+        "created_at": _utc_now(),
+    }
+    try:
+        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    except FileExistsError:
+        holder = _read_node_dispatch_claim(path)
+        raise CrewError(
+            format_refusal(
+                "D12",
+                _node_dispatch_in_flight_text(
+                    holder,
+                    node_id=node_id,
+                    project=project,
+                    worktree_identity=worktree_identity,
+                    claim_path=path,
+                ),
+            )
+        ) from None
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            json.dump(record, handle)
+    except BaseException:
+        path.unlink(missing_ok=True)
+        raise
+    return _NodeDispatchClaim(path, run_id)
 
 
 def _publish_launch_claim(
@@ -5791,7 +5920,11 @@ def dispatch(
     session, and that member's own in-flight run refuses a second dispatch to
     it. Omitting it makes the dispatch disposable: the run carries its own
     identity and registers no roster row, so no unrelated task is refused for
-    the member another run in flight happens to hold.
+    the member another run in flight happens to hold. Two dispatches of one
+    node for the same project, session and node id are serialised by an
+    exclusive claim over the node's worktree path: the second is refused
+    before any worktree exists, naming the in-flight dispatch, so exactly one
+    of two concurrent dispatches launches.
 
     A node whose backend has no headroom left is *held* rather than dispatched:
     :class:`BudgetHold` is raised before any worktree exists, so the node stays
@@ -6398,7 +6531,21 @@ def dispatch(
     spawned_pid: int | None = None
     spawned_start_time: str | None = None
     wired_peer_run_ids: list[str] = []
+    node_claim: _NodeDispatchClaim | None = None
     try:
+        # The claim over this node's worktree path is taken here, immediately
+        # before the worktree, so a dispatch that loses it refuses before
+        # touching the path. It is held until the launch is decided, and
+        # released only after a refusal has unwound — the unwind removes the
+        # worktree, and a next dispatch taking the claim early would race that
+        # removal against its own creation.
+        node_claim = _claim_node_dispatch(
+            project=project,
+            worktree_identity=worktree_identity,
+            node_id=node.id,
+            run_id=run_id,
+            session=session,
+        )
         worktree = _create_worktree(repo_root, worktree_identity, node.id, base)
         directory.mkdir(parents=True, exist_ok=True)
         working_directory = worktree["path"]
@@ -6951,6 +7098,12 @@ def dispatch(
             exc.add_note(f"undoing run {run_id} failed: {rollback_failure}")
             raise exc from cause
         raise
+    finally:
+        # Released only now, after any unwind has removed the worktree a
+        # refusal cut: a next dispatch taking the claim earlier would race its
+        # own creation against that removal.
+        if node_claim is not None:
+            node_claim.release()
     return record
 
 
