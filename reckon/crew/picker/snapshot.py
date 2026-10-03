@@ -338,7 +338,11 @@ def candidates(
             state
             if state.get("headroom") == "known"
             and not state.get("expired")
-            and (group is None or group_allowance.get("state") == budget.OBSERVED)
+            and (
+                group is None
+                or group_allowance.get("state") == budget.OBSERVED
+                or group_allowance.get("effective_limit") is not None
+            )
             else {}
         )
         utilisation = (
@@ -402,7 +406,7 @@ def candidates(
         budget_reason = None
         if group is not None and not budget_facts:
             budget_reason = str(state.get("detail") or "") or (
-                f"no recorded account-window reading for budget group {group['group']}"
+                "no recorded account-window reading for the candidate's budget group"
             )
         result.append(
             BudgetCandidate(
