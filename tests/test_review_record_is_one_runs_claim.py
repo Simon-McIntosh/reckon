@@ -105,7 +105,9 @@ def _fixture_pointers_in_the_real_home() -> list[str]:
 
 
 @pytest.fixture()
-def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[tuple[Path, Path]]:
+def home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[tuple[Path, Path]]:
     """A temporary crew home and a repository that looks like a reckon mount."""
     assert _fixture_pointers_in_the_real_home() == []
     config_home = tmp_path / "config"
