@@ -919,6 +919,20 @@ def _emit(payload, pretty: bool) -> None:
     click.echo(json.dumps(payload, indent=2 if pretty else None, sort_keys=True))
 
 
+def _emit_dry_run_request_error(pretty: bool, detail: str) -> None:
+    """Answer a request error on the dry run's JSON channel.
+
+    A request error is the same fact whether it came from a leaf key the
+    flight schema refuses or from a keyed-map name no layer defines, so both
+    answer in the same decodable document rather than one in plain text on
+    stderr.
+    """
+    _emit(
+        {"ok": False, "dry_run": True, "error": "request-error", "detail": detail},
+        pretty,
+    )
+
+
 def _validation_detail(validation) -> str:
     """Render a node validation's findings as the detail of a refusal.
 
@@ -980,6 +994,116 @@ def _flight_default_backend_override(flight_module, config, overrides):
     if "default_backend" not in prompt_layer:
         return None
     return str(config.get("default_backend") or "").strip() or None
+
+
+def _with_resolved_overrides(payload: dict, override_resolution: dict) -> dict:
+    """Attach each --set path's resolution to a dry-run document.
+
+    Every dry-run document emitted after the resolution carries it, refusal
+    documents included, so a caller reading one can tell an override that
+    resolved from one that never applied.
+    """
+    if override_resolution:
+        payload["overrides"] = override_resolution
+    return payload
+
+
+def _config_value_at(config, path: str):
+    """Return the value a dotted flight-config path holds; None when unset."""
+    node = config
+    for segment in (part for part in path.split(".") if part):
+        if not isinstance(node, Mapping) or segment not in node:
+            return None
+        node = node[segment]
+    return node
+
+
+def _layer_flight_config(flight_module, project, checkout_path):
+    """Resolve the file layers alone, without this dispatch's prompt layer."""
+    from reckon.crew.refusals import format_refusal
+
+    try:
+        return flight_module.resolve(project, checkout_path=checkout_path).config
+    except flight_module.FlightConfigError as exc:
+        raise click.ClickException(format_refusal("D06", str(exc))) from exc
+
+
+def _require_configured_override_paths(flight_module, overrides, base) -> None:
+    """Refuse any --set path naming a backend or role no layer defines.
+
+    The preview and the launch apply this one check, so a name no config
+    layer defines cannot be refused by one path and merged into a section
+    nothing routes to by the other.
+    """
+    for pair in overrides:
+        _require_configured_override_path(
+            flight_module, pair.partition("=")[0].strip(), base
+        )
+
+
+def _require_configured_override_path(flight_module, path: str, base) -> None:
+    """Refuse a --set path naming a backend or role no layer defines.
+
+    An override under a keyed map the configuration does not carry — a
+    misspelled backend or role name — merges into a section nothing routes to,
+    so a dry run that echoed it would confirm an override that can change
+    nothing. The refusal names the path and the defined names, matching the
+    resolution already applied to ``default_backend`` and ``local_backend``.
+    """
+    from reckon.crew.refusals import format_refusal
+
+    segments = [part for part in path.split(".") if part]
+    for index in range(len(segments) - 1):
+        if segments[index] not in flight_module._KEYED_MAPS:
+            continue
+        container = base.get(segments[index])
+        name = segments[index + 1]
+        if isinstance(container, Mapping) and name in container:
+            continue
+        defined = (
+            ", ".join(sorted(str(entry) for entry in container))
+            if isinstance(container, Mapping)
+            else "none"
+        )
+        raise click.ClickException(
+            format_refusal(
+                "D06",
+                f"--set path {path!r} names {name!r} under "
+                f"{segments[index]!r}, which no config layer defines "
+                f"(defined {segments[index]}: {defined}); override a path the "
+                "configuration knows",
+            )
+        )
+
+
+def _dispatch_override_resolution(
+    flight_module, overrides, resolved, base, *, local: bool
+) -> dict:
+    """Report how each --set override resolved against the config layers.
+
+    A dry run exists to confirm an override before a real dispatch spends a
+    run, so every --set path is echoed with the value the resolved flight
+    configuration holds there — null included, so an override to null is
+    distinct from one that never applied — beside the value the layers
+    beneath it held without it.
+    """
+    from reckon.crew.refusals import format_refusal
+
+    if not overrides:
+        return {}
+    if local:
+        try:
+            base = flight_module.select_local_backend(base)
+        except flight_module.FlightConfigError as exc:
+            raise click.ClickException(format_refusal("D06", str(exc))) from exc
+    resolution: dict[str, dict[str, Any]] = {}
+    for pair in overrides:
+        path = pair.partition("=")[0].strip()
+        resolution[path] = {
+            "before": _config_value_at(base, path),
+            "resolved": _config_value_at(resolved, path),
+        }
+    return resolution
 
 
 def _model_availability_refusal(crew_module, flight_module, config, node):
@@ -1392,7 +1516,8 @@ def crew_preflight(
     help=(
         "Override one flight key after file layers. For routed effort, "
         "roles.<role>.by_spec_level.<level>.effort overlays "
-        "backends.<name>.effort."
+        "backends.<name>.effort. A path naming a backend or role no config "
+        "layer defines is refused."
     ),
 )
 @click.option(
@@ -1526,7 +1651,23 @@ def crew_dispatch(
             "--brief and --section are mutually exclusive; a brief names no "
             "committed plan section"
         )
-    config = _dispatch_resolved_flight(flight_module, project, checkout_path, overrides)
+    base_config = None
+    try:
+        if overrides:
+            base_config = _layer_flight_config(flight_module, project, checkout_path)
+            _require_configured_override_paths(flight_module, overrides, base_config)
+        config = _dispatch_resolved_flight(
+            flight_module, project, checkout_path, overrides
+        )
+    except click.ClickException as exc:
+        if not dry_run:
+            raise
+        # A resolution the prompt layer cannot join — a leaf key the schema
+        # refuses as well as a name no layer defines — is a request error, and
+        # a dry run answers every request error on its JSON channel so a
+        # caller that decodes stdout reads the refusal rather than nothing.
+        _emit_dry_run_request_error(pretty, str(exc))
+        raise click.exceptions.Exit(1) from exc
     effective_route = resolve_dispatch_route(config, route)
     if effective_route == "picker" and (backend or local):
         raise click.UsageError(
@@ -1591,6 +1732,16 @@ def crew_dispatch(
 
     if dry_run:
         try:
+            override_resolution = _dispatch_override_resolution(
+                flight_module, overrides, config, base_config, local=local
+            )
+        except click.ClickException as exc:
+            # A --set path the configuration does not know is a request error
+            # on the same channel every other dry-run refusal answers on, so a
+            # caller keying on ``error`` reads a refusal rather than a preview.
+            _emit_dry_run_request_error(pretty, str(exc))
+            raise click.exceptions.Exit(1) from exc
+        try:
             from reckon.crew.dispatch import (
                 dispatch_picker_selection,
                 resolve_project_repository,
@@ -1641,7 +1792,10 @@ def crew_dispatch(
             raise click.exceptions.Exit(3) from exc
         except crew_module.PlanVisibilityError as exc:
             _emit(
-                {"ok": False, "error": "plan-unavailable", "detail": str(exc)},
+                _with_resolved_overrides(
+                    {"ok": False, "error": "plan-unavailable", "detail": str(exc)},
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(4) from exc
@@ -1651,18 +1805,24 @@ def crew_dispatch(
             # diagnosing with --dry-run is pointed at the composed review rather
             # than at mounts.
             _emit(
-                {"ok": False, "error": "plan-review-missing", "detail": str(exc)},
+                _with_resolved_overrides(
+                    {"ok": False, "error": "plan-review-missing", "detail": str(exc)},
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(4) from exc
         except crew_module.CompetenceLimit as exc:
             _emit(
-                {
-                    "ok": False,
-                    "error": "competence-refusal",
-                    "detail": str(exc),
-                    "competence": exc.verdict,
-                },
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "error": "competence-refusal",
+                        "detail": str(exc),
+                        "competence": exc.verdict,
+                    },
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(5) from exc
@@ -1671,40 +1831,49 @@ def crew_dispatch(
             # carries, so a validating caller reaches the admission judgement a
             # real dispatch reaches rather than a generic dispatch refusal.
             _emit(
-                {
-                    "ok": False,
-                    "dry_run": True,
-                    "error": "watcher-required",
-                    "detail": str(exc),
-                    "watch": exc.watch,
-                },
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "dry_run": True,
+                        "error": "watcher-required",
+                        "detail": str(exc),
+                        "watch": exc.watch,
+                    },
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(8) from exc
         except crew_module.CrewError as exc:
             _emit(
-                {
-                    "ok": False,
-                    "dry_run": True,
-                    "error": "dispatch-refused",
-                    "detail": str(exc),
-                },
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "dry_run": True,
+                        "error": "dispatch-refused",
+                        "detail": str(exc),
+                    },
+                    override_resolution,
+                ),
                 pretty,
             )
             click.echo(f"Error: {exc}", err=True)
             raise click.exceptions.Exit(1) from exc
         if resolution.competence and not resolution.competence["allowed"]:
             _emit(
-                {
-                    "ok": False,
-                    "dry_run": True,
-                    "error": "competence-refusal",
-                    "detail": str(
-                        resolution.competence.get("reason")
-                        or "the node exceeds the competence horizon"
-                    ),
-                    "competence": resolution.competence,
-                },
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "dry_run": True,
+                        "error": "competence-refusal",
+                        "detail": str(
+                            resolution.competence.get("reason")
+                            or "the node exceeds the competence horizon"
+                        ),
+                        "competence": resolution.competence,
+                    },
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(5)
@@ -1716,13 +1885,16 @@ def crew_dispatch(
             # promise exists to prevent. The findings stay under ``validation``
             # for a caller that wants them structured.
             _emit(
-                {
-                    "ok": False,
-                    "dry_run": True,
-                    "error": "contract-validation",
-                    "detail": _validation_detail(resolution.validation),
-                    **resolution.as_dict(),
-                },
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "dry_run": True,
+                        "error": "contract-validation",
+                        "detail": _validation_detail(resolution.validation),
+                        **resolution.as_dict(),
+                    },
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(2)
@@ -1733,21 +1905,22 @@ def crew_dispatch(
             # temporary failure a real dispatch would exit on rather than a
             # validation that reads as a go-ahead.
             _emit(
-                {
-                    "ok": False,
-                    "dry_run": True,
-                    "error": "lane-paused",
-                    "detail": _lane_paused_detail(lane_gate),
-                    "reason": lane_gate.get("reason"),
-                    "lane_gate": lane_gate,
-                },
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "dry_run": True,
+                        "error": "lane-paused",
+                        "detail": _lane_paused_detail(lane_gate),
+                        "reason": lane_gate.get("reason"),
+                        "lane_gate": lane_gate,
+                    },
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(75)
-        _emit(
-            {"ok": True, "dry_run": True, **resolution.as_dict()},
-            pretty,
-        )
+        payload = {"ok": True, "dry_run": True, **resolution.as_dict()}
+        _emit(_with_resolved_overrides(payload, override_resolution), pretty)
         raise click.exceptions.Exit(0)
 
     try:
