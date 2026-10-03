@@ -446,9 +446,7 @@ def test_a_stale_empty_claim_is_reclaimed_and_the_dispatch_proceeds(
 ) -> None:
     """A dispatcher killed between exclusive create and record write must not wedge."""
     config_home, repo = home
-    _plant_empty_claim(
-        age_seconds=dispatch_module._NODE_CLAIM_EMPTY_RECORD_STALE_SECONDS + 60
-    )
+    _plant_empty_claim(age_seconds=3600)
     seam_calls: list[str] = []
     monkeypatch.setattr(
         dispatch_module, "_create_worktree", _worktree_seam(tmp_path, seam_calls)
