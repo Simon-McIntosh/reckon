@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="220">
+<meta name="plan-version" content="221">
 </head>
 <body>
   <main class="plan-doc">
@@ -1664,6 +1664,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-crpc-s36-landed" data-who="s22-coord" data-when="2026-10-03">
     <div class="r-comment-body"><p>Landed at a0e3f3b48 (run r-20261003T013806462596-integrated-companion-path-is-accepted, reviewed at 94, zero added on a 101-file stacked population). Its first live use promoted r-20261002T203452309560-resume-refuses-a-session-over-the-window, accepting dispatch.py despite peer claims, after 6 h 15 min held. Review follow-ons: a cited commit equal to HEAD, or a squash integration, still refuses; and a cited merge commit can make the scope and reachability readings disagree.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-crpc-s39-second" data-who="s22-coord" data-when="2026-10-03">
+    <div class="r-comment-body"><p>A second instance, at 02:49Z. <code>crew complete</code> for r-20261003T023742769164-review-of-reclaimed-run-head-keeps-stored-reviews failed with <code>could not stage the landing writes</code> and reported that the ledger row was rolled back. The landing's plan write survived the rollback: crew-runtime-positive-controls.html was left modified in the shared working tree, carrying the run's <code>c-run-…</code> comment and <code>plan-version</code> 220, uncommitted, where any peer's next commit could take it. A plain retry rewrote the same comment and committed it, leaving one copy. The rollback must restore every landing write, not only the store row and the index.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
