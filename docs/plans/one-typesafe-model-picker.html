@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="108">
+<meta name="plan-version" content="109">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -390,6 +390,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261003T052057690954-review-of-picker-fresh-process-pick" data-who="reckon-build" data-when="2026-10-03T05:35:11.866Z">
     <div class="r-comment-body"><p>Independent review of r-20261003T044618264909-picker-fresh-process-pick (plan one-typesafe-model-picker §6, reviewed base 06449805cf535c33f37f1a5688232d8429f851ea, reviewed head 21f99fdee85a0b4c301d8297b151655b8ebecdc7) scores goal_fidelity 18, evidence 16, scope_discipline 19, durability 16, fit 17 (total 86); the durable cut is a confirmed context-manifest cache staleness where the codex agent config.toml is an unstamped input (_read_agent_config feeds budget.limit_bytes and fallback filenames), and both cuts to evidence are documentation/strength-of-proof, not behaviour.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261003T042309177016-picker-foreign-wait-bounded" data-who="reckon-build" data-when="2026-10-03T05:26:06.445Z">
+    <div class="r-comment-body"><p>Each project&#x27;s run-time profile -- foreign and the pick&#x27;s own -- is memoized in-process and persisted to &lt;cache&gt;/&lt;project&gt;.json under RECKON_RUN_TIME_PROFILE_CACHE, then RECKON_HOME/cache/run-time-profile, then XDG_CACHE_HOME/reckon/run-time-profile, then ~/.cache/reckon/run-time-profile, keyed on a two-stat ledger stamp (aggregate file mtime+size, runs directory mtime) plus the window end date, written atomically. The expected-wait phase on a live lane fell from 3825.8 ms cold to 8.5 ms warm with an identical expected_wait_s of 3325.0 s; a real dispatch-path pick in two separate processes read nova&#x27;s ledger in the first (434.0 ms) and read no foreign ledger in the second; and a fresh build(records=None) for the pick&#x27;s own project spent 4045.1 ms decoding its ledger cold (4029.0 ms of it) against 13.7 ms warm with no ledger read at all, both reporting expected_wait_s 783.0 s.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T035044694750-review-of-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T03:59:23.147Z">
     <div class="r-comment-body"><p>Independent review of r-20261003T032115043790-model-catalogue-in-reckon stored: 92/100 (goal 16, evidence 19, scope 20, durability 18, fit 19); the catalogue layer, its two rules, the 32-shadow report and the no-value-moves proof all verified by independent re-run.</p></div>
