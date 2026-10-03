@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="579">
+<meta name="plan-version" content="580">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.62">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -3698,6 +3698,9 @@ if isinstance(argv, list) and argv:
 </div>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261002T234749524023-review-of-attempt-exit-waits-for-its-worker" data-who="reckon-build" data-when="2026-10-03T00:02:04.315Z">
     <div class="r-comment-body"><p>review-of-attempt-exit-waits-for-its-worker — independent review of run r-20261002T224824119720 stored as a parsed record scoring goal_fidelity 17, evidence 17, scope_discipline 19, durability 17, fit 18 (total 88), added_failure_count 0, reviewed_base_sha 8702883ad00f6379077e3482b41f1cb292213819, reviewed_head_sha 326adf19245ac3c65407d0e23684a4cc190e466e; three follow-ons: the signal short-circuit records early for a launcher killed by signal with a live worker, the wait covers every supervisor child so a live reparented descendant holds the record, and the recorded head gate ran one docs-only commit before the reviewed head.</p></div>
+</div>
+<div class="r-comment" data-section="s31" data-id="c-run-r-20261003T042016647592-resume-refuses-a-live-worker" data-who="reckon-build" data-when="2026-10-03T04:54:03.982Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/crew-observability-truth/resume-refuses-a-live-worker.html — a resume of a run whose worker still lives is refused on both doors before anything launches, the refusal naming the pid that supplied the host-gated liveness reading (the pointer&#x27;s pid, else the run directory&#x27;s worker record a supervisor&#x27;s early exit leaves behind); gate base 38 passed / head 42 passed, both EXIT=0, zero added failure ids; the declared mutation makes the manual resume launch a second attempt and fails EXIT=1 with 2 ids.</p></div>
 </div>
 </section>
 </main>
