@@ -6,8 +6,12 @@ running while the next test has replaced the modules it reads. These cases pin
 the join that ends it: a transition starts a sweep whose body holds in flight,
 the next test replaces the ledger decoder with a refusal and asserts that no
 thread exception reaches it, and the helper is called directly against a held
-sweep. The fleet and the configuration home are synthesised under the test's
-own temporary paths, so no case reaches a real project or a real producer.
+sweep. A record a retained tree leaves behind sits under the basetemp before
+the refusal test ends, so the per-test reap reads it there — every forgery is
+scoped to the test body, which is why that reap decodes it with the real
+readers rather than with a refusal. The fleet and the configuration home are
+synthesised under the test's own temporary paths, so no case reaches a real
+project or a real producer.
 """
 
 from __future__ import annotations
@@ -138,6 +142,10 @@ def _start_held_sweep(
     ledger decode — and ends on its own, so a caller that joins the thread
     sees it finish while a caller that does not leaves it running. Returns the
     thread's name, so a failure names the sweep that was left behind.
+
+    The patch lives inside a context that ends with this call, and the sweep
+    is inside the held body before it ends, so no teardown fixture runs under
+    a forged process-global reader.
     """
     real_publish = runs._publish_obligation_snapshots
 
@@ -146,15 +154,16 @@ def _start_held_sweep(
         time.sleep(HOLD_SECONDS)
         return real_publish(project, transition_fired=transition_fired)
 
-    monkeypatch.setattr(runs, "_publish_obligation_snapshots", held)
-    runs._WATCH_STREAM_PRODUCERS[PROJECT] = runs._WatchStreamProducer(
-        path=runs.watch_stream_path(PROJECT),
-        known={},
-        stall_window=runs.DEFAULT_WATCH_STALL_WINDOW,
-    )
-    _write_pointer(fleet, "r-held", phase="working")
-    runs.list_live(project=PROJECT)
-    assert started.wait(timeout=10.0), "a transition must start a sweep"
+    with monkeypatch.context() as scoped:
+        scoped.setattr(runs, "_publish_obligation_snapshots", held)
+        runs._WATCH_STREAM_PRODUCERS[PROJECT] = runs._WatchStreamProducer(
+            path=runs.watch_stream_path(PROJECT),
+            known={},
+            stall_window=runs.DEFAULT_WATCH_STALL_WINDOW,
+        )
+        _write_pointer(fleet, "r-held", phase="working")
+        runs.list_live(project=PROJECT)
+        assert started.wait(timeout=10.0), "a transition must start a sweep"
     return f"{SWEEP_THREAD_PREFIX}-{PROJECT}"
 
 
@@ -172,6 +181,26 @@ def test_a_transition_starts_a_sweep_held_past_this_test(
     )
 
 
+def test_a_retained_seat_record_waits_under_the_basetemp(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    """A record a retained tree leaves behind sits where the reap walks.
+
+    When an earlier test on this worker fails, its tree and the seat record
+    under it are retained, and the per-test reap decodes every such record
+    during a later test's teardown. A passing test's own tree is not retained,
+    so this writes the record into a sibling of the tracked trees — the shape
+    a failed test leaves — and the next test's teardown reading it cleanly is
+    the assertion: a process-global reader still forged there turns this
+    record into a teardown error.
+    """
+    retained = tmp_path_factory.getbasetemp() / "test_retained_seat_record0"
+    record = retained / "crew" / "watch" / "seat.lock"
+    record.parent.mkdir(parents=True, exist_ok=True)
+    record.write_text("{}\n", encoding="utf-8")
+    assert record.is_file()
+
+
 def test_no_sweep_thread_exception_reaches_the_next_test(
     fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -182,6 +211,12 @@ def test_no_sweep_thread_exception_reaches_the_next_test(
     any sweep thread to end: a sweep that outlived its test reaches the
     refusal and dies with the exception, which is recorded here and fails this
     test. With the join in place there is no thread to reach it.
+
+    Both forgeries live inside a context that ends with the wait. Left
+    installed past it, the refusal is what every later fixture reads —
+    including the per-test reap decoding a retained tree's seat record, which
+    fails at teardown on whichever worker retention happens to put one in
+    front of it.
     """
     seen: list[BaseException] = []
     previous = threading.excepthook
@@ -193,9 +228,10 @@ def test_no_sweep_thread_exception_reaches_the_next_test(
     def refuse(*args: object, **kwargs: object) -> object:
         raise AssertionError("a sweep outlived its test and decoded the ledger")
 
-    monkeypatch.setattr(threading, "excepthook", observed)
-    monkeypatch.setattr(ledger.json, "loads", refuse)
-    _await_no_sweep_threads()
+    with monkeypatch.context() as scoped:
+        scoped.setattr(threading, "excepthook", observed)
+        scoped.setattr(ledger.json, "loads", refuse)
+        _await_no_sweep_threads()
     assert seen == [], f"an earlier test's sweep thread raised here: {seen!r}"
 
 
