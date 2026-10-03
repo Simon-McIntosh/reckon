@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="plan-writes-are-not-fenced">
+<title>a-lost-race-is-refused-not-raised — landing record</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="a-lost-race-is-refused-not-raised">Landing record — a writer that loses a landing race is refused, never raised</h2>
+<p>Under <code>-n 8</code> load the followup writer lost a landing race and came back as a raised <code>VersionConflict('version conflict: expected 0, got 1')</code> instead of the one-shape refusal. Forced without load, the interleaving alone does not produce it: a landing write committed between the edit's version read and its write returns the refusal, because <code>_edit_plan</code> wraps its store write. The escape needs one more fact, and reloading <code>reckon._store</code> — which fixtures do to re-read its environment-resolved paths. A reload rebinds <code>store.VersionConflict</code> to a fresh class object, while <code>reckon/mcp.py</code> bound it by name at import; the store then raises the new class and <code>except VersionConflict as e:</code> at <code>reckon/mcp.py:3737</code> no longer matches it, so the conflict leaves the tool surface as an exception. Measured: <code>mcp.VersionConflict is store.VersionConflict</code> is <code>False</code> after a store-only reload, and pairing <code>tests/test_landing_patch_refuses_a_hiding_followup.py</code> with the race file reproduces the suite's own signature serially (<code>2 failed, 9 passed</code>).</p>
+<p>The repair keeps the class object identical across a reload of <code>reckon/_store.py</code>, so every module that bound it by name keeps matching the store's raise.</p>
+<p><code>tests/test_a_lost_race_is_refused_not_raised.py</code> forces the interleaving: it reloads the store, then a monkeypatched read commits a landing write the moment the edit has taken its version. The followup, section and state-set writers must return the refusal naming both versions (expected 0, current 1) with their change absent and the landing record intact; the comment writer appends commutatively, so its assertion is success with both records present. No case may raise, and a sequential edit afterwards still lands as a positive control. Head: <code>4 passed</code>.</p>
+<h3>Negative control</h3>
+<p>Declared string: the forced followup-append case fails at the base revision with <code>VersionConflict</code> raised, and a scratch copy of head that lets the conflict propagate again fails it the same way. Both arms hold. Base <code>f74b81bfd</code> (<code>negative-control-base.log</code>) and head <code>d81bbf953</code> with <code>reckon/_store.py</code> reverted to the base definition (<code>negative-control-head-without-guard.log</code>) each report <strong>3 failed, 1 passed</strong>, <code>EXIT=1</code>, with failing ids <code>[followup-append]</code>, <code>[section-append]</code>, <code>[state-set]</code> and <code>VersionConflict: version conflict: expected 0, got 1</code> raised from <code>reckon/_store.py:1367</code>; the comment case passes in both arms, the commutative merge being untouched by the class identity.</p>
+<h3>Gate</h3>
+<p><code>tests/test_landing_write_races_every_writer.py</code> under <code>-n 8</code>: 20 consecutive runs, log <code>gate-race-20x.log</code>. Base and head arms over the wider population of test files naming <code>_edit_plan</code> or <code>VersionConflict</code> were not run inside the node's budget; they are recorded as a follow-on rather than as evidence.</p>
+</main>
+</body>
+</html>
