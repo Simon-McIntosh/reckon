@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="617">
+<meta name="plan-version" content="618">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.64">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -3461,6 +3461,9 @@ PEER SCOPES
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20260929T055105937393-a-score-is-queryable-from-committed-state" data-who="reckon-build" data-when="2026-09-29T07:04:38.064Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/crew-observability-truth/a-score-is-queryable-from-committed-state.html</p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261003T105134835432-review-record-is-one-runs-claim" data-who="reckon-build" data-when="2026-10-03T11:12:05.864Z">
+    <div class="r-comment-body"><p>The review store&#x27;s write exclusivity is pinned by tests/test_review_record_is_one_runs_claim.py — one review record as two live runs&#x27; write path, the second dispatch refused as ScopeConflict naming the first run and the shared record path, a different subject&#x27;s record path admitted; the refusal already held at base bd621f63c, so no dispatch change was made (base 76 passed / head 76 passed, no added failure id; negative control 1 failed, 1 passed, EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-20260915-a-near-miss-key-is-reported-as-an-absent-fact" data-who="reckon-ship" data-when="2026-09-15T06:40:00Z">
     <div class="r-comment-body"><p><strong>A SECOND MANIFEST-KEY DEFECT, ROUTED FROM ANOTHER PROJECT'S COORDINATOR, AND IT IS THIS SECTION'S DEFECT ONE STEP LATER.</strong> A worker wrote <code>commit: 61e85056</code> with its changed paths beneath — singular, where the schema reads <code>commits</code>. Promotion refused with <em>manifest field 'commits' is missing</em> (<code>promotion.py:517</code>). <strong>The statement is true of the key and false of the fact</strong>: the commit was reported, and reported accurately. Reproduced here against the live parser:</p><pre>parse_manifest("node: n\nstatus: complete\ncommit: 61e85056\nchanged_paths: a.py b.py\n")
