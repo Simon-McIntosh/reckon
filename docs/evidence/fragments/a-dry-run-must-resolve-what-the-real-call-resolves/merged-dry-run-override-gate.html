@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-dry-run-must-resolve-what-the-real-call-resolves">
+  <meta name="plan-verifies" content="reckon:a-dry-run-must-resolve-what-the-real-call-resolves#s6">
+  <meta name="evidence-verdict" content="pass-with-limitation">
+  <meta name="evidence-date" content="2026-10-03">
+  <title>Merged dry-run override head measured against main | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="merged-dry-run-override-gate">
+  <h2>Merged dry-run override head measured against main</h2>
+  <p>The head is the merge <code>1a89125cb</code> of <code>dbaa5bae</code> into
+  <code>9fe5d8204</code>, with one hand-resolved conflict in the dry-run block of
+  <code>reckon/cli.py</code> (225 insertions, 52 deletions there; the merge also adds
+  <code>tests/test_dry_run_shows_each_set_override.py</code>, 326 lines, and a 61-line fragment).
+  Both arms ran in the foreground with <code>-n 8 --timeout=300</code>, <code>-p no:cacheprovider</code>,
+  a basetemp outside any repository, and a log whose first line names the revision and tree and
+  whose header lines name <code>module.__file__</code> and the resolved cwd. The base arm ran from a
+  <code>git archive</code> extraction of <code>9fe5d8204</code> under the run scratch; the head arm
+  ran in the worktree at <code>1a89125cb</code>.</p>
+  <table>
+    <caption>Suite arms over the dispatch test files. The base arm targets 34 files: the head's new
+    test file is absent at the base revision and is not a runnable target there.</caption>
+    <thead><tr><th>Arm</th><th>Revision</th><th>Result</th><th>Log</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>9fe5d8204</code></td><td>1 failed, 545 passed, 1 skipped, 547 items, 426.03 s, EXIT=1</td><td><code>baseline-suite.log</code> (run directory)</td></tr>
+      <tr><td>head</td><td><code>1a89125cb</code></td><td>2 failed, 552 passed, 1 skipped, 555 items, 591.02 s, EXIT=1</td><td><code>after-suite.log</code> (run directory)</td></tr>
+    </tbody>
+  </table>
+  <p>The head's extra 8 items are the new test file's cases and all 8 pass (an isolated head run of
+  <code>tests/test_dry_run_shows_each_set_override.py</code>: 8 passed in 4.22 s, EXIT=0).</p>
+  <p>Added failure ids — failing at the head and not at the base — number one:
+  <code>tests/test_every_attempt_is_supervised.py::test_a_killed_resumed_worker_leaves_its_attempt_exit_record</code>.
+  No added failure touches the dry-run block of <code>reckon/cli.py</code>. That id did not
+  reproduce: three isolated head reruns and one base control rerun of its file each report
+  <strong>5 passed</strong>, EXIT=0 (7.1 s, 7.2 s, 10.5 s, 7.7 s), and the merge's <code>cli.py</code>
+  diff sits in <code>_emit</code>, the flight override helper, <code>crew_preflight</code> and
+  <code>crew_dispatch</code>, none of which the killed-resume path reaches. Its arm failure is a
+  3-second liveness wait for a killed worker's attempt exit record — load-sensitive under eight
+  workers, and not attributable to this change on the evidence gathered.</p>
+  <p>Pre-existing at both arms, and not added:
+  <code>tests/test_a_brief_points_rather_than_quotes.py::test_a_report_changes_no_other_dry_run_field</code>
+  fails identically at base and head, on a <code>picker_selection</code> field of the dry-run
+  payload.</p>
+</section>
+</main>
+</body>
+</html>
