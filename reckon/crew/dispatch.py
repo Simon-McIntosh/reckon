@@ -2117,13 +2117,14 @@ def _compose_dispatch_prompt(
     )
 
 
-def _candidate_scope_entries(
+def _resolved_node_scope_entries(
     node: TaskNode,
     *,
     project: str,
     repo: Path,
     authority: Mapping[str, Any],
 ) -> list[tuple[Path | None, str, Path, str, str | None]]:
+    """Expand the node's whole scope, dispatcher grants included, unfiltered."""
     repository_projects = mounted_repository_projects()
     repositories = tuple(
         repository_identity(root) or Path(str(root)).expanduser().resolve()
@@ -2131,13 +2132,54 @@ def _candidate_scope_entries(
     )
     write = authority.get("write")
     write = write if isinstance(write, Mapping) else {}
-    entries = _resolved_scope_entries(
+    return _resolved_scope_entries(
         node.write_paths,
         base_repository=repository_identity(repo) or Path(repo).resolve(),
         repositories=repositories,
         project=project,
         repository_projects=repository_projects,
         preferred_projects=tuple(str(item) for item in write.get("projects") or ()),
+    )
+
+
+def _granted_landing_paths(
+    node: TaskNode,
+    *,
+    project: str,
+    repo: Path,
+    authority: Mapping[str, Any],
+) -> set[Path]:
+    """The plan's landing files this node's own resolved scope holds.
+
+    A plan file, its cumulative evidence record or its figures topic declared in
+    a node's write paths is granted as written, so the node does hold a claim on
+    it. The refusal exempts these paths because every node on the plan may hold
+    them so their appends can merge, but a live holder of one is still a run the
+    new dispatch shares a file with, and the report names it.
+    """
+    shared = _shared_landing_paths(node, project=project, authority=authority)
+    if not shared:
+        return set()
+    return {
+        absolute.resolve()
+        for _repository, _path, absolute, _declared, _derived_from in (
+            _resolved_node_scope_entries(
+                node, project=project, repo=repo, authority=authority
+            )
+        )
+        if absolute.resolve() in shared
+    }
+
+
+def _candidate_scope_entries(
+    node: TaskNode,
+    *,
+    project: str,
+    repo: Path,
+    authority: Mapping[str, Any],
+) -> list[tuple[Path | None, str, Path, str, str | None]]:
+    entries = _resolved_node_scope_entries(
+        node, project=project, repo=repo, authority=authority
     )
     shared = _shared_landing_paths(node, project=project, authority=authority)
     if not shared:
@@ -2204,15 +2246,32 @@ def _live_conflict_rows(
     authority: Mapping[str, Any],
     claims: Iterable[_RepositoryScopeClaim],
     disregarded: list[str] | None = None,
+    include_granted_landing: bool = True,
 ) -> list[dict[str, Any]]:
-    candidates = _candidate_scope_entries(
-        node, project=project, repo=repo, authority=authority
+    candidates = (
+        _resolved_node_scope_entries(
+            node, project=project, repo=repo, authority=authority
+        )
+        if include_granted_landing
+        else _candidate_scope_entries(
+            node, project=project, repo=repo, authority=authority
+        )
     )
     shared = _shared_landing_paths(node, project=project, authority=authority)
+    landing = (
+        _granted_landing_paths(node, project=project, repo=repo, authority=authority)
+        if include_granted_landing
+        else set()
+    )
     shared_files = _shared_write_paths(project, repo)
     conflicts: list[dict[str, Any]] = []
     for claim in claims:
-        if claim.absolute_path.resolve() in shared:
+        claim_absolute = claim.absolute_path.resolve()
+        if claim_absolute in shared and claim_absolute not in landing:
+            # A live claim on a landing file this node does not itself hold is
+            # not a conflict: the node writing its own fragment is the whole
+            # point of the fragment default. One the node does hold is a
+            # collision like any other, and is reported below.
             continue
         overlapping = [
             (path, absolute)
@@ -5237,17 +5296,31 @@ def plan_dispatch(
         )
         if report_live_conflicts:
             repo_root = Path(repo).resolve()
+            claims = _repository_scope_claims()
+            # The directory-claim judgement reads exactly the rows the
+            # exclusive-claim walk produced at base, so the granted report
+            # below adds rows to the record but nothing it adds can drop a
+            # refusal or judge a collision the walk never saw.
+            refusal_rows = _live_conflict_rows(
+                node,
+                project=project,
+                repo=repo_root,
+                authority=resolved_authority,
+                claims=claims,
+                disregarded=resolution.warnings,
+                include_granted_landing=False,
+            )
             resolution.live_conflicts = _live_conflict_rows(
                 node,
                 project=project,
                 repo=repo_root,
                 authority=resolved_authority,
-                claims=_repository_scope_claims(),
+                claims=claims,
                 disregarded=resolution.warnings,
             )
             directory_rows = [
                 row
-                for row in (resolution.live_conflicts or ())
+                for row in refusal_rows
                 if _live_conflict_is_a_directory_claim(row, repo_root)
             ]
             if directory_rows:
