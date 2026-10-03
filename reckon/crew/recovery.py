@@ -1490,17 +1490,25 @@ def _review_delivered_paths(tree: Path, review: Mapping[str, Any]) -> list[str] 
     means the delivered diff could not be read: the caller must treat the move
     as touching the run's own work rather than prove safety from the half it
     holds, because a history git cannot compare cannot be shown to leave the
-    delivered work alone.
+    delivered work alone. A stored record that names no base is in that same
+    case: without a base the delivered paths are unknown rather than empty, so
+    an empty reading would carry a review nothing shows to be safe.
     """
     delivered: list[str] = []
     _, base, _, head = review_module.carried_revision_pair(review)
     base_sha = str(base or "").strip()
     head_sha = str(head or "").strip()
-    if base_sha and head_sha:
-        changed = _changed_paths_between(tree, base_sha, head_sha)
-        if changed is None:
-            return None
-        delivered.extend(changed)
+    if not base_sha:
+        # No base means no pair to diff, so the delivered paths are unknown
+        # rather than empty. Reading the absence as an empty diff would let a
+        # move over the run's own deliverable carry a review nothing shows to
+        # be safe, so it is read as unprovable, exactly as an uncomparable
+        # pair is.
+        return None
+    changed = _changed_paths_between(tree, base_sha, head_sha)
+    if changed is None:
+        return None
+    delivered.extend(changed)
     roots: list[Path | None] = [tree]
     reviewed_worktree = str(review.get("reviewed_worktree") or "").strip()
     if reviewed_worktree:
