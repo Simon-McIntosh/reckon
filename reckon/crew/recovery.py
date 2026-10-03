@@ -2117,11 +2117,9 @@ def dispatch_review_for_run(
             "reason": reason,
         }
 
-    # The lane is selected rather than asserted: the local one is the
-    # preference, and it is dropped when this run already records a failed
-    # attempt on it. Without that, a sweep that fires on every completion
-    # recomposes the same review onto the lane that just dropped it, which the
-    # reflex was measured doing twice in two minutes against a saturated pool.
+    # The continuous reflex can try another eligible lane after one drops a
+    # review. Recovery's explicit sweep stays on the local lane unless the
+    # reviewed node declared another, and waits if that lane is unavailable.
     local_lane = str(resolved.get("local_backend") or "").strip()
     owning_lane = str(record.get("backend") or "").strip()
     if prefer_local:
