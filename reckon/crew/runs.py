@@ -1015,14 +1015,17 @@ def record_run_acknowledgement(
     project: str | None = None,
     session: str | None = None,
 ) -> dict[str, Any]:
-    """Record a deliberate deferral of one live run's obligations.
+    """Record a deliberate deferral of one run's obligations.
 
-    The deferral is written beside the closure disposition on the live
-    pointer, so it travels with the run it excuses and expires on its own: the
-    obligations reader withholds a run whose deferral has not yet passed and
-    returns it once it has, with no second store to reconcile. ``until`` is
-    normalised to UTC on write so a later comparison never has to know which
-    zone it arrived in.
+    For a live run the deferral is written beside the closure disposition on
+    the live pointer, so it travels with the run it excuses and expires on its
+    own: the obligations reader withholds a run whose deferral has not yet
+    passed and returns it once it has, with no second store to reconcile. A run
+    already promoted has no pointer left, and the remainder it still holds is
+    a deliberate one all the same, so the deferral is written to the run's
+    ledger record — the promoted run's own store, which is where the
+    obligations reader looks for it. ``until`` is normalised to UTC on write so
+    a later comparison never has to know which zone it arrived in.
     """
     text = str(reason).strip()
     if not text:
@@ -1030,6 +1033,13 @@ def record_run_acknowledgement(
     deadline = parse_utc(until)
     if deadline is None:
         raise CrewError(f"acknowledgement --until {until!r} is not an ISO-8601 instant")
+    deferral = {
+        "reason": text,
+        "until": deadline.isoformat(),
+        "recorded_at": _utc_now(),
+    }
+    if not pointer_path(run_id).exists():
+        return _record_acknowledgement_on_ledger(run_id, deferral, project=project)
 
     def record(pointer: dict[str, Any]) -> dict[str, Any]:
         pointer_project = str(pointer.get("project") or "")
@@ -1044,14 +1054,76 @@ def record_run_acknowledgement(
                 f"live run {run_id!r} belongs to session {pointer_session!r}, "
                 f"not {session!r}"
             )
-        pointer[ACKNOWLEDGEMENT_FIELD] = {
-            "reason": text,
-            "until": deadline.isoformat(),
-            "recorded_at": _utc_now(),
-        }
+        pointer[ACKNOWLEDGEMENT_FIELD] = deferral
         return pointer
 
     return _mutate_pointer(run_id, record)
+
+
+def _mounted_ledger_roots(project: str | None) -> dict[str, Path]:
+    """Each mounted project's checkout root, keyed by project name.
+
+    A promoted run's ledger lives beside the project it was promoted for, and
+    the mount registry is what resolves a project name to a checkout from
+    outside it. The optional ``project`` narrows the search to one registry
+    entry; an unknown name resolves to no root rather than a guess.
+    """
+    from reckon import flight
+
+    try:
+        mounted = flight.mounted_project_docs()
+    except flight.FlightConfigError:
+        return {}
+    if project is not None:
+        docs = mounted.get(str(project))
+        return {str(project): docs.parent.resolve()} if docs is not None else {}
+    return {name: docs.parent.resolve() for name, docs in mounted.items()}
+
+
+def _record_acknowledgement_on_ledger(
+    run_id: str, deferral: Mapping[str, Any], *, project: str | None
+) -> dict[str, Any]:
+    """Record a promoted run's deferral on its own ledger record.
+
+    The record is read and written through the ledger's own reader and writer,
+    so a record that lives only in a per-run file and one the aggregate also
+    carries are both amended in one step, with the two copies kept identical —
+    a disagreement between them is what the ledger refuses to read at all.
+    """
+    from reckon import ledger
+
+    roots = _mounted_ledger_roots(project)
+    for name, root in sorted(roots.items()):
+        try:
+            data, version = ledger.load(name, root=root)
+        except ledger.LedgerError:
+            continue
+        rows: list[Any] = []
+        found = False
+        for row in data.get("runs") or []:
+            candidate = dict(row) if isinstance(row, Mapping) else row
+            if (
+                isinstance(candidate, dict)
+                and str(candidate.get("run_id") or "") == run_id
+            ):
+                candidate[ACKNOWLEDGEMENT_FIELD] = dict(deferral)
+                found = True
+            rows.append(candidate)
+        if not found:
+            continue
+        data["runs"] = rows
+        try:
+            ledger.write(name, data, version, root=root)
+        except (ledger.LedgerError, OSError) as exc:
+            raise CrewError(
+                f"could not record the acknowledgement for {run_id!r} on "
+                f"{name}'s ledger: {exc}"
+            ) from exc
+        return {"run_id": run_id, ACKNOWLEDGEMENT_FIELD: dict(deferral)}
+    looked = ", ".join(sorted(roots)) or "no mounted project"
+    raise CrewError(
+        f"no live run {run_id!r} and no ledger record for it (looked in: {looked})"
+    )
 
 
 def run_acknowledgement(pointer: Mapping[str, Any]) -> dict[str, Any] | None:

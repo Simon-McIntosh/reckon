@@ -173,7 +173,13 @@ def _classified_rows(project: str) -> list[dict[str, Any]]:
 def _acknowledgements_in_force(
     project: str, *, now: datetime
 ) -> dict[str, dict[str, Any]]:
-    """Return each live run's recorded deferral that has not yet expired.
+    """Return each run's recorded deferral that has not yet expired.
+
+    A deferral is read from whichever store the run can own one in: the live
+    pointer of a run still in flight, and the ledger record of a promoted run
+    whose remainder is still owed. The promoted record is the only store left
+    once the pointer is gone, and it names the same deferral — so a deliberate
+    remainder of a promoted run is withheld exactly as a live run's is.
 
     A deferral whose ``until`` has passed is not returned, so the run it named
     re-enters the list on the next read rather than lingering in the
@@ -186,6 +192,14 @@ def _acknowledgements_in_force(
         run_id = str(pointer.get("run_id") or "")
         record = runs.run_acknowledgement(pointer)
         if not run_id or not record:
+            continue
+        until = parse_utc(record.get("until"))
+        if until is not None and until > now:
+            in_force[run_id] = record
+    for holder in _held_worktree_records(project).values():
+        run_id = str(holder.get("run_id") or "")
+        record = runs.run_acknowledgement(holder)
+        if not run_id or not record or run_id in in_force:
             continue
         until = parse_utc(record.get("until"))
         if until is not None and until > now:
@@ -541,10 +555,8 @@ def _holding_record(
     return candidates[-1]
 
 
-def _held_worktrees_by_session(
-    project: str, *, now: datetime
-) -> dict[str, list[dict[str, Any]]]:
-    """Return promoted runs whose retained tree is still held.
+def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
+    """Return the ledger record holding each registered tree that is still held.
 
     A tree is held only when Git's registry lists it, its directory is still on
     disk, a promotion record names it, and no promotion record shows it
@@ -576,19 +588,6 @@ def _held_worktrees_by_session(
         for path in _registered_worktrees(repository)
         if path != repository and path.is_dir()
     }
-    command = " ".join(
-        shlex.quote(part)
-        for part in (
-            "reckon",
-            "crew",
-            "gc",
-            "--repo",
-            str(repository),
-            "--project",
-            project,
-            "--apply",
-        )
-    )
     occupied = _live_worktrees(project)
     inspected = sorted(registered - occupied)
     sources = ledger._run_files(project, repository)
@@ -618,7 +617,7 @@ def _held_worktrees_by_session(
                 if _names_worktree(record, worktree):
                     matched[worktree] = record
 
-    by_session: dict[str, list[dict[str, Any]]] = {}
+    held: dict[Path, Mapping[str, Any]] = {}
     for worktree, record in matched.items():
         release = record.get("release")
         if isinstance(release, Mapping) and release.get("worktree_released") is True:
@@ -626,6 +625,37 @@ def _held_worktrees_by_session(
             # tree released, so the path is not held whatever the registry or
             # the filesystem now shows.
             continue
+        held[worktree] = record
+    return held
+
+
+def _held_worktrees_by_session(
+    project: str, *, now: datetime
+) -> dict[str, list[dict[str, Any]]]:
+    """One session's held-worktree duties, from the trees that are still held.
+
+    The session is the directory the tree was created under, which is the
+    session that dispatched the run whose record still names it.
+    """
+    docs_dir = _store._docs_dir_for_project(project)
+    if docs_dir is None:
+        return {}
+    repository = docs_dir.parent.resolve()
+    command = " ".join(
+        shlex.quote(part)
+        for part in (
+            "reckon",
+            "crew",
+            "gc",
+            "--repo",
+            str(repository),
+            "--project",
+            project,
+            "--apply",
+        )
+    )
+    by_session: dict[str, list[dict[str, Any]]] = {}
+    for worktree, record in _held_worktree_records(project).items():
         retention = record.get("worktree_retention")
         retained_at = (
             retention.get("retained_at") if isinstance(retention, Mapping) else None
