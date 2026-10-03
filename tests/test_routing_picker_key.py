@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import json
 from copy import deepcopy
 
@@ -16,6 +17,8 @@ from tests.test_picker_in_dispatch import CONFIG, selection
 from tests.test_picker_in_dispatch import (
     repo as repo,  # noqa: PLC0414 - re-export the pytest fixture
 )
+
+dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 
 def invoke(repo, *, route=None, dry_run=False):
@@ -74,7 +77,13 @@ def test_dispatch_resolves_routing_key(
     monkeypatch.setattr(picker, "pick", lambda *_a, **_k: selection())
     payload = invoke(repo, route=override, dry_run=dry_run)
     assert payload["backend"] == expected_backend
-    assert payload["picker_selection"]["backend"] == "beta"
+    if dry_run and expected_route != "picker":
+        # A preview carries the picker answer only when it routed by one; a
+        # shadow or deterministic preview reads the same whatever the picker
+        # said, so its report cannot drift with the picker's per-call timing.
+        assert payload["picker_selection"] is None
+    else:
+        assert payload["picker_selection"]["backend"] == "beta"
     assert payload["route"] == expected_route
     assert payload["route_override"] == override
     if not dry_run:
@@ -84,6 +93,50 @@ def test_dispatch_resolves_routing_key(
         )
         assert record["route"] == expected_route
         assert record["route_override"] == override
+
+
+def _without_clock_stamps(value):
+    """Mask observation stamps so two previews compare on their decisions alone."""
+    if isinstance(value, dict):
+        return {
+            key: ("<clock>" if key.endswith("_at") else _without_clock_stamps(item))
+            for key, item in value.items()
+        }
+    if isinstance(value, list):
+        return [_without_clock_stamps(item) for item in value]
+    return value
+
+
+@pytest.mark.parametrize("mode", ["shadow", "route"])
+def test_a_dry_run_report_is_comparable_across_picker_modes(repo, monkeypatch, mode):
+    """Two previews of one node differ in no field the picker's timing touches.
+
+    The picker is stubbed to report a different latency on each ask, so a report
+    that kept the per-call figure would read as two different dispatches. A
+    shadow preview must not carry the picker's answer at all; a routed preview
+    keeps the decision it routed by and drops the timing behind it.
+    """
+    config = deepcopy(CONFIG)
+    config["routing"] = {"picker": mode}
+    monkeypatch.setattr(cli, "_resolved_flight", lambda *_a, **_k: config)
+    monkeypatch.setattr(dispatch_module, "new_run_id", lambda _node: "r-fixed")
+    latencies = iter([1.0, 999.0])
+
+    def pick(*_a, **_k):
+        return selection(latency_ms=next(latencies))
+
+    monkeypatch.setattr(picker, "pick", pick)
+    first = invoke(repo, dry_run=True)
+    second = invoke(repo, dry_run=True)
+
+    assert _without_clock_stamps(first) == _without_clock_stamps(second)
+    if mode == "shadow":
+        assert first["picker_selection"] is None
+    else:
+        assert first["picker_selection"]["action"] == "route"
+        assert first["picker_selection"]["backend"] == "beta"
+        assert "latency_ms" not in first["picker_selection"]
+        assert "jev_latency_ms" not in first["picker_selection"]
 
 
 def test_shipped_routing_default_is_shadow(tmp_path):

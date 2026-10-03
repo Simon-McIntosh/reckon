@@ -4150,6 +4150,33 @@ def _brief_text(node: TaskNode) -> str:
 
 PICKER_DISPATCH_TIMEOUT_SECONDS = 5.0
 
+# A picker answer carries per-call measurements: how long the ask itself took.
+# They differ between two asks of the same node by construction, so a report
+# that keeps them cannot be compared with a second run of the same call — which
+# is the whole point of a dry run. The live run record keeps them, where the
+# figures are the point; the resolved plan a preview reports drops them.
+_PICKER_PER_CALL_FIELDS = ("latency_ms", "jev_latency_ms")
+
+
+def _reportable_picker_selection(
+    selection: Mapping[str, Any] | None,
+) -> dict[str, Any] | None:
+    """The picker answer a resolved plan records so two previews compare.
+
+    The per-call latencies are removed, leaving the decision — the action, the
+    selected backend and model, the probabilities and the reason — which is what
+    a preview exists to show. Observation stamps reach the report already
+    carrying their ``_at`` suffix, which the comparison masks as a clock reading
+    rather than a decision.
+    """
+    if selection is None:
+        return None
+    return {
+        key: value
+        for key, value in selection.items()
+        if key not in _PICKER_PER_CALL_FIELDS
+    }
+
 
 def _picker_fallback(
     reason: str,
@@ -4774,7 +4801,16 @@ def plan_dispatch(
         lane_allowance=lane_allowance,
         lane_advisory=lane_advisory,
         open_endedness=open_endedness,
-        picker_selection=(None if picker_selection is None else dict(picker_selection)),
+        # A resolved plan records the picker answer only when the route used it.
+        # A shadow (or deterministic) preview reads the same whatever the picker
+        # happened to say, so two dry runs of one node differ in no field the
+        # picker touched; a routed preview keeps the decision it routed by, minus
+        # the per-call measurements that differ between two asks.
+        picker_selection=(
+            _reportable_picker_selection(picker_selection)
+            if route == "picker"
+            else None
+        ),
         route=route,
         route_override=route_override,
     )
