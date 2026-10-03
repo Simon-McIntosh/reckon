@@ -15,6 +15,13 @@ from reckon.crew.picker import PickRequest, lane_context, snapshot
 dispatch = importlib.import_module("reckon.crew.dispatch")
 
 
+@pytest.fixture(autouse=True)
+def isolated_crew_home(monkeypatch, tmp_path):
+    home = tmp_path / "config"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+
+
 def _config():
     return {
         "backends": {
