@@ -239,7 +239,7 @@ def test_concurrent_dispatches_leave_a_plan_edit_uncommitted(
     assert plan.read_bytes() == dirty
     assert _git(root, "rev-parse", "HEAD") == base
     assert _git(root, "status", "--short", "--", "docs/plans/fixture.html") == (
-        " M docs/plans/fixture.html"
+        "M docs/plans/fixture.html"
     )
     assert _section(root, "work")["attempts"] == 1
     assert _section(root, "other")["attempts"] == 1

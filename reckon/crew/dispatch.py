@@ -385,6 +385,45 @@ def _resolved_plan_section_text(
     return _plan_section_text(blob.stdout, node.section)
 
 
+def _visible_plan_commit_with_working_edit(
+    *,
+    node: TaskNode,
+    project: str,
+    repo: str | Path,
+    base: str,
+    authority: Mapping[str, Any],
+) -> str:
+    """Allow a dirty plan only when its committed section is still visible.
+
+    The ordinary visibility check has already proved the plan blob exists and
+    reached only its working-byte comparison. Read the same committed section
+    before accepting the dispatch; an uncommitted edit stays owned by its writer.
+    """
+    plan_repo = Path(str(authority["plan"]["repository"])).resolve()
+    plan_base = base if plan_repo == Path(repo).resolve() else "HEAD"
+    resolved = subprocess.run(
+        ["git", "rev-parse", "--verify", f"{plan_base}^{{commit}}"],
+        cwd=plan_repo,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if resolved.returncode:
+        raise PlanVisibilityError(f"plan base {plan_base!r} is not a commit")
+    commit = resolved.stdout.strip()
+    if (
+        node.section.strip()
+        and _resolved_plan_section_text(
+            node=node, project=project, authority=authority, plan_commit=commit
+        )
+        is None
+    ):
+        raise PlanVisibilityError(
+            f"plan {node.plan!r} does not contain committed section {node.section!r}"
+        )
+    return commit
+
+
 def _dispatch_section_routing(
     config: Mapping[str, Any],
     *,
@@ -5201,13 +5240,24 @@ def plan_dispatch(
                 "base_sha": "",
             }
         else:
-            plan_commit = require_plan_section_visible(
-                node=node,
-                project=project,
-                repo=repo,
-                base=base,
-                authority=resolved_authority,
-            )
+            try:
+                plan_commit = require_plan_section_visible(
+                    node=node,
+                    project=project,
+                    repo=repo,
+                    base=base,
+                    authority=resolved_authority,
+                )
+            except PlanVisibilityError as exc:
+                if "differs from base" not in str(exc):
+                    raise
+                plan_commit = _visible_plan_commit_with_working_edit(
+                    node=node,
+                    project=project,
+                    repo=repo,
+                    base=base,
+                    authority=resolved_authority,
+                )
             review_warning = require_plan_reviewed(
                 node=node,
                 project=project,
