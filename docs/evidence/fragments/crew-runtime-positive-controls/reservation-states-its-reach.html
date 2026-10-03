@@ -1,0 +1,49 @@
+<section id="reservation-states-its-reach">
+  <h2>reservation-states-its-reach — the reservation states its roster cap's host-wide reach where it is armed</h2>
+
+  <p><strong>Defect.</strong> A placement is declared per project, but the record it resolves
+  against is one unkeyed file at <code>crew_home()/placement/reservation.json</code> and the
+  roster cap is summed over every project's placed live runs. A session reading its own
+  flight configuration therefore cannot see that arming the reservation places a ceiling over
+  every project on the host: the scope of the declaration and the scope of the thing declared
+  do not match, and the blast radius is invisible at the point of the decision. The hold
+  detail named only the cap — <code>held reservation 1274099 on all with 32 cores and 128 GB;
+  roster cap 25</code> — and the published record carried no reach at all.</p>
+
+  <p><strong>Fix.</strong> Both moments at which a reservation is armed state the reach.
+  <code>_roster_reach()</code> reads the live pointers through the same population and the
+  same liveness reading the dispatch guard counts with
+  (<code>occupying_the_reservation</code> over <code>list_live()</code>), names the projects
+  whose placed runs are counted at that moment, and builds one statement. The hold detail and
+  the adoption detail both quote that statement, and the record each publishes carries it as
+  a <code>roster_reach</code> field (<code>scope</code>, <code>projects</code>,
+  <code>statement</code>), so a reader of the reservation file sees the same reach the arming
+  session was told. Runs that are not placed are not named: the cap counts placed runs only,
+  and the statement is read at the moment the record is published rather than copied from the
+  arming project.</p>
+
+  <p><strong>Reproduction at base <code>9cd9746611ee5d4e485d21957bf446c3638059b1</code>.</strong>
+  <code>tests/test_reservation_states_its_reach.py</code> holds a reservation in a temporary
+  config home with the scheduler stubbed and placed live pointers from two projects present
+  (plus an unplaced pointer from a third that must not be named). At base the hold detail
+  reads <code>held reservation 1274099 on all with 32 cores and 128 GB; roster cap 25</code>
+  with no reach stated, and the published record carries no <code>roster_reach</code> field,
+  so both new cases fail at base. The only other base-arm failure is
+  <code>test_every_crew_verb_help_names_its_state_or_condition</code>, a verb count baked
+  into that case (36 against 35), which is red at base with this change absent.</p>
+
+  <p><strong>Arms</strong> — both <code>pytest -n 8 --timeout=300</code>, each with its own
+  basetemp and its own log. Base <code>9cd974661</code> from a <code>git archive</code>
+  extraction under <code>$TMPDIR</code>, with the new test copied into the extraction:
+  3 failed, 98 passed, <code>EXIT=1</code>. Head <code>f9271cc11</code>: 1 failed, 100
+  passed, <code>EXIT=1</code>, and the head arm adds no failure id — its only failure is the
+  pre-existing verb-count case the base arm also fails.</p>
+
+  <p><strong>Declared mutation</strong> — the reach statement removed from the hold detail:
+  1 failed, 1 passed, <code>EXIT=1</code>, the failing id
+  <code>test_the_hold_states_the_host_wide_reach_and_the_projects_counted</code>, which the
+  head arm passes; the adoption case still passes, so the red is the hold detail's. No
+  figure: the change is a statement and a record field, and neither is clearer shown than
+  read. Logs under the run directory's <code>logs/</code>: <code>base-arm.log</code>,
+  <code>head-arm.log</code>, <code>negative-control.log</code>.</p>
+</section>
