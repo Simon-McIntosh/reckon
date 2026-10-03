@@ -9223,19 +9223,20 @@ EXPLAINED_STATES = frozenset(
 
 
 def _promote_record_holds(record: Mapping[str, Any]) -> bool:
-    """Whether a promoted run's ledger row exists for this live pointer.
+    """Whether this live pointer's ledger row records landed commits.
 
     Promotion appends the run's ledger row and then removes the live pointer,
     so for the length of that window the pointer still exists while the work
     has already landed. A classifier that reads only the pointer sees a
     completed manifest whose review no longer matches the moved head and calls
-    the run unpromoted — a landing reported as unfinished work. The ledger row
-    is the fleet's evidence that the work landed, so it is read here rather
-    than inferred from the pointer's absence, which arrives a poll later.
+    the run unpromoted — a landing reported as unfinished work. The ledger row's
+    commits are the evidence that work landed, so they are read here rather than
+    inferred from the pointer's absence, which arrives a poll later. A row with
+    no commits records a completion but cannot claim a code landing.
 
     The row is read from the run's own repository, the root promotion wrote it
-    under. A single stat answers: a promotion writes the per-run file before
-    it touches the aggregate, so the file's presence is the record's presence.
+    under. Promotion writes the per-run file before it touches the aggregate,
+    so this reads that file directly.
     An unreadable or absent row answers False — the run then takes the word its
     pointer earns, which is the safe direction because the alternative promises
     a landing nothing recorded.
@@ -9252,8 +9253,14 @@ def _promote_record_holds(record: Mapping[str, Any]) -> bool:
     if not run_id or not project or not repo:
         return False
     try:
-        return ledger_module.run_path(project, run_id, repo).is_file()
-    except (OSError, ValueError):
+        path = ledger_module.run_path(project, run_id, repo)
+        row = json.loads(path.read_text(encoding="utf-8"))
+        return (
+            isinstance(row, Mapping)
+            and row.get("run_id") == run_id
+            and bool(row.get("commits"))
+        )
+    except (OSError, ValueError, ledger_module.LedgerError):
         return False
 
 
@@ -10026,7 +10033,7 @@ def _manifest_rewritten(
 
 
 def _ledger_run_id_reader(project: str) -> Callable[[], Iterable[str]]:
-    """A lazy reader of a project's recorded run ids, for the departure fold.
+    """A lazy reader of run ids whose ledger rows record landed commits.
 
     The ledger is a shared file another process rewrites, so its read degrades
     to an empty set rather than failing the whole fleet observation: a partial
@@ -10038,8 +10045,13 @@ def _ledger_run_id_reader(project: str) -> Callable[[], Iterable[str]]:
 
     def read() -> Iterable[str]:
         try:
-            return ledger_module.run_ids(project)
-        except (OSError, ValueError):
+            rows, _version = ledger_module.read_records(project, with_figures=False)
+            return {
+                str(row["run_id"])
+                for row in rows
+                if row.get("run_id") and row.get("commits")
+            }
+        except (OSError, ValueError, ledger_module.LedgerError):
             return ()
 
     return read
@@ -10346,8 +10358,15 @@ def _watch_transition(
         event["commit_count"] = len(event["manifest_commits"])
     if "waiting" in counts or previous in WAITING_STATES or current in WAITING_STATES:
         event["waiting"] = counts.get("waiting", 0)
+    recorded = (
+        _recorded_transition_spend(project, str(snapshot.get("run_id") or ""))
+        if kind == "transition" and current == "promoted"
+        else None
+    )
     event.update(
-        _spend_facts(
+        recorded
+        if recorded is not None
+        else _spend_facts(
             project,
             snapshot,
             spend_runs=spend_runs,
@@ -10356,6 +10375,62 @@ def _watch_transition(
         )
     )
     return event
+
+
+def _recorded_transition_spend(project: str, run_id: str) -> dict[str, Any] | None:
+    """Read a promoted run's spend from the row committed before pointer unlink.
+
+    The live-pointer fold is empty by the time this transition is published.
+    The ledger's throughput block is the measurement promotion already
+    resolved, so the transition copies its numeric facts without another fold.
+    A missing block stays unknown; a measured zero remains numeric zero.
+    """
+    if not run_id:
+        return None
+    from reckon import ledger as ledger_module
+
+    try:
+        path = ledger_module.run_path(project, run_id)
+        if path.is_file():
+            row = json.loads(path.read_text(encoding="utf-8"))
+        else:
+            rows, _version = ledger_module.read_records(project, with_figures=False)
+            row = next((item for item in rows if item.get("run_id") == run_id), None)
+    except (OSError, ValueError, ledger_module.LedgerError):
+        return None
+    if not isinstance(row, Mapping) or row.get("run_id") != run_id:
+        return None
+    throughput = row.get("throughput")
+    throughput = throughput if isinstance(throughput, Mapping) else {}
+    budget = row.get("budget")
+    budget = budget if isinstance(budget, Mapping) else {}
+
+    def measured(value: Any) -> int | float | None:
+        return (
+            value
+            if isinstance(value, (int, float))
+            and not isinstance(value, bool)
+            and math.isfinite(value)
+            else None
+        )
+
+    input_tokens = measured(throughput.get("cumulative_input_tokens"))
+    output_tokens = measured(throughput.get("generated_tokens"))
+    return {
+        "spend_folded_run_count": 1,
+        "spend_measured_stream_count": None,
+        "spend_unmeasured_stream_count": None,
+        "spend_wall_seconds": measured(throughput.get("elapsed_seconds")),
+        "spend_model_seconds": measured(throughput.get("generation_seconds")),
+        "spend_machine_seconds": measured(throughput.get("machine_seconds")),
+        "spend_charged_tokens": (
+            input_tokens + output_tokens
+            if input_tokens is not None and output_tokens is not None
+            else None
+        ),
+        "spend_generation_rate": measured(throughput.get("tokens_per_second")),
+        "spend_notional_cost_usd": measured(budget.get("cost_usd_cumulative")),
+    }
 
 
 def _spend_facts(

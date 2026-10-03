@@ -61,7 +61,10 @@ def _write_promoted_run(tmp_path: Path, run_id: str, repo: Path) -> None:
     )
     row = ledger.run_path(PROJECT, run_id, str(repo))
     row.parent.mkdir(parents=True, exist_ok=True)
-    row.write_text(json.dumps({"run_id": run_id, "project": PROJECT}), encoding="utf-8")
+    row.write_text(
+        json.dumps({"run_id": run_id, "project": PROJECT, "commits": ["HEAD"]}),
+        encoding="utf-8",
+    )
 
 
 def _snapshot(run_id: str) -> dict:
