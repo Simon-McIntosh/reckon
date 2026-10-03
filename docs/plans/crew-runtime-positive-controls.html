@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="255">
+<meta name="plan-version" content="256">
 </head>
 <body>
   <main class="plan-doc">
@@ -2041,6 +2041,9 @@
 </div>
 <div class="r-comment" data-section="s41" data-id="c-run-r-20261003T083733272629-review-of-fleet-supervisor-tests-start-nothing-real" data-who="reckon-build" data-when="2026-10-03T08:42:56.852Z">
     <div class="r-comment-body"><p>§41 — independent review of run r-20261003T080556071218-fleet-supervisor-tests-start-nothing-real stored at the review-store path keyed by head 019f9fbb5; five dimensions scored (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 18), total 96, no dimension absent; the reviewed run's own base/head gate logs support added_failure_count 0 with no added ids; one follow-on finding (stale serve() docstring).</p></div>
+</div>
+<div class="r-comment" data-section="s41" data-id="c-run-r-20261003T080556071218-fleet-supervisor-tests-start-nothing-real" data-who="reckon-build" data-when="2026-10-03T08:36:19.962Z">
+    <div class="r-comment-body"><p>§41 — the supervisor&#x27;s test file resolves the fleet services file inside each case&#x27;s temporary config home and a stop request stops every declared service the reader started, so the suite starts nothing real and leaves nothing behind: base arm 59 passed EXIT=0 with 24 processes still running (12 reader cases × the operator&#x27;s 2 declared services, enumerated from each process&#x27;s own /proc environment and reaped by explicit pid), head arm 61 passed EXIT=0 with zero survivors, declared control 2 failed EXIT=1 with the isolation pin removed and 1 failed EXIT=1 naming the surviving process when the stop sweep is removed. Evidence: docs/evidence/fragments/crew-runtime-positive-controls/fleet-supervisor-tests-start-nothing-real.html</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
