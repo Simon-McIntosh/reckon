@@ -48,7 +48,9 @@ EARLY_EXIT_SIGNAL = signal.SIGTERM
 
 
 @pytest.fixture()
-def isolated_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path, Path]:
+def isolated_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[Path, Path, Path]:
     """A temporary operator home, run directory and worktree, none shared."""
     home = tmp_path / "home"
     home.mkdir()
