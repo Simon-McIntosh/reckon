@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s2">
+  <meta name="plan-verdict" content="passed-with-follow-on">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-tags" content="crew,dispatch,fence,resume,evidence">
+  <title>A killed-worker resume loses the fenced attempt's exit | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-killed-worker-resumes-to-completion-again" data-reckon="landed" data-when="2026-10-03">
+  <h2>A killed-worker resume loses the fenced attempt's exit</h2>
+  <p><strong>Reproduction.</strong>
+  <code>tests/test_a_killed_worker_resumes_to_completion.py::test_a_killed_worker_is_classified_resumed_and_completed</code>
+  fails alone at head with <code>assert None == 0</code> at line 328, which asserts
+  <code>second["exit_code"] == 0</code> on the resumed attempt's supervisor exit record. The
+  record carries <code>None</code>.</p>
+  <p><strong>Cause (product defect, outside this node's write scope).</strong>
+  <code>reckon/crew/dispatch.py:9426-9431</code> <code>_supervisor_spawn_worker</code> calls
+  <code>_spawn_worker_retrying_a_vanished_bind</code> and returns <code>process.pid</code> without
+  transferring the <code>process.returncode</code> that helper's startup poll may already have
+  collected. In <code>_died_over_a_vanished_bind_source</code>
+  (dispatch.py:8579-8586) the poll watches a just-spawned child for up to
+  <code>SANDBOX_STARTUP_WINDOW_SECONDS</code> (0.5&nbsp;s) through <code>Popen.poll()</code>; a
+  poll that observes the child's exit reaps it. The resumed attempt is composed by the resume
+  launcher and carries the bwrap fence, so its read-only bind sources are non-empty and the poll
+  runs; the stub worker writes its manifest and <code>exit 0</code> well inside the window, so the
+  poll consumes the status before the supervisor's <code>waitpid</code>, which then gets
+  <code>ECHILD</code>, returns <code>None</code>, and writes <code>exit_code</code>/
+  <code>signal</code>/<code>signal_name</code> all null. The sibling lane
+  <code>_spawn_detached_worker</code> already guards this exact case
+  (dispatch.py:8667-8678) by reading <code>getattr(process, "returncode", None)</code> and
+  recording the collected exit; the supervised lane needs the same transfer.</p>
+  <p><strong>Attribution.</strong> The change was introduced by
+  <code>04538bea5</code> (<em>fix(crew): retry a worker spawn refused over a vanished bind
+  source</em>), ledger run
+  <code>r-20261003T014214828711-spawn-retries-a-vanished-bind</code>, crew session
+  <code>s22-coord</code>.</p>
+  <p><strong>Evidence.</strong> Attempt&nbsp;1&rsquo;s plan argv is
+  <code>["/bin/sh", &lt;stub&gt;]</code> (unfenced), so no bind sources exist and the poll is
+  skipped; its exit record carries <code>signal_name: SIGTERM</code> and a live
+  <code>pid_start_time</code>. Attempt&nbsp;2&rsquo;s argv is the bwrap fence, and its exit record
+  carries <code>worker_pid</code> with <code>pid_start_time: null</code> and all-null
+  exit/signal fields, while <code>resume-1.jsonl</code> proves the inner worker ran and exited 0.
+  The asymmetry isolates the fenced spawn path.</p>
+  <p><strong>Outcome.</strong> No test or product source changed by this node; the failure is a
+  product defect filed under <code>follow_ons</code>. The id stays red at head, by design, until
+  the supervised spawn path transfers the collected status.</p>
+</article>
+</body>
+</html>
