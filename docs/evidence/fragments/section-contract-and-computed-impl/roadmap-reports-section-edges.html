@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roadmap reports section-level edges</title>
+<meta name="docs-project" content="reckon">
+<meta name="node" content="roadmap-reports-section-edges">
+<meta name="plan" content="section-contract-and-computed-impl">
+<meta name="section" content="s6">
+<meta name="recorded" content="2026-10-03">
+</head>
+<body>
+<main class="plan-doc">
+
+<h1>Roadmap reports section-level edges</h1>
+
+<p>The roadmap's critical path and blocking edges report a section-level edge
+when a plan is held by one section of another: the edge's ref carries the
+target anchor (<code>plan#sN</code>) rather than the plan name alone, and a
+plan-level <code>depends_on</code> keeps its plan-level edge.</p>
+
+<h2>What changed</h2>
+
+<p><code>reckon/roadmap.py</code> resolves a gate's outcome source into
+dependency rows and graph edges. Three authored forms are read:</p>
+
+<ul>
+<li>a declared outcome source — <code>gating_plan</code> — carrying the
+<code>#section</code> anchor;</li>
+<li>a <code>#section</code> ref written into the gate's own measure or
+evidence text;</li>
+<li>a section named in words beside the plan it belongs to, as in
+<code>cut-cell-current-attribution section 6</code> or a bare
+<code>sections 1 and 2</code> carrying the gate's own plan by context. This
+form is marked <code>"source": "gate-text"</code> and binds only when the
+named section exists on the named plan, so a passing mention never invents an
+edge.</li>
+</ul>
+
+<p>Each resolved ref produces a dependency row carrying the waiting section,
+the target ref with its anchor, and the gate it came from. Those rows join the
+raw view's <code>depends_on</code>, <code>section_depends_on</code> and
+<code>section_readiness</code>; an unsatisfied one also enters the path graph,
+and every path in the raw view's <code>open_paths</code> — the critical one
+included — gains an <code>edges</code> list naming the section and gate on
+each step. A plan-level <code>depends_on</code> yields no entry: its edge reads
+with an empty section and gate.</p>
+
+<h2>Live evidence: the two nova gates authored 2026-09-19</h2>
+
+<p>Read at head through the CLI, with the project mounted from a copy of the
+live plans outside the write fence:</p>
+
+<pre><code>PYTHONPATH=&lt;worktree&gt; RECKON_MOUNTS_PATH=&lt;scratch&gt;/mounts-nova.json \
+  python -c "from reckon.cli import main; main()" \
+  roadmap --project nova --json-output</code></pre>
+
+<p>The topology rebank gate, on cut-cell section 6, holds topology section
+s2:</p>
+
+<pre><code>{"gate": "g-trcr-rebank-after-rung-a", "ref": "cut-cell-current-attribution#s6",
+ "source": "gate-text", "source_section": "s2", "stage": "s6",
+ "section_found": true, "satisfied": false}</code></pre>
+
+<p>and the critical path carries the same edge with its section named:</p>
+
+<pre><code>{"from": "topology-read-containment-and-rebank", "to": "cut-cell-current-attribution",
+ "ref": "cut-cell-current-attribution#s6", "section": "s6",
+ "gate": "g-trcr-rebank-after-rung-a"}</code></pre>
+
+<p>The corpus gate, written once its plan's throughput sections have landed,
+holds its own section s6 on sections 1 and 2:</p>
+
+<pre><code>{"gate": "g-ltsi-corpus-after-throughput", "ref": "labeller-throughput-and-shape-inverse#s1",
+ "source": "gate-text", "source_section": "s6", "stage": "s1",
+ "section_found": true, "satisfied": false}
+{"gate": "g-ltsi-corpus-after-throughput", "ref": "labeller-throughput-and-shape-inverse#s2",
+ "source": "gate-text", "source_section": "s6", "stage": "s2",
+ "section_found": true, "satisfied": false}</code></pre>
+
+<p>Both gates carry their dependency as prose in the authored files: no
+<code>data-gating-plan</code>, no <code>plan-section-depends-on</code> and no
+section <code>data-links</code> exist in the mounted corpus. The
+<code>gate-text</code> provenance marks exactly that: the section was read
+from the gate's own words, not from a machine ref. Authoring the ref as
+<code>gating_plan</code> is the durable form and resolves the same edge with
+<code>"source": "declared"</code>.</p>
+
+<h2>Arms</h2>
+
+<table>
+<tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr>
+<tr>
+<td>head</td>
+<td><code>a097f12c8</code> + worktree</td>
+<td>6 passed — <code>tests/test_roadmap_reports_section_edges.py</code></td>
+<td><code>logs/head-new-test.log</code></td>
+</tr>
+<tr>
+<td>base</td>
+<td><code>406faf5ef</code></td>
+<td>5 failed, 1 passed — the same file at the base revision</td>
+<td><code>logs/base-new-test.log</code></td>
+</tr>
+</table>
+
+<p><strong>Negative control (declared):</strong> "At the base revision the
+section-gated case in tests/test_roadmap_reports_section_edges.py fails,
+because the edge names only the plan." The base arm exits non-zero and fails
+<code>test_a_gate_on_one_section_of_another_plan_reports_the_section</code>
+plus four further ids, none of which the head arm fails. Log:
+<code>logs/base-new-test.log</code>.</p>
+
+<p>The test builds its own docs tree under <code>tmp_path</code> and mounts it
+through <code>RECKON_MOUNTS_PATH</code> plus a state root under the same
+temporary tree, so it reads no state outside its temporary project.</p>
+
+<h2>Remaining</h2>
+
+<p>Only the new file was run at both revisions: the wider set of test files
+importing <code>reckon.roadmap</code> was not run at base and head before the
+deadline. The change's reach is one function pair plus the edge list, and the
+mounted corpus declares no section-level ref at all, so the population the
+new code touches on live data is the four gates whose words name a section —
+the nova pair above included. A follow-on runs the importing-file set at base
+and head and records the delta.</p>
+
+<p>The section readiness split now keys the gate's waiting section; a plan
+whose gate names only a whole plan keeps its plan-level blocker as before.</p>
+
+</main>
+</body>
+</html>
