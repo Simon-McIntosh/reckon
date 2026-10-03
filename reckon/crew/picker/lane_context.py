@@ -282,22 +282,30 @@ def _profile_cache_root() -> Path:
     """The directory the persisted run-time profiles live under.
 
     Outside every repository, so a cache write never dirties a checkout. The
-    location resolves from ``RECKON_RUN_TIME_PROFILE_CACHE`` when a caller names
-    one, else the user's cache directory (``XDG_CACHE_HOME`` or ``~/.cache``).
-    When neither is set but ``RECKON_HOME`` is, the cache stays under that home
-    so a caller that isolated its configuration also isolated its cache, which
-    is how the test suite keeps these writes inside its temporary tree.
+    resolution order is fixed so every caller on a host lands on one directory:
+
+    1. ``RECKON_RUN_TIME_PROFILE_CACHE``, when a caller names one;
+    2. ``RECKON_HOME``, as ``<RECKON_HOME>/cache/run-time-profile`` -- a home
+       that isolated the configuration has isolated the cache with it, which is
+       how the test suite keeps these writes inside its temporary tree;
+    3. ``XDG_CACHE_HOME``, as ``<XDG_CACHE_HOME>/reckon/run-time-profile``;
+    4. ``~/.cache/reckon/run-time-profile``.
+
+    ``RECKON_HOME`` outranks ``XDG_CACHE_HOME`` deliberately: the home is the
+    isolation hook a test or a sandbox sets, while a host commonly has
+    ``XDG_CACHE_HOME`` pointed at the real user cache, so the reverse order would
+    let an isolated run write into the live cache.
     """
 
     configured = os.environ.get("RECKON_RUN_TIME_PROFILE_CACHE")
     if configured:
         return Path(configured).expanduser()
-    cache_home = os.environ.get("XDG_CACHE_HOME")
-    if cache_home:
-        return Path(cache_home) / "reckon" / "run-time-profile"
     reckon_home = os.environ.get("RECKON_HOME")
     if reckon_home:
         return Path(reckon_home) / "cache" / "run-time-profile"
+    cache_home = os.environ.get("XDG_CACHE_HOME")
+    if cache_home:
+        return Path(cache_home) / "reckon" / "run-time-profile"
     return Path.home() / ".cache" / "reckon" / "run-time-profile"
 
 
@@ -578,7 +586,7 @@ def build(
             selected.append(row)
         profile = {"groups": _group_rows(selected)}
     elif project:
-        profile = run_time_profile(project, now=moment)
+        profile = _cached_run_time_profile(project, now=moment)
     return {
         "return_times": return_times(
             profile,

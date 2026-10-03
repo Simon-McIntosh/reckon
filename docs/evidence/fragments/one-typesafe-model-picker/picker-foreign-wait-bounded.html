@@ -93,18 +93,42 @@
   projects are read again, so the reuse cannot pass by ignoring a changed
   ledger. A third case runs the pick in two separate subprocesses against one
   shared cache directory and asserts the second process reads no foreign
-  ledger, which is the property an in-process memo cannot provide.</p>
+  ledger, which is the property an in-process memo cannot provide. A fourth case
+  composes a pick through <code>build</code> with no records handed in, so the
+  pick's own project is profiled from its ledger too, and asserts the second of
+  two processes reads <em>no</em> ledger at all &mdash; a fresh dispatch whose
+  ledgers have not moved decodes nothing. A fifth sets both
+  <code>XDG_CACHE_HOME</code> and <code>RECKON_HOME</code> to different
+  temporary directories and asserts the entry lands under the latter and
+  nothing is written under the former.</p>
 
-  <p><strong>Negative control.</strong> Removing the persisted-profile read
+  <p><strong>Where the cache lives.</strong> The path resolves
+  <code>RECKON_RUN_TIME_PROFILE_CACHE</code>, then
+  <code>RECKON_HOME</code> (<code>&lt;home&gt;/cache/run-time-profile</code>),
+  then <code>XDG_CACHE_HOME</code> (<code>&lt;xdg&gt;/reckon/run-time-profile</code>),
+  then <code>~/.cache/reckon/run-time-profile</code>. The home outranks the XDG
+  directory deliberately: the suite isolates <code>RECKON_HOME</code> but a host
+  commonly points <code>XDG_CACHE_HOME</code> at the real user cache, so the
+  reverse order let a test write a fixture's profile into the live cache and, on
+  a second run the same day, read it back instead of calling the loader &mdash;
+  the reuse would then look proven while the loader was never exercised.</p>
+
+  <p><strong>Negative controls.</strong> Removing the persisted-profile read
   makes the cross-process test fail: 1 failed / 2 passed, exit 1, the failing id
   being exactly <code>test_reuse_survives_between_processes</code>, whose second
   process then reads all four foreign ledgers
-  (<code>negative-control.log</code>).</p>
+  (<code>negative-control.log</code>). Restoring the pre-fix cache-root order
+  and the pre-fix own-project read in <code>build</code> fails exactly the two
+  cases that cover them &mdash;
+  <code>test_the_persisted_cache_prefers_reckon_home</code> and
+  <code>test_a_fresh_process_with_no_records_reads_no_ledger</code> &mdash; at
+  2 failed / 3 deselected (<code>negative-control-2.log</code>); source
+  restored afterwards.</p>
 
   <p><strong>Gate.</strong> Base arm (scratch tree at the base revision) and
   head arm run the picker test files plus <code>test_run_time_profile.py</code>
   with the ledger present, judged by delta rather than an absolute count:
-  base 119 passed (exit 0), head 122 passed (exit 0) &mdash; the added passing
+  base 119 passed (exit 0), head 124 passed (exit 0) &mdash; the added passing
   cases are this node's new test file, and there are no added failure ids. Logs:
   <code>gate-base.log</code>, <code>gate-head.log</code>.</p>
 </article>

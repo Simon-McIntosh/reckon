@@ -55,6 +55,31 @@ def _empty_profile_cache():
     lane_context._PROFILE_CACHE.clear()
 
 
+def test_the_persisted_cache_prefers_reckon_home(tmp_path, monkeypatch):
+    """Both cache homes set: the entry lands under ``RECKON_HOME`` only.
+
+    The suite isolates ``RECKON_HOME``, but a host commonly has
+    ``XDG_CACHE_HOME`` pointing at the real user cache. Resolving that first
+    would put a fixture's profile in the live cache and, on a second run the
+    same day, read it back instead of calling the loader -- so the home the
+    caller isolated must win, and nothing may be written under the other.
+    """
+
+    reckon_home = tmp_path / "reckon-home"
+    xdg_home = tmp_path / "xdg-home"
+    monkeypatch.setenv("RECKON_HOME", str(reckon_home))
+    monkeypatch.setenv("XDG_CACHE_HOME", str(xdg_home))
+    monkeypatch.delenv("RECKON_RUN_TIME_PROFILE_CACHE", raising=False)
+    monkeypatch.setattr(lane_context, "run_time_profile", lambda _project, **_kw: {})
+
+    lane_context._cached_run_time_profile("cache-order-probe", now=NOW)
+
+    assert (
+        reckon_home / "cache" / "run-time-profile" / "cache-order-probe.json"
+    ).is_file()
+    assert not xdg_home.exists()
+
+
 def test_two_picks_read_each_foreign_ledger_once(monkeypatch):
     """Four foreign projects, two picks, one ledger read each.
 
@@ -203,6 +228,112 @@ wait = lane_context._expected_wait(
 )
 print(json.dumps({"expected_wait_s": wait}))
 """
+
+
+#: A one-shot pick composed through ``build`` in its own interpreter, with no
+#: records handed in, so the pick's own project is profiled from its ledger as
+#: well as each live foreign project. It spies every profile it asks for, so two
+#: runs against one cache directory show what a fresh dispatch reads.
+_BUILD_DRIVER = """
+import json
+import os
+import importlib
+from datetime import UTC, datetime
+from types import SimpleNamespace
+
+lane_context = importlib.import_module("reckon.crew.picker.lane_context")
+
+PROJECTS = ["own-project", "foreign-1", "foreign-2", "foreign-3", "foreign-4"]
+SPY = os.environ["PICKER_FOREIGN_WAIT_SPY"]
+open(SPY, "a", encoding="utf-8").close()
+
+lane_context.list_live = lambda: [
+    {
+        "project": project,
+        "backend": "clive",
+        "role": "implement",
+        "spec_level": "guided",
+        "phase": "working",
+        "agent": {"local": True, "effort": "standard"},
+        "node": {"role": "implement", "spec_level": "guided"},
+    }
+    for project in PROJECTS
+]
+lane_context.local_lane_load = lambda: {}
+
+
+def spy(project, **_kwargs):
+    with open(SPY, "a", encoding="utf-8") as handle:
+        handle.write(project + "\\n")
+    return {
+        "groups": [
+            {
+                "backend": "clive",
+                "effort": "standard",
+                "role": "implement",
+                "spec_level": "guided",
+                "runs": 3,
+                "wall_seconds_median": 420.0,
+            }
+        ]
+    }
+
+
+lane_context.run_time_profile = spy
+composed = lane_context.build(
+    node=SimpleNamespace(time_budget=""),
+    candidates=[],
+    project="own-project",
+    records=None,
+    now=datetime(2026, 10, 3, 4, 0, tzinfo=UTC),
+)
+print(json.dumps({"expected_wait_s": composed["local_lane"]["expected_wait_s"]}))
+"""
+
+
+def test_a_fresh_process_with_no_records_reads_no_ledger(tmp_path):
+    """The pick's own project is cached too, so a warm process reads nothing.
+
+    ``build`` with no records used to profile the pick's own project straight
+    from its ledger, so a dispatch still decoded one ledger on every pick even
+    when nothing had changed. Both the own project and each live foreign project
+    now come from the persisted profile: the first process reads all five, and
+    the second must read none.
+    """
+
+    worktree = Path(__file__).resolve().parents[1]
+    driver = tmp_path / "build_driver.py"
+    driver.write_text(textwrap.dedent(_BUILD_DRIVER), encoding="utf-8")
+    cache = tmp_path / "profile-cache"
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(worktree)
+    env["RECKON_RUN_TIME_PROFILE_CACHE"] = str(cache)
+
+    reads: list[list[str]] = []
+    for name in ("first-spy.txt", "second-spy.txt"):
+        spy = tmp_path / name
+        env["PICKER_FOREIGN_WAIT_SPY"] = str(spy)
+        completed = subprocess.run(
+            [sys.executable, str(driver)],
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=120,
+            check=False,
+        )
+        assert completed.returncode == 0, completed.stderr
+        payload = json.loads(completed.stdout)
+        assert payload["expected_wait_s"] == 420.0
+        reads.append(spy.read_text(encoding="utf-8").split())
+
+    assert sorted(reads[0]) == [
+        "foreign-1",
+        "foreign-2",
+        "foreign-3",
+        "foreign-4",
+        "own-project",
+    ]
+    assert reads[1] == []
 
 
 def test_reuse_survives_between_processes(tmp_path):
