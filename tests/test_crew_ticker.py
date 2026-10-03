@@ -70,7 +70,7 @@ def _record_ledger_row(run_id: str) -> None:
     """
     path = ledger.run_path("proj", run_id)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"run_id": run_id}))
+    path.write_text(json.dumps({"run_id": run_id, "commits": ["HEAD"]}))
 
 
 def _event(**overrides) -> dict:

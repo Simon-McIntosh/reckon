@@ -54,7 +54,10 @@ def _record_promotion(project: str, run_id: str) -> None:
     """
     row = ledger.run_path(project, run_id)
     row.parent.mkdir(parents=True, exist_ok=True)
-    row.write_text(json.dumps({"run_id": run_id}), encoding="utf-8")
+    row.write_text(
+        json.dumps({"run_id": run_id, "commits": ["abc1234"]}),
+        encoding="utf-8",
+    )
 
 
 def _manifest(run_directory: Path) -> Path:

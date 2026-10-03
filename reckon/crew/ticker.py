@@ -141,6 +141,7 @@ STATE_HUE = {
         "stalled": 130,
         "complete": 28,
         "promoted": 22,
+        "recorded": 28,
         "withdrawn": 130,
         "discarded": 130,
         "departed": 130,
@@ -168,6 +169,7 @@ STATE_HUE = {
         "stalled": 179,
         "complete": 78,
         "promoted": 71,
+        "recorded": 78,
         "withdrawn": 179,
         "discarded": 179,
         "departed": 179,
@@ -318,7 +320,15 @@ MARKER = NEW_STATE_OFFSET
 # or a stall is not here: it has stopped without finishing, and it is exactly
 # what a reader attaching wants told.
 SETTLED_STATES = frozenset(
-    {"complete", "completed_unpromoted", "promoted", "failed", "stopped", "abandoned"}
+    {
+        "complete",
+        "completed_unpromoted",
+        "promoted",
+        "recorded",
+        "failed",
+        "stopped",
+        "abandoned",
+    }
 )
 
 _CELLS = ("working", "blocked", "unpromoted")

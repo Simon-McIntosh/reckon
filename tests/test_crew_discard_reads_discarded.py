@@ -76,7 +76,7 @@ def _record_ledger_row(run_id: str) -> None:
     """Write the per-run ledger file a promotion leaves behind."""
     path = ledger.run_path("proj", run_id)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps({"run_id": run_id}))
+    path.write_text(json.dumps({"run_id": run_id, "commits": ["HEAD"]}))
 
 
 def test_a_discarded_run_departs_as_discarded(home: Path) -> None:

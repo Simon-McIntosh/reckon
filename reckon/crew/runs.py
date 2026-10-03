@@ -3587,7 +3587,14 @@ WATCH_ATTENTION_STATES = (
     "exited-unfinished",
     "wait-aged",
 )
-WATCH_PROGRESS_STATES = ("dispatched", "working", "running", "waiting", "promoted")
+WATCH_PROGRESS_STATES = (
+    "dispatched",
+    "working",
+    "running",
+    "waiting",
+    "promoted",
+    "recorded",
+)
 
 
 def _watch_arming_line(project: str) -> str:

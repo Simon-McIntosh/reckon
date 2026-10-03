@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-departure-row-says-how-and-what-it-spent">
+  <meta name="plan-title" content="The departure row says how and what it spent">
+  <meta name="plan-summary" content="The watch transition distinguishes committed promotion from other departures and carries the spend already resolved on the ledger row.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-commits" content="ddab3b65c937fc60297f7b54b6c8f4ca88b2b240, 1137979ab5fc48c60381d3578e1539091f551776, e38ca08e4808e90e60571a126ca188e4bf65cbfd, 82c41a5bba5a23b269bb90e970fc7a6b07fab281">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,ticker,departure,spend">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>The departure row says how and what it spent | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution record &middot; 2026-10-03</p>
+      <h1>The departure row says how and what it spent</h1>
+      <p class="lead" data-node="the-departure-row-says-how-and-what-it-spent" data-reckon="landed" data-when="2026-10-03">
+        The ticker keeps promoted for a row with commits and names a settled
+        commitless completion recorded. Both hold their live pointer without a
+        second announcement. A settled transition copies the ledger's resolved
+        throughput instead of folding a pointer list that promotion has emptied.
+      </p>
+    </header>
+
+    <h2>Measures</h2>
+    <table>
+      <thead><tr><th>Measure</th><th>Base revision</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Four departure words; promotion requires commits</td>
+          <td>Promoted, discarded, stopped and withdrawn already rendered distinctly after <code>88bd5e41a</code> and <code>acb45d2cb</code>. A ledger row with <code>commits: []</code> still rendered promoted, both as a departing run and while its pointer lingered.</td>
+          <td>The same run shape renders promoted, discarded, stopped and withdrawn through <code>format_watch_transition</code>. A settled row without commits has a fifth word, recorded, and never reads as a vanished pointer or unfinished delivery. Both settled words are held while the pointer lives and announced once. The ledger's separate disposition field, introduced by <code>9c4ba7c83</code>, remains preserved; the watch words are selected from recorded commits, the discard marker and the live or departing state.</td>
+        </tr>
+        <tr>
+          <td>Promoted transition spend</td>
+          <td>The ledger had captured throughput before pointer unlink at <code>3424f05b4</code>, but the watch transition returned null wall time, tokens and generation rate after unlink.</td>
+          <td>A folded stream yields <code>20.0</code> wall seconds, <code>150</code> charged tokens and <code>10.0</code> generated tokens per second before promotion; the promoted transition carries the same three numeric values from the committed row. Recorded commitless transitions read the same ledger source. The transition does not fold the stream again.</td>
+        </tr>
+        <tr>
+          <td>Unknown and measured zero</td>
+          <td>The ticker already had distinct display forms after <code>b876427a7</code>, but a promoted transition with a recorded zero lost that figure when its pointer disappeared.</td>
+          <td>An unresolved wall and token figure remains null and renders an absence mark; measured zero remains numeric zero and renders <code>0m</code>. Both directions are asserted. Stream counts absent from the ledger stay unknown rather than being invented as zero.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>The commitless completion correction</h2>
+    <p>The first repair treated every row with no commits as if its pointer had
+    vanished without a row. A wider stacked measurement found seven failures:
+    a live row was no longer held, a real report-only promotion read as
+    unfinished, and later departures read withdrawn. A focused reproduction at
+    <code>2583015ce</code> confirmed all seven failures against twelve passes.
+    The correction keeps ledger presence as the settlement guard and uses the
+    row's commit list only to choose promoted or recorded. A row carrying an
+    explicit no-commit reason reads recorded both while its pointer lives and
+    after it leaves; the live row is announced once.</p>
+    <p>Fixtures were given commits only where they describe a code landing:
+    <code>test_a_promoted_live_run_does_not_reannounce.py</code> and
+    <code>test_crew_watch_lifetime.py</code> already put <code>HEAD</code> in
+    their manifests; <code>test_a_rewritten_terminal_manifest_transitions.py</code>
+    rewrites its manifest with <code>abc1234</code>; and the synthetic landed
+    control in <code>test_a_promotion_never_reads_unpromoted.py</code> asserts a
+    promotion. The real report-only promotion in that last file instead declares
+    no commit and asserts recorded at the pointer-removal boundary.</p>
+    <p>A later review found two more inconsistent reads. A live committed row
+    with no commits had <code>fleet_verdict.state=recorded</code> but
+    <code>classification=promoted</code>; both now take the same settled word.
+    A malformed run identifier made the ledger path raise rather than answer
+    that no promotion row could be found; the guard now returns false. Both
+    failures were reproduced before the correction. The departure reader also
+    resolves only the runs leaving the fleet, reading their per-run rows after
+    a cheap membership check instead of decoding every row in the ledger on
+    each watch transition. A full watcher case proves a commitless completion
+    announces recorded and then stops, just as a committed promotion does.</p>
+
+    <h2>Check</h2>
+    <p>The seven-file departure population at base <code>422d114dce724c0aabb5861d19acf0ab47be53d2</code> had <strong>3 failed, 80 passed</strong>, with all failures in the new measure file. The first head <code>ddab3b65c937fc60297f7b54b6c8f4ca88b2b240</code> passed <strong>83 tests</strong>. The negative control ran the base source against the new tests and failed the no-commit and missing-spend assertions. Ruff reported 10 findings in <code>recovery.py</code> at both base and head, and none in the changed tests.</p>
+    <p>The coordinator's exact 46-file selection is retained with the run logs. At base <code>4d1feeed905d145a3130e71293f2cfdf1233f1d7</code>, it produced <strong>6 failed, 599 passed</strong>. The departure measure test file did not exist at that revision, so its current copy was laid over the base source to run all 46 paths; four of the six failures are in that file. The first corrected head <code>e38ca08e4808e90e60571a126ca188e4bf65cbfd</code> produced <strong>1 failed, 606 passed</strong>; the failure was an older assertion expecting the classification mismatch the correction removed. Its expectation was updated at <code>82c41a5bba5a23b269bb90e970fc7a6b07fab281</code>. A three-worker run at that head produced <strong>3 failed, 604 passed</strong>, all timeout traces in a user-namespace subprocess, SQLite migration and dispatch path. The same 46 paths passed with two workers: <strong>607 passed, no failures</strong>. The completed repeat carried 22 warnings, including a background-thread filesystem warning; the three-worker timeout IDs are preserved in its separate log.</p>
+  </main>
+</body>
+</html>
