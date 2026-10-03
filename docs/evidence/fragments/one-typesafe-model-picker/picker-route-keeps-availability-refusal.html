@@ -27,19 +27,25 @@
   reads <code>unknown</code> and stays eligible.</p>
   <p><code>reckon/cli.py</code> now asks the picker once for the picker route and applies
   the same availability probe the deterministic route runs to whichever backend the
-  selection resolves — a routed backend, a fallback to the default, or the default the
-  refusal falls through to — with the <code>picker_selection</code> recorded on the
-  refusal payload. A selection that resolves no concrete backend (a hold or a refusal) is
-  left to the picker's own refusal path. Exactly one backend is probed, as on the
-  deterministic path.</p>
+  selection resolves — a routed backend, a <code>fallback</code>, a <code>refuse</code>,
+  a <code>route</code> carrying no backend (all three continuing to the configured
+  default), or the default the refusal falls through to — with the
+  <code>picker_selection</code> recorded on the refusal payload. A <code>hold</code>
+  resolves no lane and is left to the picker's own hold path. Exactly one backend is
+  probed, as on the deterministic path.</p>
+  <p><code>reckon/crew/dispatch.py</code> accepts the caller's <code>picker_selection</code>
+  and reuses it rather than asking the picker again, so a live picker dispatch makes one
+  pick, not two, and the availability-checked backend is exactly the dispatched backend.</p>
 
   <h3>Measure</h3>
   <ul>
-    <li>Gate (five named files) base arm <code>3 failed, 30 passed</code> (EXIT=1) → head arm
-    <code>33 passed</code> (EXIT=0); the three base failures are the two new unserved cases
-    plus the pre-existing echo case.</li>
+    <li>Gate (seven named files, including <code>test_picker_in_dispatch.py</code> and
+    <code>test_picker_inputs_never_block_dispatch.py</code>): head arm
+    <code>EXIT=0</code> at commit a534e5370.</li>
     <li>New file <code>tests/test_picker_route_keeps_availability_refusal.py</code>: fallback-to-unserved
-    default exits 5, route-to-unserved names the backend and exits 5, route-to-served previews.</li>
+    default exits 5, route-to-unserved names the backend and exits 5, refuse-to-unserved-default
+    exits 5, route-to-served previews, and a two-answer mock picker is called once with the
+    dispatched backend equal to the checked one.</li>
     <li>Negative control: restoring <code>availability_refusal = None</code> under the picker
     route fails both unserved cases (<code>2 failed, 1 passed</code>, EXIT=1).</li>
   </ul>
