@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="A named-backend dispatch resolves deterministically">
+  <meta name="plan-summary" content="A shadow and a lane change each name the backend they run on; under routing.picker=route they now resolve through that backend and record route deterministic, instead of being refused at the picker guard or silently rerouted.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s6">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,routing,picker,shadow,lane-change,evidence">
+  <title>A named-backend dispatch resolves deterministically | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="explicit-lane-paths-stay-deterministic" data-reckon="landed" data-when="2026-10-03">
+  <h2>A named-backend dispatch resolves deterministically</h2>
+  <p>A shadow names the candidate backend it compares and a lane change names the backend it
+  moves to, so the picker has nothing to select for either. Under <code>routing.picker=route</code>
+  <code>plan_dispatch</code> still resolved the picker for them and refused with
+  <code>picker route has no selection</code>; with a selection present it would have silently
+  rerouted the run off the shadow's named candidate. Both paths now resolve with
+  <code>route=deterministic</code> and record <code>route deterministic</code> on the run.</p>
+
+  <h3>What changed</h3>
+  <ul>
+    <li><code>shadow</code> passes <code>route=deterministic</code> to both its dry-run
+    <code>plan_dispatch</code> and its <code>dispatch</code>, so the candidate it names is the
+    backend that runs.</li>
+    <li><code>change_lane</code> passes <code>route=deterministic</code> to its
+    <code>plan_dispatch</code> and records the resolved <code>route</code> on the run it moves
+    (a resolution that declares no route leaves the run's recorded route unchanged).</li>
+  </ul>
+
+  <h3>Measure</h3>
+  <p>Two cases drive each path under route mode. At the base revision both fail with
+  <code>picker route has no selection</code>; at the committed head both pass. The named gate
+  (the two files plus every test that calls <code>shadow(</code>/<code>change_lane(</code>)
+  reports <code>94 passed, EXIT=0</code> at head, so zero failure ids are added.</p>
+
+  <h3>Commits</h3>
+  <p><code>88ffb8d84</code> — implementation and tests. Logs under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T232007359279-explicit-lane-paths-stay-deterministic/logs/</code>.</p>
+</article>
+</body>
+</html>
