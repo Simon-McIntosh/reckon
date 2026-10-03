@@ -46,6 +46,15 @@ from reckon._timestamps import parse_utc
 # Layer names, lowest precedence first. The order is the merge order.
 LAYER_ORDER = ("shipped", "host", "project", "override")
 
+# The reckon-owned model catalogue is a layer in its own right, sitting between
+# the shipped defaults and the host layer in precedence: a host, project or
+# override value wins over it, and it wins over the shipped defaults. It is
+# applied after every other layer has merged rather than folded into the loop,
+# because its defining rule needs the merged result — it fills a key only for a
+# backend another layer already defines, so a catalogue entry alone never
+# creates a backend.
+CATALOGUE_LAYER = "catalogue"
+
 # Maps whose keys are user-chosen names rather than schema-fixed keys. Their
 # entries are inlined objects whose identifier slot is the map key.
 _KEYED_MAPS = ("backends", "roles")
@@ -137,12 +146,20 @@ class LayerSource:
 
 @dataclass
 class ResolvedFlight:
-    """A merged flight config plus the origin of every value in it."""
+    """A merged flight config plus the origin of every value in it.
+
+    ``shadows`` names every higher-layer value that overrides a catalogue
+    value, and is empty when no higher layer declares a key the catalogue
+    carries. Each entry names the key, the backend and the file so a host
+    layer can be emptied of catalogue keys and the report still shows which
+    values were coming from where.
+    """
 
     config: dict[str, Any]
     provenance: dict[str, str]
     layers: list[LayerSource] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
+    shadows: list[dict[str, str]] = field(default_factory=list)
 
     def origin(self, key_path: str) -> str | None:
         """Return the layer that supplied ``key_path``, or None if unset."""
@@ -163,6 +180,17 @@ class ResolvedConfig(dict[str, Any]):
 def shipped_defaults_path() -> Path:
     """Path to the defaults shipped inside the package."""
     return Path(__file__).resolve().parent / "schema" / "flight-defaults.yaml"
+
+
+def model_catalogue_path() -> Path:
+    """Path to the model catalogue shipped inside the package.
+
+    The catalogue is reckon-owned data, so it ships beside the defaults rather
+    than being configured. A wheel whose catalogue is missing resolves exactly
+    as it did before the catalogue existed, because its values are applied only
+    as fills for backends another layer already defines.
+    """
+    return Path(__file__).resolve().parent / "schema" / "model-catalogue.yaml"
 
 
 # The operator-home files a dialect's harness reads at startup. reckon owns the
@@ -1051,6 +1079,82 @@ def expand_backend_environment(
     return expanded
 
 
+def _apply_catalogue(
+    merged: dict[str, Any],
+    catalogue: Mapping[str, Any],
+    provenance: dict[str, str],
+) -> None:
+    """Fill catalogue keys for backends another layer already defines.
+
+    The two rules the catalogue layer exists to hold live here. A catalogue
+    entry for a backend no other layer declares is skipped, so the catalogue
+    alone never creates a backend and another workstation sees no phantom
+    candidate. A key a higher layer already supplied is left standing, so the
+    catalogue is a default rather than an override; the value it did not need
+    to supply stays attributed to the layer that supplied it.
+    """
+    catalogue_backends = catalogue.get("backends")
+    merged_backends = merged.get("backends")
+    if not isinstance(catalogue_backends, Mapping):
+        return
+    if not isinstance(merged_backends, Mapping):
+        return
+    for backend_name, entry in catalogue_backends.items():
+        if not isinstance(entry, Mapping):
+            continue
+        target = merged_backends.get(backend_name)
+        if not isinstance(target, dict):
+            continue
+        for key, value in entry.items():
+            if key in target:
+                continue
+            target[key] = copy.deepcopy(value)
+            provenance[f"backends.{backend_name}.{key}"] = CATALOGUE_LAYER
+
+
+def _catalogue_shadows(
+    catalogue: Mapping[str, Any],
+    layer_data: Mapping[str, tuple[str | None, Mapping[str, Any]]],
+) -> list[dict[str, str]]:
+    """Report every higher-layer value that overrides a catalogue value.
+
+    A host, project or override value for a key the catalogue also carries
+    wins the merge silently, so the merge alone cannot show that the catalogue
+    is ready to supply it. Walking the raw layers here makes the shadow
+    visible, naming the key, the backend and the file that supplied the
+    winning value — which is what lets a later commit empty those keys from
+    the host layer knowing the resolved values will not move.
+    """
+    catalogue_backends = catalogue.get("backends")
+    if not isinstance(catalogue_backends, Mapping):
+        return []
+    shadows: list[dict[str, str]] = []
+    for layer_name, (path, data) in layer_data.items():
+        if layer_name == CATALOGUE_LAYER:
+            continue
+        backends = data.get("backends")
+        if not isinstance(backends, Mapping):
+            continue
+        for backend_name, entry in backends.items():
+            if not isinstance(entry, Mapping):
+                continue
+            catalogue_entry = catalogue_backends.get(backend_name)
+            if not isinstance(catalogue_entry, Mapping):
+                continue
+            for key in catalogue_entry:
+                if key not in entry:
+                    continue
+                shadows.append(
+                    {
+                        "backend": str(backend_name),
+                        "key": str(key),
+                        "layer": layer_name,
+                        "file": str(path) if path is not None else "",
+                    }
+                )
+    return sorted(shadows, key=lambda item: (item["backend"], item["key"]))
+
+
 def resolve(
     project: str | None = None,
     *,
@@ -1059,15 +1163,21 @@ def resolve(
     project_path: str | Path | None = None,
     checkout_path: str | Path | None = None,
     shipped_path: str | Path | None = None,
+    catalogue_path: str | Path | None = None,
 ) -> ResolvedFlight:
-    """Resolve the four layers into one config plus per-key provenance.
+    """Resolve the layers into one config plus per-key provenance.
 
     ``project`` selects the project layer; without it only shipped, host and
     override contribute. ``overrides`` is the prompt layer — the runtime choice
-    for the current task, which always wins.
+    for the current task, which always wins. The model catalogue rides between
+    the shipped defaults and the host layer: its values fill keys a higher
+    layer leaves unset, and it never creates a backend no higher layer defines.
     """
     shipped_file = Path(shipped_path) if shipped_path else shipped_defaults_path()
     host_file = Path(host_path) if host_path else host_config_path()
+    catalogue_file = (
+        Path(catalogue_path) if catalogue_path else model_catalogue_path()
+    )
 
     project_file: Path | None = None
     if project_path is not None:
@@ -1087,6 +1197,9 @@ def resolve(
     layers: list[LayerSource] = []
     contributing: list[str] = []
     warnings: list[str] = []
+    # The raw data of each non-catalogue layer, kept so the shadow report can
+    # name which higher layer supplied a value the catalogue also carries.
+    layer_data: dict[str, tuple[str | None, Mapping[str, Any]]] = {}
 
     for name, path, inline in candidates:
         if inline is not None:
@@ -1113,6 +1226,10 @@ def resolve(
         validate_layer(data, source)
         merged = deep_merge(merged, data)
         _record_provenance(data, name, provenance)
+        layer_data[name] = (
+            None if path is None else str(path),
+            data,
+        )
         contributing.append(str(source))
 
     if not merged:
@@ -1120,12 +1237,23 @@ def resolve(
             shipped_file, "", "shipped defaults are missing or empty"
         )
 
+    # The catalogue is applied after the other layers rather than inside the
+    # loop: it fills a key only for a backend some layer already defines, so it
+    # must see the merged result to know which backends exist.
+    catalogue = read_layer_file(catalogue_file)
+    if catalogue:
+        validate_layer(catalogue, catalogue_file)
+        _apply_catalogue(merged, catalogue, provenance)
+        contributing.append(str(catalogue_file))
+    shadows = _catalogue_shadows(catalogue, layer_data)
+
     _validate_resolved(merged, " + ".join(contributing))
     return ResolvedFlight(
         config=ResolvedConfig(_sorted(merged), warnings=warnings),
         provenance=dict(sorted(provenance.items())),
         layers=layers,
         warnings=warnings,
+        shadows=shadows,
     )
 
 
@@ -1685,7 +1813,16 @@ def flight_report(
         "availability": probe_availability(resolved.config, probe_auth=probe_auth),
         "config": resolved.config,
         "layers": [
-            {"name": layer.name, "path": layer.path, "present": layer.present}
+            {
+                "name": layer.name,
+                "path": layer.path,
+                "present": layer.present,
+                **(
+                    {"shadows": [s for s in resolved.shadows if s["layer"] == layer.name]}
+                    if any(s["layer"] == layer.name for s in resolved.shadows)
+                    else {}
+                ),
+            }
             for layer in resolved.layers
         ],
         "project": project,

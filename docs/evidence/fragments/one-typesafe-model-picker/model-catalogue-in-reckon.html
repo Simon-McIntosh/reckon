@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="Reckon owns the model catalogue">
+  <meta name="plan-summary" content="Every backend key classified as catalogue or machine fact, the catalogue shipped in a reckon-owned layer, the shadow report, and the before/after proof that emptying the host layer of catalogue keys moves provenance and no value.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s11">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="recorded">
+  <meta name="plan-tags" content="crew,flight,model-catalogue,provenance">
+  <title>Reckon owns the model catalogue — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="model-catalogue-in-reckon" data-reckon="landed" data-when="2026-10-03">
+  <h2>Reckon owns the model catalogue</h2>
+
+  <p>The model-selection facts for every backend — family, model, alias, effort, budget group and per-million rates — are a reckon decision, not a reckon property of a machine, so they ship in a reckon-owned layer at a precedence below the host layer. The host layer keeps only facts about the machine. This record classifies every key the host layer carried, ships the catalogue, reports a host value over a catalogue value as a shadow, and proves that emptying the host layer of catalogue keys moves provenance and no value.</p>
+
+  <h3>1. Every backend key the host layer carried, classified</h3>
+
+  <p><strong>catalogue</strong> — a reckon routing decision, moved to the shipped catalogue. <strong>machine</strong> — a fact about this machine: how a worker is placed, launched, what executable runs, where a lane publishes its state, and the measured window of a served deployment. <strong>reckon-other</strong> — a reckon routing decision the model catalogue does not name (acting fences, session reuse, wall-clock budgets, whether to probe an account), left in the host layer by this node and surfaced under <code>follow_ons</code>.</p>
+
+  <table>
+    <thead>
+      <tr><th>backend | key</th><th>class</th></tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="2"><strong>codex</strong> (also codex-luna, codex-astra)</td></tr>
+      <tr><td>placement</td><td>machine</td></tr>
+      <tr><td>launch, command</td><td>machine</td></tr>
+      <tr><td>model, effort, alias, budget_group</td><td>catalogue</td></tr>
+      <tr><td>sandbox, session_reuse, time_budget, budget_check</td><td>reckon-other</td></tr>
+      <tr><td colspan="2"><strong>codex-terra</strong></td></tr>
+      <tr><td>placement</td><td>machine</td></tr>
+      <tr><td>launch, command</td><td>machine</td></tr>
+      <tr><td>model, effort, alias, budget_group, input_rate_per_million, output_rate_per_million, as_of</td><td>catalogue</td></tr>
+      <tr><td>sandbox, session_reuse, time_budget, budget_check</td><td>reckon-other</td></tr>
+      <tr><td colspan="2"><strong>clive</strong></td></tr>
+      <tr><td>placement</td><td>machine</td></tr>
+      <tr><td>launch, command</td><td>machine</td></tr>
+      <tr><td>endpoints_document, lane_document, gate_document</td><td>machine</td></tr>
+      <tr><td>usable_input_window, effective_input_window</td><td>machine</td></tr>
+      <tr><td>model, effort, alias</td><td>catalogue</td></tr>
+      <tr><td>sandbox, session_reuse, time_budget, max_concurrent_runs</td><td>reckon-other</td></tr>
+      <tr><td colspan="2"><strong>claude</strong> (also claude-opus, claude-haiku)</td></tr>
+      <tr><td>placement</td><td>machine</td></tr>
+      <tr><td>launch, command</td><td>machine</td></tr>
+      <tr><td>model, effort, alias</td><td>catalogue</td></tr>
+      <tr><td>sandbox, session_reuse, time_budget, budget_check</td><td>reckon-other</td></tr>
+      <tr><td colspan="2"><strong>native</strong> (the calling harness)</td></tr>
+      <tr><td>launch</td><td>machine</td></tr>
+      <tr><td>alias</td><td>catalogue</td></tr>
+      <tr><td>session_reuse, time_budget</td><td>reckon-other</td></tr>
+    </tbody>
+  </table>
+
+  <p>The machine-fact classification is the plan's own list — placement, paths, commands, credentials, endpoints and launch wrappers. The clive <code>usable_input_window</code> and <code>effective_input_window</code> are measured properties of the served deployment rather than routing choices, so they stay machine facts; <code>max_concurrent_runs</code> is retired and changes no behaviour.</p>
+
+  <h3>2. The shipped catalogue</h3>
+
+  <p>A new file, <code>reckon/schema/model-catalogue.yaml</code>, ships in the wheel beside <code>flight-defaults.yaml</code>. It carries the catalogue keys for every backend the host layer defined, resolved as values at 2026-10-03: <code>codex</code>(gpt-6-sol, high, sol6, codex-sub), <code>codex-luna</code>(gpt-6-luna, xhigh, luna6, codex-sub), <code>codex-terra</code>(gpt-5.6-terra, xhigh, terra5.6, codex-sub, 2.0/12.0, as_of 2026-09-09), <code>codex-astra</code>(gpt-6-astra, xhigh, astra6, codex-sub), <code>clive</code>(deepseek-v4.1-flash, xhigh, dsv4.1-flash), <code>claude</code>(claude-sonnet-5-5, medium, sonnet 5.5), <code>claude-opus</code>(claude-opus-5-5, high, opus 5.5), <code>claude-haiku</code>(claude-haiku-4-5-20251001, high, haiku 4.5), <code>native</code>(alias harness). The catalogue carries no rates for the codex subscription lanes or the unmetered local lane, so they classify explicitly unpriced rather than pricing at a stale number.</p>
+
+  <p>Two rules hold the layering honest, both enforced in <code>reckon/flight.py</code>:</p>
+  <ul>
+    <li><strong>A catalogue entry alone creates no backend.</strong> The catalogue fills a key only for a backend another layer already defines, so a host that does not declare codex resolves no codex backend and no other workstation or project sees a phantom candidate.</li>
+    <li><strong>A host, project or override value still wins.</strong> The catalogue is a default below the host layer, not an override above it.</li>
+  </ul>
+
+  <h3>3. The shadow report</h3>
+
+  <p><code>reckon flight</code> and the crew <code>flight</code> view report each host-layer value for a catalogue key as a shadow, naming the key, the backend and the file. The shadows ride the layer inventory rather than a new top-level key, so the report's existing shape is unchanged: the host layer's own row carries a <code>shadows</code> list. With the host layer as it stood at 2026-10-03, 32 host values shadowed the catalogue, every one naming <code>/home/ITER/mcintos/.config/reckon/flight.yaml</code>.</p>
+
+  <h3>4. Proof that no resolved value changes</h3>
+
+  <p>The resolved flight for <code>--project reckon</code> was captured as JSON under the run directory (<code>r-20261003T032115043790-model-catalogue-in-reckon/before.json</code>, <code>after.json</code>, <code>emptied.json</code>). The proof compares the host layer as it stands against the same host layer with its 32 catalogue keys removed — the later dotfiles commit this node makes safe:</p>
+  <ul>
+    <li><strong>Resolved config: identical.</strong> Zero differing leaves between the full host layer and the emptied one (<code>after.json</code> vs <code>emptied.json</code>).</li>
+    <li><strong>Provenance: 32 entries moved</strong> from <code>host</code> to <code>catalogue</code>, every one under <code>backends.&lt;name&gt;.&lt;catalogue-key&gt;</code>; no other key's provenance changed.</li>
+    <li><strong>Shadows: 32 → 0.</strong> Once the host stops declaring a catalogue key, nothing shadows the catalogue.</li>
+  </ul>
+  <p>So the host layer can be emptied of catalogue keys in a later commit, and the resolved values do not move.</p>
+
+  <h3>Gate</h3>
+  <p>Base arm (revision <code>c6acda8e0</code>, scratch tree): <code>111 passed, 2 skipped</code>, EXIT=0, log <code>logs/base-flight-gate.log</code>. Head arm (working tree over <code>c6acda8e0</code>): <code>115 passed, 2 skipped</code>, EXIT=0, log <code>logs/head-flight-gate.log</code>. The four added tests are <code>tests/test_flight_catalogue_layer.py</code>; no pre-existing test was changed, and delta is +4 passing, zero added failures.</p>
+  <p>Negative control — the catalogue-only guard dropped so a catalogue entry creates a backend — fails <code>test_a_catalogue_entry_alone_creates_no_backend</code> (EXIT=1), log <code>logs/negative-control.log</code>. The head arm passes. (A gate log's suite run declares its own run complete and does not itself name the guard; the mutation and its failing test id are what the log records.)</p>
+</article>
+</body>
+</html>
