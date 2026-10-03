@@ -45,6 +45,108 @@
     <p><code>codex-spark</code> is retired, on the lead's decision of 2026-10-02: the account refuses <code>gpt-5.3-codex-spark</code> and the provider's model list omits it. It is removed from the host layer (dotfiles <code>8390913</code>) and from the project layer (merge <code>d7e1a0fe2</code>). The bookend reserve on an account with no five-hour window was measured refusing a documentation-role codex dispatch at 11:16Z. After the §7 merges, the reserve reads the provider-reported primary window. The close-out page (<code>reserve-without-five-hour-window.html</code>, review 84) quotes a dry run as the after-measure, but a dry run never reaches the reserve check, so that quote is not evidence. The admitted evidence is real: routed dispatch <code>r-20261002T212009757157-picker-holds-for-local</code> went to codex-astra (implement role) at 21:20Z on the same account and was admitted.</p>
   </section>
 
+  <section id="s8">
+    <h2>§8 — Return time, latency and honest replay figures: landed</h2>
+    <p>Eight nodes landed on 2026-10-02:</p>
+    <ul>
+      <li><code>picker-return-time</code> (merge <code>bf00313a3</code>): <code>lane_context.py</code> renders, per candidate:
+        <ul>
+          <li>the median and 90th-percentile run time for this role and spec level;</li>
+          <li>the budget reading's source and age, marked stale past its shelf life;</li>
+          <li>the local lane's load.</li>
+        </ul>
+      </li>
+      <li><code>picker-latency</code> (<code>699f85dd8</code>) and <code>picker-fast-on-dispatch-path</code> (<code>b554e91ca</code>): one ledger read and one budget snapshot serve every candidate of a pick, and the dispatch path no longer scans every plan's HTML.</li>
+      <li><code>picker-replay-measure</code> (<code>f4335f2e8</code>): the replay's Jev-latency median now counts only rows that made a call, and refused picks are counted, where before they were zero by construction.</li>
+      <li><code>lane-load-honours-observed-window</code> (<code>901526aec</code>) and <code>lane-slot-gate-reads-a-flag</code> (<code>83e96a174</code>): local worker slots are withheld until the router's observed window fills, and the slot gate reads this as a structured flag. Head runs gave 11 and 24 passed; the base and negative-control runs failed as declared.</li>
+      <li><code>dispatch-builds-picker-inputs</code> (<code>562da835d</code>) and <code>picker-inputs-never-block-dispatch</code> (<code>c9e37cc14</code>): picker inputs are built inside the guard, so a corrupt ledger can no longer raise out of dispatch.</li>
+      <li><code>picker-surface-contracts</code> (<code>d8dd26613</code>): removes hardcoded model ids from the tests and documents <code>crew pick</code>. 127 passed at the base, 133 at the head, none added.</li>
+    </ul>
+    <p>Measured over the 37 ledger rows recorded after the availability fix (§6):</p>
+    <table>
+      <tr><th>measure</th><th>value</th></tr>
+      <tr><td>median pick latency</td><td>2.5 s</td></tr>
+      <tr><td>90th-percentile pick latency</td><td>at the 5 s bound</td></tr>
+      <tr><td>timeouts</td><td>7 of 37 (19%), each falling back to the flight default lane</td></tr>
+    </table>
+    <p>That timeout rate is the open tuning item.</p>
+  </section>
+
+  <section id="s6">
+    <h2>§6 — Dogfood and switch-over: switched; the week-long comparison continues</h2>
+    <p>Reckon's own dispatches met the lead's three switch conditions:</p>
+    <ol>
+      <li><strong>Routed.</strong> At least eight promoted runs in this session went through <code>--route picker</code>, six to clive and two to codex-astra. None was dispatched to a refused or logged-out model.</li>
+      <li><strong>Recorded.</strong> 123 ledger rows carry <code>picker_selection</code>, dispatched between 2026-10-02T19:02Z and 2026-10-03T02:49Z. Each row holds:
+        <ul>
+          <li>the backend, model and effort;</li>
+          <li>the probabilities and confidence;</li>
+          <li>the Jev model and latency;</li>
+          <li>the candidates offered and excluded;</li>
+          <li>the orchestrator's comment.</li>
+        </ul>
+      </li>
+      <li><strong>Fell back deliberately.</strong> One dispatch with an invalid key recorded <code>fallback_reason: jev-error: HTTPError</code> and ran on the default lane.</li>
+    </ol>
+    <p>Dogfooding found these defects, and each was fixed before the switch:</p>
+    <table>
+      <tr><th>defect</th><th>fixed by</th><th>merge</th></tr>
+      <tr><td>Review nodes were offered metered lanes.</td><td><code>picker-honours-review-exclusion</code></td><td><code>8d2b6fdfc</code></td></tr>
+      <tr><td>Routine work never held while the local lane was not admitting.</td><td><code>picker-holds-for-local</code></td><td><code>30ac3b181</code></td></tr>
+      <tr><td>A missing probe cache read as unavailable, which excluded clive (detail below).</td><td><code>picker-cached-availability-is-unknown</code></td><td><code>70fff3536</code></td></tr>
+      <tr><td>The in-harness backend was offered.</td><td><code>picker-never-offers-in-harness</code></td><td><code>a7796bb5c</code></td></tr>
+      <tr><td>Explicit lane paths refused under route mode.</td><td><code>explicit-lane-paths-stay-deterministic</code></td><td><code>3b08135ad</code></td></tr>
+      <tr><td>An absent selection refused under route mode.</td><td><code>picker-absent-selection-falls-back</code></td><td><code>7585889f0</code></td></tr>
+      <tr><td>Dry runs were not comparable with each other.</td><td><code>dry-run-picker-is-comparable</code></td><td><code>64a5d2639</code></td></tr>
+    </table>
+    <p>The missing-cache defect caused every refused and every held pick in the ledger: 19 refused review picks and 12 held implement picks, all dispatched between 21:58Z and 23:45Z. The fix merged at 23:45:36Z, and no pick has been refused since.</p>
+    <p><strong>The switch.</strong> <code>picker-routes-by-default</code> (merge <code>4cb06a148</code>) ships <code>routing.picker: route</code>, and <code>reckon flight --project reckon</code> resolves it with provenance <code>shipped</code>. On the combined tree, the 155-file dispatch population gave 3 failed and 1,851 passed; the flip adds none of the three:</p>
+    <ul>
+      <li><code>test_cli_follow_streams…</code> was already failing before the flip;</li>
+      <li><code>test_dispatch_returns_when_its_supervisor_finished_the_launch</code> fails on main;</li>
+      <li>the deprecation-announcement test fails only under load.</li>
+    </ul>
+    <p>All twelve peer sessions were messaged on 2026-10-03 with how to route, add a comment, read a hold and switch back.</p>
+    <p>Measured over the 37 rows dispatched after the availability fix:</p>
+    <table>
+      <tr><th>measure</th><th>value</th></tr>
+      <tr><td>Jev picks</td><td>30, all clive</td></tr>
+      <tr><td>timeouts</td><td>7</td></tr>
+      <tr><td>median confidence</td><td>0.62 (minimum 0.47)</td></tr>
+    </table>
+    <p><strong>Remaining.</strong> Compare against deterministic routing over at least one week or 100 dispatches, whichever is longer, on:</p>
+    <ul>
+      <li>success rate;</li>
+      <li>metered spend per promoted run;</li>
+      <li>fallback rate;</li>
+      <li>confidence distribution.</li>
+    </ul>
+    <p>This is the measure that can reverse the switch. It can close no earlier than 2026-10-09.</p>
+  </section>
+
+  <section id="s3">
+    <h2>§3 — Current model per provider: closed</h2>
+    <p><code>model-currency.html</code> tables, for each provider and family, the current id, its exact source and every older pin on this workstation. The sources:</p>
+    <ul>
+      <li>the Claude CLI 2.1.287 catalog;</li>
+      <li>the codex <code>models_cache.json</code>, fetched at 2026-10-02T11:19:43Z;</li>
+      <li>the <code>clive --list</code> probe.</li>
+    </ul>
+    <p>The stale routing pins were repinned under the lead's authorisation, in dotfiles <code>8390913</code>:</p>
+    <ul>
+      <li><code>codex</code> to <code>gpt-6-sol</code>;</li>
+      <li><code>codex-luna</code> to <code>gpt-6-luna</code>;</li>
+      <li>copilot to <code>claude-sonnet-5-5</code>.</li>
+    </ul>
+    <p><code>codex-spark</code> is retired (§2). The older ids that remain are not routing pins:</p>
+    <ul>
+      <li>effort-override keys in <code>~/.claude/settings.json</code>;</li>
+      <li>clive's <code>behavesAs</code> mapping;</li>
+      <li>the host layer's <code>.bak</code> copies;</li>
+      <li>the interactive default in <code>~/.codex/config.toml</code>, which codex writes itself. Reckon's dotfiles seed does not set it, and dispatch passes the model named in flight.</li>
+    </ul>
+  </section>
+
 </main>
 </body>
 </html>

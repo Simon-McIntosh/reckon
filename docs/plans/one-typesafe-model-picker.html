@@ -25,8 +25,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="92">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="94">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -50,10 +50,12 @@
   <p class="landed-summary">codex-spark is retired (account refuses it, provider list omits it; dotfiles 8390913, merge d7e1a0fe2). On an account with no five-hour window the reserve reads the provider-reported primary window; a real implement-role codex-astra dispatch was admitted at 21:20Z. Merge fd83fd8ae. <a href="s2">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-03</span>
     <h2 id="s3">§3 — Which model is current for each provider</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p>For each provider, list the newest release of every model family it serves to this workstation's accounts, and every configured or pinned id that an older release still shadows. Measured so far from the installed Claude CLI (2.1.287): <code>claude-fable-5-1</code>, <code>claude-opus-5-5</code>, <code>claude-sonnet-5-5</code> and <code>claude-haiku-4-5</code> are current, and no lane offers Fable 5.1. Stale pins found: <code>claude-sonnet-5</code> in <code>dotfiles/copilot/settings.json</code>, and <code>gpt-5.5</code> and <code>gpt-5.6-sol</code> in <code>~/.codex/config.toml</code>. The clive wrapper's <code>behavesAs: claude-sonnet-5</code> is a capability-catalog mapping for the local model, not a routing pin. The codex catalog has not been read.</p>
-    <p><strong>Done when:</strong> a table lists, per provider and family, the current id, its source (CLI catalog, provider model list, or live probe), and every location on this workstation that pins an older id.</p>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">model-currency.html tables the current id, its exact source and every older pin per provider and family. Routing pins repinned in dotfiles 8390913 (codex gpt-6-sol, codex-luna gpt-6-luna, copilot claude-sonnet-5-5); codex-spark retired. The older ids left are not routing pins. <a href="s3">full record</a></p>
+</section>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-02</span>
@@ -62,22 +64,18 @@
   <p class="landed-summary">Designed and prototyped: one Jev Choice over existing backends via OpenRouter Decisions (<code>typesafe/jev-1.13</code>, ~0.3 s, ~$0.00002), strict Jinja state (593 tokens), code-side candidate filter, fallback to the default backend. Replay of 50 ledger dispatches: 74% agreement, 24% fallback, 0 refused-model picks; latency 19.6 s end-to-end, to be cut in §5. Merges 7bc774ce4, 191b54d7f, 65f1b6b73, a78d94752. <a href="s4">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-03</span>
     <h2 id="s5">§5 — Build the typed router</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="8.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="deferred" data-links=""></section>
-    <p>Build the router in reckon from §4's design note. It turns a node's declared needs and the live state of every lane into one typed selection: family, model, effort, the probabilities and confidence behind it, the pinned Jev version, the orchestrator's comment, and a fallback reason when one applies. The selection is recorded on the run and its ledger row. It replaces per-model backends with one backend per provider and adds a dispatch field for the orchestrator's free-form comment. Old backend names resolve, with a warning, for one transition period, so that no peer's dispatch breaks mid-flight. The router never falls back silently. This section's node shapes and done-whens are written from §4's design note, and its gate holds it until that note exists.</p>
-    <p><strong>The lead's direction (2026-10-02, second instruction).</strong> "We need this working quickly." Jev's prompts are <strong>Jinja templates</strong>, after <code>imas_codex/llm/prompt_loader.py</code> in imas-codex, so that live facts are injected at call time: burn rate and window position for each metered lane, local-lane worker slots and congestion from <code>lane.json</code>, and recent successes and failures per model from the ledger. The state is <strong>concise and only what the judgment needs</strong>: the lead's words are "do not overwhelm the typesafe model". <strong>Return time is a routing input</strong> (the lead, 2026-10-02): the state carries, per candidate, the distribution of recorded run times by effort and node size (median and 90th percentile of <code>wall_seconds</code> from the ledger), and the local lane's current load (running, waiting, headroom, tokens per second), so that Jev weighs how soon a job of this size would return on each lane. The node <code>run-time-profile</code> derives these figures in a module of their own, and the picker renders them. Development is iterative: each replay and dogfood round feeds the next revision of the templates. Straightforward, well-defined work (specification level <code>exact</code>, or a node needing no decision) goes to the local lane, and this rule lives in the candidate filter and the template, not only in Jev's judgment. Metered lanes are paced so that a window is not spent in its first days.</p>
-    <p><strong>Nodes, in order.</strong></p>
-    <ol>
-      <li><strong>Prototype</strong> (<code>picker-prototype</code>, dispatched under §4 because §4's replay runs through it, and so it lands before §4's gate): a <code>reckon/crew/picker/</code> package holding the Jinja templates, the state builder, the candidate filter, the OpenRouter client for Jev and the typed selection. A <code>reckon crew pick</code> command prints one selection for a described node without dispatching anything, and a replay mode runs at least 50 ledger dispatches through it. The replay is §4's evidence.</li>
-      <li><strong>Shadow recording</strong> (<code>picker-shadow</code>): every dispatch asks the router and records its selection on the live run and on its ledger row as one key present on every row, null when the router was not asked. No lane changes.</li>
-      <li><strong>Routed dispatch</strong> (<code>picker-routes-dispatch</code>): an opt-in dispatch mode in which the router's selection names the backend, with the orchestrator's free-form comment passed verbatim. Below threshold, or when Jev is unreachable, it falls back to the deterministic default and records why.</li>
-    </ol>
-    <p>The first cut chooses among the existing backend names, each of which is one (family, model) pair, so no peer's configuration changes. Consolidating to one backend per provider is a later node, opened only once routed dispatch has run here.</p>
+<section data-reckon="section" data-id="s5" data-effort-hours="8.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-attempts="0" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Built through §8 (return time, latency), §9 (shadow recording and routed dispatch) and §10 (Jev judges pressure); its record could not move from deferred by any edit path, so the nodes ran under those sections. Consolidation to one backend per provider folds into §11. <a href="s9">full record</a></p>
+</section>
 
     <h2 id="s6">§6 — Prototype and dogfood the router</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
 <p>The router is proven on reckon's own work before it becomes anyone's default. Three stages, each leaving its own evidence:</p><ol><li><strong>Replay</strong>, inside §4's done-when: recorded dispatches go through the questions, with no live effect.</li><li><strong>Shadow</strong>: every live reckon dispatch also asks the router, and records its pick, probabilities and confidence beside the lane actually used, without acting on it. This runs for at least one week or 100 dispatches, whichever is longer.</li><li><strong>Dogfood</strong>: one coordinator session routes its own dispatches through the router, using orchestrator comments, with a recorded switch back to deterministic routing.</li></ol><p><strong>Measures</strong>, each compared with deterministic routing over the same period: run success rate; metered spend per promoted run; dispatches to a refused or logged-out model (target zero); router latency per dispatch; fallback rate; and the confidence distribution.</p><p><strong>Done when:</strong> the shadow and dogfood stages each publish those measures from their run records. The router becomes the default only if the dogfood stage shows a success rate no lower, spend no higher, and zero dispatches to a refused or logged-out model. Otherwise the plan records the negative result and what to change.</p>
 <p><strong>Compressed by the lead (2026-10-02).</strong> "Prototype extensively and then dogfood here to ensure working. Once live, message all other sessions and switch over." The switch therefore happens once the dogfood stage <em>here</em> meets three conditions. First, at least six of this session's dispatches are routed, with zero to a refused or logged-out model. Second, every routed run carries its recorded selection on its run record and ledger row. Third, one deliberate fallback (Jev unreachable, or confidence below threshold) is recorded with its reason. At the switch, every live coordinator session is messaged with how to route and how to switch back. The week-long shadow comparison above continues after the switch, as the measure that can reverse it.</p>
+<p><strong>Switched on 2026-10-03.</strong> All three conditions were met. At least eight routed runs were promoted, none to a refused or logged-out model; 123 ledger rows carry the selection; and one deliberate <code>jev-error</code> fallback is recorded. <code>picker-routes-by-default</code> (merge <code>4cb06a148</code>) ships <code>routing.picker: route</code>, and all twelve peer sessions were messaged. Dogfooding found seven defects, each fixed before the switch. <a href="s6">Full record</a>. Two pieces of work remain. First, the pick timeouts: 7 of 37 picks hit the 5 s bound (<code>f-otmp-pick-timeouts</code>). Second, the comparison with deterministic routing, which runs from 2026-10-09 (<code>f-otmp-week-compare</code>).</p>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-02</span>
@@ -86,9 +84,12 @@
   <p class="landed-summary">Codex pacing follows the provider-reported window and reads the live account surface. At 5% used, 2.63 h into a 10,080-minute window (burn 3.19×, allowance 1.72%), implement dispatch is held and review admitted. The reserve no longer refuses an account with no five-hour window. Merges adf905314, 88089b0ce. One pre-existing failure, owned by a-window-paces-the-lane, is accepted. <a href="s7">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-03</span>
     <h2 id="s8">§8 — Picker iteration: return time, latency and honest replay figures</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
-<p>The §4 prototype picks in 19.6 s end to end, while the Jev call itself takes 350 ms; the rest is the competence and context checks reloading the ledger once per candidate. Its state does not yet carry return time. Two nodes, split by file so they run in parallel. <code>picker-return-time</code> adds <code>reckon/crew/picker/lane_context.py</code>, which renders per candidate the median and 90th-percentile run time for a job of this size from <code>run_time_profile</code>, the budget reading's source and age (a ledger-only reading past its shelf life is marked stale), and the local lane's load from <code>local_lane_load</code>. It also measures the state bound against a real five-key congestion block. <code>picker-latency</code> shares one ledger read and one budget snapshot across all candidates of a pick, with a target median of 3 s or less per pick. It also corrects the replay summary, whose Jev-latency median counts rows that made no call and whose refused-pick count is zero by construction.</p><p>This work sits in a section of its own because §5's record cannot move from <code>deferred</code> to <code>implementable</code> through any edit path: state writes are refused on disagreement, and text writes cannot touch a structured-state region.</p>
+<section data-reckon="section" data-id="s8" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Return time (p50/p90 by role and spec level), budget source and age, and local-lane load reach Jev; one ledger read and one budget snapshot per pick; replay figures count only real calls and real refusals; picker inputs never raise out of dispatch. After the availability fix: median pick 2.5 s, 7 of 37 picks timed out at the 5 s bound. Merges bf00313a3, 699f85dd8, b554e91ca, f4335f2e8, 901526aec, 83e96a174, 562da835d, c9e37cc14, d8dd26613. <a href="s8">full record</a></p>
+</section>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-02</span>
@@ -137,10 +138,11 @@
     <p class="r-gate-required-evidence">one-typesafe-model-picker#s4</p>
     <a class="r-gate-evidence" href="docs/evidence/fragments/one-typesafe-model-picker/picker-prototype.html names the single route Choice with its instructions and criteria, the state schema with orchestrator_comment, the code-side candidate filter, thresholds 0.6 metered and 0.4 local, the fallback to default_backend, the pinned typesafe/jev-1.13 via OpenRouter Decisions and the credential path OPENROUTER_API_KEY_RECKON; its live replay of 50 ledger dispatches gave 74% agreement, 24% fallback and 0 refused-model picks (merge a78d94752, review 90/100).">Evidence</a>
 </div>
-<div class="r-gate" data-id="g-otmp-router-built" data-section="s6" data-gated-sections="s6" data-status="open" data-verdict="">
+<div class="r-gate" data-id="g-otmp-router-built" data-section="s6" data-gated-sections="s6" data-status="closed" data-verdict="passed">
     <h4 class="r-gate-measure">the router records a typed selection on live dispatch runs and their ledger rows, so shadow mode can run without changing any lane</h4>
     <p class="r-gate-required-evidence">one-typesafe-model-picker#s5</p>
-    </div>
+    <a class="r-gate-evidence" href="123 ledger rows under docs/state/reckon/runs/ (dispatched 2026-10-02T19:02Z to 2026-10-03T02:49Z) carry picker_selection with backend, model, effort, probabilities, confidence, Jev model, latency and the offered and excluded candidates. At least eight routed promoted runs (six clive, two codex-astra), none to a refused or logged-out model, and one deliberate fallback (jev-error: HTTPError). routing.picker: route shipped at merge 4cb06a148. Record: docs/evidence/archive/one-typesafe-model-picker-landed.html#s6.">Evidence</a>
+</div>
 </section>
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-otmp-release-state" data-who="s25-coord" data-when="2026-10-02">
@@ -348,7 +350,7 @@
     <div class="r-comment-body"><p>independent review of r-20261003T022415893541-picker-absent-selection-falls-back stored as a parsed record at reviews/reckon/r-20261003T022415893541-picker-absent-selection-falls-back.json (and the .at-b99856e93377b9c95409bc9d834e867d288158a7 revision copy); read 6058ff38617a187e0a480a0de1486c2b81b885ef..b99856e93377b9c95409bc9d834e867d288158a7, scored goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 19 (total 94), added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline_suite (128 passed/2 skipped, 0 failures) and after_suite (129 passed/2 skipped, 0 failures) gate logs; three follow-on findings, no blocker.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261003T011541331638-picker-routes-by-default" data-who="reckon-build" data-when="2026-10-03T01:48:47.905Z">
-    <div class="r-comment-body"><p>picker-routes-by-default — shipped routing.picker flipped to route with the opt-out comment; default test passes at head (route, provenance shipped) and fails at base; schema regen byte-identical; flight report shows config.routing.picker=route, provenance shipped; three gate tests outside this node&#x27;s grants are left red by the flip (see follow_ons).</p></div>
+    <div class="r-comment-body"><p>picker-routes-by-default — shipped routing.picker flipped to route with the opt-out comment; default test passes at head (route, provenance shipped) and fails at base; schema regen byte-identical; flight report shows config.routing.picker=route, provenance shipped; three gate tests outside this node's grants are left red by the flip (see follow_ons).</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
@@ -357,6 +359,21 @@
     <h4 class="r-fu-title">Pre-existing stamp-reader failure belongs to a-window-paces-the-lane</h4>
     <div class="r-fu-body">Pointer, not work: tests/test_preflight_pace.py::test_one_stamp_reader_dates_a_record_for_both_surfaces fails at every base this plan measured, because the lanes view publishes the composition time instead of the record's created_at. The fix belongs to a-window-paces-the-lane.</div>
     <pre class="r-fu-prompt">/reckon-build a-window-paces-the-lane</pre>
+    </article>
+<article class="r-fu" data-id="f-otmp-pick-timeouts" data-status="open" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Seven of 37 picks time out at the 5 s bound</h4>
+    <div class="r-fu-body">After the availability fix, 7 of 37 ledger picks hit the 5 s dispatch bound and fell back to the flight default lane; the 90th-percentile pick sits at the bound. Profile where the time goes on the dispatch path under fleet load, and cut it or justify a different bound from the measured distribution. A timed-out pick is a recorded fallback, not a refusal, so nothing blocks meanwhile.</div>
+    <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §6</pre>
+    </article>
+<article class="r-fu" data-id="f-otmp-week-compare" data-status="open" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Compare picker routing with deterministic once a week has run</h4>
+    <div class="r-fu-body">From 2026-10-09, or once 100 routed dispatches exist if later, publish success rate, metered spend per promoted run, fallback rate and the confidence distribution against deterministic routing over the same period. This is the measure that can reverse the switch.</div>
+    <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §6</pre>
+    </article>
+<article class="r-fu" data-id="f-otmp-catalogue" data-status="open" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Move the model catalogue from dotfiles into reckon</h4>
+    <div class="r-fu-body">§11: family, model, alias, effort, budget group and rates move from the host layer into reckon's shipped or project layer; the host layer keeps placement, paths, commands and credentials.</div>
+    <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §11</pre>
     </article>
 </section>
 </main>
