@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="135">
+<meta name="plan-version" content="136">
 <meta name="plan-commits" content="505c690b,9701e873,c45e7bac,dd19e201,31509127">
 <meta name="plan-artifacts" content="reckon/review_tiers.py,reckon/schema/flight.yaml,reckon/schema/flight-defaults.yaml,reckon/_flight_schema.py,docs/_shared/flight.schema.json,reckon/flight.py,tests/test_review_tiers.py">
 <meta name="plan-impl" content="0.95">
@@ -238,10 +238,16 @@
     <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §5</pre>
     <p class="r-fu-outcome">Three of the follow-ons landed. A repair round's resume attempts are keyed to its round id (resume-attempts-count-per-round, review 96, db59fe30). Racing claims order by parsed registration time; a running claim is never yielded to a racing newcomer, and same-second registrations at different precisions do not let the newer one through (racing-claims-order-by-parsed-time, reviews 96 then 94, 80dd435d). The first round of that change made test_crew.py scope-conflict cases fail intermittently; the coordinator population caught it, and the fix passed 228 tests three times. An unmarked finding still blocks and is listed in the repair brief (an-unmarked-finding-is-reported-not-repaired, 93, ec09db93). Its first round, a timestamp cutoff, was reversed after its review (62) showed it dropped findings and failed 14 reflex tests. The reflex's own resume carried that repair, its first live use. Not yet done, carried by f-arist-011: a fallback when the winning claim later withdraws; the follower's flapping on a promoted run whose pointer survived; and section 4.</p>
     </article>
-<article class="r-fu" data-id="f-arist-011" data-status="open" data-written-by="s25-coord" data-written-at="2026-10-01" data-recommends-skill="reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arist-011" data-status="resolved" data-written-by="s25-coord" data-written-at="2026-10-01" data-recommends-skill="reckon-build" data-resolved-at="2026-10-03T03:09:55+00:00" data-resolved-by="s25-coord">
     <h4 class="r-fu-title">Close the reflex follow-ons, then build section 4</h4>
     <div class="r-fu-body"><ul><li>Racing claims are first-wins with no fallback. If the registered-first dispatch withdraws later for an unrelated reason (a budget hold, a backend ceiling, a crash), the later one has already refused, and the paths are left with no worker. The _raise_live_scope_conflict facade also skips the ordering.</li><li>The follower showed a promoted run's row alternating between promoted and dispatched every 8 s after a promotion failed on a peer's git index.lock and left the live pointer behind. It continued after gc reaped the pointer, so the follower keeps its own copy of the state.</li><li>an-unmarked-finding-is-reported-not-repaired left the unmarked count in the no-repair reason, which can now only read zero.</li><li>Then section 4: a clean review promotes without a coordinator.</li></ul></div>
     <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §5</pre>
+    <p class="r-fu-outcome">All four bullets are closed. (1) Racing claims: a dispatch that loses a race to an unlaunched winner now waits for it to launch or withdraw (a-racing-loser-outlives-a-withdrawn-winner, merged at 2cd8e47a1). The _raise_live_scope_conflict facade has no production caller; it is only re-exported in reckon/crew.py, so its missing ordering reaches no dispatch. (2) The follower's flapping on a promoted run is addressed by the follower latch in fleet_transitions (merge 100498b84). (3) The always-zero unmarked count was dropped from the no-repair reason in d91c91fe4. (4) Section 4 landed and is collapsed (merge ecdd531ca).</p>
+    </article>
+<article class="r-fu" data-id="f-arist-012" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="s25-coord" data-written-at="2026-10-03" data-recommends-skill="/reckon-build a-review-is-sized-to-its-risk §3" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Close sections 3 and 6, then section 7</h4>
+    <div class="r-fu-body"><ul><li>Section 3: read the verdict of the repair-round census (docs/evidence/fragments/a-review-is-sized-to-its-risk/repair-round-census.html, window 2026-09-25 to 2026-10-02). If every finding-bearing review had exactly one repair round, collapse section 3. Otherwise name each review with more than one round and its cause. The retry guards landed tonight should be counted toward that cause: a same-round retry is no longer re-sent into a refused turn, and a resumed repair carries its own deadline.</li><li>Section 6: nova's declaration of review.suite and its first real wave close are nova-side edits that nova-f5 is landing. Confirm they landed, then collapse section 6.</li><li>Section 7 closes when sections 3 and 6 close.</li></ul></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-is-sized-to-its-risk §3</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
