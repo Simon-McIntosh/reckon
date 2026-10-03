@@ -1,0 +1,31 @@
+<article class="r-evidence" data-plan="one-typesafe-model-picker" data-node="picker-routes-by-default">
+  <h3>Picker routing is the shipped default</h3>
+  <p><code>reckon/schema/flight-defaults.yaml</code> now sets
+  <code>routing.picker: route</code>, with a comment naming both opt-outs: a
+  project layer may set <code>shadow</code>, and a single dispatch opts out with
+  <code>--route deterministic</code>. The generated schema outputs
+  (<code>reckon/_flight_schema.py</code>, <code>docs/_shared/flight.schema.json</code>)
+  regenerate byte-identically from <code>reckon/schema/flight.yaml</code>;
+  <code>scripts/regen_flight_schema.py</code> produced no diff.</p>
+  <p>A project declaring nothing resolves <code>route</code> from the shipped
+  layer; a project layer declaring <code>shadow</code> resolves <code>shadow</code>
+  from the project layer. <code>tests/test_routing_picker_default.py</code>
+  asserts both. At the base revision the default test fails
+  (<code>route != shadow</code>) and the same file passes at head. The
+  <code>shadow</code> negative control fails the default test with
+  <code>EXIT=1</code>. <code>reckon flight --project reckon</code> reports
+  <code>config.routing.picker = route</code> with provenance
+  <code>routing.picker = shipped</code>.</p>
+  <p>Three gate tests outside this node's write scope now fail because the
+  default flip changes what a bare <code>plan_dispatch</code> resolves:
+  <code>test_flight.py::test_dispatch_dry_run_payload_does_not_repeat_the_inspection_report</code>
+  and <code>::test_retired_backend_concurrency_is_ignored_with_a_runtime_warning</code>
+  raise <code>CrewError: picker route has no selection</code> (they call
+  <code>plan_dispatch</code> with no <code>picker_selection</code> against the
+  shipped config), and
+  <code>test_routing_picker_key.py::test_shipped_routing_default_is_shadow</code>
+  still asserts <code>shadow</code>. The first two sit in
+  <code>reckon/crew/dispatch.py</code> / <code>tests/test_flight.py</code> and the
+  third in <code>tests/test_routing_picker_key.py</code>, all outside this node's
+  grants.</p>
+</article>
