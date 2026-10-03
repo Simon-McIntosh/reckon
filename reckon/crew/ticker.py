@@ -26,15 +26,19 @@ and the plain reason clause says why.
 from __future__ import annotations
 
 import fcntl
+import json
 import os
 import re
 import struct
 import termios
 from collections.abc import Callable, Iterable, Mapping
+from datetime import UTC, datetime
 from numbers import Real
+from pathlib import Path
 from typing import Any
 
 from reckon._timestamps import parse_iso, parse_utc
+from reckon.crew import lane_document as _lane_document
 
 CLOCK = 8
 # The cell is 28, not 36: a name already elides from the middle, so the eight
@@ -724,16 +728,21 @@ def bound_cells(report: Mapping[str, Any] | None) -> list[tuple[str, Any]]:
 # cell exists to prevent.
 LANE_LABEL = "lane"
 LANE_RATE = 5
-# The pair is two right-aligned figures around the label, as in
-# `` 1.40 lane  1.44``. Fixed width, so the run's own figure and the lane's hold
-# one screen column apiece as they move and a reader compares them down a pane
-# rather than re-finding them on each row.
-LANE_WIDTH = LANE_RATE + len(" ") + len(LANE_LABEL) + len(" ") + LANE_RATE
-# What the cell says when the reading carries no figure. A word rather than a
-# zero or a bare absence marker, because the lane has not measured nothing —
-# it published no number at all, and a reader must be able to tell that from a
-# lane that is merely idle.
-LANE_UNKNOWN = f"{LANE_LABEL} {BOUND_UNKNOWN}"
+# What the cell says when no mean could be read. A phrase rather than a zero or
+# a bare absence marker: the lane has not measured nothing — its document is
+# absent, stale, or carries no mean — and a reader must be able to tell that
+# from a lane that is merely idle.
+LANE_MEAN_UNAVAILABLE = "mean unavailable"
+# The figure and the phrase hold one width, so the clause after them begins at
+# one screen column whichever state the lane is in and the run's own figure
+# stays put as it moves down a pane.
+LANE_MEAN_WIDTH = len(LANE_MEAN_UNAVAILABLE)
+LANE_WIDTH = LANE_RATE + len(" ") + len(LANE_LABEL) + len(" ") + LANE_MEAN_WIDTH
+# How long a read lane document serves the pane's later rows. The lane
+# republishes on its own cadence and the pane draws rows in bursts, so one
+# resolution and one read cover every row inside the window rather than one of
+# each per row.
+LANE_DOCUMENT_REUSE_SECONDS = 15.0
 
 
 def lane_rate_text(value: Any) -> str:
@@ -743,58 +752,80 @@ def lane_rate_text(value: Any) -> str:
     against each other keep the resolution that separates them while a large
     rate spends no column on a precision nothing measures; a bool and anything
     non-numeric render the absence marker, because a rate that was never taken
-    is not a zero.
+    is not a zero. A rate wider than any real one is folded to thousands rather
+    than allowed to push the cells after it off their columns.
     """
     if isinstance(value, bool) or not isinstance(value, Real):
         return DIM_MARKER
     number = float(value)
-    return f"{number:.2f}" if number < 10 else f"{number:.1f}"
+    if number < 10:
+        return f"{number:.2f}"
+    if number < 1000:
+        return f"{number:.1f}"
+    return f"{number / 1000:.0f}k"
 
 
-def carried_lane_mean(reading: Any) -> float | None:
-    """The lane's mean rate the carried reading reports, else None.
+def lane_document_path(project: str | None, backend: str) -> str | None:
+    """The lane document the row's own backend declares, or None.
 
-    Only a reading the producer marked fresh contributes a figure. An
-    unreadable, unparsable or stale document arrives as the unknown carry the
-    producer composes, and a mean withheld as unknown is not a measurement; the
-    row names that absence rather than dissolving it into a number.
+    A backend declares the local JSON its lane publishes about itself, read
+    here through the same four-layer resolution a dispatch takes, so the pane
+    reads the document of the lane the run was actually sent through. A row
+    naming no backend, a config that cannot be read and a backend declaring no
+    document all yield None rather than raising: this is a display surface, and
+    a pane that refused to render because a config file is malformed would be
+    worse than a cell that names its own absence.
     """
-    if not isinstance(reading, Mapping):
+    if not backend:
         return None
-    if str(reading.get("state") or "") != "fresh":
+    try:
+        from reckon import flight as flight_module
+    except ImportError:
         return None
-    throughput = reading.get("throughput")
-    if not isinstance(throughput, Mapping):
+    try:
+        config = flight_module.resolve(project).config
+    except (OSError, ValueError, flight_module.FlightConfigError):
         return None
+    backends = config.get("backends")
+    if not isinstance(backends, Mapping):
+        return None
+    settings = backends.get(backend)
+    if not isinstance(settings, Mapping):
+        return None
+    declared = settings.get("lane_document")
+    if not isinstance(declared, str) or not declared.strip():
+        return None
+    return str(Path(declared).expanduser())
+
+
+def lane_mean_from_text(raw: str | None, *, now: datetime) -> float | None:
+    """The lane's mean generation rate, from the JSON its document holds.
+
+    The document is read through the lane document module's own readers — the
+    same resolution a dispatch carries — so the freshness judgment and the
+    throughput block are the module's rather than a spelling of its keys kept
+    here. A document that is absent, unparsable, not an object, past its own
+    shelf life, or publishing no numeric mean returns None: the cell names that
+    state rather than printing a zero a reader would take for a measurement.
+    """
+    try:
+        payload: Any = None if raw is None else json.loads(raw)
+    except ValueError:
+        payload = None
+    document = _lane_document.read_lane_document(payload, now=now)
+    if document.get("stale"):
+        return None
+    reading = _lane_document.read_lane_reading_fields(payload)
+    throughput = _lane_document.read_lane_throughput(
+        payload,
+        reading_stamp=str(reading.get("observed_at") or ""),
+        reading_age_seconds=int(document.get("age_seconds") or 0),
+        now=now,
+    )
     mean = throughput.get("mean_tokens_per_second")
     if isinstance(mean, bool) or not isinstance(mean, Real):
         return None
     return float(mean)
-
-
-def lane_cells(event: Mapping[str, Any]) -> list[tuple[str, Any]]:
-    """The lane cell, or empty when the row carries no reading.
-
-    A row whose record carries no lane reading adds no cell, and prints no
-    per-row rate either: the rate alone is the reading that sent two
-    coordinators to the wrong node, so the pair travels together or neither is
-    shown. A record that carries a reading renders the run's own rate beside
-    the lane's mean; a reading that measured no mean names the absence and
-    withholds the rate with it, so a figure never arrives without the lane's
-    own on the same row.
-    """
-    reading = event.get("lane_reading")
-    if reading is None:
-        return []
-    mean = carried_lane_mean(reading)
-    if mean is None:
-        return [(" " * GAP, None), (elide(LANE_UNKNOWN, LANE_WIDTH), "dim")]
-    clause = (
-        f"{lane_rate_text(event.get('spend_generation_rate')):>{LANE_RATE}}"
-        f" {LANE_LABEL} "
-        f"{lane_rate_text(mean):>{LANE_RATE}}"
-    )
-    return [(" " * GAP, None), (clause, None)]
 
 
 def _display_state(state: Any) -> str:
@@ -1365,6 +1396,12 @@ class Ticker:
         # independent render probes rather than stream rows and do not enter the
         # chain.
         self._reported: dict[str, str] = {}
+        # The lane's mean over the last read of its document, by project and
+        # backend: the pane draws rows in bursts and the lane republishes on its
+        # own cadence, so one read serves every row inside the reuse window. A
+        # figure of None is a read that could not name a mean, held like any
+        # other rather than re-reading the lane per row to ask again.
+        self._lane_means: dict[str, tuple[datetime, float | None]] = {}
 
     def _model_width(self, project: str | None) -> int:
         """The model cell's width for ``project``, resolved once and remembered.
@@ -1384,6 +1421,67 @@ class Ticker:
     def _grid_width(self, model_width: int) -> int:
         """The whole grid's width: the request, raised to fit a wider model cell."""
         return max(self._requested_width, MIN_WIDTH - MODEL + model_width)
+
+    def _lane_mean(self, project: str | None, backend: str) -> float | None:
+        """The lane's mean generation rate, read from the lane's own document.
+
+        The mean is a fact about the lane rather than about the run, so the row
+        takes it from the document the lane publishes — located through the
+        row's own resolved configuration and read through the lane document
+        module's readers — rather than from a field its watch event does not
+        carry. The read is held for a short window, because a pane draws rows in
+        bursts and the lane republishes on its own cadence: one resolution and
+        one read serve every row drawn inside the window.
+
+        Absence is a state here rather than an error. No document, an unreadable
+        one, a stale one and one carrying no mean all return None, and the cell
+        names that state beside the run's own rate.
+        """
+        key = f"{project or ''}\0{backend}"
+        now = datetime.now(UTC)
+        held = self._lane_means.get(key)
+        if held is not None and (now - held[0]).total_seconds() < (
+            LANE_DOCUMENT_REUSE_SECONDS
+        ):
+            return held[1]
+        path = lane_document_path(project, backend)
+        mean: float | None = None
+        if path is not None:
+            try:
+                raw: str | None = Path(path).read_text(encoding="utf-8")
+            except OSError:
+                raw = None
+            mean = lane_mean_from_text(raw, now=now)
+        self._lane_means[key] = (now, mean)
+        return mean
+
+    def _lane_cells(self, event: Mapping[str, Any]) -> list[tuple[str, Any]]:
+        """The lane cell: the run's own rate, and the lane's mean beside it.
+
+        The run's own figure is rendered whether or not the lane answered: it is
+        what the run did on the lane, and withholding it because the lane's
+        document could not be read would cost the reader the row's own
+        measurement as well. Beside it stands the lane's mean, or the phrase
+        naming why no mean could be read — a rate alone is the reading this cell
+        exists to replace, so the two travel together or the second says why it
+        is missing.
+
+        A row naming no backend has no lane to read — the document is declared
+        per backend — and adds no cell, keeping the exact shape such a row
+        rendered before.
+        """
+        backend = str(event.get("backend") or "").strip()
+        if not backend:
+            return []
+        project = str(event.get("project") or "").strip() or None
+        rate = lane_rate_text(event.get("spend_generation_rate"))
+        mean = self._lane_mean(project, backend)
+        if mean is None:
+            text = f"{rate:>{LANE_RATE}} {LANE_LABEL} {LANE_MEAN_UNAVAILABLE}"
+            return [(" " * GAP, None), (text, "dim")]
+        figure = f"{lane_rate_text(mean):<{LANE_MEAN_WIDTH}}"
+        text = f"{rate:>{LANE_RATE}} {LANE_LABEL} {figure}"
+        return [(" " * GAP, None), (text, None)]
 
     def hue(self, node: str) -> int:
         """The node's colour, claimed on first sighting and kept thereafter."""
@@ -1523,11 +1621,19 @@ class Ticker:
         cells.extend(self._spend_cells(event, to_state))
         cells.append((" " * GAP, None))
         cells.extend(self._stats(event))
-        cells.extend(lane_cells(event))
+        grid_width = self._grid_width(model_width)
+        head = sum(len(text) for text, _ in cells)
+        # The lane cell is an addition the row makes only where the pane has the
+        # room for it. At its narrowest the grid holds the fixed columns and
+        # nothing else, and a cell appended past that edge would wrap the row,
+        # which costs a quarter of the visible history. The cell spends the
+        # clause's margin and never the pane's edge.
+        if head + GAP + LANE_WIDTH <= grid_width:
+            cells.extend(self._lane_cells(event))
         cells.append((" " * GAP, None))
 
         head = sum(len(text) for text, _ in cells)
-        room = max(self._grid_width(model_width) - head, 0)
+        room = max(grid_width - head, 0)
         # The clause keeps the whole margin: every column ahead of it is sized
         # by what it carries, and what a row can say is what the pane has left
         # after those. A width that leaves the reason nothing renders the fixed
