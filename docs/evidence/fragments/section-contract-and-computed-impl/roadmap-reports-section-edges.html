@@ -129,6 +129,19 @@ from the gate's own words, not from a machine ref. Authoring the ref as
 <td>53 passed</td>
 <td><code>logs/repair-base-arm.log</code></td>
 </tr>
+<tr>
+<td>importing set, head</td>
+<td><code>d7056b829</code></td>
+<td>354 passed — the 33 test files importing
+<code>reckon.roadmap</code></td>
+<td><code>logs/after-suite.log</code></td>
+</tr>
+<tr>
+<td>importing set, base</td>
+<td><code>406faf5ef</code></td>
+<td>354 passed — the same 33 files at the base revision</td>
+<td><code>logs/baseline-suite.log</code></td>
+</tr>
 </table>
 
 <p><strong>Negative control (declared):</strong> "At the base revision the
@@ -166,13 +179,12 @@ set.</p>
 
 <h2>Remaining</h2>
 
-<p>The wider set of test files importing <code>reckon.roadmap</code> was not
-run at base and head. The arms above cover the three files the change and the
-review touch, and the two files the review named were run at base and again
-without the repair. The mounted corpus declares no section-level ref at all,
-so the population the new code touches on live data is the four gates whose
-words name a section — the nova pair above included. A follow-on runs the
-full importing-file set at base and head and records the delta.</p>
+<p>Every test file importing <code>reckon.roadmap</code> — 33 files — was run
+at the base revision and at the repair head: 354 tests pass at each, with no
+failure ids either side, so the delta is zero. The mounted corpus declares no
+section-level ref at all, so the population the new code touches on live data
+is the four gates whose words name a section — the nova pair above
+included.</p>
 
 <p>The section readiness split now keys the gate's waiting section; a plan
 whose gate names only a whole plan keeps its plan-level blocker as before.</p>
