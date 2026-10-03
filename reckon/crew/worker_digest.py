@@ -124,9 +124,9 @@ DROPPED_BLOCKS: tuple[str, ...] = (
 FLEET_COMPUTE_HEADER = "### On the fleet allocation, run heavy work in place"
 
 COMPUTE_ROUTES_SENTENCE = (
-    "Heavy work that cannot run in place is discharged either as "
-    f"{PARTITION_ROUTE} (for example on {' or '.join(PARTITION_EXAMPLES)}) or, "
-    f"to submit from inside the allocation, by setting {OVERRIDE_ENV}=1."
+    "Heavy work that cannot run in place is discharged either as\n"
+    f"{PARTITION_ROUTE} (for example on {' or '.join(PARTITION_EXAMPLES)}) or, to\n"
+    f"submit from inside the allocation, by setting {OVERRIDE_ENV}=1."
 )
 
 # Canonical header -> the sentence the digest appends after that block's own
@@ -415,7 +415,7 @@ def _with_added_sentence(header: str, chunk: str) -> str:
     sentence = ADDED_SENTENCES.get(header)
     if sentence is None:
         return chunk
-    return f"{chunk.rstrip()}\n\n{sentence}\n"
+    return f"{chunk.rstrip()}\n\n{sentence}\n\n"
 
 
 def select_blocks(keys: Iterable[str], text: str) -> list[tuple[str, str]]:

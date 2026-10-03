@@ -442,6 +442,11 @@ about 8 to 12 pytest processes, not one per core.
   `timeout` in its pytest config.
 - **GitHub SSH on port 22 is refused from compute nodes.** Push with
   `GIT_SSH_COMMAND="ssh -o Hostname=ssh.github.com -o Port=443"`.
+
+Heavy work that cannot run in place is discharged either as
+a separate partition job (for example on all_debug or betelgeuse) or, to
+submit from inside the allocation, by setting RECKON_ALLOW_NESTED_LAUNCH=1.
+
 ## IMAS Data Access
 
 Always imas-python (`imas.DBEntry`), never `h5py` on IMAS data. Open with the DD version the data was written in and check `homogeneous_time` before reading per-signal time. Idioms and the failure modes they prevent: `~/.agents/references/imas-data.md`.
