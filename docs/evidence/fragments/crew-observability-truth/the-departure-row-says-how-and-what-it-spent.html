@@ -9,7 +9,7 @@
   <meta name="plan-title" content="The departure row says how and what it spent">
   <meta name="plan-summary" content="The watch transition distinguishes committed promotion from other departures and carries the spend already resolved on the ledger row.">
   <meta name="plan-evidence-for" content="crew-observability-truth">
-  <meta name="plan-commits" content="ddab3b65c937fc60297f7b54b6c8f4ca88b2b240, 1137979ab5fc48c60381d3578e1539091f551776">
+  <meta name="plan-commits" content="ddab3b65c937fc60297f7b54b6c8f4ca88b2b240, 1137979ab5fc48c60381d3578e1539091f551776, e38ca08e4808e90e60571a126ca188e4bf65cbfd, 82c41a5bba5a23b269bb90e970fc7a6b07fab281">
   <meta name="plan-recorded-at" content="2026-10-03">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-tags" content="crew,ticker,departure,spend">
@@ -71,10 +71,20 @@
     control in <code>test_a_promotion_never_reads_unpromoted.py</code> asserts a
     promotion. The real report-only promotion in that last file instead declares
     no commit and asserts recorded at the pointer-removal boundary.</p>
+    <p>A later review found two more inconsistent reads. A live committed row
+    with no commits had <code>fleet_verdict.state=recorded</code> but
+    <code>classification=promoted</code>; both now take the same settled word.
+    A malformed run identifier made the ledger path raise rather than answer
+    that no promotion row could be found; the guard now returns false. Both
+    failures were reproduced before the correction. The departure reader also
+    resolves only the runs leaving the fleet, reading their per-run rows after
+    a cheap membership check instead of decoding every row in the ledger on
+    each watch transition. A full watcher case proves a commitless completion
+    announces recorded and then stops, just as a committed promotion does.</p>
 
     <h2>Check</h2>
     <p>The seven-file departure population at base <code>422d114dce724c0aabb5861d19acf0ab47be53d2</code> had <strong>3 failed, 80 passed</strong>, with all failures in the new measure file. The first head <code>ddab3b65c937fc60297f7b54b6c8f4ca88b2b240</code> passed <strong>83 tests</strong>. The negative control ran the base source against the new tests and failed the no-commit and missing-spend assertions. Ruff reported 10 findings in <code>recovery.py</code> at both base and head, and none in the changed tests.</p>
-    <p>For the correction, the same reconstructed 46-file watch population ran at main <code>52962e0123c6c24d46aaae57d210f67fa05cce8b</code> with <strong>579 passed, no failures</strong>, at repair head <code>1137979ab5fc48c60381d3578e1539091f551776</code> with <strong>580 passed, no failures</strong>, and in a clean virtual stack of those heads with <strong>580 passed, no failures</strong>. Each arm emitted one filesystem warning. The extra pass is the commitless-settlement case added to an existing test file. The file list is retained with the run logs. The coordinator's 46-file selection yielded 600 tests at base; its exact file list was unavailable here, so these counts are a paired measurement of the reconstructed selection rather than a claim that both selections were identical.</p>
+    <p>The coordinator's exact 46-file selection is retained with the run logs. At base <code>4d1feeed905d145a3130e71293f2cfdf1233f1d7</code>, it produced <strong>6 failed, 599 passed</strong>. The departure measure test file did not exist at that revision, so its current copy was laid over the base source to run all 46 paths; four of the six failures are in that file. The first corrected head <code>e38ca08e4808e90e60571a126ca188e4bf65cbfd</code> produced <strong>1 failed, 606 passed</strong>; the failure was an older assertion expecting the classification mismatch the correction removed. Its expectation was updated at <code>82c41a5bba5a23b269bb90e970fc7a6b07fab281</code>. A three-worker run at that head produced <strong>3 failed, 604 passed</strong>, all timeout traces in a user-namespace subprocess, SQLite migration and dispatch path. A lower-concurrency repeat on the same 46 files is underway to judge those timeouts.</p>
   </main>
 </body>
 </html>
