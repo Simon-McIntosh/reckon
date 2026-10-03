@@ -28,6 +28,7 @@ import json
 import re
 from collections import Counter
 from html.parser import HTMLParser
+from itertools import pairwise
 from pathlib import Path
 
 from bs4 import BeautifulSoup
@@ -1163,6 +1164,24 @@ def _remove_meta(html_text: str, name: str) -> str:
     return pat.sub("", html_text)
 
 
+def _metas_are_contiguous(html_text: str, names: list[str]) -> bool:
+    """True when each name occurs exactly once, in order, separated by whitespace only."""
+    spans: list[tuple[int, int]] = []
+    for name in names:
+        matches = list(
+            re.finditer(
+                rf'<meta\s+name="{re.escape(name)}"[^>]*>', html_text, re.IGNORECASE
+            )
+        )
+        if len(matches) != 1:
+            return False
+        spans.append(matches[0].span())
+    for (_, end), (start, _) in pairwise(spans):
+        if start < end or html_text[end:start].strip():
+            return False
+    return True
+
+
 def _set_meta_block(html_text: str, pairs: list[tuple[str, str]]) -> str:
     """Insert or replace several ``<meta>`` tags as ONE contiguous block.
 
@@ -1171,31 +1190,46 @@ def _set_meta_block(html_text: str, pairs: list[tuple[str, str]]) -> str:
     takes a line from each, and the document then carries two ``plan-version``
     lines whose writer updates one and whose reader takes the other. One
     contiguous block makes a three-way merge treat them as a single hunk.
-    Every existing occurrence is replaced, so a document that already carries
-    duplicates converges to one copy, and the block goes where the first
-    occurrence sat — before ``</head>`` when the document carries none — so
-    repeated writes stay byte-stable.
+
+    An existing document is changed as little as the block allows. A document
+    that already carries every name contiguously is rewritten in place, and
+    otherwise the block is written where the FIRST pair's tag already sits —
+    for the lifecycle scalars, where ``plan-impl`` sits when it is emitted —
+    so that tag holds its position and only the later names move to it. The
+    placement is not tidiness: a writer that relocates a scalar another reader
+    or test pins in place rewrites bytes no edit asked it to rewrite, which is
+    churn in every plan on every write. Every later occurrence of a name is
+    removed, so a document that already carries duplicates converges to one
+    copy, and a document carrying none gets the block before ``</head>``.
     """
     if not pairs:
         return html_text
     names = [name for name, _ in pairs]
-    anchor_pattern = re.compile(
-        "|".join(rf'<meta\s+name="{re.escape(name)}"[^>]*>' for name in names),
-        re.IGNORECASE,
-    )
-    anchor = anchor_pattern.search(html_text)
-    anchor_start = anchor.start() if anchor else None
-    for name in names:
-        html_text = _remove_meta(html_text, name)
     block = "\n".join(
         f'<meta name="{name}" content="{_esc(content)}">' for name, content in pairs
     )
-    if anchor_start is None:
-        idx = html_text.lower().find("</head>")
+    if _metas_are_contiguous(html_text, names):
+        out = html_text
+        for name, content in pairs:
+            out = _set_meta(out, name, content)
+        return out
+    anchor = re.search(
+        rf'<meta\s+name="{re.escape(names[0])}"[^>]*>', html_text, re.IGNORECASE
+    )
+    if anchor is None:
+        out = html_text
+        for name in names:
+            out = _remove_meta(out, name)
+        idx = out.lower().find("</head>")
         if idx != -1:
-            return html_text[:idx] + block + "\n" + html_text[idx:]
-        return block + "\n" + html_text
-    return html_text[:anchor_start] + block + "\n" + html_text[anchor_start:]
+            return out[:idx] + block + "\n" + out[idx:]
+        return block + "\n" + out
+    head = html_text[: anchor.start()]
+    rest = html_text[anchor.start() :]
+    for name in names:
+        head = _remove_meta(head, name)
+        rest = _remove_meta(rest, name)
+    return head + block + "\n" + rest
 
 
 # A section the parser selects nothing from can still hold authored content in

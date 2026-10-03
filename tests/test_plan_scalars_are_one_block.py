@@ -14,6 +14,7 @@ Every later copy is ignored and reported as a compatibility warning.
 
 from __future__ import annotations
 
+import re
 from datetime import date
 
 import pytest
@@ -60,11 +61,46 @@ DUPLICATE_DOC = """<!doctype html>
 """
 
 
+# The scattered layout the corpus carries: version and modified sit before
+# impl, so impl is the first name of the block the writer emits and the one a
+# write must not move.
+PLACEMENT_DOC = """<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="demo">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="scalar-placement">
+  <meta name="plan-status" content="active">
+  <meta name="plan-modified" content="2026-01-01">
+  <meta name="plan-version" content="2">
+  <meta name="plan-title" content="Scalar placement">
+  <meta name="plan-impl" content="0.2">
+  <title>Scalar placement</title>
+</head>
+<body><main class="plan-doc"><h1>Scalar placement</h1></main></body>
+</html>
+"""
+
+STAMPED = re.compile(
+    r'<meta\s+name="plan-(?:version|modified)"[^>]*>\s*', re.IGNORECASE
+)
+
+
 def _next_element(tag):
     sibling = tag.next_sibling
     while sibling is not None and not getattr(sibling, "name", None):
         sibling = sibling.next_sibling
     return sibling
+
+
+def _meta_names(soup, *, drop_stamps: bool = False) -> list[str]:
+    names = [meta.get("name") for meta in soup.select("meta")]
+    if drop_stamps:
+        names = [
+            name for name in names if name not in ("plan-version", "plan-modified")
+        ]
+    return names
 
 
 def _duplicate_document(first: tuple[str, str, str], last: tuple[str, str, str]) -> str:
@@ -133,3 +169,39 @@ def test_store_write_emits_the_lifecycle_scalars_as_one_block(tmp_path, monkeypa
     assert impl.get("content") == "0.5"
     assert version.get("content") == str(expected_version + 1)
     assert modified.get("content") == date.today().isoformat()
+
+
+def test_a_scattered_write_keeps_the_impl_scalar_where_it_sits(tmp_path, monkeypatch):
+    """A document whose impl sits after version and modified converges onto a
+    block anchored at impl: that line is rewritten where it is and only the
+    later names move to it, so no other meta changes document position. A
+    writer that instead relocates impl rewrites a line other readers pin in
+    place, which is churn in every plan on every write — the invariant
+    ``tests/test_section_body_records_are_read.py`` measures byte for byte,
+    comparing a plan outside the version/modified stamps and the comments
+    section across an edited write."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    checkout = tmp_path / "checkout"
+    plan_dir = checkout / "docs" / "plans"
+    plan_dir.mkdir(parents=True)
+    plan_file = plan_dir / "scalar-placement.html"
+    plan_file.write_text(PLACEMENT_DOC, encoding="utf-8")
+    before_soup = BeautifulSoup(plan_file.read_text(encoding="utf-8"), "html.parser")
+
+    state, version = _store.read_plan("demo", "scalar-placement", root=checkout)
+    state["impl"] = 0.5
+    written = _store.write_plan(
+        "demo", "scalar-placement", state, version, root=checkout
+    )
+    assert written == version + 1
+
+    soup = BeautifulSoup(plan_file.read_text(encoding="utf-8"), "html.parser")
+    impl = soup.find("meta", attrs={"name": "plan-impl"})
+    version_tag = soup.find("meta", attrs={"name": "plan-version"})
+    modified = soup.find("meta", attrs={"name": "plan-modified"})
+    assert impl.get("content") == "0.5"
+    assert _meta_names(soup, drop_stamps=True) == _meta_names(
+        before_soup, drop_stamps=True
+    )
+    assert _next_element(impl) is version_tag
+    assert _next_element(version_tag) is modified
