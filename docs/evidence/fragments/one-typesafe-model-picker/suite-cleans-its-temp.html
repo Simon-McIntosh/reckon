@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="The suite keeps only failed tests' temp dirs and cannot reach live Jev whatever the credential">
+  <meta name="plan-summary" content="pytest now retains temporary directories only for failed tests, so a green gate leaves the disk as it found it; and the autouse no_live_jev fixture wraps the client's HTTP call so a request to the picker's endpoint is refused before any connection is opened, whatever credential a test supplies.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s6">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,picker,test-isolation,pytest,temp-directories,evidence">
+  <title>The suite keeps only failed tests' temp dirs and blocks live Jev | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="suite-tidies-and-blocks-jev-http" data-reckon="landed" data-when="2026-10-03">
+  <h2>The suite keeps only failed tests' temp dirs and blocks live Jev whatever the credential</h2>
+
+  <h3>Temporary directories are cleaned</h3>
+  <p>pytest 9.1 defaults <code>tmp_path_retention_policy</code> to <code>all</code>, so every
+  test's <code>tmp_path</code> survived the run; the <code>[tool.pytest.ini_options]</code> block
+  set only <code>timeout</code>. Four coordinator population runs with explicit per-arm
+  <code>--basetemp</code> left 5.2&nbsp;GB on the fleet node's <code>/tmp</code>, which reached
+  90%. <code>pyproject.toml</code> now sets <code>tmp_path_retention_policy = "failed"</code>,
+  so only a failed test keeps its directory for debugging and a green gate leaves nothing
+  behind.</p>
+  <p>Measured on a fixed 20-file sample run with <code>-n 8</code> and an explicit
+  <code>--basetemp</code>, once at the unmodified revision and once with the retention change,
+  same file list, both green (base 395 passed / 2 skipped; head 396 passed / 2 skipped, the
+  extra case being the new JeV guard case):</p>
+  <table>
+    <thead><tr><th>arm</th><th>basetemp size (<code>du -sk</code>)</th><th>directories</th></tr></thead>
+    <tbody>
+      <tr><td>base (retention <code>all</code>)</td><td>12772&nbsp;KB (12.5&nbsp;MiB)</td><td>3534</td></tr>
+      <tr><tr><td>head (retention <code>failed</code>)</td><td>2148&nbsp;KB (2.1&nbsp;MiB)</td><td>1389</td></tr>
+      <tr><td>delta</td><td>10624&nbsp;KB removed (83%)</td><td>2145 removed</td></tr>
+    </tbody>
+  </table>
+  <p>The residual 2.1&nbsp;MiB is directory state the retention policy does not own — session
+  and module-scoped factories, and the fixture homes this suite's own conftest places — not
+  retained per-test trees.</p>
+
+  <h3>The reap runs before the prune</h3>
+  <p>Retaining only failed tests' temporary trees collided with the suite's watch-producer
+  reaper, which finds detached producers through the seat records written under each test's
+  configuration home. A passing test's home is pruned at that test's own teardown, so by the
+  session-end reap the record was gone and the producer could no longer be attributed — the
+  liveness scan then failed the session on a producer it could not reap
+  (<code>test_a_watcher_armed_by_a_child_session_is_not_left_running</code> failed twice alone
+  at head). A function-scoped autouse fixture now reaps, at each test's own teardown, the
+  producers recorded under the run's base temp directory — signalling before <code>tmp_path</code>
+  is pruned — and mirrors the seat records into a stable subtree so a later reader (the parent
+  test that measures the child session) still finds them after the tree is removed. The
+  session-end <code>/proc</code> scan is unchanged and still fails the session on any live
+  producer that never wrote a record
+  (<code>test_watch_arming_isolation.py::test_the_session_check_reads_a_producers_own_home</code>,
+  8 passed).</p>
+
+  <h3>No test reaches live Jev, whatever the credential</h3>
+  <p>The previous isolation rested only on the credential being absent: the autouse
+  <code>no_live_jev</code> fixture removed <code>OPENROUTER_API_KEY_RECKON</code> and pointed
+  credential resolution at a path holding none. A test that set the key itself would build the
+  request and send it. The same fixture now also wraps the client's HTTP call
+  (<code>urllib.request.urlopen</code>, which <code>reckon/crew/picker/client.py</code> uses), so
+  a request aimed at the picker endpoint (<code>client.DECISIONS_ORIGIN</code>) raises the
+  existing <code>LiveJevDisabledError</code> before a connection is opened, while any other host
+  a test fetches — its own loopback server — still reaches the network through the original call.
+  A test that patches <code>urllib.request.urlopen</code> itself replaces this guard, so a test
+  answering the call with a fixture keeps working.</p>
+  <p>A new case, <code>test_a_present_credential_is_refused_before_the_network</code>, sets a
+  fake <code>OPENROUTER_API_KEY_RECKON</code>, dispatches a dry run with no lane named, patches
+  <code>socket.getaddrinfo</code> to catch any host lookup, and asserts no lookup was attempted
+  and that the selection is a recorded fallback
+  (<code>jev-error: LiveJevDisabledError</code>) to the default backend. Loopback fetch tests
+  (<code>test_service_unit.py</code>, <code>test_server_listens_before_it_watches.py</code>,
+  <code>test_rollup_isolates_a_project.py</code>) still pass, confirming the guard delegates for
+  non-picker hosts.</p>
+
+  <h3>Gate and negative control</h3>
+  <p>Gate over <code>tests/test_suite_never_calls_live_jev.py</code>, all
+  <code>tests/test_picker*.py</code>, and the 20-file sample: base 395 passed / 2 skipped
+  (<code>EXIT=0</code>), head 396 passed / 2 skipped (<code>EXIT=0</code>), zero added failures.
+  Declared negative control — delete the guard's <code>urlopen</code> setattr — makes the
+  present-credential case fail: the dispatch resolves <code>openrouter.ai:443</code> and the
+  socket spy records it (<code>1 failed</code>, <code>EXIT=1</code>), so the guard, not the
+  credential, is what keeps the suite off the live service.</p>
+</article>
+</body>
+</html>

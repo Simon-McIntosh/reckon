@@ -19,10 +19,12 @@ import contextlib
 import json
 import os
 import shlex
+import shutil
 import signal
 import sys
 import tempfile
 import time
+import urllib.request
 from pathlib import Path
 
 import pytest
@@ -128,6 +130,29 @@ def no_live_jev(request, tmp_path_factory, monkeypatch):
             str(tmp_path_factory.mktemp("no-catalogue") / "absent-catalogue.yaml"),
         )
 
+    # Credential absence alone is not isolation: a test that sets the key back
+    # builds and sends the request. Whatever credential is present, the client's
+    # HTTP call is wrapped so a request aimed at the picker's endpoint raises the
+    # same ``LiveJevDisabledError`` the missing credential would, while any other
+    # host a test fetches — its own loopback server — still reaches the network
+    # through the original call. A test that patches ``urllib.request.urlopen``
+    # itself replaces this guard, so a test answering the call with a fixture
+    # keeps working.
+    original_urlopen = urllib.request.urlopen
+
+    def refuse_live_jev(target, *args, **kwargs):
+        url = getattr(target, "full_url", None)
+        if url is None and isinstance(target, str):
+            url = target
+        if url and str(url).startswith(client.DECISIONS_ORIGIN):
+            raise client.LiveJevDisabledError(
+                "live Jev is disabled under test: the request to the decisions "
+                "endpoint was refused before a connection was opened"
+            )
+        return original_urlopen(target, *args, **kwargs)
+
+    monkeypatch.setattr(urllib.request, "urlopen", refuse_live_jev)
+
 
 # The served process's discovery walk-reuse window. ``serve.main`` assigns
 # ``reckon.serve._SIGNATURE_TTL_S`` on whichever thread runs the server and does
@@ -201,6 +226,38 @@ def watch_record_dirs(root: Path) -> list[Path]:
         if candidate.is_dir() and candidate.parent.name == "crew"
     ]
     return sorted(set(found))
+
+
+# Where a seat record is mirrored before the tree holding it is pruned. The
+# record is the evidence a watcher was armed and the handle a session-end reap
+# would use; keeping temporary directories only for failures would otherwise
+# delete it the moment the arming test passes.
+_SEAT_RECORDS_DIR = "_seat-records"
+
+
+def preserve_seat_records(root: Path) -> None:
+    """Copy every seat record out of the test trees ``root`` is about to prune.
+
+    The copy keeps the ``crew/watch`` shape and the home's path relative to
+    ``root``, so a reader looking for records under the run's root still finds
+    them after the arming test's own directory is removed. The originals are
+    left in place until the prune removes them, so a reap taken now still reads
+    the home each record was actually written under.
+    """
+    mirror = root / _SEAT_RECORDS_DIR
+    for directory in watch_record_dirs(root):
+        if mirror in directory.parents:
+            continue
+        destination = mirror / directory.relative_to(root)
+        try:
+            destination.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            continue
+        for record in directory.glob("*.lock"):
+            try:
+                shutil.copy2(record, destination / record.name)
+            except OSError:
+                continue
 
 
 def watcher_record_pids(root: Path) -> list[tuple[int, Path]]:
@@ -311,6 +368,29 @@ def await_exit(pids: list[int], grace: float = _REAP_GRACE_SECONDS) -> None:
         if not any(Path("/proc", str(pid)).exists() for pid in pids):
             return
         time.sleep(0.05)
+
+
+@pytest.fixture(autouse=True)
+def reap_watch_producers_armed_by_this_test(tmp_path, tmp_path_factory):
+    """Reap, before the test's temporary homes are pruned, what it armed.
+
+    A detached watch producer is found through the seat record under its
+    configuration home. When temporary directories are kept only for failures,
+    that home is removed at the test's own end — before the session-scoped
+    reaper runs — so the record the reap depends on is already gone and the
+    surviving producer is left to fail the session's liveness scan. Signalling
+    here, at this test's teardown, keeps the record in place long enough to
+    attribute the producer; requesting ``tmp_path`` makes this fixture finalize
+    before ``tmp_path`` does. A producer that never wrote a record is not listed
+    here and is still caught by the session-end scan.
+    """
+    yield
+    root = tmp_path_factory.getbasetemp()
+    reaped = sorted(set(reapable_watch_pids(root)))
+    for pid in reaped:
+        signal_worker(pid, signal.SIGTERM)
+    await_exit(reaped)
+    preserve_seat_records(root)
 
 
 def _live_watch_producers() -> list[tuple[int, Path]]:

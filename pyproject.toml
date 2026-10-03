@@ -56,6 +56,9 @@ Source = "https://github.com/Simon-McIntosh/reckon"
 
 [tool.pytest.ini_options]
 timeout = 300
+# Only failed tests keep their temporary directories: a failure needs its tree,
+# a green run leaves none behind.
+tmp_path_retention_policy = "failed"
 
 [tool.ruff]
 # Generated from reckon/schema/flight.yaml. Linting it would invite hand edits

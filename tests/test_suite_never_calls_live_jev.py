@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import urllib.request
 from copy import deepcopy
 from pathlib import Path
@@ -116,6 +117,39 @@ def test_a_routed_dispatch_never_calls_the_live_service(
     deterministic_result, deterministic = invoke(repo, route="deterministic")
     assert routed_result.exit_code == deterministic_result.exit_code
     assert routed["backend"] == deterministic["backend"]
+
+
+def test_a_present_credential_is_refused_before_the_network(
+    repo, live_facts, routed_config, monkeypatch
+):
+    """A credential alone does not let a test reach the live service.
+
+    The fixture removes the credential, which isolates the suite only while no
+    test sets one back. Here a key IS set, so credential resolution succeeds and
+    the client would build and send its request; the fixture's HTTP guard is then
+    the only thing between the dispatch and a live call. Any attempt to look the
+    service host up is caught at the socket layer, beneath that guard, so a pass
+    is evidence the request was refused rather than merely failing.
+    """
+    monkeypatch.setenv("OPENROUTER_API_KEY_RECKON", "fake-credential")
+
+    reached = []
+
+    def refuse(*args, **kwargs):
+        reached.append(args)
+        raise AssertionError("a network call was attempted under test")
+
+    monkeypatch.setattr(socket, "getaddrinfo", refuse)
+
+    result, payload = invoke(repo)
+    assert result.exit_code == 0, result.output
+    assert reached == [], "the dispatch resolved the service host"
+
+    selection = payload["picker_selection"]
+    assert selection is not None
+    assert selection["action"] == "fallback"
+    assert selection["fallback_reason"] == "jev-error: LiveJevDisabledError"
+    assert selection["backend"] == routed_config["default_backend"]
 
 
 def test_the_real_credential_is_unreadable_under_test():

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 JEV_MODEL = "typesafe/jev-1.13"
+DECISIONS_ORIGIN = "https://openrouter.ai"
 DECISIONS_URL = "https://openrouter.ai/api/alpha/decisions"
 TIMEOUT_SECONDS = 10
 
