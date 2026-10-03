@@ -3580,6 +3580,7 @@ WATCH_ATTENTION_STATES = (
     "stalled",
     "stopped",
     "abandoned",
+    "lane-event",
     "completed_unpromoted",
     "unknown",
     "unreadable",
