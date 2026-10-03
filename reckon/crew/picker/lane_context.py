@@ -252,6 +252,15 @@ def _expected_wait(
         owner = row.get("project")
         if not owner:
             continue
+        # When the pick already holds one project's records, a worker from a
+        # different project is out of scope: reading that project's whole
+        # ledger to profile it would put a second ledger's size on the pick's
+        # critical path, and the pick's cost is bounded by the records it holds.
+        # An unprofiled owner contributes nothing, matching the rule that a
+        # shape with no measurement reports no invented duration. With no
+        # records held, every owner is profiled from its own ledger as before.
+        if records is not None and owner != project:
+            continue
         if owner not in profiles:
             if owner == project and records is not None:
                 recent = [
