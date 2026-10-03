@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="dispatch-stdout-is-one-document">
+  <meta name="plan-title" content="crew dispatch writes one JSON document to stdout and every notice to stderr">
+  <meta name="plan-summary" content="A caller of crew dispatch decodes stdout as JSON, and a notice printed by anything beneath the command landed on the same stream, so json.loads raised Extra data and the payload was lost. Every outcome now runs with stdout redirected to a notice channel that forwards to stderr, and only the final emission writes the payload. Gate: base 3 failed 229 passed EXIT=1 (one of them the control), head 1 failed 231 passed EXIT=1 with only the failure base already had; the declared control restores the notice to stdout and reddens the presence case with a JSONDecodeError at EXIT=1.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-tags" content="crew,cli,stdout,json,observability">
+  <title>crew dispatch writes one JSON document to stdout and every notice to stderr | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="dispatch-stdout-is-one-document" data-reckon="landed" data-when="2026-10-03">
+  <h2>crew dispatch writes one JSON document to stdout and every notice to stderr</h2>
+
+  <p><strong>The defect.</strong> A caller reads <code>crew dispatch</code>'s stdout as one JSON document
+  (<code>json.loads(payload)</code>), and the documented failure is a caller seeing
+  <em>Extra data</em> from a notice that landed on the same stream. The command's own outcomes are sound — every
+  <code>_emit</code> in <code>reckon/cli.py</code> is followed by an exit — but nothing structural kept a print
+  from anywhere beneath it off stdout, so the contract held by convention rather than by construction.</p>
+
+  <p><strong>What was checked at the base revision.</strong> Each outcome path of <code>crew_dispatch</code> was
+  driven (dry run, launch, watcher-required refusal, request error, unknown backend, not-dispatchable,
+  contract refusal) and each wrote exactly one JSON document; every <code>_emit</code> call in the command body is
+  followed by <code>raise click.exceptions.Exit</code>. Grepping the modules beneath it found the stdout writers in
+  <code>reckon/crew/dispatch.py</code> to be the peer-channel entry (<code>dispatch.py:2933</code>, a separate
+  command) and <code>remove_worker_scratch</code> (<code>dispatch.py:7708</code>, <code>7712</code>,
+  <code>7719</code>, whose only callers are in <code>promotion.py</code>), plus the supervisor launcher's pid
+  print (<code>dispatch.py:8970</code>, over a private pipe) and the watcher producer's reload notice
+  (<code>runs.py:2320</code>, whose stdout the watcher redirects to its own log). None is on a path
+  <code>crew_dispatch</code> walks, so at base no outcome wrote a second document — the case the specification
+  requires to fail at base has to be a notice placed on a seam the command really calls.</p>
+
+  <p><strong>The change.</strong> In <code>reckon/cli.py</code>, <code>crew_dispatch</code> is wrapped by
+  <code>_holds_stdout_for_one_document</code>, which runs the whole command with <code>sys.stdout</code> bound to
+  <code>_OneDocumentStdout</code>. Any write made anywhere beneath the command — including a bare
+  <code>print</code> in code this node may not edit — is forwarded to stderr, and the helper exposes the real
+  payload stream so <code>_emit</code> still writes the one document to the caller's stdout. The channel also
+  answers <code>fileno()</code> with stderr's descriptor, so a writer that reaches for the fd rather than the
+  object lands on the notice channel too, and a reader that asks the channel to be read from is told it is not
+  readable instead of silently getting nothing.</p>
+
+  <p><strong>The gate.</strong> Both arms ran with <code>pytest -n 8 --timeout=300</code> over the sixteen
+  <code>tests/test_dispatch*.py</code> files plus <code>test_brief_dispatch.py</code>,
+  <code>test_crew_orphan.py</code>, <code>test_gate_population_resolves.py</code>,
+  <code>test_crew_routing_visibility.py</code> and <code>test_skill_contracts.py</code>, each arm with its own
+  <code>--basetemp</code> and its own log. Base (<code>9b66ff8a768e</code>, the node's test file copied into a
+  scratch extraction of the base): <strong>3 failed, 229 passed, 1 skipped at EXIT=1</strong>
+  (<code>logs/base-arm.log</code>) — the presence case this node declares, plus
+  <code>test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code>, plus
+  <code>test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated</code>. Head
+  (<code>74bb83d47eda</code>): <strong>1 failed, 231 passed, 1 skipped at EXIT=1</strong>
+  (<code>logs/head-arm-2.log</code>), the one failure being the skill-contract id the base already fails, so the
+  head arm adds no failure id and the declared control is green at head.</p>
+
+  <p><strong>A first head run named two ids a re-run did not reproduce, and they are recorded rather than
+  buried.</strong> The first head arm (<code>logs/head-arm.log</code>) failed
+  <code>test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs</code>
+  (the dispatch process alive 20.5 s against an 8 s bound) and
+  <code>::test_dispatch_returns_when_its_supervisor_finished_the_launch</code> (a pointer naming no supervisor),
+  while base failed a third case in the <em>same file</em>. The file is timing-sensitive and takes its bounds
+  from wall clock on a shared, loaded node: run alone at head it passes <strong>7 passed</strong> twice
+  (<code>logs/stability-head-isolated-1.log</code>, <code>logs/stability-head-isolated-2.log</code>), and the full
+  head set re-run gives <strong>1 failed, 231 passed</strong> with only the pre-existing skill-contract id
+  (<code>logs/stability-head-full.log</code>). Both first-run ids are therefore classified as load-dependent flakiness in
+  that file, not as this change's regression; the evidence for that classification is the three logs above,
+  and the file is named under follow-ons.</p>
+
+  <p><strong>The control, executed.</strong> The declared mutation removes the redirect, so the notice the
+  presence case prints beneath the command returns to the caller's stdout. Run against the base tree with
+  <code>-k presence-check</code>: <strong>1 failed, 7 deselected at EXIT=1</strong>
+  (<code>logs/negative-control.log</code>), <code>JSONDecodeError</code> out of <code>json.loads(stdout)</code>.
+  The head arm passes the same case, and the red log is the one the manifest names.</p>
+
+  <p><strong>What this does not cover.</strong> The launch path's config-error outcome emits no document at all
+  (empty stdout), a zero-document shape outside this node's stated measure of <em>more than one document or
+  non-JSON text</em>; <code>remove_worker_scratch</code> prints to stdout from the promotion path, which no test
+  on this node's gate drives; and <code>dispatch.py:2933</code>'s peer-channel document is a second entry point
+  that this node may not edit. All three are recorded under follow-ons rather than fixed here.</p>
+</article>
+</body>
+</html>
