@@ -17,13 +17,16 @@ from __future__ import annotations
 import dataclasses
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SHIM_DIR = REPO_ROOT / "reckon" / "host_shims"
-VENV_PYTHON = REPO_ROOT / ".venv" / "bin" / "python"
+# The interpreter that drives the shim is the one running pytest, so the test
+# needs no repository .venv (an extraction of the tree has none).
+PYTHON = Path(sys.executable)
 TOOLS = ("srun", "sbatch", "salloc")
 
 # The bound the shim-directory-first case runs under. With the filter in place
@@ -155,6 +158,9 @@ def launch_env(
     env["PYTHONPATH"] = os.pathsep.join([str(fixture.injection), str(REPO_ROOT)])
     env["NESTED_LAUNCH_TEST_FACTS"] = "inside" if inside else "outside"
     env["FAKE_LAUNCH_RECORD"] = str(fixture.record)
+    # The shim resolves its own interpreter; hand it the one running pytest so
+    # the shim need not fall back to a repository .venv the tree may not have.
+    env["RECKON_SHIM_PYTHON"] = sys.executable
     if override is not None:
         env["NESTED_LAUNCH_TEST_MODULE"] = str(override)
     if extra:
@@ -227,7 +233,7 @@ def test_the_fixture_install_is_live(tmp_path: Path) -> None:
         "print(int(f.in_allocation), f.job_id, f.node)"
     )
     result = subprocess.run(
-        [str(VENV_PYTHON), "-c", probe],
+        [str(PYTHON), "-c", probe],
         env=env,
         capture_output=True,
         text=True,
