@@ -185,9 +185,15 @@ def test_a_misfiled_record_rewritten_in_place_reclassifies(
     )
 
     after = _classify(record)
+    fresh = _uncached(record)
 
     assert after["classification"] == "scoring"
-    assert after == _uncached(record)
+    assert after["review_status"] == "unparsed"
+    # The whole row is not compared: some of its fields are ages read against
+    # the wall clock, which moves between the two calls. The verdict and the
+    # classification are what the rewrite moved.
+    assert after["classification"] == fresh["classification"]
+    assert after["review_status"] == fresh["review_status"]
 
 
 def test_an_unchanged_misfiled_record_leaves_the_memo_in_force(
