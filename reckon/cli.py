@@ -5028,15 +5028,15 @@ def crew_dispose(project, reviewed_run_id, dimension, kind, node_id, reason, pre
     unknown dimension, a kind outside the closed set, a fold naming no node,
     an exemption carrying no reason, and either kind supplied with the other's
     field all exit non-zero with the reason stated. The record rewritten is the
-    one the obligations read-back selects — the same resolution and the same
-    selection, by the run's own live pointer and by the head-first rule the
-    reader uses — so an accepted call is one the row follows, and a store
-    holding a legacy copy beside a revision-keyed record for the same head
-    cannot take the entry in the copy nobody reads. A run with no live pointer,
-    the ordinary case once it is promoted, is answered from its own records
-    rather than from the directory the operator stands in; see
-    :func:`_reviewed_head_from_run_records`.
+    one the sub-floor duty reader selects — the same reading, taken through the
+    same function and arguments the duty was built from — so a duty row raised
+    is one this command can retire, and a store holding a legacy copy beside a
+    revision-keyed record for the same head cannot take the entry in the copy
+    nobody reads. A run with no live pointer, the ordinary case once it is
+    promoted, is answered from its own records rather than from the directory
+    the operator stands in; see :func:`_reviewed_head_from_run_records`.
     """
+    from reckon.crew import obligations as obligations_module
     from reckon.crew import recovery, runs
     from reckon.crew import review as review_module
 
@@ -5055,12 +5055,19 @@ def crew_dispose(project, reviewed_run_id, dimension, kind, node_id, reason, pre
         except ValueError as exc:
             raise click.ClickException(str(exc)) from exc
     else:
-        tree = recovery._review_tree(pointer)
-        head = recovery._reviewed_run_head(pointer) if tree is not None else ""
+        # The revision the run's work is at, named by the refusal below when the
+        # store's record describes another; the record itself is selected
+        # through the reading both readers share.
+        head, _tree = recovery._review_head_and_tree(pointer)
     try:
-        stored, described = recovery.select_review_for_head(
-            project, reviewed_run_id, head, tree=tree
-        )
+        if pointer is None:
+            stored, described = recovery.select_review_for_head(
+                project, reviewed_run_id, head, tree=tree
+            )
+        else:
+            stored, described = obligations_module.stored_review_for_run(
+                project, reviewed_run_id, pointer
+            )
     except (OSError, ValueError) as exc:
         raise click.ClickException(
             f"cannot read the stored review for run {reviewed_run_id!r}: {exc}"

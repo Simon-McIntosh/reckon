@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="A duty raised from a stored review is one the disposition command retires">
+  <meta name="plan-summary" content="The sub-floor duty reader in reckon/crew/obligations.py and the disposition command in reckon/cli.py now select a run's stored review through one shared function and arguments, so every duty row raised is one the writer can retire. A duty follows from a stored review that exists, whether or not the run's worktree survives, so a record naming no resolvable head is read through the store's newest record. tests/test_one_review_head_resolver.py drives both readers over a reclaimed run citing its head by a nine-character id and over a run with no readable tree. Base arm at d6017d33e2ca3e2489de9d2305667495cb5d6cc6 over the 22-file gate population: 157 passed, EXIT=0. Head arm at 7aa01b6559b9eecdd03f1a2e224f7b98e073f741 over the same population plus the new test file: 160 passed, EXIT=0, no failure id. Negative control (the disposition selecting its own record again): 3 failed, EXIT=1, ids the head arm does not fail. Status pass.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="pass">
+  <title>A duty raised from a stored review is one the disposition command retires &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A duty raised from a stored review is one the disposition command retires</h1>
+  <p><strong>Result: pass.</strong> The duty reader and the disposition command now select a run's stored review through one shared reading, so a coordinator shown a sub-floor duty row always has a command that retires it at the same record. The head arm is green over the 22-file gate population plus the new test file (<code>160 passed</code>, <code>EXIT=0</code>), the negative control is red on ids the arm does not fail (<code>3 failed</code>, <code>EXIT=1</code>), and the earlier attempt's conflict is resolved: a duty follows from a stored review that exists, whether or not the run's worktree survives, and agreement with the classifier was never the requirement.</p>
+  <section id="change">
+    <h2>What changed</h2>
+    <p>Two readers of a run's stored review resolved the record independently. <code>_sub_floor_items_by_session</code> in <code>reckon/crew/obligations.py</code> derived a duty from a run's review whether or not its worktree survived; the <code>crew dispose</code> command in <code>reckon/cli.py</code> resolved the same run's record separately, so a row the duty reader raised for a reclaimed run could be unreachable from the command that retires it &mdash; a row the coordinator is shown and no command can dispose is worse than no row.</p>
+    <p>Both now take one reading, <code>stored_review_for_run</code> in <code>reckon/crew/obligations.py</code>, with the same arguments. It resolves the head through the recovery resolver every other reader uses (<code>_review_head_and_tree</code>), so a reclaimed run is keyed to the head its own record carries rather than to the shared checkout's HEAD; a record naming no resolvable head is read through the store's newest record for the run, because a low dimension is a finding about a review that exists and a reclaimed worktree neither supplies nor retires one. <code>_sub_floor_items_by_session</code> keeps its base reading and takes it through the shared function; the <code>crew dispose</code> branch for a live pointer takes the same function and arguments. A promoted run has no live pointer and therefore no duty row, and its command path keeps the record-based head and head-first selection it had.</p>
+    <p>The second commit repairs a defect the first commit's gate population caught: replacing the disposition's own resolution left the disagreement message &mdash; which names the revision the run's work is at beside the revision the record describes &mdash; without its head, so the refusal path raised <code>UnboundLocalError</code> instead of the refusal. The head is now taken from the same resolver the shared reading uses, so the two revisions the message names are the two the reading itself compared.</p>
+    <figure>
+      <img src="/reckon/figures/crew-runtime-positive-controls/one-review-head-resolver-on-main/reader-convergence.svg" alt="Three shapes of a run's stored record and what the duty reader and the disposition command select for each. A reclaimed run whose record cites its head by a nine-character id: both select the record keyed to the run's own full head. A reclaimed run whose record names no resolvable head: both select the store's newest record for the run. No worktree and no readable repository: both select the store's newest record for the run. No row resolves through the shared checkout's later HEAD." style="max-width:100%;height:auto;">
+      <figcaption>What the two readers select for the three record shapes. Each row is one assertion of <code>tests/test_one_review_head_resolver.py</code>: the duty row exists, and the record the disposition command selects is the record the duty reader selected &mdash; observed at <code>stored_review_for_run</code>, the reading they share.</figcaption>
+    </figure>
+  </section>
+  <section id="measure">
+    <h2>The measure</h2>
+    <ul>
+      <li><strong>Base arm</strong> (d6017d33e2ca3e2489de9d2305667495cb5d6cc6, extracted with <code>git archive</code> to scratch and imported from that tree): the 22-file gate population, <code>157 passed in 44.08s</code>, <code>EXIT=0</code>, no failure id, <code>logs/base-arm-2.log</code>.</li>
+      <li><strong>Head arm</strong> (7aa01b6559b9eecdd03f1a2e224f7b98e073f741, the worktree): the same 22 files plus <code>tests/test_one_review_head_resolver.py</code>, <code>160 passed in 39.37s</code>, <code>EXIT=0</code>, no failure id, <code>logs/head-arm-3.log</code>. Both arms ran under pytest-xdist (eight workers) with a per-test timeout of 300 s, each with its own basetemp and its own never-overwritten log.</li>
+      <li><strong>Negative control</strong> (the disposition selecting its own record again &mdash; <code>select_review_for_head</code> called directly with the head it resolved, never the shared reading &mdash; applied in the worktree, then reverted): <code>3 failed, EXIT=1</code> &mdash; the three cases of <code>tests/test_one_review_head_resolver.py</code>, none of them failed by the head arm, <code>logs/negative-control-3.log</code>. <code>tests/test_reclaimed_run_review_head.py</code>, the keep-passing file, is untouched by this change and green in the head arm.</li>
+      <li><strong>Lint and format</strong>: <code>ruff check</code> over the three changed paths reports the same four pre-existing <code>reckon/cli.py</code> findings at head as at the base tree and none in <code>reckon/crew/obligations.py</code> or the new test file; <code>ruff format --check</code> reports all three formatted.</li>
+    </ul>
+  </section>
+  <section id="path">
+    <h2>How the requirement was settled</h2>
+    <p>The first attempt implemented the dispatch fence literally &mdash; the duty reader selecting exactly what the classifier selects, which is no record for a reclaimed run whose record names no head. That reddens <code>tests/test_reclaimed_run_review_head.py::test_a_live_run_with_no_readable_tree_still_owes_its_sub_floor_duty</code>, the keep-passing case pinning the opposite: a stored review outlives the worktree, and the duty it owes stays raised. The run closed blocked naming that id, with both resolution paths recorded in the previous revision of this fragment (<code>logs/head-arm.log</code>).</p>
+    <p>The coordinator's ruling settled it: a sub-floor dimension duty follows from a stored review that exists, whether or not the run's worktree survives; the requirement is that the writer that disposes a duty selects the same record as the duty reader, so every duty raised can be disposed; agreement with the classifier is not the requirement. This record implements that reading, and the kept file is a load-bearing pin rather than a conflict.</p>
+    <p>One intermediate arm is on disk as the record of that path: <code>logs/head-arm-2.log</code> (f3db9769aaee727129bc9123c26db8acf25de660) is red on the refusal-message defect the second commit repairs, since the gate population includes <code>tests/test_sub_floor_disposition_has_a_writer.py</code>, the file covering the changed command.</p>
+  </section>
+ </main>
+</body>
+</html>
