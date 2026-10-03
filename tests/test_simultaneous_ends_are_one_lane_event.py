@@ -238,6 +238,7 @@ def test_grouped_members_keep_their_own_resume_verdict(tmp_path, monkeypatch):
     assert "resume" not in members["r-no-session"]["next_action"]
     assert event["recovery"] != "resume"
     assert "resume_remedy" not in event
+    assert event["fleet_verdict"]["state"] == "lane-event"
     assert event["fleet_verdict"]["recovery"] == event["recovery"]
     recovered = recovery.recover(project="fixture-project")
     assert (

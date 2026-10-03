@@ -5,17 +5,24 @@ from __future__ import annotations
 import itertools
 import re
 
-from reckon.crew import recovery
+from reckon.crew import recovery, runs
 from reckon.crew import ticker as ticker_module
 
 ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
 ACTION_WORDS = frozenset(recovery.RECOVERY_VERBS.values())
+# The words a departed run's absence carries, from the departure classifier.
+DEPARTURE_STATES = {"withdrawn", "discarded", "departed"}
+# The vocabulary a producer or classifier can emit, stated by its owners rather
+# than read from the renderer's own tables: a set read out of the renderer
+# moves with whatever word is added there, a display alias included, so the
+# binding would agree with itself through any change to the renderer.
 CLASSIFIER_STATES = tuple(
     sorted(
-        set(ticker_module.STATE_HUE["light"])
+        set(runs.WATCH_ATTENTION_STATES)
+        | set(runs.WATCH_PROGRESS_STATES)
         | set(recovery.RECOVERY_CLASSES)
         | set(recovery.RECOVERY_CLASSIFICATIONS)
-        | {"completed_unpromoted"}
+        | DEPARTURE_STATES
     )
 )
 NAMES = (
@@ -466,3 +473,32 @@ def test_a_reason_whose_first_word_does_not_fit_still_prints_characters() -> Non
     # clause, so the field kept the word's head rather than collapsing.
     assert overlong.count("w") >= 10, overlong
     assert overlong.rstrip().endswith("\N{HORIZONTAL ELLIPSIS}"), overlong
+
+
+def test_a_display_alias_is_not_a_classifier_word() -> None:
+    """A word a reader sees is not a word a producer or classifier emits.
+
+    The state cell spells a display form that differs from the internal word,
+    and the renderer resolves the display form to a hue of its own. The
+    classifier vocabulary is the set a producer or the recovery classifier can
+    put on either side of the transition, so a display form belongs to neither
+    side of it: a set carrying one tells a reader that a word only the cell
+    spells is something the fleet emits. Both shapes of alias are checked — a
+    display form that differs from its internal key, and any word carrying a
+    space — and each must still resolve to a hue on both themes, so keeping the
+    alias out of the vocabulary cannot leave its cell unpainted.
+    """
+    aliases = {
+        display for word, display in ticker_module.DISPLAY.items() if display != word
+    } | {
+        word
+        for theme in ("light", "dark")
+        for word in ticker_module.STATE_HUE[theme]
+        if " " in word
+    }
+    assert aliases, "no display alias is declared, so the check is vacuous"
+    leaked = aliases & ticker_module.CLASSIFIER_STATE_WORDS
+    assert not leaked, sorted(leaked)
+    for alias in aliases:
+        for theme in ("light", "dark"):
+            assert ticker_module._state_hue(theme, alias) != "dim", (theme, alias)
