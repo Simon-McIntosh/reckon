@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="work-scheduling-surface">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
   <title>Section contract and computed impl | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="71">
+<meta name="plan-version" content="72">
 <meta name="plan-impl" content="0.91">
 </head>
 <body>
@@ -479,7 +479,7 @@
 <p>Reported on 2026-10-02 by nova's S21 coordinator. <code>collapse_section</code> refused with "no section with id 's2'" on nova-portfolio-replan, although <code>&lt;section id="s2"&gt;&lt;h2&gt;</code> is in the file (plan version 5), and the coordinator had to collapse by text mode. Some plans carry the section id on a wrapping <code>section</code> element rather than on the <code>h2</code>, and a-review-dies-where-nobody-is-looking is one of them. <code>read_plan(view='section')</code> has the same blindness: it reported "available sections: none" for that plan on 2026-10-01.</p><p><strong>Done when</strong> collapse and the section read both resolve an id carried on the wrapper as well as on the <code>h2</code>. Tests over both shapes collapse and read the section. The negative control restores the <code>h2</code>-only lookup, and the wrapper case is then refused.</p>
 
     <h2 id="s11">§11 — Land §1 and §2 together (the schema and its refusal), then §3, then §4 and §5, then §6</h2>
-<section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p>The schema without the refusal is a suggestion; the refusal without the schema has nothing to refuse. §3 depends on §1. §5 depends on §4. §6 is documentation and an audit warning and can run beside any of them.</p><p><strong>Done when</strong> the refusal lands with the schema it refuses for.</p><p>Moved from followup f-scci-001 on section-contract-and-computed-impl by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.84; §1+§2 as one node, §3 after §1, §5 after §4, §6 documentation and an audit warning</p>
 
     <h2 id="s12">§12 — The insert path&#x27;s first-record warning has a test</h2>
@@ -562,6 +562,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-scci-s12-landed" data-who="s22-coord" data-when="2026-10-02">
     <div class="r-comment-body"><p>Landed at 8496dafdb (run r-20261002T224347306695-insert-path-warns-on-first-record, reviewed at 98, zero added failures). <code>test_first_section_record_insert_warns_impl_becomes_computed</code> covers the insert path: inserting the first section record through <code>insert_section</code> on a plan carrying none returns the warning that impl becomes computed. The negative control removes the warning from <code>_apply_insert_section</code> and fails exactly that case. Review follow-on, outside this plan: the run's gate-log header spelled <code>rev=</code>, which <code>_LOGGED_REVISION_RE</code> in reckon/crew/review.py does not read, so the review's base and head log revisions annotate null. The coordinator's gate rules now name the <code>revision=</code> spelling.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20261003T135716168822" data-who="" data-when="">
+    <div class="r-comment-body"><p>Sections 5, 7 and 11 are met at main and are declared done here. The source is the read-only currency audit s22-currency-index-contract-review (run r-20261003T132625170815, read at 6cb144965), whose independent review scored 96. I checked that every sha below resolves and is an ancestor of main, and that every test exists at HEAD.</p><ul><li>§5 attempts steer the capability class: c23de221; <code>tests/test_section_attempts_capability.py</code>. The production caller <code>_dispatch_section_routing</code> is on the live launch path.</li><li>§7 wiring is asserted at creation: merge 23635a76 (5ded9147, e87e5e3a, 033cd1f2), review findings closed at 2b04c779, 35d2953b, 604026a6; <code>tests/test_doccheck_unwired_plan.py</code>, <code>tests/test_roadmap_unwired_plan.py</code>.</li><li>§11 land §1 and §2 together: §1 at 0443c69d, §2 at adfc6715 and a510ec6e, extended by ae1579630. The audit judged this from code and history without a focused test run; <code>tests/test_section_contract_is_refused.py</code> exists at HEAD and is the pin a later run can confirm.</li></ul><p>Partly met, and left implementable. §4's write half is missing: no increment site for attempts on dispatch or completion; it lands in <code>reckon/crew/dispatch.py</code> and <code>reckon/_store.py</code>. §6's roadmap section-level edges are missing; node roadmap-reports-section-edges is being dispatched for it.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260919T114226411288-scci-wiring-asserted-at-creation" data-who="reckon-ship" data-when="2026-09-19T12:08:30.455Z">
     <div class="r-comment-body"><p>An unwired implementable plan is refused at creation and audit unless it declares itself standalone; review 83/100 with four findings queued</p></div>
@@ -708,7 +711,7 @@
     <div class="r-comment-body"><p>added the insert-path sibling case test_first_section_record_insert_warns_impl_becomes_computed to tests/test_impl_stays_authorable_while_records_are_partial.py — inserting the first section record via insert_section on a plan carrying none returns the warning that impl becomes computed once the records cover every declared section; gate head 67 passed vs base 66, EXIT=0, no added failure id; negative control (warning removed from _apply_insert_section) fails exactly that case, EXIT=1 (commit f75f6884b)</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261002T232223087048-review-of-insert-path-warns-on-first-record" data-who="reckon-build" data-when="2026-10-02T23:38:47.194Z">
-    <div class="r-comment-body"><p>stored a parsed review for run r-20261002T224347306695-insert-path-warns-on-first-record at both granted paths, scoring all five dimensions (goal_fidelity 20, evidence 19, durability 19, scope_discipline 20, fit 20; total 98), recording reviewed_base_sha 605a4d9d5 and reviewed_head_sha f75f6884b, and carrying added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite/after_suite gate logs</p></div>
+    <div class="r-comment-body"><p>stored a parsed review for run r-20261002T224347306695-insert-path-warns-on-first-record at both granted paths, scoring all five dimensions (goal_fidelity 20, evidence 19, durability 19, scope_discipline 20, fit 20; total 98), recording reviewed_base_sha 605a4d9d5 and reviewed_head_sha f75f6884b, and carrying added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline_suite/after_suite gate logs</p></div>
 </div>
 </section>
 </main>

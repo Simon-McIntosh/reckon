@@ -19,12 +19,12 @@
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-sprint" content="S22">
   <meta name="plan-standalone" content="Builds on the landed discovery repair of a-page-load-reads-each-file-once; no live plan waits on it and it consumes no plan&#x27;s pending evidence.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>The Page Paints From An Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="36">
+<meta name="plan-version" content="37">
 <meta name="plan-impl" content="0.86">
 </head>
 <body>
@@ -307,6 +307,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-tppfai-s9-already-landed" data-who="" data-when="">
     <div class="r-comment-body"><p>§9's done-when was met before this section was moved here from its followup. <code>75714ebb9</code> (feat(spa): stream project state changes) is on main. <code>tests/test_page_paints_from_the_index.py</code> runs the change stream against the real server and asserts that the index rows of a reported tree stay fresh. Found by the read-only audit moved-sections-already-landed (run r-20261003T055306768573, reviewed at 95). s22-coord confirmed that the commit is an ancestor of main and that the test file exists.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20261003T135714267117" data-who="" data-when="">
+    <div class="r-comment-body"><p>Sections 3, 4, 5, 6 and 8 are met at main and are declared done here. The source is the read-only currency audit s22-currency-index-contract-review (run r-20261003T132625170815, read at 6cb144965), whose independent review scored 96 with no blocking findings. Its positive control (crew-runtime-positive-controls §44) read met. I checked that every sha below resolves and is an ancestor of main, and that every test exists at HEAD.</p><ul><li>§3 metadata index survives a restart: 1d48ac7d3, 5fec63333, 5518b727f; <code>tests/test_metadata_index_survives_restart.py</code>.</li><li>§4 a page paints from the index: f83e38014, 07e4597e2; <code>tests/test_page_paints_from_the_index.py</code>.</li><li>§5 a change pushes its rows: 79d925018, 267f54280; <code>tests/test_changes_push_rows.py</code>.</li><li>§6 a thumbnail is a thumbnail: 56952fa9b; <code>tests/test_figure_thumbnails.py</code>.</li><li>§8 agent readers answer from the same index: ac9beac9f, 3881bbd7c; <code>tests/test_agent_readers_use_the_index.py</code>.</li></ul><p>§7 is open. No cold-start timing exists for this plan's gate; the only page-load report measured a service before §3–§6 landed, and only <code>/_discover</code>. It needs a measurement after an operator restart of reckon.service. The live server has run since 2026-10-02 11:18, and a live-server measurement node is reading it now, so the restart waits for that node.</p></div>
 </div>
 </section>
 </main>
