@@ -19,9 +19,11 @@ refusal cannot tell which overlay produced it.
   (lands) and into sibling B (refused), and records both. The refusal is the
   read-only overlay, not a missing path: the shell says so.
 
-The declared negative control drops the pool from ``protected_paths``; case 1's
-write into B then lands and the test fails. Running this file directly prints
-that mutation verbatim on the first line and the observed landing beneath it.
+The declared negative control drops the pool from the fence's declared
+protected set — the function the fence composes from — so the pool's read-only
+overlay leaves the argv; case 1's write into B then lands and the test fails.
+Running this file directly prints that mutation verbatim on the first line and
+the observed landing beneath it.
 """
 
 from __future__ import annotations
@@ -39,8 +41,9 @@ import pytest
 from reckon import _backends
 
 NEGATIVE_CONTROL_MUTATION = (
-    "remove Code/.reckon-worktrees from protected_paths; case 1's write into "
-    "sibling worktree B then lands and the test fails"
+    "strip Code/.reckon-worktrees from declared_protected_paths — the composed "
+    "set the fence reads — so no read-only overlay of the pool is emitted; "
+    "case 1's write into sibling worktree B then lands and the test fails"
 )
 
 requires_bwrap = pytest.mark.skipif(
@@ -169,11 +172,23 @@ def _ro_bind_of(argv: list[str], destination: Path) -> int:
 
 
 def _without_pool(home: Path, original: Callable[..., list[Path]]) -> Callable:
-    """Return ``protected_paths`` with the pool stripped — the declared mutation."""
+    """Return ``declared_protected_paths`` with the pool stripped — the mutation.
+
+    The fence composes from the declared set rather than from
+    :func:`_backends.protected_paths`, because a protected path absent for an
+    instant while it is rewritten must still be sealed. A mutation that patched
+    the narrowing instead would change nothing the fence reads, so the pool's
+    read-only overlay would stay in the argv and the control could not produce
+    its red result.
+    """
     pool = _backends.resolved_destination(home / "Code" / ".reckon-worktrees")
 
-    def patched(h=None):
-        return [p for p in original(home) if _backends.resolved_destination(p) != pool]
+    def patched(h=None, config=None):
+        return [
+            path
+            for path in original(home if h is None else h, config)
+            if _backends.resolved_destination(path) != pool
+        ]
 
     return patched
 
@@ -224,12 +239,12 @@ def test_a_worker_writes_its_own_tree_and_not_the_sibling(tmp_path: Path) -> Non
 
 def _negative_control_report(root: Path) -> list[str]:
     pool = Pool(root)
-    original = _backends.protected_paths
-    _backends.protected_paths = _without_pool(pool.home, original)
+    original = _backends.declared_protected_paths
+    _backends.declared_protected_paths = _without_pool(pool.home, original)
     try:
         proc = pool.run_fence(pool.argv())
     finally:
-        _backends.protected_paths = original
+        _backends.declared_protected_paths = original
     return [
         f"stub exit: {proc.returncode}",
         f"results: {pool.results_text().strip()!r}",
