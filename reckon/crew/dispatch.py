@@ -418,7 +418,8 @@ def _dispatch_section_routing(
         return None
     try:
         resolved_authority = dict(
-            authority or resolve_dispatch_authority(project, Path(str(repo)).resolve())
+            authority
+            or resolve_dispatch_authority(project, Path(str(repo)).resolve())
         )
         docs_dir = Path(str(resolved_authority["plan"]["docs"])).resolve()
         resource = resolve_resource(
@@ -643,7 +644,9 @@ def _refuse_over_reservation_roster(
     refusal = placement_module.reservation_roster_refusal(len(occupants))
     if refusal is None:
         return
-    occupying_ids = [str(pointer.get("run_id") or "unknown") for pointer in occupying]
+    occupying_ids = [
+        str(pointer.get("run_id") or "unknown") for pointer in occupying
+    ]
     raise CrewError(f"{refusal} Occupying runs: {', '.join(occupying_ids) or 'none'}.")
 
 
@@ -2887,7 +2890,9 @@ class DispatchPlan:
             "lane_reading": (
                 None if self.lane_reading is None else dict(self.lane_reading)
             ),
-            "lane_gate": (None if self.lane_gate is None else dict(self.lane_gate)),
+            "lane_gate": (
+                None if self.lane_gate is None else dict(self.lane_gate)
+            ),
             "lane_allowance": (
                 None if self.lane_allowance is None else dict(self.lane_allowance)
             ),
@@ -4199,7 +4204,9 @@ def _picker_budget_snapshot(
     )
 
 
-def _picker_input(name: str, build: Callable[[], Any], errors: dict[str, str]) -> Any:
+def _picker_input(
+    name: str, build: Callable[[], Any], errors: dict[str, str]
+) -> Any:
     """Build one dispatch-scope picker input, recording a failure instead of raising.
 
     These inputs are advisory: the picker re-reads whatever it is not handed, so
@@ -5663,7 +5670,9 @@ def dispatch(
     )
     picker_budget = _picker_input(
         "budget_snapshot",
-        lambda: _picker_budget_snapshot(project, config, repo_root, picker_records),
+        lambda: _picker_budget_snapshot(
+            project, config, repo_root, picker_records
+        ),
         picker_input_errors,
     )
     picker_selection = dispatch_picker_selection(
@@ -7784,7 +7793,10 @@ def placement_job_id(
             for token in str(completed.stdout or "").split():
                 if token.isdigit():
                     return token, "recorded"
-            last = f"probe answered no identifier (exit {completed.returncode})"
+            last = (
+                "probe answered no identifier "
+                f"(exit {completed.returncode})"
+            )
         if attempt + 1 < _PLACEMENT_PROBE_ATTEMPTS:
             time.sleep(1.0)
     return None, last or "probe answered no identifier"
@@ -9406,10 +9418,7 @@ def _reap_worker_on_its_terminal_manifest(
                 run_dir=run_directory,
             )
             signalled_at = now
-        elif (
-            signalled_at is not None
-            and now - signalled_at >= _WORKER_GRACE_KILL_SECONDS
-        ):
+        elif signalled_at is not None and now - signalled_at >= _WORKER_GRACE_KILL_SECONDS:
             # The worker ignored the grace signal. SIGKILL cannot be ignored,
             # and the record names this second, harder signal.
             signal_worker(
@@ -9934,7 +9943,9 @@ def _reviewed_run_id(source: str, records: Iterable[Mapping[str, Any]]) -> str:
     if not named:
         return source
     named.sort(
-        key=lambda item: str(item.get("completed_at") or item.get("created_at") or "")
+        key=lambda item: str(
+            item.get("completed_at") or item.get("created_at") or ""
+        )
     )
     return str(named[-1].get("run_id") or source)
 
@@ -10015,7 +10026,8 @@ def _session_too_large_to_continue(record: Mapping[str, Any]) -> str | None:
                     refusal = "blocking_limit"
     if refusal:
         return (
-            f"the run ended with {refusal!r}, so its session is too large to continue"
+            f"the run ended with {refusal!r}, so its session is too large to "
+            "continue"
         )
     if compaction_announced and not boundary_seen:
         return (
@@ -10053,7 +10065,9 @@ def _prior_same_task_run(
     if not candidates:
         return None
     candidates.sort(
-        key=lambda item: str(item.get("completed_at") or item.get("created_at") or "")
+        key=lambda item: str(
+            item.get("completed_at") or item.get("created_at") or ""
+        )
     )
     return candidates[-1]
 
@@ -10356,10 +10370,9 @@ def _backend_settings(
     # The identity the launch resolved to, recorded beside the command. It is
     # consulted when the command's own stem names no dialect, which is the case
     # a placed run produces; a record naming only its lane still resolves.
-    identity = (
-        str(record.get("dialect") or "").strip()
-        or str(record.get("backend") or "").strip()
-    )
+    identity = str(record.get("dialect") or "").strip() or str(
+        record.get("backend") or ""
+    ).strip()
     if identity:
         settings.setdefault("dialect", identity)
     for key in ("usable_input_window", "model", "effort"):
