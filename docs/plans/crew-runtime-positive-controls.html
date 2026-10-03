@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="211">
+<meta name="plan-version" content="212">
 </head>
 <body>
   <main class="plan-doc">
@@ -1889,11 +1889,14 @@
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261002T225040192210-red-base-exemption-needs-completed-arms" data-who="reckon-build" data-when="2026-10-03T00:39:16.784Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/crew-runtime-positive-controls/red-base-exemption-needs-completed-arms.html — the red-base exemption requires completed: true on both suite arms and reads the head arm's failing ids from the cited gate log, never the manifest's after_suite list; the interrupted-baseline case fails at the base revision and passes at the head, and a case whose after_suite list is empty while the log names an id the baseline lacks is refused.</p></div>
 </div>
+<div class="r-comment" data-section="s30" data-id="c-run-r-20261003T011805766223-review-of-red-base-exemption-needs-completed-arms" data-who="reckon-build" data-when="2026-10-03T01:28:52.223Z">
+    <div class="r-comment-body"><p>both review records written under /home/ITER/mcintos/.config/reckon/crew/reviews/reckon/ keyed to reviewed run r-20261002T225040192210-red-base-exemption-needs-completed-arms and head 4b57d9c1d84275b8b5334cc3b9d8aa34b1a4d505; read_review(reckon, run, reviewed_head_sha=4b57d9c1d) returns status parsed, total 96, reviewed_base_sha e4f53c46db8028d87376229b5a0e5bfada7edc29, reviewed_head_sha 4b57d9c1d84275b8b5334cc3b9d8aa34b1a4d505, added_failure_count 0, added_failure_ids []</p></div>
+</div>
 <div class="r-comment" data-section="s34" data-id="c-run-r-20261002T222352532588-reclaimed-run-review-keys-on-its-own-head" data-who="reckon-build" data-when="2026-10-03T00:39:08.591Z">
     <div class="r-comment-body"><p>In reckon/crew/recovery.py, _record_carried_head resolves an abbreviated commits: entry of seven or more hex characters to its full object id through the run's repository (rev-parse --verify with the commit peel appended), skipping an entry resolved neither way; a reclaimed run's review head is read from its own record instead of the shared checkout's HEAD, and the empty head accepts no stored record (select_review_for_head), so the compose path refuses with a reason naming the missing head and the carry-forward head move (review_head_move, through _run_head_for_review) resolves the same head rather than the checkout's; the case pinning the superseded fallback was updated to this reading under a coordinator scope decision, its first assertion kept and its second replaced with an empty head accepting no record and composing no review. Arm of record at 2b8f0e7a4: base 168 passed EXIT=0, head 170 passed, 1 skipped, EXIT=0, no added failure id; negative control with the abbreviation resolution removed reds the nine-character case, 1 failed 1 passed, EXIT=1; landing record docs/evidence/fragments/crew-runtime-positive-controls/reclaimed-run-review-keys-on-its-own-head.html.</p></div>
 </div>
 <div class="r-comment" data-section="s34" data-id="c-run-r-20261003T011148438890-review-of-reclaimed-run-review-keys-on-its-own-head" data-who="reckon-build" data-when="2026-10-03T01:25:13.727Z">
-    <div class="r-comment-body"><p>Stored a parsed five-dimension review of run r-20261002T222352532588-reclaimed-run-review-keys-on-its-own-head (base 18d9e07b0, head 44d0e8c1c) at both granted store paths; total 85 (goal_fidelity 17, evidence 16, scope_discipline 19, durability 15, fit 18), added_failure_count 0 with no ids derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs; one follow-on finding — two readers (reckon/cli.py:4753 and reckon/crew/obligations.py:592) still call _reviewed_run_head directly and resolve the shared checkout&#x27;s HEAD for a reclaimed run, contradicting §34&#x27;s absolute clause.</p></div>
+    <div class="r-comment-body"><p>Stored a parsed five-dimension review of run r-20261002T222352532588-reclaimed-run-review-keys-on-its-own-head (base 18d9e07b0, head 44d0e8c1c) at both granted store paths; total 85 (goal_fidelity 17, evidence 16, scope_discipline 19, durability 15, fit 18), added_failure_count 0 with no ids derived from the reviewed run's own baseline_suite and after_suite gate logs; one follow-on finding — two readers (reckon/cli.py:4753 and reckon/crew/obligations.py:592) still call _reviewed_run_head directly and resolve the shared checkout's HEAD for a reclaimed run, contradicting §34's absolute clause.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
