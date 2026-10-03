@@ -993,12 +993,14 @@ def _emit(payload, pretty: bool) -> None:
     )
 
 
-def _crew_result_ok(result: Mapping[str, Any]) -> bool:
+def _crew_result_ok(result: Mapping[str, Any], *, observation: bool = False) -> bool:
     """Read a crew command's outcome from its published result fields."""
     if "ok" in result:
         return result["ok"]
     if not result:
         return False
+    if observation:
+        return True
     if any(
         result.get(key)
         for key in (
@@ -1043,11 +1045,15 @@ def _crew_result_ok(result: Mapping[str, Any]) -> bool:
 
 
 def _emit_crew_result(
-    result: Mapping[str, Any], pretty: bool, *, failure_exit: int = 1
+    result: Mapping[str, Any],
+    pretty: bool,
+    *,
+    failure_exit: int = 1,
+    observation: bool = False,
 ) -> None:
     """Publish one crew verdict and give a negative verdict a matching exit."""
     payload = dict(result)
-    payload["ok"] = _crew_result_ok(payload)
+    payload["ok"] = _crew_result_ok(payload, observation=observation)
     _emit(payload, pretty)
     if not payload["ok"]:
         raise click.exceptions.Exit(failure_exit)
@@ -2552,7 +2558,7 @@ def crew_observe(run_id, project, pretty):
         record = crew_module.observe(run_id, config=config)
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit_crew_result({**record, **resolved}, pretty)
+    _emit_crew_result({**record, **resolved}, pretty, observation=True)
 
 
 def _follow_selects(
@@ -4519,7 +4525,7 @@ def crew_follow(
                 # This one line is about the follower, not the fleet, so it is
                 # printed as it was written rather than rendered as a fleet row.
                 if json_output:
-                    _emit_crew_result(event, pretty)
+                    _emit_crew_result(event, pretty, observation=True)
                 else:
                     _echo_follow_line(str(event.get("line") or ""))
                 continue
@@ -4530,7 +4536,7 @@ def crew_follow(
                 # them and the new ones; the DIM row is the reader's signal that
                 # the drawing style changed here.
                 if json_output:
-                    _emit_crew_result(event, pretty)
+                    _emit_crew_result(event, pretty, observation=True)
                 elif session is not None:
                     _echo_follow_line(replay_dim(history_module.FORMAT_CHANGED_TEXT))
                     history_module.append_history(
@@ -4555,7 +4561,7 @@ def crew_follow(
                 # terminal, the burst opens under one dim frame line that names
                 # it as earlier history, so a restored row is never acted on.
                 if json_output:
-                    _emit_crew_result(event, pretty)
+                    _emit_crew_result(event, pretty, observation=True)
                 elif session is not None and _follow_replay_visible():
                     restored = history_module.cap_history(
                         history_module.read_history(project, session),
@@ -4581,12 +4587,12 @@ def crew_follow(
                 # object with the stamps (and the remedy when there is one), and
                 # text mode prints the one dim line.
                 if json_output:
-                    _emit_crew_result(event, pretty)
+                    _emit_crew_result(event, pretty, observation=True)
                 else:
                     _echo_follow_line(replay_dim(str(event.get("line") or "")))
                 continue
             if json_output:
-                _emit_crew_result(event, pretty)
+                _emit_crew_result(event, pretty, observation=True)
             elif not _row_is_stale_inventory(event):
                 # An observing follower draws the owner column on every row so
                 # the grid stays aligned, and the owning session's own rows are
@@ -4760,7 +4766,7 @@ def crew_watch(
                             "baseline",
                             "transition",
                         }:
-                            _emit_crew_result(result, pretty)
+                            _emit_crew_result(result, pretty, observation=True)
                         elif not _row_is_stale_inventory(result):
                             click.echo(
                                 format_watch_transition(result, ticker=grid), color=True

@@ -43,6 +43,15 @@ def test_result_shapes_have_a_single_verdict_rule(result, expected):
     assert cli._crew_result_ok(result) is expected
 
 
+def test_observed_worker_status_does_not_change_the_read_verdict():
+    assert (
+        cli._crew_result_ok(
+            {"run_id": "running", "exit_status": None}, observation=True
+        )
+        is True
+    )
+
+
 def test_crew_emit_sites_do_not_put_literal_success_beside_a_result():
     source = Path(cli.__file__).read_text(encoding="utf-8")
     tree = ast.parse(source)
