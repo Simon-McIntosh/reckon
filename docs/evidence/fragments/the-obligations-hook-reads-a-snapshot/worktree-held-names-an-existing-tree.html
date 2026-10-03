@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="reckon-type" content="evidence">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-evidence-for" content="the-obligations-hook-reads-a-snapshot">
+  <title>Landing: worktree-held names only a tree still on disk | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; landing record</p>
+      <h1>Landing: worktree-held names only a tree that still exists</h1>
+      <p class="lead">Lands the worktree-held half of the entry: the held-tree reader now requires the directory on disk and reads the promotion's own release verdict, so a registration with nothing behind it raises no duty.</p>
+    </header>
+
+    <section id="landing-what-landed">
+      <h2>What landed</h2>
+      <ul>
+        <li><code>reckon/crew/obligations.py</code> &mdash; <code>_held_worktrees_by_session</code> filters Git's worktree registry to paths whose directory exists on disk (<code>path.is_dir()</code>), and skips any record whose <code>release.worktree_released</code> is true. Git keeps a deleted tree listed (<code>prunable gitdir file points to non-existent location</code>) until the registry is pruned, so the registry alone could not answer whether anything is held.</li>
+        <li><code>tests/test_worktree_held_names_an_existing_tree.py</code> (new) &mdash; a promoted run with its tree deleted raises no <code>worktree-held</code>, with Git's listing of the deleted path asserted as a positive control; a second case keeps the tree and asserts the duty is raised; a third keeps the tree while the record shows it released and asserts no duty.</li>
+      </ul>
+    </section>
+
+    <section id="landing-measure">
+      <h2>Measure</h2>
+      <p>Gate: 9 test files reaching the held-tree reader, run with <code>pytest -n 8 --timeout=300</code> in each arm.</p>
+      <ul>
+        <li>Base arm, extracted from <code>9b66ff8a768e734c9e39da17f846cca1ca6c94d6</code> under the run scratch: <code>2 failed, 236 passed</code>, <code>EXIT=1</code>. Both failures are this node's new cases &mdash; the deleted-tree case and the released-record case &mdash; and both fail with <code>worktree-held</code> raised. The reproduction is quoted in the log.</li>
+        <li>Head arm at <code>c8164115fac5488f70c3008af3c3b67a79212ab7</code>: <code>238 passed</code>, <code>EXIT=0</code>. No failure id added; every pre-existing test that reaches the duty still passes.</li>
+        <li>Negative control, the declared mutation (the on-disk existence check dropped from the reader): <code>1 failed</code>, <code>EXIT=1</code>, the failure being <code>test_a_promoted_run_whose_tree_was_deleted_is_not_held</code> &mdash; the check is load-bearing.</li>
+        <li><code>ruff check</code> and <code>ruff format --check</code> over the two changed Python paths: no finding, no reformat; base carried none either.</li>
+      </ul>
+    </section>
+
+    <section id="landing-commits">
+      <h2>Commits and records</h2>
+      <p>Code and tests: <code>c8164115fac5488f70c3008af3c3b67a79212ab7</code>. Logs in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T054254036730-worktree-held-names-an-existing-tree/</code>: <code>base-arm3.log</code> (base arm), <code>head-arm.log</code> (head arm), <code>negative-control.log</code> (negative control).</p>
+    </section>
+  </main>
+</body>
+</html>
