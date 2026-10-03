@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="Recorded gate commands name an executable">
+  <meta name="plan-summary" content="Promotion now refuses a recorded gate command whose first argv token cannot resolve to an executable. Nineteen promotion fixture files record a runnable interpreter command.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="pass">
+  <title>Recorded gate commands name an executable &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Recorded gate commands name an executable</h1>
+    <p>At the base revision, <code>_require_runnable_gate_command("fixture", {"command": "focused check passed"})</code> returned <code>None</code> and <code>_require_executable_gate_command</code> was absent. The guard restored in <code>reckon/crew/promotion.py</code> tokenises the command, skips leading assignments, and refuses a first token that cannot resolve to an executable. A shared test helper records the current interpreter with <code>-c pass</code>; each affected fixture uses that executable argv.</p>
+    <section id="measure">
+      <h2>Measured outcome</h2>
+      <ul>
+        <li><strong>Archived base</strong> <code>afec9a9fe2f1d967c851f77c2b7398a48cc5eb2d</code>: 2 failed, 264 passed in 248.46s. Both failures were review-score cases in <code>tests/test_crew_promotion.py</code>.</li>
+        <li><strong>Committed head</strong> <code>6af0bbcd9df4ca9c62362e48c5e2b1c79547c9c0</code>: 269 passed in 253.93s; zero added failure IDs over the same 21 test files. Both arms used pytest-xdist with eight workers, a 300-second per-test timeout, and distinct basetemp directories.</li>
+        <li><strong>Negative control</strong>: one fixture's command was changed back to <code>focused check passed</code>. Its promotion test failed because the guard refused program <code>focused</code>; the restored fixture passed in the head arm. The negative run ended with <code>EXIT=1</code> and one failing test ID.</li>
+        <li><strong>Style delta</strong>: Ruff reported four findings at both revisions and no new finding. Ruff format reported the same three unformatted Python files at both revisions.</li>
+      </ul>
+      <p>The base, head and negative-control logs are <code>gate-base-20261003T0429.log</code>, <code>gate-head-20261003T0435.log</code> and <code>gate-negative-20261003T0441.log</code> in this run's crew directory. Each arm's log names its revision and command, and ends with its exit status.</p>
+    </section>
+  </main>
+</body>
+</html>
