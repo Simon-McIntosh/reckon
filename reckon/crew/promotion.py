@@ -1483,6 +1483,7 @@ def _write_replay_log(
     header: Sequence[str],
     output: str,
     exit_status: int | None,
+    cut_short: str | None = None,
 ) -> Path | None:
     """Write a re-run's captured output under the run directory, or None.
 
@@ -1490,7 +1491,9 @@ def _write_replay_log(
     lines, the command's own output, and a terminal ``EXIT=<n>`` record — so
     the gate-log readers parse a re-run exactly as they parse the log it was
     replayed from. A re-run killed by the bound has no status to record, so no
-    ``EXIT=`` line is written and the absence is the fact.
+    ``EXIT=`` line is written and the absence is the fact; the ``cut_short``
+    statement says outright that it was stopped, so the log's three bare header
+    lines are not left to read as a gate that simply printed nothing.
 
     Best-effort, like the cited-log preservation beside it: a log that cannot
     be written leaves the verdict untouched and reports no path.
@@ -1502,6 +1505,8 @@ def _write_replay_log(
     body = str(output or "").rstrip("\n")
     if body.strip():
         parts.append(body)
+    if cut_short:
+        parts.append(f"# cut short: {cut_short}")
     if exit_status is not None:
         parts.append(f"EXIT={exit_status}")
     try:
@@ -1802,6 +1807,8 @@ def _merged_gate_finding(
     exit_status: int | None,
     reason: str | None,
     failure_ids: Sequence[str] = (),
+    timed_out: bool = False,
+    replay_elapsed_seconds: float | None = None,
 ) -> dict[str, Any] | None:
     """The divergence a merge-time re-run exists to surface, or None.
 
@@ -1819,6 +1826,10 @@ def _merged_gate_finding(
     the finding reaches can act on the divergence without reopening the log;
     an empty sequence writes no key, because a re-run whose output named no
     test id measured no id rather than a zero.
+
+    A re-run stopped by its bound carries ``timed_out`` and the seconds it ran
+    before it was stopped, so the finding states the timeout and its duration
+    in fields rather than only inside the reason sentence.
     """
     if base_verdict != "passed" or integrated_verdict == "passed":
         return None
@@ -1840,6 +1851,10 @@ def _merged_gate_finding(
     }
     if failure_ids:
         finding["failure_ids"] = list(failure_ids)
+    if timed_out:
+        finding["timed_out"] = True
+        if replay_elapsed_seconds is not None:
+            finding["replay_elapsed_seconds"] = round(replay_elapsed_seconds, 2)
     return finding
 
 
@@ -1972,6 +1987,30 @@ def _replay_bound(
     return _REPLAY_BOUND_DEFAULT_SECONDS, "default"
 
 
+def _replay_cut_short_reason(
+    *,
+    bound_seconds: float,
+    bound_source: str,
+    elapsed_seconds: float,
+) -> str:
+    """The statement a re-run stopped by its bound leaves behind.
+
+    It names the bound, which input set it, and the seconds the replay ran
+    before it was stopped, so the same sentence serves the report's ``reason``,
+    the finding, and the log's cut-short line: a reader who has only the log can
+    tell a stopped replay from one that ran and printed nothing.
+    """
+    origin = {
+        "explicit": "named by the caller",
+        "derived": "derived from the run's recorded gate duration",
+        "default": "the default, as no gate duration is recorded",
+    }[bound_source]
+    return (
+        f"the gate did not finish within the {bound_seconds:g}s re-run bound "
+        f"({origin}) and was stopped after {elapsed_seconds:.2f}s"
+    )
+
+
 def rerun_gate_at_integrated_revision(
     *,
     repository: Path,
@@ -2011,6 +2050,16 @@ def rerun_gate_at_integrated_revision(
     A gate that did not run, or did not finish within the bound, is reported
     as ``not-run`` with its reason, never as passed: an unmeasured re-run must
     not read as a verified one.
+
+    ``ok`` is true only when the re-run produced an exit status. A re-run that
+    exits by timeout, or otherwise ends without a status, reports ``ok: false``
+    with a finding naming the timeout and the seconds it ran before it was cut
+    short, so the one field a caller reads first cannot call an unmeasured
+    re-run a success. Its log carries a ``# cut short:`` line saying the bound
+    stopped it rather than ending on header lines a reader takes for a gate
+    that printed nothing. A re-run that completes keeps its exit status and
+    verdict unchanged, whatever that status is: ``ok`` reports that a status
+    was measured, not that the gate passed.
 
     The bound the re-run executes under resolves from three inputs, and the
     report names which applied and its value: an explicit ``timeout_seconds``
@@ -2087,6 +2136,8 @@ def rerun_gate_at_integrated_revision(
         "ran": False,
         "exit_status": None,
         "timed_out": False,
+        "replay_elapsed_seconds": None,
+        "ok": True,
         "log_path": None,
         "worktree_roots_rewritten": [],
         "reason": None,
@@ -2153,6 +2204,7 @@ def rerun_gate_at_integrated_revision(
             integrated_revision=report["integrated_revision"],
             rewritten_roots=rewritten_roots,
         )
+        started = time.monotonic()
         try:
             result = subprocess.run(
                 ["sh", "-c", replayed],
@@ -2164,10 +2216,19 @@ def rerun_gate_at_integrated_revision(
                 timeout=bound_seconds,
             )
         except subprocess.TimeoutExpired as expired:
-            report.update(ran=True, timed_out=True)
+            elapsed = time.monotonic() - started
+            report.update(ran=True, timed_out=True, replay_elapsed_seconds=elapsed)
             partial = expired.output if isinstance(expired.output, str) else ""
             written = _write_replay_log(
-                replay_log_path, header=header, output=partial, exit_status=None
+                replay_log_path,
+                header=header,
+                output=partial,
+                exit_status=None,
+                cut_short=_replay_cut_short_reason(
+                    bound_seconds=bound_seconds,
+                    bound_source=bound_source,
+                    elapsed_seconds=elapsed,
+                ),
             )
             if written is not None:
                 report["log_path"] = str(written)
@@ -2190,14 +2251,10 @@ def rerun_gate_at_integrated_revision(
     if reason is not None:
         report["reason"] = reason
     elif report["timed_out"]:
-        bound_origin = {
-            "explicit": "named by the caller",
-            "derived": "derived from the run's recorded gate duration",
-            "default": "the default, as no gate duration is recorded",
-        }[bound_source]
-        report["reason"] = (
-            f"the gate did not finish within the {bound_seconds:g}s re-run "
-            f"bound ({bound_origin})"
+        report["reason"] = _replay_cut_short_reason(
+            bound_seconds=bound_seconds,
+            bound_source=bound_source,
+            elapsed_seconds=report["replay_elapsed_seconds"],
         )
     report["finding"] = _merged_gate_finding(
         report["base_verdict"],
@@ -2208,7 +2265,14 @@ def rerun_gate_at_integrated_revision(
         failure_ids=tuple(sorted(_control_failure_ids(replay_text)))
         if replay_text
         else (),
+        timed_out=report["timed_out"],
+        replay_elapsed_seconds=report["replay_elapsed_seconds"],
     )
+    # A replay with no exit status measured nothing to stand behind: it was cut
+    # short by the bound, or it never started. ``ok`` therefore reads as "a
+    # status was produced", never as "the gate passed" — a caller taking ok at
+    # its word on an unmeasured replay would conclude the opposite of the fact.
+    report["ok"] = report["exit_status"] is not None
     return report
 
 
@@ -2248,7 +2312,10 @@ def record_gate_rerun_at_integrated_revision(
     failing here because the directory it named is gone. The re-run's captured
     output is written under this run's directory beside the preserved gate log
     and its path is recorded on the report, so a failure carries the text that
-    explains it rather than only an exit status.
+    explains it rather than only an exit status. The payload's ``ok`` reports
+    whether the re-run produced an exit status at all, so a replay cut short by
+    its bound reaches a coordinator as a failure rather than as a success with
+    a null status.
     """
     checkout = Path(repository).expanduser().resolve()
     ledger_root = root if root is not None else checkout
@@ -2329,6 +2396,10 @@ def record_gate_rerun_at_integrated_revision(
         ),
         "checkout_revision": report.get("checkout_revision"),
         "report": report,
+        # The CLI publishes this payload behind its own success flag, so a
+        # replay that measured nothing must carry the failure here or the
+        # caller reads ok on a check that never produced a status.
+        "ok": report["ok"],
         "finding": report.get("finding"),
         "landing": landing,
         "store_synopsis": store_synopsis,
