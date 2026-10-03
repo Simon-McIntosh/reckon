@@ -1359,11 +1359,16 @@ def review_head_move(record: Mapping[str, Any]) -> dict[str, Any]:
     through :func:`reckon.review_tiers.changes_runtime_source`, so the reflex
     and the promotion gate cannot split on whether a moved commit is runtime
     source — a second classifier here is exactly the drift this shares instead.
+
+    The head is the run's own — its worktree's while that is readable, its
+    record's once the worktree has been reclaimed. A reclaimed record that
+    names no resolvable head moves nowhere: reading the shared checkout's HEAD
+    in its place would carry a review to a revision the run never reached.
     """
     tree = _review_tree(record)
     if tree is None:
         return {}
-    head = _reviewed_run_head(record)
+    head = _run_head_for_review(record)
     if not head:
         return {}
     project = str(record.get("project") or "")
