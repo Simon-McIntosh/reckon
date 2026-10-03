@@ -31,14 +31,17 @@ gate-log finding attached and no status-replacement finding; its malformed case
 (<code>echo</code> probe) still reads <code>unreadable</code>. At base
 <code>9fe5d8204</code> the valid-wait case fails — <code>1 failed, 1 passed</code> on
 <code>gate-base-supplement.log</code> — and so does the same case inside the base arm
-<code>gate-base.log</code> (<code>3 failed, 501 passed</code>, its other failure
-pre-existing). The negative control restores the unconditional status finding and the
-valid-wait case fails again (<code>EXIT=1</code>, log
-<code>negative-control.log</code>). Logs and the run manifest live under
+<code>gate-base.log</code> (<code>3 failed, 501 passed</code>, its other failures a pre-final
+copy of the test file and the pre-existing follow-stream case). The negative control
+restores the unconditional status finding and the valid-wait case fails again
+(<code>EXIT=1</code>, log <code>negative-control.log</code>). Logs and the run manifest live under
 <code>~/.config/reckon/crew/runs/r-20261002T225510427652-valid-wait-keeps-its-state/</code>.</p>
-<p><b>Remainder.</b> The head gate arm was cut short once by a full <code>/tmp</code>
-(disk-full errors, not code); the focused head run passes 2 of 2 and the twelve-file head
-arm was rerun afterwards. See the run manifest's <code>failure_attribution</code> and
-<code>tests</code> for the exact figures.</p>
+<p><b>Remainder.</b> None. The twelve-file head arm completed at
+<code>cf50f544c</code> over the files that reach the audit (<code>1 failed, 512
+passed</code>, <code>gate-head-4.log</code>). Its single failure,
+<code>test_crew_recovery.py::test_cli_follow_streams_each_event_as_one_json_document</code>,
+is red at base <code>9fe5d8204</code> too, so the arm adds no failure the base did not
+have. Earlier attempts cut short by a full <code>/tmp</code> are recorded in the run
+manifest and superseded; the run's scratch under <code>/tmp</code> is deleted.</p>
 </body>
 </html>
