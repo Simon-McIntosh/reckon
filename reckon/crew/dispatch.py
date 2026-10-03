@@ -8065,6 +8065,107 @@ def _spawn(
     )
 
 
+# bwrap refuses a launch whose read-only bind source cannot be found, naming
+# the source in its refusal — one phrase when the source is gone before the
+# mount is attempted, another when the kernel refuses it. The fence composes
+# those binds from the paths that exist when it is built, and a writer that
+# replaces a file by rename leaves the name missing for an instant, so a spawn
+# landing in that instant dies before the worker starts while a launch a moment
+# later would have begun normally. A spawn that dies this way is retried rather
+# than recorded as a launch failure.
+_VANISHED_BIND_REFUSAL_PHRASES = ("Can't bind mount", "Can't find source path")
+
+# How long a freshly spawned worker is given to prove it started, and how often
+# its exit is looked for inside that window. bwrap refuses a missing bind source
+# before it execs the harness, so the window only has to cover bwrap's own
+# startup — but that startup competes with every other process on the host, so
+# the window is sized for a loaded host rather than for the refusal itself: a
+# child still running at the end of it is a launch that began.
+SANDBOX_STARTUP_WINDOW_SECONDS = 0.5
+VANISHED_BIND_STARTUP_POLL_SECONDS = 0.01
+
+
+def _read_only_bind_sources(argv: Iterable[str]) -> list[str]:
+    """The read-only bind sources a launch argv would mount."""
+    words = list(argv)
+    sources: list[str] = []
+    for index, word in enumerate(words):
+        if str(word) == "--ro-bind" and index + 2 < len(words):
+            sources.append(str(words[index + 1]))
+    return sources
+
+
+def _refusal_names_a_bind_source(refusal: str, sources: Iterable[str]) -> bool:
+    """Whether bwrap's refusal is the missing-source one for this launch."""
+    if not any(phrase in refusal for phrase in _VANISHED_BIND_REFUSAL_PHRASES):
+        return False
+    return any(source and source in refusal for source in sources)
+
+
+def _died_over_a_vanished_bind_source(
+    process: subprocess.Popen,
+    *,
+    argv: Iterable[str],
+    stderr_path: Path,
+) -> bool:
+    """Whether a just-spawned worker already died over a missing bind source.
+
+    The window a rename leaves is momentary, so this only answers true for the
+    failure that window causes: the child exited inside the startup poll, and
+    bwrap's refusal names one of the sources this launch asked it to mount. A
+    child still running at the end of the window started, and a child that
+    exited over anything else is the launch failure its caller records.
+    """
+    sources = _read_only_bind_sources(argv)
+    if not sources:
+        return False
+    # A caller may hand the launch a stand-in rather than a real process; such a
+    # launch cannot be observed starting, and the refusal is proved by the
+    # child's own exit, so there is nothing the retry could key on.
+    poll = getattr(process, "poll", None)
+    if poll is None:
+        return False
+    deadline = time.monotonic() + SANDBOX_STARTUP_WINDOW_SECONDS
+    while poll() is None and time.monotonic() < deadline:
+        time.sleep(VANISHED_BIND_STARTUP_POLL_SECONDS)
+    if poll() is None or process.returncode == 0:
+        return False
+    try:
+        refusal = stderr_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    return _refusal_names_a_bind_source(refusal, sources)
+
+
+def _spawn_worker_retrying_a_vanished_bind(
+    attempt: Callable[[], subprocess.Popen],
+    *,
+    argv: Iterable[str],
+    stderr_path: Path,
+) -> subprocess.Popen:
+    """Spawn a worker, retrying while the fence's own bind source is missing.
+
+    The retry is inside one attempt: a worker that starts on a later try is the
+    attempt that launched, so nothing is recorded as a failure for the tries a
+    momentary rename defeated. The tries are bounded by the constants the
+    composition's own wait uses. A spawn that failed for any other reason is
+    returned at once for its caller to record as the launch failure it is.
+    """
+    process = attempt()
+    tries = 1
+    limit = max(1, _backends.PROTECTED_BIND_WAIT_ATTEMPTS)
+    while tries < limit and _died_over_a_vanished_bind_source(
+        process, argv=argv, stderr_path=stderr_path
+    ):
+        # The dead try is reaped here so it cannot be mistaken later for the
+        # worker's own exit by whoever collects the run's children.
+        process.wait()
+        time.sleep(_backends.PROTECTED_BIND_WAIT_INTERVAL_SECONDS)
+        tries += 1
+        process = attempt()
+    return process
+
+
 def _spawn_detached_worker(
     plan: _backends.LaunchPlan,
     *,
@@ -8085,26 +8186,44 @@ def _spawn_detached_worker(
     child — it has to be, for the pid to mean anything — but it is a child the
     caller does not owe a wait on.
     """
-    with (
-        open(prompt_path, "rb") as stdin,
-        open(log_path, "wb") as stdout,
-        open(stderr_path, "wb") as stderr,
-    ):
-        process = subprocess.Popen(
-            plan.argv,
-            cwd=plan.cwd,
-            env=_worker_process_environment(
-                plan.environment,
-                dialect=plan.dialect,
-            ),
-            stdin=stdin,
-            stdout=stdout,
-            stderr=stderr,
-            start_new_session=True,
-        )
+    argv = [str(word) for word in plan.argv]
+
+    def attempt() -> subprocess.Popen:
+        with (
+            open(prompt_path, "rb") as stdin,
+            open(log_path, "wb") as stdout,
+            open(stderr_path, "wb") as stderr,
+        ):
+            return subprocess.Popen(
+                argv,
+                cwd=plan.cwd,
+                env=_worker_process_environment(
+                    plan.environment,
+                    dialect=plan.dialect,
+                ),
+                stdin=stdin,
+                stdout=stdout,
+                stderr=stderr,
+                start_new_session=True,
+            )
+
+    process = _spawn_worker_retrying_a_vanished_bind(
+        attempt, argv=argv, stderr_path=Path(stderr_path)
+    )
+    launched = _launched_worker_record(plan, log_path, stderr_path)
+    # A poll of a child that has already exited collects its status, and the
+    # retry's startup check polls the child. A worker that died inside that
+    # window is therefore no longer waitable: registering the pid would hand
+    # the reaper a child it cannot wait, and both the failure record and the
+    # registered pid would be lost. The exit the check collected is recorded
+    # here exactly as a reap would record it.
+    exit_status = getattr(process, "returncode", None)
+    if exit_status is not None:
+        if launched is not None:
+            _record_launch_failure(launched, exit_status=exit_status)
+        return process.pid
     with _LAUNCHED_WORKERS_LOCK:
         _LAUNCHED_WORKERS.add(process.pid)
-        launched = _launched_worker_record(plan, log_path, stderr_path)
         if launched is not None:
             _LAUNCHED_WORKER_RUNS[process.pid] = launched
     _LAUNCHED_WORKERS_WAKE.set()
@@ -8824,28 +8943,37 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         coordinator_session=str(record.get("session") or ""),
         claude_headers=str(plan.get("dialect") or "") == "claude",
     )
-    with (
-        open(str(spec["prompt_path"]), "rb") as stdin,
-        open(str(spec["log_path"]), "wb") as stdout,
-        open(str(spec["stderr_path"]), "wb") as stderr,
-    ):
-        process = subprocess.Popen(
-            list(plan["argv"]),
-            cwd=plan.get("cwd"),
-            env=_worker_process_environment(
-                environment,
-                dialect=str(plan.get("dialect") or ""),
-            ),
-            stdin=stdin,
-            stdout=stdout,
-            stderr=stderr,
-            start_new_session=False,
-            # The worker must start with the default signal dispositions rather
-            # than the supervisor's own handlers, so a stop aimed at the group
-            # ends the worker. This runs in the supervisor's single-threaded
-            # child as it starts.
-            preexec_fn=_worker_default_signals,  # noqa: PLW1509
-        )
+    argv = [str(word) for word in plan["argv"]]
+
+    def attempt() -> subprocess.Popen:
+        with (
+            open(str(spec["prompt_path"]), "rb") as stdin,
+            open(str(spec["log_path"]), "wb") as stdout,
+            open(str(spec["stderr_path"]), "wb") as stderr,
+        ):
+            return subprocess.Popen(
+                argv,
+                cwd=plan.get("cwd"),
+                env=_worker_process_environment(
+                    environment,
+                    dialect=str(plan.get("dialect") or ""),
+                ),
+                stdin=stdin,
+                stdout=stdout,
+                stderr=stderr,
+                start_new_session=False,
+                # The worker must start with the default signal dispositions
+                # rather than the supervisor's own handlers, so a stop aimed at
+                # the group ends the worker. This runs in the supervisor's
+                # single-threaded child as it starts.
+                preexec_fn=_worker_default_signals,  # noqa: PLW1509
+            )
+
+    process = _spawn_worker_retrying_a_vanished_bind(
+        attempt,
+        argv=argv,
+        stderr_path=Path(str(spec["stderr_path"])),
+    )
     return process.pid
 
 
