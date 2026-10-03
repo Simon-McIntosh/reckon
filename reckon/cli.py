@@ -1804,13 +1804,16 @@ def crew_dispatch(
             )
         except crew_module.BudgetHold as exc:
             _emit(
-                {
-                    "ok": False,
-                    "dry_run": True,
-                    "error": "budget-hold",
-                    "detail": str(exc),
-                    "hold": exc.verdict,
-                },
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "dry_run": True,
+                        "error": "budget-hold",
+                        "detail": str(exc),
+                        "hold": exc.verdict,
+                    },
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(3) from exc

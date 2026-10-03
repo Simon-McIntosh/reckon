@@ -10,6 +10,7 @@ from one that never applied — the reading the dry run exists to give.
 
 from __future__ import annotations
 
+import importlib
 import json
 import os
 import subprocess
@@ -20,6 +21,8 @@ from click.testing import CliRunner
 
 from reckon import cli as cli_module
 from reckon import crew
+
+dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 DONE_WHEN = "the refusal reports each --set path resolved beside its prior value"
 
@@ -184,6 +187,39 @@ def test_a_dry_run_local_failure_carries_the_echo(home: Path, repo: Path) -> Non
     assert payload["error"] == "request-error"
     assert "local_backend" in payload["detail"]
     assert "must be set" in payload["detail"], "the refusal names what is missing"
+    assert payload["dry_run"] is True
+    assert payload["overrides"] == OVERRIDE_ECHO
+    assert not list(crew.list_live(project="sample")), "nothing may be created"
+
+
+def test_a_dry_run_budget_hold_carries_the_echo(
+    home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A held wave is a dry-run refusal document like the rest."""
+    (home / "flight.yaml").write_text(_host_flight(), encoding="utf-8")
+    monkeypatch.setattr(
+        cli_module, "_model_availability_refusal", lambda *_a, **_k: None
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "dispatch_picker_selection",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        dispatch_module, "resolve_project_repository", lambda *_a, **_k: repo
+    )
+
+    def held(**_kwargs):
+        raise crew.BudgetHold({"backend": "codex", "reason": "the window is spent"})
+
+    monkeypatch.setattr(crew, "plan_dispatch", held)
+
+    result = CliRunner().invoke(cli_module.main, _arguments(repo))
+
+    assert result.exit_code == 3, result.output
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    assert payload["error"] == "budget-hold"
     assert payload["dry_run"] is True
     assert payload["overrides"] == OVERRIDE_ECHO
     assert not list(crew.list_live(project="sample")), "nothing may be created"
