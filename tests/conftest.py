@@ -18,7 +18,9 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import shlex
 import signal
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -29,6 +31,10 @@ from reckon.crew.dispatch import WATCH_ARMING_ENV
 from reckon.crew.routing import signal_worker
 
 ARMING_MARKER = "arms_watch_producer"
+
+# Promotion fixtures record a command that can run from any temporary
+# repository; the interpreter path must exist in the process doing the check.
+EXECUTABLE_GATE_COMMAND = f"{shlex.quote(sys.executable)} -c pass"
 
 # How long a producer the reaper signalled is given to exit before its survival
 # is read as a leak. The producer is a Python process with no signal handler, so

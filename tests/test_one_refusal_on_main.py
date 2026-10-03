@@ -20,6 +20,7 @@ import pytest
 from reckon import _plan_html, _store, crew
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -100,7 +101,7 @@ def _manifest(tmp_path: Path, run_id: str, *, commits: Sequence[str] = ()) -> Pa
         "status: complete\n"
         f"commits: [{listed}]\n"
         "changed_paths: []\n"
-        "tests: focused check passed\n",
+        f"tests: {EXECUTABLE_GATE_COMMAND}\n",
         encoding="utf-8",
     )
     return manifest
@@ -158,7 +159,7 @@ def _store_complete_review(run_id: str, *, head: str) -> None:
 
 
 GATE_CHECK_WITHOUT_A_LOG = {
-    "command": "python -m pytest tests/test_x.py",
+    "command": EXECUTABLE_GATE_COMMAND,
     "exit_status": 0,
 }
 

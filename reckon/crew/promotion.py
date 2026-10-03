@@ -4,6 +4,7 @@ import html
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import tempfile
@@ -1634,6 +1635,80 @@ def _require_runnable_gate_command(
         "exit non-zero and record a failure the merge did not cause. Record the "
         "command itself — the literal file list, not a description of it — and "
         "put the readable summary in the gate log header or in --outcome"
+    )
+
+
+# A leading ``NAME=value`` token is a shell assignment rather than the program
+# name, so the executable lookup starts at the first token that is not one.
+_SHELL_ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+
+
+def _require_executable_gate_command(
+    run_id: str,
+    gate_check: Mapping[str, Any] | None,
+) -> None:
+    """Refuse a recorded gate command whose first token names no executable.
+
+    The recorded command is what the integration re-run executes, so it has to
+    name a program that can start. The command is tokenised the way a shell
+    would tokenise it, leading ``NAME=value`` assignments are skipped, and the
+    first remaining token either carries a path separator — and must then be an
+    existing executable file — or is looked up on ``PATH``. A command written
+    as prose can satisfy every shape check that refuses placeholders, ellipses
+    and prose parentheticals and still name no program at all, so the token
+    itself is resolved here and a promotion recording such a command is refused
+    before the row is written.
+
+    Refusal reaches only a command whose program cannot be resolved from here:
+    the lookup is the same ``PATH`` the promotion process runs under, and a
+    command that resolves still promotes on whatever the other gate checks
+    make of its evidence.
+    """
+    if not isinstance(gate_check, Mapping):
+        return
+    command = str(gate_check.get("command") or "").strip()
+    if not command:
+        return
+    try:
+        argv = shlex.split(command)
+    except ValueError as unparseable:
+        raise CrewError(
+            f"run {run_id!r} records the gate command {command!r}, which does "
+            f"not parse as a shell command ({unparseable}): the integration "
+            "re-run would execute the text a shell cannot tokenise. Found: a "
+            "command that does not parse. Record the literal command that ran, "
+            "quoting its arguments, and put any readable summary in the gate "
+            "log header or in --outcome"
+        ) from unparseable
+    while argv and _SHELL_ASSIGNMENT.match(argv[0]):
+        argv = argv[1:]
+    if not argv:
+        raise CrewError(
+            f"run {run_id!r} records the gate command {command!r}, which names "
+            "no program: it carries only shell variable assignments. Found: a "
+            "command whose first token names no executable. Record the literal "
+            "command that ran, and put any readable summary in the gate log "
+            "header or in --outcome"
+        )
+    program = argv[0]
+    if "/" in program:
+        candidate = Path(program).expanduser()
+        try:
+            runnable = candidate.is_file() and os.access(candidate, os.X_OK)
+        except OSError:
+            runnable = False
+    else:
+        runnable = shutil.which(program) is not None
+    if runnable:
+        return
+    raise CrewError(
+        f"run {run_id!r} records the gate command {command!r}, whose program "
+        f"{program!r} names no executable — it is neither an existing "
+        "executable file nor a command found on PATH, so the integration "
+        "re-run would fail before running the check. Found: a first token that "
+        "names no executable. Record the literal command that ran — the real "
+        "program the check was started with — and put any readable summary in "
+        "the gate log header or in --outcome"
     )
 
 
@@ -5479,6 +5554,7 @@ def complete(
             _gate_log_agrees,
             _verdict_matches_exit_status,
             _runnable_gate_command,
+            _executable_gate_command,
             review_waived,
             _standing_suite,
             resume_waived,
@@ -5520,10 +5596,11 @@ def complete(
                     run_id, record, gate_check, verdict=verdict
                 ),
                 # The recorded command is what the integration re-run executes,
-                # so a text that describes the check must be refused here rather
-                # than land on a row that later reports a failure the merge did
-                # not cause.
+                # so a text that describes the command or names no program must
+                # be refused here rather than land on a row that later reports a
+                # failure the merge did not cause.
                 lambda: _require_runnable_gate_command(run_id, gate_check),
+                lambda: _require_executable_gate_command(run_id, gate_check),
                 _review_gate,
                 # The project's declared suite is the gate that sees the whole
                 # tree, and the lighter promotions wait on it. The tier is the

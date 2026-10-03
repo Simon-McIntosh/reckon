@@ -16,6 +16,7 @@ import pytest
 
 from reckon import _plan_html, _store, crew
 from reckon.crew.runs import _write_json, pointer_path
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -515,7 +516,7 @@ def _invoke_complete_cli(run_id: str, gate_log: Path, *extra: str):
             "--outcome",
             "the work landed",
             "--gate-command",
-            "probe check",
+            EXECUTABLE_GATE_COMMAND,
             "--gate-exit-status",
             "0",
             "--gate-log-path",

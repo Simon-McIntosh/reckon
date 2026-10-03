@@ -8,6 +8,7 @@ from click.testing import CliRunner
 from reckon import crew, ledger
 from reckon.cli import main as cli_main
 from reckon.crew.runs import _write_json, pointer_path, read_pointer
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 from tests.test_crew_promotion_requires_review import (
     PROJECT,
     _row,
@@ -77,7 +78,7 @@ def _complete_cli(repository: Path, tmp_path: Path, *extra: str):
             "--checkout-path",
             str(repository),
             "--gate-command",
-            "pytest tests/test_guard.py",
+            EXECUTABLE_GATE_COMMAND,
             "--gate-exit-status",
             "0",
             "--gate-log-path",

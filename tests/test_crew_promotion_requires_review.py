@@ -13,6 +13,7 @@ from reckon import _plan_html, crew, ledger
 from reckon.cli import main as cli_main
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -90,7 +91,7 @@ def _write_complete_pointer(
         "status: complete\n"
         "commits: []\n"
         "changed_paths: []\n"
-        "tests: focused check passed\n",
+        f"tests: {EXECUTABLE_GATE_COMMAND}\n",
         encoding="utf-8",
     )
     _write_json(

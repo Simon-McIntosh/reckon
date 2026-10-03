@@ -36,6 +36,7 @@ import pytest
 
 from reckon import _plan_html, crew, ledger
 from reckon.crew.runs import _write_json, pointer_path
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 PROJECT = "commitless-review-fixture"
 PLAN = "commitless-review-target"
@@ -151,7 +152,7 @@ def _manifest(
         "status: complete\n"
         f"commits: {commits}\n"
         f"changed_paths: {changed_paths}\n"
-        "tests: focused commitless-review promotion check passed\n",
+        f"tests: {EXECUTABLE_GATE_COMMAND}\n",
         encoding="utf-8",
     )
     return manifest

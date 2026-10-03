@@ -21,6 +21,7 @@ import pytest
 from reckon import crew
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 PROJECT = "matching-project"
 # Runtime source: a run changing it owes a review, which is the gate these
@@ -147,7 +148,7 @@ def _promoted_head(
         "status: complete\n"
         f"commits: [{head}]\n"
         f"changed_paths: [{FILE}]\n"
-        "tests: focused check passed\n",
+        f"tests: {EXECUTABLE_GATE_COMMAND}\n",
         encoding="utf-8",
     )
     _pointer(repository, run_tree, run_id, base, manifest)

@@ -30,6 +30,7 @@ from reckon.crew import review as review_module
 from reckon.crew import standing_suite
 from reckon.crew.runs import _write_json, pointer_path
 from reckon.flight import SuiteDeclaration
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -144,7 +145,7 @@ def _write_pointer(
         "status: complete\n"
         f"commits: {commit}\n"
         f"changed_paths: {', '.join(changed_paths)}\n"
-        "tests: focused check passed\n",
+        f"tests: {EXECUTABLE_GATE_COMMAND}\n",
         encoding="utf-8",
     )
     _write_json(
