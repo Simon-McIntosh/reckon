@@ -2127,23 +2127,35 @@ def _repair_source_refusal(record: Mapping[str, Any]) -> str:
     return ""
 
 
-def _repair_round_recorded_start(
+def _repair_round_started_mtime_ns(
     record: Mapping[str, Any], round_id: str
-) -> datetime | None:
-    """When this round's resume began, as the run's durable record dates it.
+) -> int | None:
+    """The manifest baseline when this round's resume began, in nanoseconds.
 
-    The opening write records ``at`` when the round is first resumed or
-    dispatched, both of which the module already records, so the stamp names the
-    moment the ended turn's input was sent rather than the moment the run first
-    existed. None when the record carries no outcome for this round, so a caller
-    cannot compare against a start that belongs to another round.
+    The round opens with the reviewed run's own resume write, which records the
+    manifest's mtime as the attempt's baseline; the manifest's own mtime is
+    compared against that baseline rather than against the second-resolution
+    ``at`` stamp, because a manifest written just before the round can share the
+    stamp's second and would then read as fresh. The pointer's own file mtime
+    stands in when no baseline was recorded, the pointer having been written as
+    the round opened. None when the record carries no outcome for this round, so
+    a start belonging to another round is never used.
     """
     recorded = record.get(REPAIR_DISPATCH_FIELD)
     if not isinstance(recorded, Mapping):
         return None
     if str(recorded.get("round_id") or "") != str(round_id or ""):
         return None
-    return parse_utc(recorded.get("at"))
+    baseline = record.get("manifest_baseline_mtime_ns")
+    if isinstance(baseline, int) and not isinstance(baseline, bool):
+        return baseline
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return None
+    try:
+        return runs.pointer_path(run_id).stat().st_mtime_ns
+    except OSError:
+        return None
 
 
 def _manifest_reports_round(text: str, round_id: str) -> str | None:
@@ -2209,14 +2221,14 @@ def _reviewed_run_refused_the_round(record: Mapping[str, Any], round_id: str) ->
         return False
     if reported == "this":
         return True
-    started = _repair_round_recorded_start(record, round_id)
-    if started is None:
+    started_ns = _repair_round_started_mtime_ns(record, round_id)
+    if started_ns is None:
         return False
     try:
-        written = Path(path).stat().st_mtime
+        written_ns = Path(path).stat().st_mtime_ns
     except OSError:
         return False
-    return written >= started.timestamp()
+    return written_ns > started_ns
 
 
 def _reviewed_run_is_busy(record: Mapping[str, Any]) -> str:
