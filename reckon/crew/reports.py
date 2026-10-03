@@ -47,6 +47,7 @@ import os
 import re
 import subprocess
 import tempfile
+import time
 from collections.abc import Iterable, Iterator
 from pathlib import Path, PurePath, PurePosixPath
 from typing import Any, TypedDict
@@ -964,7 +965,9 @@ def parse_needs_help(text: str) -> dict[str, Any]:
     for line in lines:
         stripped = line.strip()
         match = re.match(
-            r"^(tried|options|leaning|cost-if-wrong)\s*:\s*(.*)$", stripped, re.I
+            r"^(tried|options|leaning|cost-if-wrong)\s*:\s*(.*)$",
+            stripped,
+            re.IGNORECASE,
         )
         if match:
             current = match.group(1).lower()
@@ -1496,6 +1499,45 @@ def _commit_citation_findings(
     return findings
 
 
+def _wait_declaration_refusal(
+    manifest: dict[str, Any], manifest_path: Path | None
+) -> str:
+    """The reason a waiting manifest's declaration is refused, or "".
+
+    The declaration is read by the fleet's own wait reader rather than by a
+    second copy of the grammar, so the audit cannot disagree with the
+    classifier and the worker stop hook about what a parked worker declared.
+    A declaration the reader honours keeps its state: the audit's other
+    findings for the fleet's own manifest fields are reported beside it as
+    attachments. A declaration the reader refuses is refused here too, with the
+    reader's own error text, so a malformed wait block is never read as an
+    accepted state.
+    """
+    from reckon.crew.recovery import _manifest_wait
+
+    try:
+        wait = _manifest_wait(
+            manifest,
+            manifest_path or Path("manifest.md"),
+            now_seconds=time.time(),
+            stale_after_seconds=0,
+        )
+    except Exception as exc:  # noqa: BLE001 - an unreadable wait refuses, never crashes
+        return f"the wait declaration could not be validated: {exc}"
+    if wait is None:
+        return (
+            "status 'waiting' holds no wait declaration the fleet can act on: "
+            "wait_condition, wait_probe (or wait_file), wait_terminal and "
+            "resume_brief. A waiting manifest must declare a condition that "
+            "can end"
+        )
+    if not wait["valid"]:
+        return (
+            f"status 'waiting' but the wait declaration is incomplete: {wait['error']}"
+        )
+    return ""
+
+
 def audit_manifest(
     text: str,
     node: TaskNode | None = None,
@@ -1518,8 +1560,23 @@ def audit_manifest(
             "ok": False,
         }
     findings: list[str] = []
+    resolved_manifest_path = manifest_path
+    if resolved_manifest_path is None and node is not None and node.manifest_path:
+        resolved_manifest_path = Path(node.manifest_path).expanduser()
     status = str(manifest.get("status", "")).lower()
-    if status not in ("complete", "blocked", "failed"):
+    if status == "waiting":
+        # A parked worker's declaration is judged by the fleet's own wait
+        # reader — the one the classifier and the worker stop hook share — so
+        # the audit cannot demand a status the other two accept. A declaration
+        # the reader honours keeps its waiting state, and any unrelated finding
+        # (a gate log naming no revision, an out-of-scope path) is reported
+        # beside that state as an attachment rather than replacing it. A
+        # declaration the reader refuses is refused here too, with the reader's
+        # own error, so a malformed wait block never reads as an accepted state.
+        refusal = _wait_declaration_refusal(manifest, resolved_manifest_path)
+        if refusal:
+            findings.append(refusal)
+    elif status not in ("complete", "blocked", "failed"):
         findings.append(f"status {status!r} is not complete, blocked or failed")
     if status == "complete" and not manifest["commits"] and _role_owes_a_commit(node):
         findings.append("status is complete but no commit is recorded")
@@ -1571,9 +1628,6 @@ def audit_manifest(
                         else None,
                     )
                 )
-    resolved_manifest_path = manifest_path
-    if resolved_manifest_path is None and node is not None and node.manifest_path:
-        resolved_manifest_path = Path(node.manifest_path).expanduser()
     findings.extend(
         _control_log_findings(manifest, node, manifest_path=resolved_manifest_path)
     )
