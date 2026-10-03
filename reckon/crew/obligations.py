@@ -544,7 +544,14 @@ def _holding_record(
 def _held_worktrees_by_session(
     project: str, *, now: datetime
 ) -> dict[str, list[dict[str, Any]]]:
-    """Return promoted runs whose retained tree remains in Git's registry.
+    """Return promoted runs whose retained tree is still held.
+
+    A tree is held only when Git's registry lists it, its directory is still on
+    disk, a promotion record names it, and no promotion record shows it
+    released. Git keeps a path in its registry until the registry is pruned, so
+    a directory deleted out from under a registration is still listed; naming
+    that registration would raise a duty whose remedy, a project-wide sweep,
+    would take peers' trees to clear a tree entry that holds nothing.
 
     A registered path a live run now occupies is skipped: the promoted run's
     ledger record still names it under the same node id, but the tree belongs
@@ -565,7 +572,9 @@ def _held_worktrees_by_session(
         return {}
     repository = docs_dir.parent.resolve()
     registered = {
-        path for path in _registered_worktrees(repository) if path != repository
+        path
+        for path in _registered_worktrees(repository)
+        if path != repository and path.is_dir()
     }
     command = " ".join(
         shlex.quote(part)
@@ -611,6 +620,12 @@ def _held_worktrees_by_session(
 
     by_session: dict[str, list[dict[str, Any]]] = {}
     for worktree, record in matched.items():
+        release = record.get("release")
+        if isinstance(release, Mapping) and release.get("worktree_released") is True:
+            # The promotion's own record answers for this tree: it reported the
+            # tree released, so the path is not held whatever the registry or
+            # the filesystem now shows.
+            continue
         retention = record.get("worktree_retention")
         retained_at = (
             retention.get("retained_at") if isinstance(retention, Mapping) else None
