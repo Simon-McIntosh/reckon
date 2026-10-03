@@ -83,6 +83,7 @@ from reckon._store import (
     write_json_atomically,
 )
 from reckon._timestamps import parse_utc
+from reckon.crew.runs import follower_code_stamp
 from reckon.evidence import (
     EvidenceSynthesisError,
     compose_landed_record,
@@ -971,6 +972,7 @@ _SIGNATURE_TTL_S = 0.0
 # The package source the served process started with, recorded by main() so
 # /_server can report when the code on disk has moved past the code running.
 _SOURCE_SNAPSHOT: served_code.SourceSnapshot | None = None
+_SERVER_CODE_STAMP: str | None = None
 # Which of those files the served process has run since start; the report counts
 # only changes to these, because a file the server never runs cannot change
 # what it serves.
@@ -2299,6 +2301,28 @@ class Handler(BaseHTTPRequestHandler):
         ts = datetime.now().strftime("%H:%M:%S")
         print(f"[{ts}] {self.address_string()} {fmt % args}", flush=True)
 
+    def _refuse_stale_code(self) -> bool:
+        """Stop a request before it can import code newer than this process."""
+
+        if _SOURCE_SNAPSHOT is None or _SERVER_CODE_STAMP is None:
+            return False
+        report = served_code.drift(_SOURCE_SNAPSHOT)
+        if not report["stale"]:
+            return False
+        self._send_json(
+            HTTPStatus.SERVICE_UNAVAILABLE,
+            {
+                "error": "stale-code",
+                "running_code_stamp": _SERVER_CODE_STAMP,
+                "disk_code_stamp": follower_code_stamp(),
+                "changed_files": report["changed"]
+                + report["added"]
+                + report["removed"],
+                "detail": "The server's loaded code differs from disk; restart the service.",
+            },
+        )
+        return True
+
     def _send(self, status: int, body: bytes, ctype: str = "text/html") -> None:
         self.send_response(status)
         self.send_header("Content-Type", ctype)
@@ -2651,6 +2675,8 @@ class Handler(BaseHTTPRequestHandler):
         self._send_json(HTTPStatus.OK, payload)
 
     def do_GET(self) -> None:  # noqa: N802
+        if self._refuse_stale_code():
+            return
         path = unquote(urlsplit(self.path).path)
 
         if path == "/favicon.ico":
@@ -3560,6 +3586,8 @@ class Handler(BaseHTTPRequestHandler):
         )
 
     def do_POST(self) -> None:  # noqa: N802
+        if self._refuse_stale_code():
+            return
         try:
             self._handle_post()
         finally:
@@ -3738,9 +3766,11 @@ def main(
 ) -> None:
     global _SIGNATURE_TTL_S  # noqa: PLW0603 — the served process opts into reuse
     global _SOURCE_SNAPSHOT  # noqa: PLW0603 — recorded once, as the code loads
+    global _SERVER_CODE_STAMP  # noqa: PLW0603 — one stamp per served process
     global _CHECK_REFRESH_ENABLED  # noqa: PLW0603 — the served process opts in
     global _EXECUTED_SOURCE  # noqa: PLW0603 — recorded from here on
     _SOURCE_SNAPSHOT = served_code.take_snapshot()
+    _SERVER_CODE_STAMP = follower_code_stamp()
     executed = served_code.ExecutedSource(_SOURCE_SNAPSHOT.root)
     _EXECUTED_SOURCE = executed if executed.start() else None
     _CHECK_REFRESH_ENABLED = True
@@ -3790,6 +3820,7 @@ def main(
         _EXECUTED_SOURCE = None
         _CHECK_REFRESH_ENABLED = False
         _SOURCE_SNAPSHOT = None
+        _SERVER_CODE_STAMP = None
 
 
 if __name__ == "__main__":
