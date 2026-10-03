@@ -19,11 +19,13 @@
   <meta name="plan-sprint" content="S22">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling">
-  <meta name="plan-standalone" content="It carries live measures and an adoption step that two shipped plans left behind; no live plan's sections wait on it and it consumes no plan&#x27;s pending evidence.">
+  <meta name="plan-standalone" content="It carries live measures and an adoption step that two shipped plans left behind; no live plan&#x27;s sections wait on it and it consumes no plan&#x27;s pending evidence.">
   <title>The Restarted Server Meets Its Shipped Measures | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+<meta name="plan-modified" content="2026-10-03">
+<meta name="plan-version" content="1">
 </head>
 <body>
   <main class="plan-doc">
@@ -39,7 +41,7 @@
     </header>
 
     <h2 id="s1">§1 — The in-flight surface is measured on the live server</h2>
-<section data-reckon="section" data-id="s1" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
     <p>
       inflight-visibility declared four measures that a checkout cannot produce:
     </p>
@@ -78,9 +80,15 @@
       one plan, and the dependency scan reports no undeclared direction.
     </p>
 
-    <section data-reckon="decisions" id="decisions" class="r-decisions">
-<h2><span class="sec">§</span> Decisions</h2>
-    </section>
+    <h2 id="s3">§3 — A dispatched run reads working within 3 s, and /crew answers in under one</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>From <a href="#s1">§1</a>'s live measurement on 2026-10-03. Two causes keep the in-flight measure from passing, and they are separable.</p><p><strong>The phase waits for the stream.</strong> <code>reckon/serve.py</code> derives a run's working phase from its stream file, which the worker writes only after its harness starts, so a launched run reads idle for 15 to 45 s. The pointer and the attempt record already exist at launch. A run with a live supervisor and no stream yet is launching, not idle, and should read so.</p><p><strong>The read is slow.</strong> <code>GET /crew</code> took 6.5 to 7.7 s per request on the live server. That alone exceeds the gate, and it makes every watcher poll a seven-second wait.</p><p><strong>Done when</strong> a test dispatches a fixture run and reads its row as launching or working from the first <code>/crew</code> response after the pointer appears, before any stream file exists. <code>GET /crew</code> answers in under one second on a fixture of 40 live pointers, timed in the test. The negative control is a scratch copy that derives the phase only from the stream file again, where the first assertion fails.</p>
+
+    <h2 id="s4">§4 — A sprint whose file exists is never reported as no sprint</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>From <a href="#s1">§1</a>'s live measurement on 2026-10-03: the sprint route rendered "No sprint." for S25 while <code>docs/sprints/S25.html</code> existed on the served checkout. The server was 12 files behind the code on disk, so the cause may already be fixed in code it was not running.</p><p><strong>Done when</strong> the cause is established at main: a test serves a fixture project whose sprint file exists, requests its sprint route, and asserts the sprint renders. If that passes at main, re-measure on a server restarted onto main and record the result. If it fails, repair the reader and keep the test as the pin.</p>
+
+    
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -88,8 +96,13 @@
     <h4 class="r-fu-title">Measure the live server, then adopt the directions</h4>
     <div class="r-fu-body"><p>§1 and §2 are independent; either can go first.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-restarted-server-meets-its-shipped-measures §1</pre>
-</article>
-    </section>
-  </main>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-20261003T142040672286" data-who="" data-when="">
+    <div class="r-comment-body"><p>§1 is recorded: merge daf42f981 of 4eaec5eae (run r-20261003T132413476447-live-server-measures, commits 5d9613c45 and 4eaec5eae; reviewed at 93). Evidence: <code>docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html</code>, figures under <code>docs/figures/the-restarted-server-meets-its-shipped-measures/live-server-measures/</code>. Measured against reckon.service MainPID 331604, started 2026-10-02 11:18:06 CEST and re-read with NRestarts=0 during the window. The server's own banner reported it 12 files behind the code on disk.</p><ul><li><strong>No second daemon:</strong> pass. One listener on :8765 while a watcher was in use.</li><li><strong>Navigable:</strong> pass for the watcher tab and plan links. Finding: the sprint route rendered "No sprint." for S25 although <code>docs/sprints/S25.html</code> exists, with the cause unestablished on a stale server.</li><li><strong>In-flight band:</strong> pass. A plan page showed its band while two runs targeted it.</li><li><strong>Live run visible within 3 s:</strong> fail. Across ten fleet dispatches the phase read idle for 15 to 45 s after the pointer appeared, because <code>reckon/serve.py</code> derives working from the run's stream file, which exists only once the worker starts. Each <code>GET /crew</code> also took 6.5 to 7.7 s to answer, so the 3 s gate cannot be met on response time alone. The done half was confirmed inside 3 s for one run; the other two were bounded at 3.8 and 5.2 s by the instrument's cadence.</li></ul><p>The two findings are carried as §3 and §4.</p></div>
+</div>
+</section>
+</main>
 </body>
 </html>
