@@ -1386,6 +1386,38 @@ def store_review(
     return path
 
 
+# A review record can be met mid-write: a review worker composes its record
+# itself, so a reader can arrive while the file is still being written. Skipping
+# such a file is a reading a coordinator has to see rather than a silent
+# absence -- a truncated record would otherwise read as "this run has no
+# review" and send the coordinator to write one beside the record already
+# there. The skips are kept here so a caller that publishes a fleet-wide
+# reading can name every file it could not read; see :func:`drain_read_failures`.
+_SKIPPED_RECORDS: list[dict[str, str]] = []
+
+
+def _note_skipped_record(path: Path, error: Exception) -> None:
+    """Record one unreadable record file, once, so a publisher can name it."""
+    entry = {"path": str(path), "error": f"{type(error).__name__}: {error}"}
+    for index, existing in enumerate(_SKIPPED_RECORDS):
+        if existing["path"] == entry["path"]:
+            _SKIPPED_RECORDS[index] = entry
+            return
+    _SKIPPED_RECORDS.append(entry)
+
+
+def drain_read_failures() -> list[dict[str, str]]:
+    """Return and clear the unreadable record files met since the last call.
+
+    A caller that publishes a fleet-wide reading drains this after deriving, so
+    the files the derivation could not read are named in what it publishes
+    instead of vanishing from the answer.
+    """
+    failures = list(_SKIPPED_RECORDS)
+    _SKIPPED_RECORDS.clear()
+    return failures
+
+
 def stored_record(
     project: str,
     reviewed_run_id: str,
@@ -1424,6 +1456,12 @@ def stored_record(
     about the filing, and the caller that wants the newest record asks again
     without a head. Only a run with none of its own files reaches the
     store-wide search.
+
+    A record file that cannot be read or does not parse — a review worker
+    composing its record by hand can be met mid-write — is skipped rather than
+    raised: the reader answers from the records it could read, and every file
+    it could not is kept for :func:`drain_read_failures`, so a publisher can
+    name it instead of the run reading as one that has no review at all.
     """
     directory = review_store_root(base_dir) / project
     candidates = [review_path(project, reviewed_run_id, base_dir)]
@@ -1431,14 +1469,25 @@ def stored_record(
         candidates.extend(directory.glob(f"{reviewed_run_id}.at-*.json"))
     existing = {path.resolve(): path for path in candidates if path.is_file()}
     if existing:
-        records = [
-            (path, json.loads(path.read_text(encoding="utf-8")))
-            for path in existing.values()
-        ]
+        records: list[tuple[Path, Any, int]] = []
+        for path in existing.values():
+            try:
+                record = json.loads(path.read_text(encoding="utf-8"))
+                mtime_ns = path.stat().st_mtime_ns
+            except (OSError, ValueError) as error:
+                # A record caught mid-write is skipped, not raised: the reader
+                # still answers from the records it could read, and the file it
+                # could not is kept for a publisher to name.
+                _note_skipped_record(path, error)
+                continue
+            records.append((path, record, mtime_ns))
+        if not records:
+            return None, None
         if reviewed_head_sha is None:
-            return max(records, key=lambda item: item[0].stat().st_mtime_ns)
+            path, record, _mtime_ns = max(records, key=lambda item: item[2])
+            return path, record
         named = reviewed_head_sha.strip().lower()
-        for path, record in records:
+        for path, record, _mtime_ns in records:
             _, _, carried_head, stored_head = carried_revision_pair(record)
             if not carried_head or not stored_head:
                 continue
@@ -1488,7 +1537,8 @@ def _record_filed_elsewhere(
         path = entry["path"]
         try:
             record = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        except (OSError, json.JSONDecodeError) as error:
+            _note_skipped_record(path, error)
             continue
         if not isinstance(record, Mapping):
             continue

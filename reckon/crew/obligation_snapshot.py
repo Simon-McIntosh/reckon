@@ -35,7 +35,9 @@ import hashlib
 import json
 import os
 import re
+import sys
 import time
+import traceback
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -85,12 +87,15 @@ PRODUCER_RELOAD_WINDOW_SECONDS = (
 _RUNS_DIRNAME = "runs"
 
 # The keys this module adds to the derived payload, and the ones it removes
-# from a stored snapshot on the way back to the payload's shape.
+# from a stored snapshot on the way back to the payload's shape. The findings
+# are one such key: they record what the sweep could not read, which is a fact
+# about the reading rather than a duty the derivation returns.
 _AGE_SECONDS = "age_seconds"
 _AGE_SINCE = "age_since"
 _OLDEST_AGE_SECONDS = "oldest_age_seconds"
 _OLDEST_AGE_SINCE = "oldest_age_since"
-_SNAPSHOT_KEYS = ("computed_at", "stream_offset", "producer")
+_FINDINGS = "findings"
+_SNAPSHOT_KEYS = ("computed_at", "stream_offset", "producer", _FINDINGS)
 
 
 def _config_home() -> Path:
@@ -504,12 +509,15 @@ def document_for(
     computed_at: datetime,
     stream_offset: int,
     producer: Mapping[str, Any],
+    findings: Iterable[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     """The payload as a snapshot carries it, plus its producer and provenance.
 
     The derived fields are carried as the derivation returns them; only the
     ages are stored as the instant they are measured from, so a reader never
-    reads a frozen count.
+    reads a frozen count. The findings name the inputs the sweep could not
+    read, so a reader sees them beside the duties rather than losing them with
+    the files.
     """
     document = payload_measured_from(payload, computed_at=computed_at)
     document["computed_at"] = _iso(computed_at)
@@ -520,6 +528,7 @@ def document_for(
         "started_at": producer.get("started_at"),
         "code_stamp": producer.get("code_stamp"),
     }
+    document[_FINDINGS] = [dict(row) for row in findings]
     return document
 
 
@@ -633,6 +642,7 @@ class FleetState:
     sub_floor: dict[str, list[dict[str, Any]]]
     held_worktrees: dict[str, list[dict[str, Any]]]
     unreconciled: dict[str, int]
+    findings: list[dict[str, str]]
 
 
 def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
@@ -653,7 +663,7 @@ def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
         if session and run_id and module._current_review_in_flight(pointer):
             reviews_in_flight.setdefault(session, set()).add(run_id)
     floors = module.review_module.declared_dimension_floors(config)
-    return FleetState(
+    state = FleetState(
         project=project,
         now=instant,
         config=config,
@@ -666,7 +676,14 @@ def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
         sub_floor=module._sub_floor_items_by_session(project, floors, now=instant),
         held_worktrees=module._held_worktrees_by_session(project, now=instant),
         unreconciled=module.runs.drain_unreconciled_by_session(project),
+        findings=[],
     )
+    # Every review read this sweep makes has happened by now -- the classified
+    # rows, the sub-floor lookup and the held-worktree scan all reach the
+    # review store -- so what could not be read is drained here, once, and
+    # travels with the state every session's slice is built from.
+    state.findings = module.review_module.drain_read_failures()
+    return state
 
 
 def _duty_kind(module, row: Mapping[str, Any]) -> str:
@@ -745,6 +762,24 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
     }
 
 
+def _report_sweep_failure(project: str, *, session: str) -> None:
+    """Log one failed sweep or slice, and let the sweep carry on.
+
+    A review record, a pointer or a stream can be met mid-write, and one
+    unreadable input must not cost every other session its snapshot: the
+    producer's next trigger derives the state again and publishes. The
+    traceback goes to the producer's log, so the defect stays visible to a
+    reader rather than surfacing only as snapshots that stopped moving.
+    """
+    detail = f"session {session}" if session else "the fleet state"
+    print(
+        f"obligation-sweep-failure: {project}: {detail} could not be published",
+        file=sys.stderr,
+        flush=True,
+    )
+    traceback.print_exc(file=sys.stderr)
+
+
 def sweep(
     project: str,
     *,
@@ -765,6 +800,12 @@ def sweep(
     from the moment its producer takes the seat.
 
     Returns the paths written, oldest session first.
+
+    One failure costs only what it touched. A sweep that cannot derive the
+    fleet state, or a slice that cannot be built or written, is logged with its
+    traceback and the remaining sessions are published; the producer's next
+    trigger runs a fresh sweep, so the seat outlives any single exception a
+    mid-write file raises.
     """
     instant = _utc_now() if now is None else now
     key = str(snapshot_dir(project))
@@ -789,19 +830,28 @@ def sweep(
         )
         return []
 
-    state = fleet_state(project, now=instant)
     written: list[Path] = []
-    for session in dict.fromkeys(str(session or "") for session in sessions):
-        if not session:
-            continue
-        payload = payload_for(state, session)
-        document = document_for(
-            payload,
-            computed_at=instant,
-            stream_offset=stream_offset,
-            producer=producer,
-        )
-        written.append(write_snapshot(project, session, document))
+    try:
+        state = fleet_state(project, now=instant)
+    except Exception:  # noqa: BLE001 - one unreadable input costs one sweep
+        _report_sweep_failure(project, session="")
+    else:
+        for session in dict.fromkeys(str(session or "") for session in sessions):
+            if not session:
+                continue
+            try:
+                payload = payload_for(state, session)
+                document = document_for(
+                    payload,
+                    computed_at=instant,
+                    stream_offset=stream_offset,
+                    producer=producer,
+                    findings=state.findings,
+                )
+                written.append(write_snapshot(project, session, document))
+            except Exception:  # noqa: BLE001 - the sweep answers for every other session
+                _report_sweep_failure(project, session=session)
+                continue
     _SWEEPS[key] = _SweepMemory(
         identity=identity,
         checked_at=instant if not checked else memory.checked_at,
