@@ -24,7 +24,6 @@ import re
 from datetime import UTC, datetime, timedelta
 
 import pytest
-
 from reckon.crew import recovery
 from reckon.crew import ticker as ticker_module
 
