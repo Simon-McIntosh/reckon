@@ -18,10 +18,13 @@ import io
 import json
 from collections.abc import Iterator
 from contextlib import contextmanager
+from functools import partial
 from pathlib import Path
 from typing import Any
 
-from reckon import crew
+import pytest
+
+from reckon import crew, ledger
 from reckon.crew.query import runs_view
 
 LEDGER_ROWS = 2000
@@ -29,7 +32,7 @@ TARGET = "r-target-run"
 
 #: The run-id path reads one ledger file and resolves one row's session from it,
 #: so it opens a host-independent handful of files. Measured 2 on the synthetic
-#: ledger below; the full walk over the same ledger opens 2001.
+#: ledger below; the uncached full walk over the same ledger opens 2001.
 MAX_OPEN_FILES = 4
 
 
@@ -95,20 +98,30 @@ def test_one_run_read_returns_exactly_that_row(tmp_path: Path) -> None:
     assert [row["run_id"] for row in result["rows"]] == [TARGET]
 
 
-def test_one_run_read_opens_a_fixed_small_number_of_files(tmp_path: Path) -> None:
+def test_one_run_read_opens_a_fixed_small_number_of_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     repository, project = _ledger_repository(tmp_path)
     # Warm any lazy import so the count is the read's own, not import-time I/O.
     runs_view(project, checkout_path=str(repository), run_id=TARGET)
 
-    with _count_opens() as full:
-        runs_view(project, checkout_path=str(repository))
-    # Positive control: the instrument sees the walk's per-row ledger reopen.
-    assert full["n"] > 100, full
+    with monkeypatch.context() as patch:
+        # SQLite reads bypass io.open, so the positive control uses source files.
+        patch.setattr(ledger, "load", partial(ledger.load, use_index=False))
+        with _count_opens() as full:
+            runs_view(project, checkout_path=str(repository))
+        # Positive control: the instrument sees the walk's per-row ledger reopen.
+        assert full["n"] > 100, full
 
-    with _count_opens() as one:
+        with _count_opens() as one:
+            result = runs_view(project, checkout_path=str(repository), run_id=TARGET)
+        assert result["count"] == 1
+        assert one["n"] <= MAX_OPEN_FILES, one
+
+    with _count_opens() as indexed_one:
         result = runs_view(project, checkout_path=str(repository), run_id=TARGET)
     assert result["count"] == 1
-    assert one["n"] <= MAX_OPEN_FILES, one
+    assert indexed_one["n"] <= MAX_OPEN_FILES, indexed_one
 
 
 def test_one_run_read_selects_one_of_two_live_pointers() -> None:
