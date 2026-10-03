@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-restarted-server-meets-its-shipped-measures">
+  <meta name="plan-verifies" content="reckon:the-restarted-server-meets-its-shipped-measures#s3">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-03">
+  <meta name="evidence-commit" content="1f29f3112">
+  <title>A launched run reads launched, not idle | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-done">
+<section id="a-launched-run-reads-launched">
+  <h2>A launched run reads launched, not idle</h2>
+
+  <p>§3's first cause is repaired. <code>GET /crew</code> derived a row's phase
+  in <code>serve._crew_rows</code> from the age of the run's stream file, which
+  does not exist until the worker's harness starts, so a dispatched run read
+  <code>idle</code> for its first 15–45 s. The row now reads the phase from the
+  same classification the crew live view reads for the same pointer
+  (<code>reckon.crew.recovery.classify_pointer</code>), so one run cannot render
+  two ways; the stream reading stands only for a pointer the classifier cannot
+  phase at all — one recording no phase and carrying no evidence of a launch.
+  Commit <code>1f29f3112</code>; the response's fields are unchanged and no
+  field was added.</p>
+
+  <h3>The measure</h3>
+
+  <p><code>tests/test_a_launched_run_reads_launched.py</code> serves a fixture
+  project over a temporary crew home and reads it through the real HTTP route.
+  Its launched fixture is a pointer carrying <code>phase: starting</code>, a
+  live supervisor pid on this host and no stream file; the test asserts the
+  row's phase equals the classification the live view gives that pointer, and
+  is not <code>idle</code>. Two further cases pin a fresh stream at
+  <code>working</code> and a terminal stream at <code>done</code>.</p>
+
+  <ul>
+    <li><strong>Gate:</strong> <code>pytest -q -s
+    tests/test_a_launched_run_reads_launched.py</code> — 3 passed, EXIT=0, at
+    <code>1f29f3112</code>. Log:
+    <code>~/.config/reckon/crew/runs/r-20261003T145631922192-a-launched-run-reads-launched/gate-head.log</code>.</li>
+    <li><strong>Negative control:</strong> the base revision in a scratch tree
+    with the new test — the launched-run case fails
+    <code>assert 'idle' == 'starting'</code>, the other two pass, EXIT=1. Log:
+    <code>…/negative-control.log</code>.</li>
+    <li><strong>Population:</strong> every test file naming
+    <code>_crew_rows</code>, <code>_log_activity</code> or the /crew route —
+    base arm 237 passed, 6 skipped, EXIT=0 (<code>…/base-arm.log</code>); head
+    arm 236 passed, 6 skipped, 1 failed (<code>…/head-arm.log</code>), that one
+    failure a client-side 5 s timeout on the discovery route under load, which
+    passes at head when its file runs alone
+    (<code>…/head-arm-crew-routes-rerun.log</code>: 13 passed) and passed in the
+    base arm; no classification runs on that route's fixture.</li>
+    <li><strong>Fixture response time:</strong> the first <code>GET /crew</code>
+    over the three-run fixture took 645.7 ms, printed by the gate.
+    §3's response-time half is left to a later node as briefed.</li>
+  </ul>
+</section>
+</main>
+</body>
+</html>
