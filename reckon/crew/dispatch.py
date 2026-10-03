@@ -7895,10 +7895,13 @@ def _spawn(
 # than recorded as a launch failure.
 _VANISHED_BIND_REFUSAL_PHRASES = ("Can't bind mount", "Can't find source path")
 
-# How long a freshly spawned worker is given to prove it started. bwrap refuses
-# a missing bind source before it execs the harness, so this window only has to
-# cover bwrap's own startup; a child still running at its end is a launch that
-# began.
+# How long a freshly spawned worker is given to prove it started, and how often
+# its exit is looked for inside that window. bwrap refuses a missing bind source
+# before it execs the harness, so the window only has to cover bwrap's own
+# startup — but that startup competes with every other process on the host, so
+# the window is sized for a loaded host rather than for the refusal itself: a
+# child still running at the end of it is a launch that began.
+SANDBOX_STARTUP_WINDOW_SECONDS = 0.5
 VANISHED_BIND_STARTUP_POLL_SECONDS = 0.01
 
 
@@ -7942,7 +7945,7 @@ def _died_over_a_vanished_bind_source(
     poll = getattr(process, "poll", None)
     if poll is None:
         return False
-    deadline = time.monotonic() + _backends.PROTECTED_BIND_WAIT_INTERVAL_SECONDS
+    deadline = time.monotonic() + SANDBOX_STARTUP_WINDOW_SECONDS
     while poll() is None and time.monotonic() < deadline:
         time.sleep(VANISHED_BIND_STARTUP_POLL_SECONDS)
     if poll() is None or process.returncode == 0:

@@ -45,12 +45,9 @@ RUN_ID = "r-vanished-bind"
 # from a refusal over something else.
 REFUSALS = ("Can't bind mount", "Can't find source path")
 
-# The shipped startup window is 50 ms, which is enough for the child this
-# reproduces — a rename leaves the name missing for less than that — but too
-# tight for a test to schedule a forked shell inside reliably. The window is
-# widened here so the retry's own decision, not the test host's load, decides
-# the outcome; the attempts bound is left at its shipped value.
-TEST_WINDOW_SECONDS = 0.25
+# The cases below exercise the shipped startup window and the shipped attempts
+# bound; neither is patched, so the test's verdict is the retry's own decision
+# under the constants a dispatch runs with.
 
 
 @pytest.fixture()
@@ -61,9 +58,6 @@ def isolated_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path,
     crew_home = tmp_path / "crew-home"
     monkeypatch.setenv("RECKON_HOME", str(crew_home))
     monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(tmp_path / "scratch"))
-    monkeypatch.setattr(
-        _backends, "PROTECTED_BIND_WAIT_INTERVAL_SECONDS", TEST_WINDOW_SECONDS
-    )
     directory = runs.run_dir(RUN_ID)
     directory.mkdir(parents=True)
     runs.live_dir().mkdir(parents=True, exist_ok=True)
@@ -358,6 +352,18 @@ def test_the_supervisor_seam_retries_the_spawn(
     finally:
         for process in spawn.processes:
             _stop(process)
+
+
+def test_the_startup_window_tolerates_a_loaded_host() -> None:
+    """The shipped window is sized for a loaded host, not for an idle one.
+
+    The window decides whether a launch started, and a tight one turns the
+    retry into a race with the host's load: a sandbox that takes longer to
+    refuse its mount than the window allows would be recorded as a launch
+    failure without the retry ever looking twice. Half a second is the floor
+    the window is held to, and the cases above run under this shipped value.
+    """
+    assert dispatch_module.SANDBOX_STARTUP_WINDOW_SECONDS >= 0.5
 
 
 def test_the_pool_control_driver_mutation_reaches_the_fence(
