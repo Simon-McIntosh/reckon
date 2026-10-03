@@ -1,5 +1,5 @@
 <article class="landed-report" data-run-id="r-20261003T093007340648-simultaneous-ends-are-one-lane-event">
-  <h3>Close terminal runs on one backend now report as one lane event</h3>
+  <h3>Close terminal runs with one recorded cause report as one lane event</h3>
   <p>
     The base revision reported five independent terminal rows for a fixture with three runs
     ending on one backend within nine seconds, a fourth on another backend at the same time,
@@ -7,7 +7,9 @@
     at base. Recovery and both live query projections now fold the close trio into one row
     naming its backend and all three run ids. The other two remain individual terminal rows.
     A single-run read stays individual. The window is anchored to the first end, so adjacent
-    pairs cannot connect a longer chain into one event.
+    pairs cannot connect a longer chain into one event. The correlation also requires the same
+    cause recorded by each terminal result: an unrecognised error, different result errors, or
+    the same generic unknown-model text for two configured models leaves both runs individual.
   </p>
   <p>
     The cause is read from the latest terminal <code>result</code> record with
@@ -15,18 +17,22 @@
     The fixture names the selected model as unavailable, and the event reports
     <code>backend-catalog-change</code> with that result text. Separate terminal cases
     distinguish rate limit and transport causes. A warning written only to
-    <code>stderr</code> supplies no cause to a successful run that reaches scoring. The grouped row offers resumption after the backend
-    returns while retaining each member's session and worktree.
+    <code>stderr</code> supplies no cause to a successful run that reaches scoring.
+    The event carries each member's original classification and recovery action. Resume is
+    offered for a member only when its session resolves and its worktree still exists; a
+    second member with no session and an empty worktree keeps <code>recover</code>, while the
+    mixed event itself says <code>inspect</code>. The group no longer exposes the leader's
+    session remedy as though it applied to everyone.
   </p>
   <p>
     The eight-file gate used <code>pytest -n 8 --timeout=300</code> at both revisions.
     Base <code>7fbe5fd8963bdb30816189f515c709c37d913f3b</code> had
-    <strong>6 failed, 150 passed</strong>; five failures were the new assertions.
-    Head <code>3b689808c339a2cbacec015ffaa7f69ae28a7531</code> had
-    <strong>1 failed, 155 passed</strong>, with only the CLI watch failure already present
+    <strong>11 failed, 150 passed, 1 warning</strong>; ten failures were the new assertions.
+    Head <code>4bd94f4b08a8ee37796994aa4f9fd4724c617692</code> had
+    <strong>1 failed, 160 passed</strong>, with only the CLI watch failure already present
     at base and no added failure id. The declared mutation set the correlation window to
-    zero in a scratch extraction of head; the grouping case failed while four cause and
-    negative cases passed (<strong>1 failed, 4 passed, EXIT=1</strong>). The run manifest
+    zero in a scratch extraction of head; both grouping cases failed while the eight cause,
+    recovery and negative cases passed (<strong>2 failed, 8 passed, EXIT=1</strong>). The run manifest
     names the three full logs and the exact commands.
   </p>
 </article>
