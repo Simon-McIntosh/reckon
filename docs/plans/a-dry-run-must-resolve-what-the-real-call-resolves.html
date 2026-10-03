@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
 </head>
 <body>
@@ -205,6 +205,9 @@ Measured twice on 2026-09-21. A dry run naming a sprint id as --plan returned ok
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261003T023940873974-review-of-every-dry-run-refusal-carries-the-echo" data-who="reckon-build" data-when="2026-10-03T02:52:29.409Z">
     <div class="r-comment-body"><p>every-dry-run-refusal-carries-the-echo — independent review stored at the revision-keyed path and the legacy path: status parsed, five dimensions scored (goal_fidelity 15, evidence 16, scope_discipline 18, durability 15, fit 19), total 83, reviewed_base_sha 41e6fc48f5b7f9293694519d4c13c4e8c146bb82 and reviewed_head_sha baddc6cef37d5fee913ca844a825c3bcc844daaa, added_failure_count 1 with added_failure_ids derived from the reviewed run's own gate logs; two findings: cli.py:1782 blocking (the budget-hold dry-run refusal carries dry_run:true but omits the --set echo) and cli.py:1796 follow-on (plan-unavailable, plan-review-missing and competence-limit dry-run refusals carry the echo but omit dry_run:true).</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261003T014604919126-every-dry-run-refusal-carries-the-echo" data-who="reckon-build" data-when="2026-10-03T03:14:45.949Z">
+    <div class="r-comment-body"><p>every-dry-run-refusal-carries-the-echo — the exit-5 availability competence refusal is emitted after the --set override resolution and its dry-run document carries dry_run true plus the overrides echo, the --local selection failure on the dry-run path answers on the request-error channel with the same two fields, and the repair round added the same echo to the exit-3 budget-hold dry-run refusal; the base-failing brief-points test was the test&#x27;s clock mask missing measured millisecond durations (picker_selection.latency_ms) and is fixed in the test, not the code; the refusal test file drives all three refusals; gate arms re-run on the repaired head add no failure id.</p></div>
 </div>
 </section>
 </main>
