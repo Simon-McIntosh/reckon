@@ -48,7 +48,8 @@ import re
 import subprocess
 import tempfile
 import time
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
+from datetime import UTC, datetime
 from pathlib import Path, PurePath, PurePosixPath
 from typing import Any, TypedDict
 
@@ -63,6 +64,7 @@ from reckon.crew.node import (
     TaskNode,
     is_test_path,
     negative_control_is_none,
+    parse_duration,
 )
 from reckon.crew.runs import _utc_now
 
@@ -1538,6 +1540,134 @@ def _wait_declaration_refusal(
     return ""
 
 
+# The expiry verbs a blocker uses when it claims the attempt's clock has run
+# out. Narrow on purpose: a blocker that merely names a fence — the write
+# fence, the evidence fence — is not a claim about the time fence, so the
+# phrase must carry the expiry beside the noun.
+_FENCE_EXPIRY = re.compile(
+    r"(?i)\b(?:time[ -]fence|fence|deadline)\b[^\n]{0,80}?"
+    r"\b(?:expired|expires|spent|exhausted|reached|passed|elapsed|exceeded|out of time)\b"
+)
+
+# The fence statement the dispatch prompt writes verbatim, as a manifest
+# records it when the worker quotes its own fence back instead of only naming
+# it. Both the launch instant and the deadline are ISO-8601 UTC.
+_FENCE_STATEMENT = re.compile(
+    r"Launched ([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z) UTC; "
+    r"deadline ([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z)"
+)
+
+
+def _instant(text: str) -> float | None:
+    """The POSIX instant an ISO-8601 ``Z`` stamp names, or None."""
+    try:
+        return datetime.fromisoformat(text).timestamp()
+    except ValueError:
+        return None
+
+
+def _utc_stamp(seconds: float) -> str:
+    """Render a POSIX instant the way attempt records and fences write it."""
+    return (
+        datetime.fromtimestamp(seconds, tz=UTC)
+        .isoformat(timespec="seconds")
+        .replace("+00:00", "Z")
+    )
+
+
+def _recorded_manifest_instant(manifest_path: Path | None, fallback: float) -> float:
+    """When the manifest was recorded, from its own stat identity, or ``fallback``.
+
+    The manifest's last write is the moment the blocker was delivered, which is
+    what a fence claim is judged against; a manifest the reader cannot stat
+    falls back to the moment of the audit rather than silently exempting the
+    claim.
+    """
+    if manifest_path is None:
+        return fallback
+    try:
+        return manifest_path.stat().st_mtime
+    except OSError:
+        return fallback
+
+
+def _attempt_deadline_seconds(
+    text: str, node: TaskNode | None, manifest_path: Path | None
+) -> float | None:
+    """The attempt's recorded deadline, or None when nothing records one.
+
+    Two records are read, in order. The fence statement a manifest quotes back
+    names its deadline directly. Failing that, the attempt record a supervisor
+    writes beside the manifest names the attempt's launch instant, and the
+    node's declared budget turns that into the deadline — the same arithmetic
+    the prompt's fence states, from the same record.
+    """
+    recorded = _FENCE_STATEMENT.search(text)
+    if recorded is not None:
+        return _instant(recorded.group(2))
+    budget = str(getattr(node, "time_budget", "") or "")
+    if not budget or manifest_path is None:
+        return None
+    try:
+        marker = json.loads(
+            (manifest_path.parent / "attempt.json").read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return None
+    if not isinstance(marker, Mapping):
+        return None
+    started = _instant(str(marker.get("attempt_started_at") or ""))
+    if started is None:
+        return None
+    try:
+        return started + parse_duration(budget)
+    except CrewError:
+        return None
+
+
+def _time_fence_claim_findings(
+    text: str,
+    manifest: Mapping[str, Any],
+    node: TaskNode | None,
+    manifest_path: Path | None,
+    *,
+    now: float | None = None,
+) -> list[str]:
+    """A blocked manifest whose blocker blames a fence that had not yet expired.
+
+    A worker that writes ``status: blocked`` citing the time fence ends its run
+    on a claim about the clock, and a coordinator that takes the claim at its
+    word redispatch or abandons work the worker was entitled to keep going
+    with. The claim is checked against the attempt's own record: when the
+    manifest was recorded before the deadline the attempt ran under, the fence
+    had not expired and the blocker misstates its cause — a defect, reported
+    rather than accepted as a blocker. A manifest that records no deadline, or
+    one whose blocker makes no fence claim, is left alone: an unknown clock is
+    not a defect.
+    """
+    status = str(manifest.get("status", "")).lower()
+    if status not in ("blocked", "failed"):
+        return []
+    claim = "\n".join(str(entry) for entry in manifest.get("blockers") or ())
+    if not _FENCE_EXPIRY.search(claim):
+        return []
+    deadline = _attempt_deadline_seconds(text, node, manifest_path)
+    if deadline is None:
+        return []
+    recorded = _recorded_manifest_instant(
+        manifest_path, now if now is not None else time.time()
+    )
+    if recorded >= deadline:
+        return []
+    return [
+        (
+            "the blocker cites an expired time fence, but the attempt's recorded "
+            f"deadline {_utc_stamp(deadline)} had not passed when the manifest was "
+            f"recorded at {_utc_stamp(recorded)}: a defect, not a blocker"
+        )
+    ]
+
+
 def audit_manifest(
     text: str,
     node: TaskNode | None = None,
@@ -1630,6 +1760,9 @@ def audit_manifest(
                 )
     findings.extend(
         _control_log_findings(manifest, node, manifest_path=resolved_manifest_path)
+    )
+    findings.extend(
+        _time_fence_claim_findings(text, manifest, node, resolved_manifest_path)
     )
     findings.extend(
         _gate_log_revision_findings(manifest, manifest_path=resolved_manifest_path)
