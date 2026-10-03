@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="A fenced codex run cannot remove or blank the operator's login">
+  <meta name="plan-summary" content="A fenced codex launch binds the operator's ~/.codex/auth.json writable into the run's codex home; the bind lets a refresh through but refuses unlink and rename at the mount point, and a post-run comparison of two stat sizes reports a zero-byte login on the run's record and stderr without ever opening the credential.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s7">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,fence,harness-home,codex,login,truncation">
+  <title>A fenced codex run cannot remove or blank the operator's login — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="codex-login-cannot-be-removed" data-reckon="landed" data-when="2026-10-03">
+  <h2>A fenced codex run cannot remove or blank the operator's login</h2>
+  <p>The writable single-file bind of <code>~/.codex/auth.json</code> that lets
+  a fenced refresh land is also what could blank the operator's only login, so
+  the file's guarantees are now asserted rather than assumed. A fenced run
+  cannot remove the login at either path — an unlink at the run home's mount
+  point is refused <code>Errno 16</code> and at the operator's own
+  <code>~/.codex</code> <code>Errno 30</code> — and cannot replace it, by rename
+  over it or by unlink and recreate (both <code>Errno 16</code>). Both refusal
+  cases pass at the base revision unchanged: they are documented as holding
+  already, not as newly repaired. A truncation to zero bytes is possible
+  through the bind, and is detected after the run by comparing the size recorded
+  before launch with the size read back — two <code>stat</code> calls that never
+  open, read, copy or print the credential — and reported as a
+  <code>truncated</code> record on the run directory's
+  <code>codex-login.json</code> and a line on the run's <code>stderr.log</code>,
+  carried into the run's stream observation; a rewrite after a mid-refresh zero
+  heals the record rather than pinning a loss that did not happen.</p>
+  <p>Gate: 25 modules that reach the change, <code>pytest -n 8
+  --timeout=300</code>, each arm its own basetemp under the run's scratch root
+  and its own log under the run directory. Head (27d347f91f5788c60d3cab7705df2615addb6c74,
+  <code>git archive</code> extraction): 210 passed, EXIT=0. Base
+  (9e5081bb32085947e24a8b17921c94c7935e32df): 3 failed, 207 passed, EXIT=1 — the
+  three failures are exactly the new truncation cases (no
+  <code>observe_codex_login</code> at base), so the truncation half reproduces
+  red at base and the head arm adds no failure id. Negative control (declared
+  string, first line of <code>logs/negative-control.log</code>): with the
+  post-run size check removed the zero-byte truncation case fails,
+  EXIT=1. A cwd-dependent picker hold in
+  <code>test_the_protected_set_is_declared.py</code> appears only when the gate
+  runs from inside a git worktree and reproduces with the base code under the
+  same cwd, so it is attributed to the environment, not to this change; from
+  the extraction-based arm it does not appear. No other run's records are read
+  or written by the change or by this gate.</p>
+</article>
+</body>
+</html>
