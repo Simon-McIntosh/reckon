@@ -6272,26 +6272,44 @@ def dispatch(
             budget_snapshot=picker_budget,
             input_errors=picker_input_errors,
         )
-    resolution = plan_dispatch(
-        node=node,
-        config=config,
-        locked_decisions=locked_decisions,
-        peer_scopes=peer_scopes,
-        project=project,
-        repo=repo_root,
-        base=base,
-        execution_override=execution_override,
-        authority=authority,
-        local=local,
-        backend_override=backend_override,
-        default_backend_override=default_backend_override,
-        member=member,
-        allow_unreviewed_plan=unreviewed_plan_override,
-        repairs=repairs,
-        session=session,
-        route=route,
-        picker_selection=picker_selection,
-    )
+    try:
+        resolution = plan_dispatch(
+            node=node,
+            config=config,
+            locked_decisions=locked_decisions,
+            peer_scopes=peer_scopes,
+            project=project,
+            repo=repo_root,
+            base=base,
+            execution_override=execution_override,
+            authority=authority,
+            local=local,
+            backend_override=backend_override,
+            default_backend_override=default_backend_override,
+            member=member,
+            allow_unreviewed_plan=unreviewed_plan_override,
+            repairs=repairs,
+            session=session,
+            route=route,
+            picker_selection=picker_selection,
+        )
+    except BudgetHold:
+        if (
+            resolve_dispatch_route(config, route) == "picker"
+            and picker_selection is not None
+            and picker_selection.get("action") == "hold"
+        ):
+            from reckon.crew.picker.outcomes import record_picker_hold
+
+            record_picker_hold(
+                project=project,
+                docs=Path(str(authority["plan"]["docs"])),
+                node=node.id,
+                plan=node.plan,
+                selection=picker_selection,
+                reason=_picker_refusal_reasons(picker_selection),
+            )
+        raise
     route = resolution.route
     if not resolution.validation.ok:
         raise CrewError(

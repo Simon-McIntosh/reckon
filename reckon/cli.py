@@ -1370,6 +1370,13 @@ def _parse_ready_node(statement: str) -> dict[str, Any]:
 )
 @click.option("--session", default="")
 @click.option("--replay", "replay_count", type=click.IntRange(min=1), default=None)
+@click.option(
+    "--outcomes", is_flag=True, help="Summarise recorded picker decisions and outcomes."
+)
+@click.option("--since", default=None, help="Inclusive ISO completion-time boundary.")
+@click.option(
+    "--all-projects", is_flag=True, help="Read every mounted project's ledger."
+)
 @click.option("--checkout-path", type=click.Path(path_type=Path), default=None)
 @click.option("--pretty", is_flag=True)
 def crew_pick(
@@ -1383,6 +1390,9 @@ def crew_pick(
     capability,
     session,
     replay_count,
+    outcomes,
+    since,
+    all_projects,
     checkout_path,
     pretty,
 ):
@@ -1390,6 +1400,26 @@ def crew_pick(
     from reckon.crew.node import TaskNode
     from reckon.crew.picker import PickRequest, pick
     from reckon.crew.picker.replay import replay
+
+    if outcomes:
+        from reckon.crew.picker.outcomes import read_outcomes
+
+        if replay_count:
+            raise click.ClickException("--outcomes and --replay cannot be combined")
+        if all_projects and project:
+            raise click.ClickException(
+                "--project and --all-projects cannot be combined"
+            )
+        try:
+            payload = read_outcomes(
+                project=None if all_projects else project, since=since
+            )
+        except (ValueError, OSError) as exc:
+            raise click.ClickException(str(exc)) from exc
+        _emit(payload, pretty)
+        return
+    if since or all_projects:
+        raise click.ClickException("--since and --all-projects require --outcomes")
 
     if not project:
         from bs4 import BeautifulSoup
