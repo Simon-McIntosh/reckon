@@ -1,0 +1,36 @@
+<article class="landed-report" data-run-id="r-20261003T092600081081-two-key-line-reaches-promotion">
+  <h3>two-key-line-reaches-promotion &mdash; a two-field manifest line is refused where the run is promoted</h3>
+  <p>
+    A manifest whose one line carries two keys is now stopped at the promotion boundary, not only at
+    the reader. The reader refuses the line (<code>9a2f95e7f</code>) and promotion carries that
+    refusal forward (<code>b650bbec6</code>); <code>tests/test_two_key_line_reaches_promotion.py</code>
+    proves the chain end to end: a run delivered in the one-line form &mdash;
+    <code>commits: &lt;sha&gt;; changed_paths: candidate.txt</code> on one line &mdash; is fed through
+    <code>crew.complete</code> in a temporary config home and repository, and the promotion refuses
+    with the line number, the whole line, and the pair of keys; the run's pointer is left in place so
+    the run is not consumed by the refusal. The second case is the promotion-level control the
+    section's done-when asks for: the same run with those fields on separate lines promotes.
+  </p>
+  <p>
+    <strong>Measure.</strong> Gate: the new file plus <code>tests/test_manifest_parse_format.py</code>
+    and <code>tests/test_review_gate_coverage.py</code> &mdash; three files, run
+    <code>-n 8 --timeout=300</code> with a per-arm basetemp outside any repository, both arms in the
+    foreground. Base arm (<code>7fbe5fd89</code>, the new test file copied into a
+    <code>git archive</code> extraction): 128 passed, <code>EXIT=0</code>. Head arm
+    (<code>4130bce6</code>): 128 passed, <code>EXIT=0</code>, zero added failure ids. The case passes
+    at the base revision, which is the point: it pins behaviour that has already landed rather than
+    repairing anything, and its arms differ only by the test file. Negative control: the parse-level
+    refusal removed from <code>reckon/crew/reports.py</code> in a scratch copy of the base tree (the
+    refusal's call sites fall 2 to 1) &mdash; 3 failed / 125 passed, <code>EXIT=1</code>. The
+    promotion case fails as <code>DID NOT RAISE CrewError</code>: with the refusal gone the one-line
+    manifest promotes, which is the disarm the section measured, and the two parse-level cases in
+    <code>tests/test_manifest_parse_format.py</code> fail beside it.
+  </p>
+  <p>
+    <strong>Follow_ons.</strong> <code>_require_commit_for_changed_manifest</code> still swallows a
+    parse refusal as a skip and returns without a verdict, so on an unreadable manifest the
+    changed-paths-without-commit guard is silent and the refusal reaches the operator only through
+    the status carrier it happens to run beside; making that guard speak on a manifest it cannot read
+    is a change under <code>reckon/crew/promotion.py</code>, outside this node's write paths.
+  </p>
+</article>
