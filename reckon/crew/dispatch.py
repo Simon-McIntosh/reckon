@@ -7824,9 +7824,12 @@ def _worker_host_line(facts: Any, run_directory: str | Path) -> str:
         else f"{scratch} is not node-local"
     )
     return (
-        f"HOST — ALLOCATION: node {node}; job {job}; {tmp_clause}; do not use "
-        "srun, sbatch or salloc because the worker already runs on the node; "
-        f"logs a later reader needs go under {run_directory}."
+        f"HOST — ALLOCATION: node {node}; job {job}; {tmp_clause}; the work "
+        "runs in place — do not open an srun or salloc step in this job or an "
+        "sbatch into it; a separate partition job (for example betelgeuse or a "
+        "*_debug partition) is submitted with RECKON_ALLOW_NESTED_LAUNCH=1 when "
+        "the done-when names one; logs a later reader needs go under "
+        f"{run_directory}."
     )
 
 

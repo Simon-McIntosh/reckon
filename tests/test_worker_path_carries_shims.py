@@ -217,8 +217,11 @@ def test_inside_allocation_prompt_names_the_host_and_storage_contract(
     assert f"node {NODE}" in prompt
     assert f"job {JOB}" in prompt
     assert f"{SCRATCH} is node-local" in prompt
-    assert "do not use srun, sbatch or salloc" in prompt
-    assert "the worker already runs on the node" in prompt
+    assert "the work runs in place" in prompt
+    assert (
+        "do not open an srun or salloc step in this job or an sbatch into it" in prompt
+    )
+    assert "RECKON_ALLOW_NESTED_LAUNCH=1" in prompt
     assert f"logs a later reader needs go under {run_directory}" in prompt
 
 
@@ -271,4 +274,4 @@ def test_outside_allocation_carries_the_git_shim_but_no_scheduler_shims(
         "PATH"
     }
     assert "HOST — ALLOCATION" not in prompt
-    assert "do not use srun, sbatch or salloc" not in prompt
+    assert "RECKON_ALLOW_NESTED_LAUNCH" not in prompt
