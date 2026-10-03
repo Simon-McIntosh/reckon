@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-is-charged-to-a-job">
+  <meta name="plan-title" content="The nested-launch refusal names the legitimate routes">
+  <meta name="plan-summary" content="The shim refusal now names both routes out of a nested launch — a separate partition job and the explicit opt-in — and the digest states the same two routes in the fleet compute section, composed from the refusal module's own constants.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-is-charged-to-a-job">
+  <meta name="plan-verifies" content="reckon:a-worker-is-charged-to-a-job#s9">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="blocked">
+  <meta name="plan-tags" content="crew,nested-launch,refusal,digest">
+  <title>The nested-launch refusal names the legitimate routes — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="nested-refusal-names-the-route" data-reckon="blocked" data-when="2026-10-03">
+  <h2>The nested-launch refusal names the legitimate routes</h2>
+  <p><code>refusal_message</code> in <code>reckon/nested_launch.py</code> now names both routes out of a refused nested launch: a separate partition job, with the example partitions (<code>all_debug</code> or <code>betelgeuse</code>) declared as <code>PARTITION_ROUTE</code> and <code>PARTITION_EXAMPLES</code> beside the existing <code>OVERRIDE_ENV</code> opt-in. <code>reckon/crew/worker_digest.py</code> composes the same two routes into the fleet compute section for the roles that retain it, from those same constants, via <code>ADDED_SENTENCES</code> keyed on the fleet header — the canonical policy lives outside this repository and stays untouched. A test (<code>tests/test_nested_refusal_names_the_route.py</code>) asserts both texts name both routes, deriving every route name from the modules' constants rather than from literals, and asserts the policy body the digest is composed over names neither route — so the digest's addition is the thing shown.</p>
+  <p>The declared mutation — the partition-route line removed from <code>refusal_message</code> — reddens the three refusal cases (<code>EXIT=1</code>), ids the head arm does not fail. Base arm (scratch extraction of 4c2856691, the head's new test copied in): 85 passed, 8 errors on the new file, exit 1. Head arm: 89 passed, 2 failed, exit 1 — the two failures are the committed role digests being stale against the generator, which is this node's block: regenerating <code>reckon/crew/digests/{implement,test}.md</code> is the generator's output and the byte-identity cases in <code>tests/test_worker_digest.py</code> require it, but that directory is outside this node's declared write scope, so the run stopped and requests the widening rather than writing it.</p>
+</article>
+</body>
+</html>
