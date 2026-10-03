@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="An absent picker selection falls back deterministically">
+  <meta name="plan-summary" content="A caller that reaches plan_dispatch on the picker route without a selection — a validating dry run, or an internal re-dispatch — resolves the deterministic backend and records a picker fallback with reason picker-selection-absent, instead of raising that the route has no selection.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s6">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,routing,picker,dispatch,evidence">
+  <title>An absent picker selection falls back deterministically | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="picker-absent-selection-falls-back" data-reckon="landed" data-when="2026-10-03">
+  <h2>An absent picker selection falls back deterministically</h2>
+  <p><code>plan_dispatch</code> resolves the picker route and then received no
+  picker selection from any caller that does not run dispatch's own picker step
+  — a validating dry run, or an internal re-dispatch. It previously raised
+  <code>picker route has no selection</code>, so once routing defaults to
+  <code>route</code> those callers would be refused before they could resolve.
+  The route now falls back to the routing that would have run without the
+  picker and records why the picker's answer is absent.</p>
+
+  <h3>What the change does</h3>
+  <ul>
+    <li>A missing selection is turned into the same fallback shape every other
+    absent picker answer uses, carrying
+    <code>fallback_reason: picker-selection-absent</code>.</li>
+    <li>The caller's own backend request, when it made one, is kept; otherwise
+    the configured default stands in — the deterministic backend a dispatch
+    reaches with no picker at all.</li>
+    <li>The fallback is recorded on the resolved plan's
+    <code>picker_selection</code>, so a dry-run preview shows what was decided
+    and why.</li>
+  </ul>
+
+  <h3>Evidence</h3>
+  <ul>
+    <li><code>tests/test_routing_picker_key.py::test_absent_picker_selection_resolves_deterministically</code>:
+    at the base revision, applied against the base source, it fails with
+    <code>CrewError: picker route has no selection</code>; at the head it passes
+    and the resolved backend is the configured default <code>alpha</code>.</li>
+    <li>Negative control — the missing-selection raise restored on the head
+    source: the new test fails (<code>EXIT=1</code>).</li>
+    <li>Gate <code>tests/test_routing_picker_key.py tests/test_flight.py
+    tests/test_picker_in_dispatch.py tests/test_a_brief_points_rather_than_quotes.py</code>:
+    base 128 passed, 2 skipped; head 129 passed, 2 skipped, zero added failure
+    ids.</li>
+    <li><code>tests/test_flight.py::test_dispatch_dry_run_payload_does_not_repeat_the_inspection_report</code>
+    and <code>::test_retired_backend_concurrency_is_ignored_with_a_runtime_warning</code>
+    both pass under a configuration declaring <code>routing.picker: route</code>.</li>
+    <li><code>test_shipped_routing_default_is_shadow</code> is renamed to
+    <code>test_shipped_routing_default_is_route</code> and asserts
+    <code>route</code>, applied against a shipped-layer configuration fixture
+    that declares it so the check holds on either side of the routing-default
+    change.</li>
+  </ul>
+</article>
+</body>
+</html>
