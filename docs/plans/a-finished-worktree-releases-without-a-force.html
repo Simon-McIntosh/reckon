@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 </head>
 <body>
   <main class="plan-doc">
@@ -273,6 +273,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T041931269950-gc-vanished-mid-sweep" data-who="reckon-build" data-when="2026-10-03T04:37:59.487Z">
     <div class="r-comment-body"><p>gc no longer stops when a worktree directory vanishes between classification and its action: the row is reported as gone before action (unavailable, not counted removed) and the sweep releases the remaining trees; gate 60 passed base to 61 passed head with 0 added failures, and the negative control (vanished path allowed to raise again) fails the new test with EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261003T043948978315-review-of-gc-vanished-mid-sweep" data-who="reckon-build" data-when="2026-10-03T04:51:06.688Z">
+    <div class="r-comment-body"><p>review of gc-vanished-mid-sweep stored at both review paths: status parsed, total 97/100 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19), reviewed base d6017d33e head c091ae601; added_failure_count 0 with added_failure_ids []; one follow-on finding (the vanish test exercises only the pin path, the other two actions are covered by the shared handler but untested).</p></div>
 </div>
 </section>
 </main>
