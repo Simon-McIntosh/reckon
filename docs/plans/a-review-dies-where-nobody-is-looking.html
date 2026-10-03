@@ -25,11 +25,11 @@
   <title>A Review Dies Where Nobody Is Looking | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="85">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+<meta name="plan-modified" content="2026-10-03">
+<meta name="plan-version" content="86">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192,06a008fb,3263f5a1">
-<meta name="plan-impl" content="0.88">
+<meta name="plan-impl" content="0.92">
 </head>
 <body>
   <main class="plan-doc">
@@ -479,7 +479,7 @@
     </section>
 
     <h2 id="s10">§10 — The review death rate after reviews moved to effort high</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p>Local-lane reviews moved from effort xhigh to high at dotfiles f3f653a, about 18:36Z on 2026-09-30, with 29.4% of xhigh reviews dying as the before-rate. This section runs §2's experiment as an after-window and gives §9 its first after-rate. Once at least 60 local-lane reviews have run at effort high since that commit, re-run <code>docs/research/scripts/scan_local_lane_deaths.py</code> over them and write its after block beside the before block.</p><p><strong>Done when</strong> the after block states the number of reviews in the window, the death count and rate with its interval, and the before-rate it is compared against. A window holding fewer than 60 reviews is recorded as not yet measurable, with its count, rather than as a rate. Lowering clive's effective window below 480000 stays a lead decision and is not part of this section.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -747,7 +747,10 @@
     <div class="r-comment-body"><p>§10 after-window measured — 343 local-lane review attempts at effort high started since 2026-09-30T18:36Z, 17 died mid-turn, 5.0% (95% Wilson 3.1–7.8%) against the 29.4% xhigh before-rate; the page states the after block beside the before block, and the scanner gained --since/--until whose default leaves the before-block output unchanged</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T123358275865-review-of-review-death-rate-after-effort-high" data-who="reckon-build" data-when="2026-10-02T12:54:04.585Z">
-    <div class="r-comment-body"><p>independent review of r-20261002T113126482688 stored — parsed record, five dimensions all scored 0..20 (goal_fidelity 19, evidence 15, scope_discipline 20, durability 8, fit 19, total 81), reviewed_base_sha ff112f9f reviewed_head_sha 37bb3741f, no blocking findings (3 follow-ons: the node&#x27;s new scanner code is untested, the committed data file still carries after:null, and the before-rate rerun reads 29.26% against the published 29.4%)</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261002T113126482688 stored — parsed record, five dimensions all scored 0..20 (goal_fidelity 19, evidence 15, scope_discipline 20, durability 8, fit 19, total 81), reviewed_base_sha ff112f9f reviewed_head_sha 37bb3741f, no blocking findings (3 follow-ons: the node's new scanner code is untested, the committed data file still carries after:null, and the before-rate rerun reads 29.26% against the published 29.4%)</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-ardw-s10-record" data-who="s22-coord" data-when="2026-10-03">
+    <div class="r-comment-body"><p>The death-rate record now agrees with its data (run r-20261002T224450436186-death-rate-record-agrees-with-its-data, merged at 208e08be1, reviewed at 93, zero added failures). The scan gains a window after the fixes landed, and the research page and <code>docs/research/data/local-lane-deaths.json</code> report what the scan produces. The review left three follow-ons. First, the new within-window rate line is not ruff-formatted, deliberately, because reformatting would change the scanner's sha256 that the committed scan records. Second, the after figure is compared against the plan's published 29.4% before-rate, while the same scan's own before block reads 29.3%, a corpus drift the page discloses. Third, the committed test's after branch checks only that the headline is positive, so it would not catch a rescan that moved the after figures.</p></div>
 </div>
 </section>
 </main>
