@@ -108,6 +108,7 @@ def test_executed_module_change_reexecs_after_refusal(
         assert payload["changed_files"] == ["active.py"]
         assert headers["Retry-After"] == "5"
         assert invoked.wait(5)
+        assert server.socket.fileno() == -1
     assert calls == [(sys.executable, [sys.executable, *sys.orig_argv[1:]])]
 
 

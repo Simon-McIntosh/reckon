@@ -1069,6 +1069,7 @@ class _CodeReload:
             if self.requested:
                 return
             self.requested = True
+        self.server.server_close()
         threading.Thread(target=self.server.shutdown, daemon=True).start()
 
     def finish(self) -> None:
