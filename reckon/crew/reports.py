@@ -848,6 +848,62 @@ def _validate_suite_observation(raw: dict[str, Any]) -> SuiteObservation:
     }
 
 
+# ── A suite record keyed by arm is refused where its author can fix it ───────
+# The manifest template defines one flat record per suite arm, carrying
+# ``revision``, ``command``, ``exit_status``, ``log_path``, ``completed`` and
+# ``failure_ids`` at its top level. A worker whose gate has several arms
+# naturally records an object keyed by arm instead, and validation folds that
+# object into a canonical observation whose every field is empty: the arm then
+# reads as one that declares no completion, and the refusal arrives at
+# promotion, after the worker's process has ended and only a coordinator can
+# restructure the record. The shape is judged here so its author sees the
+# finding while the fix is still theirs.
+
+
+def _is_flat_suite_record(observation: Mapping[str, Any]) -> bool:
+    """Whether a parsed observation carries a flat record's required fields.
+
+    Presence is asked of the canonical observation every parsed suite field
+    arrives in, because validation keeps what it could type and empties the
+    rest: a field the record does not genuinely carry is an empty string or
+    ``None``. ``log_digest`` stands in for ``log_path`` exactly as the manifest
+    template and the field-level checks allow, so a record citing only a digest
+    is flat.
+    """
+    if not str(observation.get("revision") or "").strip():
+        return False
+    if not str(observation.get("command") or "").strip():
+        return False
+    if observation.get("exit_status") is None:
+        return False
+    if not (
+        str(observation.get("log_path") or "").strip()
+        or str(observation.get("log_digest") or "").strip()
+    ):
+        return False
+    if observation.get("completed") is None:
+        return False
+    return observation.get("failure_ids") is not None
+
+
+def _flat_suite_record_finding(name: str, observation: Mapping[str, Any]) -> str | None:
+    """Refuse a suite observation that is not one flat record.
+
+    A record keyed by arm or by measurement carries none of the flat record's
+    required fields at its top level, and the finding names the field and the
+    keys a flat record needs so its author can restructure it before
+    delivering. A record carrying them is left to the field-level checks, which
+    judge the values themselves.
+    """
+    if _is_flat_suite_record(observation):
+        return None
+    return (
+        f"{name} is not a flat suite record: a flat record carries revision, "
+        "command, exit_status, log_path (or log_digest), completed and "
+        "failure_ids at its top level"
+    )
+
+
 def _typed_failure_attribution(value: Any) -> dict[str, str] | str | None:
     """Type a failure attribution whether it arrived as text or a JSON object."""
     if isinstance(value, dict):
@@ -1712,6 +1768,18 @@ def audit_manifest(
         findings.append("status is complete but no commit is recorded")
     if status == "complete" and not manifest.get("tests"):
         findings.append("status is complete but no test result is recorded")
+    # Judged whatever the status and whether or not the run is armed: a
+    # manifest that records its suite arms as an object keyed by arm normalises
+    # to an observation whose fields are all empty, and promotion refuses it
+    # hours later as an arm that declares no completion — past the point where
+    # its author can restructure the record. check-manifest reads this finding
+    # while the worker still holds a turn.
+    for name in ("baseline_suite", "after_suite"):
+        observation = manifest.get(name)
+        if isinstance(observation, dict):
+            shape = _flat_suite_record_finding(name, observation)
+            if shape:
+                findings.append(shape)
     if status == "complete" and suite_armed:
         for name in ("baseline_suite", "after_suite"):
             observation = manifest.get(name)
@@ -1720,6 +1788,11 @@ def audit_manifest(
                 continue
             if not isinstance(observation, dict):
                 findings.append(f"{name} must be an inline JSON object")
+                continue
+            if not _is_flat_suite_record(observation):
+                # Already refused above, while the shape was still its
+                # author's to change; the field-level checks below describe
+                # values a record keyed by arm never carried at its top level.
                 continue
             findings.extend(
                 f"{name}.{field} is missing"
