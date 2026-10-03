@@ -7924,10 +7924,16 @@ def _died_over_a_vanished_bind_source(
     sources = _read_only_bind_sources(argv)
     if not sources:
         return False
+    # A caller may hand the launch a stand-in rather than a real process; such a
+    # launch cannot be observed starting, and the refusal is proved by the
+    # child's own exit, so there is nothing the retry could key on.
+    poll = getattr(process, "poll", None)
+    if poll is None:
+        return False
     deadline = time.monotonic() + _backends.PROTECTED_BIND_WAIT_INTERVAL_SECONDS
-    while process.poll() is None and time.monotonic() < deadline:
+    while poll() is None and time.monotonic() < deadline:
         time.sleep(VANISHED_BIND_STARTUP_POLL_SECONDS)
-    if process.poll() is None or process.returncode == 0:
+    if poll() is None or process.returncode == 0:
         return False
     try:
         refusal = stderr_path.read_text(encoding="utf-8", errors="replace")
@@ -8016,9 +8022,10 @@ def _spawn_detached_worker(
     # the reaper a child it cannot wait, and both the failure record and the
     # registered pid would be lost. The exit the check collected is recorded
     # here exactly as a reap would record it.
-    if process.returncode is not None:
+    exit_status = getattr(process, "returncode", None)
+    if exit_status is not None:
         if launched is not None:
-            _record_launch_failure(launched, exit_status=process.returncode)
+            _record_launch_failure(launched, exit_status=exit_status)
         return process.pid
     with _LAUNCHED_WORKERS_LOCK:
         _LAUNCHED_WORKERS.add(process.pid)
