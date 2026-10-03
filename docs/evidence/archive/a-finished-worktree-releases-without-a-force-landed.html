@@ -115,6 +115,43 @@
       later landed in a different form. Releasing them needs a decision on those commits, not a
       gc rule.
     </p>
+
+    <h2 id="s10">§8 to §10, and the twelve released (2026-10-03)</h2>
+    <p>
+      §8 (9c3b6c5e6) made gc name the tree it failed on, report a broken worktree as a row,
+      and always report what it had already removed. §9 (a0e3f3b48) let
+      <code>garbage_collect</code> pin a worktree's unique commits to an archive ref before
+      releasing it. §10 (7a57be66d) exposed that option as
+      <code>crew gc --pin-unique-commits</code>. At about 04:07Z, s22-coord ran it with
+      <code>--apply</code> over the twelve worktrees §4 had kept. Each worktree's residue went
+      under <code>~/.config/reckon/crew/worktree-residue/</code>, its commits went to an archive
+      ref, and the tree was released. No force was used.
+    </p>
+    <table>
+      <thead><tr><th>Archive ref</th><th>Commit</th></tr></thead>
+      <tbody>
+        <tr><td><code>refs/reckon/archive/review-prompt-per-item-verdicts</code></td><td>3d8234c68</td></tr>
+        <tr><td><code>refs/reckon/archive/n-after-capture-evidence</code></td><td>e37ce4dc2</td></tr>
+        <tr><td><code>refs/reckon/archive/session-keying-test-expectation</code></td><td>5eda3ab33</td></tr>
+        <tr><td><code>refs/reckon/archive/a-spent-lane-judgement-has-a-shelf-life</code></td><td>9c4dd4339</td></tr>
+        <tr><td><code>refs/reckon/archive/liveness-is-derived-not-remembered</code></td><td>deea8ebf1</td></tr>
+        <tr><td><code>refs/reckon/archive/model-and-effort-are-separate-columns</code></td><td>7fc7845e4</td></tr>
+        <tr><td><code>refs/reckon/archive/the-promotion-gate-reads-the-attribution</code></td><td>94e225fef</td></tr>
+        <tr><td><code>refs/reckon/archive/the-transition-carries-the-role-it-renders</code></td><td>e3f881227</td></tr>
+        <tr><td><code>refs/reckon/archive/the-working-bucket-counts-only-work</code></td><td>dfee19c6d</td></tr>
+        <tr><td><code>refs/reckon/archive/review-of-the-reason-keeps-its-predicate</code></td><td>9c0474128</td></tr>
+        <tr><td><code>refs/reckon/archive/a-scoring-run-dispatches-its-own-review</code></td><td>629d317f1</td></tr>
+        <tr><td><code>refs/reckon/archive/a-withheld-worktree-says-whether-its-work-is-unique</code></td><td>a6ceda3bc</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The first apply released one tree and then stopped. A peer's promotion released
+      <code>s25-picker/explicit-lane-implies-deterministic</code> between gc's classification
+      and its action, and gc raised on the missing path. §8's partial report named that path and
+      the one tree already removed. A second apply released the remaining eleven, plus one clean
+      integrated review tree of s25-picker's that no live run claimed. The archive refs are
+      local to the shared checkout, as worktree commits were before.
+    </p>
   </main>
 </body>
 </html>

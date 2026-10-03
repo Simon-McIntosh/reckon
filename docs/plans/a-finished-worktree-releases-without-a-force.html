@@ -23,9 +23,9 @@
   <title>A Finished Worktree Releases Without a Force | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 </head>
 <body>
   <main class="plan-doc">
@@ -172,6 +172,11 @@
 <p><strong>The remainder of §9.</strong> §9 landed at a0e3f3b48. <code>garbage_collect</code> can pin a worktree's unique commits to an archive ref and then release it, but <code>crew gc</code> has no command-line flag for that option yet, because reckon/cli.py was held by another node.</p>
 <p><strong>Done when</strong> <code>crew gc --pin-unique-commits</code> passes the option through, and a test drives it from the command line over one dirty, unintegrated worktree in a temporary repository, then asserts the archive ref resolves and the tree is gone. The coordinator then dry-runs it over the twelve kept worktrees, applies it, and records each archive ref in the landed evidence.</p>
 
+    <h2 id="s11">§11 — A worktree that vanishes mid-sweep does not stop gc</h2>
+<section data-reckon="section" data-id="s11" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p><strong>Observed 2026-10-03 at about 04:07Z.</strong> <code>crew gc --pin-unique-commits --apply</code> stopped with <code>[Errno 2] No such file or directory</code> on <code>s25-picker/explicit-lane-implies-deterministic</code>. A peer's promotion had released that worktree between gc's classification and its action. tests/test_gc_applies_past_a_vanished_worktree.py exists for this case, so either it does not cover this sweep's path, the pin path, or the vanish now lands in a step it does not exercise. A rerun released the rest.</p>
+<p><strong>Done when</strong> a worktree that vanishes between classification and action, whether the action is pinning, saving residue or removal, is reported as a row (gone before action) and the sweep continues. A test removes the directory after classification and asserts the sweep releases the others and reports the vanished one. The negative control lets the missing path raise again, and the test then fails.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-afwrwaf-001" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="/reckon-build a-finished-worktree-releases-without-a-force §2" data-resolved-at="2026-10-02T22:27:37+00:00" data-resolved-by="s22-coord">
@@ -198,10 +203,16 @@
     <pre class="r-fu-prompt">/reckon-build a-finished-worktree-releases-without-a-force §9</pre>
     <p class="r-fu-outcome">§9 landed at a0e3f3b48 (run r-20261003T014450129925-gc-pins-unique-commits-before-release, reviewed at 95, zero added on a 101-file stacked population). Its command-line flag is §10.</p>
     </article>
-<article class="r-fu" data-id="f-afwrwaf-005" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-03" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-afwrwaf-005" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-03" data-recommends-skill="" data-resolved-at="2026-10-03T04:14:03+00:00" data-resolved-by="s22-coord">
     <h4 class="r-fu-title">land §10, then release the twelve</h4>
     <div class="r-fu-body"><p>§10: the <code>crew gc</code> flag for pinning. Then release the twelve kept worktrees with it.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-finished-worktree-releases-without-a-force §10</pre>
+    <p class="r-fu-outcome">§10 landed at 7a57be66d, and the twelve worktrees §4 kept were released at about 04:07Z with crew gc --pin-unique-commits --apply. Each one's commits are pinned under refs/reckon/archive/, its residue is saved, and no force was used (evidence anchor s10). The first apply stopped on a tree a peer released mid-sweep; that is §11.</p>
+    </article>
+<article class="r-fu" data-id="f-afwrwaf-006" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-03" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">land §11</h4>
+    <div class="r-fu-body"><p>§11: a worktree that vanishes mid-sweep must not stop gc.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-finished-worktree-releases-without-a-force §11</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
