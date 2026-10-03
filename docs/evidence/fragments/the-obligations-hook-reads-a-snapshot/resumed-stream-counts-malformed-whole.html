@@ -1,0 +1,19 @@
+<section id="resumed-stream-counts-malformed-whole">
+  <h2>A resumed stream counts malformed lines over the whole stream</h2>
+  <p>
+    <code>observe_log</code> extends a previous observation from a byte cursor
+    instead of re-reading the stream, and <code>malformed_lines</code> was measured
+    from the appended segment alone. The running total now travels in the same
+    <code>stream_state</code> the event folds already resume from
+    (<code>reckon/_backends.py</code>, commit <code>02422a12</code>). On a fixture
+    whose malformed lines fall both before and after the cursor, the resumed
+    observation reports 2 malformed lines — equal to a whole parse of the same
+    stream — where the base revision reported 1.
+  </p>
+  <p>
+    <strong>Gate.</strong> The same 20 test files at base and at head, each arm in
+    its own tree with its own basetemp: base 3 failed, 450 passed; head 2 failed,
+    451 passed. The head arm adds no failure id. The two failures present in both
+    arms are the base revision's own and lie outside this node's scope.
+  </p>
+</section>
