@@ -6959,13 +6959,35 @@ def _own_review_record_exists(record: Mapping[str, Any]) -> bool:
         return False
 
 
+def _misfiled_review_candidates(record: Mapping[str, Any]) -> list[Path]:
+    """The store's files that can answer this run from another run's id.
+
+    A run with no record of its own is answered by searching the store for a
+    record whose content names it, and that search resolves through the store
+    index rather than opening every file. The index is the same enumeration
+    read here, so the candidates named are the ones such a lookup can return
+    and the two cannot drift.
+    """
+    project = str(record.get("project") or "")
+    run_id = str(record.get("run_id") or "")
+    if not project or not run_id:
+        return []
+    directory = review_module.review_store_root() / project
+    entries = review_module._store_index(directory).get(run_id) or []
+    return [Path(entry["path"]) for entry in entries if entry.get("path") is not None]
+
+
 def _review_input_identities(record: Mapping[str, Any]) -> dict[str, str]:
     """The identity of every review-store file this run's review is read from.
 
     The store is read by run id and by revision, so the candidates are the
     run's own path and any revision-keyed copy of it. The project directory
     joins them because a record filed under another run id is found by listing
-    the directory, and the listing moves when an entry is added or removed.
+    the directory, and the listing moves when an entry is added or removed. A
+    record filed under another run id is itself among the inputs whenever this
+    run has none of its own, because it is then the record the selection reads:
+    the directory's identity does not move when such a file is rewritten in
+    place, so the file's own identity is what carries that rewrite into the key.
     """
     project = str(record.get("project") or "")
     run_id = str(record.get("run_id") or "")
@@ -6974,17 +6996,20 @@ def _review_input_identities(record: Mapping[str, Any]) -> dict[str, str]:
         return identities
     directory = review_module.review_store_root() / project
     identities[str(directory)] = _directory_identity(directory)
+    own_record_exists = _own_review_record_exists(record)
     # Whether the run has a record at one of its own paths is part of the key
     # rather than a note beside it: a run with none is answered by listing the
     # whole store, so the appearance of its own file is what moves that answer
     # from a listing to a read, and a key that could not see the difference
     # would serve the listing's verdict over the record a reviewer just wrote.
     identities[f"own-review-record:{run_id}"] = (
-        "present" if _own_review_record_exists(record) else "absent"
+        "present" if own_record_exists else "absent"
     )
     candidates = [directory / f"{run_id}.json"]
     with contextlib.suppress(OSError):
         candidates.extend(sorted(directory.glob(f"{run_id}.at-*.json")))
+    if not own_record_exists:
+        candidates.extend(_misfiled_review_candidates(record))
     for path in candidates:
         identities[str(path)] = _file_identity(path)
     return identities

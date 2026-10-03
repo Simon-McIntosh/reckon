@@ -1,0 +1,25 @@
+<section id="memo-keys-a-misfiled-record">
+  <h2>The classification memo sees a misfiled review record rewritten in place</h2>
+  <p>
+    A run with no review record of its own is answered from a record a review worker
+    filed under another run id. The classification memo's key
+    (<code>_review_input_identities</code> in <code>reckon/crew/recovery.py</code>)
+    held the review store's project-directory identity and the run's own candidate
+    paths, and a rewrite of that misfiled file in place moves neither of them. The
+    memo written before the rewrite therefore served the earlier verdict. The key now
+    adds the per-file identity of the indexed candidates reachable under another run
+    id whenever the run has none of its own — the same enumeration the misfiled
+    lookup resolves through, so the key and the lookup cannot drift.
+  </p>
+  <p>
+    <strong>Measure.</strong>
+    <code>tests/test_memo_keys_a_misfiled_record.py</code> rewrites a misfiled record
+    in place between two classifications and asserts the second reads the rewritten
+    verdict (<code>promotable</code> to <code>scoring</code>) and equals the
+    memo-free arm; an unchanged misfiled record still costs no re-read. Base
+    <code>9b66ff8a7</code>: 1 failed, 96 passed, <code>EXIT=1</code> (the new case).
+    Head: 97 passed, <code>EXIT=0</code>, no added failure id. With the misfiled
+    identity removed from the key, the in-place rewrite case is served the earlier
+    verdict and fails again (1 failed, 1 passed, <code>EXIT=1</code>).
+  </p>
+</section>
