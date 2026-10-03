@@ -93,6 +93,41 @@ def test_ledger_index_shares_cache_root_without_touching_capabilities(
     assert set(cache_path.parent.iterdir()) == {index_path, cache_path}
 
 
+@pytest.mark.parametrize("existing", [False, True])
+def test_index_schema_and_rows_publish_in_one_transaction(
+    tmp_path, monkeypatch, existing
+):
+    root, _aggregate, directory = _fixture(tmp_path, monkeypatch)
+    _write(directory, _row("first"))
+    if existing:
+        ledger.picker_runs("sample", root)
+        with sqlite3.connect(ledger._run_index_path("sample", root)) as connection:
+            connection.execute("PRAGMA user_version=0")
+
+    statements = []
+    connect = sqlite3.connect
+
+    def traced_connect(*args, **kwargs):
+        connection = connect(*args, **kwargs)
+        connection.set_trace_callback(statements.append)
+        return connection
+
+    monkeypatch.setattr(sqlite3, "connect", traced_connect)
+    assert ledger.picker_runs("sample", root) == [_row("first")]
+    writes = [
+        i
+        for i, sql in enumerate(statements)
+        if sql.startswith(
+            ("CREATE ", "DROP ", "INSERT ", "DELETE ", "PRAGMA user_version=")
+        )
+    ]
+    assert writes, statements
+    begin = [i for i, sql in enumerate(statements) if sql.startswith("BEGIN")]
+    commit = [i for i, sql in enumerate(statements) if sql == "COMMIT"]
+    assert len(begin) == len(commit) == 1, statements
+    assert begin[0] < min(writes) <= max(writes) < commit[0], statements
+
+
 def test_append_reads_only_the_new_run(tmp_path, monkeypatch):
     root, _aggregate, directory = _fixture(tmp_path, monkeypatch)
     for i in range(40):

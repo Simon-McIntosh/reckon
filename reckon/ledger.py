@@ -878,6 +878,9 @@ def _indexed_data(
         # The transaction publishes stamps and payloads together. Aggregate and
         # split records remain independent sources, including their conflict check.
         with connection:
+            # The context manager commits but does not begin a transaction.
+            # Include schema writes so a cold read pays for one durable commit.
+            connection.execute("BEGIN")
             version = connection.execute("PRAGMA user_version").fetchone()[0]
             if version != _RUN_INDEX_VERSION:
                 for table in ("records", "aggregate_rows", "metadata"):
