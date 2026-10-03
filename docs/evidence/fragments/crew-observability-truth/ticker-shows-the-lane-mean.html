@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="ticker-shows-the-lane-mean">
+  <meta name="plan-title" content="The ticker row shows the lane's mean beside its own rate">
+  <meta name="plan-summary" content="The follower's row renders the run's own generation rate and the lane's mean in one cell, the mean read from the lane document the row's backend declares; a lane that published no readable mean is named beside the rate rather than replacing it.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-commits" content="b115ba2da, 6c73fea3b">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,ticker,lane,observability">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>The ticker row shows the lane's mean beside its own rate | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution record &middot; 2026-10-03</p>
+      <h1>The ticker row shows the lane's mean beside its own rate</h1>
+      <p class="lead" data-node="ticker-shows-the-lane-mean" data-reckon="landed" data-when="2026-10-03">
+        The row composes the run's own generation rate and the lane's mean in one cell,
+        as <code> 2.00 lane 1.44</code>, and names the absence beside the rate when no
+        mean can be read (<code> 2.00 lane mean unavailable</code>). The mean comes from
+        the lane document the run's own backend declares, read through the lane document
+        module's readers under a short reuse window — not from a field the watch event
+        carries. Gate: base <code>7fbe5fd89</code> <strong>13 failed, 394 passed</strong>
+        (10 of the failures the new file), head <strong>3 failed, 404 passed</strong>, no
+        added failure id — the three remaining ids
+        (<code>test_cli_follow_streams_each_event_as_one_json_document</code>,
+        <code>test_cli_follow_prints_compact_transition_lines_by_default</code>,
+        <code>test_cli_follow_keeps_machine_objects_behind_json_flag</code>) fail
+        identically at base and are outside this node. Negative control declared and
+        executed: with the lane mean dropped from the rendered row, <code>4 failed</code>
+        — every assertion that reads the lane figure — and no id the head arm fails.
+        <code>ruff check</code> passes on both changed files; <code>ruff format
+        --check</code> reports only the one pre-existing hunk (<code>ticker.py</code>,
+        the <code>STATS</code> expression) that the base reports too.
+      </p>
+    </header>
+
+    <h2>The regression this repair closes</h2>
+    <p>The first landing read the mean from <code>event["lane_reading"]</code>, a key the
+    watch path never sets: <code>_watch_snapshot</code> and <code>_watch_transition</code>
+    rebuild each event field by field, and the live pointer's lane reading is not among
+    them. The cell therefore returned nothing on every real row, and because it also
+    withheld the run's own rate, the live pane lost the per-row generation rate it
+    rendered before without gaining the lane's mean in its place. The test did not catch
+    it because it built its events by hand — the shape the watch path produces is the
+    shape the test now uses.</p>
+    <p>The cell now resolves the row's backend in the same four-layer flight configuration
+    a dispatch reads, takes that backend's declared <code>lane_document</code>, and reads
+    it through <code>reckon/crew/lane_document.py</code>: the reader judges freshness from
+    the document's own stamp and shelf life, and resolves the throughput block's mean. A
+    document that is absent, unreadable, past its shelf life or publishing no numeric mean
+    yields the phrase; only a measured mean is printed. The read is held for a short reuse
+    window, so a pane drawing a burst of rows resolves the config and reads the lane once
+    rather than per row.</p>
+    <p>Two limits are stated rather than hidden. A row that names no backend adds no cell —
+    the document is declared per backend, so such a row has no lane to read, and it keeps
+    the exact shape it rendered before. And the cell is an addition the pane must have room
+    for: at the grid's minimum width the fixed columns fill the pane and the cell is
+    dropped rather than allowed to wrap the row, which spends the clause's margin and never
+    the pane's edge.</p>
+  </main>
+</body>
+</html>
