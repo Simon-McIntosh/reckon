@@ -226,13 +226,16 @@ def test_the_held_set_equals_the_whole_ledger_derivation(fleet: Path) -> None:
 
 # The mixed states a held tree can be recorded in. Two runs of one node whose
 # completion order reverses their dispatch order, and a tie on the completion
-# stamp, are the orderings the two sources disagree about.
+# stamp, are the orderings the two sources disagree about. A run whose node id
+# differs from the tree's directory name is a state no run-id token names, so
+# only the record's own retention reaches the tree.
 MIXED_STATES = (
     "aggregate-only",
     "per-run-only",
     "file-and-aggregate-row",
     "completion-reverses-dispatch",
     "completed-at-tie",
+    "node-id-differs-from-tree-name",
 )
 
 
@@ -287,6 +290,21 @@ def _build_case(root: Path, case: str) -> str:
                 ),
             )
         return late
+    if case == "node-id-differs-from-tree-name":
+        # The later run was dispatched for another node and retained this tree,
+        # so neither its node id nor its run id token names the tree.
+        other = "r-20261001T100000000000-beta-holds"
+        _append(root, _produced(early, "alpha-holds", worktree=tree))
+        _append(
+            root,
+            _produced(
+                other,
+                "beta-holds",
+                worktree=tree,
+                completed_at=OBSERVED_AT - timedelta(minutes=5),
+            ),
+        )
+        return other
     raise AssertionError(f"unknown mixed state {case!r}")
 
 

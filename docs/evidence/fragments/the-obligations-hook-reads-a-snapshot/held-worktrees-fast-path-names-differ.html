@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="reckon-type" content="evidence">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-evidence-for" content="the-obligations-hook-reads-a-snapshot">
+  <title>Landing: a held tree is named by its record, not its run id | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; landing record</p>
+      <h1>Landing: a held tree is named by its record, not its run id</h1>
+      <p class="lead">Lands the code half of the entry: the held-worktree fast path no longer selects a per-run file by the node token in its run id. Every per-run file the aggregate does not carry is read once per call and matched by the record's own two namings &mdash; the retained path and the node id &mdash; which is how the merged reader decides, so a record whose node id differs from its tree's directory name resolves to the same run the whole-ledger reader picks.</p>
+    </header>
+
+    <section id="landing-what-landed">
+      <h2>What landed</h2>
+      <ul>
+        <li><code>reckon/crew/obligations.py</code> &mdash; <code>_holding_record</code> takes the per-run records the aggregate does not carry and matches each against the tree by <code>_names_worktree</code> alone; the <code>_run_id_names_node</code> token test is gone, because a run's node id need not equal the tree's directory name, so a file's name cannot tell whether its record names the tree. <code>_held_worktree_records</code> reads each such file once for the call, in the same order the merged reader appends them, and the run the merged ledger's own order puts last holds the tree. A file whose row the aggregate already holds is still never opened.</li>
+        <li><code>tests/test_held_worktrees_read_run_files.py</code> &mdash; a sixth generated mixed state, <code>node-id-differs-from-tree-name</code>: one run dispatched for <code>alpha-holds</code> and a later run dispatched for <code>beta-holds</code> whose retention names the same tree, both file-only. The later run holds the tree in the whole-ledger read.</li>
+      </ul>
+    </section>
+
+    <section id="landing-reproduction">
+      <h2>Reproduction at the base</h2>
+      <p>The new case fails at <code>f9c5d2cfc3b8f531809c0c30d11a1b2bcb2ac1aa</code> exactly as the review found, with the fast path attributing the tree to the earlier run:</p>
+      <pre><code>assert {'r-20261001T090000000000-alpha-holds'} == {'r-20261001T100000000000-beta-holds'}
+Extra items in the left set:  'r-20261001T090000000000-alpha-holds'
+Extra items in the right set: 'r-20261001T100000000000-beta-holds'</code></pre>
+    </section>
+
+    <section id="landing-measure">
+      <h2>Measure</h2>
+      <p>Gate: 13 test files reaching <code>_held_worktrees</code>, <code>_held_worktrees_by_session</code>, <code>obligations()</code> or the snapshot it feeds, run with <code>pytest -n 8 --timeout=300</code> in each arm.</p>
+      <ul>
+        <li>Base arm, product extracted from <code>f9c5d2cfc3b8f531809c0c30d11a1b2bcb2ac1aa</code> under the run scratch with this node's test file overlaid: <code>1 failed, 97 passed</code>, <code>EXIT=1</code>. The single failure is the new case <code>test_a_mixed_state_goes_to_the_run[node-id-differs-from-tree-name]</code>.</li>
+        <li>Head arm at <code>a5576b7ff37dffc80d8d53ac7d7edf5610eb3586</code>: <code>98 passed</code>, <code>EXIT=0</code>. No failure id added; every existing test that reaches the derivation still passes.</li>
+        <li>Negative control, the declared mutation (a per-run file is admitted again only when the run id's node token equals the worktree directory name) applied to the head in the scratch: <code>1 failed, 8 passed</code>, <code>EXIT=1</code>, the failure being the new case &mdash; the widened read is what makes parity hold.</li>
+        <li><code>ruff check</code> over the two changed Python paths: no finding (the base carried one <code>I001</code>, removed with the now-unused <code>import re</code>). <code>ruff format --check</code>: both files formatted, as at the base.</li>
+        <li>Cost on the real reckon ledger (11 held trees; 1,636 run files of which 315 are file-only), <code>_held_worktrees_by_session('reckon')</code> in a fresh process: base 7.29&nbsp;s and 7.11&nbsp;s, head 8.03&nbsp;s and 7.08&nbsp;s, then head-first 8.52&nbsp;s and 7.18&nbsp;s against base 7.83&nbsp;s and 6.92&nbsp;s. The between-arm difference sits inside the ~0.6&nbsp;s order effect cache warmth produces, so no regression is resolved by this instrument; the added read is bounded by the 315 file-only files, read once per call rather than once per tree.</li>
+      </ul>
+    </section>
+
+    <section id="landing-commits">
+      <h2>Commits and records</h2>
+      <p>Code and tests: <code>a5576b7ff37dffc80d8d53ac7d7edf5610eb3586</code>. Logs in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T075909628508-held-worktrees-fast-path-names-differ/</code>: <code>gate-base.log</code> (base arm), <code>gate-head-a5576b7.log</code> (head arm), <code>negative-control.log</code> (declared mutation).</p>
+    </section>
+  </main>
+</body>
+</html>
