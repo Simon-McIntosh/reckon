@@ -1,0 +1,23 @@
+<section data-reckon="evidence" data-node="the-lane-event-grouping-keeps-its-own-vocabulary">
+  <h3>A lane event groups by its cause, not by the run that reported it</h3>
+  <p>The lane-event signature now removes the tokens a run's own record contributes — its
+  run id, a process id, a timestamp — before the cause is hashed, so simultaneous ends for
+  one cause are one lane event while two ends with different causes stay apart. Display
+  aliases such as <code>lane event</code> moved out of <code>STATE_HUE</code> into their
+  own <code>DISPLAY_HUE</code> table, so <code>CLASSIFIER_STATE_WORDS</code> carries only
+  producer and classifier words, while both aliases still resolve to a hue on both themes.
+  Three assertions fail at base <code>81b535347</code> and pass at head
+  <code>1506c0f2e</code>: the one-event case across a run id, a pid and a timestamp, the
+  grouped row's <code>fleet_verdict.state</code>, and the alias exclusion. The base arm
+  over the assertion-carrying files records <strong>5 failed, 19 passed, EXIT=1</strong>;
+  the four named files at head record <strong>121 passed, EXIT=0</strong>, and the baseline
+  suite over the three existing files records <strong>116 passed, EXIT=0</strong>. The
+  declared negative control reddens the one-event case in a scratch copy of the head tree
+  with the signature taken over the full reason text again (<strong>3 failed, 1 passed,
+  EXIT=1</strong>), while the two-different-causes case still passes. Outside this node's
+  fence, reported rather than fixed:
+  <code>tests/test_crew_ticker_layout.py::test_every_state_the_snapshot_can_emit_has_a_colour</code>
+  refuses <code>('light', ['lane event', 'unpromoted'])</code> at head (<strong>1 failed,
+  69 passed</strong>) once the aliases leave <code>STATE_HUE</code>, a merged-head repair
+  for the node that owns that file.</p>
+</section>
