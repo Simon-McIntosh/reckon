@@ -61,6 +61,7 @@ import shutil
 import subprocess
 import tempfile
 import threading
+import time
 import urllib.request
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -2501,8 +2502,8 @@ PROTECTED_PATHS_KEY = "protected_paths"
 UNPROTECTED_PATHS_KEY = "unprotected_paths"
 
 
-def _default_protected_paths(home: str | Path | None = None) -> list[Path]:
-    """Return the fence's shipped default protected set, home-relative.
+def _named_protected_paths(home: str | Path | None = None) -> list[Path]:
+    """Return every path in the fence's shipped default set, home-relative.
 
     The set is derived from the home directory rather than stored absolute, so
     the same declaration fences a test's temp home and the operator's real one.
@@ -2515,7 +2516,10 @@ def _default_protected_paths(home: str | Path | None = None) -> list[Path]:
 
     This is the default a host or project layer augments or trims through the
     flight keys; it is never replaced by a layer, so a layer that omits one of
-    these from ``protected_paths`` leaves it protected.
+    these from ``protected_paths`` leaves it protected. Every named path is
+    returned whether or not it exists on this machine, because a path missing
+    from one existence check alone is still one the fence intends to seal; only
+    :func:`_default_protected_paths` narrows the set to what is on disk.
     """
     root = Path(home) if home is not None else Path.home()
     named = [
@@ -2544,7 +2548,19 @@ def _default_protected_paths(home: str | Path | None = None) -> list[Path]:
     # ``Code/dotfiles`` is named above and is also a checkout, so the same path
     # can arrive twice; a duplicate read-only overlay is harmless to bubblewrap
     # but doubles the argv and reads as a mistake. Preserve order, drop repeats.
-    return list(dict.fromkeys(path for path in named if path.exists()))
+    return list(dict.fromkeys(named))
+
+
+def _default_protected_paths(home: str | Path | None = None) -> list[Path]:
+    """Return the shipped default protected paths this machine has.
+
+    A named default with no file behind it seals nothing — there is no inode to
+    mount and no bytes to seal — so it is left out of the composed set, exactly
+    as a path the operator never had. A default that is merely missing for an
+    instant while the fence is built is waited for before this narrowing is
+    consulted; see :func:`protected_read_only_binds`.
+    """
+    return [path for path in _named_protected_paths(home) if path.exists()]
 
 
 def _resolve_declared_path(
@@ -2583,22 +2599,29 @@ def _declared_paths(
     return resolved
 
 
-def protected_paths(
+def declared_protected_paths(
     home: str | Path | None = None, config: Mapping[str, Any] | None = None
 ) -> list[Path]:
-    """Return the existing paths the fence makes read-only, home-relative.
+    """Return every path the fence intends to seal, whether or not it exists.
 
-    The set composes three things: the shipped default
-    (:func:`_default_protected_paths`), the extra paths a host or project layer
+    The intent composes three things: the shipped default
+    (:func:`_named_protected_paths`), the extra paths a host or project layer
     names under ``protected_paths``, and the defaults a layer names under
     ``unprotected_paths``. The default is always present, so a layer augments
-    it but can never replace it, and the only way to drop a default is to name
+    it, but can never replace it, and the only way to drop a default is to name
     it under ``unprotected_paths`` — a reduction is then a deliberate, named
     act rather than a side effect of an edited ``protected_paths`` list.
+
+    Composition keeps the intent whole rather than reporting only what is on
+    disk at this instant: a path being rewritten as the fence is composed can
+    be absent for a moment while remaining one the fence must seal, and one a
+    layer adds is a declaration the fence checks rather than filters away. Both
+    reach :func:`protected_read_only_binds` as intent; they part company only
+    for a path that stays absent past its bounded wait.
     """
-    defaults = _default_protected_paths(home)
+    named = _named_protected_paths(home)
     additions = _declared_paths(config, PROTECTED_PATHS_KEY, home)
-    composed = list(dict.fromkeys([*defaults, *additions]))
+    composed = list(dict.fromkeys([*named, *additions]))
     removals = _declared_paths(config, UNPROTECTED_PATHS_KEY, home)
     if removals:
         removal_targets = {str(resolved_destination(path)) for path in removals}
@@ -2607,7 +2630,20 @@ def protected_paths(
             for path in composed
             if str(resolved_destination(path)) not in removal_targets
         ]
-    return [path for path in composed if path.exists()]
+    return composed
+
+
+def protected_paths(
+    home: str | Path | None = None, config: Mapping[str, Any] | None = None
+) -> list[Path]:
+    """Return the composed protected set narrowed to the paths on disk now.
+
+    Only a path with a file behind it can be sealed read-only, so this is the
+    set a caller can assert about without waiting; the fence itself composes
+    from :func:`declared_protected_paths`, because a path momentarily absent
+    while it is rewritten still has to be sealed.
+    """
+    return [path for path in declared_protected_paths(home, config) if path.exists()]
 
 
 def fence_unprotected_paths(
@@ -2693,33 +2729,88 @@ def resolved_destination(path: Path) -> Path:
     return Path(path).resolve()
 
 
+# How long the fence waits for a protected bind source that is absent when the
+# fence is composed. A writer that replaces a file by rename leaves its name
+# missing for an instant, and a protected path bound during that instant would
+# abort the launch instead of sealing it. Every absent source waits together,
+# so a path this machine does not have at all costs one interval rather than
+# one each.
+PROTECTED_BIND_WAIT_ATTEMPTS = 10
+PROTECTED_BIND_WAIT_INTERVAL_SECONDS = 0.05
+
+
+def _await_protected_sources(absent: Sequence[Path]) -> list[Path]:
+    """Wait, bounded, for protected bind sources that are absent to appear.
+
+    Returns the paths still absent once the wait is over. One shared wait
+    serves every absent source, so a composition is delayed by at most
+    ``PROTECTED_BIND_WAIT_ATTEMPTS`` intervals however many are missing, and a
+    path that appears at any point during it is no longer reported.
+    """
+    pending = list(absent)
+    for _ in range(PROTECTED_BIND_WAIT_ATTEMPTS):
+        if not pending:
+            break
+        time.sleep(PROTECTED_BIND_WAIT_INTERVAL_SECONDS)
+        pending = [path for path in pending if not path.exists()]
+    return pending
+
+
 def protected_read_only_binds(
     protected: Sequence[Path],
+    *,
+    required: Sequence[Path] = (),
 ) -> list[tuple[Path, Path]]:
     """Return the source/destination pairs that overlay the protected paths.
 
     Every protected path is resolved through its whole ancestry, not only when
     the path is itself a symlink, because a link anywhere above it makes the
     destination unmountable and aborts the launch before the worker starts. Both
-    shapes reach this list — ``protected_paths`` filters on ``Path.exists()``,
-    which follows links — and two are live on this workstation's home:
-    ``~/.gitconfig`` is a link into ``Code/dotfiles``, and a protected path
-    below a symlinked ``~/.config`` is a plain directory with a link above it.
+    shapes reach this list — the composed set is filtered on ``Path.exists()``
+    by :func:`protected_paths`, which follows links — and two are live on this
+    workstation's home: ``~/.gitconfig`` is a link into ``Code/dotfiles``, and a
+    protected path below a symlinked ``~/.config`` is a plain directory with a
+    link above it.
 
     Two consequences of resolving, both handled here. A resolved target already
     inside another protected path needs no overlay of its own: that path is
     sealed in its own right, so one of its own would be a redundant read-only
-    bind. And a target that does not exist is skipped outright — a link into
-    nothing seals nothing, and there is no file to mount.
+    bind. And a target that does not exist is not sealed — a link into nothing
+    seals nothing, and there is no file to mount.
+
+    A target that is absent here is one whose existence check lost a race with
+    a writer that replaces files by rename, so it is waited for, bounded and
+    together, before it is judged: an absent path that appears during that wait
+    is bound exactly as one that was never absent. A path that stays absent
+    afterwards parts company by what it is. A path in ``required`` — one a
+    layer named under ``protected_paths`` — is a promise the fence cannot keep
+    without a file behind the name, so it refuses the launch, naming it, rather
+    than launching with the path writable. A shipped default that stays absent
+    is left out instead: a path this machine does not have is not a protection
+    the fence can lose, and refusing on it would stop every launch on a host
+    with, say, no ``~/.netrc``.
 
     The destination is always the resolved path, so nothing this returns names
     a symlink anywhere in its ancestry.
     """
-    resolved: list[Path] = []
-    for path in protected:
-        target = resolved_destination(path)
-        if target.exists() and str(target) not in {str(seen) for seen in resolved}:
-            resolved.append(target)
+    targets = list(dict.fromkeys(resolved_destination(path) for path in protected))
+    absent = [target for target in targets if not target.exists()]
+    if absent:
+        still_absent = set(_await_protected_sources(absent))
+        required_targets = {str(resolved_destination(path)) for path in required}
+        refused = [
+            str(target)
+            for target in targets
+            if target in still_absent and str(target) in required_targets
+        ]
+        if refused:
+            raise BackendError(
+                f"protected path {refused[0]} is still absent after waiting "
+                f"{PROTECTED_BIND_WAIT_ATTEMPTS} times at "
+                f"{PROTECTED_BIND_WAIT_INTERVAL_SECONDS}s intervals; refusing to "
+                "launch with a declared protected path unsealed"
+            )
+    resolved = [target for target in targets if target.exists()]
     pairs: list[tuple[Path, Path]] = []
     for target in resolved:
         others = [other for other in resolved if other != target]
@@ -2804,7 +2895,9 @@ def fence_argv(
 
     A protected path is bound at its resolved target rather than at its own
     path, because bubblewrap cannot create a mount point below a symlink; see
-    :func:`protected_read_only_binds`. The writable roots are resolved the same
+    :func:`protected_read_only_binds`, which also waits, bounded, for a path
+    that is momentarily absent while it is rewritten and refuses the launch
+    for one a layer declares but never appears. The writable roots are resolved the same
     way, for two reasons: containment is tested against the paths the overlays
     actually land on, so a grant inside a symlinked protected tree is still
     re-opened writable rather than silently lost, and the grant's own
@@ -2827,7 +2920,7 @@ def fence_argv(
     invent nothing. Each handed root is a directory by construction, so
     declaring a file can never create a directory of that name.
     """
-    protected = protected_paths(home, config)
+    protected = declared_protected_paths(home, config)
     roots: list[Path] = [Path(path) for path in writable_directories]
     if worktree is not None:
         roots.append(Path(worktree))
@@ -2835,7 +2928,10 @@ def fence_argv(
     if manifest_path is not None:
         roots.append(Path(manifest_path).parent)
 
-    binds = protected_read_only_binds(protected)
+    binds = protected_read_only_binds(
+        protected,
+        required=_declared_paths(config, PROTECTED_PATHS_KEY, home),
+    )
     sealed = [destination for _source, destination in binds]
     if worktree is not None:
         checkout = _fenced_worktree_refusal(
