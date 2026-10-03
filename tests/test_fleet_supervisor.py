@@ -7,6 +7,12 @@ session start reaches zellij, the inherited session variables do not reach the
 child. Each case therefore observes a process or a file rather than a return
 value, and every absence is preceded by showing the same instrument reading a
 known-present value.
+
+The configuration home the reader resolves its declared services through is
+pinned inside each case's temporary directory, so no case here reads the
+operator's fleet config or starts a service it declares. The reader's own stop
+request is what every case stops a reader with, so the services it started end
+with it.
 """
 
 from __future__ import annotations
@@ -55,6 +61,22 @@ ENV_DUMP_CHILD = (
     "    handle.write('\\n'.join(sorted(os.environ)))\n"
 )
 
+# A declared service stub: argv[1] is a marker it writes to prove it ran, and
+# then it idles in a sleep loop. A loop rather than one long sleep, because the
+# case stops it and what the stop reaches must be a process that would still be
+# running otherwise.
+STUB_SERVICE = (
+    "import sys, time\n"
+    "open(sys.argv[1], 'w', encoding='utf-8').write('started\\n')\n"
+    "while True:\n"
+    "    time.sleep(0.1)\n"
+)
+
+# How long a reader is given to answer a stop request before it is killed. The
+# bound covers the reader's own service stop grace, so a reader that is honoring
+# the request is never killed mid-stop.
+GRACEFUL_STOP_SECONDS = 30.0
+
 # A stand-in for zellij: it appends its argv to the file named by
 # RECKON_ZELLIJ_STUB_LOG, prints the sessions named by
 # RECKON_ZELLIJ_STUB_SESSIONS when asked to list them, and prints the tabs
@@ -99,6 +121,55 @@ def _send(runtime: Path, line: str) -> None:
         handle.write(line + "\n")
 
 
+def _try_send(runtime: Path, line: str) -> bool:
+    """Write a request line if a reader holds the FIFO's other end.
+
+    Opening a FIFO for writing blocks until a reader opens it, so a reader that
+    has already ended would hang the writer forever; the open is non-blocking
+    and answers ENXIO instead, which is the fact the caller wants rather than a
+    wait. The line is short, so the write itself cannot block.
+    """
+    try:
+        descriptor = os.open(
+            runtime / fleet_supervisor.REQUEST_FIFO_NAME,
+            os.O_WRONLY | os.O_NONBLOCK,
+        )
+    except OSError:
+        return False
+    try:
+        os.write(descriptor, (line + "\n").encode())
+    finally:
+        os.close(descriptor)
+    return True
+
+
+def _processes_with_env(name: str, value: str) -> list[int]:
+    """Every process of this user whose environment carries ``name=value``.
+
+    Each process is read from its own environment file under ``/proc``, so it is
+    found by what it was handed rather than by what it is called: a name pattern
+    would match the search itself, and would miss a service whose argv is
+    whatever the config declared. A process owned by another user and one that
+    ends while the scan runs are skipped rather than reported, so a missing
+    reading is never mistaken for an absent process.
+    """
+    needle = f"{name}={value}".encode()
+    uid = os.getuid()
+    found: list[int] = []
+    for entry in Path("/proc").iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            if entry.stat().st_uid != uid:
+                continue
+            environ = (entry / "environ").read_bytes()
+        except OSError:
+            continue
+        if needle in environ.split(b"\0"):
+            found.append(int(entry.name))
+    return sorted(found)
+
+
 def _reader_log(path: Path) -> str:
     try:
         return path.read_text(encoding="utf-8")
@@ -139,6 +210,23 @@ def _settled_argv(
         previous = current
         time.sleep(POLL_SECONDS)
     return _argv_log(path)
+
+
+@pytest.fixture(autouse=True)
+def isolated_config_home(tmp_path, monkeypatch):
+    """Resolve the fleet services file inside this case's temporary directory.
+
+    The reader starts every service ``<config home>/fleet/services.json``
+    declares, each as a process that leads its own session and so outlives
+    nothing but the allocation. Without this the file's own runs resolve the
+    operator's real config and launch real services that outlive the case, which
+    is state outside the repository in the writing direction. ``XDG_CONFIG_HOME``
+    is the environment the reader resolves the path through, so this one
+    variable drives the whole configuration into the case's tree.
+    """
+    config_home = tmp_path / "config-home"
+    monkeypatch.setenv(fleet_supervisor.CONFIG_HOME_ENV, str(config_home))
+    return config_home
 
 
 @pytest.fixture()
@@ -182,13 +270,28 @@ def reader(tmp_path):
         )
         return process
 
+    def stop(timeout: float = GRACEFUL_STOP_SECONDS) -> None:
+        """Stop every reader this fixture started, and what each one started.
+
+        The stop request is the reader's own, so the services it declared are
+        stopped before it exits and nothing it started is left behind. A reader
+        that does not answer within the bound is killed, which is the only case
+        where what it started could survive it.
+        """
+        for process, _handle in opened:
+            if process.poll() is not None:
+                continue
+            _try_send(runtime, "stop")
+            try:
+                process.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=10)
+
     yield SimpleNamespace(
-        start=start, runtime=runtime, state=state, log=log, opened=opened
+        start=start, stop=stop, runtime=runtime, state=state, log=log, opened=opened
     )
-    for process, _handle in opened:
-        if process.poll() is None:
-            process.kill()
-        process.wait(timeout=10)
+    stop()
     stack.close()
 
 
@@ -812,3 +915,124 @@ def test_a_session_start_that_overruns_does_not_hold_the_reader(
         timeout=10.0,
     )
     assert leftover
+
+
+def test_stopping_the_reader_stops_the_service_its_config_declared(
+    reader, tmp_path
+) -> None:
+    """A declared service ends when the reader that started it is stopped.
+
+    The stub is declared in the services file this case's isolated config home
+    resolves, so the case observes both halves at once: a stub that never starts
+    shows the reader read some other services file, and a stub that survives the
+    stop shows the reader's end does not reach what it started. Survivors are
+    read from each process's own environment rather than from its command line,
+    so the assertion names the process by what it was handed.
+    """
+    reckon_home = tmp_path / "reckon-home"
+    marker = tmp_path / "stub-started"
+    config_home = Path(os.environ[fleet_supervisor.CONFIG_HOME_ENV])
+    services_file = (
+        config_home
+        / fleet_supervisor.CONFIG_DIRECTORY_NAME
+        / fleet_supervisor.SERVICES_FILE_NAME
+    )
+    services_file.parent.mkdir(parents=True, exist_ok=True)
+    services_file.write_text(
+        json.dumps({"stub": [sys.executable, "-c", STUB_SERVICE, str(marker)]}),
+        encoding="utf-8",
+    )
+
+    reader.start({"RECKON_HOME": str(reckon_home)})
+    _wait_for(
+        marker.exists,
+        message=(
+            "the declared stub never started, so the reader did not read the "
+            f"services file this case wrote; log={_reader_log(reader.log)!r}"
+        ),
+    )
+    # The instrument is shown seeing a process that is there before an absence
+    # is read from it. The reader itself carries the marker, so the case waits
+    # for a second process besides it: the service it started.
+    reader_pid = reader.opened[0][0].pid
+    _wait_for(
+        lambda: (
+            [
+                pid
+                for pid in _processes_with_env("RECKON_HOME", str(reckon_home))
+                if pid != reader_pid
+            ]
+            or None
+        ),
+        message=(
+            "no process but the reader carries this case's RECKON_HOME, so the "
+            "scan would read the same before and after the stop"
+        ),
+    )
+
+    reader.stop()
+
+    survivors = _processes_with_env("RECKON_HOME", str(reckon_home))
+    if survivors:
+        deadline = time.monotonic() + WAIT_SECONDS
+        while survivors and time.monotonic() < deadline:
+            time.sleep(POLL_SECONDS)
+            survivors = _processes_with_env("RECKON_HOME", str(reckon_home))
+    assert survivors == [], (
+        f"processes carrying RECKON_HOME={reckon_home} outlived the reader's "
+        f"stop: {survivors}"
+    )
+
+
+def test_the_operator_services_file_is_never_opened(tmp_path, monkeypatch) -> None:
+    """The reader resolves its services file in the case's tree, not the operator's.
+
+    The operator's home is simulated under this case's temporary directory — the
+    real one is exactly what must not be touched — and its config declares a
+    service, so a reader that fell back to it would both read the file and start
+    something. Opens are recorded from the path objects the reader's own loader
+    reads through: the isolated file is shown read, and the operator-shaped one
+    is shown not to be.
+    """
+    operator_home = tmp_path / "operator-home"
+    operator_services = (
+        operator_home
+        / ".config"
+        / fleet_supervisor.CONFIG_DIRECTORY_NAME
+        / fleet_supervisor.SERVICES_FILE_NAME
+    )
+    operator_services.parent.mkdir(parents=True, exist_ok=True)
+    operator_services.write_text(
+        json.dumps({"operator-stub": [sys.executable, "-c", "pass"]}),
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("HOME", str(operator_home))
+
+    opened: list[str] = []
+    real_open = Path.open
+
+    def recording_open(path, *args, **kwargs):
+        opened.append(str(path))
+        return real_open(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", recording_open)
+
+    isolated = fleet_supervisor.services_config_path(os.environ)
+    assert isolated.is_relative_to(tmp_path), (
+        f"the reader resolves its services file at {isolated}, outside this "
+        "case's temporary directory"
+    )
+    isolated.parent.mkdir(parents=True, exist_ok=True)
+    isolated.write_text(
+        json.dumps({"isolated-stub": [sys.executable, "-c", "pass"]}),
+        encoding="utf-8",
+    )
+    declared = fleet_supervisor.declared_services(os.environ)
+    assert declared == {"isolated-stub": [sys.executable, "-c", "pass"]}, declared
+    assert str(isolated) in opened, (
+        "the reader's own services file was not read, so this instrument is not "
+        "shown seeing a read it should see"
+    )
+    assert str(operator_services) not in opened, (
+        f"the operator-shaped services file at {operator_services} was read"
+    )

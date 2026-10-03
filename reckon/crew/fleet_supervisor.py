@@ -23,6 +23,9 @@ Requests arrive one per line on a FIFO in that directory:
   ``spawn <run-id> <spec>``    run the supervisor spec's argv as this batch
                                step's own detached child, and acknowledge it in
                                the spec's run directory
+  ``stop``                     stop every declared service this reader started
+                               and end the request loop, so nothing it started
+                               outlives it
 
 Each session start runs a fresh copy of this module (the ``start`` mode),
 because the loop is long-lived and the starting logic is not: a fix to how a
@@ -698,6 +701,18 @@ class DeclaredServices:
         with self._guard:
             self._stop_locked(name)
 
+    def stop_all(self) -> None:
+        """Stop every service this supervisor is running, and wait for each end.
+
+        The stop path of the reader: what it started does not outlive it. Each
+        name is stopped by its recorded pid, the same way a reload stops one the
+        config no longer declares, and the guard is held across the sweep so the
+        supervision thread cannot restart a copy between two stops.
+        """
+        with self._guard:
+            for name in list(self._states):
+                self._stop_locked(name)
+
     def _stop_locked(self, name: str) -> None:
         """Signal the recorded pid, and wait for the service to end.
 
@@ -1209,8 +1224,13 @@ def handle_line(
     environ: Mapping[str, str] | None = None,
     exec_: Any = os.execv,
     services: DeclaredServices | None = None,
-) -> None:
-    """Act on one request line; a line this reader cannot act on is logged only."""
+) -> bool:
+    """Act on one request line; a line this reader cannot act on is logged only.
+
+    Returns whether the reader keeps reading requests. Only the ``stop`` verb
+    returns False, so the loop ends when it is asked to rather than on any line
+    the reader could not act on.
+    """
     request = parse_request(line)
     if request.verb == "session":
         layout = request.fields[1] if len(request.fields) > 1 else ""
@@ -1226,10 +1246,14 @@ def handle_line(
             spawn_supervisor(run_id, spec_path, environ)
         except (OSError, ValueError, KeyError, TypeError) as exc:
             log(f"spawn failed for {run_id}: {type(exc).__name__}: {exc}")
+    elif request.verb == "stop":
+        log("stopping")
+        return False
     elif request.verb == "":
-        return
+        return True
     else:
         log(f"unknown request: {line.strip()}")
+    return True
 
 
 def _reap_finished_children() -> None:
@@ -1296,9 +1320,15 @@ def serve(
                 line = stream.readline()
                 if not line:
                     continue
-                handle_line(line, runtime, environ, exec_, services)
+                if not handle_line(line, runtime, environ, exec_, services):
+                    break
     finally:
+        # The reader's end is the stop path for everything it started: a stop
+        # request, and an exception escaping the loop, both stop the declared
+        # services here. A reload never reaches this, because exec replaces the
+        # image without unwinding, so the services it adopted keep running.
         stopping.set()
+        services.stop_all()
     return 0
 
 
