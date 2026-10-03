@@ -107,6 +107,7 @@ def _dispatch(
     section: str = "work",
     launcher=None,
 ) -> dict:
+    manifest = root.parent / "config" / "crew" / "runs" / node_id / "manifest.md"
     backend = (
         {
             "launch": "cli",
@@ -128,9 +129,10 @@ def _dispatch(
             role=role,
             spec_level="exact",
             done_when="pytest reports one passing section accounting case",
-            write_paths=[f"src/{node_id}.py"],
+            write_paths=[str(manifest)] if role == "test" else [f"src/{node_id}.py"],
             time_budget="20m",
             negative_control="none: fixture does not write a test",
+            manifest_path=str(manifest),
         ),
         project="sample",
         repo=root,
@@ -268,3 +270,15 @@ def test_refused_worker_start_does_not_count(tmp_path: Path, monkeypatch) -> Non
         _dispatch(root, "refused", launcher=refuse)
     assert _section(root)["attempts"] == 0
     assert plan.read_bytes() == before
+
+
+def test_test_role_counts_and_unpassed_run_is_superseded(
+    tmp_path: Path, monkeypatch
+) -> None:
+    root, _plan = _repository(tmp_path, monkeypatch)
+    run = _dispatch(root, "verification", role="test")
+    assert _section(root)["attempts"] == 1
+    crew.complete(run["run_id"], gate="not-run", outcome="superseded", root=root)
+    assert _section(root)["attempt_outcomes"] == [
+        {"run_id": run["run_id"], "status": "superseded"}
+    ]
