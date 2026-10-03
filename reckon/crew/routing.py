@@ -460,7 +460,7 @@ def _git(repo: Path, *args: str, check: bool = True) -> subprocess.CompletedProc
     )
     if check and result.returncode:
         detail = result.stderr.strip() or result.stdout.strip()
-        raise CrewError(f"git {' '.join(args)} failed: {detail}")
+        raise CrewError(f"git {' '.join(args)} failed in {repo}: {detail}")
     return result
 
 
@@ -571,6 +571,7 @@ def _tree_state(path: Path) -> dict[str, Any]:
         return {
             "path": str(path),
             "available": False,
+            "unavailable_state": "missing",
             "detail": "tree is no longer available",
         }
     head = subprocess.run(
@@ -601,6 +602,7 @@ def _tree_state(path: Path) -> dict[str, Any]:
         return {
             "path": str(path),
             "available": False,
+            "unavailable_state": "unreadable",
             "detail": detail,
         }
     entries = []
@@ -721,6 +723,7 @@ def _inspect_workspace(
             "path": str(path),
             "head": "",
             "classification": "unavailable",
+            "unavailable_state": state.get("unavailable_state") or "missing",
             "detail": detail,
             "dirty": [],
             "integrated_into": integrated_into,
@@ -1146,6 +1149,17 @@ UNAVAILABLE_WORKTREE_REASON = (
     "no commit or working tree to judge; it is reported and left in place, "
     "because removing its registration would discard another session's record"
 )
+# A registration whose directory still exists but cannot be read as a git
+# working tree — a plain directory left where the tree was, or a damaged
+# registration. It is reported with git's own reason and left in place for the
+# same purpose as a vanished directory: the registration is another session's
+# record of a tree it may still be reasoning about.
+UNREADABLE_WORKTREE_REASON = (
+    "git still registers this worktree and its directory exists, but it is not "
+    "a git working tree, so there is no commit or status to judge; it is "
+    "reported and left in place, because removing it would discard another "
+    "session's record"
+)
 # Figures the routing derivation reads from raw run streams when the ledger
 # row carries no recorded measurement. A run source may be reaped only once
 # every such figure is recorded on its row, because a reaped stream is the
@@ -1218,6 +1232,41 @@ def _explicitly_absent_figures(record: Mapping[str, Any]) -> tuple[str, ...]:
     )
 
 
+class GcSweepError(CrewError):
+    """A sweep that stopped mid-pass, carrying the steps it already applied.
+
+    A pass removes and refuses worktrees one at a time, so a failure after the
+    first removal would otherwise reach the caller as a bare message: the tree
+    already gone from disk, and nothing naming it. ``partial`` holds the report
+    the pass had built — the removed list, the rows already judged and the path
+    the failure was reached through — so a caller that never sees a return
+    value can still report what was done.
+    """
+
+    def __init__(self, message: str, partial: dict[str, Any]) -> None:
+        super().__init__(message)
+        self.partial = partial
+
+
+def _gc_partial_report(
+    repo_root: Path,
+    integrated_into: str,
+    apply: bool,
+    removed: list[str],
+    worktrees: list[dict[str, Any]],
+    failed_path: str,
+) -> dict[str, Any]:
+    """The report a sweep stopped mid-pass can still make."""
+    return {
+        "repo": str(repo_root),
+        "integrated_into": integrated_into,
+        "dry_run": not apply,
+        "removed_worktrees": list(removed),
+        "worktrees": list(worktrees),
+        "failed_path": failed_path,
+    }
+
+
 def garbage_collect(
     *,
     repo: str | Path,
@@ -1232,183 +1281,202 @@ def garbage_collect(
         raise CrewError("retention days cannot be negative")
     repo_root = Path(repo).resolve()
     _git(repo_root, "rev-parse", "--verify", f"{integrated_into}^{{commit}}")
-    roots = _workspace_roots(repo_root)
-    runs_root = runs_dir()
-    claims = _live_worktree_claims()
-    shadow_records = _shadow_worktree_records(repo_root, project)
-    ledger_records = _ledgered_records(repo_root, project)
-    # The managed set is the workspace registry; a tree the promotion boundary
-    # already walks must be one gc sees too, and that includes registered
-    # worktrees a worker created under a run directory.
-    candidates = [
-        path
-        for path in _registered_worktrees(repo_root)
-        if path != repo_root
-        and (
-            any(path.is_relative_to(root) for root in roots)
-            or path.is_relative_to(runs_root)
-        )
-    ]
-    worktrees = [
-        _inspect_workspace(
-            repo_root,
-            path,
-            integrated_into,
-            claims.get(path.resolve(), ()),
-            shadow_records.get(path.resolve()),
-            raise_on_unavailable=False,
-            release_residue=True,
-        )
-        for path in sorted(candidates)
-    ]
-    # Extractions carry no git directory, so the worktree registry never sees
-    # them; they are reported beside the registry rows under their own kind.
-    worktrees.extend(
-        _extraction_report(path) for path in _run_directory_extractions(runs_root)
-    )
+    worktrees: list[dict[str, Any]] = []
     removed: list[str] = []
     residue_report: list[dict[str, Any]] = []
-    if apply:
-        for item in worktrees:
-            if item["classification"] not in RECLAIMABLE_CLASSES:
-                continue
-            path = Path(item["path"])
-            current_claims = _live_worktree_claims().get(path.resolve(), [])
-            if current_claims:
-                item["classification"] = "live-referenced"
-                item["claimed_by_live_runs"] = sorted(current_claims)
-                continue
-            if item["classification"] == "dirty-integrated":
-                current = _inspect_workspace(
+    failed_path = ""
+    try:
+        roots = _workspace_roots(repo_root)
+        runs_root = runs_dir()
+        claims = _live_worktree_claims()
+        shadow_records = _shadow_worktree_records(repo_root, project)
+        ledger_records = _ledgered_records(repo_root, project)
+        # The managed set is the workspace registry; a tree the promotion boundary
+        # already walks must be one gc sees too, and that includes registered
+        # worktrees a worker created under a run directory.
+        candidates = [
+            path
+            for path in _registered_worktrees(repo_root)
+            if path != repo_root
+            and (
+                any(path.is_relative_to(root) for root in roots)
+                or path.is_relative_to(runs_root)
+            )
+        ]
+        worktrees = []
+        for path in sorted(candidates):
+            failed_path = str(path)
+            worktrees.append(
+                _inspect_workspace(
                     repo_root,
                     path,
                     integrated_into,
-                    (),
+                    claims.get(path.resolve(), ()),
+                    shadow_records.get(path.resolve()),
                     raise_on_unavailable=False,
                     release_residue=True,
                 )
-                if (
-                    current["classification"] != "dirty-integrated"
-                    or current["head"] != item["head"]
-                ):
-                    item.update(current)
-                    continue
-                saved = _save_and_release_worktree(
-                    repo_root,
-                    path,
-                    integrated_into,
-                    _residue_run_record(path, ledger_records),
-                )
-                item.update(saved)
-                if "unique" in saved["residue_classes"].values():
-                    residue_report.append({"worktree": str(path), **saved})
-            elif item["classification"] == "disposable":
-                shadow_record = shadow_records.get(path.resolve())
-                if shadow_record is None or not _shadow_patch_retained(shadow_record):
-                    item["classification"] = "unintegrated"
-                    continue
-                _git(repo_root, "worktree", "remove", "--force", str(path))
-            elif _git(
-                path, "status", "--porcelain", "--untracked-files=all"
-            ).stdout.strip():
-                saved = _save_and_release_worktree(
-                    repo_root,
-                    path,
-                    integrated_into,
-                    _residue_run_record(path, ledger_records),
-                )
-                item.update(saved)
-                if "unique" in saved["residue_classes"].values():
-                    residue_report.append({"worktree": str(path), **saved})
-            else:
-                _git(repo_root, "worktree", "remove", str(path))
-            removed.append(str(path))
-        # No blanket `worktree prune` after the pass: each removal above already
-        # deregisters its own tree, while a prune would also drop the
-        # registration of a tree whose directory vanished outside git — exactly
-        # the another-session record this pass reports and leaves in place.
-
-    ledgered_records = {
-        str(record.get("run_id") or ""): record
-        for record in _ledgered_records(repo_root, project)
-        if record.get("run_id")
-    }
-    ledgered = set(ledgered_records)
-    pointer_reports: list[dict[str, Any]] = []
-    for record in list_live():
-        run_id = str(record.get("run_id") or "")
-        if run_id not in ledgered or record_process_alive(record) is not False:
-            continue
-        report = {"run_id": run_id, "action": "reap", "removed": False}
+            )
+        # Extractions carry no git directory, so the worktree registry never sees
+        # them; they are reported beside the registry rows under their own kind.
+        for path in _run_directory_extractions(runs_root):
+            failed_path = str(path)
+            worktrees.append(_extraction_report(path))
         if apply:
-            with _pointer_lock(run_id):
-                current = read_pointer(run_id)
-                if run_id in ledgered and record_process_alive(current) is False:
-                    pointer_path(run_id).unlink()
-                    report["removed"] = True
-        pointer_reports.append(report)
+            for item in worktrees:
+                if item["classification"] not in RECLAIMABLE_CLASSES:
+                    continue
+                path = Path(item["path"])
+                failed_path = str(path)
+                current_claims = _live_worktree_claims().get(path.resolve(), [])
+                if current_claims:
+                    item["classification"] = "live-referenced"
+                    item["claimed_by_live_runs"] = sorted(current_claims)
+                    continue
+                if item["classification"] == "dirty-integrated":
+                    current = _inspect_workspace(
+                        repo_root,
+                        path,
+                        integrated_into,
+                        (),
+                        raise_on_unavailable=False,
+                        release_residue=True,
+                    )
+                    if (
+                        current["classification"] != "dirty-integrated"
+                        or current["head"] != item["head"]
+                    ):
+                        item.update(current)
+                        continue
+                    saved = _save_and_release_worktree(
+                        repo_root,
+                        path,
+                        integrated_into,
+                        _residue_run_record(path, ledger_records),
+                    )
+                    item.update(saved)
+                    if "unique" in saved["residue_classes"].values():
+                        residue_report.append({"worktree": str(path), **saved})
+                elif item["classification"] == "disposable":
+                    shadow_record = shadow_records.get(path.resolve())
+                    if shadow_record is None or not _shadow_patch_retained(
+                        shadow_record
+                    ):
+                        item["classification"] = "unintegrated"
+                        continue
+                    _git(repo_root, "worktree", "remove", "--force", str(path))
+                elif _git(
+                    path, "status", "--porcelain", "--untracked-files=all"
+                ).stdout.strip():
+                    saved = _save_and_release_worktree(
+                        repo_root,
+                        path,
+                        integrated_into,
+                        _residue_run_record(path, ledger_records),
+                    )
+                    item.update(saved)
+                    if "unique" in saved["residue_classes"].values():
+                        residue_report.append({"worktree": str(path), **saved})
+                else:
+                    _git(repo_root, "worktree", "remove", str(path))
+                removed.append(str(path))
+            # No blanket `worktree prune` after the pass: each removal above already
+            # deregisters its own tree, while a prune would also drop the
+            # registration of a tree whose directory vanished outside git — exactly
+            # the another-session record this pass reports and leaves in place.
 
-    cutoff = (now or datetime.now(tz=timezone.utc)) - timedelta(days=retention_days)
-    live_ids = {str(record.get("run_id") or "") for record in list_live()}
-    run_reports: list[dict[str, Any]] = []
-    if runs_root.is_dir():
-        for directory in sorted(path for path in runs_root.iterdir() if path.is_dir()):
-            if directory.name not in ledgered or directory.name in live_ids:
+        ledgered_records = {
+            str(record.get("run_id") or ""): record
+            for record in _ledgered_records(repo_root, project)
+            if record.get("run_id")
+        }
+        ledgered = set(ledgered_records)
+        pointer_reports: list[dict[str, Any]] = []
+        for record in list_live():
+            run_id = str(record.get("run_id") or "")
+            if run_id not in ledgered or record_process_alive(record) is not False:
                 continue
-            modified = datetime.fromtimestamp(
-                directory.stat().st_mtime, tz=timezone.utc
-            )
-            if modified > cutoff:
-                continue
-            record = ledgered_records.get(directory.name, {})
-            figure_status = {
-                field: _figure_retention(record, field)
-                for field in STREAM_DERIVED_FIELDS
-            }
-            missing = tuple(
-                field for field, state in figure_status.items() if state == "missing"
-            )
-            absent = tuple(
-                field
-                for field, state in figure_status.items()
-                if state == "explicitly-absent"
-            )
-            if missing:
+            report = {"run_id": run_id, "action": "reap", "removed": False}
+            if apply:
+                with _pointer_lock(run_id):
+                    current = read_pointer(run_id)
+                    if run_id in ledgered and record_process_alive(current) is False:
+                        pointer_path(run_id).unlink()
+                        report["removed"] = True
+            pointer_reports.append(report)
+
+        cutoff = (now or datetime.now(tz=timezone.utc)) - timedelta(days=retention_days)
+        live_ids = {str(record.get("run_id") or "") for record in list_live()}
+        run_reports: list[dict[str, Any]] = []
+        if runs_root.is_dir():
+            for directory in sorted(
+                path for path in runs_root.iterdir() if path.is_dir()
+            ):
+                if directory.name not in ledgered or directory.name in live_ids:
+                    continue
+                modified = datetime.fromtimestamp(
+                    directory.stat().st_mtime, tz=timezone.utc
+                )
+                if modified > cutoff:
+                    continue
+                record = ledgered_records.get(directory.name, {})
+                figure_status = {
+                    field: _figure_retention(record, field)
+                    for field in STREAM_DERIVED_FIELDS
+                }
+                missing = tuple(
+                    field
+                    for field, state in figure_status.items()
+                    if state == "missing"
+                )
+                absent = tuple(
+                    field
+                    for field, state in figure_status.items()
+                    if state == "explicitly-absent"
+                )
+                if missing:
+                    report = {
+                        "run_id": directory.name,
+                        "path": str(directory),
+                        "action": "withheld",
+                        "removed": False,
+                        "withheld": "missing-derived-figure",
+                        "reason": (
+                            "the run is past its retention window but the figures "
+                            "derived from its stream were never recorded; their "
+                            "keys are absent from the ledger row, so the derivation "
+                            "has not run and reaping would destroy the only copy of "
+                            + ", ".join(missing)
+                        ),
+                        "missing_figures": list(missing),
+                        "figure_status": figure_status,
+                    }
+                    run_reports.append(report)
+                    continue
                 report = {
                     "run_id": directory.name,
                     "path": str(directory),
-                    "action": "withheld",
+                    "action": "prune",
                     "removed": False,
-                    "withheld": "missing-derived-figure",
-                    "reason": (
-                        "the run is past its retention window but the figures "
-                        "derived from its stream were never recorded; their "
-                        "keys are absent from the ledger row, so the derivation "
-                        "has not run and reaping would destroy the only copy of "
-                        + ", ".join(missing)
-                    ),
-                    "missing_figures": list(missing),
+                    "explicitly_absent_figures": list(absent),
                     "figure_status": figure_status,
                 }
+                if apply:
+                    if any(
+                        str(record.get("run_id") or "") == directory.name
+                        for record in list_live()
+                    ):
+                        continue
+                    shutil.rmtree(directory)
+                    report["removed"] = True
                 run_reports.append(report)
-                continue
-            report = {
-                "run_id": directory.name,
-                "path": str(directory),
-                "action": "prune",
-                "removed": False,
-                "explicitly_absent_figures": list(absent),
-                "figure_status": figure_status,
-            }
-            if apply:
-                if any(
-                    str(record.get("run_id") or "") == directory.name
-                    for record in list_live()
-                ):
-                    continue
-                shutil.rmtree(directory)
-                report["removed"] = True
-            run_reports.append(report)
+    except Exception as exc:
+        raise GcSweepError(
+            str(exc),
+            _gc_partial_report(
+                repo_root, integrated_into, apply, removed, worktrees, failed_path
+            ),
+        ) from exc
 
     # `--apply` removes the integrated and the disposable, so a report whose
     # headline figure is `disposable` says 0 while it would in fact reclaim
@@ -1423,7 +1491,11 @@ def garbage_collect(
             if classification == "extraction":
                 item["withheld"] = RUN_DIRECTORY_EXTRACTION_REASON
             elif classification == "unavailable":
-                item["withheld"] = UNAVAILABLE_WORKTREE_REASON
+                item["withheld"] = (
+                    UNREADABLE_WORKTREE_REASON
+                    if item.get("unavailable_state") == "unreadable"
+                    else UNAVAILABLE_WORKTREE_REASON
+                )
             else:
                 item["withheld"] = WITHHELD_REASONS.get(
                     classification, "unrecognised classification"

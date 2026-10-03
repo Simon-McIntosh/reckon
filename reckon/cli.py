@@ -5559,7 +5559,13 @@ def crew_gc(
                 apply=apply,
             )
     except crew_module.CrewError as exc:
-        raise click.ClickException(str(exc)) from exc
+        partial = getattr(exc, "partial", None)
+        if partial is None:
+            raise click.ClickException(str(exc)) from exc
+        # A sweep that stops mid-pass has already removed and refused trees: a
+        # gc that has deleted something must say so before it exits nonzero.
+        _emit({"ok": False, "error": str(exc), **partial}, pretty)
+        raise click.exceptions.Exit(1) from exc
     _emit({"ok": True, **report}, pretty)
 
 
