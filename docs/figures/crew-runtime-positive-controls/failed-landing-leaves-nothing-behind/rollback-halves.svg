@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 430" font-family="sans-serif">
-<title>Where the one-shot rollback restore stopped, and the halves the repair splits it into</title>
+<title>The two residues a refused landing may not leave, and the repair for each</title>
 
 <defs>
 <marker id="tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
@@ -9,8 +9,8 @@
 
 <rect x="30" y="40" width="300" height="120" fill="none" stroke="#444444" stroke-width="2"/>
 <text x="180" y="72" font-size="20" text-anchor="middle" fill="#222222">the landing's writes</text>
-<text x="180" y="104" font-size="20" text-anchor="middle" fill="#222222">plan comment + version</text>
-<text x="180" y="132" font-size="20" text-anchor="middle" fill="#222222">ledger file &#183; store row</text>
+<text x="180" y="104" font-size="20" text-anchor="middle" fill="#222222">plan comment + version, ledger file,</text>
+<text x="180" y="132" font-size="20" text-anchor="middle" fill="#222222">store row</text>
 
 <line x1="330" y1="100" x2="430" y2="100" stroke="#444444" stroke-width="2" marker-end="url(#tip)"/>
 
@@ -26,17 +26,18 @@
 <text x="820" y="98" font-size="20" text-anchor="middle" fill="#8a5a00">refused by the same lock</text>
 
 <rect x="880" y="30" width="490" height="110" fill="none" stroke="#8a5a00" stroke-width="2"/>
-<text x="1125" y="60" font-size="20" text-anchor="middle" fill="#8a5a00">before the repair: reported preserved</text>
-<text x="1125" y="90" font-size="20" text-anchor="middle" fill="#222222">plan file left modified, store row left in place</text>
-<text x="1125" y="120" font-size="20" text-anchor="middle" fill="#222222">retry collides: UNIQUE constraint failed</text>
+<text x="1125" y="60" font-size="20" text-anchor="middle" fill="#8a5a00">before the repair</text>
+<text x="1125" y="90" font-size="20" text-anchor="middle" fill="#222222">created path unlinked although its entry stayed staged;</text>
+<text x="1125" y="120" font-size="20" text-anchor="middle" fill="#222222">store row kept, retry collides silently</text>
 
-<text x="1125" y="222" font-size="20" text-anchor="middle" fill="#1f6f4a">after the repair: split into halves</text>
+<text x="1125" y="222" font-size="20" text-anchor="middle" fill="#1f6f4a">after the repair</text>
 <rect x="880" y="240" width="490" height="80" fill="none" stroke="#1f6f4a" stroke-width="2"/>
-<text x="1125" y="272" font-size="20" text-anchor="middle" fill="#222222">content: HEAD's blob read from the object store,</text>
-<text x="1125" y="302" font-size="20" text-anchor="middle" fill="#222222">written directly &#8212; no index, no lock to refuse it</text>
+<text x="1125" y="272" font-size="20" text-anchor="middle" fill="#222222">entry dropped first, file removed only once it is gone &#8212;</text>
+<text x="1125" y="302" font-size="20" text-anchor="middle" fill="#222222">a refused drop leaves the file and reports it</text>
 <rect x="880" y="330" width="490" height="80" fill="none" stroke="#1f6f4a" stroke-width="2"/>
-<text x="1125" y="360" font-size="20" text-anchor="middle" fill="#222222">entry: read-only probe first, reset only if staged;</text>
-<text x="1125" y="388" font-size="20" text-anchor="middle" fill="#222222">store row removed when the append that made it is refused</text>
+<text x="1125" y="360" font-size="20" text-anchor="middle" fill="#222222">the store row the attempt inserted is removed, so the</text>
+<text x="1125" y="390" font-size="20" text-anchor="middle" fill="#222222">retry records the landed attempt</text>
 
-<text x="30" y="400" font-size="20" fill="#222222">Colour marks the two halves of the rollback; every other mark is neutral.</text>
+<text x="30" y="200" font-size="20" fill="#222222">The plan file keeps its working-tree write:</text>
+<text x="30" y="230" font-size="20" fill="#222222">the retry commits it, and four existing tests pin that.</text>
 </svg>
