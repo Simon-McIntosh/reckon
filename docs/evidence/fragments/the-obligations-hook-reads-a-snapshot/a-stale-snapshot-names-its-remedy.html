@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-verifies" content="reckon:the-obligations-hook-reads-a-snapshot#s16">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-03">
+  <meta name="evidence-commit" content="5aa9b4a38">
+  <title>A stale snapshot beside a live lease names its own follower | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-stale-snapshot-names-its-remedy">
+  <h2>A stale snapshot beside a live lease names its own follower</h2>
+  <p>A session's snapshot is republished only while that session has a live follower, so a
+  coordinator that stopped its follower keeps reading a list that ages out while the project's
+  producer is healthy and publishing every other session. The not-current line answered that reading with the
+  seat command, which reports the seat is held and refreshes nothing.
+  <code>not_fresh_line</code> in <code>reckon/hooks/coordinator_obligations.py</code> now names, for
+  a stale snapshot beside a live producer lease, <code>reckon crew follow --project &lt;p&gt;
+  --session &lt;s&gt;</code> — this session's own follower arming. A lapsed or absent lease keeps
+  <code>reckon crew watch --ensure --project &lt;p&gt;</code>, as does every other not-fresh state
+  and the reload reading, which never reaches this line for a live producer.</p>
+
+  <p>Liveness is read from the lease record the seat writes on claim and every live follower renews
+  on its wait pass, <code>&lt;config home&gt;/crew/watch/&lt;stem&gt;.lock.registration</code>:
+  <code>lease_renewed_at</code> inside the lease interval is a live producer as a reader can see it,
+  with no process probe added. The hook carries its own copy of the 600&nbsp;s interval, because the
+  watcher's module is not imported on this path; two cases pin that copy to the watcher's own figures
+  (default and <code>RECKON_PRODUCER_LEASE_SECONDS</code>) and one pins the lease path to the
+  writer's, so the two cannot drift.</p>
+
+  <h3>What the new test cases check</h3>
+  <ul>
+    <li><code>test_a_stale_snapshot_beside_a_live_lease_names_the_follower</code>: a released
+    follower registration, a snapshot 900&nbsp;s old whose recorded producer is the live test
+    process, and a lease renewed this instant — the line names the follower arming and not the seat.
+    The stale age is asserted beside it, so the case cannot pass by falling into the no-producer
+    branch;</li>
+    <li><code>test_a_stale_snapshot_beside_an_expired_lease_keeps_the_seat_remedy</code>: the lease is
+    a full interval behind and the seat command stays;</li>
+    <li><code>test_a_stale_snapshot_with_no_lease_keeps_the_seat_remedy</code>: no lease record at
+    all keeps the seat command;</li>
+    <li><code>test_the_lease_reader_looks_where_the_seat_writes</code>: the hook's lease path equals
+    <code>runs.watch_registration_path</code>;</li>
+    <li><code>test_the_lease_interval_mirrors_the_producers</code>: the hook's interval and its
+    override behaviour match <code>runs</code>'s.</li>
+  </ul>
+  <p>Each drive is a subprocess against a temporary configuration home built per case — mount,
+  registration, snapshot, lease — so no case reads or writes the operator's state.</p>
+
+  <h3>Gate — both arms over every test file naming the hook or the snapshot</h3>
+  <p>Ten files at head (the population is every <code>*.py</code> under <code>tests/</code> naming
+  <code>coordinator_obligations</code> or <code>obligation_snapshot</code>), nine at base, which has
+  no new case. Each arm runs under <code>pytest-xdist -n 8 --timeout=300</code> with its own basetemp
+  under the run's scratch directory and its own log.</p>
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th><th>failure ids</th></tr></thead>
+    <tbody>
+      <tr><td>base <code>37b089a36</code></td><td>git archive extraction</td><td>2 failed, 128 passed in 42.75 s, EXIT=1</td><td><code>test_hook_installer.py::test_the_coordinator_commands_name_the_repository_interpreter</code>; <code>test_stop_hook_reads_the_snapshot.py::test_a_not_fresh_snapshot_derives_inline_within_the_budget</code></td></tr>
+      <tr><td>head <code>5aa9b4a38</code></td><td>worker worktree</td><td>135 passed in 42.68 s, EXIT=0</td><td>none</td></tr>
+    </tbody>
+  </table>
+  <p>Both base failures re-run serially in the same extracted tree
+  (<code>base-arm-serial-recheck.log</code>): the stop-hook case then passes, so its xdist failure is
+  the extraction's load against the stop derivation's budget, not a revision defect; the interpreter
+  case still fails because an extraction carries no <code>.venv</code> symlink. Neither failure id
+  appears in the head arm, which adds none.</p>
+
+  <h3>Negative control</h3>
+  <p>The declared mutation — the base remedy, the live-lease branch removed so the hook always names
+  the seat command — was applied to an extracted head tree whose module still exports the lease
+  reader, and the test file run: <strong>1 failed, 4 passed in 5.30&nbsp;s, EXIT=1</strong>, the
+  failing id being
+  <code>tests/test_a_stale_snapshot_names_its_remedy.py::test_a_stale_snapshot_beside_a_live_lease_names_the_follower</code>,
+  with the line reading <em>the snapshot is 900s old; run <code>reckon crew watch --ensure --project
+  stale-remedy-fixture</code></em> exactly as declared. The head arm does not fail that id. Log:
+  <code>negative-control.log</code>.</p>
+
+  <p>Logs, all under the run directory:
+  <code>logs/head-arm.log</code>, <code>logs/base-arm.log</code>,
+  <code>logs/base-arm-serial-recheck.log</code>, <code>logs/negative-control.log</code>.</p>
+</section>
+</main>
+</body>
+</html>
