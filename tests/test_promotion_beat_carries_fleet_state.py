@@ -244,8 +244,10 @@ def test_the_fleet_reading_has_a_constant_shape_for_small_and_large_fleets(
 def test_an_unavailable_fleet_reading_does_not_block_promotion(
     repository: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    failure = OSError("fleet pointers are temporarily unreadable")
+
     def unreadable(*, project: str) -> list[dict[str, Any]]:
-        raise OSError("fleet pointers are temporarily unreadable")
+        raise failure
 
     monkeypatch.setattr(promotion, "list_live", unreadable)
 
@@ -257,6 +259,9 @@ def test_an_unavailable_fleet_reading_does_not_block_promotion(
     assert result["fleet_state"] == {
         "fleet_state": "unmeasured",
         "observed_at": result["fleet_state"]["observed_at"],
-        "unmeasured": {"fleet_state": "unavailable"},
+        "unmeasured": {
+            "fleet_state": "unavailable",
+            "cause": f"{type(failure).__name__}: {failure}",
+        },
     }
     assert "fleet_state" not in stored
