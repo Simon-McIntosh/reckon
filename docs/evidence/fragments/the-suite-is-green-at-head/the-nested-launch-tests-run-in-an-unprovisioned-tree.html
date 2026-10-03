@@ -1,0 +1,13 @@
+<section id="the-nested-launch-tests-run-in-an-unprovisioned-tree">
+  <h2>the-nested-launch-tests-run-in-an-unprovisioned-tree &mdash; the nested-launch tests pass in a git-archive extraction with no .venv</h2>
+
+  <p><code>tests/test_nested_launch.py</code> now takes its shim interpreter from
+  <code>sys.executable</code> (<code>PYTHON = Path(sys.executable)</code>) and hands that same
+  interpreter to the shim through <code>RECKON_SHIM_PYTHON</code> in <code>launch_env</code>, so
+  no repository <code>.venv</code> is required. No assertion is weakened or removed and no
+  product source changes. Parent-commit extraction of <code>7dde3c88b</code> with no
+  <code>.venv</code>: <strong>10 failed, 1 passed, EXIT=1</strong> (<code>negative-control.log</code>).
+  Head (<code>fb3fe7873</code>) worktree: <strong>11 passed, EXIT=0</strong>
+  (<code>gate-worktree.log</code>); head git-archive extraction with no <code>.venv</code>:
+  <strong>11 passed, EXIT=0</strong> (<code>gate-unprovisioned.log</code>).</p>
+</section>
