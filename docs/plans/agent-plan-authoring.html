@@ -16,15 +16,15 @@
 <meta name="plan-effort" content="M">
 <meta name="plan-milestone" content="">
 <meta name="plan-owner" content="Simon McIntosh">
-<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-modified" content="2026-10-03">
 <meta name="plan-depends-on" content="">
 <meta name="plan-blocks" content="">
-<meta name="plan-version" content="12">
+<meta name="plan-version" content="13">
 <meta name="plan-capability-version" content="1.0">
 <meta name="plan-capability-class" content="orchestrator">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-informs" content="plan-lifecycle-hygiene">
-<meta name="plan-section-declarations" content="{&quot;s10&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s10&quot;:&quot;done&quot;}">
 </head>
 <body>
 <main class="plan-doc">
@@ -267,7 +267,7 @@ one). If the authoring experience hurts here, fix it here first.</li>
 </ul>
 
 <h2 id="s10">§10 — Close the milestone-tooling gap</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 Sprints have add/move/update tools; milestones have none and the data was lost in a migration. Add add_milestone/update_milestone (or document index.json milestone editing) so milestone rollups aren't read-only-and-empty.<p><strong>Done when</strong> a milestone create/update path exists and the imas-ambix milestones repopulate as a test.</p><p>Moved from followup f-apa-milestone-tools on agent-plan-authoring by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>draft</code>, live; no <code>add_milestone</code>/<code>update_milestone</code> op exists in <code>reckon/mcp.py</code> (grep found none)</p>
 
 <section data-reckon="decisions" id="decisions" class="r-decisions">
@@ -364,6 +364,9 @@ Done-when
 </div>
 <div class="r-comment" data-section="_top" data-id="c-nova-exposure-count-corrected" data-who="agent/opus" data-when="2026-09-05T19:35:00Z">
     <div class="r-comment-body">CORRECTION TO THIS SECTION'S TWO LANDING NOTES ABOVE. Both said four nova plans held sixteen exposed decisions frozen pending the guard. They did not, and the figure sized the exposure this pair was justified against, so it is worth stating plainly rather than leaving to be re-derived. The sixteen elements are div.r-research[data-id] entries in those plans' research sections — the canonical spelling, parsed correctly, never at risk. They were miscounted by a grep alternation that swept r-research in alongside the decision spellings, which is the same class of error the guard itself addresses: a pattern that matches more than the thing it names. Measured here at the merged head rather than taken on report: coil-circuit-discovery, coil-geometry-inversion, mast-catalog-geometry-recovery and mast-vacuum-floor-recovery carry 3, 1, 0 and 2 canonical r-dec[data-key] decisions respectively, zero hand-rolled r-decision elements between them, and all four produce no warning and no refusal. The one genuinely exposed plan was playable-forward-solve, already restored. Two things follow. The pair's justification is the defect itself — a section that parses empty is written exactly like a section that is empty, and a read-modify-write then deletes it — which does not depend on how many plans had already tripped it. And the five nova plans extend the over-warning check into a second project: 88 reckon docs plus five foreign ones, still zero warnings on legitimate content, which is the half of this guard that could have broken every plan operation on this workstation had it been wrong.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20261003T131057119940" data-who="" data-when="">
+    <div class="r-comment-body"><p>§10 is met at main 9db32e520, verified by reading rather than by a new node. Milestones are edited through the typed-resource path that sprints use. <code>edit_plan(create=True, doc_type="milestone")</code> with <code>set</code> ops creates one, pinned by <code>tests/test_project_state.py::test_mcp_creates_new_typed_resource_and_discovery_composes_it</code> (introduced at 44c39ccdf). <code>set</code> on an existing milestone resource updates it; the op help in <code>reckon/mcp.py</code> lists the milestone resource among those taking one top-level field. Appending to the index's <code>milestones</code> list is pinned by <code>tests/test_edit_plan.py::test_append_milestone_index</code>. The grep this section was moved on looked for <code>add_milestone</code>/<code>update_milestone</code> op names, which were never needed. The imas-ambix index now carries milestones M4 and M5, so its rollups are no longer empty.</p></div>
 </div>
 </section>
 </main>
