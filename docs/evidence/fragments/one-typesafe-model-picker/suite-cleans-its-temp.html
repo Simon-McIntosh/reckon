@@ -44,6 +44,22 @@
   and module-scoped factories, and the fixture homes this suite's own conftest places — not
   retained per-test trees.</p>
 
+  <h3>The reap runs before the prune</h3>
+  <p>Retaining only failed tests' temporary trees collided with the suite's watch-producer
+  reaper, which finds detached producers through the seat records written under each test's
+  configuration home. A passing test's home is pruned at that test's own teardown, so by the
+  session-end reap the record was gone and the producer could no longer be attributed — the
+  liveness scan then failed the session on a producer it could not reap
+  (<code>test_a_watcher_armed_by_a_child_session_is_not_left_running</code> failed twice alone
+  at head). A function-scoped autouse fixture now reaps, at each test's own teardown, the
+  producers recorded under the run's base temp directory — signalling before <code>tmp_path</code>
+  is pruned — and mirrors the seat records into a stable subtree so a later reader (the parent
+  test that measures the child session) still finds them after the tree is removed. The
+  session-end <code>/proc</code> scan is unchanged and still fails the session on any live
+  producer that never wrote a record
+  (<code>test_watch_arming_isolation.py::test_the_session_check_reads_a_producers_own_home</code>,
+  8 passed).</p>
+
   <h3>No test reaches live Jev, whatever the credential</h3>
   <p>The previous isolation rested only on the credential being absent: the autouse
   <code>no_live_jev</code> fixture removed <code>OPENROUTER_API_KEY_RECKON</code> and pointed

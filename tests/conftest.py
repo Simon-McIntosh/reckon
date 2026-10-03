@@ -19,6 +19,7 @@ import contextlib
 import json
 import os
 import shlex
+import shutil
 import signal
 import sys
 import tempfile
@@ -227,6 +228,38 @@ def watch_record_dirs(root: Path) -> list[Path]:
     return sorted(set(found))
 
 
+# Where a seat record is mirrored before the tree holding it is pruned. The
+# record is the evidence a watcher was armed and the handle a session-end reap
+# would use; keeping temporary directories only for failures would otherwise
+# delete it the moment the arming test passes.
+_SEAT_RECORDS_DIR = "_seat-records"
+
+
+def preserve_seat_records(root: Path) -> None:
+    """Copy every seat record out of the test trees ``root`` is about to prune.
+
+    The copy keeps the ``crew/watch`` shape and the home's path relative to
+    ``root``, so a reader looking for records under the run's root still finds
+    them after the arming test's own directory is removed. The originals are
+    left in place until the prune removes them, so a reap taken now still reads
+    the home each record was actually written under.
+    """
+    mirror = root / _SEAT_RECORDS_DIR
+    for directory in watch_record_dirs(root):
+        if mirror in directory.parents:
+            continue
+        destination = mirror / directory.relative_to(root)
+        try:
+            destination.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            continue
+        for record in directory.glob("*.lock"):
+            try:
+                shutil.copy2(record, destination / record.name)
+            except OSError:
+                continue
+
+
 def watcher_record_pids(root: Path) -> list[tuple[int, Path]]:
     """Registered watch producer pids, with the home each record lies under.
 
@@ -335,6 +368,29 @@ def await_exit(pids: list[int], grace: float = _REAP_GRACE_SECONDS) -> None:
         if not any(Path("/proc", str(pid)).exists() for pid in pids):
             return
         time.sleep(0.05)
+
+
+@pytest.fixture(autouse=True)
+def reap_watch_producers_armed_by_this_test(tmp_path, tmp_path_factory):
+    """Reap, before the test's temporary homes are pruned, what it armed.
+
+    A detached watch producer is found through the seat record under its
+    configuration home. When temporary directories are kept only for failures,
+    that home is removed at the test's own end — before the session-scoped
+    reaper runs — so the record the reap depends on is already gone and the
+    surviving producer is left to fail the session's liveness scan. Signalling
+    here, at this test's teardown, keeps the record in place long enough to
+    attribute the producer; requesting ``tmp_path`` makes this fixture finalize
+    before ``tmp_path`` does. A producer that never wrote a record is not listed
+    here and is still caught by the session-end scan.
+    """
+    yield
+    root = tmp_path_factory.getbasetemp()
+    reaped = sorted(set(reapable_watch_pids(root)))
+    for pid in reaped:
+        signal_worker(pid, signal.SIGTERM)
+    await_exit(reaped)
+    preserve_seat_records(root)
 
 
 def _live_watch_producers() -> list[tuple[int, Path]]:

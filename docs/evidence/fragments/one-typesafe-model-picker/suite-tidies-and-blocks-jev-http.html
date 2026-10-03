@@ -33,10 +33,16 @@
     connection, delegating every other host so loopback tests still fetch. A new case sets a fake
     key, dispatches with no lane named, and shows no host lookup is attempted and the selection is
     a recorded fallback.</li>
+    <li><strong>Reaping runs before the prune.</strong> A function-scoped autouse fixture reaps
+    each test's recorded watch producers at that test's own teardown — before its temporary home
+    is pruned — and mirrors the seat records so a later reader still finds them; the session-end
+    <code>/proc</code> scan is unchanged and still fails the session on a live producer with no
+    record.</li>
   </ul>
-  <p>Gate: base 395 passed / 2 skipped, head 396 passed / 2 skipped, EXIT=0, zero added failures.
-  Negative control (delete the <code>urlopen</code> guard): the present-credential case fails,
-  <code>EXIT=1</code>, resolving <code>openrouter.ai:443</code>.</p>
+  <p>Gate: base 395 passed / 2 skipped, head 398 passed / 3 skipped over the watcher, live-Jev and
+  20-file sample, EXIT=0, zero added failures. Negative control (delete the <code>urlopen</code>
+  guard): the present-credential case fails, <code>EXIT=1</code>, resolving
+  <code>openrouter.ai:443</code>.</p>
 </article>
 </body>
 </html>
