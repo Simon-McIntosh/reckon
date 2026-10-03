@@ -42,14 +42,25 @@
     it through that action set. The recovery count fixture now expects an explicit
     <code>lane-event: 0</code>, because recovery reports every named terminal count even
     when the observed fleet contains no such event. These changes make the ticker
-    grid and count contracts pass. The follower's separate attention vocabulary in
-    <code>reckon/crew/runs.py</code> still needs the same state; that path has not been
-    granted to this worker. In the four-file gate, base had
-    <strong>11 failed, 310 passed, 2 warnings</strong>; the current head had
+    grid and count contracts pass. At the first diagnostic head, the follower's
+    separate attention vocabulary in <code>reckon/crew/runs.py</code> still lacked
+    the same state. In that four-file gate, base had
+    <strong>11 failed, 310 passed, 2 warnings</strong>; the diagnostic head had
     <strong>1 failed, 320 passed</strong>, solely
     <code>test_every_live_state_has_one_fleet_bucket_and_an_attention_route</code>
     naming the missing follower route. The zero-window control remained red at
-    <strong>2 failed, 8 passed, EXIT=1</strong>. The run manifest carries the logs and
-    the pending scope condition.
+    <strong>2 failed, 8 passed, EXIT=1</strong>. That diagnostic gate identified the
+    missing route.
+  </p>
+  <p>
+    The follower now includes <code>lane-event</code> in its attention states.
+    The final four-file <code>pytest -n 8 --timeout=300</code> gate ran against
+    base <code>7fbe5fd8963bdb30816189f515c709c37d913f3b</code> and head
+    <code>fd2565463f7d5855eb71cbb72d1bbd5a95f9a625</code>. Base recorded
+    <strong>11 failed, 310 passed</strong>; head recorded
+    <strong>321 passed, zero added failure ids</strong>. The declared zero-window
+    mutation left both grouping assertions red (<strong>2 failed, 8 passed,
+    EXIT=1</strong>), confirming that the tests exercise the correlation rule.
+    The run manifest names both completed gate receipts and the mutation log.
   </p>
 </article>
