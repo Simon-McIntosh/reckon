@@ -90,7 +90,7 @@
   <p>So the host layer can be emptied of catalogue keys in a later commit, and the resolved values do not move.</p>
 
   <h3>Gate</h3>
-  <p>Base arm (revision <code>c6acda8e0</code>, scratch tree): <code>111 passed, 2 skipped</code>, EXIT=0, log <code>logs/base-flight-gate.log</code>. Head arm (revision <code>6ea91db1</code>): <code>119 passed, 2 skipped</code>, EXIT=0, log <code>logs/head-flight-gate.log</code>. The head gate adds <code>tests/test_flight_catalogue_layer.py</code> (seven tests) and <code>tests/test_skill_contracts.py::test_no_routing_identifier_leaks_into_skills_or_source</code>; no pre-existing test was changed, and delta is +8 passing, zero added failures.</p>
+  <p>Base arm (revision <code>c6acda8e0</code>, scratch tree): <code>111 passed, 2 skipped</code>, EXIT=0, log <code>logs/base-flight-gate.log</code>. Head arm (the revision named on the log's first line): <code>119 passed, 2 skipped</code>, EXIT=0, log <code>logs/head-flight-gate.log</code>. The head gate adds <code>tests/test_flight_catalogue_layer.py</code> (seven tests) and <code>tests/test_skill_contracts.py::test_no_routing_identifier_leaks_into_skills_or_source</code>; no pre-existing test was changed, and delta is +8 passing, zero added failures.</p>
   <p>Negative control — the catalogue-only guard dropped so a catalogue entry creates a backend — fails <code>test_a_catalogue_entry_alone_creates_no_backend</code> (EXIT=1), log <code>logs/negative-control.log</code>. The head arm passes. (A gate log's suite run declares its own run complete and does not itself name the guard; the mutation and its failing test id are what the log records.)</p>
 </article>
 </body>
