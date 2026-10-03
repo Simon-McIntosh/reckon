@@ -8,6 +8,7 @@ import subprocess
 import pytest
 
 import reckon.serve as serve
+from reckon import metadata_index
 
 
 @pytest.fixture(autouse=True)
@@ -76,6 +77,7 @@ def _successful_git(monkeypatch, heads_by_repo):
 def test_repeat_discovery_skips_git_and_metadata_for_all_mounts(
     mounted_projects, monkeypatch
 ):
+    metadata_index.clear()
     docs = mounted_projects
     (docs["beta"] / "plans" / "provider.html").write_text(
         _plan("beta", "provider", "shipped")
@@ -93,9 +95,9 @@ def test_repeat_discovery_skips_git_and_metadata_for_all_mounts(
     original_parse = serve._plan_html.parse_meta
     parse_calls = []
 
-    def counted_parse(path):
+    def counted_parse(path, slug=None):
         parse_calls.append(path)
-        return original_parse(path)
+        return original_parse(path, slug)
 
     monkeypatch.setattr(serve._plan_html, "parse_meta", counted_parse)
     first = {
