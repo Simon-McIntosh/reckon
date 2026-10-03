@@ -5527,6 +5527,15 @@ def crew_suite_waive(project, reason, who, checkout_path, pretty):
         "its run has no live pointer and a terminal record; never by age."
     ),
 )
+@click.option(
+    "--pin-unique-commits",
+    is_flag=True,
+    help=(
+        "Release a dirty worktree whose commits have no patch-equivalent on "
+        "--integrated-into by first pinning those commits to an archive ref "
+        "under refs/reckon/archive/; needs --apply to act."
+    ),
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_gc(
     repo,
@@ -5536,6 +5545,7 @@ def crew_gc(
     apply,
     confirm_cross_repo,
     scratch,
+    pin_unique_commits,
     pretty,
 ):
     """Report workspaces whose integrated state makes them disposable; remove on request."""
@@ -5557,6 +5567,7 @@ def crew_gc(
                 integrated_into=integrated_into,
                 retention_days=retention_days,
                 apply=apply,
+                pin_unique_commits=pin_unique_commits,
             )
     except crew_module.CrewError as exc:
         partial = getattr(exc, "partial", None)
