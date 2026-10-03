@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="91">
+<meta name="plan-version" content="92">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -345,7 +345,10 @@
     <div class="r-comment-body"><p>plan_dispatch on the picker route with no selection now falls back to the deterministic backend and records picker_selection.fallback_reason=picker-selection-absent instead of raising; new test test_absent_picker_selection_resolves_deterministically drives it and the gate (routing_picker_key + flight + picker_in_dispatch + a_brief_points_rather_than_quotes) is 128 passed/2 skipped at base and 129 passed/2 skipped at head with zero added failure ids.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261003T024906614778-review-of-picker-absent-selection-falls-back" data-who="reckon-build" data-when="2026-10-03T02:57:53.027Z">
-    <div class="r-comment-body"><p>independent review of r-20261003T022415893541-picker-absent-selection-falls-back stored as a parsed record at reviews/reckon/r-20261003T022415893541-picker-absent-selection-falls-back.json (and the .at-b99856e93377b9c95409bc9d834e867d288158a7 revision copy); read 6058ff38617a187e0a480a0de1486c2b81b885ef..b99856e93377b9c95409bc9d834e867d288158a7, scored goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 19 (total 94), added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite (128 passed/2 skipped, 0 failures) and after_suite (129 passed/2 skipped, 0 failures) gate logs; three follow-on findings, no blocker.</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261003T022415893541-picker-absent-selection-falls-back stored as a parsed record at reviews/reckon/r-20261003T022415893541-picker-absent-selection-falls-back.json (and the .at-b99856e93377b9c95409bc9d834e867d288158a7 revision copy); read 6058ff38617a187e0a480a0de1486c2b81b885ef..b99856e93377b9c95409bc9d834e867d288158a7, scored goal_fidelity 20, evidence 17, scope_discipline 20, durability 18, fit 19 (total 94), added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline_suite (128 passed/2 skipped, 0 failures) and after_suite (129 passed/2 skipped, 0 failures) gate logs; three follow-on findings, no blocker.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261003T011541331638-picker-routes-by-default" data-who="reckon-build" data-when="2026-10-03T01:48:47.905Z">
+    <div class="r-comment-body"><p>picker-routes-by-default — shipped routing.picker flipped to route with the opt-out comment; default test passes at head (route, provenance shipped) and fails at base; schema regen byte-identical; flight report shows config.routing.picker=route, provenance shipped; three gate tests outside this node&#x27;s grants are left red by the flip (see follow_ons).</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
