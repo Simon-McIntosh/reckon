@@ -616,6 +616,7 @@ reckon crew observe --run <id>    reckon crew preflight --project <project> --ro
 reckon crew pick --project <project> --role <role> --spec-level <level> --goal <goal> --done-when <measure> --replay <n> --checkout-path <path>    # reads routing state, dispatches nothing
 reckon crew placement --ensure --session <session> --project <project>
 reckon crew recover    reckon crew redispatch --run <id> --backend <backend> --reason <text>
+reckon crew repair-status --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered
 reckon crew resume --run <id> --advice <text>    reckon crew resume-ready --project <project>
 reckon crew shadow    reckon crew stop    reckon crew unwatch --project <project>
 reckon crew verify-gate --project <project> --run <id> --checkout-path <path>
