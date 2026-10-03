@@ -716,6 +716,87 @@ def bound_cells(report: Mapping[str, Any] | None) -> list[tuple[str, Any]]:
     return [(" " * GAP, None), (bound_clause(report), "dim")]
 
 
+# The lane cell: the run's own generation rate beside the lane's mean, so the
+# row carries the denominator that makes its own figure readable. A rate
+# without the lane's mean cannot separate a slow worker from a slow lane — the
+# row was read as the second by two coordinators independently — and a measure
+# that misleads in the direction of the reader's own node is the failure this
+# cell exists to prevent.
+LANE_LABEL = "lane"
+LANE_RATE = 5
+# The pair is two right-aligned figures around the label, as in
+# `` 1.40 lane  1.44``. Fixed width, so the run's own figure and the lane's hold
+# one screen column apiece as they move and a reader compares them down a pane
+# rather than re-finding them on each row.
+LANE_WIDTH = LANE_RATE + len(" ") + len(LANE_LABEL) + len(" ") + LANE_RATE
+# What the cell says when the reading carries no figure. A word rather than a
+# zero or a bare absence marker, because the lane has not measured nothing —
+# it published no number at all, and a reader must be able to tell that from a
+# lane that is merely idle.
+LANE_UNKNOWN = f"{LANE_LABEL} {BOUND_UNKNOWN}"
+
+
+def lane_rate_text(value: Any) -> str:
+    """One generation rate as the pane prints it, or the absence marker.
+
+    Two decimals below ten and one above it, so the figures a reader compares
+    against each other keep the resolution that separates them while a large
+    rate spends no column on a precision nothing measures; a bool and anything
+    non-numeric render the absence marker, because a rate that was never taken
+    is not a zero.
+    """
+    if isinstance(value, bool) or not isinstance(value, Real):
+        return DIM_MARKER
+    number = float(value)
+    return f"{number:.2f}" if number < 10 else f"{number:.1f}"
+
+
+def carried_lane_mean(reading: Any) -> float | None:
+    """The lane's mean rate the carried reading reports, else None.
+
+    Only a reading the producer marked fresh contributes a figure. An
+    unreadable, unparsable or stale document arrives as the unknown carry the
+    producer composes, and a mean withheld as unknown is not a measurement; the
+    row names that absence rather than dissolving it into a number.
+    """
+    if not isinstance(reading, Mapping):
+        return None
+    if str(reading.get("state") or "") != "fresh":
+        return None
+    throughput = reading.get("throughput")
+    if not isinstance(throughput, Mapping):
+        return None
+    mean = throughput.get("mean_tokens_per_second")
+    if isinstance(mean, bool) or not isinstance(mean, Real):
+        return None
+    return float(mean)
+
+
+def lane_cells(event: Mapping[str, Any]) -> list[tuple[str, Any]]:
+    """The lane cell, or empty when the row carries no reading.
+
+    A row whose record carries no lane reading adds no cell, and prints no
+    per-row rate either: the rate alone is the reading that sent two
+    coordinators to the wrong node, so the pair travels together or neither is
+    shown. A record that carries a reading renders the run's own rate beside
+    the lane's mean; a reading that measured no mean names the absence and
+    withholds the rate with it, so a figure never arrives without the lane's
+    own on the same row.
+    """
+    reading = event.get("lane_reading")
+    if reading is None:
+        return []
+    mean = carried_lane_mean(reading)
+    if mean is None:
+        return [(" " * GAP, None), (elide(LANE_UNKNOWN, LANE_WIDTH), "dim")]
+    clause = (
+        f"{lane_rate_text(event.get('spend_generation_rate')):>{LANE_RATE}}"
+        f" {LANE_LABEL} "
+        f"{lane_rate_text(mean):>{LANE_RATE}}"
+    )
+    return [(" " * GAP, None), (clause, None)]
+
+
 def _display_state(state: Any) -> str:
     return elide(DISPLAY.get(str(state or ""), str(state or "")), STATE_WORD)
 
@@ -1442,6 +1523,7 @@ class Ticker:
         cells.extend(self._spend_cells(event, to_state))
         cells.append((" " * GAP, None))
         cells.extend(self._stats(event))
+        cells.extend(lane_cells(event))
         cells.append((" " * GAP, None))
 
         head = sum(len(text) for text, _ in cells)
