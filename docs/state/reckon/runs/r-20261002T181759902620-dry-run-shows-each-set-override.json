@@ -5132,6 +5132,37 @@
     "reason": "corrective-run:resume",
     "verdict": "exempt"
   },
+  "integrated_gate_check": {
+    "base_verdict": "passed",
+    "changed_paths_differing": null,
+    "checkout_descends_from_integrated_revision": false,
+    "checkout_on_integrated_revision": true,
+    "checkout_revision": "83de5f4a3f91ff5748fcfad1266e90942323c1b8",
+    "exit_status": 1,
+    "finding": {
+      "base_verdict": "passed",
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_brief_points_rather_than_quotes.py::test_a_report_changes_no_other_dry_run_field"
+      ],
+      "integrated_revision": "83de5f4a3f91ff5748fcfad1266e90942323c1b8",
+      "integrated_verdict": "failed",
+      "message": "the gate passed at the worker's base but reports failed on the integrated revision 83de5f4a3f91: the merge changes what this node's gate proves, so a base-green run alone is not enough to push. Re-run the node's gate on the merged tree, land the code the merged tree requires, or record explicitly why this finding is accepted",
+      "reason": null
+    },
+    "gate_command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -n 8 --timeout=300 -p no:cacheprovider -q tests/test_a_brief_points_rather_than_quotes.py tests/test_backend_availability.py tests/test_brief_dispatch.py tests/test_crew.py tests/test_crew_cli_repository.py tests/test_crew_drain_by_coordinator.py tests/test_crew_dryrun.py tests/test_crew_lane_change.py tests/test_crew_negative_control_interface.py tests/test_crew_node.py tests/test_crew_refusal_visibility.py tests/test_crew_routes.py tests/test_crew_routing_visibility.py tests/test_directory_claim_asks_first.py tests/test_dispatch_counts_worker_slots.py tests/test_dispatch_holds_while_the_lane_is_paused.py tests/test_dispatch_lane_disagreement.py tests/test_dispatch_names_its_backend.py tests/test_dispatch_result_matches_launch.py tests/test_dry_run_reaches_admission.py tests/test_dry_run_shows_each_set_override.py tests/test_every_attempt_is_supervised.py tests/test_execution_fit.py tests/test_follower_bounds_its_lifetime.py tests/test_lane_advisory_on_dispatch.py tests/test_lane_reading_at_dispatch.py tests/test_lane_reading_carries_counts.py tests/test_picker.py tests/test_plan_review_gate.py tests/test_review_tiers.py tests/test_scope_refusal_names_its_claimant.py tests/test_test_watchers_are_reaped.py",
+    "gate_command_source": "stored",
+    "integrated_revision": "83de5f4a3f91ff5748fcfad1266e90942323c1b8",
+    "integrated_verdict": "failed",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T181759902620-dry-run-shows-each-set-override/verify-gate.log",
+    "ran": true,
+    "reason": null,
+    "recorded_gate_seconds": 481.83,
+    "replay_bound_seconds": 963.66,
+    "replay_bound_source": "derived",
+    "timed_out": false,
+    "worktree_roots_rewritten": []
+  },
   "lane_advisory": {
     "backend": "clive",
     "burn_multiple": null,
