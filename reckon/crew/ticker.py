@@ -136,6 +136,8 @@ STATE_HUE = {
         "launch-failed": 124,
         "stopped": 124,
         "abandoned": 124,
+        "lane-event": 124,
+        "lane event": 124,
         "stalled": 130,
         "complete": 28,
         "promoted": 22,
@@ -161,6 +163,8 @@ STATE_HUE = {
         "launch-failed": 203,
         "stopped": 203,
         "abandoned": 203,
+        "lane-event": 203,
+        "lane event": 203,
         "stalled": 179,
         "complete": 78,
         "promoted": 71,
@@ -239,6 +243,7 @@ NEEDS_ACTION = frozenset(
         "stalled",
         "stopped",
         "abandoned",
+        "lane-event",
         "unknown",
         "unreadable",
         "exited-unfinished",
@@ -272,7 +277,7 @@ CLAUSE_STATES = NEEDS_ACTION | frozenset(
 # An internal classification longer than the column it must occupy. The display
 # term matches the bucket the fleet counter already reports, so one word means
 # one thing across the whole line.
-DISPLAY = {"completed_unpromoted": "unpromoted"}
+DISPLAY = {"completed_unpromoted": "unpromoted", "lane-event": "lane event"}
 
 # The dispatch vocabulary, verbatim. Kept here rather than derived from a
 # config so that a role is known the moment it is dispatched; the word IS the

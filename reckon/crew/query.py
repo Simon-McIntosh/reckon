@@ -12,7 +12,7 @@ from typing import Any
 from reckon import ledger
 from reckon._timestamps import parse_iso
 from reckon.crew.node import CrewError, normalize_section
-from reckon.crew.recovery import classify_pointer
+from reckon.crew.recovery import classify_pointer, group_terminal_lane_events
 from reckon.crew.resumption import resolve_session
 from reckon.crew.routing import mounted_repository_projects
 from reckon.crew.runs import crew_home, list_live, read_pointer
@@ -169,7 +169,9 @@ def project_live_rows(
     because a session-scoped read that dropped ``mine`` would answer nothing
     about which rows are the caller's.
     """
-    classified = [classify_pointer(record) for record in records]
+    classified = group_terminal_lane_events(
+        [classify_pointer(record) for record in records]
+    )
     if session is not None:
         for row in classified:
             row["mine"] = str(row.get("session") or "") == session
@@ -180,7 +182,13 @@ def project_live_rows(
     _refuse_unknown_live_fields(requested, classified, with_mine=with_mine)
     always = (LIVE_ROW_ANCHOR, "mine") if with_mine else (LIVE_ROW_ANCHOR,)
     selected = tuple(dict.fromkeys((*always, *requested)))
-    return [{field: row.get(field) for field in selected} for row in classified]
+    return [
+        {
+            **{field: row.get(field) for field in selected},
+            **({"lane_event": row["lane_event"]} if row.get("lane_event") else {}),
+        }
+        for row in classified
+    ]
 
 
 def _resumability(
@@ -212,6 +220,7 @@ def _compact_row(
     checkout_path: str | None,
     repository: Path | None,
     selected_fields: tuple[str, ...],
+    classified_live: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Project one source record into the stable compact row shape.
 
@@ -223,7 +232,7 @@ def _compact_row(
     section's plan and ``brief_sha256`` is left off the row (see the projection
     below) rather than carried empty.
     """
-    classified = classify_pointer(record) if source == "live" else {}
+    classified = classified_live or classify_pointer(record) if source == "live" else {}
     node_data = record.get("node")
     node_mapping = node_data if isinstance(node_data, Mapping) else {}
     node = classified.get("node") if source == "live" else record.get("node")
@@ -318,6 +327,8 @@ def _compact_row(
         ),
     }
     row = {field: complete[field] for field in selected_fields}
+    if classified.get("lane_event"):
+        row["lane_event"] = classified["lane_event"]
     # Only a brief run carries a brief digest. Leaving the key off a plan run's
     # row keeps that row's shape what it was before brief runs existed, so a
     # reader tells the two authorities apart by the key's presence.
@@ -465,7 +476,14 @@ def runs_view(
                     for record in live_records
                     if str(record.get("project") or "") == project
                 ]
-        for record in live_records:
+        classified_live = group_terminal_lane_events(
+            [classify_pointer(record) for record in live_records]
+        )
+        records_by_id = {
+            str(record.get("run_id") or ""): record for record in live_records
+        }
+        for classified in classified_live:
+            record = records_by_id[str(classified.get("run_id") or "")]
             row_project = str(record.get("project") or "")
             repository = _record_repository(record, mounted_projects)
             rows.append(
@@ -480,6 +498,7 @@ def runs_view(
                     ),
                     repository=repository,
                     selected_fields=row_fields,
+                    classified_live=classified,
                 )
             )
     if selected_source in {"all", "ledger"}:

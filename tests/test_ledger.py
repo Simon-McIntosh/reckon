@@ -1496,6 +1496,7 @@ def test_recovery_counts_running_scoring_and_interrupted(home, repo) -> None:
         "completed_unpromoted": 0,
         "interrupted": 1,
         "abandoned": 0,
+        "lane-event": 0,
     }
     assert {row["run_id"] for row in report["runs"]} == {
         running["run_id"],
