@@ -23,6 +23,7 @@ import signal
 import sys
 import tempfile
 import time
+import urllib.request
 from pathlib import Path
 
 import pytest
@@ -127,6 +128,29 @@ def no_live_jev(request, tmp_path_factory, monkeypatch):
             "RECKON_MODEL_CATALOGUE",
             str(tmp_path_factory.mktemp("no-catalogue") / "absent-catalogue.yaml"),
         )
+
+    # Credential absence alone is not isolation: a test that sets the key back
+    # builds and sends the request. Whatever credential is present, the client's
+    # HTTP call is wrapped so a request aimed at the picker's endpoint raises the
+    # same ``LiveJevDisabledError`` the missing credential would, while any other
+    # host a test fetches — its own loopback server — still reaches the network
+    # through the original call. A test that patches ``urllib.request.urlopen``
+    # itself replaces this guard, so a test answering the call with a fixture
+    # keeps working.
+    original_urlopen = urllib.request.urlopen
+
+    def refuse_live_jev(target, *args, **kwargs):
+        url = getattr(target, "full_url", None)
+        if url is None and isinstance(target, str):
+            url = target
+        if url and str(url).startswith(client.DECISIONS_ORIGIN):
+            raise client.LiveJevDisabledError(
+                "live Jev is disabled under test: the request to the decisions "
+                "endpoint was refused before a connection was opened"
+            )
+        return original_urlopen(target, *args, **kwargs)
+
+    monkeypatch.setattr(urllib.request, "urlopen", refuse_live_jev)
 
 
 # The served process's discovery walk-reuse window. ``serve.main`` assigns

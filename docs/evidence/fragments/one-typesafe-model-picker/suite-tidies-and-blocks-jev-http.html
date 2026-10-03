@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="Suite tidies its temp dirs and blocks live Jev whatever the credential">
+  <meta name="plan-summary" content="tmp_path_retention_policy=failed stops the suite retaining passing tests' temporary trees, and the no_live_jev fixture now wraps the client's HTTP call so a request to the picker endpoint is refused before any connection, whatever credential a test supplies.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s6">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,picker,test-isolation,evidence">
+  <title>Suite tidies its temp dirs and blocks live Jev | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="suite-tidies-and-blocks-jev-http" data-reckon="landed" data-when="2026-10-03">
+  <h2>Suite tidies its temp dirs and blocks live Jev whatever the credential</h2>
+  <p>Two suite-hygiene defects fixed in one node covering §6 fallout. Detailed measurements
+  are in the sibling fragment
+  <a href="/reckon/evidence/one-typesafe-model-picker/suite-cleans-its-temp">suite-cleans-its-temp</a>.</p>
+  <ul>
+    <li><strong>Temp directories cleaned.</strong> <code>pyproject.toml</code> sets
+    <code>tmp_path_retention_policy = "failed"</code>; a fixed 20-file gate run with an explicit
+    <code>--basetemp</code> fell from 12772&nbsp;KB / 3534 dirs (retention <code>all</code>) to
+    2148&nbsp;KB / 1389 dirs (retention <code>failed</code>), an 83% cut.</li>
+    <li><strong>Live Jev blocked whatever the credential.</strong> The autouse
+    <code>no_live_jev</code> fixture wraps <code>urllib.request.urlopen</code> so a request to
+    <code>client.DECISIONS_ORIGIN</code> raises <code>LiveJevDisabledError</code> before any
+    connection, delegating every other host so loopback tests still fetch. A new case sets a fake
+    key, dispatches with no lane named, and shows no host lookup is attempted and the selection is
+    a recorded fallback.</li>
+  </ul>
+  <p>Gate: base 395 passed / 2 skipped, head 396 passed / 2 skipped, EXIT=0, zero added failures.
+  Negative control (delete the <code>urlopen</code> guard): the present-credential case fails,
+  <code>EXIT=1</code>, resolving <code>openrouter.ai:443</code>.</p>
+</article>
+</body>
+</html>
