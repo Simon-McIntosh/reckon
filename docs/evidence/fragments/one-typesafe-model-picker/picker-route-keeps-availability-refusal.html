@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="The picker route keeps the deterministic availability refusal">
+  <meta name="plan-summary" content="Under the picker route the deterministic model-availability refusal is applied to whichever backend the picker resolves — a routed backend, a fallback to the default, or the default the refusal falls through to — with the picker_selection recorded on the exit-5 payload.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s6">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,picker,routing,availability,evidence">
+  <title>The picker route keeps the deterministic availability refusal | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="picker-route-keeps-availability-refusal" data-reckon="landed" data-when="2026-10-03">
+  <h2>The picker route keeps the deterministic availability refusal</h2>
+  <p>Under <code>routing.picker: route</code> the deterministic model-availability
+  refusal was skipped outright (<code>availability_refusal = None</code>), so a dispatch
+  whose picker resolved a backend the account does not serve reached contract validation
+  (exit 2) instead of the exit-5 competence refusal deterministic routing gives it. The
+  picker's own filter reads only cached observations, and a model with no cached probe
+  reads <code>unknown</code> and stays eligible.</p>
+  <p><code>reckon/cli.py</code> now asks the picker once for the picker route and applies
+  the same availability probe the deterministic route runs to whichever backend the
+  selection resolves — a routed backend, a <code>fallback</code>, a <code>refuse</code>,
+  a <code>route</code> carrying no backend (all three continuing to the configured
+  default), or the default the refusal falls through to — with the
+  <code>picker_selection</code> recorded on the refusal payload. A <code>hold</code>
+  resolves no lane and is left to the picker's own hold path. Exactly one backend is
+  probed, as on the deterministic path.</p>
+  <p><code>reckon/crew/dispatch.py</code> accepts the caller's <code>picker_selection</code>
+  and reuses it rather than asking the picker again, so a live picker dispatch makes one
+  pick, not two, and the availability-checked backend is exactly the dispatched backend.
+  Its public <code>build_picker_inputs</code> helper reads the ledger rows, the verdict
+  inputs and the budget snapshot once, outside the picker's latency bound: the CLI calls
+  it and hands the results to <code>dispatch_picker_selection</code>, and the
+  dispatcher's own no-selection branch uses the same helper. Each input is guarded
+  independently, so a failed read is recorded against the input that failed and turns
+  into a fallback whose reason names it, never an exception before the picker is asked.</p>
+
+  <h3>Measure</h3>
+  <ul>
+    <li>Gate (seven named files, including <code>test_picker_in_dispatch.py</code> and
+    <code>test_picker_inputs_never_block_dispatch.py</code>): head arm
+    <code>EXIT=0</code> (55 passed).</li>
+    <li>New file <code>tests/test_picker_route_keeps_availability_refusal.py</code>: fallback-to-unserved
+    default exits 5, route-to-unserved names the backend and exits 5, refuse-to-unserved-default
+    exits 5, route-to-served previews, a two-answer mock picker is called once with the
+    dispatched backend equal to the checked one, the CLI path hands the picker non-None
+    precomputed inputs, and a failed input read falls back naming the input.</li>
+    <li>Negative control: restoring <code>availability_refusal = None</code> under the picker
+    route fails both unserved cases (<code>2 failed, 1 passed</code>, EXIT=1).</li>
+  </ul>
+</article>
+</body>
+</html>

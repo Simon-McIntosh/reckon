@@ -4382,6 +4382,61 @@ def _picker_input(
         return None
 
 
+def build_picker_inputs(
+    project: str,
+    config: Mapping[str, Any],
+    repo: str | Path,
+    *,
+    ledger_root: Path | None = None,
+) -> tuple[
+    list[dict[str, Any]] | None,
+    Mapping[str, Any] | None,
+    Mapping[str, Any] | None,
+    dict[str, str],
+]:
+    """Build the three dispatch-scope picker inputs once, capturing failures.
+
+    The ledger rows, the verdict inputs and the budget snapshot are read here,
+    beside the pick, so their cost is paid outside the picker's own latency
+    bound and the picker re-reads nothing per candidate. A caller that picks
+    separately calls this too, so the same work is done once whichever entry
+    asks. Each input is built behind its own guard: a failure is recorded
+    against the input that failed and returned in the error map rather than
+    raised, so the picker falls back with the failure named instead of the
+    dispatch aborting before it is consulted.
+    """
+    input_errors: dict[str, str] = {}
+    repo_root = Path(repo)
+    if ledger_root is None:
+        ledger_root = _picker_input(
+            "records",
+            lambda: resolve_dispatch_ledger_root(
+                resolve_dispatch_authority(project, repo_root)
+            ),
+            input_errors,
+        )
+    records = (
+        _picker_input(
+            "records",
+            lambda: _picker_ledger_rows(project, ledger_root),
+            input_errors,
+        )
+        if ledger_root is not None
+        else None
+    )
+    verdict_inputs = _picker_input(
+        "verdict_inputs",
+        lambda: _picker_verdict_inputs(project, repo_root),
+        input_errors,
+    )
+    budget_snapshot = _picker_input(
+        "budget_snapshot",
+        lambda: _picker_budget_snapshot(project, config, repo_root, records),
+        input_errors,
+    )
+    return records, verdict_inputs, budget_snapshot, input_errors
+
+
 def dispatch_picker_selection(
     *,
     node: TaskNode,
@@ -5778,6 +5833,7 @@ def dispatch(
     no_fence_reason: str = "",
     route: str | None = None,
     comment: str = "",
+    picker_selection: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Validate, prepare and launch one node; return its run record.
 
@@ -5843,36 +5899,31 @@ def dispatch(
     # ledger, a conflicting mount or a raising budget view is recorded against
     # the input that failed and the picker is left to fall back, so a picker
     # meant only to inform the dispatch can never abort the dispatch itself.
-    picker_input_errors: dict[str, str] = {}
-    picker_records = _picker_input(
-        "records",
-        lambda: _picker_ledger_rows(project, ledger_root),
-        picker_input_errors,
-    )
-    picker_inputs = _picker_input(
-        "verdict_inputs",
-        lambda: _picker_verdict_inputs(project, repo_root),
-        picker_input_errors,
-    )
-    picker_budget = _picker_input(
-        "budget_snapshot",
-        lambda: _picker_budget_snapshot(
-            project, config, repo_root, picker_records
-        ),
-        picker_input_errors,
-    )
-    picker_selection = dispatch_picker_selection(
-        node=node,
-        config=config,
-        project=project,
-        repo=repo_root,
-        session=session,
-        comment=comment,
-        records=picker_records,
-        verdict_inputs=picker_inputs,
-        budget_snapshot=picker_budget,
-        input_errors=picker_input_errors,
-    )
+    if picker_selection is not None:
+        # The caller already asked the picker and ran the availability check on
+        # its answer, so asking again would both double the pick's latency and
+        # let the second pick choose a backend the check never saw. Reuse the
+        # caller's answer so the checked backend is the dispatched backend.
+        picker_selection = dict(picker_selection)
+    else:
+        (
+            picker_records,
+            picker_inputs,
+            picker_budget,
+            picker_input_errors,
+        ) = build_picker_inputs(project, config, repo_root, ledger_root=ledger_root)
+        picker_selection = dispatch_picker_selection(
+            node=node,
+            config=config,
+            project=project,
+            repo=repo_root,
+            session=session,
+            comment=comment,
+            records=picker_records,
+            verdict_inputs=picker_inputs,
+            budget_snapshot=picker_budget,
+            input_errors=picker_input_errors,
+        )
     resolution = plan_dispatch(
         node=node,
         config=config,

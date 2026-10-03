@@ -1112,9 +1112,55 @@ def _dispatch_override_resolution(
     return resolution
 
 
-def _model_availability_refusal(crew_module, flight_module, config, node):
-    """Return a typed refusal when the selected backend does not serve its model."""
-    backend_name, backend = crew_module.resolve_role(config, node.role, node.spec_level)
+def _picker_routed_backend(config, selection):
+    """The backend a picker selection sends the dispatch to, or ``""``.
+
+    Mirrors the routing ``plan_dispatch`` applies to the same selection: a
+    ``route`` action names its own backend, while a ``fallback``, a ``refuse``
+    and a ``route`` carrying no backend all continue to the configured default.
+    A ``hold`` resolves no backend — it is a budget decision, not a lane — so it
+    is left to the picker's own hold path rather than resolving one here.
+    """
+    action = str(selection.get("action") or "")
+    if action == "route":
+        return str(selection.get("backend") or "") or str(
+            config.get("default_backend") or ""
+        )
+    if action in {"fallback", "refuse"}:
+        return str(config.get("default_backend") or "")
+    return ""
+
+
+def _model_availability_refusal(
+    crew_module, flight_module, config, node, *, picker_selection=None
+):
+    """Return a typed refusal when the dispatch's backend does not serve its model.
+
+    On the picker route the backend the dispatch will use is the one the picker
+    resolved to, not the role's configured lane, so a selection is read here and
+    the same availability probe the deterministic route runs is applied to that
+    backend. A selection that resolves no concrete backend (a hold or a refusal)
+    is left to the picker's own refusal path, so this returns no refusal for it.
+    """
+    if picker_selection is not None:
+        backend_name = _picker_routed_backend(config, picker_selection)
+        if not backend_name:
+            return None
+        from reckon.crew.routing import resolve_role_override
+
+        try:
+            backend_name, backend = resolve_role_override(
+                config, node.role, node.spec_level, backend_name
+            )
+        except crew_module.CrewError:
+            # A backend the picker named but no layer defines is not this
+            # check's to refuse: routing resolves it moments later and reports
+            # it with the routing context a caller needs.
+            return None
+    else:
+        backend_name, backend = crew_module.resolve_role(
+            config, node.role, node.spec_level
+        )
     entry = flight_module.probe_availability({"backends": {backend_name: backend}})[
         backend_name
     ]
@@ -1747,10 +1793,53 @@ def crew_dispatch(
             _emit_dry_run_request_error(pretty, str(exc))
             raise click.exceptions.Exit(1) from exc
 
-    availability_refusal = (
-        None
-        if effective_route == "picker"
-        else _model_availability_refusal(crew_module, flight_module, config, node)
+    # The picker's own filter reads only cached observations, so a model the
+    # account does not serve stays eligible for it when no probe has been
+    # recorded. Ask the picker once here, then apply the same deterministic
+    # availability probe to whichever backend it resolves — a routed backend, a
+    # fallback to the default, or the default the refusal falls through to — so
+    # the picker route can never send a dispatch to a backend the deterministic
+    # route would have refused.
+    picker_selection = None
+    if effective_route == "picker":
+        from reckon.crew.dispatch import (
+            build_picker_inputs,
+            dispatch_picker_selection,
+            resolve_project_repository,
+        )
+
+        # The ledger rows, the verdict inputs and the budget snapshot are read
+        # here, outside the picker's own latency bound, so the picker thread
+        # spends its time picking rather than re-reading what the caller needs.
+        # A failed build is recorded and handed on rather than raised, so the
+        # picker falls back with the failure named instead of the dispatch
+        # aborting before it is consulted.
+        picker_repo = resolve_project_repository(project, repo)
+        (
+            picker_records,
+            picker_verdict_inputs,
+            picker_budget,
+            picker_input_errors,
+        ) = build_picker_inputs(project, config, picker_repo)
+        picker_selection = dispatch_picker_selection(
+            node=node,
+            config=config,
+            project=project,
+            repo=picker_repo,
+            session=session,
+            comment=comment,
+            records=picker_records,
+            verdict_inputs=picker_verdict_inputs,
+            budget_snapshot=picker_budget,
+            input_errors=picker_input_errors,
+        )
+
+    availability_refusal = _model_availability_refusal(
+        crew_module,
+        flight_module,
+        config,
+        node,
+        picker_selection=picker_selection if effective_route == "picker" else None,
     )
     if availability_refusal is not None:
         from reckon.crew.refusals import format_refusal
@@ -1761,6 +1850,10 @@ def crew_dispatch(
             "detail": format_refusal("D04", str(availability_refusal["reason"])),
             "competence": availability_refusal,
         }
+        if picker_selection is not None:
+            # The picker answer that led to the refusal rides on the payload,
+            # so a caller reads which backend the picker resolved and why.
+            refusal["picker_selection"] = picker_selection
         if dry_run:
             # A dry-run refusal document, so it carries the same dry_run
             # marker and --set echo every other refusal the preview emits
@@ -1773,23 +1866,6 @@ def crew_dispatch(
 
     if dry_run:
         try:
-            from reckon.crew.dispatch import (
-                dispatch_picker_selection,
-                resolve_project_repository,
-            )
-
-            picker_selection = (
-                dispatch_picker_selection(
-                    node=node,
-                    config=config,
-                    project=project,
-                    repo=resolve_project_repository(project, repo),
-                    session=session,
-                    comment=comment,
-                )
-                if effective_route == "picker"
-                else None
-            )
             resolution = crew_module.plan_dispatch(
                 node=node,
                 config=config,
@@ -1986,6 +2062,7 @@ def crew_dispatch(
             no_fence_reason=no_fence_reason,
             route=route,
             comment=comment,
+            picker_selection=picker_selection,
         )
     except crew_module.PlanVisibilityError as exc:
         _emit(
