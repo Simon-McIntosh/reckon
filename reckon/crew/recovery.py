@@ -1964,6 +1964,7 @@ def dispatch_review_for_run(
     config: Mapping[str, Any] | None = None,
     launcher: Callable[..., Any] | None = None,
     allow_unreconciled_runs: bool = True,
+    prefer_local: bool = False,
 ) -> dict[str, Any]:
     """Run the review dispatch a scoring run has already composed for itself.
 
@@ -2123,11 +2124,16 @@ def dispatch_review_for_run(
     # reflex was measured doing twice in two minutes against a saturated pool.
     local_lane = str(resolved.get("local_backend") or "").strip()
     owning_lane = str(record.get("backend") or "").strip()
+    if prefer_local:
+        node = record.get("node") or {}
+        declaration = node.get("lane_declaration") or {}
+        owning_lane = str(declaration.get("backend") or "").strip()
     previous_lane = _failed_review_backend(record)
     candidates = [
         name
         for name in _review_lane_candidates(resolved, owning_backend=owning_lane)
         if name != previous_lane
+        and (not prefer_local or name == (owning_lane or local_lane))
     ]
     if not candidates:
         reason = _no_lane_reason(
@@ -10400,8 +10406,9 @@ def recover(
     project: str | None = None,
     config: Mapping[str, Any] | None = None,
     launcher: Callable[..., Any] | None = None,
+    dispatch_reviews: bool = False,
 ) -> dict[str, Any]:
-    """Classify every live pointer, repairing the record and launching reviews.
+    """Classify live pointers; launch reviews only with --dispatch-reviews and --project.
 
     Each pointer is re-observed first, so the classification rests on the
     current stream and process table rather than on whatever the last writer
@@ -10410,16 +10417,15 @@ def recover(
     completed-but-unpromoted run is reported with its manifest path so the
     orchestrator can promote it deliberately.
 
-    One thing this command does launch, by design: a run in ``scoring`` has a
-    complete review dispatch already composed for it, and leaving that command
-    as a string for someone to retype is the defect this sweep exists to
-    close. The review is dispatched on the same admission path any dispatch
-    takes, and a refusal — scope, member, follower, context fit, budget, or an
-    unavailable local lane — is recorded against the run with its reason
-    rather than swallowed, so the run says why it is still awaiting review
-    instead of looking identical to a review that ran and wrote nothing.
+    Review dispatch requires ``dispatch_reviews`` and a named project. It
+    reaches only runs whose dispatching session still has a live follower;
+    otherwise the review remains with its coordinator. The sweep prefers the
+    local lane unless the reviewed node explicitly declared another backend.
     """
     from reckon.crew.dispatch import observe
+
+    if dispatch_reviews and not project:
+        raise CrewError("review dispatch requires --project with --dispatch-reviews")
 
     reports = []
     scoring: list[dict[str, Any]] = []
@@ -10456,10 +10462,25 @@ def recover(
         count = sum(1 for item in reports if item["classification"] == name)
         if count:
             counts[name] = count
-    reflex = [
-        dispatch_review_for_run(record, config=config, launcher=launcher)
-        for record in scoring
-    ]
+    reflex = []
+    awaiting_coordinator = []
+    if dispatch_reviews:
+        for record in scoring:
+            session = str(record.get("session") or "")
+            if not session or not runs.follower_state(project, session).get("live"):
+                awaiting_coordinator.append(
+                    {
+                        "run_id": str(record.get("run_id") or ""),
+                        "status": "awaiting-coordinator",
+                        "reason": f"dispatching session {session or '<missing>'!r} is not live",
+                    }
+                )
+                continue
+            reflex.append(
+                dispatch_review_for_run(
+                    record, config=config, launcher=launcher, prefer_local=True
+                )
+            )
     return {
         "runs": reports,
         "counts": counts,
@@ -10471,4 +10492,5 @@ def recover(
             r["run_id"] for r in reflex if r.get("awaiting_lane")
         ],
         "reviews_refused": [r for r in reflex if r.get("refused")],
+        "reviews_awaiting_coordinator": awaiting_coordinator,
     }

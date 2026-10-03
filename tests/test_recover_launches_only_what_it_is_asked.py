@@ -33,6 +33,7 @@ def scoring_runs(tmp_path, monkeypatch):
     launches = []
 
     def launch(record, **_kwargs):
+        assert _kwargs.get("prefer_local") is True
         launches.append(record["run_id"])
         return {
             "run_id": record["run_id"],
@@ -97,6 +98,12 @@ def test_recover_help_names_its_opted_in_launch():
     assert "review" in recovery.recover.__doc__.splitlines()[0].lower()
 
 
+def test_cli_refuses_unscoped_review_launch():
+    command = CliRunner().invoke(cli.main, ["crew", "recover", "--dispatch-reviews"])
+    assert command.exit_code != 0
+    assert "--project" in command.output
+
+
 @pytest.mark.parametrize(
     ("declared", "expected"), [(None, "local"), ("codex", "codex")]
 )
@@ -108,7 +115,7 @@ def test_sweep_review_lane_uses_local_unless_node_declares_one(
         "project": "named",
         "repo": "/unused/repository",
         "backend": "codex",
-        "node": {"requested_backend": declared} if declared else {},
+        "node": {"lane_declaration": {"backend": declared}} if declared else {},
     }
     config = {"local_backend": "local", "backends": {"local": {}, "codex": {}}}
     monkeypatch.setattr(
@@ -131,6 +138,7 @@ def test_sweep_review_lane_uses_local_unless_node_declares_one(
             "head": "abc123",
             "node_id": "review-of-source",
             "goal": "review source",
+            "done_when": "review is stored",
             "plan": "sample",
             "section": "review",
             "write_paths": ["review.json"],
