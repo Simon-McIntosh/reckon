@@ -54,7 +54,7 @@
   </p>
   <p>
     The follower now includes <code>lane-event</code> in its attention states.
-    The final four-file <code>pytest -n 8 --timeout=300</code> gate ran against
+    The four-file <code>pytest -n 8 --timeout=300</code> gate ran against
     base <code>7fbe5fd8963bdb30816189f515c709c37d913f3b</code> and head
     <code>fd2565463f7d5855eb71cbb72d1bbd5a95f9a625</code>. Base recorded
     <strong>11 failed, 310 passed</strong>; head recorded
@@ -62,5 +62,28 @@
     mutation left both grouping assertions red (<strong>2 failed, 8 passed,
     EXIT=1</strong>), confirming that the tests exercise the correlation rule.
     The run manifest names both completed gate receipts and the mutation log.
+  </p>
+  <p>
+    A merged-head contract check exposed two further registration gaps. At
+    <code>bbf96cca4aae5f30ea5465cfd111c0adcaabaf83</code>, the colour test
+    refused <code>('light', ['lane event'])</code>: the palette had the internal
+    <code>lane-event</code> key but not its displayed word. The fleet counter
+    test refused because <code>lane-event</code> was in the action set but absent
+    from the verdict emitter it inspects. Both failures reproduced together.
+    The displayed word now has the blocked hue in both themes, and grouped
+    reports obtain their fleet verdict from the shared emitter.
+  </p>
+  <p>
+    The six-file base arm under <code>TERM=dumb NO_COLOR=1</code> recorded
+    <strong>16 failed, 379 passed, 1 warning</strong>. The repeated head arm at
+    <code>269908702e7444f17935a5942d89ddf882bbd486</code> recorded
+    <strong>5 failed, 390 passed, 1 warning</strong>; all five failure ids were
+    already at base. Its first run also hit one five-second watch-lifetime
+    timeout. The three named follower and watch files plus that case passed
+    alone (<strong>41 passed</strong>), and the timeout did not recur in the
+    repeated head arm. With the correlation window set to zero in a scratch
+    extraction of this head, both grouping assertions still failed while the
+    other eight cases passed (<strong>2 failed, 8 passed, EXIT=1</strong>).
+    The manifest names each log and completed receipt.
   </p>
 </article>
