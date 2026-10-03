@@ -424,7 +424,13 @@ def wilson_interval(dead: int, size: int, z: float = 1.96) -> dict | None:
 
 
 def build_after_block(
-    attempts: list[dict], *, since: str, until: str, scan_time: str
+    attempts: list[dict],
+    *,
+    since: str,
+    until: str,
+    scan_time: str,
+    positive_control: dict | None,
+    completion_control: dict | None,
 ) -> dict:
     """The review reflex's own configuration over a window that starts at ``since``.
 
@@ -435,6 +441,11 @@ def build_after_block(
     inside it — so the filter's two axes can be checked from the block rather
     than taken on faith. Below ``MIN_WINDOW_REVIEWS`` attempts the window is
     stated as not yet measurable, with its count rather than a rate.
+
+    The block carries the same headline shape as the before block, so a reader
+    at the after-rate checks it the same way, and the fixed control run the
+    classifier is aimed with rides beside it. That control is a before-effort
+    review and predates the window: it aims the reading, not the window.
     """
     since_at = instant(since)
     until_at = instant(until)
@@ -457,6 +468,7 @@ def build_after_block(
         elif started < until_at:
             window.append(row)
     other_efforts_in_window = 0
+    other_efforts_dead = 0
     for row in attempts:
         if str(row["role"]) != "review":
             continue
@@ -465,6 +477,8 @@ def build_after_block(
         started = instant(row.get("started_at"))
         if started is not None and since_at <= started < until_at:
             other_efforts_in_window += 1
+            if row["classification"] == "dead":
+                other_efforts_dead += 1
 
     reviews = len(window)
     deaths = sum(1 for row in window if row["classification"] == "dead")
@@ -490,7 +504,26 @@ def build_after_block(
         "effort": AFTER_REVIEW_EFFORT,
         "reviews": reviews,
         "completed": sum(1 for row in window if row["classification"] == "completed"),
-        "deaths": deaths,
+        "deaths": {
+            "view": "attempt",
+            "headline": {
+                "population": (
+                    "review role at the effort this lane declares after reviews "
+                    "moved off xhigh, started inside the after window"
+                ),
+                "role": "review",
+                "effort": AFTER_REVIEW_EFFORT,
+                "count": deaths,
+                "attempts": reviews,
+                "rate": rate(deaths, reviews) if measurable else None,
+            },
+            "within_window_all_efforts": {
+                "population": "review role at every declared effort inside the window",
+                "count": deaths + other_efforts_dead,
+                "attempts": reviews + other_efforts_in_window,
+                "rate": rate(deaths + other_efforts_dead, reviews + other_efforts_in_window),
+            },
+        },
         "running": sum(1 for row in window if row["classification"] == "running"),
         "unreadable": sum(1 for row in window if row["classification"] == "unreadable"),
         "rate": rate(deaths, reviews) if measurable else None,
@@ -515,6 +548,12 @@ def build_after_block(
         },
         "exit_records": render_exit_records(
             fold_rows_exit_records(window), attempts=reviews, deaths=deaths
+        ),
+        "positive_control": positive_control,
+        "completion_control": completion_control,
+        "controls_note": (
+            "the fixed control run is a review at the before effort and predates "
+            "the window; it aims the classifier, not the window"
         ),
     }
 
@@ -771,13 +810,6 @@ def main(argv: list[str] | None = None) -> int:
     revision = script_revision()
 
     after = None
-    if args.since:
-        after = build_after_block(
-            attempts,
-            since=args.since,
-            until=args.until or scan_time,
-            scan_time=scan_time,
-        )
 
     # ── controls ────────────────────────────────────────────────────────────
     # A census of deaths is only as good as its reader's ability to see the
@@ -825,6 +857,16 @@ def main(argv: list[str] | None = None) -> int:
         completion_control["note"] = (
             "same run, later attempt: the parser reads a result record where one "
             "was written, so a death reading is not the reader failing on this run"
+        )
+
+    if args.since:
+        after = build_after_block(
+            attempts,
+            since=args.since,
+            until=args.until or scan_time,
+            scan_time=scan_time,
+            positive_control=death_control,
+            completion_control=completion_control,
         )
 
     # The rate the fence would face now, beside the whole-history rate.
@@ -992,7 +1034,7 @@ def main(argv: list[str] | None = None) -> int:
     if after is not None:
         summary += (
             f" after_window_reviews={after['reviews']}"
-            f" after_window_deaths={after['deaths']}"
+            f" after_window_deaths={after['deaths']['headline']['count']}"
             f" after_window_rate={after['rate']}"
             f" after_window_ci95={after['rate_ci95']}"
             f" after_window_measurable={after['measurable']}"
