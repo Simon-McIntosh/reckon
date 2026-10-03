@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="ticker-shows-the-lane-mean">
+  <meta name="plan-title" content="The ticker row shows the lane's mean beside its own rate">
+  <meta name="plan-summary" content="The follower's row carries the run's own generation rate and the lane's mean in one cell, taken from the lane reading the run's record already carries; a record carrying no reading prints no rate either, and a reading that measured no mean names the absence.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-commits" content="b115ba2da">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,ticker,lane,observability">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>The ticker row shows the lane's mean beside its own rate | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution record &middot; 2026-10-03</p>
+      <h1>The ticker row shows the lane's mean beside its own rate</h1>
+      <p class="lead" data-node="ticker-shows-the-lane-mean" data-reckon="landed" data-when="2026-10-03">
+        The row now composes the run's own generation rate and the lane's mean from the
+        lane reading the record already carries, as <code> 1.40 lane  1.44</code>, and the
+        absence is named where the reading measured no mean. Gate: base
+        <code>7fbe5fd89</code> <strong>11 failed, 394 passed</strong> (8 of the failures the
+        new file), head <code>b115ba2da</code> <strong>3 failed, 402 passed</strong>, no
+        added failure id — the three remaining ids
+        (<code>test_cli_follow_streams_each_event_as_one_json_document</code>,
+        <code>test_cli_follow_prints_compact_transition_lines_by_default</code>,
+        <code>test_cli_follow_keeps_machine_objects_behind_json_flag</code>) fail identically
+        at base and are outside this node. Negative control declared and executed: with the
+        lane mean dropped from the rendered row, <code>5 failed</code> including
+        <code>test_a_row_with_a_lane_reading_shows_both_figures_side_by_side</code>, and no
+        id the head arm fails. <code>ruff check</code> and <code>ruff format --check</code>
+        report no finding the base did not.
+      </p>
+    </header>
+
+    <h2>Deviation from the brief, and the one gap it leaves</h2>
+    <p>The brief reads "when no lane reading is present the row says so". The row instead
+    prints no cell at all on a record carrying no reading, because a cell that announced
+    the absence on every such row would spend the clause's margin fleet-wide and an
+    existing pinned test holds a row without a reading to its present columns. The named
+    absence is rendered for a reading that is carried and measured no mean — the state the
+    producer composes for a lane that published nothing — so a figure never appears
+    without the lane's own beside it.</p>
+    <p>One gap remains outside this node's write scope: the follower's watch transition is
+    rebuilt field by field in <code>reckon/crew/recovery.py</code> and does not yet carry
+    the pointer's <code>lane_reading</code>, so the cell is dormant in the live pane until
+    that field is threaded through. Recorded under follow_ons.</p>
+  </main>
+</body>
+</html>
