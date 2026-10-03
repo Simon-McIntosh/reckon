@@ -66,6 +66,33 @@ def _write(directory, row):
     return path
 
 
+def test_ledger_index_shares_cache_root_without_touching_capabilities(
+    tmp_path, monkeypatch
+):
+    root, _aggregate, directory = _fixture(tmp_path, monkeypatch)
+    cache_path = capabilities.capabilities_path()
+    assert not cache_path.exists()
+
+    _write(directory, _row("first"))
+    ledger.load("sample", root)
+    index_path = ledger._run_index_path("sample", root)
+    assert index_path.parent == cache_path.parent
+    assert index_path.name.startswith("ledger-")
+    assert index_path.suffix == ".sqlite"
+    assert set(cache_path.parent.iterdir()) == {index_path}
+
+    cache_value = {"ledger_versions": {"sample": "preserved"}, "configurations": []}
+    cache_path.write_text(json.dumps(cache_value))
+    before = cache_path.read_bytes()
+    _write(directory, _row("second"))
+    assert len(ledger.runs("sample", root)) == 2
+    ledger.indexed_headers("sample", root)
+
+    assert cache_path.read_bytes() == before
+    assert capabilities.load_capabilities() == cache_value
+    assert set(cache_path.parent.iterdir()) == {index_path, cache_path}
+
+
 def test_append_reads_only_the_new_run(tmp_path, monkeypatch):
     root, _aggregate, directory = _fixture(tmp_path, monkeypatch)
     for i in range(40):
