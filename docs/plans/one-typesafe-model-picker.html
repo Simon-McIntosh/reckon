@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="137">
+<meta name="plan-version" content="138">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 </head>
 <body>
@@ -511,9 +511,15 @@
     <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §6</pre>
     <p class="r-fu-outcome">Done by dispatch-speed (merge 0c853d542, codex-astra): incremental cross-process ledger index; pick p90 0.974 s over 21 fresh CLI picks with zero timeouts; whole dry-run dispatch 3.6–4.7 s warm. Input build median 1.64 s remains above its 1.0 s target. Record: evidence anchor s6-dispatch-speed.</p>
     </article>
-<article class="r-fu" data-id="f-otmp-jev-http-guard" data-status="open" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-otmp-jev-http-guard" data-status="resolved" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-03T20:17:45+00:00" data-resolved-by="s25-picker">
     <h4 class="r-fu-title">Block the live Jev HTTP call itself under test</h4>
     <div class="r-fu-body">The conftest isolation stops the client by removing the credential, so a test that sets OPENROUTER_API_KEY_RECKON would still reach OpenRouter. Stub the HTTP call in the autouse fixture, so the network is unreachable whatever the credential, and prove it with a test that sets a fake key and spies urlopen. The same followup records the remaining input-build floor (1.64 s median) and the review follow-ons of dispatch-speed: plans resolved from non-plan roots are missing from the estimate stamp; a stat PermissionError now raises; the profile key stats every run file.</div>
+    <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §6</pre>
+    <p class="r-fu-outcome">Done: HTTP-level live-Jev guard and tmp retention (c56136129); input build 0.71 s and the speed review follow-ons (f1d34ca08); the dispatch regression from the picker work fixed (dc4e52cc7). Record: evidence anchor s6-measured-and-hermetic.</p>
+    </article>
+<article class="r-fu" data-id="f-otmp-outcomes-reread" data-status="open" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Re-read picker outcomes under the corrected rules</h4>
+    <div class="r-fu-body">Run reckon crew pick --outcomes --all-projects --since 2026-10-03T22:00:00Z after a few days of dispatches, now that codex pace reaches Jev and route_mode is recorded. Report whether Jev uses codex for hard nodes when the pace allows, whether its confidence is calibrated, and the timeout rate. Also close two open review follow-ons. First, route_mode labels an operator-overridden hold as shadow; give it a named predicate. Second, the account-probe guard covers only the run_probe seam; add a suite-wide check that no test spawns a provider binary.</div>
     <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §6</pre>
     </article>
 </section>
