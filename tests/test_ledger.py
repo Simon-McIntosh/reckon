@@ -10,6 +10,7 @@ a working tree, and nothing durable may live only in the cache.
 from __future__ import annotations
 
 import asyncio
+import importlib
 import json
 import os
 import re
@@ -838,14 +839,40 @@ def test_every_completed_record_names_its_completion_time_source() -> None:
 
     assert "completed_at_source" in ledger.RECORD_FIELDS
     assert "worker_seconds_source" in ledger.RECORD_FIELDS
+    assert "route_mode" in ledger.RECORD_FIELDS
     assert set(ledger.RECORD_FIELDS) <= set(stored)
     assert stored["completed_at_source"] == "promotion_time"
     assert stored["worker_seconds_source"] == "unavailable"
+    assert stored["route_mode"] is None
     assert ledger.duration_measurement_state(stored) == "underivable"
     assert stored["duration_measurement"] == {
         "status": "underivable",
         "reason": "wall_clock_unavailable_at_promotion",
     }
+
+
+def test_dispatch_records_how_its_backend_was_chosen(home, repo, monkeypatch) -> None:
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    monkeypatch.setattr(
+        dispatch_module, "_raise_repository_scope_conflict", lambda *_a, **_k: None
+    )
+    answer = {"action": "route", "backend": "alpha"}
+    routed = _dispatch(
+        repo, node_kwargs={"id": "routed"}, route="picker", picker_selection=answer
+    )
+    shadow = _dispatch(
+        repo, node_kwargs={"id": "shadowed"}, route="shadow", picker_selection=answer
+    )
+    explicit = _dispatch(
+        repo,
+        node_kwargs={"id": "named-lane"},
+        backend_override="alpha",
+        route="deterministic",
+        picker_selection=answer,
+    )
+    assert routed["route_mode"] == "picker"
+    assert shadow["route_mode"] == "shadow"
+    assert explicit["route_mode"] == "explicit"
 
 
 def test_a_completed_record_carries_the_declared_specification_level() -> None:
@@ -1859,6 +1886,7 @@ def test_completing_a_record_with_a_genuine_foreign_pid_still_signals_and_releas
 
 def test_a_completed_record_carries_every_calibration_input(home, repo) -> None:
     record = _dispatch(repo, fixture="codex-turn.jsonl")
+    assert record["route_mode"] == "shadow"
     _deliver(record)
 
     stored = crew.complete(
@@ -1871,6 +1899,7 @@ def test_a_completed_record_carries_every_calibration_input(home, repo) -> None:
     )["record"]
 
     assert set(ledger.RECORD_FIELDS) <= set(stored)
+    assert stored["route_mode"] == "shadow"
     assert stored["agent"] == {
         "backend": "alpha",
         "launch": "cli",

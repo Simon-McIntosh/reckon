@@ -165,6 +165,7 @@ RECORD_FIELDS = (
     # distinguishable from one whose value was never written.
     "promoted_by",
     "picker_selection",
+    "route_mode",
     "unreconciled_override",
     # A brief run's authority in place of a plan section: the digest and stored
     # path of the brief it read, the plan an unplanned implement landing changed,
@@ -1955,6 +1956,18 @@ def promoted_picker_selection(run_id: str) -> dict[str, Any] | None:
     return dict(selection) if isinstance(selection, Mapping) else None
 
 
+def promoted_route_mode(run_id: str) -> str | None:
+    """Read how the dispatch chose its backend before promotion removes its pointer."""
+    from reckon.crew import runs
+
+    try:
+        pointer = runs.read_pointer(run_id)
+    except runs.CrewError:
+        return None
+    mode = pointer.get("route_mode")
+    return mode if mode in {"picker", "shadow", "explicit"} else None
+
+
 def is_unmetered_backend(backend: str) -> bool:
     """Whether a named backend has no metered per-token price."""
     return str(backend or "").strip() in UNMETERED_BACKENDS
@@ -2191,6 +2204,7 @@ def build_record(
         # fields, so a reader can tell an absent value from one never written.
         "promoted_by": str(promoted_by).strip() or None,
         "picker_selection": promoted_picker_selection(run_id),
+        "route_mode": promoted_route_mode(run_id),
     }
     # Both of these are absent from a record that has nothing to say about them,
     # which is why they are set after the literal rather than in it. The rate a

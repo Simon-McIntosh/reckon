@@ -2,6 +2,7 @@
 
 import json
 from collections import Counter
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -17,6 +18,13 @@ from reckon.crew.dispatch import (
 from reckon.crew.node import NodeValidation
 
 from .types import Candidate, PickRequest
+
+
+@dataclass
+class BudgetCandidate(Candidate):
+    """A candidate with an explanation when its account window is unknown."""
+
+    budget_reason: str | None = None
 
 
 def recent_outcomes(
@@ -208,7 +216,7 @@ def budget_view(
     probeable = list(config.get("backends", {}))
     # The budget view composes state_for and group_pace, including the account's
     # operative window. Consuming its verdict keeps every clock in one authority.
-    return budget.preflight(
+    report = budget.preflight(
         project,
         config,
         root=repo,
@@ -218,6 +226,42 @@ def budget_view(
         now=datetime.now(UTC),
         **({"probe_runner": lambda _: {}} if cached_only else {}),
     )
+    by_backend = {entry["backend"]: entry for entry in report["backends"]}
+    shelf_seconds = budget.policy(config)["evidence_shelf_life_minutes"] * 60
+    moment = parse_utc(report["checked_at"])
+    for group in report["groups"]:
+        allowance = group.get("allowance") or {}
+        if allowance.get("state") != budget.OBSERVED:
+            for name in group["members"]:
+                by_backend[name]["state"]["detail"] = (
+                    f"no recorded account-window reading for budget group {group['group']}"
+                )
+            continue
+        observed = parse_utc(str(allowance.get("observed_at") or ""))
+        if observed is None or moment is None:
+            continue
+        stale = (moment - observed).total_seconds() > shelf_seconds
+        source = (
+            "account-surface" if group.get("source") == "account-surface" else "ledger"
+        )
+        for name in group["members"]:
+            state = by_backend[name]["state"]
+            state.update(
+                source=source,
+                observed_at=observed.isoformat(),
+                expired=stale and source == "ledger",
+                headroom="known",
+                utilisation_pct=allowance["utilisation"] * 100,
+                burn_multiple=allowance["burn_multiple"],
+                resets_at=allowance["resets_at"],
+                detail=(
+                    "recorded account-window reading is stale"
+                    if stale and source == "ledger"
+                    else state.get("detail", "")
+                ),
+            )
+    report["summary"] = budget.summary(report)
+    return report
 
 
 def candidates(
@@ -288,12 +332,24 @@ def candidates(
             "state": budget.BudgetState(name).as_dict(),
         }
         state = verdict["state"]
+        group = group_by_backend.get(name)
+        group_allowance = (group or {}).get("allowance") or {}
         budget_facts = (
             state
-            if state.get("headroom") == "known" and not state.get("expired")
+            if state.get("headroom") == "known"
+            and not state.get("expired")
+            and (
+                group is None
+                or group_allowance.get("state") == budget.OBSERVED
+                or group_allowance.get("effective_limit") is not None
+            )
             else {}
         )
-        utilisation = budget_facts.get("utilisation_pct")
+        utilisation = (
+            state.get("utilisation_pct")
+            if state.get("headroom") == "known" and not state.get("expired")
+            else None
+        )
         ceiling = budget.policy(config)["utilisation_ceiling_pct"]
         if utilisation is not None and utilisation >= ceiling:
             reasons.append(f"budget-ceiling: {utilisation:g}% at or above {ceiling:g}%")
@@ -343,13 +399,17 @@ def candidates(
             family = "local" if local else _backends.dialect_for(backend).name
         except _backends.BackendError:
             family = str(backend.get("launch") or name)
-        group_allowance = (group_by_backend.get(name) or {}).get("allowance") or {}
         reset = parse_utc(str(budget_facts.get("resets_at") or ""))
         days_to_reset = (
             max(0.0, (reset - now).total_seconds() / 86400) if reset else None
         )
+        budget_reason = None
+        if group is not None and not budget_facts:
+            budget_reason = str(state.get("detail") or "") or (
+                "no recorded account-window reading for the candidate's budget group"
+            )
         result.append(
-            Candidate(
+            BudgetCandidate(
                 backend=name,
                 family=family,
                 model=model,
@@ -358,13 +418,16 @@ def candidates(
                 availability=availability,
                 utilisation_pct=budget_facts.get("utilisation_pct"),
                 burn_multiple=budget_facts.get("burn_multiple"),
-                pace_allowance=group_allowance.get("effective_limit"),
+                pace_allowance=(
+                    group_allowance.get("effective_limit") if budget_facts else None
+                ),
                 resets_at=budget_facts.get("resets_at"),
                 days_to_reset=days_to_reset,
                 worker_slots=slots,
                 congestion=congestion,
                 outcomes=recent_outcomes(rows, request, name, model, now=now),
                 reasons=reasons,
+                budget_reason=budget_reason,
             )
         )
     return result

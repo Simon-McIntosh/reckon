@@ -34,6 +34,7 @@ def row(
         "role": "implement",
         "spec_level": "guided",
         "backend": backend,
+        "route_mode": "picker",
         "gate": gate,
         "outcome": "",
         "review": {"total": review},
@@ -149,6 +150,42 @@ def test_route_mismatch_cannot_claim_the_run_outcome():
     assert report["mechanics"]["actions"]["route"] == 1
     assert report["routed_outcomes"] == []
     assert report["calibration"]["below_0.5"]["count"] == 0
+
+
+def test_route_mode_separates_picker_from_shadow_and_legacy_matches():
+    routed = row("routed")
+    routed["route_mode"] = "picker"
+    shadow = row("shadow")
+    shadow["route_mode"] = "shadow"
+    explicit = row("explicit")
+    explicit["route_mode"] = "explicit"
+    legacy = row("legacy")
+    legacy.pop("route_mode")
+    report = outcomes.summarize({"demo": [routed, shadow, explicit, legacy]}, {})
+    assert [
+        (group["attribution"], group["count"]) for group in report["routed_outcomes"]
+    ] == [("picker", 1)]
+    assert [
+        (group["attribution"], group["count"])
+        for group in report["approximate_outcomes"]
+    ] == [("approximate", 1)]
+    assert report["calibration"]["below_0.5"]["count"] == 1
+
+
+def test_review_score_success_requires_eighty_without_overriding_failed_gate():
+    low = row("low", gate="not-run")
+    low["outcome"] = "review scored 79, 1 finding(s)"
+    threshold = row("threshold", gate="not-run")
+    threshold["outcome"] = "review scored 80, 1 finding(s)"
+    failed_gate = row("failed", gate="failed")
+    failed_gate["outcome"] = "review scored 95, 0 finding(s)"
+    unknown = row("unknown", gate="not-run")
+    unknown["outcome"] = "review score pending"
+    report = outcomes.summarize({"demo": [low, threshold, failed_gate, unknown]}, {})
+    group = report["routed_outcomes"][0]
+    assert group["known_outcomes"] == 3
+    assert group["success_rate"] == 1 / 3
+    assert "80" in report["rules"]["success"]
 
 
 def test_empty_and_malformed_rows_do_not_fabricate_success():
