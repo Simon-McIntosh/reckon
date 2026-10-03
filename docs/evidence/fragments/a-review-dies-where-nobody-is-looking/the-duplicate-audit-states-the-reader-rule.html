@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-title" content="The duplicate-scalar audit states the rule the reader follows">
+  <meta name="plan-summary" content="The duplicate-plan-scalar finding told its reader that the reader takes the last copy, while read_state keeps the first occurrence in document order and _set_meta rewrites that same line. The message now quotes the copy in force, the docstring and the module comment state the same first-copy rule, and a test asserts the audit's named copy equals the reader's returned copy in both copy orders; at base the same test reddens as assert 0.1 == 0.9.">
+  <meta name="plan-evidence-for" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-commits" content="4aa3059ef">
+  <title>The duplicate-scalar audit states the rule the reader follows | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The duplicate-scalar audit states the rule the reader follows</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p><code>_scalar_duplicate_findings</code> in <code>reckon/doccheck.py</code> reported a
+      duplicated <code>plan-*</code> scalar and told its reader that "the reader takes the last
+      one" — in its message and its docstring — while <code>read_state</code> keeps the first
+      occurrence in document order and every later copy is ignored. The writer
+      (<code>_set_meta</code>) rewrites that same first line, so the audit told its reader the
+      reverse of what both reader and writer do.</p>
+      <p><strong>Reproduced before repair.</strong> The new test module run against base source
+      (revision <code>b5f74d36b</code>, scratch tree) fails on the first copy order as
+      <code>assert 0.1 == 0.9</code> — the audit's message names the last copy (<code>0.1</code>)
+      while the reader returns the first (<code>0.9</code>) — and its docstring arm fails on
+      <code>assert 'first occurrence in document order' in ...last-wins.</code></p>
+    </section>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ol>
+        <li>The message now names the copy in force by quoting it, in the reader's own terms:
+          <code>&lt;meta name="plan-impl"&gt; appears 2 times ('0.9', '0.1') — the reader takes
+          the first occurrence in document order ('0.9'), so a writer updating a later line
+          reports success while the reader keeps that first value</code>. "The first occurrence
+          in document order" is the phrase the reader's own duplicate warning uses.</li>
+        <li>The docstring states the same rule: <code>read_state</code> keeps the first
+          occurrence and ignores every later copy — the line <code>_set_meta</code> rewrites —
+          so a duplicate is the first value read while every later copy sits unread. The module
+          comment above <code>_SCALAR_META_PREFIX</code>, which stated the old last-wins rule,
+          is corrected with it.</li>
+        <li><code>tests/test_the_duplicate_audit_states_the_reader_rule.py</code> builds a
+          document carrying <code>plan-impl</code> twice, reads it through
+          <code>read_state</code> and the audit, extracts the copy the audit's message names as
+          in force, and asserts it equals the reader's returned value — in both copy orders, so
+          either order alone cannot satisfy the assertion trivially. A second test asserts the
+          docstring states the first-occurrence rule and no longer claims last-wins.</li>
+      </ol>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Head arm — every test file naming <code>_scalar_duplicate_findings</code> or
+              <code>duplicate-plan-scalar</code> at head</td>
+            <td><code>4aa3059ef</code></td>
+            <td><strong>21 passed</strong> in 2.26s, exit 0</td>
+          </tr>
+          <tr>
+            <td>Base arm — the same three files (the new one copied in; it does not exist at
+              this revision) against base source</td>
+            <td><code>b5f74d36b</code>, scratch tree extracted from the object store</td>
+            <td><strong>3 failed, 18 passed</strong> in 2.35s, exit 1 — the three new test ids,
+              absent from the head arm</td>
+          </tr>
+          <tr>
+            <td>CLI receipt — <code>audit-doc</code> on a fixture carrying
+              <code>plan-impl</code> twice</td>
+            <td><code>4aa3059ef</code></td>
+            <td>exit 1 with the message above, quoting <code>'0.9'</code> as the copy in
+              force</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The base arm is the declared negative control: restoring the last-copy wording is the
+      mutation, and the failing ids are exactly the ids the head arm passes. The population is
+      the three files that name the finding; the other two
+      (<code>tests/test_audit.py</code>, <code>tests/test_composed_record_takes_fragment_bodies.py</code>)
+      carry no message-wording assertion and pass in both arms.</p>
+    </section>
+
+    <section id="provenance">
+      <h2>Reproduction</h2>
+      <table>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Base revision</td><td><code>b5f74d36bac459d66dd241861a19261902b0a477</code></td></tr>
+          <tr><td>Head commit</td><td><code>4aa3059ef</code> (doccheck message, docstring and
+            module comment; the new test module)</td></tr>
+          <tr><td>Logs</td>
+            <td><code>head-population.log</code>, <code>base-population.log</code>,
+              <code>head-audit-doc-receipt.log</code> in the run directory
+              (<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T204354888755-the-duplicate-audit-states-the-reader-rule</code>),
+              each headed by its revision, tree, module under test, resolved working directory
+              and literal command</td></tr>
+          <tr><td>Scratch tree</td><td><code>base-tree</code> under the run's
+            <code>$TMPDIR</code>, removed with the run's scratch</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
