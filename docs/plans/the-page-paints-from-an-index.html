@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="39">
 <meta name="plan-impl" content="0.86">
 </head>
 <body>
@@ -265,6 +265,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261003T132625170815-s22-currency-index-contract-review" data-who="reckon-build" data-when="2026-10-03T13:47:09.714Z">
     <div class="r-comment-body"><p>19-row currency verdict table for 18 S22 sections plus the declared positive control at main 6cb144965: met 14, partly met 4 (SCCI §4, SCCI §6, ARDL §6, ARDL §9), open 1 (TPPFI §7); positive control (CRPC §44, 15b6080ef) reads met; gate logs gate-tppfi.log (38 passed EXIT=0) and gate-control.log (9 passed EXIT=0); report at /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-currency-index-contract-review.html</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261003T134925738734-review-of-s22-currency-index-contract-review" data-who="reckon-build" data-when="2026-10-03T14:01:51.455Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261003T132625170815-s22-currency-index-contract-review stored parsed: scores goal_fidelity 20 / evidence 19 / scope_discipline 20 / durability 18 / fit 19, total 96 over five dimensions (0..20), reviewed_base_sha = reviewed_head_sha = 6cb144965a9ef611ed638b099ee833ec025e619b; added_failure_count unmeasured (null) because the reviewed manifest leaves baseline_suite and after_suite empty, with added_failure_ids []; the reviewed run&#x27;s 19-row currency verdict report was independently verified (all cited shas resolve and are ancestors; count 14/4/1 reconciles; worktree clean at the read revision; positive control reads met)</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20260928T1745-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T15:45:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T142339561173-s21-audit-page).</p><ul><li><b>§1 and §2: done.</b> The gate at §2 is satisfied: <code>tests/test_server_listens_before_it_watches.py</code> reports 3 passed (<code>caa09a7c</code>, merged <code>ad7eef98</code>).</li><li><b>§3 to §7: still required, and all unlanded.</b> <code>reckon/metadata_index.py</code>, the <code>/_index</code> route and the <code>/_thumb</code> route do not exist. The loader's first fetch is still <code>/_discover</code> (<code>docs/ui/state-loader.js:42</code>), and <code>_write_project_event</code> emits only a content digest.</li><li><b>§8: its line citations have moved.</b> <code>discover_plans</code> is now at <code>reckon/mcp.py:1646</code>, not 1250, and <code>reckon/mcp_views.py:2454-2458</code>, not 1985. The premise is intact.</li><li><b>Carried from §2's own review, for the §3 brief:</b> <code>_FleetChangeWatch.armed_roots</code> has no caller at head, and <code>close()</code> joins the reader thread for only 2 s while one tree can take longer to arm.</li></ul><p>The audit estimates about 16.5 worker-hours remaining. f-tppfai-001 stays the driving followup.</p></div>
