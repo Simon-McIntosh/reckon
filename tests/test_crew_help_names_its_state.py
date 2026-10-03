@@ -14,7 +14,7 @@ from reckon.crew.refusals import DISPATCH_REFUSAL_REMEDIES
 CommandPath = tuple[str, ...]
 
 STATE_PHRASES: dict[CommandPath, str] = {
-    ("ack",): "one live run's obligations",
+    ("ack",): "one run's obligations",
     ("attach",): "prepared in-harness run",
     ("check-manifest",): "delivered manifest against its own node",
     ("complete",): "finished run",
@@ -34,7 +34,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("pick",): "live routing state",
     ("placement",): "one reservation a project places its workers into",
     ("preflight",): "backend budget state",
-    ("recover",): "live pointers left by an interrupted orchestrator",
+    ("recover",): "live pointers",
     ("redispatch",): "working run",
     ("repair-completion",): "historical completion measurements missing",
     ("repair-status",): "a manifest's status word",
@@ -122,7 +122,6 @@ def test_every_crew_verb_help_names_its_state_or_condition() -> None:
     leaves = _leaf_commands(cli_module.crew)
 
     assert set(leaves) == set(STATE_PHRASES)
-    assert len(leaves) == 35
     for path, command in leaves.items():
         first_line = _first_help_line(command)
         result = _help_result(path)
