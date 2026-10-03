@@ -22,7 +22,9 @@ would let the router weigh a lane it never heard from.
 
 from __future__ import annotations
 
+import contextlib
 import json
+import os
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -222,24 +224,34 @@ def return_times(
     return blocks
 
 
-#: A project's run-time profile, memoized across picks. Each entry holds the
-#: ledger stamp the profile was read at beside the profile itself; a later pick
-#: compares that stamp to decide whether the reading still describes the
-#: project's history.
-_PROFILE_CACHE: dict[str, tuple[tuple[Any, ...], Mapping[str, Any]]] = {}
+#: A project's run-time profile, memoized within one process. Each entry holds
+#: the freshness key the profile was read at beside the profile itself. This is
+#: a first layer only: a real dispatch is a fresh process, so the memo cannot
+#: carry a reading between dispatches and the persisted copy below is what makes
+#: the reuse survive.
+_PROFILE_CACHE: dict[str, tuple[str, Mapping[str, Any]]] = {}
+
+#: Persisted profile files hold this schema marker, so a file written by another
+#: version is treated as a cache miss rather than read as a profile.
+_PROFILE_FILE_SCHEMA = 1
 
 
-def _stat_stamp(path: Path) -> tuple[int, int] | None:
-    """Return a path's modification time and size, or ``None`` when absent."""
+def _stat_stamp(path: Path) -> list[int] | None:
+    """Return a path's modification time and size, or ``None`` when absent.
+
+    A list rather than a tuple, so a stamp folded into a persisted key compares
+    equal to the same stamp read back from JSON, where a tuple would arrive as a
+    list and compare unequal.
+    """
 
     try:
         info = path.stat()
     except OSError:
         return None
-    return (info.st_mtime_ns, info.st_size)
+    return [info.st_mtime_ns, info.st_size]
 
 
-def _ledger_stamp(project: str) -> tuple[Any, ...]:
+def _ledger_stamp(project: str) -> list[Any] | None:
     """A cheap freshness key for one project's ledger.
 
     Two ``stat`` calls cover every way the ledger changes from outside: a
@@ -255,15 +267,112 @@ def _ledger_stamp(project: str) -> tuple[Any, ...]:
 
     A project with no ledger has a stable stamp, which is correct: it has no
     runs to profile until the first is written, and writing one moves the stamp.
-    A path that cannot be resolved forfeits the cache rather than risk a stale
-    hit.
+    A path that cannot be resolved returns ``None``, which forfeits the cache
+    rather than risk a stale hit.
     """
 
     try:
         ledger_file = ledger.ledger_path(project)
     except (ledger.LedgerError, OSError, ValueError):
-        return (object(),)
-    return (_stat_stamp(ledger_file), _stat_stamp(ledger_file.parent / "runs"))
+        return None
+    return [_stat_stamp(ledger_file), _stat_stamp(ledger_file.parent / "runs")]
+
+
+def _profile_cache_root() -> Path:
+    """The directory the persisted run-time profiles live under.
+
+    Outside every repository, so a cache write never dirties a checkout. The
+    location resolves from ``RECKON_RUN_TIME_PROFILE_CACHE`` when a caller names
+    one, else the user's cache directory (``XDG_CACHE_HOME`` or ``~/.cache``).
+    When neither is set but ``RECKON_HOME`` is, the cache stays under that home
+    so a caller that isolated its configuration also isolated its cache, which
+    is how the test suite keeps these writes inside its temporary tree.
+    """
+
+    configured = os.environ.get("RECKON_RUN_TIME_PROFILE_CACHE")
+    if configured:
+        return Path(configured).expanduser()
+    cache_home = os.environ.get("XDG_CACHE_HOME")
+    if cache_home:
+        return Path(cache_home) / "reckon" / "run-time-profile"
+    reckon_home = os.environ.get("RECKON_HOME")
+    if reckon_home:
+        return Path(reckon_home) / "cache" / "run-time-profile"
+    return Path.home() / ".cache" / "reckon" / "run-time-profile"
+
+
+def _profile_cache_path(project: str) -> Path:
+    """One persisted profile per project, named by the project's own id."""
+
+    if not ledger._SAFE_ID.fullmatch(str(project)):
+        raise ValueError(f"project {project!r} is not a usable cache filename")
+    return _profile_cache_root() / f"{project}.json"
+
+
+def _profile_key(project: str, now: datetime) -> str | None:
+    """The freshness key a persisted profile is checked against, or ``None``.
+
+    The key folds the ledger stamp and the window's end date together and
+    serialises them, so the same stamp read back from JSON compares equal to the
+    one computed here. A ledger whose path cannot be resolved yields no key, and
+    the profile is then never cached.
+    """
+
+    stamp = _ledger_stamp(project)
+    if stamp is None:
+        return None
+    return json.dumps([stamp, now.date().isoformat()], sort_keys=True)
+
+
+def _read_persisted_profile(project: str, key: str) -> Mapping[str, Any] | None:
+    """Return a project's persisted profile when it matches ``key``.
+
+    A missing, unreadable, corrupt or foreign-schema file is a cache miss, never
+    an error: the profile can always be read again from the ledger, so a damaged
+    cache must not take a pick down with it.
+    """
+
+    try:
+        payload = json.loads(_profile_cache_path(project).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(payload, Mapping) or (
+        payload.get("schema") != _PROFILE_FILE_SCHEMA
+    ):
+        return None
+    if payload.get("key") != key:
+        return None
+    profile = payload.get("profile")
+    return profile if isinstance(profile, Mapping) else None
+
+
+def _write_persisted_profile(
+    project: str, key: str, profile: Mapping[str, Any]
+) -> None:
+    """Persist one project's profile summary for later processes to reuse.
+
+    The write is atomic -- a sibling temporary replaced over the target -- so a
+    reader never sees a half-written file, and a failure to write is swallowed:
+    the cache is an optimisation and the next process reads the ledger again.
+    Only the profile summary is written, never the rows it was derived from.
+    """
+
+    temporary: Path | None = None
+    try:
+        path = _profile_cache_path(project)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.parent / f".{path.name}.{os.getpid()}.tmp"
+        temporary.write_text(
+            json.dumps(
+                {"schema": _PROFILE_FILE_SCHEMA, "key": key, "profile": profile}
+            ),
+            encoding="utf-8",
+        )
+        os.replace(temporary, path)
+    except (OSError, ValueError):
+        if temporary is not None:
+            with contextlib.suppress(OSError):
+                temporary.unlink()
 
 
 def _cached_run_time_profile(project: str, *, now: datetime) -> Mapping[str, Any]:
@@ -274,20 +383,27 @@ def _cached_run_time_profile(project: str, *, now: datetime) -> Mapping[str, Any
     project with a live local worker on every pick, so reading each project's
     whole ledger makes a pick's cost grow with the number of live foreign
     projects -- the figure that pushes a pick past its five-second dispatch
-    bound. The profile is a function of the ledger's contents and the trailing
-    window alone, so a reading whose ledger has not moved is the same answer and
-    is reused. The window's end date is folded into the key beside the ledger
-    stamp, so a profile is recomputed at least once a day even for a project
-    whose ledger stays still, which bounds how stale the window it was read over
-    can become.
+    bound. A real dispatch is a fresh process, so the reading is persisted
+    beside its freshness key: the in-process memo is checked first, then the
+    file on disk, and only a miss reads the ledger. The profile is a function of
+    the ledger's contents and the trailing window alone, and the key folds in
+    the window's end date beside the ledger stamp, so a profile is recomputed at
+    least once a day even for a project whose ledger stays still.
     """
 
-    stamp = (_ledger_stamp(project), now.date().isoformat())
+    key = _profile_key(project, now)
+    if key is None:
+        return run_time_profile(project, now=now)
     cached = _PROFILE_CACHE.get(project)
-    if cached is not None and cached[0] == stamp:
+    if cached is not None and cached[0] == key:
         return cached[1]
+    persisted = _read_persisted_profile(project, key)
+    if persisted is not None:
+        _PROFILE_CACHE[project] = (key, persisted)
+        return persisted
     profile = run_time_profile(project, now=now)
-    _PROFILE_CACHE[project] = (stamp, profile)
+    _PROFILE_CACHE[project] = (key, profile)
+    _write_persisted_profile(project, key, profile)
     return profile
 
 

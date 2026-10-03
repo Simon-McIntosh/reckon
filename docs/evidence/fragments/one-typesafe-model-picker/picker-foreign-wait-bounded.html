@@ -10,8 +10,15 @@
   ledger's contents and the trailing window alone, so a reading whose ledger has
   not moved is the same answer. <code>lane_context._cached_run_time_profile</code>
   now memoizes each project's profile, keyed on a freshness stamp of its ledger,
-  and re-reads only when that stamp moves. The figure itself is unchanged: every
-  live local worker, foreign or not, still contributes its shape's median.</p>
+  and re-reads only when that stamp moves. A real dispatch is a fresh process,
+  so the memo alone would be cold on every pick; each profile is also persisted
+  to a small per-project file (<code>~/.cache/reckon/run-time-profile/&lt;project&gt;.json</code>,
+  path overridable through <code>RECKON_RUN_TIME_PROFILE_CACHE</code>) holding
+  the stamp, the window end date and the profile summary &mdash; never raw rows
+  &mdash; written atomically through a temporary file and <code>os.replace</code>.
+  A missing, unreadable, foreign or stamp-mismatched file is a cache miss, never
+  an error. The figure itself is unchanged: every live local worker, foreign or
+  not, still contributes its shape's median.</p>
 
   <p><strong>The key, chosen by measurement.</strong> Decoding one project's
   whole ledger on this GPFS costs 123&#8239;ms (imas-ambix, 223 run files),
@@ -52,18 +59,20 @@
   the reuse changes cost, not the answer, and the figure still reflects the
   whole live local load.</p>
 
-  <p><strong>A real dispatch-path pick.</strong> Two consecutive
-  <code>pick(&hellip;, cached_only=True)</code> calls as the dispatcher asks them,
-  project <code>reckon</code> (its foreign set is <code>{nova}</code>; log:
-  <code>measure-pick-e2e.log</code>): the first read nova's ledger once
-  (385.7&#8239;ms) and routed to <code>clive</code>; the second read no foreign
-  ledger at all and routed identically. The pick total was about 9.8&#8239;s and
-  9.7&#8239;s, dominated by non-foreign phases (candidate context measurement and
-  Jev, itself 302&ndash;554&#8239;ms) that this node does not touch; with a single
-  foreign project the read it removes is under half a second. The phase
-  measurement above is where the bound shows, because it holds the two large
-  foreign ledgers in the set. That the whole pick still runs near ten seconds in
-  this worktree is recorded under follow-ons rather than repaired here.</p>
+  <p><strong>A real dispatch-path pick, in fresh processes.</strong> A real
+  <code>crew dispatch</code> is a fresh process, so an in-process memo alone
+  cannot bound a pick. Two separate interpreter invocations of a real
+  <code>pick(&hellip;, cached_only=True)</code> for project <code>reckon</code>
+  (its foreign set is <code>{nova}</code>), pointed at one shared cache
+  directory (log: <code>measure-pick-fresh.log</code>): the first process read
+  nova's ledger once (434.0&#8239;ms) and routed to <code>clive</code>; the
+  second read no foreign ledger at all and routed identically. Both pick totals
+  were about 9.7&ndash;10.6&#8239;s, dominated by non-foreign phases (candidate
+  context measurement and Jev, itself 354&ndash;499&#8239;ms) that this node does
+  not touch. The phase measurement above is where the bound shows, because it
+  holds the two large foreign ledgers in the set. That the whole pick still runs
+  near ten seconds in this worktree is recorded under follow-ons rather than
+  repaired here.</p>
 
   <figure>
     <img src="/reckon/figures/one-typesafe-model-picker/picker-foreign-wait-bounded/foreign-read-cold-warm.png"
@@ -82,18 +91,20 @@
   project was read exactly once, so a reverted reuse doubles every count and
   fails. A second case moves the ledger stamp between picks and asserts both
   projects are read again, so the reuse cannot pass by ignoring a changed
-  ledger.</p>
+  ledger. A third case runs the pick in two separate subprocesses against one
+  shared cache directory and asserts the second process reads no foreign
+  ledger, which is the property an in-process memo cannot provide.</p>
 
-  <p><strong>Negative control.</strong> Removing the reuse (bypassing the
-  memoized-profile branch) makes the two-pick test fail: 1 failed / 1 passed,
-  exit 1, the failing id being exactly
-  <code>test_two_picks_read_each_foreign_ledger_once</code>
+  <p><strong>Negative control.</strong> Removing the persisted-profile read
+  makes the cross-process test fail: 1 failed / 2 passed, exit 1, the failing id
+  being exactly <code>test_reuse_survives_between_processes</code>, whose second
+  process then reads all four foreign ledgers
   (<code>negative-control.log</code>).</p>
 
   <p><strong>Gate.</strong> Base arm (scratch tree at the base revision) and
   head arm run the picker test files plus <code>test_run_time_profile.py</code>
   with the ledger present, judged by delta rather than an absolute count:
-  base 119 passed (exit 0), head 121 passed (exit 0) &mdash; the two added
-  passing cases are this node's new test file, and there are no added failure
-  ids. Logs: <code>gate-base.log</code>, <code>gate-head.log</code>.</p>
+  base 119 passed (exit 0), head 122 passed (exit 0) &mdash; the added passing
+  cases are this node's new test file, and there are no added failure ids. Logs:
+  <code>gate-base.log</code>, <code>gate-head.log</code>.</p>
 </article>
