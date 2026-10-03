@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="an-overrun-names-its-cause">
+  <meta name="plan-title" content="An overrun names its measured cause">
+  <meta name="plan-summary" content="Live overrun records distinguish a large run from a low generation rate, retain unknown when a comparison cannot be measured, and keep the default budget free of worker signals.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>An overrun names its measured cause | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution record &middot; 2026-10-03</p>
+      <h1>An overrun names its measured cause</h1>
+      <p class="lead">An overrun now carries <code>budget_overrun_cause</code>, its measured generation rate, and the reference rate and cohort size used to classify it. The cause reaches the crew live query. A missing measurement remains <code>unknown</code>.</p>
+    </header>
+
+    <h2 id="starting-point">The starting point and the reference</h2>
+    <p>At base revision <code>aff594161bf1098fe807fa73b41180db35d32130</code>, the saturated-lane test failed because <code>reckon/crew/recovery.py</code> had no cause helper. The recorded instance in the live plan generated 41,434 tokens at 11.53 tokens/s while seven peers shared the lane. The lane document published no throughput block on 2026-10-03, so it cannot supply the comparison.</p>
+    <p>The reference comes from the project's committed crew run records: the median positive <code>throughput.tokens_per_second</code> among completions in the preceding seven days with the same backend and model. A live watcher caches each cohort for five minutes. The comparison is absent when the project, backend or model is missing, the ledger cannot be read, or fewer than ten qualifying rates exist. No other backend's rate is substituted. The live record names the source and carries the count beside the rate.</p>
+    <p>A read through the committed ledger at the code commit found 3,488 total run rows and 1,375 qualifying local-backend/model rates, with a median of 54.79 tokens/s. The 41,434-token specimen would take about 756 seconds at that reference rate, inside the test's 1,800-second allowance; at 11.53 tokens/s it takes about 3,593 seconds. The new test classifies that case <code>lane-saturated</code>, not <code>over-large</code>. A normal-rate run producing 100,000 tokens against the same allowance classifies <code>over-large</code>. Missing run rate and missing reference each classify <code>unknown</code>.</p>
+    <p>A rate below half the reference takes the <code>lane-saturated</code> branch. At a normal rate, a token allowance exceeded or a generated volume that would exceed the seconds allowance even at the reference rate takes <code>over-large</code>. Other combinations stay <code>unknown</code>. The label describes low per-run throughput; it does not prove engine preemption. An observed prefix-cache failure also depressed rate. The underlying rates remain visible so a reader can check that interpretation.</p>
+
+    <h2 id="soft-limit">The soft limit and the separate ceiling</h2>
+    <p>The default budget classifies and reports; it does not signal a worker. The existing <code>_apply_budget_watchdog</code> has a separate opt-in ceiling: only an operator setting <code>fences.enforce_budget_watchdog</code> can enable its signal after the configured grace multiple. The shipped value in <code>reckon/schema/flight-defaults.yaml</code> is <code>false</code>. The call-graph test scans functions under <code>reckon/</code> reachable from budget and overrun computation. It permits exactly the watchdog's signal, checks that the early-return guard precedes it, reads the shipped default, and exercises the default path to assert that it signals nothing. A scratch copy that adds <code>terminate()</code> inside budget computation makes that test fail.</p>
+    <p>Delivering an overrun message to a running worker waits on <code>a-live-worker-can-be-reached</code> section 7. No delivery channel is added here, and this fragment claims only the cause and non-signalling default.</p>
+
+    <h2 id="evidence">Measured arms and source bindings</h2>
+    <table>
+      <thead><tr><th>Arm</th><th>Result</th><th>Run record</th></tr></thead>
+      <tbody>
+        <tr><td>Base existing population</td><td>5 failed, 440 passed; EXIT=1</td><td><code>baseline-suite-parallel.log</code></td></tr>
+        <tr><td>Head existing population plus new cases</td><td>5 failed, 447 passed; EXIT=1; zero added failing IDs</td><td><code>after-suite.log</code></td></tr>
+        <tr><td>New focused cases at head</td><td>7 passed</td><td><code>tests/test_an_overrun_names_its_cause.py</code></td></tr>
+        <tr><td>Scratch termination mutation</td><td>call-graph test failed; EXIT=1</td><td><code>negative-control.log</code></td></tr>
+      </tbody>
+    </table>
+    <p>The five failing IDs are identical in both completed suite arms and belong to ticker rendering and follow behavior in <code>tests/test_crew_recovery.py</code>. They are outside this node's write scope and are handed back as a follow-on. The head arm adds no failure. The code landed at <code>776a1c6134ca91ba400bf534edf6ec0b424d5bb3</code>: <code>reckon/crew/recovery.py</code> computes and carries the cause, <code>reckon/crew/query.py</code> accepts its conditional live fields, and <code>tests/test_an_overrun_names_its_cause.py</code> covers the cases and the signal boundary. Logs and the scratch measurement's imported module path reside in the run directory.</p>
+  </main>
+</body>
+</html>
