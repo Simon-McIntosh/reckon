@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-title" content="The lifecycle scalars are one block, and a duplicated scalar reads by a stated rule">
+  <meta name="plan-summary" content="The plan writer emitted impl, version and modified as independently positionable meta elements, so a union-resolved merge could leave two copies of each; the reader then took whichever copy came last while the writer maintained the first. The store's write path now emits the three as one contiguous block, and both reader paths in the plan parser resolve a duplicated plan-* scalar to its first occurrence in document order, reporting every later copy as a warning.">
+  <meta name="plan-evidence-for" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="incomplete">
+  <meta name="plan-commits" content="1ff243d09">
+  <title>The lifecycle scalars are one block, and a duplicated scalar reads by a stated rule | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The lifecycle scalars are one block, and a duplicated scalar reads by a stated rule</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>A union-resolved merge of two landing records leaves a document carrying two copies of a
+        <code>plan-*</code> scalar line, and the three lifecycle scalars — <code>plan-impl</code>,
+        <code>plan-version</code> and <code>plan-modified</code> — are the lines both merge sides
+        rewrite. Written as three independently positionable meta elements they are three
+        independently unionisable hunks, so the merge keeps a line from each side.</p>
+      <p>The reader then resolved the duplicate by document order: <code>read_state</code> walked
+        every meta and overwrote each field in turn, so the last copy won — while the writer
+        (<code>_set_meta</code>) replaces only the first occurrence in place. Reader and writer
+        named different lines, so two successful <code>set impl</code> calls could coexist with a
+        promotion refusing that impl had not moved. Reproduced before repair on a document carrying
+        <code>plan-impl</code> twice: <code>0.9</code> then <code>0.1</code> reads as
+        <code>0.1</code>, and the same document with the copies swapped reads as
+        <code>0.9</code>.</p>
+    </section>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ol>
+        <li><code>reckon/_plan_html.py</code>: new <code>_set_meta_block</code> emits several metas
+          as one contiguous block. <code>write_state</code> routes <code>plan-impl</code>,
+          <code>plan-version</code> and <code>plan-modified</code> through it: every existing
+          occurrence is removed and the block is inserted where the first occurrence sat (before
+          <code>&lt;/head&gt;</code> when the document carries none), so a three-way merge sees one
+          hunk for the three, a document that already carries duplicates converges to one copy on
+          its next write, and repeated writes stay byte-stable. The plan writer in
+          <code>reckon/_store.py</code> reaches the block through <code>write_state</code>, which
+          both of its plan-write paths call — the emission lives in the renderer because that is
+          where every store write converges, so no separate emission site can drift from it. A plan
+          whose records carry its impl keeps that figure out of the block, as before.</li>
+        <li>Both reader paths in <code>reckon/_plan_html.py</code> — <code>read_state</code> and
+          <code>parse_meta</code> — resolve a duplicated plan scalar by one stated rule:
+          <strong>the first occurrence in document order wins; every later copy is ignored and
+          reported as a compatibility warning</strong>. Chosen over refusal because the writer
+          already replaces the first occurrence, so first-wins makes reader and writer name the same
+          line and removes the disagreement at its source; refusing would instead make every read of
+          a document carrying a duplicate fail, the same project-wide read outage this plan measures
+          for an absent resource island. The warning keeps the duplicate visible rather than silent,
+          and <code>audit-doc</code>'s <code>duplicated-plan-scalar</code> error already reports
+          it.</li>
+        <li>New <code>tests/test_plan_scalars_are_one_block.py</code>: a plan written through the
+          store's <code>write_plan</code> carries the three lifecycle metas as adjacent elements
+          (asserted as next-element adjacency, so a non-meta element between them fails the test); a
+          document carrying each of the three twice resolves to the first copy in both copy orders,
+          with the duplicated names in the warnings, through <code>read_state</code> and through
+          <code>parse_meta</code>.</li>
+      </ol>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Declared mutation: the new test module run against base source, copies in both
+              orders</td>
+            <td>base <code>4d1feeed9</code>, scratch tree</td>
+            <td><strong>4 failed</strong>, exit 1 — the swapped-copies case fails as the
+              declaration says (<code>assert 0.9 == 0.1</code>, the reader taking the last copy) and
+              its unswapped twin as <code>assert 0.1 == 0.9</code>; the metadata reader fails as
+              <code>assert 0.1 == 0.9 ± 9.0e-07</code>; the store write fails as
+              <code>assert &lt;meta content="Scalar block" name="plan-title"/&gt; is
+              &lt;meta content="3" name="plan-version"/&gt;</code>, so the three metas are not
+              adjacent</td>
+          </tr>
+          <tr>
+            <td>Gate: <code>tests/test_plan_scalars_are_one_block.py</code> at the head commit, in
+              the worktree</td>
+            <td>head <code>1ff243d09</code></td>
+            <td><strong>4 passed</strong> in 6.25s, exit 0</td>
+          </tr>
+          <tr>
+            <td>Population: every test file importing <code>reckon._store</code> or
+              <code>reckon._plan_html</code> (150 files), base source</td>
+            <td>base <code>4d1feeed9</code>, scratch tree</td>
+            <td><strong>incomplete</strong> — the arm reached 97% of the population (3 failure marks visible) before the time fence ended, so it never printed a summary line and its identifiers; its log (<code>base-population.log</code>) is not a readable arm and the requirement that this population be recorded over both revisions is therefore <strong>unmet</strong> in this record</td>
+          </tr>
+          <tr>
+            <td>Same population plus the new module, head source</td>
+            <td>head <code>1ff243d09</code>, scratch tree verified byte-identical to the
+              commit</td>
+            <td><strong>19 failed, 3668 passed, 3 skipped in 1457.77s (0:24:17)</strong>, exit 1 — <code>tests/test_routing_evidence_fields.py::test_promotion_records_an_empty_follow_on_list_not_a_missing_key</code>; <code>tests/test_routing_evidence_fields.py::test_promotion_records_paths_named_in_follow_ons</code>; <code>tests/test_routing_evidence_fields.py::test_promotion_records_a_stated_dispute_count</code>; <code>tests/test_routing_evidence_fields.py::test_a_run_with_no_predecessor_omits_the_continuation_link</code>; <code>tests/test_routing_evidence_fields.py::test_a_coordinator_supplied_predecessor_is_recorded</code>; <code>tests/test_routing_evidence_fields.py::test_a_predecessor_derived_from_the_base_names_the_earlier_run</code>; <code>tests/test_routing_evidence_fields.py::test_a_promoted_row_carries_all_three_fields_together</code>; <code>tests/test_receipt_after_release.py::test_a_live_writer_is_ended_first_and_its_receipt_is_folded</code>; <code>tests/test_receipt_after_release.py::test_a_live_writer_that_never_emits_a_receipt_keeps_the_fallback</code>; <code>tests/test_receipt_after_release.py::test_an_already_terminal_quiet_run_is_unchanged</code>; <code>tests/test_receipt_after_release.py::test_a_writer_that_never_stops_cannot_hang_the_folded_promotion</code>; <code>tests/test_schema.py::test_well_formed_evidence_record_with_resolving_shas_is_quiet</code>; <code>tests/test_section_body_records_are_read.py::test_an_edited_write_preserves_a_corpus_section_body_record</code>; <code>tests/test_crew_promotion.py::test_a_reviewed_run_carries_its_dimensions_on_the_ledger_row</code>; <code>tests/test_stop_before_spawn_spawns_nothing.py::test_a_group_stop_after_the_spawn_is_recorded_as_that_stops_exit</code>; <code>tests/test_crew_promotion.py::test_a_run_promoted_without_a_review_is_distinguishable_from_a_zero_scored_one</code>; <code>tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs</code>; <code>tests/test_promotion_reads_the_terminal_record.py::test_a_terminal_record_landing_after_exit_is_folded_into_the_row</code>; <code>tests/test_promotion_reads_the_terminal_record.py::test_a_stream_that_never_receives_a_terminal_record_keeps_the_mtime_fallback</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The population requirement is <strong>unmet in this record</strong>: the base arm did not complete inside the node's time fence (it reached 97% with 3 failure marks visible in its progress tail and then stalled behind an I/O-blocked <code>git add</code> in its scratch tree). pytest prints failure identifiers only in its closing summary, so an incomplete arm yields no identifiers at all and the delta against base the fence asks for is not established; the head arm did complete (19 failed, 3668 passed, 3 skipped in 1457.77s) but its 19 identifiers cannot be attributed to pre-existing conditions without the base arm's list. A re-run of the base arm and the same comparison is the next step.</p>
+      <p></p>
+    </section>
+
+    <section id="provenance">
+      <h2>Reproduction</h2>
+      <table>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Base revision</td><td><code>4d1feeed905d145a3130e71293f2cfdf1233f1d7</code></td></tr>
+          <tr><td>Head commit</td><td><code>1ff243d094da42dcaa38702f4539de8415324c50</code></td></tr>
+          <tr><td>Logs</td>
+            <td><code>head-gate.log</code>, <code>negative-control.log</code>,
+              <code>base-population.log</code>, <code>head-population.log</code> in the run
+              directory
+              (<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T162938204236-plan-scalars-are-one-block</code>),
+              each headed by its revision, tree, module under test, resolved working directory and
+              literal command, and ending with a bare <code>EXIT=</code> line</td></tr>
+          <tr><td>Scratch trees</td>
+            <td><code>nc-base</code> (base) and <code>impl-scratch</code> (head) under
+              <code>$TMPDIR</code> of the run, removed with the run's scratch</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
