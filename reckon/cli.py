@@ -4978,8 +4978,7 @@ def crew_dispose(project, reviewed_run_id, dimension, kind, node_id, reason, pre
         except ValueError as exc:
             raise click.ClickException(str(exc)) from exc
     else:
-        tree = recovery._review_tree(pointer)
-        head = recovery._reviewed_run_head(pointer) if tree is not None else ""
+        head, tree = recovery._review_head_and_tree(pointer)
     try:
         stored, described = recovery.select_review_for_head(
             project, reviewed_run_id, head, tree=tree
