@@ -2618,6 +2618,59 @@ def _outside_declared_scope(
     )
 
 
+def _path_change_reaches_integration_head(
+    repository: Path,
+    commits: Sequence[str],
+    path: str,
+) -> bool:
+    """Report whether the run's change to ``path`` is behind the integration head.
+
+    The integration head is the repository's own HEAD — the branch the landing
+    checkout carries, the same reading recovery uses when it asks whether a
+    run's commits are on the primary branch. The run's change to the path is
+    read from each cited commit's own diff against its first parent, the
+    instrument ``_committed_scope`` charges the run by, so a cited merge counts
+    the content it brought rather than what it resolved to. Every cited commit
+    that changed the path must be strictly behind the head: a cited commit that
+    is the head itself was integrated by no later commit, so the tip a live
+    peer's claim races is the run's own, and the claim still refuses. A path no
+    cited commit changed admits nothing here, because the run's change to it
+    cannot be read from the citations the promotion presents.
+    """
+    touched = False
+    for commit in commits:
+        changed = subprocess.run(
+            [
+                "git",
+                "diff",
+                "--name-only",
+                "--no-renames",
+                f"{commit}^1",
+                commit,
+                "--",
+                path,
+            ],
+            cwd=repository,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if changed.returncode:
+            raise CrewError(
+                f"git could not read the change {commit} made to {path} in "
+                f"{repository}: "
+                f"{changed.stderr.strip() or changed.stdout.strip() or changed.returncode}"
+            )
+        if not changed.stdout.strip():
+            continue
+        touched = True
+        if not _revision_is_ancestor(repository, commit, "HEAD"):
+            return False
+        if _revision_is_ancestor(repository, "HEAD", commit):
+            return False
+    return touched
+
+
 def _accepted_scope_exceptions(
     run_id: str,
     outside: Iterable[str],
@@ -2625,8 +2678,16 @@ def _accepted_scope_exceptions(
     *,
     record: Mapping[str, Any],
     tree: Path,
-) -> list[dict[str, str]]:
-    """Validate deliberate companion paths and return their durable account."""
+    commits: Sequence[str],
+) -> list[dict[str, Any]]:
+    """Validate deliberate companion paths and return their durable account.
+
+    A live run's claim refuses an acceptance only while it protects something:
+    a path whose change by this run is already behind the integration head is
+    admitted despite the claim, because what the refusal blocks there is the
+    ledger record of a landing that has happened, not a concurrent edit. The
+    peer's claim and pointer are left untouched.
+    """
     outside_paths = tuple(str(path) for path in outside)
     supplied = accepted_paths or {}
     if not supplied:
@@ -2672,6 +2733,8 @@ def _accepted_scope_exceptions(
         )
 
     shared_files = _shared_write_paths(str(record.get("project") or ""), repository)
+    integrated_claims: dict[str, list[dict[str, str]]] = {}
+    path_integrated: dict[str, bool] = {}
     for pointer in list_live():
         peer_run = str(pointer.get("run_id") or "")
         if not peer_run or peer_run == run_id:
@@ -2706,12 +2769,38 @@ def _accepted_scope_exceptions(
                     # resolves the same list through this same helper.
                     if candidate == claim and path in shared_files:
                         continue
+                    if path not in path_integrated:
+                        path_integrated[path] = _path_change_reaches_integration_head(
+                            repository, commits, path
+                        )
+                    if path_integrated[path]:
+                        # The refusal this claim would raise protects two runs
+                        # from editing one file concurrently; a change already
+                        # behind the integration head is not at risk from the
+                        # peer's live edit, so the claim is noted on the
+                        # acceptance and left untouched.
+                        integrated_claims.setdefault(path, []).append(
+                            {"run_id": peer_run, "claim": claim.as_posix()}
+                        )
+                        continue
                     raise CrewError(
                         f"run {run_id!r} cannot accept {path}: live run "
                         f"{peer_run!r} claims {claim.as_posix()}"
                     )
 
-    return [{"path": path, "reason": normalized[path]} for path in sorted(normalized)]
+    accepted: list[dict[str, Any]] = []
+    for path in sorted(normalized):
+        entry: dict[str, Any] = {"path": path, "reason": normalized[path]}
+        if path in integrated_claims:
+            peers = sorted(
+                {(claim["run_id"], claim["claim"]) for claim in integrated_claims[path]}
+            )
+            entry["already_integrated"] = True
+            entry["peer_claims"] = [
+                {"run_id": peer_run, "claim": claim} for peer_run, claim in peers
+            ]
+        accepted.append(entry)
+    return accepted
 
 
 def _snapshot_entries(tree: Mapping[str, Any]) -> set[tuple[str, str]]:
@@ -6988,6 +7077,7 @@ def _landing_scope_products(
                 accepted_paths,
                 record=record,
                 tree=tree,
+                commits=commits,
             )
     return {
         "shadow_patch": "",
