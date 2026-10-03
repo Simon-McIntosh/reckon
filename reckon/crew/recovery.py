@@ -6401,6 +6401,32 @@ def local_liveness(record: Mapping[str, Any]) -> tuple[bool | None, bool]:
     return alive, proven
 
 
+def live_worker_pid(record: Mapping[str, Any]) -> int | None:
+    """The pid this host observes still holding the run, or None.
+
+    :func:`local_liveness` answers *whether* the run's process lives; a
+    refusal that stops a resume over a living worker is checkable only if it
+    also says *which* process, because the reader who receives it can then ask
+    the process table the same question. This composes the same two reads in
+    the same order — the pointer's pid, then the worker record the supervisor
+    writes beside the stream, which is where a run whose supervisor exited
+    ahead of its worker keeps the process that still runs it — and returns
+    which of them answered. A pid is meaningful only on the machine that
+    issued it, so a record that cannot be shown to be this host's names
+    nothing here. None means no pid answered: either the run is not alive, or
+    its liveness came from a stored answer that carries no process to name.
+    """
+    if not _launched_on_this_host(record):
+        return None
+    pointer_pid = _int_or_none(record.get("pid"))
+    if pointer_pid is not None and runs.record_process_alive(record) is True:
+        return pointer_pid
+    worker_pid = _worker_record_pid(record)
+    if worker_pid is not None and _worker_record_liveness(record) is True:
+        return worker_pid
+    return None
+
+
 def _run_chain_manifest_freshness(record: Mapping[str, Any]) -> tuple[bool, bool]:
     """Judge delivery against the first dispatch across the attempt chain."""
     try:
