@@ -41,9 +41,12 @@ import json
 import os
 import random
 import re
+import sqlite3
 import subprocess
 import sys
+import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
@@ -727,13 +730,248 @@ def run_ids(project: str, root: str | Path | None = None) -> set[str]:
     } | {path.stem for path in _run_files(project, root)}
 
 
-def load(project: str, root: str | Path | None = None) -> tuple[dict[str, Any], int]:
+# The index stores file-derived values only. Every access checks file metadata,
+# including ctime, so edits with a preserved mtime still invalidate the row.
+_RUN_INDEX_VERSION = 2
+
+
+def _file_identity(path: Path) -> tuple[int, int, int, int] | None:
+    try:
+        info = path.stat()
+    except FileNotFoundError:
+        return None
+    return info.st_mtime_ns, info.st_ctime_ns, info.st_size, info.st_ino
+
+
+def _run_snapshot(project: str, root: str | Path | None) -> list[tuple[Path, Any]]:
+    paths = _run_files(project, root)
+    # Metadata lives remotely on a shared filesystem. Bound concurrency while
+    # checking every file: directory mtime cannot detect an in-place edit.
+    if len(paths) > 32:
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            stamps = list(pool.map(_file_identity, paths))
+    else:
+        stamps = [_file_identity(path) for path in paths]
+    return list(zip(paths, stamps, strict=True))
+
+
+def input_stamp(project: str, root: str | Path | None = None) -> str:
+    """Content-change key for aggregate, additions, removals and in-place edits."""
+    aggregate = ledger_path(project, root).resolve()
+    snapshot = _run_snapshot(project, root)
+    value = [
+        str(aggregate),
+        _file_identity(aggregate),
+        [(path.name, stamp) for path, stamp in snapshot],
+    ]
+    return hashlib.sha256(json.dumps(value).encode()).hexdigest()
+
+
+def _run_index_path(project: str, root: str | Path | None) -> Path:
+    from reckon.capabilities import pick_input_cache_root
+
+    source = str(ledger_path(project, root).resolve())
+    identity = hashlib.sha256(source.encode()).hexdigest()
+    return pick_input_cache_root() / f"ledger-{identity}.sqlite"
+
+
+def _read_run(source: Path) -> dict[str, Any]:
+    try:
+        record = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise LedgerError(
+            f"cannot read run {source.stem!r} at {source}: {exc}"
+        ) from exc
+    if not isinstance(record, dict) or record.get("run_id") != source.stem:
+        raise LedgerError(f"run {source.stem!r} at {source} must hold its own run_id")
+    return record
+
+
+def _indexed_data(
+    project: str, root: str | Path | None, *, headers_only: bool = False
+) -> tuple[dict[str, Any], int]:
+    aggregate = ledger_path(project, root)
+    aggregate_stamp = json.dumps(_file_identity(aggregate))
+    snapshot = _run_snapshot(project, root)
+    path = _run_index_path(project, root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    def update(connection: sqlite3.Connection) -> tuple[dict[str, Any], int]:
+        # The transaction publishes stamps and payloads together. Aggregate and
+        # split records remain independent sources, including their conflict check.
+        with connection:
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS records "
+                "(name TEXT PRIMARY KEY, stamp TEXT, payload TEXT)"
+            )
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS aggregate_rows "
+                "(ordinal INTEGER PRIMARY KEY, run_id TEXT, payload TEXT)"
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS aggregate_identity ON aggregate_rows(run_id)"
+            )
+            connection.execute(
+                "CREATE TABLE IF NOT EXISTS metadata "
+                "(name TEXT PRIMARY KEY, payload TEXT)"
+            )
+            version = connection.execute("PRAGMA user_version").fetchone()[0]
+            if version != _RUN_INDEX_VERSION:
+                connection.execute("DELETE FROM records")
+                connection.execute("DELETE FROM aggregate_rows")
+                connection.execute("DELETE FROM metadata")
+                connection.execute(f"PRAGMA user_version={_RUN_INDEX_VERSION}")
+            meta = dict(connection.execute("SELECT name, payload FROM metadata"))
+            aggregate_changed = meta.get("stamp") != aggregate_stamp
+            if aggregate_changed:
+                data, version = _load_aggregate(project, root)
+                connection.execute("DELETE FROM aggregate_rows")
+                connection.executemany(
+                    "INSERT INTO aggregate_rows VALUES (?, ?, ?)",
+                    [
+                        (
+                            i,
+                            str(row["run_id"])
+                            if isinstance(row, Mapping) and row.get("run_id")
+                            else None,
+                            json.dumps(row, sort_keys=True, separators=(",", ":")),
+                        )
+                        for i, row in enumerate(data["runs"])
+                    ],
+                )
+                meta = {
+                    "stamp": aggregate_stamp,
+                    "header": json.dumps(
+                        {"members": data["members"], "holds": data["holds"]}
+                    ),
+                    "version": str(version),
+                }
+                connection.executemany(
+                    "INSERT OR REPLACE INTO metadata VALUES (?, ?)", meta.items()
+                )
+            stored = dict(connection.execute("SELECT name, stamp FROM records"))
+            changed = []
+            for source, stamp in snapshot:
+                encoded = json.dumps(stamp)
+                prior = stored.pop(source.stem, None)
+                if prior != encoded:
+                    changed.append(source.stem)
+                    record = _read_run(source)
+                    if _file_identity(source) != stamp:
+                        # Refuse to publish a cache built across a concurrent edit.
+                        # The caller's uncached path still supplies the current read.
+                        raise OSError(f"run changed during index read: {source}")
+                    connection.execute(
+                        "INSERT OR REPLACE INTO records VALUES (?, ?, ?)",
+                        (
+                            source.stem,
+                            encoded,
+                            json.dumps(record, sort_keys=True, separators=(",", ":")),
+                        ),
+                    )
+            connection.executemany(
+                "DELETE FROM records WHERE name=?", [(name,) for name in stored]
+            )
+            conflict = None
+            conflict_sql = (
+                "SELECT r.name FROM records r JOIN aggregate_rows a ON a.run_id=r.name "
+                "WHERE a.ordinal=(SELECT MAX(b.ordinal) FROM aggregate_rows b WHERE b.run_id=r.name) "
+                "AND a.payload != r.payload"
+            )
+            if aggregate_changed:
+                conflict = connection.execute(conflict_sql + " LIMIT 1").fetchone()
+            else:
+                for name in changed:
+                    conflict = connection.execute(
+                        conflict_sql + " AND r.name=? LIMIT 1", (name,)
+                    ).fetchone()
+                    if conflict:
+                        break
+            if conflict:
+                source = aggregate.parent / "runs" / f"{conflict[0]}.json"
+                raise LedgerError(
+                    f"run {conflict[0]!r} differs between {aggregate} and {source}; "
+                    "refusing to read conflicting history"
+                )
+            data = json.loads(meta["header"])
+            version = int(meta["version"])
+            if headers_only:
+                data["runs"] = [
+                    {"run_id": row[0]}
+                    for row in connection.execute(
+                        "SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL "
+                        "UNION ALL SELECT name FROM records WHERE name NOT IN "
+                        "(SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL)"
+                    )
+                ]
+            else:
+                data["runs"] = [
+                    json.loads(row[0])
+                    for row in connection.execute(
+                        "SELECT payload FROM aggregate_rows ORDER BY ordinal"
+                    )
+                ]
+                extra = [
+                    json.loads(row[0])
+                    for row in connection.execute(
+                        "SELECT payload FROM records WHERE name NOT IN "
+                        "(SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL) ORDER BY name"
+                    )
+                ]
+                if extra:
+                    data["runs"].extend(extra)
+                    data["runs"].sort(
+                        key=lambda row: (
+                            str(row.get("completed_at") or row.get("run_id") or ""),
+                            str(row.get("run_id") or ""),
+                        )
+                    )
+            return data, version
+
+    with contextlib.closing(sqlite3.connect(path, timeout=0.2)) as connection:
+        try:
+            return update(connection)
+        except sqlite3.OperationalError:
+            raise
+        except (sqlite3.DatabaseError, ValueError, KeyError, TypeError):
+            # A corrupt index is a miss. Publish a complete rebuilt database by
+            # atomic replacement; authoritative ledger files are never changed.
+            descriptor, temporary = tempfile.mkstemp(dir=path.parent, suffix=".sqlite")
+            os.close(descriptor)
+            try:
+                with contextlib.closing(sqlite3.connect(temporary)) as replacement:
+                    result = update(replacement)
+                os.replace(temporary, path)
+                return result
+            finally:
+                Path(temporary).unlink(missing_ok=True)
+
+
+def indexed_headers(
+    project: str, root: str | Path | None = None
+) -> tuple[dict[str, Any], int]:
+    """Read roster and history identities without decoding complete run payloads."""
+    try:
+        return _indexed_data(project, root, headers_only=True)
+    except (OSError, sqlite3.Error):
+        return load(project, root, use_index=False)
+
+
+def load(
+    project: str, root: str | Path | None = None, *, use_index: bool = True
+) -> tuple[dict[str, Any], int]:
     """Read the union of aggregate and per-run records, refusing disagreements.
 
     An interrupted export can leave two copies of a run. They count once only
     when their canonical serialisations agree; disagreement refuses the entire
     read so a caller cannot accidentally count an incomplete history.
     """
+    if use_index:
+        try:
+            return _indexed_data(project, root)
+        except (OSError, sqlite3.Error):
+            # A disposable cache cannot make an otherwise readable ledger fail.
+            pass
     data, version = _load_aggregate(project, root)
     path = ledger_path(project, root)
     by_id = {
@@ -742,17 +980,9 @@ def load(project: str, root: str | Path | None = None) -> tuple[dict[str, Any], 
         if isinstance(record, Mapping) and record.get("run_id")
     }
     added = False
-    for source in _run_files(project, root):
-        try:
-            record = json.loads(source.read_text(encoding="utf-8"))
-        except (OSError, ValueError) as exc:
-            raise LedgerError(
-                f"cannot read run {source.stem!r} at {source}: {exc}"
-            ) from exc
-        if not isinstance(record, dict) or record.get("run_id") != source.stem:
-            raise LedgerError(
-                f"run {source.stem!r} at {source} must hold its own run_id"
-            )
+    records = [_read_run(source) for source in _run_files(project, root)]
+    for record in records:
+        source = path.parent / "runs" / f"{record['run_id']}.json"
         run_id = record["run_id"]
         if run_id in by_id:
             if serialize_run(by_id[run_id]) != serialize_run(record):
@@ -2033,9 +2263,10 @@ def stream_tool_calls(paths: Iterable[str | Path]) -> list[tuple[str, str]]:
                         continue
                     if name == "Bash" and str(payload.get("command") or "").strip():
                         calls.append(("bash", str(payload["command"]).strip()))
-                    elif name.lower() in _SHADOW_PATH_CALL_KINDS and str(
-                        payload.get("file_path") or ""
-                    ).strip():
+                    elif (
+                        name.lower() in _SHADOW_PATH_CALL_KINDS
+                        and str(payload.get("file_path") or "").strip()
+                    ):
                         calls.append((name.lower(), str(payload["file_path"]).strip()))
     return calls
 
@@ -2064,9 +2295,7 @@ def shadow_primary_read(
     checkout.
     """
     prefixes = _sha_prefixes(str(primary_commit or "").strip())
-    paths = tuple(
-        str(path).strip() for path in primary_paths if str(path).strip()
-    )
+    paths = tuple(str(path).strip() for path in primary_paths if str(path).strip())
     main_root = str(repo_root or "").strip().rstrip("/")
     work_root = str(worktree or "").strip().rstrip("/")
     cwd = ""

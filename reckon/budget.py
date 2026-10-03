@@ -552,6 +552,7 @@ def _readings(
     *,
     root: str | Path | None = None,
     config: Mapping[str, Any] | None = None,
+    records: Iterable[Mapping[str, Any]] | None = None,
 ) -> list[_Reading]:
     """Collect every recorded budget block for a project, from both homes.
 
@@ -624,8 +625,12 @@ def _readings(
             )
         )
     try:
-        data, _version = ledger.load(project, root)
-        records = data["runs"]
+        data, _version = (
+            ledger.load(project, root)
+            if records is None
+            else ledger.indexed_headers(project, root)
+        )
+        records = data["runs"] if records is None else records
         members = {
             str(item.get("id") or ""): str(item.get("harness") or "")
             for item in data.get("members", ())
@@ -701,6 +706,7 @@ def latest_recorded(
     *,
     root: str | Path | None = None,
     config: Mapping[str, Any] | None = None,
+    records: Iterable[Mapping[str, Any]] | None = None,
 ) -> _RecordedReadings:
     """Return the best recorded reading per backend, preferring a known one.
 
@@ -715,7 +721,13 @@ def latest_recorded(
     best: dict[str, _Reading] = {}
     unattributed: list[_Reading] = []
     readings = sorted(
-        _readings(project, root=root, config=config), key=lambda item: item.when
+        _readings(
+            project,
+            root=root,
+            config=config,
+            **({"records": records} if records is not None else {}),
+        ),
+        key=lambda item: item.when,
     )
     for reading in readings:
         if reading.backend is None:
@@ -1590,6 +1602,8 @@ def preflight(
     caller naming neither a reading nor a document gets the hold decision and a
     group block reading unknown, which is what absence of a signal means.
     """
+    if records is not None and not isinstance(records, (list, tuple)):
+        records = list(records)
     moment = _now(now)
     window_sources: dict[str, str] = {}
     if document is not None or document_path is not None:
@@ -1605,7 +1619,12 @@ def preflight(
     else:
         names = sorted(str(name) for name in configured)
 
-    recorded = latest_recorded(project, root=root, config=config)
+    recorded = latest_recorded(
+        project,
+        root=root,
+        config=config,
+        **({"records": records} if records is not None else {}),
+    )
     verdicts = []
     for name in names:
         settings = configured.get(name)

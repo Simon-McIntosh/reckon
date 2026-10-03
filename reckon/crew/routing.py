@@ -3169,30 +3169,10 @@ def _measured_horizon_hours(value: Any) -> float | None:
 
 
 def _verdict_input_stamp(project: str, repo: Path) -> dict[str, Any]:
-    """A cheap stamp of every file one pick's shared verdict inputs read.
-
-    The inputs are ``capabilities.load_capabilities`` (its cache file) and
-    ``capabilities.project_cache_status``, which calls :func:`ledger.load` — the
-    aggregate plus every per-run JSON under the ledger's run directory. The
-    stamp names exactly those: the capability cache file, the aggregate, and
-    each run file by name, so an in-place edit of a run file is a miss as well
-    as an added or removed one. The per-run list is used rather than the run
-    directory's own mtime because a directory stamp moves on add and remove but
-    not on an edit.
-    """
-
-    aggregate = ledger.ledger_path(project, repo)
+    """File-derived revision shared with the incremental ledger reader."""
     return {
-        # The ledger path is part of the key so two checkouts whose (absent)
-        # aggregate and run-directory stamps coincide never share an entry.
-        "aggregate_path": str(aggregate),
         "capabilities": capabilities.file_stamp(capabilities.capabilities_path()),
-        "aggregate": capabilities.file_stamp(aggregate),
-        "run_dir": capabilities.file_stamp(aggregate.parent / "runs"),
-        "runs": [
-            [path.name, capabilities.file_stamp(path)]
-            for path in sorted((aggregate.parent / "runs").glob("*.json"))
-        ],
+        "ledger": ledger.input_stamp(project, repo),
     }
 
 

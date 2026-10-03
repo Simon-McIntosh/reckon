@@ -1473,6 +1473,6 @@ def project_cache_status(
     versions = cache.get("ledger_versions")
     if not isinstance(versions, Mapping) or project not in versions:
         return "untracked"
-    data, current = ledger.load(project, root=root)
+    data, current = ledger.indexed_headers(project, root=root)
     current = ledger.history_version(data, current)
     return "fresh" if versions.get(project) == current else "stale"

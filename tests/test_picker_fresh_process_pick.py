@@ -247,3 +247,31 @@ def test_cached_context_manifest_tracks_every_input_it_reads(cache_dir, tmp_path
         cached["instructions"]["project_chain"][-1]["selected_name"]
         == "AGENTS.override.md"
     )
+
+
+def test_shared_verdict_inputs_recompute_after_run_file_edit(
+    cache_dir, tmp_path, monkeypatch
+):
+    """An unchanged directory stamp cannot hide an edited run payload."""
+    from reckon import ledger
+
+    repo = tmp_path / "repo"
+    source = ledger.run_path("sample", "record", repo)
+    source.parent.mkdir(parents=True)
+    source.write_text(json.dumps({"run_id": "record", "gate": "passed"}))
+    monkeypatch.setattr(capabilities, "load_capabilities", dict)
+    seen = []
+
+    def status(*args, **kwargs):
+        value = ledger.runs("sample", repo)[0]["gate"]
+        seen.append(value)
+        return value
+
+    monkeypatch.setattr(capabilities, "project_cache_status", status)
+    assert routing.shared_verdict_inputs("sample", repo)["cache_status"] == "passed"
+    assert routing.shared_verdict_inputs("sample", repo)["cache_status"] == "passed"
+    directory_stamp = source.parent.stat().st_mtime_ns
+    source.write_text(json.dumps({"run_id": "record", "gate": "failed"}))
+    assert source.parent.stat().st_mtime_ns == directory_stamp
+    assert routing.shared_verdict_inputs("sample", repo)["cache_status"] == "failed"
+    assert seen == ["passed", "failed"]
