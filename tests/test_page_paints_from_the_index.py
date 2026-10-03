@@ -478,6 +478,11 @@ class _ChangeStream:
                 return event
 
     def close(self) -> None:
+        # The response holds a makefile over the socket, so closing the
+        # connection alone leaves the file descriptor open: the server's
+        # handler never sees EOF and blocks in its change-stream wait for the
+        # rest of the process, reaching whatever test runs next.
+        self._response.close()
         self._connection.close()
 
 
@@ -504,6 +509,11 @@ def test_a_reported_change_refreshes_the_served_index(
     serve._DISC_CACHE.clear()
 
     server = serve.ThreadingHTTPServer(("127.0.0.1", 0), serve.Handler)
+    # A ThreadingHTTPServer runs its handler threads as daemons, which the
+    # standard library's server_close() does not join. Left daemonic, a stream
+    # handler outlives the test and can call into whatever the next test has
+    # patched; non-daemonic handler threads are joined when the server closes.
+    server.daemon_threads = False
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     stream = _ChangeStream(server.server_port, PROJECT)
@@ -561,6 +571,11 @@ def test_two_change_streams_recompute_discovery_once(
     monkeypatch.setattr(serve, "_discover_plans_uncached", counted)
 
     server = serve.ThreadingHTTPServer(("127.0.0.1", 0), serve.Handler)
+    # A ThreadingHTTPServer runs its handler threads as daemons, which the
+    # standard library's server_close() does not join. Left daemonic, a stream
+    # handler outlives the test and can call into whatever the next test has
+    # patched; non-daemonic handler threads are joined when the server closes.
+    server.daemon_threads = False
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     streams = [_ChangeStream(server.server_port, PROJECT) for _ in range(2)]
