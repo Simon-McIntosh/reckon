@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="257">
+<meta name="plan-version" content="258">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1832,6 +1832,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261003T201829489206-the-suite-at-head-after-the-dispatch-fix-half-1" data-who="reckon-build" data-when="2026-10-03T20:51:01.743Z">
     <div class="r-comment-body"><p>Half-1 of the suite measured in one foreground call at 935bb39e8 after the dispatch fix: 1 failed / 6440 passed / 23 skipped / 0 errors in 1295.67 s (0:21:35), EXIT=1 over 444 odd-position test files under -n 8; the single red (test_page_paints_from_the_index::test_a_report_keeps_a_discovery_newer_than_the_report) passes solo in 1.77 s, so no deterministic reds; vs the 4d1feeed9 arm restricted to this half: 15 fixed (including the dispatch-bound id, green here at load 8.84→3.88), 0 remaining, 1 new load-only with no candidate commit.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261003T205134054140-the-suite-at-head-after-the-dispatch-fix-half-2" data-who="reckon-build" data-when="2026-10-03T21:20:22.222Z">
+    <div class="r-comment-body"><p>half-2 (444 even-position files) at b5f74d36b: 6654 passed, 0 failed, 1 error (load-only teardown, tests/test_append_run_writes_one_run_file.py::test_byte_scan_miss_never_parses_aggregate_or_opens_other_run, passes solo in 2.17 s), 28 skipped in 1040.44 s, EXIT=1; against suite-at-4d1feeed9.json restricted to this half: 18 fixed, 0 remaining, 1 new with no candidate commit since 4d1feeed9 (its file and asserted string unchanged in the range); reports suite-final-half-2.md/json copied to reports/reckon</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
