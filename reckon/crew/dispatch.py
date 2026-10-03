@@ -2249,6 +2249,105 @@ def _peer_claim_is_a_later_racing_arrival(
     return (peer_registered_at, claim.run_id) > (own_registered, own_run_id)
 
 
+# How long a dispatch that lost a registration race waits for the winning claim
+# to launch or withdraw before refusing. The winner published moments earlier
+# and reaches its own admission within a handful of seconds, so the bound is
+# short on purpose: a wait holds the losing dispatch's whole turn, and a winner
+# still composing after this long is treated as the established owner.
+RACING_WINNER_WAIT_SECONDS = 15.0
+RACING_WINNER_POLL_SECONDS = 0.25
+
+
+def _peer_claim_is_an_unlaunched_racing_winner(
+    claim: _RepositoryScopeClaim,
+    *,
+    own_run_id: str | None,
+    own_registered_at: str | None,
+) -> bool:
+    """Whether this dispatch would refuse only because of an unlaunched peer.
+
+    The mirror of ``_peer_claim_is_a_later_racing_arrival``: a peer claim whose
+    registration precedes this dispatch's own and which has not launched its
+    worker outranks it, so this dispatch refuses on sight. That refusal is the
+    one a withdrawal by the winner would strand — the loser has already gone and
+    the paths are left with no worker — so it is the only case the bounded wait
+    covers.
+
+    A launched peer, and one whose registration cannot be shown to precede this
+    dispatch's own, are established and refuse exactly as before: the wait never
+    touches them.
+    """
+    if claim.launched:
+        return False
+    if not own_run_id or not own_registered_at or not claim.registered_at:
+        return False
+    peer_registered = parse_utc(claim.registered_at)
+    own_registered = parse_utc(own_registered_at)
+    if peer_registered is None or own_registered is None:
+        return False
+    if _fractional_digits(claim.registered_at) != _fractional_digits(
+        own_registered_at
+    ) and abs(peer_registered - own_registered) < timedelta(seconds=1):
+        return False
+    return (peer_registered, claim.run_id) < (own_registered, own_run_id)
+
+
+def _racing_claim_current(run_id: str) -> _RepositoryScopeClaim | None:
+    """Re-read one live run's claim, so a wait can see a winner launch or go.
+
+    The wait re-reads the peer rather than trusting the snapshot the check was
+    handed: a winner that withdrew unlinks its pointer, and one that reached its
+    admission rewrites it with the worktree and pid that mark it launched.
+    """
+    for claim in _repository_scope_claims():
+        if claim.run_id == run_id:
+            return claim
+    return None
+
+
+def _racing_clock() -> float:
+    """The monotonic clock the racing wait measures its bound against."""
+    return time.monotonic()
+
+
+def _racing_pause(seconds: float) -> None:
+    """Sleep between re-reads of a racing winner's claim."""
+    time.sleep(seconds)
+
+
+def _settle_racing_winner(
+    claim: _RepositoryScopeClaim,
+    *,
+    own_run_id: str | None,
+    own_registered_at: str | None,
+    reread: Callable[[str], _RepositoryScopeClaim | None],
+    clock: Callable[[], float],
+    pause: Callable[[float], None],
+) -> str:
+    """Wait, bounded, for a racing winner to launch or withdraw.
+
+    Returns ``"proceed"`` when the winner's claim has withdrawn or disappeared —
+    the paths are this dispatch's after all — ``"launched"`` when the winner has
+    passed its own admission, so the refusal stands, and ``"expired"`` when the
+    bound passed with the winner still unlaunched. Only a claim already known to
+    be an unlaunched racing winner is ever reached here.
+    """
+    deadline = clock() + RACING_WINNER_WAIT_SECONDS
+    while True:
+        current = reread(claim.run_id)
+        if current is None or not current.binding:
+            return "proceed"
+        if current.launched:
+            return "launched"
+        if not _peer_claim_is_an_unlaunched_racing_winner(
+            current, own_run_id=own_run_id, own_registered_at=own_registered_at
+        ):
+            return "proceed"
+        if clock() >= deadline:
+            return "expired"
+        pause(RACING_WINNER_POLL_SECONDS)
+
+
 def _raise_repository_scope_conflict(
     node: TaskNode,
     *,
@@ -2300,12 +2399,39 @@ def _raise_repository_scope_conflict(
                 # it will meet this claim and refuse when it checks, so it does
                 # not refuse this one here. See the helper for the ordering.
                 continue
+            racing_winner_refusal = ""
+            if _peer_claim_is_an_unlaunched_racing_winner(
+                claim,
+                own_run_id=own_run_id,
+                own_registered_at=own_registered_at,
+            ):
+                # The peer registered first and has not launched yet: refusing
+                # on sight would strand the paths if that winner withdraws for
+                # an unrelated reason. Wait, bounded, for it to launch (then the
+                # refusal stands) or to go (then the paths are this dispatch's).
+                settle = _settle_racing_winner(
+                    claim,
+                    own_run_id=own_run_id,
+                    own_registered_at=own_registered_at,
+                    reread=_racing_claim_current,
+                    clock=_racing_clock,
+                    pause=_racing_pause,
+                )
+                if settle == "proceed":
+                    continue
+                if settle == "expired":
+                    racing_winner_refusal = (
+                        f"the earlier dispatch {claim.run_id!r} has not launched "
+                        f"within {RACING_WINNER_WAIT_SECONDS:g}s and its claim on "
+                        "the paths still stands"
+                    )
             if _directory_claim_overlaps(absolute, claim.absolute_path):
-                # A directory claim is coarser than the exact file a peer holds,
-                # so it is refused with the exact alternative named rather than
-                # silently, and only an explicit --accept-directory-claim keeps
-                # the whole tree. An accepted claim is written down on the record
-                # so the exception survives the command line that gave it.
+                # A directory claim is coarser than the exact file a reader sees
+                # held by a peer, so it is refused with the exact alternative
+                # named rather than silently, and only an explicit
+                # --accept-directory-claim keeps the whole tree. An accepted
+                # claim is written down on the record so the exception survives
+                # the command line that gave it.
                 if accept_directory_claim:
                     if accepted is not None:
                         accepted.append(_directory_claim_row(claim, candidate))
@@ -2321,8 +2447,14 @@ def _raise_repository_scope_conflict(
                 )
                 refusal.project = claim.project
                 message = str(refusal)
+                if racing_winner_refusal:
+                    message = f"{message}; {racing_winner_refusal}"
                 if claim.project != project:
-                    refusal.args = (f"{message} in project {claim.project!r}",)
+                    refusal.args = (
+                        f"{message} in project {claim.project!r}",
+                    )
+                else:
+                    refusal.args = (message,)
                 raise refusal
             refusal = ScopeConflict(
                 run_id=claim.run_id,
@@ -2334,6 +2466,8 @@ def _raise_repository_scope_conflict(
             message = str(refusal)
             if claim.project != project:
                 message = f"{message} in project {claim.project!r}"
+            if racing_winner_refusal:
+                message = f"{message}; {racing_winner_refusal}"
             if claim.disposition_reason:
                 message = f"{message}; {claim.disposition_reason}"
             refusal.args = (message,)

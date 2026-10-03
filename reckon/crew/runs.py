@@ -546,6 +546,12 @@ class _LiveScopeClaim:
     path: str
     declared_path: str
     derived_from: str | None = None
+    # When the run published the claim, and whether it has passed its own
+    # admission and launched. The dispatch scope check orders two racing claims
+    # by these, so they travel with the claim into that check rather than being
+    # dropped when it is rebuilt from the read model.
+    registered_at: str = ""
+    launched: bool = False
 
     def as_dict(self) -> dict[str, Any]:
         """Return the stable read-model representation of this claim."""
@@ -653,6 +659,8 @@ def _live_scope_claims(
     derivations: Mapping[str, Iterable[str]] | None = None,
 ) -> list[_LiveScopeClaim]:
     """Derive this repository's claimed paths from its project live pointers."""
+    from reckon.crew.dispatch import _UNLAUNCHED_CLAIM_PHASES
+
     claims: list[_LiveScopeClaim] = []
     for pointer in list_live(project=project):
         pointer_repo = str(pointer.get("repo") or "")
@@ -663,6 +671,14 @@ def _live_scope_claims(
             continue
         run_id = str(pointer.get("run_id") or "unknown")
         node_id = str(node.get("id") or "unknown")
+        # A claim still being composed carries no worktree or pid and sits in a
+        # pre-spawn phase; anything else has passed its own admission. The
+        # dispatch scope check orders racing claims by these, so they travel
+        # with every claim built here.
+        registered_at = str(pointer.get("created_at") or "")
+        launched = bool(pointer.get("worktree") or pointer.get("pid")) or (
+            str(pointer.get("phase") or "") not in _UNLAUNCHED_CLAIM_PHASES
+        )
         for path, declared, derived_from in _expanded_scope_paths(
             node.get("write_paths") or (), repo, derivations
         ):
@@ -673,6 +689,8 @@ def _live_scope_claims(
                     path=path,
                     declared_path=declared,
                     derived_from=derived_from,
+                    registered_at=registered_at,
+                    launched=launched,
                 )
             )
     return sorted(claims, key=lambda claim: (claim.run_id, claim.node_id, claim.path))
@@ -891,6 +909,8 @@ def _raise_live_scope_conflict(
     derivations: Mapping[str, Iterable[str]] | None = None,
     *,
     project: str | None = None,
+    own_run_id: str | None = None,
+    own_registered_at: str | None = None,
 ) -> None:
     """Delegate a scope refusal to the check every crew dispatch runs.
 
@@ -899,6 +919,12 @@ def _raise_live_scope_conflict(
     reaches. This entry is the facade's name for it, kept so the export stays
     resolvable and no second claim check can drift out of step with the one
     dispatch uses. The import is deferred because dispatch imports this module.
+
+    ``own_run_id`` and ``own_registered_at`` name the dispatch on whose behalf
+    the refusal is judged, and the converted claims carry their registration
+    time and launch state through, so the racing-claims ordering applies on this
+    route exactly as it does inside a real dispatch rather than refusing a
+    racing arrival the dispatch placed and registered first.
     """
     from reckon.crew.dispatch import (
         _raise_repository_scope_conflict,
@@ -914,6 +940,8 @@ def _raise_live_scope_conflict(
             path=claim.path,
             absolute_path=(repo / claim.path).resolve(),
             declared_path=claim.declared_path,
+            registered_at=claim.registered_at,
+            launched=claim.launched,
         )
         for claim in claims
     ]
@@ -923,6 +951,8 @@ def _raise_live_scope_conflict(
         repo=repo,
         authority={"repositories": [repo]},
         claims=converted,
+        own_run_id=own_run_id,
+        own_registered_at=own_registered_at,
     )
 
 
