@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="A worker spawn retries when a protected bind source vanished">
+  <meta name="plan-summary" content="The fence composes a read-only bind for every protected path present at composition from the declared set, and a writer that replaces a file by rename leaves its name missing for an instant, so a spawn landing in that instant died inside bubblewrap before the worker started and the run was recorded as a launch failure for a source that was back a moment later. The spawn now retries, bounded by PROTECTED_BIND_WAIT_ATTEMPTS and PROTECTED_BIND_WAIT_INTERVAL_SECONDS, retrying only bwrap's missing-source refusal naming one of this launch's own read-only bind sources; any other spawn failure is recorded exactly as before. The retry's startup poll consumed an early exit's status, which made a worker that died inside the window unreapable and silently dropped both its failure record and its registry entry; the detached seam now records the exit the check collected instead of registering the pid. The pool control driver mutates declared_protected_paths, the set the fence composes from, so stripping the worktree pool removes the pool's read-only overlay. Gate: base 11 passed EXIT=0, head 17 passed EXIT=0, head adds no failing id; the declared negative control fails 2 ids EXIT=1.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-landed-commits" content="04538bea5, 9bf13264b">
+  <title>A worker spawn retries when a protected bind source vanished &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A worker spawn retries when a protected bind source vanished &mdash; evidence</h1>
+  <p>The fence composes a read-only bind for every protected path present at composition, from the declared set, and a writer that replaces a file by rename leaves the name missing for an instant &mdash; the harness replaces <code>~/.claude.json</code> that way. A spawn landing in that instant died inside bubblewrap before the worker started: bwrap refuses <code>--ro-bind</code> whose source is absent at mount time, and the run was recorded as a launch failure for a source that was back a moment later, so the node was marked failed for a race the retry now absorbs.</p>
+  <figure>
+    <img src="/reckon/figures/crew-runtime-positive-controls/spawn-retries-a-vanished-bind/timeline.svg" alt="A two-row timeline. The first spawn, marked refused in red at about ten milliseconds because a bind source was gone at mount; the startup poll window is drawn as a dotted line at fifty milliseconds; after a fifty-millisecond wait the retry spawns and is labelled running." style="max-width:100%;height:auto;">
+    <figcaption>The spawn the retry absorbs. The first try dies within the startup poll window because one of the launch's own <code>--ro-bind</code> sources is missing at mount; the retry waits <code>PROTECTED_BIND_WAIT_INTERVAL_SECONDS</code> (50&nbsp;ms) and spawns again, up to <code>PROTECTED_BIND_WAIT_ATTEMPTS</code> (10) tries. Nothing is recorded as a launch failure for the dead tries.</figcaption>
+  </figure>
+  <section id="mechanism">
+    <h2>The mechanism, and what is deliberately not retried</h2>
+    <ul>
+      <li><strong>Recognition is keyed to this launch's own binds.</strong> <code>_read_only_bind_sources(argv)</code> lists the <code>--ro-bind</code> sources the argv would mount, and <code>_refusal_names_a_bind_source</code> matches one of the two phrases bwrap answers with when a source is gone (<code>Can't bind mount</code>, <code>Can't find source path</code>) <em>and</em> a source this launch mounted. A refusal over anything else, and any spawn failure at all, is returned at once for its caller to record as the launch failure it is.</li>
+      <li><strong>The retry is inside one attempt.</strong> A worker that starts on a later try is the attempt that launched: nothing is appended to <code>launch_failures</code> and the run's phase is untouched. Each dead try is reaped by <code>process.wait()</code> so it cannot later be mistaken for the worker's own exit. Tries are bounded by <code>_backends.PROTECTED_BIND_WAIT_ATTEMPTS</code> with <code>_backends.PROTECTED_BIND_WAIT_INTERVAL_SECONDS</code> between tries; a refusal that outlives the bound ends as the launch failure it is.</li>
+      <li><strong>Both spawn seams share the retry</strong> &mdash; <code>_spawn_detached_worker</code> and <code>_supervisor_spawn_worker</code> each build a per-try <code>attempt()</code> closure.</li>
+      <li><strong>A poll consumes the status it observes.</strong> The retry's startup check polls the fresh child, so a worker that died inside that window is no longer waitable; registering its pid handed the reaper a child it could not wait (<code>ChildProcessError</code> ECHILD), and the reap discarded the pid without recording the failure while the <code>_LAUNCHED_WORKER_RUNS</code> entry leaked. The detached seam now records the exit the check collected exactly as a reap would, instead of registering the pid. This was found by the node's own second case failing, not by inspection: the first full run recorded <code>launch_failures</code> empty and the phase still <code>working</code> for a worker that had died.</li>
+      <li><strong>The launch seam accepts a stand-in.</strong> The supervisor seam is exercised both by real spawns and by tests that replace <code>Popen</code> with an object carrying only a pid; the startup check treats a launch that cannot be polled as started rather than failing on it, since the refusal is proved by the child's own exit.</li>
+    </ul>
+  </section>
+  <section id="control-driver">
+    <h2>The pool control driver mutates what the fence reads</h2>
+    <p>The fence composes from <code>declared_protected_paths</code> (the intent), not from the narrowed <code>protected_paths</code> (on disk now) &mdash; a protected path absent for an instant must still be sealed, which is the same race this node retries. <code>tests/test_fence_protects_the_worktree_pool.py</code>'s <code>_negative_control_report</code> therefore patches <code>declared_protected_paths</code> through <code>_without_pool</code>, so stripping <code>Code/.reckon-worktrees</code> removes the pool's read-only overlay from the composed argv and case&nbsp;1's write into the sibling lands, which is the control's red result. The new test file's last case pins both directions: the composed launch really does overlay the pool, and under the mutation it no longer does.</p>
+  </section>
+  <section id="measure">
+    <h2>The measure</h2>
+    <p>The gate is the caller-derived set the brief names: every file under <code>tests/</code> matching <code>_spawn_detached_worker</code> (the new file) or <code>_supervisor_spawn_worker</code> (<code>tests/test_stored_phase_advances.py</code>, <code>tests/test_worker_env_export.py</code>), unioned with the changed fence file &mdash; four files at head, three at base, where the new file does not yet exist. Both arms ran under pytest-xdist <code>-n 8 --timeout=300</code> with their own basetemp outside any repository, each log naming its revision on its first line and ending <code>EXIT=&lt;code&gt;</code>.</p>
+    <ul>
+      <li><strong>Base arm</strong> (<code>a31484ff0</code>, a <code>git archive</code> extraction of the base under the run's scratch): <code>11 passed in 23.24s</code>, <code>EXIT=0</code> (<code>gate-base-bind.log</code>, <code>gate-base-bind.json</code>).</li>
+      <li><strong>Head arm</strong> (<code>9bf13264b</code>, this worktree): <code>17 passed in 38.93s</code>, <code>EXIT=0</code> (<code>gate-head-bind-2.log</code>, <code>gate-head-bind-2.json</code>). The failure sets are identical &mdash; the head arm adds no failing id, none lost.</li>
+      <li><strong>The first head arm added three ids, and they were this node's own defect.</strong> <code>tests/test_worker_env_export.py</code> replaces <code>Popen</code> in dispatch's namespace with a stand-in carrying only a pid, and the retry's startup check called <code>poll()</code> on it (<code>AttributeError: 'Spawned' object has no attribute 'poll'</code>, <code>gate-head-bind.log</code>). The seam now treats an unobservable launch as started, which is the second commit of this node.</li>
+      <li><strong>This node's own six cases</strong> (<code>tests/test_spawn_retries_a_vanished_bind.py</code>): both refusal phrases retried with the run's phase still <code>working</code> and <code>launch_failures</code> empty; an unrelated failure not retried and recorded as the launch failure (the positive control for the retry cases); the bound honoured at exactly <code>PROTECTED_BIND_WAIT_ATTEMPTS</code> tries ending as one launch failure; the supervisor seam retrying; the pool control driver's mutated fence lacking the pool bind. They also passed serially (<code>6 passed in 24.18s</code>, <code>node-tests-serial.log</code>) before the xdist arms.</li>
+      <li><strong>Ruff delta</strong>: <code>ruff check</code> over the changed Python paths reports the same 7 findings at base and at head (I001, UP035, PYI041&times;2, RUF010, SIM102, SIM105 &mdash; all pre-existing, line numbers shifted only); <code>ruff format --check</code> passes on all three files.</li>
+    </ul>
+  </section>
+  <section id="negative-control">
+    <h2>The declared negative control</h2>
+    <p>Declared: <em>With the spawn retry removed, the first case in <code>tests/test_spawn_retries_a_vanished_bind.py</code> records a failed launch and the test fails.</em></p>
+    <p>Run in a scratch tree extracted from the head revision with the retry removed (<code>limit = 1</code> in <code>_spawn_worker_retrying_a_vanished_bind</code>): <code>2 failed, 4 deselected in 6.52s</code>, <code>EXIT=1</code>, the two failing ids being both parametrizations of <code>test_a_spawn_refused_over_a_vanished_protected_bind_is_retried</code> &mdash; which the head arm does not fail (<code>neg-control-bind-2.log</code>).</p>
+  </section>
+  <section id="landing">
+    <h2>What landed</h2>
+    <p>Two commits on base <code>a31484ff0</code>: <code>04538bea5</code> (the retry, the collected-exit record, the control driver's mutation, the six cases and the fence-file update) and <code>9bf13264b</code> (the launch seam's tolerance of a stand-in). Files: <code>reckon/crew/dispatch.py</code>, <code>tests/test_fence_protects_the_worktree_pool.py</code>, <code>tests/test_spawn_retries_a_vanished_bind.py</code>, this fragment and its figure. The node records <code>complete</code>: the head arm over the gate adds no failing id, the declared control produces its red result, and no ruff finding is added.</p>
+  </section>
+ </main>
+</body>
+</html>
