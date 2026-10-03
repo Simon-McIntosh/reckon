@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="98">
+<meta name="plan-version" content="99">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -360,6 +360,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261003T031850518245-explicit-lane-implies-deterministic" data-who="reckon-build" data-when="2026-10-03T03:44:30.474Z">
     <div class="r-comment-body"><p>reckon/cli.py now treats a lane named by --backend, --local or --set default_backend as implying deterministic routing when --route is omitted (the picker is not asked and the resolved route is deterministic), while --route picker beside --backend or --route local still refuses; gate delta base 4 failed / 36 passed (EXIT=1) -&gt; head 40 passed / 0 failed (EXIT=0) over the four named files.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261003T035354599872-review-of-picker-refusal-falls-back-to-deterministic" data-who="reckon-build" data-when="2026-10-03T04:03:36.209Z">
+    <div class="r-comment-body"><p>review of picker-refusal-falls-back-to-deterministic stored at both review paths: status parsed, total 96/100 (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19), reviewed base d9f3e0cdc head b783edc7b, added_failure_count 0 with added_failure_ids [], and three follow-on findings (broken module-identity probe in the arm logs, a refuse naming default-backend-ineligible now dispatching to that default, and the write-scope fragment left unwritten on a diff larger than the small-node threshold).</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T035044694750-review-of-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T03:59:23.147Z">
     <div class="r-comment-body"><p>Independent review of r-20261003T032115043790-model-catalogue-in-reckon stored: 92/100 (goal 16, evidence 19, scope 20, durability 18, fit 19); the catalogue layer, its two rules, the 32-shadow report and the no-value-moves proof all verified by independent re-run.</p></div>
