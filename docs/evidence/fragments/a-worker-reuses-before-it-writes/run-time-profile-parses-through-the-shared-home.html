@@ -1,0 +1,19 @@
+<section id="run-time-profile-parses-through-the-shared-home">
+  <h2>The run-time profile's completion-stamp read routes through the shared parser</h2>
+  <p>The post-migration census counted <code>reckon/crew/run_time_profile.py:_completed_after</code> among the functions still calling <code>datetime.fromisoformat</code> directly with no comment stating why. It is not retained: it now reads its stamp through <code>reckon/_timestamps.py:parse_utc</code>, the repository's one timestamp parser, so a stamp read here and the same stamp read in the ledger cannot resolve to different moments. The rule the function already carried is kept — a stamp the parser cannot read is not evidence the row falls outside the window, so the row is left in rather than dropped, and only a string is accepted, the shape the ledger writes.</p>
+  <p><code>tests/test_run_time_profile_parses_through_the_shared_home.py</code> pins <code>_completed_after</code> against a behaviour table recorded at the base revision. Every row resolves identically at base and at head:</p>
+  <table>
+    <tr><th>stamp</th><th><code>_completed_after</code></th><th>row in the profile</th></tr>
+    <tr><td><code>2026-10-02T13:00:00Z</code> (Z suffix, after)</td><td>True</td><td>excluded</td></tr>
+    <tr><td><code>2026-10-02T11:00:00Z</code> (Z suffix, before)</td><td>False</td><td>kept</td></tr>
+    <tr><td><code>2026-10-02T15:00:00+02:00</code> (offset, after)</td><td>True</td><td>excluded</td></tr>
+    <tr><td><code>2026-10-02T11:00:00+02:00</code> (offset, before)</td><td>False</td><td>kept</td></tr>
+    <tr><td><code>2026-10-02T13:00:00</code> (naive, read as UTC)</td><td>True</td><td>excluded</td></tr>
+    <tr><td><code>2026-10-02T00:00:00</code> (naive, before)</td><td>False</td><td>kept</td></tr>
+    <tr><td><code>"not-a-timestamp"</code> (malformed)</td><td>False</td><td>kept</td></tr>
+    <tr><td><code>"   "</code> (whitespace)</td><td>False</td><td>kept</td></tr>
+    <tr><td><code>None</code> (non-string)</td><td>False</td><td>kept</td></tr>
+  </table>
+  <p>Focused gate over the new file and <code>tests/test_run_time_profile.py</code> at base and at head: <strong>23 passed</strong> at each arm, exit 0 — <strong>0 added failures</strong>.</p>
+  <p>The declared negative control makes <code>_completed_after</code> return <code>True</code> for an unreadable stamp, so the row is dropped instead of left in. The malformed-stamp row fails, with the whitespace row and the end-to-end case that asserts the row survives into <code>run_time_profile</code>: <strong>3 failed, 20 passed</strong>, exit 1.</p>
+</section>
