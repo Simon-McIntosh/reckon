@@ -3423,6 +3423,14 @@ def _apply_receipt_to_throughput(
     return throughput
 
 
+def _carried_malformed(state: Mapping[str, Any]) -> int:
+    """The malformed-line total a previous observation of this stream reached."""
+    carried = state.get("malformed") if state else None
+    if isinstance(carried, int) and not isinstance(carried, bool):
+        return carried
+    return 0
+
+
 def observe_stream(
     *,
     backend_name: str,
@@ -3444,7 +3452,10 @@ def observe_stream(
     ``state`` is a previous observation of the same stream, taken from its
     ``stream_state``, and ``lines`` then carries only the records written since
     that observation stopped. The fold is extended rather than repeated, and the
-    new state is left on the returned observation for the next read.
+    new state is left on the returned observation for the next read. The
+    malformed-line count describes the whole stream rather than the segment just
+    parsed, so it is carried in that state as well — a resumed observation
+    reports the stream's total, not only the appended tail's.
     """
     dialect = dialect_for(backend)
     carried = state if isinstance(state, Mapping) else {}
@@ -3457,7 +3468,8 @@ def observe_stream(
         carry=carried.get("fold") if carried else None,
     )
     obs.backend = backend_name
-    obs.malformed_lines = malformed
+    obs.malformed_lines = malformed + _carried_malformed(carried)
+    obs.stream_state["malformed"] = obs.malformed_lines
     obs.throughput, timestamps = _refine_throughput_from_timestamps(
         obs.throughput,
         events,
