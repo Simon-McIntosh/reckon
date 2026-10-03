@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="577">
+<meta name="plan-version" content="578">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.6">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -3686,6 +3686,9 @@ if isinstance(argv, list) and argv:
 </div>
 <div class="r-comment" data-section="s26" data-id="c-run-r-20261002T225510427652-valid-wait-keeps-its-state" data-who="reckon-build" data-when="2026-10-03T00:29:22.416Z">
     <div class="r-comment-body"><p>measure card — valid-wait case fails at base 9fe5d8204 in a temporary RECKON_HOME (base arm over the audited files 3 failed 501 passed; supplement on the final test file 1 failed 1 passed) and passes at head cf50f544c 2 of 2 (gate-head-focused.log EXIT=0), the completed twelve-file head arm carrying only the pre-existing base failure (gate-head-4.log, 1 failed 512 passed, id test_crew_recovery.py::test_cli_follow_streams_each_event_as_one_json_document), and the negative control restoring the status finding reddening the valid-wait case again (negative-control.log EXIT=1, failing id tests/test_valid_wait_keeps_its_state.py::test_a_valid_wait_keeps_its_state_beside_an_unrelated_finding)</p></div>
+</div>
+<div class="r-comment" data-section="s26" data-id="c-run-r-20261003T003001997573-review-of-valid-wait-keeps-its-state" data-who="reckon-build" data-when="2026-10-03T00:40:29.454Z">
+    <div class="r-comment-body"><p>independent review of r-20261002T225510427652-valid-wait-keeps-its-state stored at head 814fe8f516610f713160a6b9fa4d824d63c0cb0b over base 9fe5d8204634a1fe3db5f118df8c83e4eee7b0dd — five dimensions scored 18/15/17/18/18 (total 86), added_failure_count 1 with the id tests/test_crew_recovery.py::test_cli_follow_streams_each_event_as_one_json_document, two follow-on findings.</p></div>
 </div>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261002T224824119720-attempt-exit-waits-for-its-worker" data-who="reckon-build" data-when="2026-10-02T23:46:38.391Z">
     <div class="r-comment-body"><p>attempt-exit-waits-for-its-worker: the supervisor becomes a child subreaper before it spawns, so a launcher that exits ahead of its worker leaves that worker parented to the supervisor; the attempt's exit record waits for the adopted worker and carries its pid and its exit, while a spawned child that ended by signal is recorded at once; gate base 39 passed (EXIT=0), head 40 passed (EXIT=0), declared mutation red at EXIT=1.</p></div>
