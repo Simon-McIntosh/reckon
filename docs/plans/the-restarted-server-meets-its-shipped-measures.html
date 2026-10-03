@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 </head>
 <body>
   <main class="plan-doc">
@@ -101,6 +101,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-20261003T142040672286" data-who="" data-when="">
     <div class="r-comment-body"><p>§1 is recorded: merge daf42f981 of 4eaec5eae (run r-20261003T132413476447-live-server-measures, commits 5d9613c45 and 4eaec5eae; reviewed at 93). Evidence: <code>docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html</code>, figures under <code>docs/figures/the-restarted-server-meets-its-shipped-measures/live-server-measures/</code>. Measured against reckon.service MainPID 331604, started 2026-10-02 11:18:06 CEST and re-read with NRestarts=0 during the window. The server's own banner reported it 12 files behind the code on disk.</p><ul><li><strong>No second daemon:</strong> pass. One listener on :8765 while a watcher was in use.</li><li><strong>Navigable:</strong> pass for the watcher tab and plan links. Finding: the sprint route rendered "No sprint." for S25 although <code>docs/sprints/S25.html</code> exists, with the cause unestablished on a stale server.</li><li><strong>In-flight band:</strong> pass. A plan page showed its band while two runs targeted it.</li><li><strong>Live run visible within 3 s:</strong> fail. Across ten fleet dispatches the phase read idle for 15 to 45 s after the pointer appeared, because <code>reckon/serve.py</code> derives working from the run's stream file, which exists only once the worker starts. Each <code>GET /crew</code> also took 6.5 to 7.7 s to answer, so the 3 s gate cannot be met on response time alone. The done half was confirmed inside 3 s for one run; the other two were bounded at 3.8 and 5.2 s by the instrument's cadence.</li></ul><p>The two findings are carried as §3 and §4.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-run-r-20261003T132413476447-live-server-measures" data-who="reckon-build" data-when="2026-10-03T14:12:52.855Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/the-restarted-server-meets-its-shipped-measures/live-server-measures.html</p></div>
 </div>
 </section>
 </main>
