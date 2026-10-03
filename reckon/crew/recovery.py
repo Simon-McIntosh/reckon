@@ -8783,14 +8783,14 @@ def classify_pointer(
     # Lifecycle and fleet attention are distinct vocabularies. Publish both
     # from this observation so consumers never reread a stream or process to
     # derive the fleet's verdict, while lifecycle callers retain their contract.
-    if _promote_record_holds(record):
-        # The run has landed; the recorded promotion is the authority on its
-        # lifecycle word too, so every reader agrees the run is finished rather
-        # than one reading the pointer as completed work awaiting promotion.
-        classified["classification"] = "promoted"
     classified["fleet_verdict"] = _watch_verdict(
         record, classified, moment=moment, stall_seconds=stale_after_seconds
     )
+    settled = classified["fleet_verdict"]["state"]
+    if settled in FLEET_SETTLED_STATES:
+        # The ledger's word also names the lifecycle reading, so a committed
+        # completion cannot read as two different outcomes on one row.
+        classified["classification"] = settled
     # The memo is written from the key the reads were made under, so a reader
     # that finds this file again serves it only while every input still holds
     # the identity it had here. The stream's own state travels whatever the key
@@ -9253,7 +9253,7 @@ def _promote_record_holds(record: Mapping[str, Any]) -> bool:
         return False
     try:
         return ledger_module.run_path(project, run_id, repo).is_file()
-    except (OSError, ValueError):
+    except (OSError, ValueError, ledger_module.LedgerError):
         return False
 
 
@@ -10050,28 +10050,65 @@ def _manifest_rewritten(
     )
 
 
-def _ledger_run_id_reader(project: str) -> Callable[[], Mapping[str, str]]:
-    """A lazy reader of each recorded run's committed or commitless word.
+class _LedgerRunWordReader:
+    """Resolve settled words for departures without decoding the whole ledger."""
 
-    The ledger is a shared file another process rewrites, so its read degrades
-    to an empty map rather than failing the whole fleet observation: a partial
-    read must not stop the fold from reporting everything else. An empty answer
-    withholds either settled word, because neither is justified without a row.
-    """
-    from reckon import ledger as ledger_module
+    def __init__(self, project: str) -> None:
+        self.project = project
 
-    def read() -> Mapping[str, str]:
+    def for_runs(self, departures: Iterable[str] | None = None) -> Mapping[str, str]:
+        from reckon import ledger as ledger_module
+
         try:
-            rows, _version = ledger_module.read_records(project, with_figures=False)
-            return {
-                str(row["run_id"]): ("promoted" if row.get("commits") else "recorded")
-                for row in rows
-                if row.get("run_id")
-            }
+            recorded = ledger_module.run_ids(self.project)
         except (OSError, ValueError, ledger_module.LedgerError):
             return {}
+        targets = recorded if departures is None else recorded.intersection(departures)
+        words: dict[str, str] = {}
+        aggregate_only: set[str] = set()
+        for run_id in targets:
+            try:
+                path = ledger_module.run_path(self.project, run_id)
+                row = json.loads(path.read_text(encoding="utf-8"))
+            except FileNotFoundError:
+                aggregate_only.add(run_id)
+                continue
+            except (OSError, ValueError, ledger_module.LedgerError):
+                words[run_id] = "recorded"
+                continue
+            words[run_id] = (
+                "promoted"
+                if isinstance(row, Mapping)
+                and row.get("run_id") == run_id
+                and row.get("commits")
+                else "recorded"
+            )
+        if aggregate_only:
+            try:
+                rows, _version = ledger_module.read_records(
+                    self.project, with_figures=False
+                )
+                words.update(
+                    {
+                        str(row["run_id"]): (
+                            "promoted" if row.get("commits") else "recorded"
+                        )
+                        for row in rows
+                        if row.get("run_id") in aggregate_only
+                    }
+                )
+            except (OSError, ValueError, ledger_module.LedgerError):
+                pass
+            words.update(dict.fromkeys(aggregate_only - words.keys(), "recorded"))
+        return words
 
-    return read
+    def __call__(self) -> Mapping[str, str]:
+        return self.for_runs()
+
+
+def _ledger_run_id_reader(project: str) -> _LedgerRunWordReader:
+    """Read the ledger only when a departure needs its committed word."""
+    return _LedgerRunWordReader(project)
 
 
 def _departure_recorded_run_ids(
@@ -10103,7 +10140,11 @@ def _departure_recorded_run_ids(
                 break
     if reader is None:
         return None
-    recorded = reader()
+    recorded = (
+        reader.for_runs(departures)
+        if isinstance(reader, _LedgerRunWordReader)
+        else reader()
+    )
     if isinstance(recorded, Mapping):
         return {str(run_id): str(word) for run_id, word in recorded.items()}
     return {str(run_id): "promoted" for run_id in recorded}

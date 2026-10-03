@@ -110,9 +110,17 @@ def test_a_row_with_no_commits_cannot_claim_promotion(home: Path) -> None:
     pointer = {"run_id": run_id, "project": "sample", "repo": str(home)}
     assert recovery._promote_record_holds(pointer)
     assert recovery._recorded_pointer_word(pointer) == "recorded"
+    classified = recovery.classify_pointer(pointer)
+    assert classified["classification"] == "recorded"
+    assert classified["fleet_verdict"]["state"] == "recorded"
     _row(home, run_id, commits=["recorded-commit"])
     assert recovery._promote_record_holds(pointer)
     assert recovery._recorded_pointer_word(pointer) == "promoted"
+
+
+def test_malformed_run_id_cannot_hold_a_promotion(home: Path) -> None:
+    pointer = {"run_id": "bad id", "project": "sample", "repo": str(home)}
+    assert recovery._promote_record_holds(pointer) is False
 
 
 def test_promoted_transition_keeps_the_live_pointer_figures(home: Path) -> None:

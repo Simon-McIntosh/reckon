@@ -14,13 +14,15 @@ from pathlib import Path
 import pytest
 
 from reckon import crew, ledger
-from reckon.crew import runs
+from reckon.crew import recovery, runs
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
 from reckon.crew.recovery import watch_ticker
 from reckon.crew.runs import project_watch_visibility
 
 
-def _record_promotion(project: str, run_id: str) -> None:
+def _record_promotion(
+    project: str, run_id: str, *, commits: list[str] | None = None
+) -> None:
     """Write the ledger row a promotion leaves behind when a run lands.
 
     A departure is not a fact the pointer records: a run that was promoted and
@@ -30,9 +32,11 @@ def _record_promotion(project: str, run_id: str) -> None:
     """
     row = ledger.run_path(project, run_id)
     row.parent.mkdir(parents=True, exist_ok=True)
-    row.write_text(
-        json.dumps({"run_id": run_id, "commits": ["HEAD"]}), encoding="utf-8"
-    )
+    landed = ["HEAD"] if commits is None else commits
+    record = {"run_id": run_id, "commits": landed}
+    if not landed:
+        record["no_commit"] = "the report is the deliverable"
+    row.write_text(json.dumps(record), encoding="utf-8")
 
 
 CONFIG = {
@@ -102,7 +106,9 @@ def repo(tmp_path: Path, home: Path) -> Path:
     return root
 
 
-def _write_stale_terminal_pointer(home: Path, *, repo: Path | None = None) -> dict:
+def _write_stale_terminal_pointer(
+    home: Path, *, repo: Path | None = None, commits: list[str] | None = None
+) -> dict:
     """Park one delivered pointer before the watcher is armed."""
     stream = home / "streams" / "owner.jsonl"
     stream.parent.mkdir(parents=True)
@@ -133,7 +139,7 @@ def _write_stale_terminal_pointer(home: Path, *, repo: Path | None = None) -> di
         "process_alive": False,
     }
     crew._write_json(crew.pointer_path(record["run_id"]), record)
-    _record_promotion(str(record["project"]), str(record["run_id"]))
+    _record_promotion(str(record["project"]), str(record["run_id"]), commits=commits)
     return record
 
 
@@ -281,6 +287,9 @@ def test_dispatch_is_admitted_during_the_stale_terminal_window(
         # the ledger is the whole of what separates a landing from a vanished
         # pointer, and this case asserts the promoted reading of it.
         _record_promotion("sample", str(accepted["run_id"]))
+        recorded = recovery._ledger_run_id_reader("sample")()
+        assert recorded[record["run_id"]] == "promoted"
+        assert recorded[accepted["run_id"]] == "promoted"
         crew.pointer_path(record["run_id"]).unlink()
         crew.pointer_path(accepted["run_id"]).unlink()
         poll.release.set()
@@ -288,7 +297,12 @@ def test_dispatch_is_admitted_during_the_stale_terminal_window(
         _finish_after_reconciliation(ticker, pool)
 
 
-def test_empty_fleet_still_waits_for_its_first_pointer(home: Path) -> None:
+@pytest.mark.parametrize(
+    ("commits", "word"), [(["HEAD"], "promoted"), ([], "recorded")]
+)
+def test_empty_fleet_still_waits_for_its_first_pointer(
+    home: Path, commits: list[str], word: str
+) -> None:
     """The first pointer the seat sees is reported as completed_unpromoted."""
     poll = _ControlledPoll()
     ticker = watch_ticker("sample", stall_window="1h", poll_interval=0, sleeper=poll)
@@ -301,11 +315,12 @@ def test_empty_fleet_still_waits_for_its_first_pointer(home: Path) -> None:
         assert visibility["watcher_live"] is True
         assert visibility["pointer_count"] == 0
 
-        record = _write_stale_terminal_pointer(home)
+        record = _write_stale_terminal_pointer(home, commits=commits)
         poll.release.set()
         baseline = waiting.result(timeout=5)
         assert baseline["to_state"] == "completed_unpromoted"
+        assert recovery._ledger_run_id_reader("sample")()[record["run_id"]] == word
         crew.pointer_path(record["run_id"]).unlink()
-        promoted = pool.submit(next, ticker).result(timeout=5)
-        assert promoted["to_state"] == "promoted"
+        departure = pool.submit(next, ticker).result(timeout=5)
+        assert departure["to_state"] == word
         _finish_after_reconciliation(ticker, pool)
