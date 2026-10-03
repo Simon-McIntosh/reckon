@@ -1120,6 +1120,49 @@ def _recorded_review_is_live(recorded: Any) -> bool:
     return True
 
 
+def _readable_standing_review(review_run_id: str) -> Mapping[str, Any] | None:
+    """The standing review's pointer, or None when nothing readable is there."""
+    if not review_run_id:
+        return None
+    try:
+        return read_pointer(review_run_id)
+    except (CrewError, OSError):
+        return None
+
+
+def _discard_stranded_review(review_run_id: str, *, reason: str) -> str:
+    """Discard a review pointer whose launch never spawned a worker.
+
+    Returns a sentence recording what happened, for the reviewed run's own
+    dispatch record. The discard leaves its departure marker in the review's
+    run directory, and the reason is written onto that marker because the
+    marker is the durable place a later reader asks why the pointer went. A
+    discard that refuses or fails is reported rather than raised: the reflex is
+    a sweep that must reach the rest of the fleet, and a pointer already gone
+    is a release as much as one removed.
+    """
+    promotion_module = importlib.import_module("reckon.crew.promotion")
+    try:
+        promotion_module.discard(review_run_id)
+    except (CrewError, OSError) as exc:
+        return f"its discard was refused: {exc}"
+    except Exception as exc:  # noqa: BLE001 - a release must not stop the sweep
+        return f"its discard failed: {exc}"
+    try:
+        marker = promotion_module.discard_record_path(review_run_id)
+        data = json.loads(marker.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return "its pointer was discarded; no marker was readable to hold the reason"
+    if isinstance(data, Mapping):
+        data = dict(data)
+        data["reason"] = reason
+        try:
+            runs._write_json(marker, data)
+        except OSError:
+            return "its pointer was discarded; the reason could not be written"
+    return "its pointer was discarded with the reason recorded"
+
+
 def _review_in_flight(record: Mapping[str, Any]) -> str:
     """The review run already standing for this run at this head, or empty.
 
@@ -1942,12 +1985,34 @@ def dispatch_review_for_run(
         }
     in_flight = _review_in_flight(record)
     if in_flight:
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "reason": "a review is already in flight as a live run",
-            "review_run_id": in_flight,
-        }
+        standing = _readable_standing_review(in_flight)
+        if standing is not None and _stranded_launch(standing, now_seconds=time.time()):
+            # The standing claim is stranded: it never spawned a worker, so
+            # nothing is coming to finish it or to release it, and the run
+            # cannot be reviewed while it stands. The reflex releases it — the
+            # pointer is discarded with the reason recorded — and falls through
+            # to compose the review again for the same pair.
+            reason = (
+                f"the review run {in_flight} was a stranded launch: its pointer "
+                f"held the pre-spawn phase {str(standing.get('phase') or '')!r} "
+                f"for more than {STRANDED_LAUNCH_BOUND_SECONDS}s with no worker "
+                "record, stream or launch log, so its claim was released and the "
+                "review composed again"
+            )
+            release_note = _discard_stranded_review(in_flight, reason=reason)
+            _record_review_dispatch(
+                run_id,
+                status="released-stranded-launch",
+                reason=f"{reason}; {release_note}",
+                review_run_id=in_flight,
+            )
+        else:
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "reason": "a review is already in flight as a live run",
+                "review_run_id": in_flight,
+            }
 
     # The run has a stored review that speaks for an earlier head, or none at
     # all. A move the stored review no longer covers is either carried forward
@@ -5579,6 +5644,18 @@ WORKER_RECORD_NAME = "worker.json"
 # going silent is not proof that any work stopped.
 _PRE_SPAWN_PHASES = frozenset({"starting", "launching", "launcher", "dispatching"})
 
+# A launch cut off between composing its record and spawning its worker leaves
+# a pointer holding a pre-spawn phase and nothing else: no pid, no worker
+# record, no stream and no launch log in its run directory. Nothing about it is
+# in flight — there is no process to observe and no session to resume — and
+# nothing about it ends either, so it holds whatever claim it took, a lane or a
+# review another run is told is covered, for as long as the pointer lives. Past
+# this bound the absence of any launch evidence is itself the reading and the
+# pointer is a stranded launch. The bound matches the quiet window a dispatched
+# run is given before it reads as stalled, so a launch that never spawned is
+# called stranded on the same clock as one that spawned and went silent.
+STRANDED_LAUNCH_BOUND_SECONDS = 900
+
 
 def _observed_phase(
     phase: str,
@@ -5903,6 +5980,40 @@ def _attempt_started_seconds(record: Mapping[str, Any]) -> float | None:
     if started is None:
         return None
     return started.timestamp()
+
+
+def _stranded_launch(record: Mapping[str, Any], *, now_seconds: float) -> bool:
+    """Whether a launch that recorded nothing stopped happening past the bound.
+
+    The phases a launch holds before it spawns are shared with a launch that is
+    merely young, so the age alone cannot decide and neither can the phase:
+    what separates the two is evidence. A spawned worker leaves a worker record,
+    a stream, or a launch log in the run directory, so a pointer whose session
+    wrote any of them is somewhere in flight whatever its phase says. With none
+    of them written and the clock past the bound, there is nothing to wait for:
+    the launch was cut off between composing the record and spawning the
+    worker, and a pointer that holds a phase as though something were coming
+    holds it forever.
+
+    The clock is the current attempt's own start, which the launch composes on
+    the pointer before spawning anything. A pointer naming no start has no
+    launch clock to read and is left as one in flight.
+    """
+    if str(record.get("phase") or "") not in _PRE_SPAWN_PHASES:
+        return False
+    if record.get("pid"):
+        return False
+    if _worker_record(record) is not None:
+        return False
+    if _record_newest_stream(record) is not None:
+        return False
+    stderr_path = str(record.get("stderr_path") or "").strip()
+    if stderr_path and Path(stderr_path).exists():
+        return False
+    started = _attempt_started_seconds(record)
+    if started is None:
+        return False
+    return now_seconds - started > STRANDED_LAUNCH_BOUND_SECONDS
 
 
 def _run_stream_quiet_seconds(
@@ -7811,6 +7922,27 @@ def classify_pointer(
             f"fix the command and PATH for backend "
             f"{latest.get('backend') or record.get('backend')!r}, then resume "
             f"{run_id} by hand — the lift loop stays stopped until then"
+        )
+    elif _stranded_launch(record, now_seconds=moment):
+        # A launch cut off between composing its record and spawning a worker
+        # leaves a pointer holding a pre-spawn phase and nothing else: no pid,
+        # no worker record, no stream, no launch log. Nothing about it is in
+        # flight and nothing about it ends, so without this reading it holds
+        # whatever claim it took for as long as the pointer lives. The
+        # launch-failed word is the one that already says no model was reached;
+        # the clause adds what that arm cannot, that not even an end was
+        # recorded, because here there was nothing to record one from.
+        classification = "launch-failed"
+        detail = (
+            "a stranded launch: the pointer has held the pre-spawn phase "
+            f"{str(record.get('phase') or '')!r} for more than "
+            f"{STRANDED_LAUNCH_BOUND_SECONDS}s with no worker record, stream or "
+            "launch log in its run directory, so the launch was cut off before "
+            "it spawned and nothing recorded an end"
+        )
+        action = (
+            f"compose run {run_id} again; the pointer holds a claim no run "
+            "backs, and a review it claimed is released by the reflex"
         )
     elif alive is True:
         classification = "running"
