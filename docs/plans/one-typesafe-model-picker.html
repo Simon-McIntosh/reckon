@@ -25,8 +25,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="117">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="118">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -106,9 +106,12 @@
   <p class="landed-summary">Lane pressure is Jev's judgment: code filters only what cannot run; burn, pace, congestion, return time and difficulty are state; a <code>hold</code> option exists. Live picks follow the sliding scale (trivial → clive 0.66; hard, elevated risk → codex-astra 0.64; with local paused → codex-terra 0.58). Merge 2d6dbb145, review 95. <a href="s10">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-03</span>
     <h2 id="s11">§11 — Reckon owns the model catalogue</h2>
-<section data-reckon="section" data-id="s11" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
-<p>The lead (2026-10-02), on the codex repin: "I question why these settings are even in dot files, this is a reckon decision." Today every backend's model, alias, budget group and per-million rates live in the host layer, <code>dotfiles/reckon/flight.yaml</code>, so choosing a model is a dotfiles commit and crew cannot dispatch it. Move the catalogue, meaning family, model, alias, effort, budget group and rates, into reckon's own layer, shipped or project. The host layer keeps only facts about the machine: placement, paths, commands and credentials. The picker then reads one catalogue that reckon owns and can change through a reviewed node. On 2026-10-02 the lead authorised a direct dotfiles edit as a one-off: <code>codex</code> moved to <code>gpt-6-sol</code> and <code>codex-luna</code> to <code>gpt-6-luna</code>, both live-probed as serving; <code>codex-spark</code> was retired, being refused by the account and absent from the provider list; copilot moved to <code>claude-sonnet-5-5</code>. That is dotfiles commit <code>8390913</code>.</p>
+<section data-reckon="section" data-id="s11" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">The model catalogue is reckon's own versioned data at docs/state/reckon/model-catalogue.yaml, read by every project's flight resolution (decision catalogue-home); it fills, never creates, and keeps precedence. Dotfiles 0d9eda6 removed the 32 duplicated host keys; resolved flight identical for all 14 projects. Merge 7e334b9e2. <a href="s11">full record</a></p>
+</section>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -412,7 +415,7 @@
     <div class="r-comment-body"><p>Cached the picker's pure-function-of-files inputs under a per-input, cross-process cache whose stamp covers every file the cached computation reads (the agent config included), resolving its root RECKON_PICK_CACHE then RECKON_HOME then XDG_CACHE_HOME then ~/.cache/reckon so a test never writes into the real user cache; the warm bounded pick median fell from 1673 ms to 916 ms, cold 1497 ms inside the 5 s bound, and the cached inputs are proven equal to the uncached build on a real fixture with every stamped file moved in turn.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261003T111550402864-review-of-crew-verb-census-is-derived" data-who="reckon-build" data-when="2026-10-03T11:23:44.363Z">
-    <div class="r-comment-body"><p>Independent review of r-20261003T105808412251-crew-verb-census-is-derived stored at both granted review paths: 5 dimensions scored (goal_fidelity 20, evidence 17, scope_discipline 20, durability 19, fit 18; total 94/100) over reviewed_base_sha e79c1000b and reviewed_head_sha 8a92a62f, with added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite (2 failure_ids) and after_suite (0 failure_ids) gate logs; one low-severity evidence finding (the manifest&#x27;s base read-set figure 15580 and the &quot;35-token&quot; line cost do not reconcile with SKILL.md at e79c1000b, which is 15588/27 by the gate&#x27;s own formula), the budget constant and head reading reproduce exactly and the work is correct.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261003T105808412251-crew-verb-census-is-derived stored at both granted review paths: 5 dimensions scored (goal_fidelity 20, evidence 17, scope_discipline 20, durability 19, fit 18; total 94/100) over reviewed_base_sha e79c1000b and reviewed_head_sha 8a92a62f, with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own baseline_suite (2 failure_ids) and after_suite (0 failure_ids) gate logs; one low-severity evidence finding (the manifest's base read-set figure 15580 and the "35-token" line cost do not reconcile with SKILL.md at e79c1000b, which is 15588/27 by the gate's own formula), the budget constant and head reading reproduce exactly and the work is correct.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T035044694750-review-of-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T03:59:23.147Z">
     <div class="r-comment-body"><p>Independent review of r-20261003T032115043790-model-catalogue-in-reckon stored: 92/100 (goal 16, evidence 19, scope 20, durability 18, fit 19); the catalogue layer, its two rules, the 32-shadow report and the no-value-moves proof all verified by independent re-run.</p></div>
@@ -442,10 +445,11 @@
     <div class="r-fu-body">From 2026-10-09, or once 100 routed dispatches exist if later, publish success rate, metered spend per promoted run, fallback rate and the confidence distribution against deterministic routing over the same period. This is the measure that can reverse the switch.</div>
     <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §6</pre>
     </article>
-<article class="r-fu" data-id="f-otmp-catalogue" data-status="open" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-otmp-catalogue" data-status="resolved" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-03T11:28:23+00:00" data-resolved-by="s25-picker">
     <h4 class="r-fu-title">Move the model catalogue from dotfiles into reckon</h4>
     <div class="r-fu-body">§11: family, model, alias, effort, budget group and rates move from the host layer into reckon's shipped or project layer; the host layer keeps placement, paths, commands and credentials.</div>
     <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §11</pre>
+    <p class="r-fu-outcome">Landed: catalogue at docs/state/reckon/model-catalogue.yaml (merge 7e334b9e2), host keys removed in dotfiles 0d9eda6 with identical resolution for all 14 mounted projects. Record: evidence anchor s11.</p>
     </article>
 <article class="r-fu" data-id="f-otmp-dispatch-prebuild" data-status="open" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Cache the dispatcher&#x27;s pre-pick ledger and budget reads</h4>
