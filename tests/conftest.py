@@ -154,6 +154,35 @@ def no_live_jev(request, tmp_path_factory, monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", refuse_live_jev)
 
 
+# The account-surface read. When a lane's receipt-derived position is stale the
+# lanes view re-queries the backend's account probe, and for a codex-backed
+# backend that probe is ``reckon._backends.run_probe``, which spawns
+# ``<command> app-server`` and reads ``account/rateLimits/read``. Whether that
+# answers depends on the machine's live codex login, resolved from ``CODEX_HOME``
+# (fallback ``$HOME/.codex``): a logged-in home answers in about four seconds and
+# the lane adopts the probe's own observation stamp; an unanswerable home costs
+# the probe's twenty-second wait instead. Either way a test's outcome and runtime
+# then depend on ambient account state rather than on the code under test.
+#
+# Isolation is closed here in one place bound to every test, replacing the launch
+# seam with the same "no answer" result the exchange returns when the app server
+# cannot reply, so the callers' documented no-answer path stays exercised. A test
+# whose own subject is the probe exchange passes the probe a ``runner`` of its
+# own, or patches ``reckon._backends.run_probe`` itself, which replaces this
+# guard for that test.
+_ACCOUNT_PROBE_GUARD_DISABLE_ENV = "RECKON_TEST_DISABLE_ACCOUNT_PROBE_GUARD"
+
+
+@pytest.fixture(autouse=True)
+def no_live_account_probe(monkeypatch):
+    """No test spawns a real provider account probe, whatever the codex home."""
+    if os.environ.get(_ACCOUNT_PROBE_GUARD_DISABLE_ENV) == "1":
+        return
+    from reckon import _backends
+
+    monkeypatch.setattr(_backends, "run_probe", lambda probe: None)
+
+
 # The served process's discovery walk-reuse window. ``serve.main`` assigns
 # ``reckon.serve._SIGNATURE_TTL_S`` on whichever thread runs the server and does
 # not restore it, so a test that starts the served process leaves a live
