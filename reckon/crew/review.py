@@ -65,7 +65,9 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -1388,34 +1390,55 @@ def store_review(
 
 # A review record can be met mid-write: a review worker composes its record
 # itself, so a reader can arrive while the file is still being written. Skipping
-# such a file is a reading a coordinator has to see rather than a silent
-# absence -- a truncated record would otherwise read as "this run has no
-# review" and send the coordinator to write one beside the record already
-# there. The skips are kept here so a caller that publishes a fleet-wide
-# reading can name every file it could not read; see :func:`drain_read_failures`.
-_SKIPPED_RECORDS: list[dict[str, str]] = []
+# such a file is a reading a reader has to see rather than a silent absence -- a
+# truncated record would otherwise read as "this run has no review" and send the
+# reader to write one beside the record already there.
+#
+# The skips belong to the call that made them rather than to the module. A read
+# inside an open collection region appends to that region's own list, and a read
+# with no region open names nowhere, so a worker's read of a record never
+# surfaces as a finding about a file a later sweep never touched, and a process
+# that never collects grows no list at all.
+_READ_FAILURES: ContextVar[list[dict[str, str]] | None] = ContextVar(
+    "reckon_review_read_failures", default=None
+)
 
 
-def _note_skipped_record(path: Path, error: Exception) -> None:
-    """Record one unreadable record file, once, so a publisher can name it."""
-    entry = {"path": str(path), "error": f"{type(error).__name__}: {error}"}
-    for index, existing in enumerate(_SKIPPED_RECORDS):
-        if existing["path"] == entry["path"]:
-            _SKIPPED_RECORDS[index] = entry
-            return
-    _SKIPPED_RECORDS.append(entry)
+@contextmanager
+def collect_read_failures() -> Iterator[list[dict[str, str]]]:
+    """Collect the record files a read inside this region could not read.
 
-
-def drain_read_failures() -> list[dict[str, str]]:
-    """Return and clear the unreadable record files met since the last call.
-
-    A caller that publishes a fleet-wide reading drains this after deriving, so
-    the files the derivation could not read are named in what it publishes
-    instead of vanishing from the answer.
+    A caller that publishes a fleet-wide reading derives inside this region and
+    names every file it could not read in what it publishes. The list belongs to
+    the region, so it starts empty for every caller and nothing read outside it
+    reaches a later reading.
     """
-    failures = list(_SKIPPED_RECORDS)
-    _SKIPPED_RECORDS.clear()
-    return failures
+    failures: list[dict[str, str]] = []
+    token = _READ_FAILURES.set(failures)
+    try:
+        yield failures
+    finally:
+        _READ_FAILURES.reset(token)
+
+
+def _note_skipped_record(
+    path: Path, error: Exception, *, into: list[dict[str, str]] | None = None
+) -> None:
+    """Record one unreadable record file with the reader that met it.
+
+    The entries go to the collector the reader named, or to the collection
+    region it is reading inside. A reader in neither has nobody to tell and the
+    miss is dropped rather than pooled for whoever reads next.
+    """
+    target = _READ_FAILURES.get() if into is None else into
+    if target is None:
+        return
+    entry = {"path": str(path), "error": f"{type(error).__name__}: {error}"}
+    for index, existing in enumerate(target):
+        if existing["path"] == entry["path"]:
+            target[index] = entry
+            return
+    target.append(entry)
 
 
 def stored_record(
@@ -1424,6 +1447,7 @@ def stored_record(
     *,
     base_dir: str | Path | None = None,
     reviewed_head_sha: str | None = None,
+    skipped: list[dict[str, str]] | None = None,
 ) -> tuple[Path | None, dict[str, Any] | None]:
     """Return the file a stored record was read from and the record it holds.
 
@@ -1460,8 +1484,11 @@ def stored_record(
     A record file that cannot be read or does not parse — a review worker
     composing its record by hand can be met mid-write — is skipped rather than
     raised: the reader answers from the records it could read, and every file
-    it could not is kept for :func:`drain_read_failures`, so a publisher can
-    name it instead of the run reading as one that has no review at all.
+    it could not is appended to the caller's ``skipped`` list, or to the
+    collection region a :func:`collect_read_failures` caller opened around the
+    read, so a publisher can name it instead of the run reading as one that has
+    no review at all. A read that names neither is nobody's finding and is
+    dropped.
     """
     directory = review_store_root(base_dir) / project
     candidates = [review_path(project, reviewed_run_id, base_dir)]
@@ -1477,8 +1504,8 @@ def stored_record(
             except (OSError, ValueError) as error:
                 # A record caught mid-write is skipped, not raised: the reader
                 # still answers from the records it could read, and the file it
-                # could not is kept for a publisher to name.
-                _note_skipped_record(path, error)
+                # could not is named to the caller that asked.
+                _note_skipped_record(path, error, into=skipped)
                 continue
             records.append((path, record, mtime_ns))
         if not records:
@@ -1499,13 +1526,17 @@ def stored_record(
     # one whose content names the run it reviews — the shape a hand-written
     # record takes when its worker keys the file on its own run id instead of
     # the reviewed one.
-    return _record_filed_elsewhere(directory, reviewed_run_id, reviewed_head_sha)
+    return _record_filed_elsewhere(
+        directory, reviewed_run_id, reviewed_head_sha, skipped=skipped
+    )
 
 
 def _record_filed_elsewhere(
     directory: Path,
     reviewed_run_id: str,
     reviewed_head_sha: str | None,
+    *,
+    skipped: list[dict[str, str]] | None = None,
 ) -> tuple[Path | None, dict[str, Any] | None]:
     """Return the run's review sitting at another record's path, flagged.
 
@@ -1538,7 +1569,7 @@ def _record_filed_elsewhere(
         try:
             record = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as error:
-            _note_skipped_record(path, error)
+            _note_skipped_record(path, error, into=skipped)
             continue
         if not isinstance(record, Mapping):
             continue

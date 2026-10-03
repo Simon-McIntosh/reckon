@@ -97,6 +97,13 @@ _OLDEST_AGE_SINCE = "oldest_age_since"
 _FINDINGS = "findings"
 _SNAPSHOT_KEYS = ("computed_at", "stream_offset", "producer", _FINDINGS)
 
+# A finding is rendered into the duty list under its own kind, so the checklist
+# a reader formats names every path the sweep could not read beside the duties
+# it did derive. The kind is a reading rather than a duty of the derivation:
+# the sweep records it, and the reader reconstructs the row from the stored
+# findings rather than trusting an echo.
+_UNREADABLE_RECORD_KIND = "unreadable-review-record"
+
 
 def _config_home() -> Path:
     """Resolve the config home the way the rest of the tool resolves it.
@@ -213,17 +220,18 @@ def _iso(instant: datetime) -> str:
 
 
 def _parse_instant(value: Any) -> datetime | None:
-    """Read one stored instant, treating a missing zone as UTC."""
-    if isinstance(value, bool) or value in (None, ""):
-        return None
-    text = str(value).strip()
-    if text.endswith(("Z", "z")):
-        text = f"{text[:-1]}+00:00"
-    try:
-        stamp = datetime.fromisoformat(text)
-    except ValueError:
-        return None
-    return stamp if stamp.tzinfo is not None else stamp.replace(tzinfo=UTC)
+    """Read one stored instant through the repository's shared UTC parser.
+
+    The shared parser keeps this module's own policy: a value carrying no zone
+    is read as UTC, which is what every stamp written here states and the only
+    reading that does not depend on the machine that happens to run the code.
+    It is imported where it is used rather than at module level because the
+    prompt hook loads this file by path, so the package it lives in is not
+    guaranteed to be importable while this module's body runs.
+    """
+    from reckon._timestamps import parse_utc
+
+    return parse_utc(value)
 
 
 # ── Reader ──────────────────────────────────────────────────────────────────
@@ -474,13 +482,65 @@ def _row_with_age(row: Any, instant: datetime) -> Any:
     return measured
 
 
+def _unreadable_record_items(findings: Any) -> list[dict[str, Any]]:
+    """One duty-shaped row per finding, naming the path it could not read.
+
+    The row is built in the shape every duty carries, because the checklist
+    renders one line per duty: the path is the row's identity, the file's own
+    name is its node, and the remedy tells the reader what to do with a file
+    caught mid-write. A finding naming no path is not renderable and is left
+    out rather than shown as an empty row.
+    """
+    rows: list[dict[str, Any]] = []
+    if not isinstance(findings, list):
+        return rows
+    for finding in findings:
+        if not isinstance(finding, Mapping):
+            continue
+        path = str(finding.get("path") or "")
+        if not path:
+            continue
+        rows.append(
+            {
+                "kind": _UNREADABLE_RECORD_KIND,
+                "run_id": path,
+                "node": Path(path).name,
+                "age_seconds": 0,
+                "next_command": (
+                    "read it again once its writer finishes, or remove the "
+                    "unfinished file"
+                ),
+            }
+        )
+    return rows
+
+
+def _with_unreadable_records(rows: Any, findings: Any) -> list[dict[str, Any]]:
+    """The duty rows with one row per stored finding, and none echoed twice.
+
+    The stored findings are the record of what could not be read, so the rows
+    are rebuilt from them and any row of the same kind already in the list is
+    dropped: a snapshot written before this rendering, whose list carries no
+    such row, and one written after it both read back the same.
+    """
+    kept = [
+        row
+        for row in (rows if isinstance(rows, list) else [])
+        if not (isinstance(row, Mapping) and row.get("kind") == _UNREADABLE_RECORD_KIND)
+    ]
+    kept.extend(_unreadable_record_items(findings))
+    return kept
+
+
 def live_payload(document: Mapping[str, Any], *, now: datetime | None = None) -> dict:
     """The stored snapshot as the derived payload, ages recomputed at read time.
 
     This is the shape :func:`reckon.crew.obligations.obligations` returns, so a
-    reader hands a fresh snapshot to the formatting it already has. Ages are
-    recomputed against the read instant, which is what keeps a snapshot from
-    showing a frozen age however long it has been on disk.
+    reader hands a fresh snapshot to the formatting it already has, and it
+    carries one row per input the sweep could not read so that formatting names
+    each skipped path. Ages are recomputed against the read instant, which is
+    what keeps a snapshot from showing a frozen age however long it has been on
+    disk.
     """
     instant = _utc_now() if now is None else now
     payload = {
@@ -497,6 +557,9 @@ def live_payload(document: Mapping[str, Any], *, now: datetime | None = None) ->
         if since is not None:
             summary[_OLDEST_AGE_SECONDS] = _age_in_seconds(since, instant)
         payload["summary"] = summary
+    payload["obligations"] = _with_unreadable_records(
+        payload.get("obligations"), document.get(_FINDINGS)
+    )
     return payload
 
 
@@ -663,26 +726,29 @@ def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
         if session and run_id and module._current_review_in_flight(pointer):
             reviews_in_flight.setdefault(session, set()).add(run_id)
     floors = module.review_module.declared_dimension_floors(config)
-    state = FleetState(
-        project=project,
-        now=instant,
-        config=config,
-        grace=grace,
-        floors=floors,
-        rows=module._classified_rows(project),
-        pointers=pointers,
-        acknowledged=module._acknowledgements_in_force(project, now=instant),
-        reviews_in_flight=reviews_in_flight,
-        sub_floor=module._sub_floor_items_by_session(project, floors, now=instant),
-        held_worktrees=module._held_worktrees_by_session(project, now=instant),
-        unreconciled=module.runs.drain_unreconciled_by_session(project),
-        findings=[],
-    )
-    # Every review read this sweep makes has happened by now -- the classified
-    # rows, the sub-floor lookup and the held-worktree scan all reach the
-    # review store -- so what could not be read is drained here, once, and
-    # travels with the state every session's slice is built from.
-    state.findings = module.review_module.drain_read_failures()
+    # Every review read this sweep makes happens inside the region -- the
+    # classified rows, the sub-floor lookup and the held-worktree scan all
+    # reach the review store -- so what could not be read is collected here,
+    # once, and travels with the state every session's slice is built from. A
+    # read outside the region has nobody to name its skips to, so another
+    # reader in this process never reaches this sweep's findings.
+    with module.review_module.collect_read_failures() as skipped_records:
+        state = FleetState(
+            project=project,
+            now=instant,
+            config=config,
+            grace=grace,
+            floors=floors,
+            rows=module._classified_rows(project),
+            pointers=pointers,
+            acknowledged=module._acknowledgements_in_force(project, now=instant),
+            reviews_in_flight=reviews_in_flight,
+            sub_floor=module._sub_floor_items_by_session(project, floors, now=instant),
+            held_worktrees=module._held_worktrees_by_session(project, now=instant),
+            unreconciled=module.runs.drain_unreconciled_by_session(project),
+            findings=[],
+        )
+    state.findings = list(skipped_records)
     return state
 
 
@@ -706,7 +772,10 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
 
     The shape and the ordering are :func:`reckon.crew.obligations.obligations`'s
     own, composed from the same helpers the derivation uses, so a slice and a
-    derivation over the same files are equal field for field.
+    derivation over the same files are equal field for field. The state's
+    findings are the one addition: each names a record the sweep could not
+    read, and travels in the duty list so the reader that formats it names the
+    path rather than leaving the reader to open the snapshot store.
     """
     module = _derivation_module()
     in_flight = state.reviews_in_flight.get(session, set())
@@ -734,6 +803,7 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             items.append(module._live_item(row, kind=kind, now=state.now))
     items.extend(state.sub_floor.get(session, []))
     items.extend(state.held_worktrees.get(session, []))
+    items.extend(_unreadable_record_items(state.findings))
     items, acknowledged = module._partition_acknowledged(items, state.acknowledged)
     items.sort(
         key=lambda item: (
