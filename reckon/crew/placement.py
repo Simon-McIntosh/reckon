@@ -396,7 +396,8 @@ def _adopted_result(record: Mapping[str, Any]) -> dict[str, Any]:
             f"adopted the live supervisor-running allocation "
             f"{record.get('job_id')} on {record.get('partition')} with "
             f"{size.get('cores')} cores and {size.get('memory_gb')} GB; "
-            "submitted nothing"
+            "submitted nothing; "
+            f"{record['roster_reach']['statement']}"
         ),
         "reason": "adopted",
     }
@@ -532,6 +533,7 @@ def _adopt_live_fleet_allocation(
         "memory": str(shape.get("memory") or ""),
         "roster_limit": RESERVATION_ROSTER_LIMIT,
         "roster_basis": RESERVATION_ROSTER_BASIS,
+        "roster_reach": _roster_reach(),
         "held_for_project": project,
         "held_by_session": session,
         "held_at": time.time() if now is None else now,
@@ -592,6 +594,7 @@ def _ensure_reservation_locked(
             f"{RESERVATION_SCHEDULER} answered no job identifier "
             f"(exit {completed.returncode})"
         )
+    reach = _roster_reach()
     record = {
         "job_id": job_id,
         "scheduler": RESERVATION_SCHEDULER,
@@ -603,6 +606,7 @@ def _ensure_reservation_locked(
         "partition": partition,
         "roster_limit": RESERVATION_ROSTER_LIMIT,
         "roster_basis": RESERVATION_ROSTER_BASIS,
+        "roster_reach": reach,
         # The project that held it is named here and carried nowhere else: the
         # record's path is unkeyed, because one shared allocation has one record
         # every project reads.
@@ -619,7 +623,7 @@ def _ensure_reservation_locked(
         "record": record,
         "detail": (
             f"held reservation {job_id} on {partition} with {cores} cores and "
-            f"{memory_gb} GB; roster cap {RESERVATION_ROSTER_LIMIT}"
+            f"{memory_gb} GB; {reach['statement']}"
         ),
         "reason": "held",
     }
@@ -735,6 +739,35 @@ def occupying_the_reservation(
         if pointer.get("placement")
         and _placed_worker_can_hold_memory(pointer, probe, moment)
     ]
+
+
+def _roster_reach() -> dict[str, Any]:
+    """The roster cap's reach, and the projects it counts against it right now.
+
+    One unkeyed record holds the host's allocation and the cap is summed over
+    every project's placed runs, so a project that arms a reservation throttles
+    the whole host's fleet. That reach is invisible in the arming project's own
+    flight configuration, so the hold reads the live pointers and states it: the
+    projects whose placed runs the cap counts at this moment, resolved through
+    the same population and the same liveness reading the dispatch guard counts
+    with. The projects are named rather than merely counted, because a reader at
+    the point of the decision needs to see whose work the cap reaches, not just
+    how far it extends.
+    """
+    from reckon.crew import runs as runs_module
+
+    counted = occupying_the_reservation(runs_module.list_live())
+    projects = sorted({str(pointer.get("project") or "unknown") for pointer in counted})
+    named = ", ".join(projects) if projects else "none"
+    return {
+        "scope": "host",
+        "projects": projects,
+        "statement": (
+            f"the roster cap {RESERVATION_ROSTER_LIMIT} counts every project's "
+            "placed live runs on this host, not only the holding project's; "
+            f"placed live runs counted now from: {named}"
+        ),
+    }
 
 
 def reservation_roster_refusal(
