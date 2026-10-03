@@ -176,14 +176,11 @@ def _acknowledgements_in_force(
     """Return each run's recorded deferral that has not yet expired.
 
     A deferral is read from whichever store the run can own one in: the live
-    pointer of a run still in flight, and the ledger record of a promoted run
-    whose remainder is still owed. The promoted record is the only store left
-    once the pointer is gone, and it names the same deferral — so a deliberate
-    remainder of a promoted run is withheld exactly as a live run's is. The
-    promoted half is read from the aggregate copy of the ledger the records
-    are written through, which the ledger's writer keeps identical to each
-    per-run file; every recorded run therefore costs its row and not a scan of
-    the run store.
+    pointer of a run still in flight, and the run's own file under the crew
+    home once it has been promoted and no pointer is left. The promoted file is
+    transient state, so reading it costs the acknowledgement and nothing of any
+    project's committed history — a deliberate remainder of a promoted run is
+    withheld exactly as a live run's is, and expires the same way.
 
     A deferral whose ``until`` has passed is not returned, so the run it named
     re-enters the list on the next read rather than lingering in the
@@ -200,19 +197,17 @@ def _acknowledgements_in_force(
         until = parse_utc(record.get("until"))
         if until is not None and until > now:
             in_force[run_id] = record
-    docs_dir = _store._docs_dir_for_project(project)
-    if docs_dir is None:
-        return in_force
-    for row in _aggregate_rows(project, docs_dir.parent.resolve()):
-        if not isinstance(row, Mapping):
-            continue
-        run_id = str(row.get("run_id") or "")
-        record = runs.run_acknowledgement(row)
-        if not run_id or not record or run_id in in_force:
+    for record in runs.recorded_promoted_acknowledgements(project):
+        run_id = str(record.get("run_id") or "")
+        if not run_id or run_id in in_force:
             continue
         until = parse_utc(record.get("until"))
         if until is not None and until > now:
-            in_force[run_id] = record
+            in_force[run_id] = {
+                "reason": record.get("reason"),
+                "until": record.get("until"),
+                "recorded_at": record.get("recorded_at"),
+            }
     return in_force
 
 

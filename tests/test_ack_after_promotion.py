@@ -143,11 +143,13 @@ def test_a_promoted_remainder_is_acknowledged_and_leaves_the_stop_path(
     assert deferred["reason"] == reason
     assert deferred["until"] == _until_instant(hours=1)
 
-    # The deferral is durable in the promoted run's own store, and the ledger
-    # still reads as one history rather than two disagreeing copies.
-    stored = ledger.load(PROJECT, root=fleet)[0]
-    row = next(record for record in stored["runs"] if record.get("run_id") == RUN_ID)
-    assert row["acknowledgement"]["reason"] == reason
+    # The deferral is durable in the run's own file under the crew home, which
+    # names the project whose run store was checked for the run.
+    payload = json.loads(runs.acknowledgement_path(RUN_ID).read_text(encoding="utf-8"))
+    assert payload["run_id"] == RUN_ID
+    assert payload["project"] == PROJECT
+    assert payload["reason"] == reason
+    assert payload["until"] == _until_instant(hours=1)
 
 
 def test_the_duty_returns_once_the_acknowledgement_expires(
@@ -178,7 +180,36 @@ def test_an_acknowledgement_with_no_reason_is_refused(fleet: Path) -> None:
     with pytest.raises(runs.CrewError, match="reason"):
         runs.record_run_acknowledgement(RUN_ID, "   ", _until_instant(hours=1))
 
-    data = ledger.load(PROJECT, root=fleet)[0]
-    assert data["runs"], "the ledger is shown to carry the run it did not amend"
-    row = next(item for item in data["runs"] if item.get("run_id") == RUN_ID)
-    assert "acknowledgement" not in row
+    assert runs.acknowledgement_path(RUN_ID).exists() is False
+
+
+def _state_bytes(root: Path) -> dict[str, bytes]:
+    """Every file under the project's state directory, by relative path."""
+    state = root / "docs" / "state" / PROJECT
+    return {
+        str(path.relative_to(root)): path.read_bytes()
+        for path in sorted(state.rglob("*"))
+        if path.is_file()
+    }
+
+
+def test_acknowledging_a_promoted_run_leaves_the_repository_untouched(
+    fleet: Path,
+) -> None:
+    """The deferral lives outside the project, so no committed state moves."""
+    tree = _worktree(fleet, NODE)
+    _promote(fleet, tree)
+    # The promoted record is committed history at this point, as a promoted
+    # run's record is in a real checkout, and the acknowledgement must leave
+    # it exactly as it stands.
+    _git(fleet, "add", "docs/state")
+    _git(fleet, "commit", "-q", "-m", "test: record the promoted run")
+    assert _git(fleet, "status", "--porcelain") == ""
+
+    before = _state_bytes(fleet)
+    assert before, "the state directory is shown to hold the record it protects"
+
+    runs.record_run_acknowledgement(RUN_ID, "held on purpose", _until_instant(hours=1))
+
+    assert _git(fleet, "status", "--porcelain") == ""
+    assert _state_bytes(fleet) == before

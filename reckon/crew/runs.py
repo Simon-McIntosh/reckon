@@ -1022,10 +1022,11 @@ def record_run_acknowledgement(
     own: the obligations reader withholds a run whose deferral has not yet
     passed and returns it once it has, with no second store to reconcile. A run
     already promoted has no pointer left, and the remainder it still holds is
-    a deliberate one all the same, so the deferral is written to the run's
-    ledger record — the promoted run's own store, which is where the
-    obligations reader looks for it. ``until`` is normalised to UTC on write so
-    a later comparison never has to know which zone it arrived in.
+    a deliberate one all the same, so the deferral is written to a file of its
+    own under the crew home — transient state that belongs to the run, not to
+    the project's committed history, which an acknowledgement must never
+    rewrite. ``until`` is normalised to UTC on write so a later comparison
+    never has to know which zone it arrived in.
     """
     text = str(reason).strip()
     if not text:
@@ -1039,7 +1040,7 @@ def record_run_acknowledgement(
         "recorded_at": _utc_now(),
     }
     if not pointer_path(run_id).exists():
-        return _record_acknowledgement_on_ledger(run_id, deferral, project=project)
+        return _record_promoted_acknowledgement(run_id, deferral, project=project)
 
     def record(pointer: dict[str, Any]) -> dict[str, Any]:
         pointer_project = str(pointer.get("project") or "")
@@ -1060,10 +1061,48 @@ def record_run_acknowledgement(
     return _mutate_pointer(run_id, record)
 
 
-def _mounted_ledger_roots(project: str | None) -> dict[str, Path]:
+def acknowledgements_dir() -> Path:
+    """Directory of deferrals recorded for runs whose live pointer is gone."""
+    return crew_home() / "acknowledgements"
+
+
+def acknowledgement_path(run_id: str) -> Path:
+    """Path of one promoted run's recorded deferral."""
+    return acknowledgements_dir() / f"{run_id}.json"
+
+
+def recorded_promoted_acknowledgements(
+    project: str | None = None,
+) -> list[dict[str, Any]]:
+    """Every deferral recorded for a promoted run, in run-id order.
+
+    One small file per acknowledged run, so reading the directory costs what
+    the acknowledgements cost and nothing of any ledger. A file that cannot be
+    parsed is skipped rather than guessed at, on the same principle as an
+    unreadable ``until``: absence of a readable record is not proof of one.
+    """
+    records: list[dict[str, Any]] = []
+    try:
+        paths = sorted(acknowledgements_dir().glob("*.json"))
+    except OSError:
+        return records
+    for path in paths:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        if project is not None and str(payload.get("project") or "") != project:
+            continue
+        records.append(payload)
+    return records
+
+
+def _mounted_project_roots(project: str | None) -> dict[str, Path]:
     """Each mounted project's checkout root, keyed by project name.
 
-    A promoted run's ledger lives beside the project it was promoted for, and
+    A promoted run's record lives beside the project it was promoted for, and
     the mount registry is what resolves a project name to a checkout from
     outside it. The optional ``project`` narrows the search to one registry
     entry; an unknown name resolves to no root rather than a guess.
@@ -1080,50 +1119,57 @@ def _mounted_ledger_roots(project: str | None) -> dict[str, Path]:
     return {name: docs.parent.resolve() for name, docs in mounted.items()}
 
 
-def _record_acknowledgement_on_ledger(
-    run_id: str, deferral: Mapping[str, Any], *, project: str | None
-) -> dict[str, Any]:
-    """Record a promoted run's deferral on its own ledger record.
+def _promoted_record_project(run_id: str, project: str | None) -> str | None:
+    """Name the project whose run store holds a promoted run's record.
 
-    The record is read and written through the ledger's own reader and writer,
-    so a record that lives only in a per-run file and one the aggregate also
-    carries are both amended in one step, with the two copies kept identical —
-    a disagreement between them is what the ledger refuses to read at all.
+    The record is read from the run's own file beside the project's ledger,
+    which is where promotion writes it, rather than from the aggregate the
+    ledger's split moves runs out of: naming one run must not load the whole
+    history, and a presence check on the file is the same evidence the reader
+    itself would find.
     """
     from reckon import ledger
 
-    roots = _mounted_ledger_roots(project)
-    for name, root in sorted(roots.items()):
+    for name, root in sorted(_mounted_project_roots(project).items()):
         try:
-            data, version = ledger.load(name, root=root)
+            path = ledger.run_path(name, run_id, root)
         except ledger.LedgerError:
             continue
-        rows: list[Any] = []
-        found = False
-        for row in data.get("runs") or []:
-            candidate = dict(row) if isinstance(row, Mapping) else row
-            if (
-                isinstance(candidate, dict)
-                and str(candidate.get("run_id") or "") == run_id
-            ):
-                candidate[ACKNOWLEDGEMENT_FIELD] = dict(deferral)
-                found = True
-            rows.append(candidate)
-        if not found:
+        if not path.is_file():
             continue
-        data["runs"] = rows
         try:
-            ledger.write(name, data, version, root=root)
-        except (ledger.LedgerError, OSError) as exc:
-            raise CrewError(
-                f"could not record the acknowledgement for {run_id!r} on "
-                f"{name}'s ledger: {exc}"
-            ) from exc
-        return {"run_id": run_id, ACKNOWLEDGEMENT_FIELD: dict(deferral)}
-    looked = ", ".join(sorted(roots)) or "no mounted project"
-    raise CrewError(
-        f"no live run {run_id!r} and no ledger record for it (looked in: {looked})"
-    )
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(record, dict) and str(record.get("run_id") or "") == run_id:
+            return name
+    return None
+
+
+def _record_promoted_acknowledgement(
+    run_id: str, deferral: Mapping[str, Any], *, project: str | None
+) -> dict[str, Any]:
+    """Record a promoted run's deferral in its own file under the crew home.
+
+    The project's committed state is not the place for it: an acknowledgement
+    is transient, expires on its own, and amending a promoted run's record
+    would rewrite tracked history for a deferral the next reader may simply
+    discard. Undeferring is likewise the file's own expiry, so nothing has to
+    be written back when it passes.
+    """
+    name = _promoted_record_project(run_id, project)
+    if name is None:
+        looked = (
+            ", ".join(sorted(_mounted_project_roots(project))) or "no mounted project"
+        )
+        raise CrewError(
+            f"no live run {run_id!r} and no ledger record for it (looked in: {looked})"
+        )
+    payload = {"run_id": run_id, "project": name, **dict(deferral)}
+    path = acknowledgement_path(run_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _write_json(path, payload)
+    return {"run_id": run_id, ACKNOWLEDGEMENT_FIELD: dict(deferral)}
 
 
 def run_acknowledgement(pointer: Mapping[str, Any]) -> dict[str, Any] | None:
