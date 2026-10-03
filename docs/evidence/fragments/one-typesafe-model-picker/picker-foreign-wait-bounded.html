@@ -1,0 +1,99 @@
+<article class="r-evidence" data-plan="one-typesafe-model-picker" data-node="picker-foreign-wait-bounded">
+  <h3>picker-foreign-wait-bounded — a pick reads each foreign project's ledger once</h3>
+
+  <p><strong>What changed.</strong> The expected-wait figure counts every live
+  local worker, so it profiles each distinct foreign project that has one.
+  Profiling a project decodes its whole ledger: the pick's own records are
+  reused, but each foreign owner called
+  <code>run_time_profile</code> on every pick, so a pick's cost grew with the
+  number of projects live on the local lane. The profile is a function of the
+  ledger's contents and the trailing window alone, so a reading whose ledger has
+  not moved is the same answer. <code>lane_context._cached_run_time_profile</code>
+  now memoizes each project's profile, keyed on a freshness stamp of its ledger,
+  and re-reads only when that stamp moves. The figure itself is unchanged: every
+  live local worker, foreign or not, still contributes its shape's median.</p>
+
+  <p><strong>The key, chosen by measurement.</strong> Decoding one project's
+  whole ledger on this GPFS costs 123&#8239;ms (imas-ambix, 223 run files),
+  242&#8239;ms (nova, 223 files) and 2948&#8239;ms (reckon, 1589 files). The
+  alternatives the plan names measure as follows: a
+  <code>stat</code> of the ledger directory's modification time is 0.02&#8239;ms;
+  a glob-and-stat of the newest run file is 3.8&#8239;ms for the small ledgers
+  and 28&#8239;ms for reckon's 1589 files. The chosen key is two
+  <code>stat</code> calls &mdash; the aggregate ledger file's modification time
+  and size beside the runs directory's modification time &mdash; which is about
+  0.04&#8239;ms, four orders of magnitude below the read it guards. It still
+  covers every way the ledger moves from outside: a promoted run adds a file
+  (directory mtime) and any edit to an existing row rewrites the aggregate
+  (file mtime). The window's end date is folded into the key too, so a project
+  whose ledger stays still is re-read at least daily and a reused window cannot
+  grow arbitrarily stale. Deriving the foreign contribution from the lane
+  document was rejected: that document carries counts and throughput, not the
+  per-shape wall-time medians this figure is built from.</p>
+
+  <p><strong>Per-phase measurement, live lane.</strong> At measurement time the
+  local lane held live local workers for <code>nova</code> (1) and
+  <code>reckon</code> (3). For a pick whose project is <code>imas-codex</code>,
+  the foreign set the figure profiles is <code>{nova, reckon}</code>. Cold is
+  the first pick; warm is a second pick with no ledger moved between them
+  (log: <code>measure-pick.log</code>):</p>
+
+  <table>
+    <thead><tr><th>phase</th><th>cold</th><th>warm (reused)</th></tr></thead>
+    <tbody>
+      <tr><td>profile nova's ledger</td><td>411.9&#8239;ms</td><td>0&#8239;ms</td></tr>
+      <tr><td>profile reckon's ledger</td><td>3404.3&#8239;ms</td><td>0&#8239;ms</td></tr>
+      <tr><td>expected-wait phase total</td><td><strong>3825.8&#8239;ms</strong></td><td><strong>8.5&#8239;ms</strong></td></tr>
+      <tr><td><code>expected_wait_s</code></td><td>3325.0&#8239;s</td><td>3325.0&#8239;s</td></tr>
+    </tbody>
+  </table>
+
+  <p>The identical <code>expected_wait_s</code> on both passes is the point:
+  the reuse changes cost, not the answer, and the figure still reflects the
+  whole live local load.</p>
+
+  <p><strong>A real dispatch-path pick.</strong> Two consecutive
+  <code>pick(&hellip;, cached_only=True)</code> calls as the dispatcher asks them,
+  project <code>reckon</code> (its foreign set is <code>{nova}</code>; log:
+  <code>measure-pick-e2e.log</code>): the first read nova's ledger once
+  (385.7&#8239;ms) and routed to <code>clive</code>; the second read no foreign
+  ledger at all and routed identically. The pick total was about 9.8&#8239;s and
+  9.7&#8239;s, dominated by non-foreign phases (candidate context measurement and
+  Jev, itself 302&ndash;554&#8239;ms) that this node does not touch; with a single
+  foreign project the read it removes is under half a second. The phase
+  measurement above is where the bound shows, because it holds the two large
+  foreign ledgers in the set. That the whole pick still runs near ten seconds in
+  this worktree is recorded under follow-ons rather than repaired here.</p>
+
+  <figure>
+    <img src="/reckon/figures/one-typesafe-model-picker/picker-foreign-wait-bounded/foreign-read-cold-warm.png"
+         alt="Foreign-ledger read cost on a pick, cold versus warm, with the two foreign projects stacked">
+    <figcaption>Expected-wait phase cost for one pick with live foreign projects
+    <code>nova</code> and <code>reckon</code>, split by project, cold (first
+    pick) against warm (a second pick with no ledger moved). The dispatch bound
+    is 5&#8239;s.</figcaption>
+  </figure>
+
+  <p><strong>The test.</strong>
+  <code>tests/test_picker_foreign_wait_is_bounded.py</code> puts four foreign
+  projects' live local workers on the lane, monkeypatches
+  <code>run_time_profile</code> to record every project it is asked for, and
+  calls the expected-wait figure twice with no ledger moved. It asserts each
+  project was read exactly once, so a reverted reuse doubles every count and
+  fails. A second case moves the ledger stamp between picks and asserts both
+  projects are read again, so the reuse cannot pass by ignoring a changed
+  ledger.</p>
+
+  <p><strong>Negative control.</strong> Removing the reuse (bypassing the
+  memoized-profile branch) makes the two-pick test fail: 1 failed / 1 passed,
+  exit 1, the failing id being exactly
+  <code>test_two_picks_read_each_foreign_ledger_once</code>
+  (<code>negative-control.log</code>).</p>
+
+  <p><strong>Gate.</strong> Base arm (scratch tree at the base revision) and
+  head arm run the picker test files plus <code>test_run_time_profile.py</code>
+  with the ledger present, judged by delta rather than an absolute count:
+  base 119 passed (exit 0), head 121 passed (exit 0) &mdash; the two added
+  passing cases are this node's new test file, and there are no added failure
+  ids. Logs: <code>gate-base.log</code>, <code>gate-head.log</code>.</p>
+</article>
