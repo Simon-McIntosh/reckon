@@ -164,7 +164,7 @@ RECOVERY_VERBS = {
     "unwritten": "resume",
     "ready": "resume",
     "abandoned": "recover",
-    "lane-event": "resume",
+    "lane-event": "inspect",
     "refused-at-admission": "resume",
     "launch-failed": "resume",
     "ended-without-manifest": "resume",
@@ -7107,20 +7107,43 @@ def _terminal_lane_signal(
     raw = result.get("result") or result.get("error") or result.get("message")
     if isinstance(raw, Mapping):
         raw = raw.get("message") or raw.get("detail")
-    reason = " ".join(str(raw or "").split())[:240]
-    lowered = reason.casefold()
+    terminal_text = " ".join(str(raw or "").split())
+    reason = terminal_text[:240]
+    lowered = terminal_text.casefold()
+    kind = ""
     if (
         "issue with the selected model" in lowered
         or "unknown model" in lowered
+        or "unserved model" in lowered
         or "model not found" in lowered
         or "model does not exist" in lowered
+        or "model unavailable" in lowered
     ):
-        return {"kind": "backend-catalog-change", "reason": reason}, stamp
-    if "rate limit" in lowered or "rate-limit" in lowered:
-        return {"kind": "rate-limit", "reason": reason}, stamp
-    if "connection refused" in lowered or "transport" in lowered:
-        return {"kind": "transport-outage", "reason": reason}, stamp
-    return None, stamp
+        kind = "backend-catalog-change"
+    elif "rate limit" in lowered or "rate-limit" in lowered:
+        kind = "rate-limit"
+    elif "connection refused" in lowered or "transport" in lowered:
+        kind = "transport-outage"
+    if not kind:
+        return None, stamp
+    agent = record.get("agent")
+    model = (
+        str(agent.get("model") or "").strip() if isinstance(agent, Mapping) else ""
+    ) or str(record.get("model") or "").strip()
+    # A generic catalog error cannot identify which model was unserved without
+    # the configured model. Keep its per-run cause, but do not correlate it.
+    identity = f"{kind}\0{model if kind == 'backend-catalog-change' else ''}\0{lowered}"
+    signature = (
+        hashlib.sha256(identity.encode("utf-8")).hexdigest()
+        if kind != "backend-catalog-change" or model
+        else ""
+    )
+    return {
+        "kind": kind,
+        "reason": reason,
+        "model": model if kind == "backend-catalog-change" else "",
+        "signature": signature,
+    }, stamp
 
 
 def group_terminal_lane_events(
@@ -7128,8 +7151,8 @@ def group_terminal_lane_events(
     *,
     window_seconds: int = LANE_EVENT_WINDOW_SECONDS,
 ) -> list[dict[str, Any]]:
-    """Replace each close same-backend terminal cluster with one fleet row."""
-    grouped: dict[str, list[tuple[float, int]]] = {}
+    """Replace terminals sharing a recorded cause and end window with one row."""
+    grouped: dict[tuple[str, str], list[tuple[float, int]]] = {}
     for index, row in enumerate(rows):
         terminal_failure = row.get("classification") in {
             "abandoned",
@@ -7143,14 +7166,18 @@ def group_terminal_lane_events(
         if row.get("process_alive") is not False or not terminal_failure:
             continue
         backend = str(row.get("backend") or "").strip()
+        cause = row.get("lane_cause")
+        signature = (
+            str(cause.get("signature") or "") if isinstance(cause, Mapping) else ""
+        )
         ended = parse_utc(str(row.get("lane_ended_at") or ""))
-        if not backend or ended is None:
+        if not backend or not signature or ended is None:
             continue
-        grouped.setdefault(backend, []).append((ended.timestamp(), index))
+        grouped.setdefault((backend, signature), []).append((ended.timestamp(), index))
 
     events: dict[int, dict[str, Any]] = {}
     suppressed: set[int] = set()
-    for backend, endings in grouped.items():
+    for (backend, _signature), endings in grouped.items():
         endings.sort()
         clusters: list[list[tuple[float, int]]] = []
         for ending in endings:
@@ -7162,39 +7189,76 @@ def group_terminal_lane_events(
             if len(cluster) < 2:
                 continue
             members = [rows[index] for _stamp, index in cluster]
-            cause = next(
-                (row.get("lane_cause") for row in members if row.get("lane_cause")),
-                None,
-            )
+            cause = members[0]["lane_cause"]
             run_ids = [str(row.get("run_id") or "") for row in members]
-            reason = (
-                str(cause.get("reason") or "") if isinstance(cause, Mapping) else ""
-            )
+            member_actions = []
+            for member in members:
+                remedy = member.get("resume_remedy")
+                session = member.get("session_resolution")
+                worktree = str(member.get("worktree") or "")
+                resumable = bool(
+                    isinstance(remedy, Mapping)
+                    and remedy.get("session_id")
+                    and isinstance(session, Mapping)
+                    and session.get("resolved")
+                    and worktree
+                    and Path(worktree).is_dir()
+                )
+                recovery = (
+                    "resume" if resumable else str(member.get("recovery") or "inspect")
+                )
+                next_action = str(member.get("next_action") or "")
+                if not resumable and recovery == "resume":
+                    recovery = "inspect"
+                    next_action = f"inspect run {member.get('run_id')}; no usable resume session was resolved"
+                member_actions.append(
+                    {
+                        "run_id": member.get("run_id"),
+                        "classification": member.get("classification"),
+                        "recovery": recovery,
+                        "next_action": (
+                            str(remedy["command"]) if resumable else next_action
+                        ),
+                        "resumable": resumable,
+                        "session_id": str(remedy["session_id"]) if resumable else None,
+                        "worktree": worktree or None,
+                    }
+                )
+            recoveries = {member["recovery"] for member in member_actions}
             event = {
                 "backend": backend,
                 "run_ids": run_ids,
-                "cause": str(cause.get("kind"))
-                if isinstance(cause, Mapping)
-                else "undetermined",
-                "reason": reason
-                or "multiple terminal runs ended together on one backend",
+                "cause": str(cause.get("kind") or ""),
+                "reason": str(cause.get("reason") or ""),
+                "model": str(cause.get("model") or "") or None,
+                "members": member_actions,
                 "started_at": members[0].get("lane_ended_at"),
                 "ended_at": members[-1].get("lane_ended_at"),
                 "window_seconds": window_seconds,
             }
             leader = cluster[0][1]
             report = dict(rows[leader])
+            report.pop("resume_remedy", None)
+            report.pop("session_resolution", None)
             report.update(
                 classification="lane-event",
                 recovery_classification="lane-event",
-                recovery="resume",
+                recovery=next(iter(recoveries)) if len(recoveries) == 1 else "inspect",
                 lane_event=event,
                 detail=f"backend {backend!r} ended {len(run_ids)} runs together: {event['reason']}",
                 next_action=(
-                    f"preserve the sessions and worktrees for {', '.join(run_ids)}; "
-                    f"resume recoverable runs when backend {backend!r} returns"
+                    f"read each member's recovery and next_action in lane_event.members "
+                    f"when backend {backend!r} returns"
                 ),
             )
+            if isinstance(report.get("fleet_verdict"), Mapping):
+                report["fleet_verdict"] = {
+                    **report["fleet_verdict"],
+                    "state": "lane-event",
+                    "recovery_classification": "lane-event",
+                    "recovery": report["recovery"],
+                    "detail": report["detail"],
+                }
             events[leader] = report
             suppressed.update(index for _stamp, index in cluster[1:])
     return [

@@ -19,6 +19,8 @@ def _terminal(
     *,
     result_text: str = "there is an issue with the selected model — it may not exist or you may not have access to it",
     is_error: bool = True,
+    model: str = "fixture-model",
+    with_session: bool = True,
 ) -> None:
     run_dir = home / "crew" / "runs" / run_id
     run_dir.mkdir(parents=True)
@@ -63,7 +65,8 @@ def _terminal(
         "launcher_host": "another-login-node",
         "launch": "cli",
         "backend": backend,
-        "session_id": f"session-{run_id}",
+        "session_id": f"session-{run_id}" if with_session else None,
+        "agent": {"model": model},
         "log_path": str(stream),
         "manifest_path": str(run_dir / "manifest.md"),
         "worktree": str(worktree),
@@ -154,3 +157,89 @@ def test_terminal_result_names_distinct_lane_causes(
     row = query.project_live_rows(list_live(project="fixture-project"))[0]
     assert row["lane_cause"]["kind"] == expected_cause
     assert row["lane_cause"]["reason"] == terminal_text
+
+
+@pytest.mark.parametrize(
+    ("first_reason", "second_reason", "first_model", "second_model"),
+    [
+        (
+            "unknown model configured for this backend",
+            "connection refused while contacting backend",
+            "fixture-model",
+            "fixture-model",
+        ),
+        ("worker failed one", "worker failed two", "fixture-model", "fixture-model"),
+        ("worker failed", "worker failed", "fixture-model", "fixture-model"),
+        (
+            "unknown model configured for this backend",
+            "unknown model configured for this backend",
+            "model-one",
+            "model-two",
+        ),
+    ],
+)
+def test_close_terminals_without_one_recorded_cause_stay_individual(
+    tmp_path, monkeypatch, first_reason, second_reason, first_model, second_model
+):
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path))
+    _terminal(
+        tmp_path,
+        "r-first",
+        "shared",
+        "2026-09-14T06:52:19Z",
+        result_text=first_reason,
+        model=first_model,
+    )
+    _terminal(
+        tmp_path,
+        "r-second",
+        "shared",
+        "2026-09-14T06:52:23Z",
+        result_text=second_reason,
+        model=second_model,
+    )
+    rows = query.project_live_rows(list_live(project="fixture-project"))
+    assert len(rows) == 2
+    assert {row["run_id"] for row in rows} == {"r-first", "r-second"}
+    assert all(row["classification"] != "lane-event" for row in rows)
+    compact = query.runs_view("fixture-project", source="live")
+    assert compact["count"] == 2
+    assert all(row["classification"] != "lane-event" for row in compact["rows"])
+    recovered = recovery.recover(project="fixture-project")
+    assert recovered["counts"]["lane-event"] == 0
+    assert len(recovered["runs"]) == 2
+
+
+def test_grouped_members_keep_their_own_resume_verdict(tmp_path, monkeypatch):
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path))
+    _terminal(tmp_path, "r-resumable", "shared", "2026-09-14T06:52:19Z")
+    _terminal(
+        tmp_path,
+        "r-no-session",
+        "shared",
+        "2026-09-14T06:52:23Z",
+        with_session=False,
+    )
+    pointers = list_live(project="fixture-project")
+    individual = {
+        pointer["run_id"]: recovery.classify_pointer(pointer) for pointer in pointers
+    }
+    assert individual["r-resumable"]["recovery"] == "resume"
+    assert individual["r-no-session"]["recovery"] == "recover"
+    assert not list((tmp_path / "trees" / "r-no-session").iterdir())
+
+    rows = query.project_live_rows(pointers)
+    assert len(rows) == 1
+    event = rows[0]
+    assert event["classification"] == "lane-event"
+    members = {member["run_id"]: member for member in event["lane_event"]["members"]}
+    assert members["r-resumable"]["recovery"] == "resume"
+    assert members["r-no-session"]["recovery"] == "recover"
+    assert "resume" not in members["r-no-session"]["next_action"]
+    assert event["recovery"] != "resume"
+    assert "resume_remedy" not in event
+    assert event["fleet_verdict"]["recovery"] == event["recovery"]
+    recovered = recovery.recover(project="fixture-project")
+    assert (
+        recovered["runs"][0]["lane_event"]["members"] == event["lane_event"]["members"]
+    )
