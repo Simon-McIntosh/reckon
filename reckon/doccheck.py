@@ -81,9 +81,9 @@ _MD_BOLD = re.compile(r"\*\*[^*\n]+\*\*")
 _MD_LEADING = re.compile(r"^\s*(?:[-*+]\s+|#{1,6}\s+)", re.MULTILINE)
 _STUB_PROSE = re.compile(r"\bSee (?:state|plan) §|^\s*TODO\b|^\s*TBD\b", re.IGNORECASE)
 _PRE_LINE_LIMIT = 120
-# The scalar family whose duplicate the reader resolves last-wins: two lines,
-# one value read, and a writer updating the other line reports success while
-# the surface keeps the old value.
+# The scalar family whose duplicate the reader resolves first-wins: two lines,
+# one value read, and a writer updating a later line reports success while the
+# reader keeps the first value.
 _SCALAR_META_PREFIX = "plan-"
 # Tags whose authored imbalance the parser repairs into a well-formed tree, so
 # every later check reads the repaired document and the audit says OK. Each is
@@ -746,14 +746,15 @@ def _structure_findings(html_text: str) -> list[Finding]:
 
 
 def _scalar_duplicate_findings(soup: BeautifulSoup) -> list[Finding]:
-    """Report a duplicated ``plan-*`` scalar, which the reader resolves last-wins.
+    """Report a duplicated ``plan-*`` scalar, which the reader resolves first-wins.
 
-    ``read_state`` walks every ``<meta>`` in document order and overwrites the
-    field each time, so a duplicate is not an ambiguity the reader reports — it
-    is one value silently chosen. A union-resolved merge of two landing records
-    leaves exactly this shape: two ``plan-version`` lines, the writer updates
-    one, and every write is reported as a successful change to a value the
-    surface never reads.
+    ``read_state`` keeps the first occurrence in document order and ignores
+    every later copy — the same line ``_set_meta`` rewrites in place — so a
+    duplicate is not an ambiguity the reader reports: the first value is read
+    while every later copy sits unread. A union-resolved merge of two landing
+    records leaves exactly this shape: two ``plan-version`` lines, the writer
+    updates the first, and a write to any later line is reported as a
+    successful change to a value the surface never reads.
     """
     seen: dict[str, list[str]] = {}
     for meta in soup.find_all("meta"):
@@ -771,8 +772,9 @@ def _scalar_duplicate_findings(soup: BeautifulSoup) -> list[Finding]:
                 "error",
                 "duplicate-plan-scalar",
                 f'<meta name="{name}"> appears {len(values)} times ({rendered}) —'
-                " the reader takes the last one, so a writer updating any other"
-                " line reports success while the surface keeps the final value",
+                " the reader takes the first occurrence in document order"
+                f" ('{values[0]}'), so a writer updating a later line reports"
+                " success while the reader keeps that first value",
             )
         )
     return out
