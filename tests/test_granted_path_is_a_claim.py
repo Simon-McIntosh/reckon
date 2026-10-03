@@ -106,7 +106,7 @@ def repo(tmp_path: Path, home: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return root
 
 
-def _dry_run(repo: Path, node_id: str, paths: tuple[str, ...]) -> dict:
+def _dispatch_arguments(repo: Path, node_id: str, paths: tuple[str, ...]) -> list[str]:
     arguments = [
         "crew",
         "dispatch",
@@ -132,8 +132,22 @@ def _dry_run(repo: Path, node_id: str, paths: tuple[str, ...]) -> dict:
     ]
     for path in paths:
         arguments += ["--write-path", path]
-    result = CliRunner().invoke(cli_module.main, arguments)
+    return arguments
+
+
+def _dry_run(repo: Path, node_id: str, paths: tuple[str, ...]) -> dict:
+    result = CliRunner().invoke(
+        cli_module.main, _dispatch_arguments(repo, node_id, paths)
+    )
     assert result.exit_code == 0, result.output
+    return json.loads(result.output)
+
+
+def _refused_dry_run(repo: Path, node_id: str, paths: tuple[str, ...]) -> dict:
+    result = CliRunner().invoke(
+        cli_module.main, _dispatch_arguments(repo, node_id, paths)
+    )
+    assert result.exit_code == 2, result.output
     return json.loads(result.output)
 
 
@@ -200,3 +214,17 @@ def test_a_promoted_holder_is_not_reported(home: Path, repo: Path) -> None:
     crew.pointer_path("r-holder").unlink()
 
     assert _dry_run(repo, "node-later", SHARED)["live_conflicts"] == []
+
+
+def test_a_peer_over_the_figures_parent_is_refused_as_at_base(
+    home: Path, repo: Path
+) -> None:
+    # The peer holds docs/figures, the parent of the granted figures topic, so
+    # its claim is the coarser one and the dispatch is refused. Reporting the
+    # granted collision must not turn that refusal into an admission.
+    _live_holder(repo, "r-holder", "node-holder", ("docs/figures",))
+
+    payload = _refused_dry_run(repo, "node-later", SHARED)
+
+    assert payload["validation"]["ok"] is False
+    assert "directory write path overlaps a live claim" in payload["detail"]

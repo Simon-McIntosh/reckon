@@ -2246,13 +2246,22 @@ def _live_conflict_rows(
     authority: Mapping[str, Any],
     claims: Iterable[_RepositoryScopeClaim],
     disregarded: list[str] | None = None,
+    include_granted_landing: bool = True,
 ) -> list[dict[str, Any]]:
-    candidates = _resolved_node_scope_entries(
-        node, project=project, repo=repo, authority=authority
+    candidates = (
+        _resolved_node_scope_entries(
+            node, project=project, repo=repo, authority=authority
+        )
+        if include_granted_landing
+        else _candidate_scope_entries(
+            node, project=project, repo=repo, authority=authority
+        )
     )
     shared = _shared_landing_paths(node, project=project, authority=authority)
-    landing = _granted_landing_paths(
-        node, project=project, repo=repo, authority=authority
+    landing = (
+        _granted_landing_paths(node, project=project, repo=repo, authority=authority)
+        if include_granted_landing
+        else set()
     )
     shared_files = _shared_write_paths(project, repo)
     conflicts: list[dict[str, Any]] = []
@@ -2362,36 +2371,6 @@ def _live_conflict_path(value: str, repo_root: Path) -> Path:
     """Resolve one row path to an absolute path under the repository."""
     path = Path(str(value)).expanduser()
     return (path if path.is_absolute() else repo_root / path).resolve()
-
-
-def _live_conflict_outside_granted_landing(
-    row: Mapping[str, Any],
-    *,
-    landing: set[Path],
-    repo_root: Path,
-) -> bool:
-    """Whether a reported row is a directory claim outside the landing files.
-
-    A granted landing path is admitted to every node on the plan — the plan
-    file, its evidence record and its figures topic are where each node appends
-    its own record — so a collision on one is reported without being judged a
-    directory claim: refusing the second node would strand the merge the two
-    appends were meant to meet in. Every other pair keeps the directory-claim
-    judgement exactly as it was.
-    """
-    if not landing:
-        return _live_conflict_is_a_directory_claim(row, repo_root)
-    pairs = [
-        entry
-        for entry in row.get("paths") or ()
-        if _live_conflict_path(entry["left_path"], repo_root) not in landing
-        and _live_conflict_path(entry["right_path"], repo_root) not in landing
-    ]
-    if not pairs:
-        return False
-    if len(pairs) == len(row.get("paths") or ()):
-        return _live_conflict_is_a_directory_claim(row, repo_root)
-    return _live_conflict_is_a_directory_claim({**row, "paths": pairs}, repo_root)
 
 
 def _directory_claim_alternatives(
@@ -5317,28 +5296,32 @@ def plan_dispatch(
         )
         if report_live_conflicts:
             repo_root = Path(repo).resolve()
+            claims = _repository_scope_claims()
+            # The directory-claim judgement reads exactly the rows the
+            # exclusive-claim walk produced at base, so the granted report
+            # below adds rows to the record but nothing it adds can drop a
+            # refusal or judge a collision the walk never saw.
+            refusal_rows = _live_conflict_rows(
+                node,
+                project=project,
+                repo=repo_root,
+                authority=resolved_authority,
+                claims=claims,
+                disregarded=resolution.warnings,
+                include_granted_landing=False,
+            )
             resolution.live_conflicts = _live_conflict_rows(
                 node,
                 project=project,
                 repo=repo_root,
                 authority=resolved_authority,
-                claims=_repository_scope_claims(),
+                claims=claims,
                 disregarded=resolution.warnings,
-            )
-            granted_landing = _granted_landing_paths(
-                node,
-                project=project,
-                repo=repo_root,
-                authority=resolved_authority,
             )
             directory_rows = [
                 row
-                for row in (resolution.live_conflicts or ())
-                if _live_conflict_outside_granted_landing(
-                    row,
-                    landing=granted_landing,
-                    repo_root=repo_root,
-                )
+                for row in refusal_rows
+                if _live_conflict_is_a_directory_claim(row, repo_root)
             ]
             if directory_rows:
                 if accept_directory_claim:
