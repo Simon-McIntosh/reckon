@@ -1,0 +1,64 @@
+<section id="hold-check-leaves-the-tree-clean">
+  <h2>A hold check commits the aggregate it rewrote</h2>
+
+  <p><strong>What changed.</strong> A hold transition in
+  <code>record_hold_checks</code> rewrites the whole ledger aggregate, which carries run
+  rows beside the holds, and the transition exists in no per-run file. The write was
+  left in the tree for whichever session next noticed the dirty tracked file. The hold
+  path now commits its own write through the shared state-commit helper the roster
+  write already uses, under a subject naming the transition, restricted with a
+  pathspec-limited commit to the path it wrote. While a merge is in progress
+  (<code>.git/MERGE_HEAD</code> exists) no commit is made, the write is left in place
+  and the skip is stated on stderr; a checkout that cannot answer for the write is
+  skipped the same way, so a hold check against a state directory outside git still
+  records the transition.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: fourteen test files that reach the hold path, the ledger and the roster
+  commit, run with <code>-n 8 --timeout=300</code> as one arm per revision. Each arm is
+  recorded in a log whose first line names its revision and whose last line reads
+  <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>9b66ff8a7</code></td>
+        <td>6 failed, 236 passed, exit 1</td></tr>
+      <tr><td>head</td><td><code>d7e7d939b</code></td>
+        <td><strong>242 passed</strong>, exit 0 — no added failure id</td></tr>
+      <tr><td>negative control (hold commit removed at <code>d7e7d939b</code>)</td>
+        <td>mutated head</td><td>3 failed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>The base's clean-tree cases.</strong> At <code>9b66ff8a7</code> the
+    close-a-hold and open-a-hold cases fail on
+    <code>git status --porcelain</code> reporting the aggregate modified, which is the
+    defect reproduced; the merge case fails on the absent stderr statement. Three
+    further base ids fail only because the base arm is a <code>git archive</code>
+    extraction with no <code>.git</code> of its own
+    (<code>test_roster_write_commits.py::test_commit_refuses_roster_with_uncommitted_registration</code>,
+    <code>test_member_registration_commits.py::test_the_live_home_and_the_shared_checkout_are_untouched</code>)
+    or on a three-second timing wait
+    (<code>test_every_attempt_is_supervised.py::test_a_killed_resumed_worker_leaves_its_attempt_exit_record</code>);
+    all three pass in the head arm, and the head arm adds no failure id.</li>
+    <li><strong>The three cases.</strong> Closing a hold and opening a hold each assert
+    an empty <code>git status --porcelain</code> afterwards and that the committed
+    change touches no run row — the run rows are compared between the two commits, and
+    the close case also names the commit subject. The third case leaves a real merge
+    unresolved, then asserts no commit is made, the ledger write is still in the tree,
+    and the skip is on stderr.</li>
+    <li><strong>The negative control.</strong> With the hold path's
+    <code>_commit_state_write</code> call removed, the close-a-hold case fails on the
+    dirty aggregate — the declared mutation fails exactly the check it should.</li>
+    <li><strong>Existing coverage.</strong> <code>test_ledger.py</code>,
+    <code>test_budget.py</code>, <code>test_roster_write_commits.py</code> and
+    <code>test_member_registration_commits.py</code> pass unchanged in the head arm,
+    and the dispatch and resume files that reach the budget pre-flight are green.</li>
+    <li><strong>Lint delta.</strong> <code>ruff check</code> reports the same findings
+    on <code>reckon/ledger.py</code> as the base revision, and
+    <code>ruff format --check</code> names no line this change added.</li>
+  </ul>
+</section>
