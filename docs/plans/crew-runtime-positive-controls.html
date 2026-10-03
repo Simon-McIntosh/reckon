@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="261">
+<meta name="plan-version" content="262">
 </head>
 <body>
   <main class="plan-doc">
@@ -2059,6 +2059,9 @@
 </div>
 <div class="r-comment" data-section="s42" data-id="c-run-r-20261003T093152303778-review-of-node-claim-survives-a-corrupt-record" data-who="reckon-build" data-when="2026-10-03T09:38:39.755Z">
     <div class="r-comment-body"><p>Independent review of run r-20261003T083128518544-node-claim-survives-a-corrupt-record stored at both review paths: five dimensions scored goal_fidelity 20, evidence 16, scope_discipline 20, durability 20, fit 20 (total 96), reviewed_base_sha c7664e486029b91ee215b0598e9bce9787652c9f and reviewed_head_sha 209942ea8cb87db657e695be845b63c107a686a5, added_failure_count 1 (tests/test_crew.py::test_no_watch_dispatch_records_the_override_on_pointer_and_ledger), and one follow-on finding on the noisy -n 8 head arm; the change is correct and complete, and the single added id is not attributable to the node's commits.</p></div>
+</div>
+<div class="r-comment" data-section="s42" data-id="c-run-r-20261003T083128518544-node-claim-survives-a-corrupt-record" data-who="reckon-build" data-when="2026-10-03T09:24:05.594Z">
+    <div class="r-comment-body"><p>An empty or unreadable node claim is given a 5-second grace period for its writer to land and is then reclaimed exactly as a dead holder&#x27;s claim is, so a dispatcher killed between the exclusive create and its record write no longer wedges the node, and a pid beyond the kernel&#x27;s int range now refuses under D12 instead of raising OverflowError out of the dispatch; eight cases in tests/test_concurrent_dispatch_of_one_node.py pass at head against the base arm&#x27;s two failing new cases, ruff adds no finding, and the declared mutation reddens the fresh-empty case with 1 failed EXIT=1, while the record is blocked on one head-arm failure id the base arm did not carry and the evidence that it does not come from these commits is in the fragment at docs/evidence/fragments/crew-runtime-positive-controls/node-claim-survives-a-corrupt-record.html</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
