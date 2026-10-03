@@ -201,11 +201,12 @@ def summarize(
                 and selection.get("backend") == row.get("backend")
             )
             mode = row.get("route_mode")
-            routed = matching_selection and mode in (None, "picker")
+            routed = matching_selection and mode == "picker"
+            approximate = matching_selection and mode is None
             attribution = "approximate" if mode is None else "picker"
             if routed and confidence is not None and 0 <= confidence <= 1:
                 calibration[_confidence_bucket(confidence)].append(success)
-            if routed:
+            if routed or approximate:
                 backend = str(row.get("backend") or selection.get("backend") or "")
                 role = str(row.get("role") or "")
                 spec = str(row.get("spec_level") or "")
@@ -367,7 +368,7 @@ def summarize(
             "burn": "[0,1), [1,2), [2,4), [4,infinity)",
             "burn_offer": "lowest offered codex burn_multiple; unknown when none was recorded",
             "actions": "selection actions on promoted rows; run-free holds appear separately",
-            "attribution": "picker rows require route mode picker and a matching selected backend; rows without route mode use the matching-backend rule and are labelled approximate; shadow and explicit rows are excluded",
+            "attribution": "routed outcomes, calibration and chosen metered spend require route mode picker and a matching selected backend; rows without route mode use the matching-backend rule in approximate_outcomes; shadow and explicit rows are excluded",
             "window": "since is inclusive on run completed_at and hold held_at",
             "latency": "p50 is median; p90 is nearest-rank percentile",
             "repair_or_resume": "attempt kind repair, resume, or redispatch, or a repair/resume remedy",
@@ -386,7 +387,12 @@ def summarize(
                 for name in ("overall", *sorted(rows_by_project))
             },
         },
-        "routed_outcomes": group_rows,
+        "routed_outcomes": [
+            group for group in group_rows if group["attribution"] == "picker"
+        ],
+        "approximate_outcomes": [
+            group for group in group_rows if group["attribution"] == "approximate"
+        ],
         "calibration": {
             name: {
                 "count": len(calibration[name]),

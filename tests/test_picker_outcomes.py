@@ -34,6 +34,7 @@ def row(
         "role": "implement",
         "spec_level": "guided",
         "backend": backend,
+        "route_mode": "picker",
         "gate": gate,
         "outcome": "",
         "review": {"total": review},
@@ -159,14 +160,16 @@ def test_route_mode_separates_picker_from_shadow_and_legacy_matches():
     explicit = row("explicit")
     explicit["route_mode"] = "explicit"
     legacy = row("legacy")
+    legacy.pop("route_mode")
     report = outcomes.summarize({"demo": [routed, shadow, explicit, legacy]}, {})
-    assert {
+    assert [
         (group["attribution"], group["count"]) for group in report["routed_outcomes"]
-    } == {
-        ("picker", 1),
-        ("approximate", 1),
-    }
-    assert report["calibration"]["below_0.5"]["count"] == 2
+    ] == [("picker", 1)]
+    assert [
+        (group["attribution"], group["count"])
+        for group in report["approximate_outcomes"]
+    ] == [("approximate", 1)]
+    assert report["calibration"]["below_0.5"]["count"] == 1
 
 
 def test_review_score_success_requires_eighty_without_overriding_failed_gate():
