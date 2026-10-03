@@ -39,7 +39,9 @@ def test_two_ends_differing_only_in_a_per_run_token_are_one_event(
     state.
     """
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
-    _terminal(tmp_path, "r-first", "shared", "2026-09-14T06:52:19Z", result_text=first_text)
+    _terminal(
+        tmp_path, "r-first", "shared", "2026-09-14T06:52:19Z", result_text=first_text
+    )
     _terminal(
         tmp_path, "r-second", "shared", "2026-09-14T06:52:23Z", result_text=second_text
     )
