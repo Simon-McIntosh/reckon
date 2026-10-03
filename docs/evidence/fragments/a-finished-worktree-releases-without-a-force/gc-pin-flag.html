@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-finished-worktree-releases-without-a-force">
+  <meta name="plan-verifies" content="reckon:a-finished-worktree-releases-without-a-force#s10">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-03">
+  <meta name="evidence-commit" content="14c4c553f">
+  <title>crew gc exposes the pin option | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="gc-pin-flag">
+  <h2>crew gc exposes the pin option</h2>
+  <p><strong>Change (commit <code>14c4c553f</code>).</strong>
+  <code>reckon/cli.py</code>: <code>crew gc</code> gains
+  <code>--pin-unique-commits</code> (flag, default off), passed through as
+  <code>pin_unique_commits</code> to <code>garbage_collect</code>, the sweep §9
+  taught to pin a dirty worktree's commits with no patch-equivalent on
+  <code>--integrated-into</code> to <code>refs/reckon/archive/&lt;name&gt;</code>
+  before releasing the tree. Its help text names what the flag does and that it
+  needs <code>--apply</code> to act: a dry run with the flag leaves the tree and
+  the ref alone and only reports the row as reclaimable. Only the
+  <code>crew_gc</code> command changed; no other command on the line was
+  touched.</p>
+
+  <p><strong>Gate.</strong> Both arms ran in the foreground under
+  <code>pytest -n 8 --timeout=300 -p no:cacheprovider</code>, each with its own
+  basetemp under the run's scratch and its own log in the run directory. The base
+  arm, from a <code>git archive</code> extraction of
+  <code>2cd8e47a1eb9108aac40dd65fb2cf7e37225b4a0</code> in
+  <code>/tmp/reckon-crew-scratch/r-20261003T030325562440-gc-pin-flag/gate-base</code>
+  (4 test files), reports <strong>2 failed, 97 passed</strong>,
+  <code>EXIT=1</code>, failing
+  <code>test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition</code>
+  and
+  <code>test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code>.
+  The head arm at <code>14c4c553f678717e421195bbf86102227c558e3c</code> (the same
+  4 files plus the new <code>tests/test_gc_pin_flag.py</code>) reports
+  <strong>2 failed, 99 passed</strong>, <code>EXIT=1</code>, the same two ids and
+  <strong>no added failure id</strong>. Both failures are about the
+  <code>repair-status</code> verb another node registered: its hardcoded leaf
+  count and its <code>SKILL.md</code> mention are stale on the base, unchanged by
+  this node, and are reported as a follow-on rather than triaged here. Each arm
+  printed its own <code>module.__file__</code> on its header lines — the head
+  arm's is the worktree's <code>reckon/__init__.py</code>, the base arm's is the
+  scratch extraction's — so neither arm was served by the other tree.</p>
+
+  <p><strong>Negative control</strong> (<code>logs/negative-control.log</code>):
+  with the <code>pin_unique_commits</code> pass-through removed from
+  <code>crew_gc</code>, the pinned case runs as if the flag were never passed —
+  the dry-run row reads <code>reclaimable</code> false and the worktree stays —
+  and the run exits <code>1</code> with
+  <code>FAILED tests/test_gc_pin_flag.py::test_the_flag_pins_the_commits_then_the_worktree_is_gone</code>,
+  1 failed of 2. That id does not fail in the head arm.</p>
+
+  <p><strong>New tests</strong> (<code>tests/test_gc_pin_flag.py</code>, each in a
+  temporary repository with <code>RECKON_HOME</code> under <code>tmp_path</code>,
+  driven through <code>cli.main</code>):</p>
+  <ul>
+    <li>a dry run with <code>--pin-unique-commits</code> reports the dirty,
+      unintegrated row as reclaimable, creates no ref and leaves the tree; then
+      <code>--pin-unique-commits --apply</code> names
+      <code>refs/reckon/archive/&lt;name&gt;</code> on the row, removes the
+      worktree, and the ref resolves to the worktree head with its file still
+      readable through it;</li>
+    <li>the same tree under <code>--apply</code> without the flag keeps
+      classification <code>dirty</code>, <code>reclaimable</code> false, stays in
+      place and gains no ref.</li>
+  </ul>
+
+  <p><strong>Ruff.</strong> <code>ruff check</code> over <code>reckon/cli.py</code>
+  reports the same 4 findings at base and head (SIM103, SIM115, RET501, SIM105,
+  all pre-existing); the new test file reports none, and <code>ruff format
+  --check</code> passes on all changed Python paths.</p>
+
+  <p><strong>Logs.</strong> <code>logs/base-arm.log</code>,
+  <code>logs/head-arm.log</code>, <code>logs/negative-control.log</code> in the
+  run directory
+  <code>~/.config/reckon/crew/runs/r-20261003T030325562440-gc-pin-flag</code>.</p>
+</section>
+</main>
+</body>
+</html>
