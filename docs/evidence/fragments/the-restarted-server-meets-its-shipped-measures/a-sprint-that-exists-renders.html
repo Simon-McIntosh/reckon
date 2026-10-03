@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-restarted-server-meets-its-shipped-measures">
+  <meta name="plan-verifies" content="reckon:the-restarted-server-meets-its-shipped-measures#s4">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-03">
+  <meta name="evidence-commit" content="4d1feeed9">
+  <title>A sprint that exists renders on its route | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-done">
+<section id="a-sprint-that-exists-renders">
+  <h2>A sprint that exists renders on its route</h2>
+
+  <p><strong>Verdict: pass.</strong> At main (base <code>4d1feeed905d145a3130e71293f2cfdf1233f1d7</code>),
+  a fixture project whose sprint is a file on disk serves a discovery payload that carries
+  that sprint, so the sprint view has a row to render and does not answer "No sprint." The
+  live <a href="#s1">§1</a> failure — the sprint route reading "No sprint." for S25 while
+  <code>docs/sprints/S25.html</code> existed on the served checkout — is not reproducible
+  from the reader at main: the served process, not the reader's code, was the difference.</p>
+
+  <h3>What was measured</h3>
+
+  <p><code>tests/test_a_sprint_that_exists_renders.py</code> builds a distributed fixture
+  project (a complete project-state marker plus <code>docs/sprints/&lt;id&gt;.html</code>, the
+  marker's resource list deliberately omitting the sprint so the row can only arrive by the
+  scan of the sprint directory), starts the real <code>serve.Handler</code> over it through a
+  temporary mounts file and state root, and requests
+  <code>GET /_discover/&lt;project&gt;</code> — the payload the sprint view matches its
+  route's sprint id against. Result at head: <strong>1 passed</strong>, payload
+  <code>200</code> with the sprint row carrying the file's own theme and status, not a
+  synthesised stub. Logs: <code>head-test.log</code>, <code>head-arm.log</code>. The test
+  reads no state outside its temporary project (its own mounts file, state root and config
+  home).</p>
+
+  <h3>Base arm and the served process</h3>
+
+  <p>At the base revision the same reader carries the real project's sprint: calling
+  <code>discover_plans</code> on this checkout's <code>docs/</code> returns sprint ids
+  <code>S3…S25</code> (<code>source_format: distributed</code>), so
+  <code>docs/sprints/S25.html</code> is a first-class sprint row at main. A warm-cache probe
+  (scan, then write a sprint file, then scan again) returns the new sprint on the second
+  scan, so a file added after the server's first scan is not held out by the discovery cache.
+  The server process measured in §1 started <code>2026-10-02 11:18:06 CEST</code> from a
+  revision at or after <code>0963c7b11</code>; across
+  <code>0963c7b11..4d1feeed9</code> the sprint composition path is unchanged
+  (<code>reckon/project_state.py</code> has no diff; the <code>reckon/serve.py</code> delta
+  carries no sprint or discovery hunks), so the "12 files behind" drift contained no
+  sprint-reader fix — the served process failed to deliver the payload main delivers. One
+  amplifier is named for the record: the state loader falls back to index rows, silently,
+  whenever <code>/_discover</code> fails (<code>docs/ui/state-loader.js</code>), so any
+  transient server-side discovery failure renders exactly as "No sprint." with a rendered
+  plan page beside it.</p>
+
+  <h3>Population arms</h3>
+
+  <p>Population: test files naming the sprint route (<code>/_discover</code>) or serve's
+  discovery handler (<code>discover_plans</code>) — 54 files at base, 55 at head with this
+  node's test. Base (<code>base-arm.log</code>): 1 failed, 616 passed, 35 skipped. Head
+  (<code>head-arm.log</code>): 2 failed, 616 passed, 35 skipped, of which one failure —
+  a timing test that waits two seconds for a pushed row — passed in the head re-run
+  (<code>head-arm-rerun.log</code>: 1 failed, 617 passed, 35 skipped) and serially, so it is
+  load flakiness under <code>-n 8</code>, not an added failure. The single remaining failure
+  is pre-existing and outside this node's scope:
+  <code>test_discovery_cache.py::test_repeat_discovery_skips_git_and_metadata_for_all_mounts</code>
+  monkeypatches a one-argument <code>parse_meta</code> stub while the code calls it with
+  <code>(path, slug)</code> after <code>8ac88e011</code>; it fails identically at base and is
+  reported under follow-ons rather than triaged here. Added failures: zero.</p>
+
+  <h3>Negative control</h3>
+
+  <p>The declared mutation — a scratch copy whose fixture omits the sprint file — fails as
+  required: <code>EXIT=1</code> with failing test id
+  <code>test_a_sprint_that_exists_renders.py::test_a_sprint_that_exists_renders_on_its_route</code>
+  (<code>negative-control.log</code>), an id the head arm does not fail. The check therefore
+  detects an absent sprint rather than passing on its fixture alone.</p>
+
+  <h3>What remains</h3>
+
+  <p>The plan's live half — re-measuring the sprint route on a server restarted onto main —
+  needs the served process on <code>98dci4-srv-1006</code>; this node measured the same
+  handler in-process and did not restart or signal anything. The reader is pinned by the test
+  above, so that re-measure is a confirmation rather than an open question.</p>
+</section>
+</main>
+</body>
+</html>
