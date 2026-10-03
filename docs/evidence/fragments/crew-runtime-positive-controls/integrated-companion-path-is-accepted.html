@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="An already-merged companion path is accepted despite a peer's claim">
+  <meta name="plan-summary" content="The accept-path claim check in _accepted_scope_exceptions refused a companion path whenever a live run claimed it, even when the run's own change to that path was already behind the integration head. It now asks _path_change_reaches_integration_head first: every cited commit that changed the path must be strictly behind the repository's HEAD, read from each commit's own first-parent diff, the instrument _committed_scope charges the run by. An admitted claim is recorded on the acceptance (already_integrated with the peer claims present) and the peer's claim and pointer are never written; a path whose change is not yet on the integration head is still refused.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="pass">
+  <title>An already-merged companion path is accepted despite a peer's claim &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>An already-merged companion path is accepted despite a peer's claim &mdash; evidence</h1>
+  <p>The claim loop in <code>reckon/crew/promotion.py::_accepted_scope_exceptions</code> raises <code>cannot accept &lt;path&gt;: live run &lt;peer&gt; claims &lt;claim&gt;</code> for any accepted path a live peer claims. That refusal protects two runs from editing one file concurrently, but r-20261002T203452309560-resume-refuses-a-session-over-the-window had already been merged at 34eb46322 while a relay of live runs claimed its two companion paths, so the refusal blocked only the ledger record of a landing that had happened. The check now admits a path whose change by this run is already behind the integration head (<code>_path_change_reaches_integration_head</code>): each cited commit that changed the path, read from its own diff against its first parent (the instrument <code>_committed_scope</code> charges the run by), must be an ancestor of the repository's HEAD and strictly behind it &mdash; a cited commit that is the head itself was integrated by no later commit, so it stays refused. The admission records <code>already_integrated: true</code> and the peer claims present (<code>peer_claims</code>, run id and claim path) on the acceptance entry, and never writes the peer's pointer.</p>
+  <section id="measure">
+    <h2>The measure</h2>
+    <ul>
+      <li><strong>The cases.</strong> <code>tests/test_integrated_companion_path_is_accepted.py</code>, in a temporary repository and RECKON_HOME, drives <code>crew.complete</code> on a run whose commit changed a declared path plus an undeclared companion while live peer runs claim the companion. With the run's commit merged strictly behind the head, the promotion succeeds and the stored row's <code>scope_acceptances</code> carries <code>already_integrated: true</code> with both peer claims named; both peer pointers are asserted byte-for-byte unchanged. Without the merge, the same promotion is refused with the claim named, the ledger stays empty and the run's pointer is retained.</li>
+      <li><strong>Base arm</strong> (<code>67b520f31d3cab88b24d942732a8b2e8e39c4c61</code>, a <code>git archive</code> extraction with the delivered test file overlaid): <code>1 failed, 39 passed in 48.35s</code>, <code>EXIT=1</code>, the single failure being the integrated-case test &mdash; the new case is red against the base and the refusal case was already green there. Log: <code>r-20261003T013806462596-integrated-companion-path-is-accepted/base_arm.log</code>.</li>
+      <li><strong>Head arm</strong> (<code>1afe400c91f076c52e9b677ffff1831e642d482a</code>, the worktree): <code>40 passed in 58.19s</code>, <code>EXIT=0</code>, no added failure id over the same four-file gate population. Log: <code>r-20261003T013806462596-integrated-companion-path-is-accepted/head_arm.log</code>.</li>
+      <li><strong>Negative control</strong> (the reachability check removed from the admission in a scratch extraction of the delivered revision, so every claimed path is admitted): <code>1 failed, 1 passed in 15.13s</code>, <code>EXIT=1</code>, the failing id being exactly the not-integrated case &mdash; the check is load-bearing, and the mutation reddens only what it declared. Log: <code>r-20261003T013806462596-integrated-companion-path-is-accepted/negative_control.log</code>.</li>
+      <li><strong>Ruff delta</strong> over the two changed Python paths: <code>ruff check</code> counts identical at base and head (<code>5</code> lines each, three pre-existing findings in <code>promotion.py</code>), and <code>ruff format --diff</code> hunk counts identical on both sides (<code>13</code>).</li>
+    </ul>
+    <p>Every log path above is relative to the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/</code>. Each log names its revision, tree and literal command on its header lines together with the imported <code>module.__file__</code> and the resolved cwd, and ends with a bare <code>EXIT=</code> line; each arm ran with <code>pytest-xdist -n 8 --timeout=300</code> and its own basetemp under <code>$TMPDIR/r-20261003T013806462596-integrated-companion-path-is-accepted/r-20261003T013806462596-integrated-companion-path-is-accepted/</code>, deleted before the node closed.</p>
+  </section>
+ </main>
+</body>
+</html>
