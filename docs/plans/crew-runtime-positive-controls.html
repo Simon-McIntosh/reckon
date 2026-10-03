@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="290">
+<meta name="plan-version" content="291">
 <meta name="plan-modified" content="2026-10-03">
 </head>
 <body>
@@ -1770,6 +1770,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20261003T205222049957" data-who="" data-when="">
     <div class="r-comment-body"><p>Coordinator ruling for §50's node a-crew-verb-ok-reads-its-outcome (r-20261003T194714763191), recorded because it fixes what a crew verb's exit status means.</p><p>The worker derived <code>ok</code> from each result and made the exit status follow it. That turned 12 existing exit-zero assertions red. Eight of them describe a refusal, a replay that never ran or timed out, a failing replay, a promotion finding or a red suite. For those, <code>ok</code> false and a non-zero exit are correct, and the six files carrying them were granted so their assertions could be updated. The other four, in <code>tests/test_split_existing_runs.py</code>, describe projects that <code>split-runs</code> deliberately stopped or skipped.</p><p>Ruling: a skip by design is not a failure. It reports <code>ok</code> true, names the skip in its result and exits 0, because a verb run across many projects must not fail on the ones it was meant to pass over. Those four assertions must pass unedited. The rule is stated once, beside the refusal rule, in the helper the emit sites call.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20261003T215850627932" data-who="" data-when="">
+    <div class="r-comment-body"><p>Coordinator ruling reconciling §49 and §50, recorded because the two disagree about what verify-gate's <code>ok</code> means.</p><p>§49 (merged at 8c271caf9) set <code>ok</code> to "the replay produced an exit status". <code>tests/test_a_timed_out_replay_is_not_ok.py::test_a_replay_that_completes_failing_reports_its_own_failure</code> asserts <code>ok</code> true for a completed failing replay. §50's node (head 1ef417f11) derives every verb's <code>ok</code> from its outcome and keeps an <code>ok</code> a result already carries. Its updated tests expect a failing replay to exit non-zero. Stacked over main cdcf55ffd, two tests fail deterministically: <code>test_crew_promotion.py::test_verify_gate_cli_records_a_finding_against_the_run</code> and <code>test_verify_gate_replay_is_diagnosable.py::test_a_failing_replay_keeps_ids_and_stderr_in_a_log_beside_the_run</code>. A replay that ran and failed reads ok true and exits 0.</p><p>Ruling: verify-gate is <code>ok</code> only when its replay finished and passed. A timeout, a never-run replay and a completed failing replay all report <code>ok</code> false and exit non-zero, consistent with the §50 ruling above. The report's exit status, verdict and finding are unchanged. §49's completed-failing test changes its <code>ok</code> expectation accordingly. The repair is dispatched from an integration commit of §50 over main, so the result carries both.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
