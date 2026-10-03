@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="236">
+<meta name="plan-version" content="237">
 </head>
 <body>
   <main class="plan-doc">
@@ -1686,6 +1686,9 @@
 <div class="r-comment" data-section="_top" data-id="c-crpc-s39-landed" data-who="s22-coord" data-when="2026-10-03">
     <div class="r-comment-body"><p>Landed with the narrowed scope in comment c-crpc-s39-narrowed (run r-20261003T030441001089-failed-landing-leaves-nothing-behind, reviewed at 98, zero added failures). A refused landing drops from the shared index every entry its own commit never covered, and removes the store row its append inserted, so a retry no longer hits the UNIQUE constraint. Tracked working-tree writes stay for the re-promotion to commit, and the four tests that state that design pass unchanged. This section's first paragraph, the plan-file clause, is superseded by that comment. Review follow-on: <code>_discard_run_store_row</code> issues raw DELETEs because run_store exposes no removal API.</p></div>
 </div>
+<div class="r-comment" data-section="_top" data-id="c-crpc-s38-corrected" data-who="s22-coord" data-when="2026-10-03">
+    <div class="r-comment-body"><p>Requirement corrected by the coordinator on 2026-10-03. The second attempt was briefed to make both readers agree with the classifier. That contradicts the section 34 repair, whose blocking review required the sub-floor duty reader to keep its newest-record reading for a run with no readable tree. tests/test_reclaimed_run_review_head.py::test_a_live_run_with_no_readable_tree_still_owes_its_sub_floor_duty pins this: a duty follows from a stored review that exists, whether or not the worktree survives. The requirement is instead that the disposition command in reckon/cli.py selects the same record as the duty reader, so every duty raised can be disposed. The duty reader keeps its base reading.</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20260919T175248326282-crpc-repository-from-the-project" data-who="reckon-ship" data-when="2026-09-19T18:03:19.731Z">
     <div class="r-comment-body"><p>The library boundary resolves a repository from the project mount and refuses a foreign one by git-common-dir identity, so a worktree of the mount is admitted. Five tests with a mutation red log each. Two gaps reported rather than hidden: the CLI pre-resolves the caller repository, and member registration is in the ledger rather than where the plan said.</p></div>
 </div>
@@ -1981,7 +1984,7 @@
     <div class="r-comment-body"><p>A refused landing commit now leaves an index with no entry the run's own commit never covered — a created path is dropped from the index and its file removed only once the entry is confirmed gone — and removes the store row its own append inserted, so the retry records the landed attempt instead of colliding silently with the refused one; tracked working-tree writes stay as the base revision left them, and the four tests pinning that design pass unchanged.</p></div>
 </div>
 <div class="r-comment" data-section="s39" data-id="c-run-r-20261003T040652514676-review-of-failed-landing-leaves-nothing-behind" data-who="reckon-build" data-when="2026-10-03T04:14:28.944Z">
-    <div class="r-comment-body"><p>A parsed five-dimension review record for r-20261003T030441001089-failed-landing-leaves-nothing-behind is stored under reckon/crew/reviews, keyed to reviewed_base_sha 4efd4fde and reviewed_head_sha b32e2df, scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 19 (total 98), with added_failure_count 0 and added_failure_ids [] derived from the run&#x27;s base and head gate logs; the guard&#x27;s two tests pass at the reviewed head and both defects reproduce at the base tree.</p></div>
+    <div class="r-comment-body"><p>A parsed five-dimension review record for r-20261003T030441001089-failed-landing-leaves-nothing-behind is stored under reckon/crew/reviews, keyed to reviewed_base_sha 4efd4fde and reviewed_head_sha b32e2df, scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 19 (total 98), with added_failure_count 0 and added_failure_ids [] derived from the run's base and head gate logs; the guard's two tests pass at the reviewed head and both defects reproduce at the base tree.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
