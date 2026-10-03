@@ -1187,44 +1187,55 @@ def _require_gate_log_agrees(
         )
 
 
-def _arm_failure_ids(observation: Mapping[str, Any]) -> set[str] | None:
-    """The failing ids one suite arm records, or ``None`` when unreadable.
+def _head_arm_log_failure_ids(gate_check: Mapping[str, Any] | None) -> set[str] | None:
+    """The failing ids the head arm's log reports, or ``None`` when it is unreadable.
 
-    The ids are read the way the neighbouring arm readers read them: as a list
-    of non-empty strings, canonicalised through the review module so both sides
-    of a comparison are canonical. A list that cannot be read as ids says
-    nothing, and ``None`` says so rather than standing in as the empty set,
-    which would claim every id was absent from the arm.
+    The head arm of a gated measurement is the run's own check, so its log is
+    the one the promotion cites: the ids are read from that log's own
+    ``FAILED``/``ERROR`` summary lines, canonicalised the way every other arm
+    reader canonicalises them. A citation that names no path, or one that
+    cannot be read from here, reports ``None`` rather than an empty set — an
+    unread log is not a log that failed nothing, and a comparison taken over an
+    empty set would claim exactly that.
     """
-    failure_ids = observation.get("failure_ids")
-    if not isinstance(failure_ids, list) or any(
-        not isinstance(test_id, str) or not test_id.strip() for test_id in failure_ids
-    ):
+    if not isinstance(gate_check, Mapping):
         return None
-    return {review_module.canonical_node_id(test_id.strip()) for test_id in failure_ids}
+    raw = str(gate_check.get("log_path") or "").strip()
+    if not raw:
+        return None
+    try:
+        log_text = Path(raw).expanduser().read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+    return _control_failure_ids(log_text)
 
 
-def _zero_added_against_a_red_base(record: Mapping[str, Any]) -> bool:
+def _zero_added_against_a_red_base(
+    record: Mapping[str, Any], gate_check: Mapping[str, Any] | None
+) -> bool:
     """Whether the run's own manifest shows a red base the head did not worsen.
 
     A gate is judged here by its delta against its base, so a nonzero exit
     beside a passing verdict is admitted only when the manifest records a
-    baseline observation that is itself red — a nonzero exit status — and whose
-    recorded failure ids include every id the head arm records. That is zero
-    added against a red base, which is what the passing verdict then states;
-    anything less is refused by the caller.
+    baseline observation that is itself red — a nonzero exit status — whose
+    recorded failure ids include every id the head arm's log reports, and when
+    both arms declare their runs complete. That is zero added against a red
+    base, which is what the passing verdict then states; anything less is
+    refused by the caller.
 
-    Both arms are read from the run's own records, and each must declare its
-    run complete — a literal ``True``, never a truthy stand-in, the way the
-    strict arm validator and the neighbouring arm readers ask it. An
-    interrupted arm lists only the failures it reached before it stopped: a
-    short baseline covers every id an unfinished head recorded while the
-    comparison itself says nothing about what the head added, because the
-    baseline never finished the suite the head is measured against. Every
-    other condition is asked of the records too, never inferred: a manifest
-    that records no arm, a baseline with no readable status or an arm with no
-    readable list of failure ids each leave the delta unmeasured, and an
-    unmeasured delta cannot license the pair.
+    The head ids are read from the cited gate log's own ``FAILED``/``ERROR``
+    lines, never from the manifest's ``after_suite`` list: the manifest is the
+    run's own record, so a failure left out of it would read as zero added
+    while the log beside it names the id. Completion is asked of both arms as a
+    literal ``True``, never a truthy stand-in, the way the strict arm validator
+    asks it. An interrupted arm lists only the failures it reached before it
+    stopped: a short baseline then covers every id an unfinished head recorded
+    while the comparison itself says nothing about what the head added. Every
+    condition is asked of the run's own records, never inferred: a manifest
+    that records no arm, an arm that does not declare completion, a baseline
+    with no readable status or no readable list of failure ids, and a head log
+    that cannot be read each leave the delta unmeasured, and an unmeasured
+    delta cannot license the pair.
     """
     manifest = _fresh_manifest(record)
     if manifest is None:
@@ -1239,11 +1250,18 @@ def _zero_added_against_a_red_base(record: Mapping[str, Any]) -> bool:
     base_exit = baseline.get("exit_status")
     if isinstance(base_exit, bool) or not isinstance(base_exit, int) or base_exit == 0:
         return False
-    canonical_base = _arm_failure_ids(baseline)
-    canonical_head = _arm_failure_ids(after)
-    if canonical_base is None or canonical_head is None:
+    base_ids = baseline.get("failure_ids")
+    if not isinstance(base_ids, list) or any(
+        not isinstance(test_id, str) or not test_id.strip() for test_id in base_ids
+    ):
         return False
-    return canonical_head <= canonical_base
+    canonical_base = {
+        review_module.canonical_node_id(test_id.strip()) for test_id in base_ids
+    }
+    head_ids = _head_arm_log_failure_ids(gate_check)
+    if head_ids is None:
+        return False
+    return head_ids <= canonical_base
 
 
 def _arm_without_completion(manifest: Mapping[str, Any] | None) -> str | None:
@@ -1284,7 +1302,7 @@ def _require_verdict_matches_exit_status(
     record of its own.
 
     The one pair admitted is the repository's own delta rule: an armed run
-    whose manifest records a red baseline covering every id the head arm
+    whose manifest records a red baseline covering every id the head arm's log
     reports — both arms declaring their runs complete — measures zero added
     against that base, so its passing verdict is the delta verdict and not a
     contradiction. The admission is read from the run's records by
@@ -1297,7 +1315,7 @@ def _require_verdict_matches_exit_status(
     asserted = gate_check.get("exit_status")
     if isinstance(asserted, bool) or not isinstance(asserted, int) or asserted == 0:
         return
-    if _zero_added_against_a_red_base(record):
+    if _zero_added_against_a_red_base(record, gate_check):
         return
     incomplete = _arm_without_completion(_fresh_manifest(record))
     withheld = (
