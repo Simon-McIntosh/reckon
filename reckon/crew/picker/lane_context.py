@@ -252,30 +252,11 @@ def _stat_stamp(path: Path) -> list[int] | None:
 
 
 def _ledger_stamp(project: str) -> list[Any] | None:
-    """A cheap freshness key for one project's ledger.
-
-    Two ``stat`` calls cover every way the ledger changes from outside: a
-    promoted run lands as a new file in the runs directory beside the aggregate,
-    moving that directory's modification time, and an edit to an existing row
-    rewrites the aggregate, moving the aggregate file's. The file's size is
-    folded in beside its modification time so a change within the same clock
-    tick as the previous read is still visible where the filesystem's resolution
-    is coarse. Decoding the whole ledger takes 123-2948 ms across the five
-    projects the local lane shares, measured on this GPFS, while these two
-    stats take about 0.04 ms -- four orders of magnitude cheaper than the read
-    the stamp guards.
-
-    A project with no ledger has a stable stamp, which is correct: it has no
-    runs to profile until the first is written, and writing one moves the stamp.
-    A path that cannot be resolved returns ``None``, which forfeits the cache
-    rather than risk a stale hit.
-    """
-
+    """Track per-run edits as well as additions and aggregate changes."""
     try:
-        ledger_file = ledger.ledger_path(project)
+        return [ledger.input_stamp(project)]
     except (ledger.LedgerError, OSError, ValueError):
         return None
-    return [_stat_stamp(ledger_file), _stat_stamp(ledger_file.parent / "runs")]
 
 
 def _profile_cache_root() -> Path:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import subprocess
 import tomllib
@@ -94,7 +95,7 @@ def build_context_manifest(request: ContextRequest) -> dict[str, Any]:
     )
 
     # Every path this build consulted, recorded as it is read so the cache stamp
-    # is derived from the same set the computation used and the two cannot drift.
+    # follows the recorded dependencies. New readers must add their input paths.
     # The agent config is included whether or not it exists, so its later
     # appearance is a miss; the scanned directories are included so a new
     # instruction file in one of them is a miss.
@@ -157,7 +158,8 @@ def _manifest_file_paths(manifest: Mapping[str, Any]) -> list[str]:
     scanned root, or a relocated repository root all move the stamp. The
     manifest's own ``input_paths`` — recorded during the build from the paths it
     actually consulted, the agent config included — leads the set, so the stamp
-    covers every input the computation read and cannot drift from it.
+    tracks the recorded dependencies. Readers must keep recording every file
+    they consult; equivalence tests check this dependency contract.
     """
 
     paths: set[str] = set()
@@ -228,7 +230,7 @@ def cached_context_manifest(request: ContextRequest) -> dict[str, Any]:
         "activated_skills": list(request.activated_skills),
     }
     return capabilities.cached_pick_input_stamped(
-        "context-manifest",
+        "context-manifest-" + _digest(json.dumps(request_key, sort_keys=True).encode()),
         request_key,
         manifest_file_stamp,
         lambda: build_context_manifest(request),

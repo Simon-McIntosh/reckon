@@ -3208,23 +3208,56 @@ def _estimated_hours(
     if not node.plan.strip():
         return None, "unavailable"
 
-    from reckon.resources import resolve_resource
+    from concurrent.futures import ThreadPoolExecutor
+    from pathlib import PurePosixPath
 
-    resource = resolve_resource(
-        repo / "docs", project, node.plan, "plan", include_archived=False
-    )
-    if resource is None:
-        return None, "unavailable"
-    value = _plan_html.parse_meta(resource.path).get("effort_hours")
-    try:
-        hours = float(value)
-    except (TypeError, ValueError):
-        return None, "unavailable"
-    return (
-        (hours, "plan-fallback")
-        if math.isfinite(hours) and hours > 0
-        else (None, "unavailable")
-    )
+    from reckon import resources
+
+    docs = repo / "docs"
+    paths = []
+    for path in docs.rglob("*.html"):
+        relative = PurePosixPath(path.relative_to(docs).as_posix())
+        if (
+            resources._is_evidence_fragment(relative)
+            or path.name in resources.NON_RESOURCE_FILES
+            or any(part in resources.INFRA_DIRS for part in relative.parts[:-1])
+        ):
+            continue
+        try:
+            kind, archived, _legacy = resources._path_context(relative)
+        except resources.ResourceCollision:
+            continue
+        if not archived and kind in {None, "plan"}:
+            paths.append(path)
+    paths.sort()
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        stamps = list(pool.map(ledger._file_identity, paths))
+    stamp = [
+        (str(path), identity) for path, identity in zip(paths, stamps, strict=True)
+    ]
+    identity = hashlib.sha256(
+        f"{repo.resolve()}:{project}:{node.plan}".encode()
+    ).hexdigest()
+
+    def build() -> list[Any]:
+        resource = resources.resolve_resource(
+            docs, project, node.plan, "plan", include_archived=False
+        )
+        if resource is None:
+            return [None, "unavailable"]
+        value = _plan_html.parse_meta(resource.path).get("effort_hours")
+        try:
+            hours = float(value)
+        except (TypeError, ValueError):
+            return [None, "unavailable"]
+        return (
+            [hours, "plan-fallback"]
+            if math.isfinite(hours) and hours > 0
+            else [None, "unavailable"]
+        )
+
+    value = capabilities.cached_pick_input(f"plan-estimate-{identity}", stamp, build)
+    return value[0], value[1]
 
 
 def _measured_horizon_hours(value: Any) -> float | None:
@@ -3247,30 +3280,10 @@ def _measured_horizon_hours(value: Any) -> float | None:
 
 
 def _verdict_input_stamp(project: str, repo: Path) -> dict[str, Any]:
-    """A cheap stamp of every file one pick's shared verdict inputs read.
-
-    The inputs are ``capabilities.load_capabilities`` (its cache file) and
-    ``capabilities.project_cache_status``, which calls :func:`ledger.load` — the
-    aggregate plus every per-run JSON under the ledger's run directory. The
-    stamp names exactly those: the capability cache file, the aggregate, and
-    each run file by name, so an in-place edit of a run file is a miss as well
-    as an added or removed one. The per-run list is used rather than the run
-    directory's own mtime because a directory stamp moves on add and remove but
-    not on an edit.
-    """
-
-    aggregate = ledger.ledger_path(project, repo)
+    """File-derived revision shared with the incremental ledger reader."""
     return {
-        # The ledger path is part of the key so two checkouts whose (absent)
-        # aggregate and run-directory stamps coincide never share an entry.
-        "aggregate_path": str(aggregate),
         "capabilities": capabilities.file_stamp(capabilities.capabilities_path()),
-        "aggregate": capabilities.file_stamp(aggregate),
-        "run_dir": capabilities.file_stamp(aggregate.parent / "runs"),
-        "runs": [
-            [path.name, capabilities.file_stamp(path)]
-            for path in sorted((aggregate.parent / "runs").glob("*.json"))
-        ],
+        "ledger": ledger.input_stamp(project, repo),
     }
 
 
@@ -3319,9 +3332,12 @@ def _competence_verdict(
     plan_repo = repo
     if resolution.authority is not None:
         plan_repo = Path(resolution.authority["plan"]["repository"])
-    estimated_hours, estimate_provenance = _estimated_hours(
-        plan_repo, project, resolution.node
-    )
+    if verdict_inputs is not None and "node_estimate" in verdict_inputs:
+        estimated_hours, estimate_provenance = verdict_inputs["node_estimate"]
+    else:
+        estimated_hours, estimate_provenance = _estimated_hours(
+            plan_repo, project, resolution.node
+        )
     if verdict_inputs is None:
         cache = capabilities.load_capabilities()
         cache_status = capabilities.project_cache_status(cache, project, root=repo)

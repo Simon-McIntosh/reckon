@@ -654,7 +654,7 @@ def test_published_horizon_legibility_distinguishes_the_states(home, tmp_path) -
     _mount(home, [root])
 
     cache_path = home / "cache" / "capabilities.json"
-    cache_path.parent.mkdir(parents=True)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
     cache_path.write_text(
         json.dumps(
             {
