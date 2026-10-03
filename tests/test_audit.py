@@ -426,8 +426,9 @@ def _typed_sprint_island(island: str) -> str:
 
 
 def test_audit_doc_reports_duplicated_plan_scalar(tmp_path):
-    # The reader keeps the last value, so the first line is dead state that a
-    # writer can keep updating while every read reports the other value.
+    # The reader keeps the first occurrence in document order and ignores every
+    # later copy, so a later duplicate is dead state that a writer can keep
+    # updating while every read reports the first value.
     text = _plan_doc(
         slug="dup-scalar",
         head=(
