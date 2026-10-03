@@ -4668,7 +4668,7 @@ def _crew_recover(
     directory = crew_module.run_dir(run_id)
     turn = len(list(directory.glob("resume-*.jsonl"))) + 1
     advice_path = directory / f"resume-{turn}-advice.txt"
-    advice_path.write_text(advice + "\n")
+    resumption_module._write_resume_prompt(advice_path, plan=plan, advice=advice)
     log_path = directory / f"resume-{turn}.jsonl"
     stderr_path = directory / f"resume-{turn}.stderr.log"
     current = crew_module.read_pointer(run_id)

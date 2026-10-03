@@ -738,6 +738,25 @@ def _spawn(plan: Any, *, log_path: Path, stderr_path: Path, prompt_path: Path) -
     )
 
 
+def _write_resume_prompt(advice_path: Path, *, plan: Any, advice: str) -> None:
+    """Write the prompt the resumed worker reads from ``advice_path``.
+
+    The worker reads this file as its prompt, so it must carry the plan's own
+    prompt — the advice restated with the time fence composed for the attempt
+    now starting — rather than the bare advice. Writing the advice alone left
+    the resumed worker reading the inherited session's original deadline, so it
+    aged its work against a clock that had already expired. A backend that
+    feeds the prompt on argv rather than stdin carries no plan stdin text, and
+    there the advice is the whole prompt and is written unchanged.
+
+    Shared so every door that starts a resumption composes the file the same
+    way: a door that writes the bare advice leaves the worker on the first
+    attempt's deadline however the launch itself was composed.
+    """
+    prompt_text = plan.stdin_text or advice
+    advice_path.write_text(prompt_text.rstrip("\n") + "\n", encoding="utf-8")
+
+
 def _resume(
     run_id: str,
     record: Mapping[str, Any],
@@ -778,15 +797,7 @@ def _resume(
     turn = len(list(directory.glob("resume-*.jsonl"))) + 1
     advice_path = directory / f"resume-{turn}-advice.txt"
     advice_path.parent.mkdir(parents=True, exist_ok=True)
-    # The worker reads this file as its prompt, so it must carry the plan's own
-    # prompt — the advice restated with the time fence composed for the attempt
-    # now starting — rather than the bare advice. Writing the advice alone left
-    # the resumed worker reading the inherited session's original deadline, so
-    # it aged its work against a clock that had already expired. A backend that
-    # feeds the prompt on argv rather than stdin carries no plan stdin text, and
-    # there the advice is the whole prompt and is written unchanged.
-    prompt_text = plan.stdin_text or advice
-    advice_path.write_text(prompt_text.rstrip("\n") + "\n", encoding="utf-8")
+    _write_resume_prompt(advice_path, plan=plan, advice=advice)
     log_path = directory / f"resume-{turn}.jsonl"
     stderr_path = directory / f"resume-{turn}.stderr.log"
     attempt_started_at = _utc_now()

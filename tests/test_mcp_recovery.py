@@ -143,7 +143,12 @@ def test_resume_reattaches_a_session_already_on_the_pointer(
     assert result["session_id"] == "sess-on-the-pointer"
     assert result["session_source"] == "pointer"
     assert len(spawn.calls) == 1
-    assert spawn.calls[0]["prompt"] == "the limit has reset; continue"
+    # The worker reads the plan prompt: the advice it was answered with, and
+    # the time fence restated for the attempt now starting.
+    prompt = spawn.calls[0]["prompt"]
+    assert prompt.startswith("the limit has reset; continue")
+    assert prompt.count("FENCE — TIME (resumed attempt)") == 1
+    assert "deadline " in prompt
     assert result["resumed_session"] == "sess-on-the-pointer"
 
 
