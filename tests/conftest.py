@@ -67,6 +67,14 @@ _PRODUCER_LIFECYCLE_MODULES = frozenset(
     }
 )
 
+# Modules whose subject IS the model catalogue: they resolve against the real
+# catalogue to assert what a catalogue layer supplies. Everything else must not
+# read it, so the checkout's own catalogue cannot leak alias, effort, model,
+# budget group or rates into a fixture host that declared none. A test that
+# points ``RECKON_MODEL_CATALOGUE`` at its own fixture is unaffected by the
+# default; this set carries only the modules that need the repository's file.
+_CATALOGUE_SUBJECT_MODULES = frozenset({"test_flight_catalogue_layer"})
+
 # The environment a crew dispatch exports into the process it launches: the run
 # it belongs to, that run's manifest, and when the attempt started. Every one is
 # a fact about the worker, not about the code under test, and a suite that
@@ -87,6 +95,38 @@ def without_dispatch_identity(monkeypatch):
     """No test inherits the identity of the worker that ran it."""
     for name in _DISPATCH_IDENTITY_ENV:
         monkeypatch.delenv(name, raising=False)
+
+
+# The picker answers over OpenRouter and authenticates with a live credential.
+# Since routing.picker became ``route`` by default, any dispatch that names no
+# lane asks the live service; the whole suite then depends on an external
+# service, spends money on every run, and reads its judgement back as a test
+# outcome. Measured 2026-10-03: a whole-suite run failed
+# ``test_a_layer_removing_a_default_leaves_it_writable_and_records_it`` with a
+# real "BudgetHold: wave held on budget ... picker selected hold" — a live Jev
+# verdict, not a fact about the code under test. Isolation is closed here, in
+# one place bound to every test, and the credential file the checkout's real
+# ``.env`` supplies is replaced by a path that holds no key, so credential
+# resolution fails deterministically and the client raises ``LiveJevDisabled``
+# before it builds a request.
+@pytest.fixture(autouse=True)
+def no_live_jev(request, tmp_path_factory, monkeypatch):
+    """No test reaches the live picker service or reads the real credential."""
+    from reckon.crew.picker import client
+
+    monkeypatch.delenv("OPENROUTER_API_KEY_RECKON", raising=False)
+    absent = tmp_path_factory.mktemp("no-live-jev") / "absent-credential"
+    monkeypatch.setenv(client.CREDENTIAL_ENV, str(absent))
+    module = getattr(getattr(request.node, "module", None), "__name__", "")
+    if module.rsplit(".", 1)[-1] not in _CATALOGUE_SUBJECT_MODULES:
+        # Repo state must not leak into a fixture host: the checkout's own
+        # catalogue would otherwise fill alias, effort, model, budget group and
+        # rates into any backend a test declares. A catalogue test keeps the
+        # real file by name above, or points the override at its own fixture.
+        monkeypatch.setenv(
+            "RECKON_MODEL_CATALOGUE",
+            str(tmp_path_factory.mktemp("no-catalogue") / "absent-catalogue.yaml"),
+        )
 
 
 # The served process's discovery walk-reuse window. ``serve.main`` assigns

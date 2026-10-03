@@ -10,9 +10,26 @@ JEV_MODEL = "typesafe/jev-1.13"
 DECISIONS_URL = "https://openrouter.ai/api/alpha/decisions"
 TIMEOUT_SECONDS = 10
 
+# Names the credential file to read instead of the checkout's own ``.env``. A
+# caller that must not reach the live service points this at a path holding no
+# credential, so resolution fails deterministically without a request.
+CREDENTIAL_ENV = "RECKON_PICKER_CREDENTIAL"
+
+
+class LiveJevDisabledError(RuntimeError):
+    """The live Jev service was not called, so no request was sent.
+
+    Raised where a request would otherwise be built, so no connection is opened
+    and no credential is spent. The picker records this as its fallback reason
+    and dispatch continues along deterministic routing.
+    """
+
 
 def credential_path() -> Path:
     """Resolve the tool's environment file independently of the target project."""
+    override = os.environ.get(CREDENTIAL_ENV, "").strip()
+    if override:
+        return Path(override).expanduser().resolve()
     return (Path(__file__).resolve().parents[3] / ".env").resolve()
 
 
@@ -27,8 +44,9 @@ def load_key(env_path: Path) -> str:
                 value = value.strip().strip("\"'")
                 if value:
                     return value
-    raise ValueError(
-        "OPENROUTER_API_KEY_RECKON is absent from environment and reckon .env"
+    raise LiveJevDisabledError(
+        "live Jev is disabled: OPENROUTER_API_KEY_RECKON is absent from the "
+        f"environment and from {env_path}"
     )
 
 

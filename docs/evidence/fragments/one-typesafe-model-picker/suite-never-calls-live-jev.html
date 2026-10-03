@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="The suite never calls the live Jev service">
+  <meta name="plan-summary" content="An autouse conftest fixture removes the OpenRouter credential and points picker credential resolution at a path holding none, so a default-routed dispatch records a fallback naming the disabled live call and continues on deterministic routing, with the network call never made.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s6">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,picker,test-isolation,evidence">
+  <title>The suite never calls the live Jev service | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="suite-never-calls-live-jev" data-reckon="landed" data-when="2026-10-03">
+  <h2>The suite never calls the live Jev service</h2>
+  <p>Since <code>routing.picker</code> became <code>route</code> by default, any test that
+  dispatched with no lane named called Jev over OpenRouter. The suite therefore depended on an
+  external service, spent money on every run, and read Jev's judgement back as a test outcome:
+  a whole-suite run failed <code>test_a_layer_removing_a_default_leaves_it_writable_and_records_it</code>
+  with a real <code>BudgetHold: wave held on budget ... picker selected hold</code>.</p>
+  <p>An autouse <code>no_live_jev</code> fixture now removes <code>OPENROUTER_API_KEY_RECKON</code>
+  from the environment, adds a <code>RECKON_PICKER_CREDENTIAL</code> override to the client, and
+  points credential resolution at a path holding none. With no usable credential the client
+  raises <code>LiveJevDisabledError</code> before it builds a request, so the picker records its
+  usual fallback (<code>jev-error: LiveJevDisabledError</code>) and dispatch continues along
+  deterministic routing. <code>tests/test_suite_never_calls_live_jev.py</code> asserts the
+  <code>urlopen</code> spy is never reached, the fallback reason names the disabled live call, the
+  routed exit code equals the deterministic one for the same dispatch, and the real credential is
+  unreadable under test.</p>
+  <p>The same autouse fixture also points <code>RECKON_MODEL_CATALOGUE</code> at an absent
+  temp path, so the checkout's <code>docs/state/reckon/model-catalogue.yaml</code> no longer
+  leaks alias, effort, model, budget group and rates into any backend a fixture host declares;
+  the module whose subject is the catalogue keeps the repository file by name. A third case
+  asserts a fixture host backend resolves with no catalogue-supplied value and the real
+  catalogue is never read.</p>
+  <p>Gate: picker population 155 passed at head against 152 at base; the flight and ticker
+  population moves from 15 failed / 337 passed at base to 1 failed / 354 passed at head — 14
+  repository-catalogue-caused failures resolved, one pre-existing failure left (unchanged at
+  base), the new tests passing. The declared negative control — removing the autouse fixture —
+  turns the urlopen spy test, the credential case and the catalogue case red.</p>
+</article>
+</body>
+</html>
