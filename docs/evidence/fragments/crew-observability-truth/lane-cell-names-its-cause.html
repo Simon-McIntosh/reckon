@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="lane-cell-names-its-cause">
+  <meta name="plan-title" content="The lane cell names why it has no mean">
+  <meta name="plan-summary" content="The row's lane cell printed one phrase for every way a mean could not be read, and readers took it for an outage; each state now names its own cause — no lane clause when the backend declares no document, mean unpublished when the document has no throughput block, lane doc stale past its shelf life — and the run's own rate is rendered in every case.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-commits" content="fd0ad2b1e, 47e430875">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,ticker,lane,observability">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>The lane cell names why it has no mean | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution record &middot; 2026-10-03</p>
+      <h1>The lane cell names why it has no mean</h1>
+      <p class="lead" data-node="lane-cell-names-its-cause" data-reckon="landed" data-when="2026-10-03">
+        Every row whose lane figure could not be read printed the same words,
+        <code>lane mean unavailable</code>, and a follower read them as the lane being
+        down while the lane was serving. Each state now names its own cause. A backend
+        that declares no lane document carries the run's own rate alone
+        (<code> 2.00</code>); a fresh document that has published no throughput block
+        says <code>lane mean unpublished</code>; a document past its own shelf life says
+        <code>lane doc stale</code>; a document carrying a mean prints the mean as
+        before (<code>lane 1.44</code>). Gate: base <code>cee50d7f4</code>
+        <strong>38 failed, 373 passed</strong>, head <code>47e430875</code>
+        <strong>29 failed, 382 passed</strong>, no added failure id — the two extra base
+        failures are wall-clock flakes in <code>test_crew_session_delivery.py</code> that
+        pass in isolation at the base tree and pass in the head arm. Negative control
+        executed: with the old phrase reinstated in a copy of the head tree,
+        <code>test_lane_cell_names_its_cause.py</code> fails 1 of 4 — the outage-wording
+        guard — an id the head arm does not fail. <code>ruff check</code> and
+        <code>ruff format --check</code> report no finding over the changed paths that
+        the base did not.
+      </p>
+    </header>
+
+    <h2>Why one phrase read as an outage</h2>
+    <p>The two causes are different facts about the lane. In the first, the lane's
+    document is present, fresh and measured, and its throughput block has not been
+    published yet — a figure that is late, which a reader can wait out. In the second,
+    the backend names no lane document at all (the codex-shaped row), so there is no
+    lane to read and nothing the lane could publish. One phrase covered both, and so
+    also covered a document that was present and healthy; a reader holding a stalled
+    row attributed the stall to the lane rather than to the worker the row describes.
+    The repair is that the cell's text carries the cause, so a reader distinguishes a
+    late figure from an unread lane without opening the document.</p>
+    <p>The cell resolves the backend's declared document through the same four-layer
+    flight configuration a dispatch reads and takes it through
+    <code>reckon/crew/lane_document.py</code>'s own readers, so the freshness judgment
+    and the throughput keys stay the module's rather than a second spelling kept in the
+    ticker. A boolean mean and a document that is absent, unparsable or not an object
+    all take the unpublished clause, because none of them is a measured figure.</p>
+
+    <h2>The four states</h2>
+    <p>Rendered at the head tree by the cell's own code, with a run rate of
+    <code>2.00</code> tokens a second in every row:</p>
+    <table>
+      <thead><tr><th>State</th><th>What the cell prints</th></tr></thead>
+      <tbody>
+        <tr><td>backend declares no lane document</td><td><code> 2.00</code> &mdash; the run's own rate, no lane clause</td></tr>
+        <tr><td>fresh document, no throughput block</td><td><code> 2.00 lane mean unpublished</code></td></tr>
+        <tr><td>document past its own shelf life</td><td><code> 2.00 lane doc stale</code></td></tr>
+        <tr><td>document carrying a mean</td><td><code> 2.00 lane 1.44</code></td></tr>
+      </tbody>
+    </table>
+    <p>Two properties are load-bearing. The clause holds one width in every state, so the
+    run's own figure stays on its column as rows move down a pane: the longest clause
+    (<code>lane mean unpublished</code>) fixes the cell's width, unchanged from the width
+    the single phrase occupied. And the run's own rate is rendered in every case,
+    including the one where no lane clause follows it, because it is the row's own
+    measurement and withholding it would cost the reader that fact as well. A row that
+    names no backend still adds no cell at all — the document is declared per backend.</p>
+
+    <h2>Evidence</h2>
+    <p>The four cases are asserted in <code>tests/test_lane_cell_names_its_cause.py</code>,
+    which builds each row through the watch path's own transition builder
+    (<code>recovery._watch_transition</code>) with its spend figures folded from a
+    stream, against a lane figure the cell reads — not a hand-built row, and no figure
+    asserted from a field the watch event does not carry. Every case also asserts that no
+    rendered row carries the word <code>unavailable</code>, which is the repair's whole
+    point rather than a spelling check.</p>
+    <p>Base arm <code>cee50d7f4</code>: 38 failed, 373 passed over the 24 ticker-reaching
+    files; head arm <code>47e430875</code>: 29 failed, 382 passed; every head failure id
+    is a base failure id. At base, the new file fails 3 of its 4 cases (the measured case
+    passes unchanged), and the four assertions in
+    <code>test_ticker_shows_the_lane_mean.py</code> that were updated to the clause
+    replacing the phrase fail against the base revision, which carries neither clause
+    constant. The two base-only failures in <code>test_crew_session_delivery.py</code>
+    are a fixed observation window in a threaded follower test missed under the loaded
+    62.6 s base run: both pass in isolation at the base tree and pass in the head arm,
+    and they are outside this node.</p>
+    <p>Negative control:
+    <code>LANE_MEAN_UNPUBLISHED</code> reverted to the old phrase in a copy of the head
+    tree makes the no-throughput case fail on the outage-wording assertion alone
+    (<strong>1 failed, 3 passed</strong>) — an id the head arm does not fail.</p>
+  </main>
+</body>
+</html>

@@ -202,15 +202,16 @@ def test_the_lane_mean_stands_beside_the_rows_own_rate(lane, row, grid):
 def test_the_run_rate_survives_a_lane_that_published_nothing(lane, row, grid):
     """Without a document the row keeps the run's own figure and names the rest.
 
-    This is the case a live pane meets whenever the lane is down or has not
-    published yet, and it is why the rate is rendered unconditionally: a row
-    that dropped its own figure here would leave the reader with neither the
-    rate nor the mean.
+    This is the case a live pane meets whenever the lane has not published yet,
+    and it is why the rate is rendered unconditionally: a row that dropped its
+    own figure here would leave the reader with neither the rate nor the mean.
+    The phrase names the cause — the lane has published no figure — rather than
+    an absence a reader could take for an outage.
     """
     line = plain(grid.render(row()))
     assert f"{ROW_RATE:.2f}" in line, line
     assert ticker_module.LANE_LABEL in line, line
-    assert ticker_module.LANE_MEAN_UNAVAILABLE in line, line
+    assert ticker_module.LANE_MEAN_UNPUBLISHED in line, line
     assert f"{LANE_MEAN:.2f}" not in line, line
 
 
@@ -248,7 +249,7 @@ def test_a_stale_document_is_named_not_numbered(lane, row, grid):
     """
     lane.write_text(lane_document(LANE_MEAN, age_seconds=600), encoding="utf-8")
     line = plain(grid.render(row()))
-    assert ticker_module.LANE_MEAN_UNAVAILABLE in line, line
+    assert ticker_module.LANE_DOC_STALE in line, line
     assert f"{LANE_MEAN:.2f}" not in line, line
     assert f"{ROW_RATE:.2f}" in line, line
 
@@ -257,7 +258,7 @@ def test_a_document_without_a_mean_is_named(lane, row, grid):
     """A lane that published no rate is named rather than read as zero."""
     lane.write_text(lane_document(mean=None), encoding="utf-8")
     line = plain(grid.render(row()))
-    assert ticker_module.LANE_MEAN_UNAVAILABLE in line, line
+    assert ticker_module.LANE_MEAN_UNPUBLISHED in line, line
     assert "0.00" not in line, line
     assert f"{ROW_RATE:.2f}" in line, line
 
@@ -271,7 +272,7 @@ def test_a_document_that_is_not_json_is_named(lane, row, grid):
     """
     lane.write_text('{"throughput": ', encoding="utf-8")
     line = plain(grid.render(row()))
-    assert ticker_module.LANE_MEAN_UNAVAILABLE in line, line
+    assert ticker_module.LANE_MEAN_UNPUBLISHED in line, line
     assert f"{ROW_RATE:.2f}" in line, line
 
 
