@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="A crew verb's ok reads its outcome">
+  <meta name="plan-summary" content="Crew command JSON now derives its success field and exit status from the returned outcome, preserving an explicit ok and exposing held, skipped, refused, or unmeasured results.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verifies" content="crew-runtime-positive-controls#s50">
+  <meta name="plan-verdict" content="fail">
+  <title>A crew verb's ok reads its outcome &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <h1>A crew verb's ok reads its outcome &mdash; evidence</h1>
+  <p>The live section recorded 27 literal success wrappers around crew results. At base <code>61a4439acfab64bb85cbacc69d75454e01d89b94</code>, the new AST enumeration found 32 spread expressions across those wrappers and named <code>crew_preflight:1561</code> first. That is the reproduced defect: <code>{"ok": True, **report}</code> reports success for a held preflight because the report has no <code>ok</code> of its own.</p>
+
+  <section id="shapes">
+    <h2>Result shapes measured before the rule</h2>
+    <p>The inventory below follows every crew command's emit site in <code>reckon/cli.py</code> to the result it publishes. The keys shown are the outcome-bearing keys read in the called function's return shape; a row listing several verbs groups identical result forms. The three entry-point probes below exercise the hold, absent exit status, and clear-result arms.</p>
+    <table>
+      <thead><tr><th>Verbs</th><th>Result shape and meaning</th></tr></thead>
+      <tbody>
+        <tr><td>directory, velocity, verify-gate</td><td>These may supply <code>ok</code> directly. The returned value owns the verdict; verify-gate now uses this to mark an unfinished replay false.</td></tr>
+        <tr><td>pick</td><td>A selection carries <code>action</code> as route, fallback, hold or refuse. Hold and refuse are negative outcomes; a routed fallback succeeds.</td></tr>
+        <tr><td>preflight</td><td><code>held</code> beside <code>held_backends</code> is a wave hold. An empty hold list reports a clear check, including the documented unknown-headroom case.</td></tr>
+        <tr><td>dispatch, shadow, resume, redispatch</td><td>Successful calls return a plan, launch, or moved-run record. Their refusal branches already return explicit <code>ok: false</code> and distinct nonzero codes.</td></tr>
+        <tr><td>attach, observe, stop, discard, repair-status, complete</td><td>A run or ledger action returns its record. A worker's state inside that record is data about the worker; the command succeeds when it records the action.</td></tr>
+        <tr><td>follow, watch</td><td>Stream rows carry <code>event</code>; a single watch returning <code>watcher-live</code> did not acquire the watcher seat. Ordinary transition, empty-fleet and stream-control rows are measured events.</td></tr>
+        <tr><td>resume-ready</td><td>A sweep returns <code>resumed</code>, <code>skipped</code> and <code>reviews</code>. A nonempty skip, review error or refused review is a partial outcome.</td></tr>
+        <tr><td>unwatch, placement, list, member add/list, ledger</td><td>Read or management records are the result. <code>placement.held</code> means a reservation exists, which is a successful ensure, while <code>drain.drained</code> below describes plan state.</td></tr>
+        <tr><td>dispose, check-manifest, widen, drain, ack</td><td>Disposition, manifest finding, scope, closure and acknowledgement records. Check-manifest already carries an explicit verdict. An undrained project is a successful read of unfinished work, not a failed read.</td></tr>
+        <tr><td>suite run, suite waive</td><td>The run record carries <code>exit_status</code> and <code>over_budget</code>; a null or nonzero exit, or a bound overrun, cannot claim the suite succeeded. Waive returns the written path.</td></tr>
+        <tr><td>gc</td><td>A completed sweep returns worktree and removal reports. A sweep stopped mid-pass already returns an explicit refusal payload carrying its partial report.</td></tr>
+        <tr><td>recover</td><td>Classification is a successful read; with review dispatch requested, nonempty <code>reviews_refused</code>, <code>reviews_awaiting_lane</code> or <code>reviews_awaiting_coordinator</code> means the review pass did not finish.</td></tr>
+        <tr><td>split-runs, repair-completion</td><td>Per-project <code>skipped</code> or <code>stopped</code> rows mark an incomplete split. Repair reports <code>unusable</code> when no stream can measure completion.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="rule">
+    <h2>The published rule</h2>
+    <p><code>_crew_result_ok</code> in <code>reckon/cli.py</code> reads the result before <code>_emit_crew_result</code> publishes it. An explicit <code>ok</code> wins, including false. Otherwise a nonempty result is true only if its outcome fields do not name an error, refusal, skip, finding, unusable measurement, timeout, budget overrun, absent or nonzero exit status, <code>ran: false</code>, <code>measured: false</code>, <code>completed: false</code>, a held preflight, a watcher-seat skip, held or refused picker action, failed validation, review refusal or deferral, or stopped/skipped project split. A bare <code>drained: false</code> and a placement reservation's <code>held: true</code> remain measured facts, not command failures. The emit helper gives a false result exit 1, preserving preflight's established exit 3 for a hold.</p>
+  </section>
+
+  <section id="measure">
+    <h2>Verification and remaining gate</h2>
+    <p>The focused test file passes at final source head <code>62d5be2da1dd20018a0773552b36f8395911561e</code>: 22 cases in that file, plus two existing observe cases, passed together (24 passed in 18.12 s). The named enumeration found zero literal-success spreads. The final-head scratch mutation restored one literal preflight spread, and the enumeration failed naming <code>crew_preflight:1627</code> (<code>negative-control-current.log</code>, <code>EXIT=1</code>).</p>
+    <p>The 168-file comparison ran to summary on both arms. Base <code>61a4439acfab64bb85cbacc69d75454e01d89b94</code> had 2,247 passed, 32 failed, 4 errors and 7 skipped in 1083.76 s. Measured source head <code>3b68e21c373a4b6aeb89bcf778e2cb3713cce8a6</code> had 2,273 passed, 15 failed and 7 skipped in 947.51 s. The flat failure-set comparison found 15 new IDs. Two were observe treating the worker's null exit status as the read's status; the final source commit fixes that, and both existing cases pass in the focused check. One xdist worker crashed in the large run on a follower rearm case; that case passes alone in 34.06 s. The other 12 assert exit 0 for results now reported as negative by this section's requested contract. Their test files are outside this worker's write grant, so the full-population gate is not green at final head. The final source head has not been rerun over all 168 files.</p>
+    <p>Lint on the changed source and test path adds zero findings: <code>reckon/cli.py</code> retains its four base findings and the new test file has none. Both changed paths pass the format check.</p>
+  </section>
+
+  <section id="readers">
+    <h2>Readers of the changed answer</h2>
+    <p>The Reckon build skill invokes preflight and verify-gate, but the searched build/edit skill and hook code has no direct branch on crew JSON <code>ok</code>. Preflight keeps exit 3 for a hold while publishing <code>ok: false</code>; verify-gate now exits nonzero when its explicit replay verdict is false. A suite run with a null or red exit likewise reports false. Split-runs reports a skipped or stopped project as a negative command outcome. The broad head run found old exit-zero assertions for seven verify-gate cases in <code>test_bookkeeping_follows_the_run.py</code>, <code>test_crew_gate_command_is_runnable.py</code>, <code>test_crew_promotion.py</code>, <code>test_replay_bound_follows_the_gate.py</code> and <code>test_verify_gate_replay_is_diagnosable.py</code>; four skip/stop cases in <code>test_split_existing_runs.py</code>; and one red suite run in <code>test_standing_suite_holds_promotion.py</code>. Each assertion expected exit 0 while its payload now correctly reads <code>ok: false</code>. The manifest names every added failure ID and its candidate commit for a companion test update.</p>
+  </section>
+</main>
+</body>
+</html>
