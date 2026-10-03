@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="238">
+<meta name="plan-version" content="239">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1768,7 +1768,10 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
     <div class="r-comment-body"><p>Attributed the killed-worker-resumes failure at tests/test_a_killed_worker_resumes_to_completion.py:328 (`assert second["exit_code"] == 0` reads None) to the supervisor's spawn path at reckon/crew/dispatch.py:9426-9431: the shared spawn-retry startup poll reaps a fast bwrap-fenced worker, and _supervisor_spawn_worker drops the collected exit status; introduced by 04538bea5 (crew session s22-coord); no source changed.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261003T131150767670-review-of-the-fleet-reading-test-follows-the-shared-step" data-who="reckon-build" data-when="2026-10-03T13:21:29.905Z">
-    <div class="r-comment-body"><p>review of run r-20261003T125650772064-the-fleet-reading-test-follows-the-shared-step stored at both granted review paths: parsed record, scores {goal_fidelity 18, evidence 17, scope_discipline 19, durability 18, fit 19} total 91, reviewed_base_sha 907596aa0a5438ccb1a7a6258f7a2e378237fb23, reviewed_head_sha 25aa22a9d44116a2cb25c21047d3bce3d7e44967, added_failure_count 0 with added_failure_ids [] derived from the reviewed run&#x27;s own baseline/after gate logs; three follow-on findings, no blocker.</p></div>
+    <div class="r-comment-body"><p>review of run r-20261003T125650772064-the-fleet-reading-test-follows-the-shared-step stored at both granted review paths: parsed record, scores {goal_fidelity 18, evidence 17, scope_discipline 19, durability 18, fit 19} total 91, reviewed_base_sha 907596aa0a5438ccb1a7a6258f7a2e378237fb23, reviewed_head_sha 25aa22a9d44116a2cb25c21047d3bce3d7e44967, added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline/after gate logs; three follow-on findings, no blocker.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261003T131316621933-review-of-a-killed-worker-resumes-to-completion-again" data-who="reckon-build" data-when="2026-10-03T13:22:09.524Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261003T125742888765-a-killed-worker-resumes-to-completion-again (diagnosis node) at 03aeaae6..14d3d8243; the diagnosed product defect reproduces at head and is absent at the pre-retry parent, so the attribution to 04538bea5 is confirmed; total 94, zero added failures, three follow-ons (null gate arms, negative control is a rerun, and the un-repaired dispatch.py defect).</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
