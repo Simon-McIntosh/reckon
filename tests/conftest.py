@@ -422,6 +422,102 @@ def reap_watch_producers_armed_by_this_test(tmp_path, tmp_path_factory):
     preserve_seat_records(root)
 
 
+# The obligation sweep runs on a daemon thread a producer starts off its own
+# transition path, and nothing joins that thread: a sweep can outlive the test
+# that triggered it and still be running while the next test replaces the
+# modules it reads. Measured on 2026-10-03 at b5f74d36b in a whole-suite half:
+# a sweep thread an earlier test started decoded the ledger after
+# ``test_append_run_writes_one_run_file.py`` had replaced the decoder with a
+# refusal, and that test errored at teardown with the thread's exception — the
+# verdict depended on which test ran next. The join is bound to the one moment
+# that always happens, so the thread ends with the test that started it; one
+# that outlives the bound fails that test by name instead of reading as the
+# next test's failure. Requesting ``tmp_path`` and ``monkeypatch`` finalizes
+# this fixture before the tree and the configuration home a sweep was started
+# against are taken down, so the join sees the same environment the test did.
+# A producer that lives inside the watch claim is popped from the registry when
+# the claim exits, which can happen while its sweep is still in flight, so the
+# registry walk cannot see every live sweep; joining the threads by their own
+# name reaches the producers the registry has already dropped.
+@pytest.fixture(autouse=True)
+def joined_watch_sweeps(request, tmp_path, monkeypatch):
+    """No test leaves an obligation sweep thread running for the next test."""
+    yield
+    import threading
+
+    from reckon.crew import runs as runs_module
+
+    stragglers = runs_module.join_watch_sweeps()
+    for thread in list(threading.enumerate()):
+        if not thread.name.startswith("reckon-obligations-sweep"):
+            continue
+        thread.join(runs_module.WATCH_SWEEP_JOIN_SECONDS)
+        if thread.is_alive():
+            stragglers.append(thread.name)
+    if stragglers:
+        pytest.fail(
+            f"{request.node.nodeid} left obligation sweep threads running past "
+            f"their join bound: {', '.join(sorted(stragglers))}"
+        )
+
+
+# The per-test reap walks every ``*.lock`` seat record under the run's root,
+# which includes the mirror ``preserve_seat_records`` keeps for the session-end
+# reap. A test that forges a process-global reader — ``Path.read_bytes``
+# ``json.loads``, ``Path.open`` — and a record mirrored from an earlier test
+# then collide at teardown: the reap's attribution read lands on the forgery.
+# Measured on 2026-10-03 at c147ccad in one xdist worker: the four teardown
+# errors of ``tests/test_append_run_writes_one_run_file.py`` after
+# ``tests/test_obligations_snapshot_is_published.py`` were all reads by
+# ``reap_watch_producers_armed_by_this_test`` — ``/proc/<pid>/environ`` and a
+# mirrored watch record — landing on that file's own forged guards, not on any
+# thread. The mirror is read only by the session-end reap, so it is moved aside
+# while tests run and restored by a finalizer the session reap outlives.
+_SEAT_RECORD_MIRROR_ASIDE = "_seat-records-aside"
+
+
+def _seat_record_mirror_aside(root: Path) -> Path:
+    # A sibling of ``root``, not a child: the reap looks for ``crew/watch``
+    # directories anywhere under ``root``, so a hidden mirror that kept that
+    # shape would still be read.
+    return root.with_name(f"{root.name}{_SEAT_RECORD_MIRROR_ASIDE}")
+
+
+def _set_aside_seat_record_mirror(root: Path) -> None:
+    mirror = root / _SEAT_RECORDS_DIR
+    if not mirror.exists():
+        return
+    aside = _seat_record_mirror_aside(root)
+    if aside.exists():
+        shutil.rmtree(aside)
+    mirror.rename(aside)
+
+
+def _restore_seat_record_mirror(root: Path) -> None:
+    aside = _seat_record_mirror_aside(root)
+    if not aside.exists():
+        return
+    mirror = root / _SEAT_RECORDS_DIR
+    if mirror.exists():
+        shutil.rmtree(mirror)
+    aside.rename(mirror)
+
+
+@pytest.fixture(autouse=True)
+def seat_records_mirror_is_hidden_from_the_running_tests(tmp_path_factory):
+    """Only the session-end reap reads another test's mirrored seat records."""
+    _set_aside_seat_record_mirror(tmp_path_factory.getbasetemp())
+
+
+@pytest.fixture(scope="session", autouse=True)
+def seat_record_mirror_is_restored_for_the_session_reap(
+    reaped_watch_producers, tmp_path_factory
+):
+    """Put the mirror back before the session-end reap reads it."""
+    yield
+    _restore_seat_record_mirror(tmp_path_factory.getbasetemp())
+
+
 def _live_watch_producers() -> list[tuple[int, Path]]:
     """Every live ``crew watch`` process, with the home its environment names.
 
