@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="A sweep spares every worktree a live pointer names, and acts on one run on request">
+  <meta name="plan-summary" content="A run parked between turns keeps its live pointer while its manifest reads waiting, its head still equals its dispatch base and its worker process is not alive. The phase-gated claim read that pointer as finished, so a repository-wide sweep classified a live run's tree as reclaimable and removed it. The claim is now the pointer's own: any worktree a live pointer names is live-referenced, whatever phase, process liveness or integration state the pointer carries, and only promotion or discard — which remove the pointer — release it. A held tree's remedy is a sweep confined to that run, so clearing one duty cannot reach a peer's tree.">
+  <meta name="plan-evidence-for" content="reckon:crew-runtime-positive-controls">
+  <meta name="plan-verifies" content="reckon:crew-runtime-positive-controls#s44">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,gc,worktree,live-pointer,obligations,run-scope">
+  <title>A sweep spares every worktree a live pointer names, and acts on one run on request &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A sweep spares every worktree a live pointer names, and acts on one run on request</h1>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <p><code>reckon/crew/routing.py</code>: the removal paths read a new
+        <code>_live_pointer_worktrees()</code> &mdash; every worktree named by
+        any live pointer, with no phase filter &mdash; in place of the
+        phase-gated <code>_live_worktree_claims()</code> used before
+        classification, before the apply loop's re-read and in the residue
+        release's guard. A tree is a run's until promotion or discard removes
+        the pointer that names it; an integration state, a terminal-looking
+        phase or a dead worker process no longer licenses a sweep to reclaim
+        it. <code>garbage_collect</code> also gains <code>run_id</code>, which
+        resolves one run's worktree from its live pointer or its ledger row and
+        refuses a path that is not a registered worktree, then confines
+        classification, removal, pointer reaping and run-directory retention to
+        that run. <code>_pointer_claims_worktree</code> and its phase-gated
+        wrapper are unchanged for their other callers, whose reads ask whether
+        a run is in flight rather than whether its tree is still its own.</p>
+      <p><code>reckon/cli.py</code>: <code>crew gc --run RUN_ID</code> passes
+        the confinement through, and refuses <code>--run</code> together with
+        <code>--scratch</code>, which act on different targets.</p>
+      <p><code>reckon/crew/obligations.py</code>: a worktree-held row's remedy
+        is now <code>reckon crew gc --repo &lt;repo&gt; --project
+        &lt;project&gt; --run &lt;run id&gt; --apply</code> &mdash; the run
+        that holds the tree, never a repository-wide sweep, so answering one
+        duty cannot reclaim a peer's work. A retained row that names no run id
+        is skipped rather than widened.</p>
+      <p>The read-time existence check was already present at the base
+        revision (<code>_held_worktree_records</code> filters
+        <code>path.is_dir()</code>); it was verified rather than
+        reimplemented, and the new test's third case asserts it against a tree
+        removed after registration while git still lists the path.</p>
+    </section>
+
+    <section id="measure">
+      <h2>The measure</h2>
+      <table>
+        <thead><tr><th>arm</th><th>revision</th><th>result</th><th>log</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>base</td>
+            <td><code>62a16a744</code> + the new test file</td>
+            <td>113 passed, 3 failed, EXIT=1</td>
+            <td><code>base-arm-62a16a744.log</code></td>
+          </tr>
+          <tr>
+            <td>head</td>
+            <td><code>5a104bb4e</code></td>
+            <td>116 passed, EXIT=0</td>
+            <td><code>head-arm-5a104bb4e.log</code></td>
+          </tr>
+          <tr>
+            <td>negative control: phase-gated claim restored</td>
+            <td><code>5a104bb4e</code> + mutation</td>
+            <td>1 passed, 2 failed, EXIT=1</td>
+            <td><code>negative-control-phase-gated.log</code></td>
+          </tr>
+          <tr>
+            <td>negative control: the removal itself</td>
+            <td><code>5a104bb4e</code> + mutation</td>
+            <td>parked tree classified <code>integrated</code> and removed (<code>tree_exists_after_apply=False</code>)</td>
+            <td><code>negative-control-removal.log</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>The gate is the new test file plus every test file under
+        <code>tests/</code> that names <code>garbage_collect</code>,
+        <code>crew gc</code>, <code>_live_worktree_claims</code> or a
+        worktree-held obligation (19 files), run with
+        <code>pytest-xdist -n 8 --timeout=300</code>; the base arm from a
+        <code>git archive</code> extraction of the base revision with the new
+        test file copied in. The base arm's three failing ids are
+        <code>test_a_sweep_spares_a_parked_runs_worktree</code>,
+        <code>test_run_scope_touches_only_the_named_runs_tree</code> and
+        <code>test_the_held_tree_remedy_names_a_run_scoped_sweep</code> &mdash;
+        the defect being repaired, all passing at head. The head arm adds no
+        failing id. The negative control's two failing ids are the first two of
+        those, neither failing at head; the fourth row is a direct
+        demonstration on the same mutation, where an applying sweep removes the
+        parked run's worktree instead of sparing it.</p>
+      <p>The new test synthesises its own config home, ledger, repository and
+        worktrees, covering both arms of the old predicate (a terminal-looking
+        phase, and no phase at all with a reaped worker pid), and never runs a
+        sweep against the real fleet. In the run-scope case the CLI is driven
+        with <code>--run</code> for a retained tree and for a parked one,
+        asserting that only the named run's tree is removed and that a live
+        pointer's tree is listed as <code>live-referenced</code> and left
+        alone.</p>
+    </section>
+
+    <section id="paths">
+      <h2>Paths and commits</h2>
+      <ul>
+        <li><code>reckon/crew/routing.py</code></li>
+        <li><code>reckon/cli.py</code></li>
+        <li><code>reckon/crew/obligations.py</code></li>
+        <li><code>tests/test_gc_spares_a_live_pointers_worktree.py</code></li>
+        <li><code>tests/test_crew_obligations.py</code> and
+          <code>tests/test_coordinator_obligations_hook.py</code> (expectations
+          the per-run remedy makes stale)</li>
+        <li>commit <code>5a104bb4e62ef8d51e1555d9e8524eef1ab6785b</code></li>
+      </ul>
+    </section>
+
+    <section id="caveats">
+      <h2>Caveats for the coordinator</h2>
+      <ul>
+        <li>The per-run remedy changes one obligation line per held tree where
+          peers previously collapsed into one overloaded counter line; the
+          hook test now pins the per-tree line count, and the fatigue bound
+          that counter provided is no longer asserted anywhere.</li>
+        <li><code>reckon/crew/routing.py</code> is also named in another
+          in-flight node's scope; this worktree's copy is committed, and the
+          merge is the coordinator's.</li>
+        <li>Two test files outside the declared write scope were updated
+          because the brief requires them to keep passing; the stale
+          expectations are the change's own consequence, not a defect.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
