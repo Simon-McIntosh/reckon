@@ -77,7 +77,8 @@ def _event(**overrides):
 
 @pytest.fixture
 def grid():
-    return ticker_module.Ticker(width=180, theme="light", color=False)
+    """A grid whose model cell is pinned, so the row's columns are its own."""
+    return ticker_module.Ticker(width=180, theme="light", color=False, model_aliases=())
 
 
 def test_every_line_is_exactly_the_requested_width(grid):
@@ -240,7 +241,7 @@ def test_the_queued_counter_keeps_the_block_a_constant_width_across_counts():
         assert len({row.index(f"{count:>2}w") for count, row in rows.items()}) == 1
 
 
-def test_the_queued_counter_still_renders_a_zero_rather_than_dropping_it():
+def test_the_queued_counter_still_renders_a_zero_rather_than_dropping_it(monkeypatch):
     """A zero is dimmed, never blanked — the property the wider cell must keep.
 
     The cell is dimmed rather than dropped so a reader watching a drain sees the
@@ -249,6 +250,7 @@ def test_the_queued_counter_still_renders_a_zero_rather_than_dropping_it():
     must not change that, so the zero still occupies its cell and still carries
     the dim style.
     """
+    monkeypatch.delenv("NO_COLOR", raising=False)
     painter = ticker_module.Ticker(width=180, color=True)
     line = painter.render(_event(working=0, blocked=0, unpromoted=0, waiting=0))
     assert " 0q" in plain(line)
@@ -387,8 +389,13 @@ def test_colour_is_off_by_default_so_callers_get_a_plain_string():
     assert "\x1b" not in default.render(_event())
 
 
-def test_colour_changes_only_presentation(grid):
-    coloured = ticker_module.Ticker(width=180, theme="light", color=True)
+def test_colour_changes_only_presentation(grid, monkeypatch):
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    # The same grid as the fixture but painted, so the plain-text comparison
+    # below holds the columns fixed and varies only the escape codes.
+    coloured = ticker_module.Ticker(
+        width=180, theme="light", color=True, model_aliases=()
+    )
     event = _event()
     assert "\x1b" in coloured.render(event)
     assert plain(coloured.render(event)) == grid.render(event)
@@ -399,12 +406,13 @@ def test_no_color_in_the_environment_disables_colour(monkeypatch):
     assert "\x1b" not in ticker_module.Ticker(color=True).render(_event())
 
 
-def test_a_worker_keeps_one_colour_and_neighbours_differ():
+def test_a_worker_keeps_one_colour_and_neighbours_differ(monkeypatch):
     """Identity is the question the node colour answers, so it must be stable.
 
     Hues are handed out in order of first appearance rather than hashed from the
     name, because a hash collides two live workers onto one colour.
     """
+    monkeypatch.delenv("NO_COLOR", raising=False)
     painter = ticker_module.Ticker(color=True)
     first = painter.render(_event(node="alpha"))
     again = painter.render(_event(node="alpha", to_state="complete"))
@@ -481,7 +489,7 @@ def test_with_session_does_not_insert_a_column_outside_the_reading_order():
 
 def test_a_narrow_width_is_widened_to_what_the_columns_need():
     """Asking for less than the grid occupies must not produce a wrapped row."""
-    grid = ticker_module.Ticker(width=40, color=False)
+    grid = ticker_module.Ticker(width=40, color=False, model_aliases=())
     line = plain(grid.render(_event(), with_session=True))
     assert len(line) == grid.width
     assert grid.width >= ticker_module.MIN_WIDTH
@@ -500,7 +508,8 @@ def test_the_cli_theme_choices_match_the_palettes_they_select():
     assert set(cli.TICKER_THEMES) == set(ticker_module.STATE_HUE)
 
 
-def test_each_side_of_the_transition_is_painted_as_its_own_state():
+def test_each_side_of_the_transition_is_painted_as_its_own_state(monkeypatch):
+    monkeypatch.delenv("NO_COLOR", raising=False)
     painter = ticker_module.Ticker(theme="light", color=True)
     hues = ticker_module.STATE_HUE["light"]
 
@@ -667,8 +676,9 @@ def test_the_role_column_is_stable_across_every_configured_role(grid):
     )
 
 
-def test_the_role_is_dim_rather_than_hued():
+def test_the_role_is_dim_rather_than_hued(monkeypatch):
     """Colour answers which worker and does-this-need-me; role gets neither."""
+    monkeypatch.delenv("NO_COLOR", raising=False)
     painter = ticker_module.Ticker(theme="light", color=True)
     line = painter.render(_event(role="review", node="n-west"))
 
@@ -699,7 +709,7 @@ def test_a_role_column_still_leaves_every_other_column_on_its_own_position():
 
 
 def test_a_narrow_width_still_widens_to_fit_the_role_column():
-    grid = ticker_module.Ticker(width=40, color=False)
+    grid = ticker_module.Ticker(width=40, color=False, model_aliases=())
     assert grid.width >= ticker_module.MIN_WIDTH
     assert ticker_module.ROLE > 0
     line = plain(grid.render(_event()))
