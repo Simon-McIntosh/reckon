@@ -710,10 +710,10 @@ def test_ship_has_one_advisory_fleet_size_table() -> None:
 # named there, so the line is a rule the decision point needs rather than
 # reference that can be read conditionally.
 #
-# Raised from 15_600 when the inventory gained the repair-status verb, whose
-# line costs 35 estimated tokens and names the state a coordinator reads before
-# restating a manifest's status word. Raised by the line's own cost rather than
-# rounded up for headroom.
+# Raised from 15_600 to admit the repair-status verb, whose inventory line
+# costs 27 estimated tokens and names the state a coordinator reads before
+# restating a manifest's status word. Raised only as far as that line requires
+# against the base reading, not rounded up for headroom.
 FIXED_READ_SET_TOKEN_BUDGET = 15_616
 
 
