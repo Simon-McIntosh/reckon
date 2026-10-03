@@ -35,17 +35,24 @@
   probed, as on the deterministic path.</p>
   <p><code>reckon/crew/dispatch.py</code> accepts the caller's <code>picker_selection</code>
   and reuses it rather than asking the picker again, so a live picker dispatch makes one
-  pick, not two, and the availability-checked backend is exactly the dispatched backend.</p>
+  pick, not two, and the availability-checked backend is exactly the dispatched backend.
+  Its public <code>build_picker_inputs</code> helper reads the ledger rows, the verdict
+  inputs and the budget snapshot once, outside the picker's latency bound: the CLI calls
+  it and hands the results to <code>dispatch_picker_selection</code>, and the
+  dispatcher's own no-selection branch uses the same helper. Each input is guarded
+  independently, so a failed read is recorded against the input that failed and turns
+  into a fallback whose reason names it, never an exception before the picker is asked.</p>
 
   <h3>Measure</h3>
   <ul>
     <li>Gate (seven named files, including <code>test_picker_in_dispatch.py</code> and
     <code>test_picker_inputs_never_block_dispatch.py</code>): head arm
-    <code>EXIT=0</code> at commit a534e5370.</li>
+    <code>EXIT=0</code> (55 passed).</li>
     <li>New file <code>tests/test_picker_route_keeps_availability_refusal.py</code>: fallback-to-unserved
     default exits 5, route-to-unserved names the backend and exits 5, refuse-to-unserved-default
-    exits 5, route-to-served previews, and a two-answer mock picker is called once with the
-    dispatched backend equal to the checked one.</li>
+    exits 5, route-to-served previews, a two-answer mock picker is called once with the
+    dispatched backend equal to the checked one, the CLI path hands the picker non-None
+    precomputed inputs, and a failed input read falls back naming the input.</li>
     <li>Negative control: restoring <code>availability_refusal = None</code> under the picker
     route fails both unserved cases (<code>2 failed, 1 passed</code>, EXIT=1).</li>
   </ul>

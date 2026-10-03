@@ -30,6 +30,7 @@ from reckon import cli as cli_module
 from reckon import crew
 
 picker_module = importlib.import_module("reckon.crew.picker")
+dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 DONE_WHEN = "pytest tests/test_picker_route_keeps_availability_refusal.py passes"
 
@@ -321,4 +322,62 @@ def test_one_pick_per_dispatch_and_the_checked_backend_is_dispatched(
     payload = json.loads(result.output)
     assert len(calls) == 1, "the picker must be asked once per dispatch"
     assert payload["picker_selection"]["backend"] == "alpha"
+    assert payload["backend"] == "alpha"
+
+
+def test_the_cli_path_passes_precomputed_picker_inputs(
+    home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The caller builds the three inputs and hands them to the picker.
+
+    The ledger rows, the verdict inputs and the budget snapshot are read before
+    the picker thread starts, so the pick's own latency bound covers the pick
+    rather than the reads. The dispatch is handed non-None inputs and no input
+    errors, which is what proves the reads happened on the caller's side.
+    """
+    (home / "flight.yaml").write_text(_in_harness_flight(), encoding="utf-8")
+    _install_picker(monkeypatch, _selection("route", "alpha"))
+    captured: dict[str, object] = {}
+    real = dispatch_module.dispatch_picker_selection
+
+    def recording(*args, **kwargs):
+        captured.update(kwargs)
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(dispatch_module, "dispatch_picker_selection", recording)
+
+    result = CliRunner().invoke(cli_module.main, _arguments(repo, dry_run=True))
+
+    assert result.exit_code == 0, result.output
+    assert captured["records"] is not None
+    assert captured["verdict_inputs"] is not None
+    assert captured["budget_snapshot"] is not None
+    assert not captured["input_errors"]
+
+
+def test_an_input_build_failure_falls_back_naming_the_input(
+    home: Path, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failed input read is a recorded fallback, never an exception.
+
+    The verdict-input read is made to raise. The failure must be caught against
+    the input that failed, so the picker is skipped, the default backend is
+    used, and the fallback reason names ``verdict_inputs`` — the dispatch is
+    never aborted before the picker is consulted.
+    """
+    (home / "flight.yaml").write_text(_in_harness_flight(), encoding="utf-8")
+    _install_picker(monkeypatch, _selection("route", "alpha"))
+
+    def boom(*_args, **_kwargs):
+        raise RuntimeError("verdict store unavailable")
+
+    monkeypatch.setattr(dispatch_module, "_picker_verdict_inputs", boom)
+
+    result = CliRunner().invoke(cli_module.main, _arguments(repo, dry_run=True))
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    selection = payload["picker_selection"]
+    assert selection["action"] == "fallback"
+    assert "verdict_inputs" in selection["fallback_reason"]
     assert payload["backend"] == "alpha"

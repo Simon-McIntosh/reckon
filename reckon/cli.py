@@ -1803,17 +1803,35 @@ def crew_dispatch(
     picker_selection = None
     if effective_route == "picker":
         from reckon.crew.dispatch import (
+            build_picker_inputs,
             dispatch_picker_selection,
             resolve_project_repository,
         )
 
+        # The ledger rows, the verdict inputs and the budget snapshot are read
+        # here, outside the picker's own latency bound, so the picker thread
+        # spends its time picking rather than re-reading what the caller needs.
+        # A failed build is recorded and handed on rather than raised, so the
+        # picker falls back with the failure named instead of the dispatch
+        # aborting before it is consulted.
+        picker_repo = resolve_project_repository(project, repo)
+        (
+            picker_records,
+            picker_verdict_inputs,
+            picker_budget,
+            picker_input_errors,
+        ) = build_picker_inputs(project, config, picker_repo)
         picker_selection = dispatch_picker_selection(
             node=node,
             config=config,
             project=project,
-            repo=resolve_project_repository(project, repo),
+            repo=picker_repo,
             session=session,
             comment=comment,
+            records=picker_records,
+            verdict_inputs=picker_verdict_inputs,
+            budget_snapshot=picker_budget,
+            input_errors=picker_input_errors,
         )
 
     availability_refusal = _model_availability_refusal(
