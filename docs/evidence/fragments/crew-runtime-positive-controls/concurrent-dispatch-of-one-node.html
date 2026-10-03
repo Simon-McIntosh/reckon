@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="Two dispatches of one node cannot race into one worktree">
+  <meta name="plan-summary" content="A dispatch takes an exclusive claim file over one node's worktree path before the worktree is cut, so two concurrent dispatches of one node for one session cannot both reach worktree creation: the loser refuses before touching the path, naming the in-flight run; a claim whose holder process is gone is reclaimed, naming the reclaimed holder.">
+  <meta name="plan-evidence-for" content="reckon:crew-runtime-positive-controls">
+  <meta name="plan-verifies" content="reckon:crew-runtime-positive-controls#s29">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,dispatch,worktree,claim,concurrency">
+  <title>Two dispatches of one node cannot race into one worktree — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="concurrent-dispatch-of-one-node" data-reckon="landed" data-when="2026-10-03">
+  <h2>Two dispatches of one node cannot race into one worktree</h2>
+  <p>Two dispatches of one node for one session resolve to one worktree path, and both may read the live-pointer claims before either publishes its own, so a check-then-act guard sees nothing and both reach <code>git worktree add</code> on that path — each creation then losing directories the other is writing. Each dispatch now takes an exclusive claim file under the crew store, keyed by project, worktree identity and node id, immediately before the worktree is cut. The kernel's exclusive create decides the owner; the loser reads the holder's record — waiting briefly for its write to land — and refuses before touching the worktree, naming the run already in flight with its pid, registration time and claim path. The claim is released when the dispatch finishes, and after any refusal has unwound, so a failed launch leaves the node dispatchable again. The record also carries the holder's kernel process start time, so a claim left by a holder that is gone — or whose pid now belongs to a different process — is moved aside atomically by the next dispatch, which names the reclaimed holder on its result; a holder that is still alive still refuses. One dispatcher killed mid-flight therefore cannot block its node for everyone.</p>
+  <p>Five cases in <code>tests/test_concurrent_dispatch_of_one_node.py</code> run in a temporary repository and <code>RECKON_HOME</code>. The first holds both threads at a barrier on the live-claims read so neither sees the other's publication, holds the winner inside worktree creation, and lets the other run its whole admission against the held claim; it asserts exactly one worktree creation ran, exactly one dispatch launched, the refusal names the winner's run, and the claim is gone when the dispatch finishes. The second fails a launch after the claim is taken and asserts the retry launches. The remaining three cover reclamation: a claim left by a dead pid is reclaimed and the dispatch launches, naming the reclaimed holder; a claim whose pid now names a different process is reclaimed the same way; and a claim held by a live process still refuses, naming it, without touching the worktree. Base arm (a <code>git archive</code> extraction of the parent revision): 234 passed, 2 skipped, <code>EXIT=0</code>. Head arm (this worktree, the same thirty files plus this node's test file): 239 passed, 2 skipped, <code>EXIT=0</code>. No failure id is added, and <code>ruff check</code> and <code>ruff format --check</code> report no finding the base did not.</p>
+  <p>The declared mutation — the claim acquisition removed before <code>_create_worktree</code> — leaves both dispatches reaching worktree creation: the case fails on <code>Left contains one more item: 'node-one-worktree'</code>, 4 failed, <code>EXIT=1</code>.</p>
+</article>
+</body>
+</html>
