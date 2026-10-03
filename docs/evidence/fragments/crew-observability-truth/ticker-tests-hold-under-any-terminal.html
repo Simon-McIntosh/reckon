@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="ticker-tests-hold-under-any-terminal">
+  <meta name="plan-title" content="The ticker&#x27;s tests hold at head under any terminal">
+  <meta name="plan-summary" content="The four ticker test files and the recover-help test pass at head under both TERM=dumb NO_COLOR=1 and TERM=xterm-256color with NO_COLOR unset; the ids that fail at the base revision are repaired test-side, in four groups, with no source change.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-commits" content="4c4bffb09">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,ticker,observability,tests">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>The ticker's tests hold at head under any terminal | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution record &middot; 2026-10-03</p>
+      <h1>The ticker's tests hold at head under any terminal</h1>
+      <p class="lead" data-node="ticker-tests-hold-under-any-terminal" data-reckon="landed" data-when="2026-10-03">
+        The five files pass at head in both terminal arms: <strong>215 passed</strong>
+        under <code>TERM=dumb NO_COLOR=1</code> and <strong>215 passed</strong> under
+        <code>TERM=xterm-256color</code> with <code>NO_COLOR</code> unset. At the base
+        revision the dumb arm failed <strong>30 ids</strong> and the colour arm
+        <strong>22</strong>, each arm naming its own failing ids in its log. Every one
+        of the base failing ids was repaired on the <em>test</em> side; no source file
+        changed. The 18 width, alias and node-name reds carried the same cause: the
+        model-catalogue merge <code>7e334b9e2</code> made
+        <code>declared_model_aliases()</code> return <code>('harness',)</code> inside
+        the suite's isolated config home, so the model cell took the 7-character
+        alias instead of the 10-character no-alias fallback and every column after it
+        moved. The 8 colour reds were the suite reading the caller's
+        <code>NO_COLOR</code>; the 3 follow-stream reds were Click's interleaved
+        output carrying the stop notice written to stderr; and the recovery-help red
+        asserted help wording <code>cb6a06013</code> deliberately replaced.
+      </p>
+    </header>
+
+    <h2>The two arms, and what each one measured</h2>
+    <p>A test whose verdict depends on the caller's <code>TERM</code>,
+    <code>NO_COLOR</code> or <code>COLUMNS</code> is a monitor of the terminal, not a
+    test of the ticker, so the gate runs both arms and requires both. The base arm at
+    <code>aff594161</code> ran the five files before any repair: 30 failed / 185 passed
+    under the dumb arm, 22 failed / 193 passed under the colour arm. The head arm runs
+    the same command at the recorded commit, again in both arms, and both are green.
+    The four logs live under the node's run directory beside this record; the base-arm
+    logs are the negative controls.</p>
+    <p>The two arms separate the two environment causes cleanly. The 8 colour ids fail
+    only where <code>NO_COLOR=1</code> is set, and a control run of the dumb arm with
+    <code>NO_COLOR</code> simply unset passed all eight, so <code>NO_COLOR</code> and
+    not <code>TERM</code> is the driver. The 18 layout ids and the 3 follow-stream ids
+    fail identically in both arms, so neither <code>NO_COLOR</code> nor
+    <code>TERM</code> explains them.</p>
+
+    <h2>What each failing id had wrong</h2>
+    <p>File prefixes below are shorthand: <code>recovery::</code> is
+    <code>tests/test_crew_recovery.py</code>, <code>ticker::</code> is
+    <code>tests/test_crew_ticker.py</code>, <code>layout::</code> is
+    <code>tests/test_crew_ticker_layout.py</code>, <code>node-names::</code> is
+    <code>tests/test_ticker_node_names_keep_their_ends.py</code>, and
+    <code>recover::</code> is <code>tests/test_crew_recover.py</code>.</p>
+
+    <h3>The 18 width, alias and node-name reds &mdash; test changed</h3>
+    <p>These failed in both arms. The window is pinned by the plan's own measurement:
+    they pass at <code>a7ff1d4dc</code> and fail at <code>7e8ba339c</code>, and
+    <code>reckon/crew/ticker.py</code> did not change between those revisions. What
+    changed is the catalogue layer the ticker reads its alias list through. Before it,
+    the ticker's own resolution returned nothing inside the suite &mdash; the suite
+    redirects the config home, so no host layer declares an alias &mdash; and the model
+    cell fell back to the fixed 10 wide. After it, the flight catalogue fills the
+    backend's alias from the repository, so the isolated suite resolves
+    <code>('harness',)</code>, a 7-wide cell. Every assertion here was written against
+    the fallback and reads a column shifted by those three characters, which is why the
+    symptom is a truncated alias (<code>assert 'dsv4-flash' in '… dsv4-f…'</code>) or a
+    node cell read three columns to the left. The ticker is behaving as documented: the
+    model cell is sized from the declared aliases, and the row still fills its width.
+    The tests now declare the geometry they measure &mdash; the layout fixture and the
+    inline grids pass <code>model_aliases=()</code>, and the node-cell reader takes its
+    offset from the grid that rendered the row (<code>grid.model_width</code>) rather
+    than from the module constant. The pinned grids are the same shape the sibling
+    ticker test files already used.</p>
+    <ul>
+      <li><code>recovery::test_snapshot_carries_every_field_the_ticker_column_set_reads</code></li>
+      <li><code>recovery::test_an_aliased_pointer_renders_the_alias_not_the_model_id</code></li>
+      <li><code>recovery::test_legacy_log_line_renders_and_new_line_renders_two_cells</code></li>
+      <li><code>recovery::test_one_stored_new_line_renders_differently_at_two_display_settings</code></li>
+      <li><code>layout::test_a_reason_is_truncated_to_the_room_the_grid_leaves</code></li>
+      <li><code>layout::test_a_reason_that_fits_is_printed_whole</code></li>
+      <li><code>layout::test_a_reason_clipped_at_the_margin_ends_on_a_word</code></li>
+      <li><code>layout::test_a_narrow_width_is_widened_to_what_the_columns_need</code></li>
+      <li><code>layout::test_a_narrow_width_still_widens_to_fit_the_role_column</code></li>
+      <li><code>layout::test_the_model_and_effort_are_not_fused_into_one_cell</code></li>
+      <li><code>layout::test_the_longest_role_model_and_effort_elide_within_budget</code></li>
+      <li><code>layout::test_a_legacy_composed_string_renders_the_same_cells_as_separate_facts</code></li>
+      <li><code>layout::test_the_effort_column_keeps_one_offset_whatever_the_alias_length</code></li>
+      <li><code>layout::test_no_row_pads_the_widest_alias_before_its_effort</code></li>
+      <li><code>node-names::test_two_long_names_render_apart_at_the_default_width</code></li>
+      <li><code>node-names::test_a_name_that_fits_its_cell_is_unchanged</code></li>
+      <li><code>node-names::test_two_names_that_cut_alike_each_carry_their_own_mint</code></li>
+      <li><code>node-names::test_a_lone_long_name_carries_no_suffix</code></li>
+    </ul>
+
+    <h3>The 8 colour reds &mdash; test changed</h3>
+    <p>These failed only under <code>NO_COLOR=1</code>. The ticker honours
+    <code>NO_COLOR</code> by design, so a test that asserts a painted row was reading
+    the machine it ran on. Each now deletes <code>NO_COLOR</code> within its own
+    <code>monkeypatch</code> scope, so the verdict is the ticker's and not the caller's.
+    No conftest fixture was added: the pin lives on the test that depends on it, which
+    is what keeps the colour-suppression test beside them &mdash; which sets
+    <code>NO_COLOR</code> itself &mdash; still meaningful.</p>
+    <ul>
+      <li><code>layout::test_the_queued_counter_still_renders_a_zero_rather_than_dropping_it</code></li>
+      <li><code>layout::test_colour_changes_only_presentation</code></li>
+      <li><code>layout::test_a_worker_keeps_one_colour_and_neighbours_differ</code></li>
+      <li><code>layout::test_each_side_of_the_transition_is_painted_as_its_own_state</code></li>
+      <li><code>layout::test_the_role_is_dim_rather_than_hued</code></li>
+      <li><code>ticker::test_follow_emit_path_preserves_painted_escape_codes</code></li>
+      <li><code>ticker::test_cli_watch_follow_emit_site_preserves_painted_escape_codes</code></li>
+      <li><code>ticker::test_a_shadow_row_says_so_end_to_end_rather_than_by_identifier</code></li>
+    </ul>
+
+    <h3>The 3 follow-stream reds &mdash; test changed</h3>
+    <p>These failed in both arms. <code>crew watch --follow</code> writes why it stopped
+    to stderr, and Click 8.4's <code>Result.output</code> interleaves stdout with
+    stderr, so a test reading one JSON document per line saw the notice as a second
+    line: the compact-line assertion counted two newlines where it expects one, and both
+    JSON readers raised <code>Extra data</code>. The stdout contract itself is
+    unchanged and not in question &mdash; the stop notice is intended and has its own
+    tests &mdash; so the three assertions now read <code>result.stdout</code>, which is
+    the stream carrying the rows.</p>
+    <ul>
+      <li><code>recovery::test_cli_follow_streams_each_event_as_one_json_document</code></li>
+      <li><code>ticker::test_cli_follow_prints_compact_transition_lines_by_default</code></li>
+      <li><code>ticker::test_cli_follow_keeps_machine_objects_behind_json_flag</code></li>
+    </ul>
+
+    <h3>The recovery-help red &mdash; test changed</h3>
+    <p><code>recover::test_recovery_command_help_names_the_state_and_the_boundary</code>
+    asserted the phrase <q>never launch, resume, or promote work</q>, which
+    <code>reckon/cli.py</code> no longer says: <code>cb6a06013</code> replaced it with a
+    scoped opt-in, <code>launch reviews only with --dispatch-reviews and --project</code>,
+    and the default, <code>By default it repairs the record and launches nothing.</code>
+    The behaviour the test guards &mdash; that <code>recover</code> is distinguishable
+    from its adjacent recovery verbs and launches nothing unasked &mdash; is preserved,
+    so the assertion was updated to the wording that states it. <code>reckon/cli.py</code>
+    is held by another live run and was not touched.</p>
+
+    <h2>What did not change, and why</h2>
+    <p>No source file changed: <code>reckon/crew/ticker.py</code> sizes its cells from
+    the aliases it is given and fills its width, which is the documented design, and
+    <code>reckon/flight.py</code>'s catalogue layer is what makes the alias visible to
+    the suite in the first place &mdash; the tests were asserting a geometry the config
+    no longer produces. The two model-catalogue tests in
+    <code>tests/test_crew_ticker_layout.py</code> that read the catalogue through a
+    temporary home are untouched and pass, which is the positive control that the
+    catalogue read still works. Because <code>reckon/flight.py</code> did not change,
+    its own gate was not required; the alias resolution was confirmed directly instead
+    &mdash; under an isolated config home, <code>declared_model_aliases('proj')</code>
+    returns <code>('harness',)</code> and the fallback constant is 10.</p>
+    <p>One limit is recorded rather than hidden: the pins are geometry, not
+    configuration. A future change that makes the suite resolve a different alias set
+    will move these cells again, and the assertions that pin them will then need
+    re-pinning &mdash; the alternative, asserting the row's shape against whatever the
+    config happens to declare, is the monitor defect this node exists to remove.</p>
+  </main>
+</body>
+</html>

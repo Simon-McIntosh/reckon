@@ -49,16 +49,18 @@ def _event(node: str, run_id: str) -> dict[str, Any]:
     }
 
 
-def _node_cell(line: str) -> str:
+def _node_cell(grid: ticker_module.Ticker, line: str) -> str:
     """The node cell's text, read off the rendered row at the grid's columns.
 
     Taken from the row's own characters rather than from a format string, so
-    the assertion is about the cell a reader sees.
+    the assertion is about the cell a reader sees. The offset carries the
+    grid's own model-cell width: the module constant is the no-alias fallback,
+    and every column after that cell moves when a config declares an alias.
     """
     start = (
         ticker_module.CLOCK
         + ticker_module.GAP
-        + ticker_module.MODEL
+        + grid.model_width
         + ticker_module.GAP
         + ticker_module.EFFORT
         + ticker_module.GAP
@@ -69,7 +71,7 @@ def _node_cell(line: str) -> str:
 
 
 def _render(grid: ticker_module.Ticker, node: str, run_id: str) -> str:
-    return _node_cell(grid.render(_event(node, run_id)))
+    return _node_cell(grid, grid.render(_event(node, run_id)))
 
 
 def test_two_long_names_render_apart_at_the_default_width() -> None:

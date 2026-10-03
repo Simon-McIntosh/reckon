@@ -340,10 +340,12 @@ def test_cli_follow_prints_compact_transition_lines_by_default(
     )
 
     assert result.exit_code == 0
-    assert result.output.count("\n") == 1
-    assert "ticker-node" in result.output
-    assert "working → blocked" in result.output
-    assert not result.output.startswith("{")
+    # The stream carrying the rows is stdout; the notice that says why the
+    # follower stopped is written to stderr and must not be counted as a row.
+    assert result.stdout.count("\n") == 1
+    assert "ticker-node" in result.stdout
+    assert "working → blocked" in result.stdout
+    assert not result.stdout.startswith("{")
 
 
 def test_follow_renders_at_the_resolved_terminal_width(home, monkeypatch) -> None:
@@ -416,7 +418,7 @@ def test_cli_follow_keeps_machine_objects_behind_json_flag(home, monkeypatch) ->
         ["crew", "watch", "--project", "proj", "--follow", "--json"],
     )
 
-    payload = json.loads(result.output)
+    payload = json.loads(result.stdout)
     assert result.exit_code == 0
     assert payload["ok"] is True
     assert payload["node"] == "ticker-node"
@@ -425,12 +427,13 @@ def test_cli_follow_keeps_machine_objects_behind_json_flag(home, monkeypatch) ->
     assert (payload["working"], payload["blocked"], payload["unpromoted"]) == (3, 1, 0)
 
 
-def test_follow_emit_path_preserves_painted_escape_codes() -> None:
+def test_follow_emit_path_preserves_painted_escape_codes(monkeypatch) -> None:
     """The stream `_echo_follow_line` writes to is a pipe into a pane, not a
     terminal — exactly where Click's default auto-detection strips ANSI
     before a single reader ever sees it. A line the ticker painted must
     reach that stream with its escapes intact.
     """
+    monkeypatch.delenv("NO_COLOR", raising=False)
     line = ticker_module.Ticker(color=True).render(_event())
     assert "\x1b[38;5;" in line  # sanity: the rendered line really is painted
 
@@ -446,6 +449,7 @@ def test_cli_watch_follow_emit_site_preserves_painted_escape_codes(
 ) -> None:
     """`crew watch --follow` writes through its own emit site, not
     `_echo_follow_line` — it must not let Click strip colour there either."""
+    monkeypatch.delenv("NO_COLOR", raising=False)
     monkeypatch.setattr(
         recovery,
         "watch_follow",
@@ -1062,6 +1066,7 @@ def test_a_shadow_row_says_so_end_to_end_rather_than_by_identifier(
     a reader acts on instead: everything about it is dim, including the node
     hue that answers which worker a row belongs to.
     """
+    monkeypatch.delenv("NO_COLOR", raising=False)
     monkeypatch.setattr(
         cli_module,
         "_follow_watch_lines",

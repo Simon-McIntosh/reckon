@@ -386,7 +386,9 @@ def test_cli_follow_streams_each_event_as_one_json_document(home, monkeypatch) -
         ["crew", "watch", "--project", "proj", "--follow"],
     )
 
-    payloads = [json.loads(line) for line in result.output.splitlines()]
+    # The event documents are the command's stdout; the notice explaining why
+    # the follower stopped is written to stderr and is not one of them.
+    payloads = [json.loads(line) for line in result.stdout.splitlines()]
     assert result.exit_code == 0
     assert [payload["run_id"] for payload in payloads] == ["r-one", "r-two"]
     assert all(payload["ok"] is True for payload in payloads)
@@ -2083,7 +2085,10 @@ def test_snapshot_carries_every_field_the_ticker_column_set_reads(home) -> None:
         )
     assert transition["model"] == "deepseek-v4-flash"
     assert transition["alias"] == "dsv4-flash"
-    line = recovery.format_watch_transition(transition)
+    line = recovery.format_watch_transition(
+        transition,
+        ticker=ticker_module.Ticker(width=180, color=False, model_aliases=()),
+    )
     assert "dsv4-flash" in line
     assert "deepseek-v4-flash" not in line
     assert "medium" in line
@@ -2233,7 +2238,10 @@ def test_an_aliased_pointer_renders_the_alias_not_the_model_id(home) -> None:
     assert transition["alias"] == "dsv4-flash"
     assert transition["effort"] == "medium"
     assert "agent" not in transition
-    line = recovery.format_watch_transition(transition)
+    line = recovery.format_watch_transition(
+        transition,
+        ticker=ticker_module.Ticker(width=180, color=False, model_aliases=()),
+    )
     assert "dsv4-flash" in line
     assert "deepseek-v4-flash" not in line
     assert "medium" in line
@@ -2324,13 +2332,13 @@ def test_legacy_log_line_renders_and_new_line_renders_two_cells(home) -> None:
         "working": 0,
     }
     legacy_line = recovery.format_watch_transition(
-        legacy, ticker=ticker_module.Ticker(width=208, color=False)
+        legacy, ticker=ticker_module.Ticker(width=208, color=False, model_aliases=())
     )
-    # The model cell is sized from the configured aliases, so a composed agent
+    # The model cell is sized from the declared aliases, so a composed agent
     # whose model half is wider than that cell is cut with an ellipsis rather
     # than pushing the effort column off the grid. The two cells still render in
     # that order, which is the fact this reader scans.
-    grid = ticker_module.Ticker(width=208, color=False)
+    grid = ticker_module.Ticker(width=208, color=False, model_aliases=())
     cut = ticker_module.elide("gpt-5.6-sol", grid.model_width)
     assert cut.endswith("\N{HORIZONTAL ELLIPSIS}")
     assert cut in legacy_line
@@ -2353,7 +2361,10 @@ def test_legacy_log_line_renders_and_new_line_renders_two_cells(home) -> None:
             "alias": "dsv4-flash",
         },
     )
-    new_line = recovery.format_watch_transition(transition)
+    new_line = recovery.format_watch_transition(
+        transition,
+        ticker=ticker_module.Ticker(width=180, color=False, model_aliases=()),
+    )
     assert "dsv4-flash" in new_line
     assert "high" in new_line
     between = new_line[
@@ -2368,10 +2379,12 @@ def test_one_stored_new_line_renders_differently_at_two_display_settings(home) -
     # grid gives the reason less room, so the stored line changes shape.
     transition = _fact_transition(home, "r-rerender", manifest_status="blocked")
     narrow = recovery.format_watch_transition(
-        transition, ticker=ticker_module.Ticker(width=146, color=False)
+        transition,
+        ticker=ticker_module.Ticker(width=146, color=False, model_aliases=()),
     )
     wide = recovery.format_watch_transition(
-        transition, ticker=ticker_module.Ticker(width=180, color=False)
+        transition,
+        ticker=ticker_module.Ticker(width=180, color=False, model_aliases=()),
     )
     assert narrow != wide
     assert "medium" in narrow

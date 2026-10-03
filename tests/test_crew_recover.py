@@ -589,7 +589,11 @@ def test_recovery_command_help_names_the_state_and_the_boundary() -> None:
     completion = runner.invoke(cli_module.main, ["crew", "repair-completion", "--help"])
 
     assert "provider hold or declared external wait has ended" in ready.output
-    assert "never launch, resume, or promote work" in " ".join(recover.output.split())
+    # The boundary is now stated as the scoped opt-in that launches reviews and
+    # the default that launches nothing, rather than as a blanket refusal.
+    help_text = " ".join(recover.output.split())
+    assert "launch reviews only with --dispatch-reviews and --project" in help_text
+    assert "By default it repairs the record and launches nothing." in help_text
     assert "Repair historical completion measurements" in completion.output
 
 
