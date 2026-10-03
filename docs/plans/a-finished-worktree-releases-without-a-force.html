@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="32">
 </head>
 <body>
   <main class="plan-doc">
@@ -270,6 +270,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261003T031946951720-review-of-gc-pin-flag" data-who="reckon-build" data-when="2026-10-03T03:31:23.166Z">
     <div class="r-comment-body"><p>Independent review of run r-20261003T030325562440-gc-pin-flag stored as a parsed record at reviewed_base_sha 2cd8e47a1eb9108aac40dd65fb2cf7e37225b4a0 / reviewed_head_sha 0358a3886a2e1bdd9405369f46ffcf3ada2b0dbe, scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 20 (total 99) with added_failure_count 0 and two follow-on findings; no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261003T041931269950-gc-vanished-mid-sweep" data-who="reckon-build" data-when="2026-10-03T04:37:59.487Z">
+    <div class="r-comment-body"><p>gc no longer stops when a worktree directory vanishes between classification and its action: the row is reported as gone before action (unavailable, not counted removed) and the sweep releases the remaining trees; gate 60 passed base to 61 passed head with 0 added failures, and the negative control (vanished path allowed to raise again) fails the new test with EXIT=1.</p></div>
 </div>
 </section>
 </main>
