@@ -3746,10 +3746,10 @@ def _restore_landing_writes(
 
     The result is a per-path report keyed by the path as written: True for a
     path that no longer carries the landing write — restored from HEAD, or
-    dropped because HEAD never had it — and False for one whose write
-    survives, because the restore was refused and HEAD holds a copy the
-    caller preserves. A caller reporting a store it wrote reads this to tell
-    a row that survived the rollback from one the rollback reverted.
+    dropped because HEAD never had it, with nothing of it staged — and False
+    for one whose write survives. A caller reporting a store it wrote reads
+    this to tell a row that survived the rollback from one the rollback
+    reverted.
     """
     report: dict[str, bool] = {}
     for path in paths:
@@ -3767,19 +3767,82 @@ def _restore_landing_writes(
         if restored.returncode == 0:
             report[target] = True
             continue
-        try:
-            relative = Path(path).resolve().relative_to(checkout.resolve()).as_posix()
-        except ValueError:
-            report[target] = False
-            continue
-        present = _git(checkout, "cat-file", "-e", f"HEAD:{relative}", check=False)
-        if present.returncode == 0:
-            report[target] = False
-            continue
-        _git(checkout, "rm", "--cached", "--force", "--", target, check=False)
-        Path(path).unlink(missing_ok=True)
-        report[target] = True
+        report[target] = _restore_one_landing_write(checkout, path)
     return report
+
+
+def _restore_one_landing_write(checkout: Path, path: Path) -> bool:
+    """Return one landing write to its committed state without the index lock.
+
+    The whole-path restore is a single index-writing call, so a lock another
+    process holds refuses it and leaves the working-tree write in place. This
+    fallback separates the halves: the working tree comes back from HEAD's
+    blob, read through the object store and written directly, while only the
+    index entry needs the lock — reset to HEAD for a tracked path, dropped
+    for a path this promotion created. A path whose entry is still staged
+    answers False even when its content was restored: a staged entry the next
+    commit can take is not nothing left behind.
+    """
+    try:
+        relative = Path(path).resolve().relative_to(checkout.resolve()).as_posix()
+    except (OSError, ValueError):
+        return False
+    committed = _git(checkout, "cat-file", "-e", f"HEAD:{relative}", check=False)
+    if committed.returncode == 0:
+        content = _git_blob(checkout, relative)
+        if content is None:
+            return False
+        try:
+            Path(path).write_bytes(content)
+        except OSError:
+            return False
+        _git(
+            checkout,
+            "restore",
+            "--source=HEAD",
+            "--staged",
+            "--",
+            str(path),
+            check=False,
+        )
+    else:
+        try:
+            Path(path).unlink(missing_ok=True)
+        except OSError:
+            return False
+        _git(checkout, "rm", "--cached", "--force", "--", str(path), check=False)
+    return not _path_has_a_staged_change(checkout, path)
+
+
+def _git_blob(checkout: Path, relative: str) -> bytes | None:
+    """HEAD's committed content for one path, or None when git will not answer.
+
+    Read as bytes because the restore it feeds must reproduce the committed
+    file exactly; a text-mode read would fold newlines and write back a file
+    that differs from HEAD.
+    """
+    result = subprocess.run(
+        ["git", "cat-file", "blob", f"HEAD:{relative}"],
+        cwd=checkout,
+        capture_output=True,
+        check=False,
+    )
+    return result.stdout if result.returncode == 0 else None
+
+
+def _path_has_a_staged_change(checkout: Path, path: Path) -> bool:
+    """Whether the index carries a change at ``path`` against HEAD.
+
+    A read, so it answers while another process holds the index lock. A probe
+    git refuses to answer counts as a staged change, because a restore the
+    rollback cannot show is not one it may claim.
+    """
+    diff = _git(
+        checkout, "diff", "--cached", "--name-only", "--", str(path), check=False
+    )
+    if diff.returncode != 0:
+        return True
+    return bool(diff.stdout.strip())
 
 
 # A refused landing commit carries its rollback's per-path report here, so the
@@ -3895,6 +3958,43 @@ def _ledger_holds_row(project: str, root: str | Path | None, run_id: str) -> boo
     )
 
 
+def _discard_run_store_row(run_id: str) -> bool:
+    """Drop the run store row a refused landing inserted, so a retry can write it.
+
+    The store indexes the committed ledger, so a run whose landing never
+    committed has no row to keep — and leaving one behind makes the retry's
+    insert collide with the row the refused attempt wrote instead of
+    re-recording the run. The index has no delete of its own, so the row and
+    its detail row are removed directly against the store's declared tables.
+    Best-effort: the refusal that triggers this is the caller's outcome, and a
+    store this cannot reach must not replace it.
+    """
+    import sqlite3
+
+    from reckon import run_store
+
+    store = run_store.store_path()
+    if not store.is_file():
+        return False
+    try:
+        connection = sqlite3.connect(str(store))
+    except sqlite3.Error:
+        return False
+    try:
+        with connection:
+            connection.execute(
+                'DELETE FROM "run_details" WHERE "run_id" = ?', (run_id,)
+            )
+            removed = connection.execute(
+                'DELETE FROM "runs" WHERE "run_id" = ?', (run_id,)
+            )
+        return bool(removed.rowcount)
+    except sqlite3.Error:
+        return False
+    finally:
+        connection.close()
+
+
 def _commit_landing_writes(
     *,
     run_id: str,
@@ -3903,6 +4003,7 @@ def _commit_landing_writes(
     paths: Sequence[Path],
     subject: str | None = None,
     body: str | None = None,
+    store_row_written: bool = False,
 ) -> dict[str, Any]:
     """Commit promotion's own store writes in one landing commit.
 
@@ -3913,9 +4014,15 @@ def _commit_landing_writes(
     those paths and refuses. A blocked restore preserves paths held by HEAD;
     callers that already appended a ledger row must report that append.
 
+    ``store_row_written`` states that this attempt's own append inserted the
+    run's row in the rebuildable store. A refused landing then removes it,
+    because the store indexes a committed ledger and this run's row did not
+    commit: the retry must be able to insert it rather than collide with it.
+    An append that only found the row already present leaves it alone.
+
     ``subject`` and ``body`` override the promotion-flavoured defaults; a
-    caller that records a non-promotion landing (a gate re-run at the
-    integrated revision) passes its own subject naming what it did.
+    caller that records a landing that is not a promotion (a gate re-run at
+    the integrated revision) passes its own subject naming what it did.
     """
     targets = sorted(
         {Path(p).expanduser().resolve() for p in paths if Path(p).is_file()}
@@ -3925,6 +4032,8 @@ def _commit_landing_writes(
     staged = _git(checkout, "add", "--", *(str(p) for p in targets), check=False)
     if staged.returncode != 0:
         rollback = _restore_landing_writes(checkout, targets)
+        if store_row_written:
+            _discard_run_store_row(run_id)
         raise _landing_refusal(
             f"could not stage the landing writes for run {run_id!r} in "
             f"{checkout}: {staged.stderr.strip() or staged.stdout.strip()}",
@@ -3947,6 +4056,8 @@ def _commit_landing_writes(
     )
     if committed.returncode != 0:
         rollback = _restore_landing_writes(checkout, targets)
+        if store_row_written:
+            _discard_run_store_row(run_id)
         raise _landing_refusal(
             f"could not commit the landing writes for run {run_id!r} in "
             f"{checkout}: {committed.stderr.strip() or committed.stdout.strip()}",
@@ -7873,7 +7984,9 @@ def _complete_locked(
 
         # The two tracked stores this promotion wrote (the ledger row and, when a
         # narrative landed, the plan comment) are committed as one landing, so the
-        # checkout carries no uncommitted state the next reader would trip on.
+        # checkout carries no uncommitted state the next reader would trip on. A
+        # refused landing then takes back every write it made, including the store
+        # row this attempt's own append inserted, so a retry promotes cleanly.
         _commit_landing_writes(
             run_id=run_id,
             verdict=str(gate).strip().lower(),
@@ -7888,6 +8001,11 @@ def _complete_locked(
                     checkout=checkout,
                 ),
             ],
+            store_row_written=(
+                not already_promoted
+                and isinstance(store_outcome, Mapping)
+                and store_outcome.get("status") == "written"
+            ),
         )
 
         # Return capture metadata while the pointer still exists. Session
