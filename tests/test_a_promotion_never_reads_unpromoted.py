@@ -206,7 +206,7 @@ def test_a_recorded_report_reads_recorded_at_the_promote_boundary(
 
     assert observed, "the promotion never reached the promote-record boundary"
     assert len(observed) == 1
-    assert observed[0] == ("recorded", "promoted")
+    assert observed[0] == ("recorded", "recorded")
     assert result["record"]["commits"] == []
     assert result["record"]["no_commit"] == "the report is the deliverable"
     assert ledger.run_path(PROJECT, run_id, repository).is_file()
