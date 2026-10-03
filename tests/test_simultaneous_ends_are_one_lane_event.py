@@ -18,6 +18,7 @@ def _terminal(
     ended_at: str,
     *,
     result_text: str = "there is an issue with the selected model — it may not exist or you may not have access to it",
+    is_error: bool = True,
 ) -> None:
     run_dir = home / "crew" / "runs" / run_id
     run_dir.mkdir(parents=True)
@@ -28,7 +29,7 @@ def _terminal(
                 "type": "result",
                 "timestamp": ended_at,
                 "subtype": "success",
-                "is_error": True,
+                "is_error": is_error,
                 "result": result_text,
             }
         )
@@ -42,7 +43,7 @@ def _terminal(
                 "worker_pid": 4242,
                 "launched_at": "2026-09-14T06:40:00Z",
                 "exited_at": ended_at,
-                "exit_code": 1,
+                "exit_code": 1 if is_error else 0,
                 "signal": None,
                 "stream_records_seen": 1,
                 "last_record_type": "result",
@@ -52,10 +53,12 @@ def _terminal(
     )
     worktree = home / "trees" / run_id
     worktree.mkdir(parents=True)
+    if not is_error:
+        (run_dir / "manifest.md").write_text("status: complete\ncommits: []\n")
     pointer = {
         "run_id": run_id,
         "project": "fixture-project",
-        "phase": "failed",
+        "phase": "failed" if is_error else "complete",
         "process_alive": False,
         "launcher_host": "another-login-node",
         "launch": "cli",
@@ -119,12 +122,14 @@ def test_stderr_model_warning_is_not_a_terminal_cause(tmp_path, monkeypatch):
         "r-healthy-warning",
         "shared",
         "2026-09-14T06:52:19Z",
-        result_text="worker failed for an unrelated reason",
+        result_text="completed work",
+        is_error=False,
     )
     run_dir = tmp_path / "crew" / "runs" / "r-healthy-warning"
     (run_dir / "stderr.log").write_text("there is an issue with the selected model\n")
     row = query.project_live_rows(list_live(project="fixture-project"))[0]
     assert row["lane_cause"] is None
+    assert row["classification"] == "scoring"
 
 
 @pytest.mark.parametrize(
