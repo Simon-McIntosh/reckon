@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="113">
+<meta name="plan-version" content="114">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -120,6 +120,16 @@
       <button class="r-opt" data-value="coordinator-only">The coordinator names a model; the picker only validates it</button>
       </p>
     <p class="r-dec-rat">The lead, 2026-10-02: &quot;we want the model and the family to be picked. the router should handle everything, the orchestrator should be able to write free form comments to pass onto jev&quot;. The router picks family and model. The orchestrator influences the pick only through a free-form comment carried verbatim in Jev&#x27;s state, never by naming a lane. Rejected: a coordinator override as the primary control, which reproduces today&#x27;s per-name routing; and a picker with no orchestrator input, which discards context only the orchestrator has. Whether a hard override survives as a recorded emergency switch is settled by §6&#x27;s dogfood evidence, not assumed.</p>
+    </div>
+<div class="r-dec" data-key="catalogue-home" data-choice="state" data-by="Simon McIntosh" data-when="2026-10-03T10:55:52+00:00" data-sections="s11">
+    <p class="r-dec-q">Where the reckon-owned model catalogue lives</p>
+    <p class="r-dec-ctx">The first build shipped the catalogue as reckon/schema/model-catalogue.yaml. That fails test_no_routing_identifier_leaks_into_skills_or_source, because routing is data and no model or provider may be named in the package or skills. The catalogue must still be a reckon decision, not a dotfiles one.</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="state">Versioned data in the reckon repository&#x27;s docs/state, read by every project&#x27;s flight resolution</button>
+      <button class="r-opt" data-value="project-layer">Reckon&#x27;s own project layer only; other projects keep host values</button>
+      <button class="r-opt" data-value="package-exempt">Keep it in the package and exempt that one file from the leak rule</button>
+      </p>
+    <p class="r-dec-rat">Keeps the catalogue a versioned, reviewable reckon decision while honouring the rule that the package and skills name no model or provider. Every project reads it, so the dotfiles host layer can then be emptied of catalogue keys.</p>
     </div>
 </section>
 
