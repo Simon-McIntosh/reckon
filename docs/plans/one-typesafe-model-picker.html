@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="115">
+<meta name="plan-version" content="116">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -416,6 +416,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T110951890390-review-of-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T11:19:40.912Z">
     <div class="r-comment-body"><p>Independent review of r-20261003T032115043790-model-catalogue-in-reckon advanced to head b2085e04 (base c8badc496) stored parsed: goal_fidelity 15, evidence 15, scope_discipline 13, durability 18, fit 18, total 79, added_failure_count 0, three follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261003T032115043790-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T11:07:55.976Z">
+    <div class="r-comment-body"><p>Moved the reckon-owned model catalogue out of the package into docs/state/reckon/model-catalogue.yaml — versioned repository data read by every project&#x27;s flight resolution — so no model or provider identifier remains under reckon/ or skills/. model_catalogue_path() now locates the file from the running package&#x27;s own checkout root (the repository root above the reckon package directory) with a RECKON_MODEL_CATALOGUE override, and a missing file means no catalogue layer so the host values stand (a wheel without docs/ resolves as before). The catalogue still fills model/alias/effort/budget_group/rates for every backend another layer defines, never creating one, and reckon flight plus the crew flight view report host values shadowing it (32 shadows naming key/backend/file). Re-proved value stability: resolved --project reckon config identical across no-catalogue, host-as-is and host-emptied captures; 32 provenance leaves move host-&gt;catalogue; shadows 32-&gt;0.</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
