@@ -1,3 +1,5 @@
+import contextlib
+import functools
 import json
 import os
 import shlex
@@ -7,7 +9,7 @@ import subprocess
 import sys
 import threading
 import time
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Iterator, Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -914,9 +916,81 @@ def _crew_modules():
     return crew_module, flight_module
 
 
+class _OneDocumentStdout:
+    """stdout during a JSON command: the payload stream, or the notice channel.
+
+    A caller decodes a command's stdout, so anything written there that is not
+    the command's own document breaks the read — a second document or a bare
+    sentence both make ``json.loads`` raise, and the caller is left with
+    nothing. This stream forwards every ordinary write to stderr and keeps the
+    real stdout aside for the one document the command emits through
+    :func:`_emit`, so a notice printed anywhere beneath — a helper's warning, a
+    library's status line, code this module does not own — cannot corrupt it.
+    """
+
+    def __init__(self, payload_stream: Any) -> None:
+        self.payload_stream = payload_stream
+
+    def write(self, text: str) -> int:
+        return sys.stderr.write(text)
+
+    def writable(self) -> bool:
+        return True
+
+    def readable(self) -> bool:
+        return False
+
+    def seekable(self) -> bool:
+        return False
+
+    def flush(self) -> None:
+        sys.stderr.flush()
+
+    def isatty(self) -> bool:
+        return False
+
+    def fileno(self) -> int:
+        # A writer that reaches for the descriptor still lands on the notice
+        # channel rather than on the stream the caller is parsing.
+        return sys.stderr.fileno()
+
+
+@contextlib.contextmanager
+def _single_document_stdout() -> Iterator[None]:
+    """Hold stdout for one JSON document while a command runs.
+
+    Everything the command calls runs with stdout pointing at the notice
+    channel, so notices reach stderr wherever they are printed; the emission
+    helper writes to the stream held aside here.
+    """
+    channel = _OneDocumentStdout(sys.stdout)
+    with contextlib.redirect_stdout(channel):
+        yield
+
+
+def _holds_stdout_for_one_document(callback):
+    """Run a JSON command under :func:`_single_document_stdout`.
+
+    Applied to the callback itself rather than to a block of its body, so the
+    guarantee holds for every outcome and for code the command calls that this
+    module cannot edit.
+    """
+
+    @functools.wraps(callback)
+    def run(*args, **kwargs):
+        with _single_document_stdout():
+            return callback(*args, **kwargs)
+
+    return run
+
+
 def _emit(payload, pretty: bool) -> None:
     """Print one JSON document, sorted so two runs diff only on real change."""
-    click.echo(json.dumps(payload, indent=2 if pretty else None, sort_keys=True))
+    stream = getattr(sys.stdout, "payload_stream", sys.stdout)
+    click.echo(
+        json.dumps(payload, indent=2 if pretty else None, sort_keys=True),
+        file=stream,
+    )
 
 
 def _emit_dry_run_request_error(
@@ -1644,6 +1718,7 @@ def crew_preflight(
     help="Validate and resolve only: no worktree, no process, no record.",
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+@_holds_stdout_for_one_document
 def crew_dispatch(
     project,
     plan_slug,
