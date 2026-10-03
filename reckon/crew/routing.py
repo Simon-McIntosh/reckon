@@ -36,7 +36,6 @@ from reckon.crew.node import (
 )
 from reckon.crew.refusals import format_refusal
 from reckon.crew.runs import (
-    _live_worktree_claims,
     _pointer_lock,
     _process_start_time,
     delivery_roots,
@@ -2030,8 +2029,14 @@ def _create_worktree(
 
 
 def _remove_worktree(repo: Path, path: str) -> None:
-    """Undo a worktree created for a dispatch that then failed."""
-    claims = _live_worktree_claims().get(Path(path).resolve(), [])
+    """Undo a worktree created for a dispatch that then failed.
+
+    Liveness is read through the wide claim, so a run parked between turns —
+    its pointer carrying a terminal-looking phase while its worker is gone —
+    keeps its tree: the phase-gated claim would read that pointer as finished
+    and this force-removal would take the tree of a live run.
+    """
+    claims = _live_pointer_worktrees().get(Path(path).resolve(), [])
     if claims:
         raise CrewError(
             f"refusing to remove worktree {path}: claimed by live runs "
