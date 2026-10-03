@@ -2200,20 +2200,81 @@ def _repair_source_refusal(record: Mapping[str, Any]) -> str:
     return ""
 
 
+def _repair_round_started_mtime_ns(
+    record: Mapping[str, Any], round_id: str
+) -> int | None:
+    """The manifest baseline when this round's resume began, in nanoseconds.
+
+    The round opens with the reviewed run's own resume write, which records the
+    manifest's mtime as the attempt's baseline; the manifest's own mtime is
+    compared against that baseline rather than against the second-resolution
+    ``at`` stamp, because a manifest written just before the round can share the
+    stamp's second and would then read as fresh. The pointer's own file mtime
+    stands in when no baseline was recorded, the pointer having been written as
+    the round opened. None when the record carries no outcome for this round, so
+    a start belonging to another round is never used.
+    """
+    recorded = record.get(REPAIR_DISPATCH_FIELD)
+    if not isinstance(recorded, Mapping):
+        return None
+    if str(recorded.get("round_id") or "") != str(round_id or ""):
+        return None
+    baseline = record.get("manifest_baseline_mtime_ns")
+    if isinstance(baseline, int) and not isinstance(baseline, bool):
+        return baseline
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return None
+    try:
+        return runs.pointer_path(run_id).stat().st_mtime_ns
+    except OSError:
+        return None
+
+
+def _manifest_reports_round(text: str, round_id: str) -> str | None:
+    """Which round's advice a manifest quotes: ``this``, ``other``, or None.
+
+    A refusal may quote the advice verbatim, in which case the round token the
+    advice opens with is present, or it may paraphrase the blocker and quote
+    nothing, which reads the same as a manifest that simply predates the round.
+    Telling those apart is the caller's job; this answers only whether the
+    manifest names this round's token, a different round's token, or no token at
+    all, so a manifest quoting an earlier round's advice is never mistaken for
+    this round's refusal however the surrounding text is worded.
+    """
+    marker = REPAIR_ROUND_TOKEN_LINE
+    rid = str(round_id or "")
+    seen_other = False
+    index = 0
+    while True:
+        found = text.find(marker, index)
+        if found == -1:
+            return "other" if seen_other else None
+        after = text[found + len(marker) :]
+        if rid and after.startswith(rid):
+            return "this"
+        seen_other = True
+        index = found + len(marker)
+
+
 def _reviewed_run_refused_the_round(record: Mapping[str, Any], round_id: str) -> bool:
     """Whether the reviewed run's own manifest refused this round's advice.
 
     A resumed turn can end in two ways the busy guard cannot tell apart: it can
     die mid-work, leaving the run's manifest untouched, or it can read the
-    round's advice, refuse the dead end it names, and write a terminal manifest
-    quoting that advice as its blocker. Only the second is a dead end — a retry
-    would re-send byte-identical advice into the same refusal — so the retry is
-    suppressed exactly when the manifest already answers this round. The marker
-    is the round token the composed advice opens with, keyed on the round id, so
-    a manifest quoting an earlier round's advice does not settle this one. A
-    manifest that cannot be read, or one carrying no recognised status, is not
-    evidence of a refusal, so the guard degrades toward the retry rather than
-    suppressing it.
+    round's advice, refuse the dead end it names, and write a terminal manifest.
+    Only the second is a dead end — a retry would re-send byte-identical advice
+    into the same refusal — so the retry is suppressed exactly when the manifest
+    already answers this round. The signal is not the wording: a terminal
+    manifest written after this round's resume began is a refusal whether or not
+    it copies the advice's opening token. The token corroborates: a manifest
+    quoting this round's token is a refusal, and one quoting a different round's
+    is not evidence about this round at all. A manifest that cannot be read, one
+    carrying no recognised terminal status, or one the run held before the round
+    opened is not a refusal, so the guard degrades toward the retry rather than
+    suppressing it. The caller reaches this only for a round whose reviewed head
+    has not moved, the moved head having moved the round on, so the head-unmoved
+    half of the signal is settled before the manifest is read.
     """
     path = str(record.get("manifest_path") or "")
     if not path:
@@ -2222,13 +2283,25 @@ def _reviewed_run_refused_the_round(record: Mapping[str, Any], round_id: str) ->
         text = Path(path).read_text(encoding="utf-8")
     except OSError:
         return False
-    if _repair_round_token(round_id) not in text:
-        return False
     try:
         parsed = parse_manifest(text, path=path)
     except Exception:  # noqa: BLE001 - an unreadable manifest is not a refusal
         return False
-    return manifest_status_is_terminal(parsed.get("status"))
+    if not manifest_status_is_terminal(parsed.get("status")):
+        return False
+    reported = _manifest_reports_round(text, round_id)
+    if reported == "other":
+        return False
+    if reported == "this":
+        return True
+    started_ns = _repair_round_started_mtime_ns(record, round_id)
+    if started_ns is None:
+        return False
+    try:
+        written_ns = Path(path).stat().st_mtime_ns
+    except OSError:
+        return False
+    return written_ns > started_ns
 
 
 def _reviewed_run_is_busy(record: Mapping[str, Any]) -> str:
