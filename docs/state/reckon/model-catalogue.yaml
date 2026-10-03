@@ -1,0 +1,84 @@
+# Reckon-owned model catalogue — which model each backend serves, and its
+# published rates. Versioned data in this repository, read by every project's
+# flight resolution; it is not shipped in the wheel.
+#
+# The catalogue is the reckon decision layer for model selection: family, model,
+# alias, effort, budget group and per-million rates are routing choices, not
+# facts about a machine, so they belong here rather than in a host layer that
+# would make choosing a model a dotfiles commit.
+#
+# Two rules hold the layering honest:
+#
+#   * The catalogue only fills keys for a backend another layer already defines.
+#     A catalogue entry alone never creates a backend, so a host that does not
+#     declare codex resolves no codex backend and no workstation or project sees
+#     a phantom candidate.
+#   * A host, project or override value still wins. `reckon flight` reports any
+#     host-layer value for a catalogue key as shadowing this catalogue, naming
+#     the key, the backend and the file, so a host layer can be emptied of these
+#     keys without the resolved values changing.
+#
+# A backend absent from this catalogue keeps whatever its host layer declares.
+
+version: 1
+
+backends:
+  # The default codex workhorse. Rates are unpriced here because their
+  # subscription publishes no per-token price; a catalogue entry without rates
+  # classifies as explicitly unpriced rather than pricing at a stale number.
+  codex:
+    model: gpt-6-sol
+    effort: high
+    alias: sol6
+    budget_group: codex-sub
+
+  codex-luna:
+    model: gpt-6-luna
+    effort: xhigh
+    alias: luna6
+    budget_group: codex-sub
+
+  codex-terra:
+    model: gpt-5.6-terra
+    effort: xhigh
+    alias: terra5.6
+    budget_group: codex-sub
+    # Published per-million rates. Both rates and their as_of travel together:
+    # a pair without a date classifies explicitly unpriced rather than pricing
+    # at a stale number, so refresh both and move the date when you do.
+    input_rate_per_million: 2.0
+    output_rate_per_million: 12.0
+    as_of: "2026-09-09"
+
+  codex-astra:
+    model: gpt-6-astra
+    effort: xhigh
+    alias: astra6
+    budget_group: codex-sub
+
+  # The locally served lane. It carries no rates: the hardware is unmetered, so
+  # pricing it would invent a figure the lane is never billed.
+  clive:
+    model: deepseek-v4.1-flash
+    effort: xhigh
+    alias: "dsv4.1-flash"
+
+  claude:
+    model: claude-sonnet-5-5
+    effort: medium
+    alias: sonnet 5.5
+
+  claude-opus:
+    model: claude-opus-5-5
+    effort: high
+    alias: opus 5.5
+
+  claude-haiku:
+    model: claude-haiku-4-5-20251001
+    effort: high
+    alias: haiku 4.5
+
+  # The calling harness itself. It has no model, effort or rates to catalogue;
+  # only its display alias is a reckon decision rather than a machine fact.
+  native:
+    alias: harness
