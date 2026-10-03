@@ -1010,6 +1010,9 @@ def _crew_result_ok(result: Mapping[str, Any]) -> bool:
             "finding",
             "timed_out",
             "over_budget",
+            "reviews_refused",
+            "reviews_awaiting_lane",
+            "reviews_awaiting_coordinator",
         )
     ):
         return False
@@ -1020,6 +1023,8 @@ def _crew_result_ok(result: Mapping[str, Any]) -> bool:
     if result.get("held") and "held_backends" in result:
         return False
     if result.get("event") == "watcher-live":
+        return False
+    if result.get("action") in {"hold", "refuse", "skipped", "unmeasured"}:
         return False
     validation = result.get("validation")
     if isinstance(validation, Mapping) and validation.get("ok") is False:
