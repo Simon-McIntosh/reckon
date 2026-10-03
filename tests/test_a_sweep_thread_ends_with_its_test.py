@@ -6,12 +6,12 @@ running while the next test has replaced the modules it reads. These cases pin
 the join that ends it: a transition starts a sweep whose body holds in flight,
 the next test replaces the ledger decoder with a refusal and asserts that no
 thread exception reaches it, and the helper is called directly against a held
-sweep. A record a retained tree leaves behind sits under the basetemp before
-the refusal test ends, so the per-test reap reads it there — every forgery is
-scoped to the test body, which is why that reap decodes it with the real
-readers rather than with a refusal. The fleet and the configuration home are
-synthesised under the test's own temporary paths, so no case reaches a real
-project or a real producer.
+sweep. The refusal test writes the seat record a retained tree would leave
+behind into its own tree, which the per-test reap reads at that test's
+teardown; every forgery is scoped to the test body, so the reap decodes the
+record with the real readers rather than with a refusal. The fleet and the
+configuration home are synthesised under the test's own temporary paths, so
+no case reaches a real project or a real producer.
 """
 
 from __future__ import annotations
@@ -181,28 +181,8 @@ def test_a_transition_starts_a_sweep_held_past_this_test(
     )
 
 
-def test_a_retained_seat_record_waits_under_the_basetemp(
-    tmp_path_factory: pytest.TempPathFactory,
-) -> None:
-    """A record a retained tree leaves behind sits where the reap walks.
-
-    When an earlier test on this worker fails, its tree and the seat record
-    under it are retained, and the per-test reap decodes every such record
-    during a later test's teardown. A passing test's own tree is not retained,
-    so this writes the record into a sibling of the tracked trees — the shape
-    a failed test leaves — and the next test's teardown reading it cleanly is
-    the assertion: a process-global reader still forged there turns this
-    record into a teardown error.
-    """
-    retained = tmp_path_factory.getbasetemp() / "test_retained_seat_record0"
-    record = retained / "crew" / "watch" / "seat.lock"
-    record.parent.mkdir(parents=True, exist_ok=True)
-    record.write_text("{}\n", encoding="utf-8")
-    assert record.is_file()
-
-
 def test_no_sweep_thread_exception_reaches_the_next_test(
-    fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+    fleet: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A sweep left running would decode here; the join means it cannot.
 
@@ -212,12 +192,21 @@ def test_no_sweep_thread_exception_reaches_the_next_test(
     refusal and dies with the exception, which is recorded here and fails this
     test. With the join in place there is no thread to reach it.
 
-    Both forgeries live inside a context that ends with the wait. Left
-    installed past it, the refusal is what every later fixture reads —
-    including the per-test reap decoding a retained tree's seat record, which
-    fails at teardown on whichever worker retention happens to put one in
-    front of it.
+    A failed test's tree is retained with the seat record under it, and the
+    per-test reap decodes every record under the basetemp during a later
+    test's teardown — under whatever process-global readers that test left
+    installed. This test writes that record into its own tree, which lives
+    through this teardown because the reap requests ``tmp_path`` and so is
+    finalized before the tree is pruned; a sibling test's tree is pruned
+    before this test's teardown and would never be seen by it. Both forgeries
+    live inside a context that ends with the wait, so the reap here reads a
+    retained record with the real decoder — a refusal left installed past the
+    wait turns it into a teardown error instead.
     """
+    record = tmp_path / "crew" / "watch" / "seat.lock"
+    record.parent.mkdir(parents=True)
+    record.write_text("{}\n", encoding="utf-8")
+
     seen: list[BaseException] = []
     previous = threading.excepthook
 
