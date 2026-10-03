@@ -6,6 +6,7 @@ import hashlib
 import os
 import subprocess
 import tomllib
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -59,7 +60,7 @@ def build_context_manifest(request: ContextRequest) -> dict[str, Any]:
     fallback_names = _fallback_names(config)
 
     repo_root = _find_repository_root(target_dir)
-    project_chain = _project_instruction_chain(
+    project_chain, scanned_dirs = _project_instruction_chain(
         repo_root, target_dir, fallback_names, findings
     )
     project_bytes = sum(item["bytes"] for item in project_chain)
@@ -92,6 +93,21 @@ def build_context_manifest(request: ContextRequest) -> dict[str, Any]:
         request.activated_skills, discovered_skills, findings
     )
 
+    # Every path this build consulted, recorded as it is read so the cache stamp
+    # is derived from the same set the computation used and the two cannot drift.
+    # The agent config is included whether or not it exists, so its later
+    # appearance is a miss; the scanned directories are included so a new
+    # instruction file in one of them is a miss.
+    input_paths: set[str] = {
+        str(canonical_path),
+        str(entrypoint_path),
+        str(agent_root / "config.toml"),
+    }
+    input_paths.update(str(directory) for directory in scanned_dirs)
+    input_paths.update(str(item["path"]) for item in project_chain)
+    input_paths.update(str(root["path"]) for root in metadata_roots)
+    input_paths.update(str(item["path"]) for item in discovered_skills)
+
     manifest: dict[str, Any] = {
         "schema_version": 1,
         "agent": agent,
@@ -123,6 +139,7 @@ def build_context_manifest(request: ContextRequest) -> dict[str, Any]:
             "discovered": discovered_skills,
             "activated_bodies": activated_bodies,
         },
+        "input_paths": sorted(input_paths),
         "findings": sorted(
             findings,
             key=lambda item: (item["severity"], item["code"], item["path"]),
@@ -130,6 +147,92 @@ def build_context_manifest(request: ContextRequest) -> dict[str, Any]:
     }
     manifest["ok"] = not any(item["severity"] == "error" for item in findings)
     return manifest
+
+
+def _manifest_file_paths(manifest: Mapping[str, Any]) -> list[str]:
+    """Every file or directory a built manifest's content depends on.
+
+    Stamping these lets a second process trust a cached manifest without
+    re-reading any of them: a changed instruction file, a skill added to a
+    scanned root, or a relocated repository root all move the stamp. The
+    manifest's own ``input_paths`` — recorded during the build from the paths it
+    actually consulted, the agent config included — leads the set, so the stamp
+    covers every input the computation read and cannot drift from it.
+    """
+
+    paths: set[str] = set()
+    for value in manifest.get("input_paths") or ():
+        if value:
+            paths.add(str(value))
+    for key in ("canonical_policy", "entrypoint"):
+        record = manifest.get(key)
+        if isinstance(record, Mapping):
+            for field in ("path", "resolved_path"):
+                value = record.get(field)
+                if value:
+                    paths.add(str(value))
+    instructions = manifest.get("instructions")
+    if isinstance(instructions, Mapping):
+        for item in instructions.get("effective_chain") or ():
+            if not isinstance(item, Mapping):
+                continue
+            for field in ("path", "resolved_path", "directory"):
+                value = item.get(field)
+                if value:
+                    paths.add(str(value))
+    repository = manifest.get("repository")
+    if isinstance(repository, Mapping) and repository.get("root"):
+        paths.add(str(repository["root"]))
+    skills = manifest.get("skills")
+    if isinstance(skills, Mapping):
+        for root in skills.get("metadata_roots") or ():
+            if isinstance(root, Mapping) and root.get("path"):
+                paths.add(str(root["path"]))
+        for item in skills.get("discovered") or ():
+            if isinstance(item, Mapping):
+                for field in ("path", "resolved_path"):
+                    value = item.get(field)
+                    if value:
+                        paths.add(str(value))
+    return sorted(paths)
+
+
+def manifest_file_stamp(manifest: Mapping[str, Any]) -> list[Any]:
+    """A cheap stamp of the files a manifest was built from."""
+
+    from reckon import capabilities
+
+    return [
+        [path, capabilities.file_stamp(path)] for path in _manifest_file_paths(manifest)
+    ]
+
+
+def cached_context_manifest(request: ContextRequest) -> dict[str, Any]:
+    """Return a context manifest, reusing a cached one while its files stand.
+
+    The manifest reads the instruction chain and its skill roots, a walk whose
+    repository lookup shells out to git. It is a pure function of those files,
+    so a fresh process reuses the cached manifest and re-stamps only the handful
+    of paths it names. A changed file, an added skill or a relocated root is a
+    miss and the manifest is rebuilt.
+    """
+
+    from reckon import capabilities
+
+    request_key = {
+        "agent": request.agent.lower(),
+        "target": str(_absolute(request.target)),
+        "user_home": str(_absolute(request.user_home)),
+        "agent_root": str(request.agent_root) if request.agent_root else None,
+        "project_doc_max_bytes": request.project_doc_max_bytes,
+        "activated_skills": list(request.activated_skills),
+    }
+    return capabilities.cached_pick_input_stamped(
+        "context-manifest",
+        request_key,
+        manifest_file_stamp,
+        lambda: build_context_manifest(request),
+    )
 
 
 def _absolute(path: Path) -> Path:
@@ -310,9 +413,9 @@ def _project_instruction_chain(
     target_dir: Path,
     fallback_names: list[str],
     findings: list[dict[str, str]],
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], list[Path]]:
     if repo_root is None:
-        return []
+        return [], []
     try:
         relative = target_dir.relative_to(repo_root)
     except ValueError:
@@ -323,7 +426,7 @@ def _project_instruction_chain(
             target_dir,
             "Target is outside the detected repository root.",
         )
-        return []
+        return [], []
 
     directories = [repo_root]
     current = repo_root
@@ -348,7 +451,7 @@ def _project_instruction_chain(
         record["directory"] = str(directory)
         record["selected_name"] = selected.name
         chain.append(record)
-    return chain
+    return chain, directories
 
 
 def _skill_roots(

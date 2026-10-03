@@ -5,9 +5,10 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import posixpath
 from collections import defaultdict
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from statistics import fmean, median
 from typing import Any
@@ -1127,6 +1128,158 @@ def load_capabilities(path: str | Path | None = None) -> dict[str, Any]:
     if not isinstance(data, dict):
         raise ValueError(f"capabilities cache {target} does not hold an object")
     return data
+
+
+# A fresh-process dispatch pick re-reads inputs that are pure functions of
+# files: the instruction-chain context estimate and a project's verdict inputs.
+# Both cost a subprocess or a full ledger walk on every cold process, while the
+# files they read change rarely, so a per-input cache file lets the second
+# process skip the recomputation. The key is a cheap stamp of the files the
+# input reads, so a changed file is a miss. A missing, unreadable, corrupt or
+# version-mismatched entry is a miss too, never an error: the input is rebuilt.
+PICK_INPUT_CACHE_VERSION = 2
+
+
+def pick_input_cache_root() -> Path:
+    """The directory the picker input cache lives under.
+
+    Outside every repository, so a cache write never dirties a checkout. An
+    explicit ``RECKON_PICK_CACHE`` wins, so a test points it at a temp dir. Then
+    ``RECKON_HOME`` (the repository's own home), then ``XDG_CACHE_HOME``, then
+    the user's cache directory. The repository home precedes the XDG directory
+    because a test isolates ``RECKON_HOME`` but not ``XDG_CACHE_HOME``; reading
+    XDG first would let a test write into — and on a second run read back from —
+    the real user cache.
+    """
+
+    configured = os.environ.get("RECKON_PICK_CACHE")
+    if configured:
+        return Path(configured).expanduser()
+    reckon_home = os.environ.get("RECKON_HOME")
+    if reckon_home:
+        return Path(reckon_home) / "cache"
+    cache_home = os.environ.get("XDG_CACHE_HOME")
+    if cache_home:
+        return Path(cache_home) / "reckon"
+    return Path.home() / ".cache" / "reckon"
+
+
+def pick_input_cache_path(name: str, *, root: str | Path | None = None) -> Path:
+    """One cache file per named picker input."""
+
+    base = Path(root) if root is not None else pick_input_cache_root()
+    return base / f"picker-{name}.json"
+
+
+def file_stamp(path: str | Path) -> list[int] | None:
+    """A cheap ``[mtime_ns, size]`` stamp of one path, or None when absent."""
+
+    try:
+        info = Path(path).stat()
+    except OSError:
+        return None
+    return [info.st_mtime_ns, info.st_size]
+
+
+def pick_input_stamp_key(stamp: Any) -> str:
+    """A stable string for a stamp of JSON-safe values."""
+
+    return json.dumps(stamp, sort_keys=True, separators=(",", ":"), default=str)
+
+
+def _read_pick_entry(path: Path) -> dict[str, Any] | None:
+    """The cached entry, or None when it cannot be trusted.
+
+    Absent, unreadable, corrupt and version-mismatched entries all read as
+    None, so a damaged cache is rebuilt rather than surfaced as an error.
+    """
+
+    try:
+        entry = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(entry, dict) or entry.get("version") != PICK_INPUT_CACHE_VERSION:
+        return None
+    if "key" not in entry:
+        return None
+    return entry
+
+
+def _write_pick_entry(path: Path, entry: dict[str, Any]) -> None:
+    """Write one entry atomically; a cache write never fails its caller."""
+
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        write_json_atomically(path, entry, fsync=False, indent=None)
+    except OSError:
+        return
+
+
+def cached_pick_input(
+    name: str,
+    stamp: Any,
+    build: Callable[[], Any],
+    *,
+    root: str | Path | None = None,
+) -> Any:
+    """Return the cached value for ``stamp``, or rebuild and store it.
+
+    The contract is a pure function of files: ``stamp`` must be derived only
+    from the files the input reads, and ``build`` must not consult anything
+    that has to be live. When the stored key differs from ``stamp`` the input
+    is recomputed, which is how a changed file, a first process and a corrupt
+    cache all converge on a fresh value.
+    """
+
+    path = pick_input_cache_path(name, root=root)
+    key = pick_input_stamp_key(stamp)
+    entry = _read_pick_entry(path)
+    if entry is not None and entry.get("key") == key:
+        return entry.get("value")
+    value = build()
+    _write_pick_entry(
+        path, {"version": PICK_INPUT_CACHE_VERSION, "key": key, "value": value}
+    )
+    return value
+
+
+def cached_pick_input_stamped(
+    name: str,
+    request_key: Any,
+    stamp_of: Callable[[Any], Any],
+    build: Callable[[], Any],
+    *,
+    root: str | Path | None = None,
+) -> Any:
+    """Cache an input whose file stamp is derived from the value it built.
+
+    Some inputs read a set of files the caller cannot enumerate before reading
+    them, so the stamp is computed from the returned value instead. On read the
+    cached value is re-stamped and must still match what it was written with, so
+    a file it depends on that changed since is a miss. ``request_key`` selects
+    the entry, and ``stamp_of`` must return a JSON-safe stamp of the files
+    ``value`` reads.
+    """
+
+    path = pick_input_cache_path(name, root=root)
+    key = pick_input_stamp_key(request_key)
+    entry = _read_pick_entry(path)
+    if entry is not None and entry.get("request") == key:
+        value = entry.get("value")
+        if entry.get("stamp") == pick_input_stamp_key(stamp_of(value)):
+            return value
+    value = build()
+    _write_pick_entry(
+        path,
+        {
+            "version": PICK_INPUT_CACHE_VERSION,
+            "key": key,
+            "request": key,
+            "stamp": pick_input_stamp_key(stamp_of(value)),
+            "value": value,
+        },
+    )
+    return value
 
 
 def _current_ledger_versions(
