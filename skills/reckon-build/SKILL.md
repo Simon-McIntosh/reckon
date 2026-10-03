@@ -749,9 +749,9 @@ in the harness it opens every turn with that checklist and refuses a Stop while 
 item is unacknowledged.
 
 Before the closing summary, **refuse to end the session while any queue row is
-foldable, any live pointer is unreconciled, or any executable section remains
-open.** Run the followup drain of §7c, then call `crew(project, view="drain")`,
-write all three figures into the ledger, and read it back:
+foldable or any live pointer is unreconciled.** Run the followup drain of §7c,
+then call `crew(project, view="drain")`, write all three figures into the ledger,
+and read it back:
 
 - every open row carries a disposition from the closed set, or the session
   continues;
@@ -765,12 +765,9 @@ write all three figures into the ledger, and read it back:
 - the run-disposition set is exactly `handed-off` and `still-working`;
   `still-working` remains valid only while the live classifier reports
   `running`, while a promoted run leaves the count by losing its pointer.
-- `executable-remaining` is the same view's `executable_remainder`, never a
-  figure from memory: the count of sections declared `implementable` that no
-  `done` reclassification has closed, summed over the plans that carry a
-  declaration. It is a lower bound, so any nonzero figure refutes a stop — fold
-  those sections back into the DAG and execute them before closing. An empty
-  ledger beside a nonzero remainder is an unfinished drain, not a tidy stop.
+- `executable-remaining` is the same view's `executable_remainder`; a nonzero
+  remainder is folded back into the DAG, never waived. The figure's shape is
+  defined in `references/sprint-orchestration.md`.
 
 Report the fence on the four axes of §4e with occasion `close`. A session ending
 with `foldable-remaining: 0`, `unreconciled-runs: 0` and
@@ -1118,11 +1115,9 @@ so it is committed rather than conversational. Three properties do the work:
 - **All three zeroes are the termination condition.** `foldable-remaining` is
   checked against the followup rows; `unreconciled-runs` and
   `executable-remaining` come from `crew(project, view="drain")`, never from
-  memory. `unreconciled-runs` counts live pointers without a valid disposition;
-  `executable-remaining` is the view's `executable_remainder`, the declared
-  sections not yet reclassified `done`, and a session does not end while it is
-  nonzero. Record deliberate pointers first with `reckon crew drain --project
-  <project> --leave <run-id>=handed-off|still-working`.
+  memory, and a session does not end while any is nonzero. Record deliberate
+  pointers first with `reckon crew drain --project <project> --leave
+  <run-id>=handed-off|still-working`.
 
 **Terminal status is gated on this drain.** Do not set `status` to `shipped` or
 `done` while any foldable followup is open. Exempt rows may remain open only with
@@ -1142,8 +1137,8 @@ from the inside.** Convergence and creep differ only in direction — test it:
 
 **Do not count layers and do not budget them** — a ten-layer chain converging on a
 one-line fix is healthy, and the deepest layers are usually the cheapest and
-highest-leverage. The only quantities that govern stopping are the drain ledger's
-three zeroes, and the only session-level exemption is `context-exhausted`
+highest-leverage. The drain ledger's three zeroes govern stopping, and the only
+session-level exemption is `context-exhausted`
 with its figure. Worked example: `references/sprint-orchestration.md` §10.
 
 ### 8. Final validation — eat the dog food

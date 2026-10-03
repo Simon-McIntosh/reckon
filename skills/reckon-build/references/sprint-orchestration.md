@@ -587,7 +587,8 @@ on one line:
 
 A session does not end while any of the three is nonzero. The remainder is a
 lower bound over the plans that carry a declaration, so a nonzero figure refutes
-a stop, while the view reports the plans it could not count beside it.
+a stop, while the view reports the plans it could not count beside it. An empty
+ledger beside a nonzero remainder is an unfinished drain, not a tidy stop.
 
 Fold eligible entries into sections and DAG nodes, execute the newly ready
 nodes, then re-read the plan because their landings may have created more
