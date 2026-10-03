@@ -5,12 +5,19 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from reckon.crew import query, recovery
 from reckon.crew.runs import list_live
 
 
 def _terminal(
-    home: Path, run_id: str, backend: str, ended_at: str, *, model_error: bool = True
+    home: Path,
+    run_id: str,
+    backend: str,
+    ended_at: str,
+    *,
+    result_text: str = "there is an issue with the selected model — it may not exist or you may not have access to it",
 ) -> None:
     run_dir = home / "crew" / "runs" / run_id
     run_dir.mkdir(parents=True)
@@ -22,12 +29,7 @@ def _terminal(
                 "timestamp": ended_at,
                 "subtype": "success",
                 "is_error": True,
-                "result": (
-                    "there is an issue with the selected model — it may not exist "
-                    "or you may not have access to it"
-                    if model_error
-                    else "worker failed"
-                ),
+                "result": result_text,
             }
         )
         + "\n"
@@ -54,7 +56,7 @@ def _terminal(
         "run_id": run_id,
         "project": "fixture-project",
         "phase": "failed",
-        "process_alive": True,
+        "process_alive": False,
         "launcher_host": "another-login-node",
         "launch": "cli",
         "backend": backend,
@@ -104,6 +106,11 @@ def test_simultaneous_terminals_are_one_lane_event(tmp_path, monkeypatch):
     assert compact["count"] == 3
     assert sum(row["classification"] == "lane-event" for row in compact["rows"]) == 1
 
+    recovered = recovery.recover(project="fixture-project")
+    assert recovered["counts"]["lane-event"] == 1
+    assert recovered["counts"]["abandoned"] == 2
+    assert len(recovered["runs"]) == 3
+
 
 def test_stderr_model_warning_is_not_a_terminal_cause(tmp_path, monkeypatch):
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
@@ -112,9 +119,33 @@ def test_stderr_model_warning_is_not_a_terminal_cause(tmp_path, monkeypatch):
         "r-healthy-warning",
         "shared",
         "2026-09-14T06:52:19Z",
-        model_error=False,
+        result_text="worker failed for an unrelated reason",
     )
     run_dir = tmp_path / "crew" / "runs" / "r-healthy-warning"
     (run_dir / "stderr.log").write_text("there is an issue with the selected model\n")
     row = query.project_live_rows(list_live(project="fixture-project"))[0]
     assert row["lane_cause"] is None
+
+
+@pytest.mark.parametrize(
+    ("terminal_text", "expected_cause"),
+    [
+        ("unknown model configured for this backend", "backend-catalog-change"),
+        ("rate limit reached for this account", "rate-limit"),
+        ("connection refused while contacting backend", "transport-outage"),
+    ],
+)
+def test_terminal_result_names_distinct_lane_causes(
+    tmp_path, monkeypatch, terminal_text, expected_cause
+):
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path))
+    _terminal(
+        tmp_path,
+        "r-cause",
+        "shared",
+        "2026-09-14T06:52:19Z",
+        result_text=terminal_text,
+    )
+    row = query.project_live_rows(list_live(project="fixture-project"))[0]
+    assert row["lane_cause"]["kind"] == expected_cause
+    assert row["lane_cause"]["reason"] == terminal_text

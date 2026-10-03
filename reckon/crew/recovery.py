@@ -95,7 +95,12 @@ RECOVERY_CLASSES = (
     "unreadable",
     "exited-unfinished",
     "abandoned",
+    "lane-event",
 )
+
+# A burst is anchored to its first end, so a chain of nearby endings cannot
+# silently join events whose first and last runs ended minutes apart.
+LANE_EVENT_WINDOW_SECONDS = 30
 
 WAITING_STATUS = "waiting"
 # The waiting family is the stop that lifts itself, an overdue wait included:
@@ -159,6 +164,7 @@ RECOVERY_VERBS = {
     "unwritten": "resume",
     "ready": "resume",
     "abandoned": "recover",
+    "lane-event": "resume",
     "refused-at-admission": "resume",
     "launch-failed": "resume",
     "ended-without-manifest": "resume",
@@ -180,6 +186,7 @@ ACTIONABLE_RECOVERY_CLASSIFICATIONS = frozenset(
         "unwritten",
         "ready",
         "abandoned",
+        "lane-event",
         "refused-at-admission",
         "wait-aged",
         INTERRUPTED_RUN_PHASE,
@@ -7073,6 +7080,130 @@ def _classification_key(identities: Mapping[str, str]) -> str:
     return hashlib.sha256(rendered.encode("utf-8")).hexdigest()
 
 
+def _terminal_lane_signal(
+    record: Mapping[str, Any],
+) -> tuple[dict[str, str] | None, str | None]:
+    """Read cause and end time from the latest terminal result, never stderr."""
+    found = _record_newest_stream(record)
+    if found is None:
+        return None, None
+    result: Mapping[str, Any] | None = None
+    try:
+        with found[0].open(encoding="utf-8", errors="replace") as stream:
+            for line in stream:
+                try:
+                    event = json.loads(line)
+                except ValueError:
+                    continue
+                if isinstance(event, Mapping) and event.get("type") == "result":
+                    result = event
+    except OSError:
+        return None, None
+    if result is None:
+        return None, None
+    stamp = str(result.get("timestamp") or "") or None
+    if not result.get("is_error"):
+        return None, stamp
+    raw = result.get("result") or result.get("error") or result.get("message")
+    if isinstance(raw, Mapping):
+        raw = raw.get("message") or raw.get("detail")
+    reason = " ".join(str(raw or "").split())[:240]
+    lowered = reason.casefold()
+    if (
+        "issue with the selected model" in lowered
+        or "unknown model" in lowered
+        or "model not found" in lowered
+        or "model does not exist" in lowered
+    ):
+        return {"kind": "backend-catalog-change", "reason": reason}, stamp
+    if "rate limit" in lowered or "rate-limit" in lowered:
+        return {"kind": "rate-limit", "reason": reason}, stamp
+    if "connection refused" in lowered or "transport" in lowered:
+        return {"kind": "transport-outage", "reason": reason}, stamp
+    return None, stamp
+
+
+def group_terminal_lane_events(
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    window_seconds: int = LANE_EVENT_WINDOW_SECONDS,
+) -> list[dict[str, Any]]:
+    """Replace each close same-backend terminal cluster with one fleet row."""
+    grouped: dict[str, list[tuple[float, int]]] = {}
+    for index, row in enumerate(rows):
+        terminal_failure = row.get("classification") in {
+            "abandoned",
+            "blocked",
+            "failed",
+            "exited-unfinished",
+            "stopped",
+            "refused-at-admission",
+            INTERRUPTED_RUN_PHASE,
+        } or (row.get("classification") == "paused" and row.get("lane_cause"))
+        if row.get("process_alive") is not False or not terminal_failure:
+            continue
+        backend = str(row.get("backend") or "").strip()
+        ended = parse_utc(str(row.get("lane_ended_at") or ""))
+        if not backend or ended is None:
+            continue
+        grouped.setdefault(backend, []).append((ended.timestamp(), index))
+
+    events: dict[int, dict[str, Any]] = {}
+    suppressed: set[int] = set()
+    for backend, endings in grouped.items():
+        endings.sort()
+        clusters: list[list[tuple[float, int]]] = []
+        for ending in endings:
+            if not clusters or ending[0] - clusters[-1][0][0] > window_seconds:
+                clusters.append([ending])
+            else:
+                clusters[-1].append(ending)
+        for cluster in clusters:
+            if len(cluster) < 2:
+                continue
+            members = [rows[index] for _stamp, index in cluster]
+            cause = next(
+                (row.get("lane_cause") for row in members if row.get("lane_cause")),
+                None,
+            )
+            run_ids = [str(row.get("run_id") or "") for row in members]
+            reason = (
+                str(cause.get("reason") or "") if isinstance(cause, Mapping) else ""
+            )
+            event = {
+                "backend": backend,
+                "run_ids": run_ids,
+                "cause": str(cause.get("kind"))
+                if isinstance(cause, Mapping)
+                else "undetermined",
+                "reason": reason
+                or "multiple terminal runs ended together on one backend",
+                "started_at": members[0].get("lane_ended_at"),
+                "ended_at": members[-1].get("lane_ended_at"),
+                "window_seconds": window_seconds,
+            }
+            leader = cluster[0][1]
+            report = dict(rows[leader])
+            report.update(
+                classification="lane-event",
+                recovery_classification="lane-event",
+                recovery="resume",
+                lane_event=event,
+                detail=f"backend {backend!r} ended {len(run_ids)} runs together: {event['reason']}",
+                next_action=(
+                    f"preserve the sessions and worktrees for {', '.join(run_ids)}; "
+                    f"resume recoverable runs when backend {backend!r} returns"
+                ),
+            )
+            events[leader] = report
+            suppressed.update(index for _stamp, index in cluster[1:])
+    return [
+        events.get(index, dict(row))
+        for index, row in enumerate(rows)
+        if index not in suppressed
+    ]
+
+
 def classify_pointer(
     record: Mapping[str, Any],
     *,
@@ -8210,8 +8341,26 @@ def classify_pointer(
             phase in _PRE_SPAWN_PHASES and _newest_stream_shows_work(record)
         ),
     )
+    lane_cause, stream_ended_at = (
+        _terminal_lane_signal(record) if alive is False else (None, None)
+    )
+    exit_ended_at = (
+        str(ended_exit.get("exited_at") or "") if ended_exit is not None else ""
+    )
+    lane_ended_at = next(
+        (
+            stamp
+            for stamp in (exit_ended_at, stream_ended_at, terminal_at)
+            if parse_utc(stamp)
+        ),
+        None,
+    )
     classified = {
         "run_id": run_id,
+        "backend": str(record.get("backend") or ""),
+        "lane_cause": lane_cause,
+        "lane_ended_at": lane_ended_at,
+        "lane_event": None,
         "project": record.get("project"),
         # Several coordinator sessions share one project, so every read of a
         # run has to say whose it is. Without it a session reading the live
@@ -10445,6 +10594,7 @@ def recover(
         reports.append(report)
         if report["classification"] == "scoring":
             scoring.append(observed)
+    reports = group_terminal_lane_events(reports)
     counts = {
         name: sum(1 for item in reports if item["classification"] == name)
         for name in (
@@ -10454,6 +10604,7 @@ def recover(
             "completed_unpromoted",
             INTERRUPTED_RUN_PHASE,
             "abandoned",
+            "lane-event",
         )
     }
     for name in ("waiting", "paused", "stopped", "blocked", "failed", "unreadable"):
