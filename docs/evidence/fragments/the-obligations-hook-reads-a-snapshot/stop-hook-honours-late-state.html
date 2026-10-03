@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-verifies" content="reckon:the-obligations-hook-reads-a-snapshot#s14">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-03">
+  <meta name="evidence-commit" content="9865c8d03">
+  <title>A late ack and a skipped record do not hold a stop open | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-done">
+<section id="stop-hook-honours-late-state">
+  <h2>A late acknowledgement and an unreadable record do not hold a stop open</h2>
+
+  <p>Two ways the stop hook refused on a list the fleet no longer owed. First,
+  <code>crew ack</code> records its deferral on the run's live pointer and
+  republishes nothing, so a snapshot computed
+  seconds before the ack went on listing the deferred duty until the next sweep.
+  <code>_stop</code> now re-reads the deferrals in force at the moment it would
+  refuse — <code>obligations._acknowledgements_in_force</code> and
+  <code>_partition_acknowledged</code> applied to the fresh snapshot's list — and
+  refuses only on what is still owed. The acknowledgement's own deadline bounds
+  that reading: an expired deferral is not in force, so the duty returns to the
+  list and the same snapshot blocks again.</p>
+
+  <p>Second, a review record the sweep could not read travels in the snapshot as
+  a finding and the reader renders it into the duty list under
+  <code>unreadable-review-record</code>. That kind joined
+  <code>_NON_BLOCKING_KINDS</code> beside <code>review-queued</code>: it reaches
+  the checklist, and it no longer asks a coordinator to act on a file caught
+  mid-write.</p>
+
+  <p><strong>Reproduction.</strong> The base revision, extracted with
+  <code>git archive</code> and with only the new case file overlaid, fails both
+  cases: <code>2 failed, 45 passed in 14.71s</code>, <code>EXIT=1</code>. The
+  late-ack case's block reason names the deferred run
+  (<code>- [blocked] run-stop-hook-deferred … </code>) and the unreadable-record
+  case's names <code>- [unreadable-review-record] …/review-of-a-run.json</code>,
+  both at the base revision the defects were recorded against.</p>
+
+  <p><strong>Gate.</strong> Base <code>4c87d83e9</code> with the new case file
+  overlaid: <code>2 failed, 45 passed in 14.71s</code>, <code>EXIT=1</code>, the
+  two failing ids being the two cases above. Head
+  <code>9865c8d03</code>: <code>47 passed in 16.83s</code>, <code>EXIT=0</code>,
+  the head adds no failure id. Six files reach the change
+  (<code>test_stop_hook_honours_late_state.py</code>,
+  <code>test_stop_hook_reads_the_snapshot.py</code>,
+  <code>test_coordinator_obligations_hook.py</code>,
+  <code>test_crew_obligations.py</code>,
+  <code>test_obligations_hook_reads_the_snapshot.py</code>,
+  <code>test_skipped_record_reaches_the_checklist.py</code>), both arms run under
+  <code>pytest -n 8 --timeout=300</code> from their own basetemp outside any
+  repository and write their own log. <code>ruff check</code> and
+  <code>ruff format --check</code> over the changed Python paths report no
+  finding the base did not.</p>
+
+  <p><strong>Negative control.</strong> The declared mutation — the stop hook not
+  re-applying the acknowledgements — leaves both cases red at the base and
+  exactly one red under the armed change:</p>
+
+  <table>
+    <thead>
+      <tr><th>arm</th><th>outcome</th><th>marked ids</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>base, new case file overlaid</td>
+        <td><code>2 failed, 45 passed in 14.71s</code>, <code>EXIT=1</code></td>
+        <td>both new cases</td>
+      </tr>
+      <tr>
+        <td>head</td>
+        <td><code>47 passed in 16.83s</code>, <code>EXIT=0</code></td>
+        <td>(none)</td>
+      </tr>
+      <tr>
+        <td>head with the re-application removed</td>
+        <td><code>1 failed, 1 passed in 4.55s</code>, <code>EXIT=1</code></td>
+        <td><code>test_an_ack_recorded_after_the_snapshot_lets_the_stop_through</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The unreadable-record case passes under that mutation, so the red log names
+  the ack behaviour alone. The mutation ran in a scratch extraction of the head
+  revision, and the armed worktree was never left mutated.</p>
+
+  <p>Logs live under the run directory:
+  <code>.config/reckon/crew/runs/r-20261003T030827383233-stop-hook-honours-late-state/logs/</code>
+  — <code>base-arm.log</code>, <code>head-arm.log</code>,
+  <code>negative-control.log</code>, <code>reproduction-before-fix.log</code>.
+  The worktree-held half of the section is a separate node and
+  <code>reckon/crew/obligations.py</code> was not touched here.</p>
+</section>
+</main>
+</body>
+</html>

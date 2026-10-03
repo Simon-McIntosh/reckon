@@ -37,7 +37,9 @@ Two modes, selected by ``--hook``:
   while duties remain, so the turn cannot end into forgotten work. It reads the
   same snapshot as the prompt path and blocks on what that snapshot lists,
   except the duty kinds a reflex already owns and retries, which are listed but
-  never hold a turn open. When the snapshot is not fresh for any reason it
+  never hold a turn open, and except the duties an acknowledgement recorded
+  after the snapshot was computed defers, which are re-read from the live
+  pointers as the hook refuses. When the snapshot is not fresh for any reason it
   derives inline under a bounded budget instead, and if that budget runs out it
   allows the stop with one line naming the not-fresh reason, so no producer
   state can trap a coordinator. The block fires at most once per list:
@@ -78,6 +80,7 @@ import shlex
 import signal
 import sys
 from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
 from typing import Any
@@ -139,16 +142,21 @@ def stop_derivation_budget() -> float:
         return STOP_DERIVATION_BUDGET_SECONDS
 
 
-def _obligations_view():
-    """The obligations derivation, imported where it is used and not before.
+def _obligations_module():
+    """The obligations derivation module, imported where it is used, not before.
 
     Kept out of every other path on purpose: a prompt turn reaches none of the
-    derivation modules, and only a stop whose snapshot is not fresh pays for
-    loading them.
+    derivation modules, and only a stop that must derive, or must re-read the
+    deferrals a snapshot may predate, pays for loading them.
     """
-    from reckon.crew.obligations import obligations as view
+    from reckon.crew import obligations as module
 
-    return view
+    return module
+
+
+def _obligations_view():
+    """The obligations derivation itself."""
+    return _obligations_module().obligations
 
 
 def derive_within_budget(
@@ -186,11 +194,13 @@ def derive_within_budget(
         signal.signal(alarm, previous)
 
 
-# The duty kinds listed but never holding a stop open: the work behind them is
-# already owned by a reflex that retries, so blocking would ask a coordinator to
-# act on a wait it cannot shorten. Mirrors the derivation's own vocabulary,
-# which cannot be imported here on the paths that read a fresh snapshot.
-_NON_BLOCKING_KINDS = frozenset({"review-queued"})
+# The duty kinds listed but never holding a stop open. A queued review's work
+# is already owned by a reflex that retries, and an unreadable record is a
+# reading of a file caught mid-write rather than a duty the coordinator can act
+# on, so blocking would ask a coordinator to act on a wait it cannot shorten.
+# Mirrors the derivation's own vocabulary, which cannot be imported here on the
+# paths that read a fresh snapshot.
+_NON_BLOCKING_KINDS = frozenset({"review-queued", "unreadable-review-record"})
 
 # A session worktree's directory component is the repository name plus a short
 # hex digest, e.g. ``reckon-c8f839407e49``.
@@ -772,6 +782,33 @@ def _prompt(payload: dict[str, Any]) -> int:
     return 0
 
 
+def reapply_acknowledgements(
+    payload: dict[str, Any], *, project: str
+) -> dict[str, Any]:
+    """The payload's duties minus every deferral in force at read time.
+
+    A snapshot is computed at one instant and can be read many seconds later,
+    and ``crew ack`` records its deferral on the run's live pointer without
+    republishing the session's snapshot, so the list a fresh snapshot carries
+    may still name a duty the coordinator has already excused. The deferrals
+    are therefore re-applied here, where a stop would refuse, against the
+    pointers as they read now. The acknowledgement's own deadline bounds the
+    effect: a deferral that has expired is not in force, so the duty returns to
+    the list and the stop blocks again.
+    """
+    module = _obligations_module()
+    items = list(payload.get("obligations") or ())
+    in_force = module._acknowledgements_in_force(project, now=datetime.now(tz=UTC))
+    owed, _deferred = module._partition_acknowledged(items, in_force)
+    summary = payload.get("summary")
+    summary = dict(summary) if isinstance(summary, Mapping) else {}
+    summary["count"] = len(owed)
+    summary["oldest_age_seconds"] = max(
+        (int(item.get("age_seconds") or 0) for item in owed), default=0
+    )
+    return {**payload, "obligations": owed, "summary": summary}
+
+
 def _blocking_items(items: Sequence[Any]) -> list[Any]:
     """The duties a stop is held open for, in list order.
 
@@ -791,7 +828,9 @@ def _stop(payload: dict[str, Any]) -> int:
 
     The snapshot decides when it is fresh, exactly as it does for the prompt
     path, and the verdict is read from what it lists minus the kinds a reflex
-    already owns. A snapshot that is not fresh -- for any of its three reasons
+    already owns and minus the deferrals in force, so an acknowledgement
+    written after the snapshot was computed is honoured before a refusal. A
+    snapshot that is not fresh -- for any of its three reasons
     -- sends the hook to the derivation, imported lazily and run under the
     bounded budget, because a stop is a verdict on the turn and a list no
     producer stands behind must not decide it. If the budget runs out, the stop
@@ -841,6 +880,15 @@ def _stop(payload: dict[str, Any]) -> int:
         # not hold the turn open. The recorded set is left as it stands,
         # because the prompt path injected this very list and clearing it
         # would make the same duties speak twice.
+        return 0
+    # The snapshot's list is what the sweep computed, not what the fleet owes
+    # now. An acknowledgement written since it was published is honoured here
+    # rather than at the next republish, so a deferral does not hold the turn
+    # open for a duty the coordinator has already excused.
+    resolved = reapply_acknowledgements(
+        resolved, project=str(resolved.get("project") or project)
+    )
+    if not _blocking_items(resolved.get("obligations") or ()):
         return 0
     emit("stop", payload, resolved)
     return 0
