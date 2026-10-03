@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -190,6 +190,9 @@ Measured twice on 2026-09-21. A dry run naming a sprint id as --plan returned ok
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261002T224320974295-review-of-dry-run-shows-each-set-override" data-who="reckon-build" data-when="2026-10-02T23:03:32.090Z">
     <div class="r-comment-body"><p>Independent review of run r-20261002T181759902620-dry-run-shows-each-set-override stored for base baf499dfd0163f686aa32175a301c80d6c278201 head dbaa5baeecac713a85a76232efc7e167704997f5 - goal_fidelity 18, evidence 19, scope_discipline 20, durability 18, fit 19 (total 94); two follow-on findings, both in reckon/cli.py; added_failure_count 0 with no ids over the reviewed run's own base/head arms.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261002T181759902620-dry-run-shows-each-set-override" data-who="reckon-build" data-when="2026-10-02T22:22:39.584Z">
+    <div class="r-comment-body"><p>The dispatch dry run reports every --set path as overrides.&lt;path&gt;.before beside overrides.&lt;path&gt;.resolved (null included) and refuses a path naming a backend or role no config layer defines. This repair round extended the refusal to the real dispatch path (the preview is not a stricter gate than the launch it previews), made every dry-run refusal document (contract refusal exit 2, held-lane refusal exit 75) carry the same override echo a successful preview carries, and answered a schema-refused --set key with the same request-error dry-run document the keyed-map refusal already used, in place of a plain-text line on stderr. Measure: focused file 8 passed; base arm 521 passed/1 skipped vs head arm 529 passed/1 skipped, both EXIT=0, no added failure id; each repair&#x27;s reverting control fails its check at EXIT=1. The suite arms ran with the session&#x27;s stale RECKON_FOLLOWER_OWNER stamp removed: with it present, eight pre-existing follower-admission tests fail identically on the untouched base tree and on head, so they measure the environment rather than the change.</p></div>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-drrv-s6-landed" data-who="s22-coord" data-when="2026-10-03">
     <div class="r-comment-body"><p>Landed at e0a9767ea (run r-20261002T181759902620-dry-run-shows-each-set-override, repair round reviewed at 94, zero added failures). The coordinator merged it in a scratch worktree and resolved two cli.py conflicts against main's picker routing. The merge was measured by r-20261002T234040312239-merged-dry-run-override-gate: one added id, flaky under xdist and passing in three isolated reruns. <code>tests/test_a_brief_points_rather_than_quotes.py::test_a_report_changes_no_other_dry_run_field</code> already fails on main at 9fe5d8204, independently of this change.</p></div>
