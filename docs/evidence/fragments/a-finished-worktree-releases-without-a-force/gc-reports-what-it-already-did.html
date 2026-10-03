@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-finished-worktree-releases-without-a-force">
+  <meta name="plan-verifies" content="reckon:a-finished-worktree-releases-without-a-force#s8">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-03">
+  <meta name="evidence-commit" content="1a36da02f">
+  <title>gc names its subject and reports what it already did | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="gc-reports-what-it-already-did">
+  <h2>gc names its subject and reports what it already did</h2>
+  <p><strong>Change (commit <code>1a36da02f</code>).</strong> <code>_git</code>
+  (<code>reckon/crew/routing.py</code>) raised <code>git rev-parse HEAD failed: fatal: not a
+  git repository …</code> — the command and git's output, with no directory. The message now
+  reads <code>git rev-parse HEAD failed in &lt;directory&gt;: …</code>, so a sweep names the tree
+  its command ran in.</p>
+  <p>A registered worktree whose directory exists but is not a git working tree was already a
+  reported row (<code>classification: unavailable</code>, <code>reclaimable: false</code>, path
+  and git's reason in <code>detail</code>) and the sweep already continued past it. Its
+  <code>withheld</code> condition, however, said the directory <em>is gone</em> — false for the
+  replaced-by-a-plain-directory case the incident reported. An unreadable directory now carries
+  <code>unavailable_state: unreadable</code> and the withheld text says the directory exists but
+  is not a git working tree, while a vanished directory keeps its own reason.</p>
+  <p>A pass that stops mid-way lost its report: <code>garbage_collect</code> raises
+  <code>GcSweepError</code> carrying the report it had built — <code>removed_worktrees</code>,
+  the judged <code>worktrees</code> rows, and <code>failed_path</code> — and <code>crew_gc</code>
+  (<code>reckon/cli.py</code>) prints <code>{"ok": false, "error": …}</code> merged with that
+  report before exiting 1. Measured at the base revision with one released worktree and one
+  locked worktree: the command printed only <code>Error: git worktree remove … failed</code>,
+  exiting 1, and the deleted tree went unnamed. At head the same scenario prints
+  <code>removed_worktrees</code> naming the deleted tree, <code>failed_path</code> naming the
+  locked tree, and exits 1.</p>
+  <p><strong>Gate.</strong> <code>pytest -n 8 --timeout=300</code> over the gc surface
+  (<code>tests/test_gc_reports_what_it_already_did.py</code>, <code>test_crew_gc.py</code>,
+  <code>test_gc_applies_past_a_vanished_worktree.py</code>, <code>test_gc_covers_run_directory_trees.py</code>,
+  <code>test_gc_releases_squash_landed_worktrees.py</code>, <code>test_finished_worktree_saves_residue.py</code>,
+  <code>test_a_runs_scratch_ends_with_the_run.py</code>, <code>test_crew_shadow_paths.py</code>,
+  <code>test_crew_help_names_its_state.py</code>). Base arm (a <code>git archive</code> of
+  <code>3b08135adf3e</code> under the run scratch): 4 failed, 56 passed — the three new cases fail
+  at base exactly on the changed behaviour (the inaccurate withheld text; the message without the
+  directory; the report lost to a bare error). Head arm (<code>1a36da02f22ab</code>): 59 passed,
+  1 failed — <code>test_crew_help_names_its_state.py::test_every_crew_verb_help_names_its_state_or_condition</code>,
+  red identically in both arms (<code>len(leaves) == 35</code> against 36 registered verbs), so the
+  head arm adds no failure id. ruff <code>check</code> and <code>format --check</code> report no
+  finding the base did not on the changed paths.</p>
+  <p><strong>Declared mutation.</strong> With <code>crew_gc</code> converting the mid-sweep
+  <code>CrewError</code> to a <code>ClickException</code> before emitting its report, the release
+  in <code>tests/test_gc_reports_what_it_already_did.py</code> goes unreported and the test fails:
+  <code>EXIT=1</code>, <code>test_a_stopped_sweep_reports_the_steps_it_already_applied</code>
+  fails on <code>json.decoder.JSONDecodeError</code> (no report printed), while the other two cases
+  in the file pass. This gate measures only this node's own change; verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>
+</main>
+</body>
+</html>
