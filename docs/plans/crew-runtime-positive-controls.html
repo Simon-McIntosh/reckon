@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="287">
+<meta name="plan-version" content="288">
 </head>
 <body>
   <main class="plan-doc">
@@ -2151,6 +2151,9 @@
 </div>
 <div class="r-comment" data-section="s49" data-id="c-run-r-20261003T190049079221-a-timed-out-replay-is-not-ok" data-who="reckon-build" data-when="2026-10-03T19:45:01.512Z">
     <div class="r-comment-body"><p>reckon/crew/promotion.py — rerun_gate_at_integrated_revision now reports ok only when the re-run produced an exit status, so a replay stopped by its bound returns ok false with the bound and the seconds it ran named in the finding (timed_out, replay_elapsed_seconds) and in a `# cut short:` line in its log while the ledger row records not-run, and a replay that completes keeps its own exit status and verdict whether green or red; tests/test_a_timed_out_replay_is_not_ok.py adds 4 cases and runs 4 passed in 64.13s EXIT=0 at head, the 9-file verify-gate population runs 158 passed in 190.29s EXIT=0 at the final head against 2 failed 156 passed at base (the two reds reproduce identically against a head-revision extraction, so they track the measurement tree rather than the revision), and the negative control reddens exactly the timeout case with ok true beside a null exit status.</p></div>
+</div>
+<div class="r-comment" data-section="s49" data-id="c-run-r-20261003T194525220806-review-of-a-timed-out-replay-is-not-ok" data-who="reckon-build" data-when="2026-10-03T19:51:07.291Z">
+    <div class="r-comment-body"><p>review of run r-20261003T190049079221-a-timed-out-replay-is-not-ok (reckon:crew-runtime-positive-controls §49) stored at reviews/reckon/r-20261003T190049079221-a-timed-out-replay-is-not-ok.json and its head-pinned copy, scoring goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 19 (total 95), reviewed_base_sha 9443e674a, reviewed_head_sha f8f7d24eb, added_failure_count 0 with empty added_failure_ids; the node&#x27;s four done-when clauses hold and were independently re-run by this reviewer, and the declared negative control was independently reproduced.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
