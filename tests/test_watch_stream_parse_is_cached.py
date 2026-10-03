@@ -8,6 +8,7 @@ import os
 import sys
 import threading
 import time
+from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -174,7 +175,16 @@ def test_concurrent_stream_readers_survive_eviction_and_growth(
 
     for stream in [*streams, *shared]:
         stream.write_text(record(0) + record(1), encoding="utf-8")
-    _backends._PARSED_STREAMS.clear()
+
+    class CountingCache(OrderedDict):
+        evictions = 0
+
+        def popitem(self, last=True):
+            self.evictions += 1
+            return super().popitem(last)
+
+    cache = CountingCache()
+    monkeypatch.setattr(_backends, "_PARSED_STREAMS", cache)
     monkeypatch.setattr(_backends, "_PARSED_STREAM_LIMIT", 6_000)
     barrier = threading.Barrier(worker_count)
 
@@ -236,13 +246,16 @@ def test_concurrent_stream_readers_survive_eviction_and_growth(
             results = list(pool.map(classify, range(worker_count)))
     finally:
         sys.setswitchinterval(previous)
-        _backends._PARSED_STREAMS.clear()
     total = sum(count for count, _seen, _error in results)
     visited = set().union(*(seen for _count, seen, _error in results))
     errors = [error for _count, _seen, error in results if error is not None]
-    print(f"stress_iterations={total} stress_streams={len(visited)}")
+    print(
+        f"stress_iterations={total} stress_streams={len(visited)} "
+        f"stress_evictions={cache.evictions}"
+    )
     assert not errors, (
         f"iterations={total}; streams={len(visited)}; errors={errors[:5]}"
     )
     assert len(visited) >= 40, (len(visited), total, errors)
     assert total >= 100, (total, errors)
+    assert cache.evictions >= 100, (cache.evictions, total)
