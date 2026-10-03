@@ -2856,6 +2856,12 @@ def _build_roadmap(
             "implementable_sections": implementable_sections(
                 _plan_declarations(plan, docs_dir, project, slug)
             ),
+            "section_attempts": {
+                section: int((plan.get("section_attempts") or {}).get(section, 0))
+                for section in implementable_sections(
+                    _plan_declarations(plan, docs_dir, project, slug)
+                )
+            },
             "dependency_ready": is_ready,
             "dependency_readiness": readiness,
             "schedule_ready": not is_schedule_deferred,
@@ -3065,6 +3071,7 @@ def _build_roadmap(
             "slug": row["slug"],
             "sprint": row["sprint"],
             "progress_pct": row["progress_pct"],
+            "section_attempts": row["section_attempts"],
             "unlocks": row["unlocks"],
             "dependency_ready": row["dependency_ready"],
             "dependency_readiness": row["dependency_readiness"],

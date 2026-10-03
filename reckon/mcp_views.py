@@ -1111,7 +1111,12 @@ def ready_set_view(roadmap: dict[str, Any]) -> dict[str, Any]:
             continue
         row = dict(summary)
         readiness = readiness_by_slug.get(str(row.get("slug")), {})
-        for key in ("section_readiness", "ready_sections", "blocked_sections"):
+        for key in (
+            "section_readiness",
+            "ready_sections",
+            "blocked_sections",
+            "section_attempts",
+        ):
             if key in readiness:
                 row[key] = readiness[key]
         ready.append(row)

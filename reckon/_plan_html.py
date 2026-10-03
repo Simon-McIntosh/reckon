@@ -1597,6 +1597,10 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
             parsed_state = read_state(text)
         except ValueError:
             parsed_state = None
+        if parsed_state is not None:
+            rec["section_attempts"] = {
+                row["id"]: row["attempts"] for row in parsed_state.get("sections", [])
+            }
         derived = (
             None
             if parsed_state is None
