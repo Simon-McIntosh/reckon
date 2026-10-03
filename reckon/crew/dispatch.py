@@ -1581,7 +1581,9 @@ def _repository_scope_claims(
 # both dispatches can read before either publishes — so the claim is an
 # exclusive file create under the crew store: the kernel decides which
 # dispatch owns the path, and the loser reads the holder's record and refuses,
-# naming it, before it has touched the worktree.
+# naming it, before it has touched the worktree. A holder that died without
+# releasing is found by its recorded pid and process start time and moved
+# aside, so one killed dispatcher cannot block the node for everyone.
 NODE_DISPATCH_CLAIM_DIRECTORY = "claims"
 
 # How long a refused dispatch re-reads the holder's record before naming it
@@ -1590,6 +1592,11 @@ NODE_DISPATCH_CLAIM_DIRECTORY = "claims"
 # refusal still names the holder rather than a blank.
 _NODE_CLAIM_RECORD_ATTEMPTS = 20
 _NODE_CLAIM_RECORD_INTERVAL_SECONDS = 0.01
+
+# How many times a dispatch re-runs the reclaim-or-refuse decision before it
+# gives up. One reclaim is the ordinary case; the bound only exists so a storm
+# of reclaimers cannot spin.
+_NODE_CLAIM_ATTEMPTS = 8
 
 
 def _node_dispatch_claim_path(
@@ -1614,6 +1621,49 @@ def _read_node_dispatch_claim(path: Path) -> Mapping[str, Any]:
         if attempt + 1 < _NODE_CLAIM_RECORD_ATTEMPTS:
             time.sleep(_NODE_CLAIM_RECORD_INTERVAL_SECONDS)
     return {}
+
+
+def _claim_holder_is_alive(holder: Mapping[str, Any]) -> bool:
+    """Whether the process that wrote a claim record is still that process.
+
+    A claim whose holder is gone makes the node undispatable for everyone, so
+    a holder the kernel contradicts is expendable. A pid alone cannot answer
+    the question: pid numbers are reused, so the start time pins the pid to
+    one process, and a mismatch means the recorded holder is gone whatever now
+    wears its number. A record that cannot be interrogated at all — no pid or
+    start time recorded, or no kernel start times to read — gets the
+    conservative answer: the holder counts as present, because displacing a
+    live dispatch whose record is still being written would leave two.
+    """
+    holder_pid = holder.get("pid")
+    recorded_start = holder.get("process_start_time")
+    if not isinstance(holder_pid, int) or not isinstance(recorded_start, str):
+        return True
+    if not Path("/proc").is_dir():
+        return True
+    try:
+        os.kill(holder_pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    current_start = _process_start_time(holder_pid)
+    if current_start is None:
+        return False
+    return current_start == recorded_start
+
+
+def _reclaim_stale_node_dispatch_claim(path: Path, holder: Mapping[str, Any]) -> str:
+    """Move a dead holder's claim out of the way so a newcomer can take it.
+
+    The rename is atomic, so of two reclaimers only one moves the file; the
+    other finds nothing to move and races the exclusive create, which only one
+    of them can win.
+    """
+    stale = path.with_name(f"{path.name}.reclaimed-{holder.get('run_id') or 'unknown'}")
+    with contextlib.suppress(FileNotFoundError):
+        os.rename(path, stale)
+    return str(stale)
 
 
 def _node_dispatch_in_flight_text(
@@ -1643,9 +1693,12 @@ def _node_dispatch_in_flight_text(
 class _NodeDispatchClaim:
     """The held exclusive claim over one node's worktree path."""
 
-    def __init__(self, path: Path, run_id: str) -> None:
+    def __init__(
+        self, path: Path, run_id: str, reclaimed: dict[str, Any] | None = None
+    ) -> None:
         self.path = path
         self.run_id = run_id
+        self.reclaimed = reclaimed
 
     def release(self) -> None:
         """Give the path up, so the node can be dispatched again."""
@@ -1664,7 +1717,10 @@ def _claim_node_dispatch(
 
     The exclusive create is the whole arbitration: a second dispatch of the
     same node, project and worktree identity loses it and refuses, naming the
-    in-flight dispatch, before any worktree exists for it to disturb.
+    in-flight dispatch, before any worktree exists for it to disturb. A claim
+    whose holder process is gone — or whose pid is now a different process —
+    no longer owns the path, and is moved aside so one dead dispatcher cannot
+    block every later dispatch of the node.
     """
     path = _node_dispatch_claim_path(project, worktree_identity, node_id)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1675,31 +1731,58 @@ def _claim_node_dispatch(
         "worktree_identity": worktree_identity,
         "node": node_id,
         "pid": os.getpid(),
+        "process_start_time": _process_start_time(os.getpid()),
         "created_at": _utc_now(),
     }
-    try:
-        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
-    except FileExistsError:
-        holder = _read_node_dispatch_claim(path)
-        raise CrewError(
-            format_refusal(
-                "D12",
-                _node_dispatch_in_flight_text(
-                    holder,
-                    node_id=node_id,
-                    project=project,
-                    worktree_identity=worktree_identity,
-                    claim_path=path,
-                ),
-            )
-        ) from None
-    try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            json.dump(record, handle)
-    except BaseException:
-        path.unlink(missing_ok=True)
-        raise
-    return _NodeDispatchClaim(path, run_id)
+    reclaimed: dict[str, Any] | None = None
+    for _attempt in range(_NODE_CLAIM_ATTEMPTS):
+        try:
+            descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        except FileExistsError:
+            holder = _read_node_dispatch_claim(path)
+            if _claim_holder_is_alive(holder):
+                raise CrewError(
+                    format_refusal(
+                        "D12",
+                        _node_dispatch_in_flight_text(
+                            holder,
+                            node_id=node_id,
+                            project=project,
+                            worktree_identity=worktree_identity,
+                            claim_path=path,
+                        ),
+                    )
+                ) from None
+            # Another dispatch may have reclaimed and republished between the
+            # read and the move; moving that claim aside would leave two
+            # owners, so only the record this dispatch judged stale is
+            # displaced.
+            if _read_node_dispatch_claim(path) != holder:
+                continue
+            moved_to = _reclaim_stale_node_dispatch_claim(path, holder)
+            if reclaimed is None:
+                reclaimed = {
+                    "run_id": holder.get("run_id"),
+                    "pid": holder.get("pid"),
+                    "created_at": holder.get("created_at"),
+                }
+            reclaimed["moved_to"] = moved_to
+            continue
+        try:
+            with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+                json.dump(record, handle)
+        except BaseException:
+            path.unlink(missing_ok=True)
+            raise
+        return _NodeDispatchClaim(path, run_id, reclaimed=reclaimed)
+    raise CrewError(
+        format_refusal(
+            "D12",
+            f"the claim over node {node_id!r} for project {project!r} under worktree "
+            f"identity {worktree_identity!r} kept being reclaimed by other dispatches "
+            f"at {path}",
+        )
+    )
 
 
 def _publish_launch_claim(
@@ -7104,6 +7187,8 @@ def dispatch(
         # own creation against that removal.
         if node_claim is not None:
             node_claim.release()
+    if node_claim is not None and node_claim.reclaimed:
+        record["reclaimed_node_claim"] = node_claim.reclaimed
     return record
 
 

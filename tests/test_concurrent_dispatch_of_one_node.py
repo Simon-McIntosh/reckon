@@ -13,7 +13,11 @@ The first case drives the interleaving the defect was measured in: both
 dispatches read the live claims before either publishes, one then holds the
 node claim inside worktree creation while the other is refused. The second
 case is the release side: a dispatch that fails after taking the claim gives
-it back, so the retry launches.
+it back, so the retry launches. The rest cover reclamation: a holder killed
+without releasing would block the node for everyone, so the record carries the
+holder's pid and process start time, and a dispatch finding a holder that is
+gone — or a pid that now names a different process — moves that claim aside
+and takes the path, while a living holder still refuses.
 """
 
 from __future__ import annotations
@@ -286,3 +290,108 @@ def test_a_failed_dispatch_releases_its_claim(
 
     assert record["run_id"]
     assert seam_calls == [NODE_ID, NODE_ID]
+
+
+def _plant_claim(**record: Any) -> Path:
+    """Write a claim record as a holder that never returned to release it."""
+    path = _claim_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(record), encoding="utf-8")
+    return path
+
+
+def _dead_pid() -> int:
+    """A pid whose process has exited and been reaped."""
+    child = subprocess.Popen(["true"], stdout=subprocess.DEVNULL)
+    child.wait()
+    return child.pid
+
+
+def test_a_claim_left_by_a_dead_holder_is_reclaimed(
+    home: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A dispatcher killed holding the claim must not block the node."""
+    config_home, repo = home
+    stale_run_id = "r-20261003T00000000000000-dead-holder"
+    dead_pid = _dead_pid()
+    _plant_claim(
+        run_id=stale_run_id,
+        project=PROJECT,
+        session=SESSION,
+        worktree_identity=SESSION,
+        node=NODE_ID,
+        pid=dead_pid,
+        process_start_time="0",
+        created_at="2026-10-03T00:00:00Z",
+    )
+    seam_calls: list[str] = []
+    monkeypatch.setattr(
+        dispatch_module, "_create_worktree", _worktree_seam(tmp_path, seam_calls)
+    )
+
+    record = _dispatch(config_home, repo)
+
+    assert seam_calls == [NODE_ID]
+    reclaimed = record["reclaimed_node_claim"]
+    assert reclaimed["run_id"] == stale_run_id
+    assert reclaimed["pid"] == dead_pid
+    # The dead holder's claim was moved aside rather than deleted, and this
+    # dispatch's own claim was given back when it finished.
+    assert Path(reclaimed["moved_to"]).exists()
+    assert not _claim_path().exists()
+
+
+def test_a_claim_whose_pid_now_names_another_process_is_reclaimed(
+    home: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A reused pid must not read as the recorded holder still owning the path."""
+    config_home, repo = home
+    stale_run_id = "r-20261003T00000000000000-reused-pid"
+    _plant_claim(
+        run_id=stale_run_id,
+        project=PROJECT,
+        session=SESSION,
+        worktree_identity=SESSION,
+        node=NODE_ID,
+        pid=os.getpid(),
+        process_start_time="0",
+        created_at="2026-10-03T00:00:00Z",
+    )
+    seam_calls: list[str] = []
+    monkeypatch.setattr(
+        dispatch_module, "_create_worktree", _worktree_seam(tmp_path, seam_calls)
+    )
+
+    record = _dispatch(config_home, repo)
+
+    assert seam_calls == [NODE_ID]
+    assert record["reclaimed_node_claim"]["run_id"] == stale_run_id
+
+
+def test_a_claim_held_by_a_live_process_still_refuses(
+    home: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A live holder is named in the refusal and keeps its claim."""
+    config_home, repo = home
+    live_run_id = "r-20261003T00000000000000-live-holder"
+    _plant_claim(
+        run_id=live_run_id,
+        project=PROJECT,
+        session=SESSION,
+        worktree_identity=SESSION,
+        node=NODE_ID,
+        pid=os.getpid(),
+        process_start_time=dispatch_module._process_start_time(os.getpid()),
+        created_at="2026-10-03T00:00:00Z",
+    )
+    seam_calls: list[str] = []
+    monkeypatch.setattr(
+        dispatch_module, "_create_worktree", _worktree_seam(tmp_path, seam_calls)
+    )
+
+    with pytest.raises(crew.CrewError) as refusal:
+        _dispatch(config_home, repo)
+
+    assert live_run_id in str(refusal.value)
+    assert seam_calls == []
+    assert _claim_path().exists()
