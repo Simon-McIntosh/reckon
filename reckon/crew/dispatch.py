@@ -4675,7 +4675,7 @@ def _picker_fallback(
 
 
 def _picker_ledger_rows(project: str, ledger_root: Path) -> list[dict[str, Any]]:
-    return ledger.runs(project, root=ledger_root)
+    return ledger.picker_runs(project, root=ledger_root)
 
 
 def _picker_verdict_inputs(project: str, repo_root: Path) -> Mapping[str, Any]:

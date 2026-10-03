@@ -252,9 +252,9 @@ def _stat_stamp(path: Path) -> list[int] | None:
 
 
 def _ledger_stamp(project: str) -> list[Any] | None:
-    """Track per-run edits as well as additions and aggregate changes."""
+    """Read the index change marker and atomic-write stamps without a census."""
     try:
-        return [ledger.input_stamp(project)]
+        return ledger.index_stamp(project)
     except (ledger.LedgerError, OSError, ValueError):
         return None
 
@@ -391,6 +391,16 @@ def _cached_run_time_profile(project: str, *, now: datetime) -> Mapping[str, Any
         _PROFILE_CACHE[project] = (key, persisted)
         return persisted
     profile = run_time_profile(project, now=now)
+    # A cache miss can refresh the index; bind the profile to that new marker.
+    refreshed_key = _profile_key(project, now)
+    if refreshed_key is None:
+        return profile
+    # Source changes during the read must not stamp an older profile as fresh.
+    # Only the final index marker may move as a result of this profile's read.
+    before, after = json.loads(key), json.loads(refreshed_key)
+    if before[0][:-1] != after[0][:-1] or before[1] != after[1]:
+        return profile
+    key = refreshed_key
     _PROFILE_CACHE[project] = (key, profile)
     _write_persisted_profile(project, key, profile)
     return profile

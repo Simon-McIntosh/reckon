@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon"><meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="dispatch-speed-followups"><meta name="plan-title" content="Projected picker inputs and cache review checks">
+<meta name="plan-summary" content="Fresh-process input latency, semantic equivalence, metadata-error recovery and constant-cost profile keys">
+<meta name="plan-evidence-for" content="one-typesafe-model-picker"><meta name="plan-verifies" content="one-typesafe-model-picker#s6">
+<meta name="plan-recorded-at" content="2026-10-03"><meta name="plan-verdict" content="pass">
+<meta name="plan-environment" content="98dci4-clu-2018, allocation 1277272, shared root Python environment">
+<meta name="plan-tags" content="picker,dispatch,latency,cache">
+<title>Projected picker inputs and cache review checks | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css"><link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc"><article data-reckon="landed" data-node="dispatch-speed-followups" id="dispatch-speed-followups">
+<h1>Projected picker inputs and cache review checks</h1>
+<table><caption>Picker input build before the bounded pick; project reckon, one fresh Python process per sample, 3,512 initial rows (1,710 per-run files), ten subsequent samples with one appended run each. The actual build_picker_inputs path uses resolved flight configuration and isolated ledger/cache copies; no Jev call. Times include records, verdict inputs and the budget snapshot.</caption>
+<thead><tr><th>Measure</th><th>Base</th><th>Product head</th><th>Interpretation</th></tr></thead><tbody>
+<tr><th>After-append median</th><td>1.959 s</td><td>0.709 s</td><td>Meets ≤1.0 s; 63.8% reduction</td></tr>
+<tr><th>After-append p90</th><td>2.966 s</td><td>0.939 s</td><td>Nearest-rank percentile, ten samples</td></tr>
+<tr><th>Empty-index initialization</th><td>5.657 s</td><td>4.477 s</td><td>Still reads all authoritative sources; this one-time construction exceeds 1.0 s</td></tr>
+<tr><th>Authoritative run reads per append</th><td>1</td><td>1</td><td>10/10 samples in each arm; cold positive control reads 1,710 files</td></tr>
+<tr><th>Retained full payloads decoded by projected-input test</th><td>41 with full reader</td><td>0; one changed source after append or edit</td><td>Positive control observes all 41; declared mutation restores those 41 decodes and fails</td></tr>
+<tr><th>Profile key, 40 run files</th><td>41 Path.stat calls, including all 40 run files</td><td>3 Path.stat calls, zero run-file stats</td><td>Aggregate, run directory and index marker; constant in run count</td></tr>
+<tr><th>Input errors in measured cohorts</th><td>0/11</td><td>0/11</td><td>Every sample returned the full expected row count</td></tr>
+</tbody></table>
+<table><caption>Review findings and semantic regression controls</caption>
+<thead><tr><th>Case</th><th>Reproduction or control</th><th>Disposition and source binding</th></tr></thead><tbody>
+<tr><th>Plan metadata under a different typed root</th><td><code>research/example.html: location type 'research' conflicts with reckon-type 'plan'</code>; equivalent refusal under evidence; resolve_resource returns null</td><td>Already guarded at base. New tests pin rejection, then move the document into a supported flat root and verify cached effort changes from 2 to 3 hours. No resolver redesign.</td></tr>
+<tr><th>Unreadable file metadata</th><td>Base raises <code>PermissionError: metadata denied</code></td><td><code>ledger._file_identity</code> catches OSError; <code>routing.shared_verdict_inputs</code> forfeits the cache on an incomplete stamp. The test proves repeated unreadable stamps rebuild rather than reusing a null-key entry. Confirmed absence remains cacheable for empty and per-run-only ledgers.</td></tr>
+<tr><th>Profile cache key walks all runs</th><td>Base key stats 40/40 run files</td><td><code>ledger.index_stamp</code> supplies a constant-cost key to <code>lane_context._ledger_stamp</code>. Atomic writes invalidate immediately; in-place edits invalidate when an indexed ledger read observes them. Profile construction binds its refreshed index marker only while source stamps remain unchanged.</td></tr>
+<tr><th>Projection equivalence</th><td>Append and edit compared with an uncached full build</td><td>Budget snapshots, verdict inputs, recent outcomes, non-empty return-time figures and rendered picker state agree. Fresh processes reuse persisted projections; index unavailability falls back to authoritative history.</td></tr>
+<tr><th>Full-history conflict</th><td>Duplicate runs differ only in a field omitted from the projection</td><td>The projected read still refuses conflicting history; full payloads remain the authority for conflict checks.</td></tr>
+<tr><th>Cache recovery</th><td>Incompatible schema and damaged projected JSON</td><td>Both rebuild from authoritative sources; full-record callers retain complete payloads.</td></tr>
+</tbody></table>
+<table><caption>Validation receipts and reproducible bindings</caption><thead><tr><th>Item</th><th>Recorded value</th></tr></thead><tbody>
+<tr><th>Base revision</th><td><code>a4e95929a5401d0f49533fed89800ec2e10533c5</code></td></tr>
+<tr><th>Latency measurement revision</th><td><code>88c10ba1d6890830e094a51e4be00b711bc68197</code>; later absence repair changes only the missing-aggregate path, which the measured fixture does not use</td></tr>
+<tr><th>Product head</th><td><code>1eb68c4341f76785f043a3d25bc3ffba9283175f</code></td></tr>
+<tr><th>Prescribed base gate</th><td>521 passed in 528.29s (0:08:48); EXIT=0</td></tr>
+<tr><th>Prescribed head gate</th><td>536 passed in 421.76s (0:07:01); EXIT=0; added failure ids: []</td></tr>
+<tr><th>Negative control</th><td><code>test_projected_inputs_do_not_decode_retained_full_payloads</code> fails after restoring full-payload decoding on the dispatch path; EXIT=1</td></tr>
+<tr><th>Product paths</th><td><code>reckon/ledger.py</code>, <code>reckon/crew/dispatch.py</code> (picker input only), <code>reckon/crew/routing.py</code> (verdict cache only), <code>reckon/crew/picker/lane_context.py</code></td></tr>
+<tr><th>Regression tests</th><td><code>tests/test_dispatch_speed.py</code></td></tr>
+<tr><th>Durable run directory</th><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T151730890178-dispatch-speed-followups</code></td></tr>
+<tr><th>Measurement receipts</th><td><code>base-measurements.jsonl</code>, <code>head-measurements.jsonl</code>, <code>base-metrics.json</code>, <code>head-metrics.json</code>, <code>marker-measurements.json</code>, <code>typed-root-refusal.json</code></td></tr>
+<tr><th>Gate receipts</th><td><code>base-gate.log</code>, <code>head-gate.log</code>, <code>negative-control.log</code>, <code>review-reproduction.log</code>. Every gate ends in EXIT; the base extraction logs its imported module and cwd. An initial base run overlapped edits and is retained as <code>initial-base-gate.log</code>; it is excluded from the comparison. The first head run (<code>first-head-gate.log</code>) found two added failures in absent-aggregate cache reuse; <code>1eb68c434</code> repairs them and <code>absence-repair.log</code> records 5 focused cases passing.</td></tr>
+<tr><th>Scope and limits</th><td>Focused gate only; coordinator owns merged-head verification and plan closure. Measurements cover input construction, not total dispatch or Jev latency. Empty-index construction remains an authoritative full read. Direct in-place foreign-ledger edits become visible to profile caching when the ledger index refreshes.</td></tr>
+</tbody></table>
+</article></main></body></html>

@@ -732,13 +732,13 @@ def run_ids(project: str, root: str | Path | None = None) -> set[str]:
 
 # The index stores file-derived values only. Every access checks file metadata,
 # including ctime, so edits with a preserved mtime still invalidate the row.
-_RUN_INDEX_VERSION = 2
+_RUN_INDEX_VERSION = 3
 
 
 def _file_identity(path: Path) -> tuple[int, int, int, int] | None:
     try:
         info = path.stat()
-    except FileNotFoundError:
+    except OSError:
         return None
     return info.st_mtime_ns, info.st_ctime_ns, info.st_size, info.st_ino
 
@@ -755,13 +755,27 @@ def _run_snapshot(project: str, root: str | Path | None) -> list[tuple[Path, Any
     return list(zip(paths, stamps, strict=True))
 
 
-def input_stamp(project: str, root: str | Path | None = None) -> str:
+def input_stamp(project: str, root: str | Path | None = None) -> str | None:
     """Content-change key for aggregate, additions, removals and in-place edits."""
     aggregate = ledger_path(project, root).resolve()
     snapshot = _run_snapshot(project, root)
+    aggregate_identity = _file_identity(aggregate)
+    if aggregate_identity is None:
+        # An absent aggregate is a valid empty roster; unreadable metadata is
+        # not evidence of absence and must forfeit caching.
+        try:
+            aggregate.stat()
+        except FileNotFoundError:
+            pass
+        except OSError:
+            return None
+        else:
+            return None
+    if any(stamp is None for _, stamp in snapshot):
+        return None
     value = [
         str(aggregate),
-        _file_identity(aggregate),
+        aggregate_identity,
         [(path.name, stamp) for path, stamp in snapshot],
     ]
     return hashlib.sha256(json.dumps(value).encode()).hexdigest()
@@ -773,6 +787,65 @@ def _run_index_path(project: str, root: str | Path | None) -> Path:
     source = str(ledger_path(project, root).resolve())
     identity = hashlib.sha256(source.encode()).hexdigest()
     return pick_input_cache_root() / f"ledger-{identity}.sqlite"
+
+
+def index_stamp(project: str, root: str | Path | None = None) -> list[Any]:
+    """Constant-cost key for the last indexed content and atomic ledger writes.
+
+    The index changes when a reader observes an in-place edit. Aggregate writes
+    and atomic per-run replacements also move the source or directory stamp,
+    so a profile cache notices them before another reader refreshes the index.
+    """
+    aggregate = ledger_path(project, root)
+    return [
+        str(aggregate.resolve()),
+        _RUN_INDEX_VERSION,
+        _file_identity(aggregate),
+        _file_identity(aggregate.parent / "runs"),
+        _file_identity(_run_index_path(project, root)),
+    ]
+
+
+# Persist exactly the history fields consumed by picker outcomes, return times,
+# attempts and budget readers. Full records remain available to other callers.
+_PICKER_FIELDS = (
+    "run_id",
+    "node",
+    "plan",
+    "backend",
+    "agent",
+    "member",
+    "role",
+    "spec_level",
+    "gate",
+    "completed_at",
+    "completed_at_source",
+    "dispatched_at",
+    "observed_at",
+    "terminal_at",
+    "started_at",
+    "created_at",
+    "time_budget",
+    "wall_seconds",
+    "budget",
+    "throughput",
+    "lane_receipt",
+)
+
+
+def picker_record(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Project a full record onto the inputs the picker consumes."""
+    return {key: record[key] for key in _PICKER_FIELDS if key in record}
+
+
+def picker_runs(project: str, root: str | Path | None = None) -> list[dict[str, Any]]:
+    """Read projected history without decoding retained full payloads."""
+    try:
+        data, _version = _indexed_data(project, root, picker_only=True)
+        return data["runs"]
+    except (OSError, sqlite3.Error):
+        data, _version = load(project, root, use_index=False)
+        return [picker_record(row) for row in data["runs"]]
 
 
 def _read_run(source: Path) -> dict[str, Any]:
@@ -788,7 +861,11 @@ def _read_run(source: Path) -> dict[str, Any]:
 
 
 def _indexed_data(
-    project: str, root: str | Path | None, *, headers_only: bool = False
+    project: str,
+    root: str | Path | None,
+    *,
+    headers_only: bool = False,
+    picker_only: bool = False,
 ) -> tuple[dict[str, Any], int]:
     aggregate = ledger_path(project, root)
     aggregate_stamp = json.dumps(_file_identity(aggregate))
@@ -800,13 +877,18 @@ def _indexed_data(
         # The transaction publishes stamps and payloads together. Aggregate and
         # split records remain independent sources, including their conflict check.
         with connection:
+            version = connection.execute("PRAGMA user_version").fetchone()[0]
+            if version != _RUN_INDEX_VERSION:
+                for table in ("records", "aggregate_rows", "metadata"):
+                    connection.execute(f"DROP TABLE IF EXISTS {table}")
+                connection.execute(f"PRAGMA user_version={_RUN_INDEX_VERSION}")
             connection.execute(
                 "CREATE TABLE IF NOT EXISTS records "
-                "(name TEXT PRIMARY KEY, stamp TEXT, payload TEXT)"
+                "(name TEXT PRIMARY KEY, stamp TEXT, payload TEXT, picker TEXT)"
             )
             connection.execute(
                 "CREATE TABLE IF NOT EXISTS aggregate_rows "
-                "(ordinal INTEGER PRIMARY KEY, run_id TEXT, payload TEXT)"
+                "(ordinal INTEGER PRIMARY KEY, run_id TEXT, payload TEXT, picker TEXT)"
             )
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS aggregate_identity ON aggregate_rows(run_id)"
@@ -815,19 +897,13 @@ def _indexed_data(
                 "CREATE TABLE IF NOT EXISTS metadata "
                 "(name TEXT PRIMARY KEY, payload TEXT)"
             )
-            version = connection.execute("PRAGMA user_version").fetchone()[0]
-            if version != _RUN_INDEX_VERSION:
-                connection.execute("DELETE FROM records")
-                connection.execute("DELETE FROM aggregate_rows")
-                connection.execute("DELETE FROM metadata")
-                connection.execute(f"PRAGMA user_version={_RUN_INDEX_VERSION}")
             meta = dict(connection.execute("SELECT name, payload FROM metadata"))
             aggregate_changed = meta.get("stamp") != aggregate_stamp
             if aggregate_changed:
                 data, version = _load_aggregate(project, root)
                 connection.execute("DELETE FROM aggregate_rows")
                 connection.executemany(
-                    "INSERT INTO aggregate_rows VALUES (?, ?, ?)",
+                    "INSERT INTO aggregate_rows VALUES (?, ?, ?, ?)",
                     [
                         (
                             i,
@@ -835,6 +911,10 @@ def _indexed_data(
                             if isinstance(row, Mapping) and row.get("run_id")
                             else None,
                             json.dumps(row, sort_keys=True, separators=(",", ":")),
+                            json.dumps(
+                                picker_record(row) if isinstance(row, Mapping) else row,
+                                separators=(",", ":"),
+                            ),
                         )
                         for i, row in enumerate(data["runs"])
                     ],
@@ -852,6 +932,8 @@ def _indexed_data(
             stored = dict(connection.execute("SELECT name, stamp FROM records"))
             changed = []
             for source, stamp in snapshot:
+                if stamp is None:
+                    raise OSError(f"cannot stat run: {source}")
                 encoded = json.dumps(stamp)
                 prior = stored.pop(source.stem, None)
                 if prior != encoded:
@@ -862,11 +944,12 @@ def _indexed_data(
                         # The caller's uncached path still supplies the current read.
                         raise OSError(f"run changed during index read: {source}")
                     connection.execute(
-                        "INSERT OR REPLACE INTO records VALUES (?, ?, ?)",
+                        "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?)",
                         (
                             source.stem,
                             encoded,
                             json.dumps(record, sort_keys=True, separators=(",", ":")),
+                            json.dumps(picker_record(record), separators=(",", ":")),
                         ),
                     )
             connection.executemany(
@@ -909,16 +992,17 @@ def _indexed_data(
                     )
                 ]
             else:
+                column = "picker" if picker_only else "payload"
                 data["runs"] = [
                     json.loads(row[0])
                     for row in connection.execute(
-                        "SELECT payload FROM aggregate_rows ORDER BY ordinal"
+                        f"SELECT {column} FROM aggregate_rows ORDER BY ordinal"  # noqa: S608 - fixed column names
                     )
                 ]
                 extra = [
                     json.loads(row[0])
                     for row in connection.execute(
-                        "SELECT payload FROM records WHERE name NOT IN "
+                        f"SELECT {column} FROM records WHERE name NOT IN "  # noqa: S608 - fixed column names
                         "(SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL) ORDER BY name"
                     )
                 ]

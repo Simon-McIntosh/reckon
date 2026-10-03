@@ -116,7 +116,8 @@ def test_append_reads_only_the_new_run(tmp_path, monkeypatch):
     assert reads == []
 
 
-def test_fresh_process_reuses_index_after_append(tmp_path, monkeypatch):
+@pytest.mark.parametrize("reader", ["runs", "picker_runs"])
+def test_fresh_process_reuses_index_after_append(tmp_path, monkeypatch, reader):
     root, _aggregate, directory = _fixture(tmp_path, monkeypatch)
     _write(directory, _row("first"))
     ledger.load("sample", root)
@@ -130,11 +131,11 @@ def read(path):
     reads.append(path.name)
     return original(path)
 ledger._read_run=read
-rows=ledger.runs('sample',sys.argv[1])
+rows=getattr(ledger,sys.argv[2])('sample',sys.argv[1])
 print(json.dumps({'reads':reads,'ids':[row['run_id'] for row in rows]}))
 """
     result = subprocess.run(
-        [sys.executable, "-c", script, str(root)],
+        [sys.executable, "-c", script, str(root), reader],
         env={**os.environ, "PYTHONPATH": str(Path(ledger.__file__).parent.parent)},
         capture_output=True,
         text=True,
@@ -255,9 +256,16 @@ def test_picker_inputs_and_rendered_state_equal_full_build(tmp_path, monkeypatch
             return NOW
 
     monkeypatch.setattr(snapshot, "datetime", Clock)
+    monkeypatch.setattr(budget, "datetime", Clock)
     config = {
         "default_backend": "worker",
-        "backends": {"worker": {"model": "model", "budget_check": False}},
+        "backends": {
+            "worker": {
+                "model": "model",
+                "budget_check": False,
+                "budget_group": "wallet",
+            }
+        },
     }
     monkeypatch.setattr(
         capabilities,
@@ -282,6 +290,22 @@ def test_picker_inputs_and_rendered_state_equal_full_build(tmp_path, monkeypatch
 
     monkeypatch.setattr(lane_context, "build", dated_build)
     for row in [_row("first"), _row("second"), _row("second", wall=70)]:
+        row.update(
+            {
+                "irrelevant_payload": "large prompt omitted from picker inputs",
+                "lane_receipt": {
+                    "observed_at": NOW.isoformat(),
+                    "quota_windows": [
+                        {
+                            "window_minutes": 10080,
+                            "used_percent": row["wall_seconds"],
+                            "resets_at": "2026-10-10T12:00:00+00:00",
+                        }
+                    ],
+                },
+                "throughput": {"generated_tokens": 21000},
+            }
+        )
         _write(directory, row)
         indexed = dispatch.build_picker_inputs("sample", config, root, ledger_root=root)
         with monkeypatch.context() as patch:
@@ -302,11 +326,18 @@ def test_picker_inputs_and_rendered_state_equal_full_build(tmp_path, monkeypatch
                     project, root, use_index=False
                 ),
             )
+            patch.setattr(
+                dispatch,
+                "_picker_ledger_rows",
+                lambda project, root: original_load(project, root, use_index=False)[0][
+                    "runs"
+                ],
+            )
             full = dispatch.build_picker_inputs(
                 "sample", config, root, ledger_root=root
             )
         assert indexed[3] == full[3] == {}
-        assert indexed[0] == full[0]
+        assert indexed[0] == [ledger.picker_record(row) for row in full[0]]
         assert indexed[1] == full[1]
         assert indexed[2] == full[2]
         # Budget ages are evaluated at the current instant; fix the time in
@@ -324,6 +355,43 @@ def test_picker_inputs_and_rendered_state_equal_full_build(tmp_path, monkeypatch
             for rows in (indexed[0], full[0])
         ]
         assert views[0] == views[1]
+        from reckon.crew.picker.types import Candidate, PickRequest
+
+        request = PickRequest("sample", node)
+        outcomes = [
+            snapshot.recent_outcomes(rows, request, "worker", "model", now=NOW)
+            for rows in (indexed[0], full[0])
+        ]
+        assert outcomes[0] == outcomes[1]
+        assert outcomes[0]["passed"] == len(indexed[0])
+        candidate = Candidate(
+            backend="worker",
+            family="test",
+            model="model",
+            effort="high",
+            local=False,
+            availability="served",
+            utilisation_pct=None,
+            burn_multiple=None,
+            pace_allowance=None,
+            resets_at=None,
+            worker_slots=None,
+            congestion=None,
+            outcomes=outcomes[0],
+        )
+        contexts = [
+            lane_context.build(
+                node=node,
+                candidates=[candidate],
+                project="sample",
+                records=rows,
+                budget_snapshot=view,
+                config=config,
+            )
+            for rows, view in zip((indexed[0], full[0]), views, strict=True)
+        ]
+        assert contexts[0] == contexts[1]
+        assert contexts[0]["return_times"]["worker"]["p50_s"] is not None
         rendered = [
             prompts.render(
                 "state.jinja",
@@ -331,7 +399,7 @@ def test_picker_inputs_and_rendered_state_equal_full_build(tmp_path, monkeypatch
                 capability={},
                 estimated_context=None,
                 comment="",
-                candidates=[],
+                candidates=[candidate],
                 project="sample",
                 records=rows,
                 budget_snapshot=view,
@@ -427,3 +495,258 @@ def test_plan_estimate_cache_tracks_edits_and_duplicate_identity(tmp_path, monke
     (plans / "duplicate.html").write_text(plan.read_text())
     with pytest.raises(resources.ResourceCollision, match="duplicate resource"):
         routing._estimated_hours(root, "sample", node)
+
+
+@pytest.mark.parametrize("typed_root", ["research", "evidence"])
+def test_estimate_rejects_plan_metadata_in_a_different_typed_root(
+    tmp_path, monkeypatch, typed_root
+):
+    from reckon import resources
+    from reckon.crew import routing
+
+    root, _aggregate, _directory = _fixture(tmp_path, monkeypatch)
+    directory = root / "docs" / typed_root
+    directory.mkdir()
+    path = directory / "example.html"
+    path.write_text(
+        '<meta name="reckon-type" content="plan">'
+        '<meta name="plan-slug" content="example">'
+        '<meta name="plan-effort-hours" content="2">'
+    )
+    node = TaskNode(
+        id="work",
+        goal="Measure",
+        plan="example",
+        role="implement",
+        spec_level="guided",
+        done_when="test",
+        time_budget="20m",
+    )
+    with pytest.raises(resources.ResourceCollision, match="location type"):
+        resources.identify_resource(root / "docs", path, "sample")
+    assert (
+        resources.resolve_resource(root / "docs", "sample", "example", "plan") is None
+    )
+    assert routing._estimated_hours(root, "sample", node) == (None, "unavailable")
+    # Moving into the untyped compatibility root makes this content resolvable.
+    legacy = root / "docs" / "example.html"
+    path.rename(legacy)
+    assert routing._estimated_hours(root, "sample", node) == (2.0, "plan-fallback")
+    legacy.write_text(legacy.read_text().replace('content="2"', 'content="3"'))
+    assert routing._estimated_hours(root, "sample", node) == (3.0, "plan-fallback")
+
+
+def test_permission_error_forfeits_verdict_cache(tmp_path, monkeypatch):
+    from reckon.crew import routing
+
+    root, aggregate, directory = _fixture(tmp_path, monkeypatch)
+    path = _write(directory, _row("first"))
+    reads = []
+    monkeypatch.setattr(
+        capabilities, "load_capabilities", lambda: reads.append(1) or {}
+    )
+    monkeypatch.setattr(
+        capabilities, "project_cache_status", lambda *a, **kw: "untracked"
+    )
+    assert routing.shared_verdict_inputs("sample", root)["cache_status"] == "untracked"
+    stat = Path.stat
+
+    def denied(self, *args, **kwargs):
+        if self in (path, aggregate):
+            raise PermissionError("metadata denied")
+        return stat(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "stat", denied)
+    assert ledger._file_identity(path) is None
+    for _ in range(2):
+        assert (
+            routing.shared_verdict_inputs("sample", root)["cache_status"] == "untracked"
+        )
+    assert len(reads) == 3
+
+
+def test_profile_stamp_cost_does_not_grow_with_runs(tmp_path, monkeypatch):
+    root, aggregate, directory = _fixture(tmp_path, monkeypatch)
+    monkeypatch.setattr(ledger, "ledger_path", lambda *a, **kw: aggregate)
+    for i in range(40):
+        _write(directory, _row(f"run-{i}"))
+    ledger.load("sample", root)
+    calls = []
+    stat = Path.stat
+
+    def counted(self, *args, **kwargs):
+        calls.append(self)
+        return stat(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "stat", counted)
+    first = lane_context._ledger_stamp("sample")
+    assert calls  # The instrument must observe the marker reads.
+    assert not any(path.parent == directory for path in calls)
+    assert len(calls) <= 12
+    calls.clear()
+    assert lane_context._ledger_stamp("sample") == first
+    assert len(calls) <= 12
+    _write(directory, _row("appended"))
+    assert lane_context._ledger_stamp("sample") != first
+    ledger.load("sample", root)
+    before_edit = lane_context._ledger_stamp("sample")
+    _write(directory, _row("appended", wall=90))
+    ledger.load("sample", root)
+    assert lane_context._ledger_stamp("sample") != before_edit
+
+
+def test_projected_inputs_do_not_decode_retained_full_payloads(tmp_path, monkeypatch):
+    dispatch = importlib.import_module("reckon.crew.dispatch")
+    full_row = {**_row("aggregate"), "unused_payload": "x" * 4000}
+    root, _aggregate, directory = _fixture(
+        tmp_path, monkeypatch, aggregate_rows=[full_row]
+    )
+    for i in range(40):
+        _write(directory, {**_row(f"run-{i}"), "unused_payload": "x" * 4000})
+    ledger.load("sample", root)
+    decodes = []
+    original = json.loads
+
+    def decode(value, *args, **kwargs):
+        if isinstance(value, str) and '"unused_payload"' in value:
+            decodes.append(value)
+        return original(value, *args, **kwargs)
+
+    monkeypatch.setattr(json, "loads", decode)
+    assert len(ledger.runs("sample", root)) == 41
+    assert len(decodes) == 41  # Positive control: full payload decoding is visible.
+    decodes.clear()
+    rows = dispatch._picker_ledger_rows("sample", root)
+    assert len(rows) == 41
+    assert decodes == []
+    _write(directory, {**_row("appended"), "unused_payload": "appended source"})
+    rows = dispatch._picker_ledger_rows("sample", root)
+    assert len(rows) == 42
+    assert len(decodes) == 1
+    assert '"appended source"' in decodes[0]
+    decodes.clear()
+    _write(directory, {**_row("run-0", wall=70), "unused_payload": "edited source"})
+    rows = dispatch._picker_ledger_rows("sample", root)
+    assert next(row for row in rows if row["run_id"] == "run-0")["wall_seconds"] == 70
+    assert len(decodes) == 1
+    assert '"edited source"' in decodes[0]
+    assert rows == [
+        ledger.picker_record(row)
+        for row in ledger.load("sample", root, use_index=False)[0]["runs"]
+    ]
+
+
+def test_projected_inputs_refuse_conflicting_full_history(tmp_path, monkeypatch):
+    row = {**_row("first"), "unused_payload": "aggregate"}
+    root, _aggregate, directory = _fixture(tmp_path, monkeypatch, aggregate_rows=[row])
+    _write(directory, row)
+    assert ledger.picker_runs("sample", root) == [ledger.picker_record(row)]
+    _write(directory, {**row, "unused_payload": "conflict outside projection"})
+    with pytest.raises(
+        ledger.LedgerError, match="refusing to read conflicting history"
+    ):
+        ledger.picker_runs("sample", root)
+
+
+def test_projected_inputs_fall_back_when_index_is_unavailable(tmp_path, monkeypatch):
+    root, _aggregate, directory = _fixture(tmp_path, monkeypatch)
+    _write(directory, {**_row("first"), "unused_payload": "not a picker input"})
+    monkeypatch.setattr(
+        ledger,
+        "_indexed_data",
+        lambda *a, **kw: (_ for _ in ()).throw(OSError("read-only")),
+    )
+    assert ledger.picker_runs("sample", root) == [_row("first")]
+
+
+def test_profile_reuses_marker_published_during_initial_read(tmp_path, monkeypatch):
+    root, aggregate, directory = _fixture(tmp_path, monkeypatch)
+    monkeypatch.setattr(ledger, "ledger_path", lambda *a, **kw: aggregate)
+    _write(directory, _row("first"))
+    calls = []
+
+    def profile(project, **kwargs):
+        calls.append(project)
+        ledger.load(project, root)
+        return {"groups": []}
+
+    lane_context._PROFILE_CACHE.clear()
+    monkeypatch.setattr(lane_context, "run_time_profile", profile)
+    lane_context._cached_run_time_profile("sample", now=NOW)
+    lane_context._cached_run_time_profile("sample", now=NOW)
+    assert calls == ["sample"]
+
+
+@pytest.mark.parametrize("damage", ["schema", "picker"])
+def test_projected_index_recovers_from_incompatible_or_corrupt_cache(
+    tmp_path, monkeypatch, damage
+):
+    root, _aggregate, directory = _fixture(tmp_path, monkeypatch)
+    _write(directory, _row("first"))
+    expected = ledger.picker_runs("sample", root)
+    with sqlite3.connect(ledger._run_index_path("sample", root)) as connection:
+        if damage == "schema":
+            connection.execute("PRAGMA user_version=0")
+        else:
+            connection.execute("UPDATE records SET picker='invalid JSON'")
+    assert ledger.picker_runs("sample", root) == expected
+
+
+def test_atomic_run_edit_invalidates_profile_before_index_refresh(
+    tmp_path, monkeypatch
+):
+    root, aggregate, directory = _fixture(tmp_path, monkeypatch)
+    monkeypatch.setattr(ledger, "ledger_path", lambda *a, **kw: aggregate)
+    path = _write(directory, _row("first"))
+    ledger.load("sample", root)
+    first = lane_context._ledger_stamp("sample")
+    ledger._replace_run_file(path, json.dumps(_row("first", wall=90)))
+    assert lane_context._ledger_stamp("sample") != first
+
+
+def test_profile_does_not_cache_across_a_source_change(tmp_path, monkeypatch):
+    root, aggregate, directory = _fixture(tmp_path, monkeypatch)
+    monkeypatch.setattr(ledger, "ledger_path", lambda *a, **kw: aggregate)
+    _write(directory, _row("first"))
+    calls = []
+
+    def profile(project, **kwargs):
+        calls.append(project)
+        ledger.load(project, root)
+        if len(calls) == 1:
+            _write(directory, _row("appended"))
+        return {"groups": [], "count": len(calls)}
+
+    lane_context._PROFILE_CACHE.clear()
+    monkeypatch.setattr(lane_context, "run_time_profile", profile)
+    assert lane_context._cached_run_time_profile("sample", now=NOW)["count"] == 1
+    assert lane_context._cached_run_time_profile("sample", now=NOW)["count"] == 2
+    assert lane_context._cached_run_time_profile("sample", now=NOW)["count"] == 2
+    assert calls == ["sample", "sample"]
+
+
+@pytest.mark.parametrize("with_run", [False, True])
+def test_absent_aggregate_retains_verdict_cache(tmp_path, monkeypatch, with_run):
+    from reckon.crew import routing
+
+    root, aggregate, directory = _fixture(tmp_path, monkeypatch)
+    aggregate.unlink()
+    if with_run:
+        _write(directory, _row("first"))
+    builds = []
+    monkeypatch.setattr(capabilities, "load_capabilities", dict)
+
+    def status(*args, **kwargs):
+        rows = ledger.runs("sample", root)
+        builds.append(rows)
+        return "observed"
+
+    monkeypatch.setattr(capabilities, "project_cache_status", status)
+    for _ in range(2):
+        assert (
+            routing.shared_verdict_inputs("sample", root)["cache_status"] == "observed"
+        )
+    assert len(builds) == 1
+    assert len(builds[0]) == int(with_run)
+    cache = capabilities.pick_input_cache_path("verdict-inputs-sample")
+    assert json.loads(cache.read_text())["value"]["cache_status"] == "observed"
