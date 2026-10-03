@@ -7032,6 +7032,18 @@ def dispatch(
             "budget": _backends.unknown_budget("no events yet"),
             "budget_fallback": budget_fallback,
             "picker_selection": picker_selection,
+            "route_mode": (
+                "explicit"
+                if local
+                or backend_override is not None
+                or default_backend_override is not None
+                else "picker"
+                if resolution.route == "picker"
+                and picker_selection is not None
+                and picker_selection.get("action") == "route"
+                and picker_selection.get("backend") == backend_name
+                else "shadow"
+            ),
             "route": resolution.route,
             "route_override": resolution.route_override,
             "pace": pace_record,

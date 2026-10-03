@@ -447,6 +447,7 @@ def test_a_legacy_promoted_row_keeps_every_existing_field_type() -> None:
     for name in ("follow_on_paths", "predecessor_run", "dispute_count"):
         assert name not in legacy
     assert set(ledger.RECORD_FIELDS) <= set(legacy)
+    assert legacy["route_mode"] is None
     assert legacy["gate"] == "passed"
     assert legacy["worker_seconds"] == 320
     assert legacy["tests_added"] == 4
@@ -475,3 +476,4 @@ def test_a_promoted_row_carries_all_three_fields_together(
     assert row["dispute_count"] == 1
     # The row is still a complete completed-run record.
     assert set(ledger.RECORD_FIELDS) <= set(row)
+    assert row["route_mode"] is None

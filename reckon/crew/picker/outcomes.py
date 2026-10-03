@@ -1,12 +1,11 @@
 """Measure picker decisions against their own promoted run outcomes.
 
 Success is a recorded ``gate == "passed"`` or, when the gate was not run,
-an outcome of ``passed``, ``complete``, ``done``, ``success``, or a scored
-review. A failed gate always fails. All other rows have unknown success and
+an outcome of ``passed``, ``complete``, ``done``, ``success``, or a review
+scored at least 80. A failed gate always fails. All other rows have unknown success and
 are excluded from success-rate denominators, never counted as failures. A
-run's outcome is attributed to a route only when the selected backend matches
-the launched backend. The ledger has no route-mode field, so a coincidentally
-matching shadow selection cannot be distinguished from a routed selection.
+run's outcome is attributed to a route when its recorded route mode is picker.
+Older rows with no route mode use the backend match as an approximate attribution.
 """
 
 from __future__ import annotations
@@ -15,6 +14,7 @@ import fcntl
 import json
 import math
 import os
+import re
 from collections import Counter, defaultdict
 from collections.abc import Mapping
 from datetime import UTC, datetime
@@ -26,9 +26,11 @@ from reckon import flight, ledger
 from reckon._timestamps import parse_utc
 from reckon.crew.run_time_profile import run_time_profile
 
+REVIEW_SUCCESS_SCORE = 80
 SUCCESS_RULE = (
     "gate passed succeeds; gate failed fails; with no closed gate, outcome "
-    "passed/complete/done/success or review scored succeeds; otherwise unknown"
+    f"passed/complete/done/success or review scored at least {REVIEW_SUCCESS_SCORE} "
+    "succeeds; a lower review score fails; otherwise unknown"
 )
 BUCKETS = ("below_0.5", "0.5_to_0.7", "0.7_to_0.85", "0.85_and_above")
 BURN_LEVELS = ("below_1", "1_to_2", "2_to_4", "4_and_above", "unknown")
@@ -57,8 +59,8 @@ def _success(row: Mapping[str, Any]) -> bool | None:
     outcome = str(row.get("outcome") or "").strip().lower()
     if outcome in {"passed", "complete", "done", "success"}:
         return True
-    if outcome.startswith("review scored "):
-        return True
+    if match := re.match(r"review scored (\d+)\b", outcome):
+        return int(match.group(1)) >= REVIEW_SUCCESS_SCORE
     return None
 
 
@@ -193,11 +195,14 @@ def summarize(
                 latency[project].append(ms)
             success = _success(row)
             confidence = _number(selection.get("confidence"))
-            routed = (
+            matching_selection = (
                 action == "route"
                 and bool(selection.get("backend"))
                 and selection.get("backend") == row.get("backend")
             )
+            mode = row.get("route_mode")
+            routed = matching_selection and mode in (None, "picker")
+            attribution = "approximate" if mode is None else "picker"
             if routed and confidence is not None and 0 <= confidence <= 1:
                 calibration[_confidence_bucket(confidence)].append(success)
             if routed:
@@ -209,7 +214,14 @@ def summarize(
                     definition.get("risk") if isinstance(definition, Mapping) else None
                 )
                 groups[
-                    (project, backend, role, spec, str(risk) if risk else None)
+                    (
+                        project,
+                        backend,
+                        role,
+                        spec,
+                        str(risk) if risk else None,
+                        attribution,
+                    )
                 ].append(dict(row))
             offered = selection.get("offered")
             if isinstance(offered, list):
@@ -252,7 +264,7 @@ def summarize(
                     }
                 )
     group_rows: list[dict[str, Any]] = []
-    for (project, backend, role, spec, risk), members in sorted(
+    for (project, backend, role, spec, risk, attribution), members in sorted(
         groups.items(), key=lambda item: str(item[0])
     ):
         known = [value for row in members if (value := _success(row)) is not None]
@@ -287,6 +299,7 @@ def summarize(
                 "role": role,
                 "spec_level": spec,
                 "risk": risk,
+                "attribution": attribution,
                 "count": len(members),
                 "known_outcomes": len(known),
                 "success_rate": sum(known) / len(known) if known else None,
@@ -354,7 +367,7 @@ def summarize(
             "burn": "[0,1), [1,2), [2,4), [4,infinity)",
             "burn_offer": "lowest offered codex burn_multiple; unknown when none was recorded",
             "actions": "selection actions on promoted rows; run-free holds appear separately",
-            "attribution": "routed outcome requires action route and selected backend equal to launched backend; matching shadow picks remain indistinguishable because the ledger omits route mode",
+            "attribution": "picker rows require route mode picker and a matching selected backend; rows without route mode use the matching-backend rule and are labelled approximate; shadow and explicit rows are excluded",
             "window": "since is inclusive on run completed_at and hold held_at",
             "latency": "p50 is median; p90 is nearest-rank percentile",
             "repair_or_resume": "attempt kind repair, resume, or redispatch, or a repair/resume remedy",
