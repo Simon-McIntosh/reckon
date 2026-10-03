@@ -58,6 +58,15 @@ WORKSTATION_RUN_FIELDS = ("project", "repo", "repo_exists")
 #: A projected live row always carries the identity of the run it describes, so
 #: a caller that asked for one field can still tell which run answered.
 LIVE_ROW_ANCHOR = "run_id"
+LIVE_OVERRUN_FIELDS = frozenset(
+    {
+        "budget_overrun_cause",
+        "budget_overrun_rate",
+        "budget_overrun_reference_rate",
+        "budget_overrun_reference_runs",
+        "budget_overrun_reference_source",
+    }
+)
 
 
 class RunQueryError(ValueError):
@@ -126,6 +135,9 @@ def _live_field_vocabulary(
         vocabulary.update(row)
     if not vocabulary:
         vocabulary.update(classify_pointer({}))
+    # These appear only once a run passes a budget, but a live query may ask
+    # for them while every run is still inside its allowance.
+    vocabulary.update(LIVE_OVERRUN_FIELDS)
     if with_mine:
         vocabulary.add("mine")
     return vocabulary
