@@ -613,7 +613,7 @@ reckon crew discard --run <id>    reckon crew drain --project <project> --leave 
 reckon crew follow --project <project>    reckon crew gc    reckon crew ledger --project <project> --view <view>
 reckon crew list    reckon crew member add    reckon crew member list --project <project>
 reckon crew observe --run <id>    reckon crew preflight --project <project> --role <role>
-reckon crew pick --project <project> --role <role> --spec-level <level> --goal <goal> --done-when <measure> --replay <n> --checkout-path <path>    # reads routing state, dispatches nothing
+reckon crew pick --project <project> --role <role> --spec-level <level> --goal <goal> --done-when <measure> --replay <n> --outcomes --since <ISO> --all-projects --checkout-path <path>    # reads routing state or outcome history, dispatches nothing
 reckon crew placement --ensure --session <session> --project <project>
 reckon crew recover    reckon crew redispatch --run <id> --backend <backend> --reason <text>
 reckon crew repair-status --run <id> --status <verdict> --reason <text>    # replaces a manifest's status word, keeping the file as delivered

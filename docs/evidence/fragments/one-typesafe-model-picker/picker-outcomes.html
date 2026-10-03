@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon"><meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="picker-outcomes"><meta name="plan-title" content="Picker decision outcomes">
+<meta name="plan-summary" content="First cross-project reading of picker mechanics, matched routes, calibration, metered offers and holds">
+<meta name="plan-evidence-for" content="one-typesafe-model-picker"><meta name="plan-verifies" content="one-typesafe-model-picker#s6">
+<meta name="plan-recorded-at" content="2026-10-03"><meta name="plan-verdict" content="measurement">
+<title>Picker decision outcomes | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css"><link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc"><article data-reckon="landed" data-node="picker-outcomes" id="picker-outcomes">
+<h1>Picker decision outcomes</h1>
+<p>This is the first reading since the routing switch at 2026-10-03 03:00 UTC, across 14 mounted projects. The source is the JSON emitted by <code>reckon crew pick --outcomes --all-projects --since 2026-10-03T03:00:00Z</code>, saved as <code>live-outcomes.json</code> in the run directory below. A positive control found 224 promoted rows carrying selections; the reported zeros are measured within that population.</p>
+<h2>Mechanics</h2>
+<table><thead><tr><th>Measure</th><th>Reading</th></tr></thead><tbody>
+<tr><th>Route selections</th><td>173</td></tr>
+<tr><th>Fallback selections</th><td>49</td></tr>
+<tr><th>Hold selections on promoted rows</th><td>2</td></tr>
+<tr><th>Refuse selections</th><td>0</td></tr>
+<tr><th>Timeout fallbacks</th><td>49</td></tr>
+<tr><th>Pick latency p50 [ms]</th><td>4040.556</td></tr>
+<tr><th>Pick latency p90 [ms]</th><td>5005.449</td></tr>
+<tr><th>Actual run-free picker holds</th><td>0</td></tr>
+</tbody></table><p>The two hold selections above occur on promoted rows, so they are selection records rather than held dispatches. Earlier picker holds were not durable. The new dispatch hold path writes them without a run id; none had been recorded when this reading was taken.</p>
+<p><strong>Matched routed outcomes:</strong> 158 runs, 66 with a known success result, 55 successes (83.3% of known outcomes). A run enters this cohort only if its selection action is route and its selected backend equals the launched backend.</p>
+<h2>Calibration</h2><figure><img src="/reckon/figures/one-typesafe-model-picker/picker-outcomes/success-by-confidence.svg" alt="Success rate for four confidence buckets with known-outcome and total pick counts labelled above each bar."><figcaption>Only matched routes with known outcomes enter each success-rate denominator. Labels show known outcomes over all matched picks in that confidence bucket. The small below-0.5 and at-least-0.85 cohorts cannot support a stable trend.</figcaption></figure>
+<table><thead><tr><th>Confidence</th><th>Matched picks</th><th>Known outcomes</th><th>Success rate</th></tr></thead><tbody>
+<tr><th>below 0.5</th><td>11</td><td>3</td><td>100.0%</td></tr>
+<tr><th>0.5–below 0.7</th><td>88</td><td>25</td><td>96.0%</td></tr>
+<tr><th>0.7–below 0.85</th><td>56</td><td>36</td><td>72.2%</td></tr>
+<tr><th>0.85 and above</th><td>3</td><td>2</td><td>100.0%</td></tr>
+</tbody></table><h2>Outcomes by selected backend and node shape</h2><table><thead><tr><th>Project</th><th>Backend</th><th>Role</th><th>Specification</th><th>Risk</th><th>Runs</th><th>Known</th><th>Success</th><th>Review median</th><th>Repair or resume</th><th>Wall median [s]</th><th>Profile p50 [s]</th><th>Wall/profile</th></tr></thead><tbody>
+<tr><td>nova</td><td>clive</td><td>implement</td><td>exact</td><td>unknown</td><td>12</td><td>7</td><td>100.0%</td><td>90.000</td><td>3</td><td>1383.000</td><td>2831</td><td>0.489</td></tr>
+<tr><td>nova</td><td>clive</td><td>implement</td><td>guided</td><td>unknown</td><td>3</td><td>1</td><td>100.0%</td><td>88.000</td><td>1</td><td>2688.000</td><td>4460</td><td>0.603</td></tr>
+<tr><td>nova</td><td>clive</td><td>review</td><td>exact</td><td>unknown</td><td>20</td><td>0</td><td>unknown</td><td>unknown</td><td>3</td><td>631.500</td><td>1203</td><td>0.525</td></tr>
+<tr><td>nova</td><td>clive</td><td>test</td><td>exact</td><td>unknown</td><td>1</td><td>0</td><td>unknown</td><td>unknown</td><td>0</td><td>3600.000</td><td>3400</td><td>1.059</td></tr>
+<tr><td>reckon</td><td>clive</td><td>implement</td><td>exact</td><td>unknown</td><td>37</td><td>36</td><td>72.2%</td><td>95.000</td><td>9</td><td>1797.000</td><td>2015</td><td>0.892</td></tr>
+<tr><td>reckon</td><td>clive</td><td>implement</td><td>guided</td><td>unknown</td><td>4</td><td>4</td><td>75.0%</td><td>92.500</td><td>2</td><td>2089.000</td><td>3770</td><td>0.554</td></tr>
+<tr><td>reckon</td><td>clive</td><td>investigate</td><td>exact</td><td>unknown</td><td>4</td><td>0</td><td>unknown</td><td>95.500</td><td>0</td><td>1466.000</td><td>1759</td><td>0.833</td></tr>
+<tr><td>reckon</td><td>clive</td><td>review</td><td>exact</td><td>unknown</td><td>75</td><td>17</td><td>100.0%</td><td>unknown</td><td>15</td><td>519.000</td><td>2422</td><td>0.214</td></tr>
+<tr><td>reckon</td><td>clive</td><td>test</td><td>exact</td><td>unknown</td><td>1</td><td>0</td><td>unknown</td><td>unknown</td><td>1</td><td>3857.000</td><td>2017.500</td><td>1.912</td></tr>
+<tr><td>reckon</td><td>codex</td><td>implement</td><td>exact</td><td>unknown</td><td>1</td><td>1</td><td>100.0%</td><td>98.000</td><td>0</td><td>1386.000</td><td>1736</td><td>0.798</td></tr>
+</tbody></table><p>The profile comparator is the trailing 14-day median for backend, role and specification, choosing the largest effort cohort where several exist. Missing review, wall and profile figures remain unknown.</p>
+<h2>Metered offers</h2><p>One matched routed run chose a codex backend; its offered <code>burn_multiple</code> and <code>pace_allowance</code> were both null. The offer data therefore cannot support a spend comparison in this reading. The table counts every selection with an offered codex candidate; an unknown burn level is kept as an explicit group.</p><table><thead><tr><th>Lowest offered burn multiple</th><th>Picks</th><th>Matched routes to codex</th><th>Share</th></tr></thead><tbody>
+<tr><th>below 1</th><td>0</td><td>0</td><td>unknown</td></tr>
+<tr><th>1–below 2</th><td>0</td><td>0</td><td>unknown</td></tr>
+<tr><th>2–below 4</th><td>0</td><td>0</td><td>unknown</td></tr>
+<tr><th>4 and above</th><td>0</td><td>0</td><td>unknown</td></tr>
+<tr><th>unknown</th><td>100</td><td>1</td><td>1.0%</td></tr>
+</tbody></table><h2>Rules and limits</h2><p>Success is a passed gate, or, without a closed gate, an outcome explicitly saying passed, complete, done, success or review scored. A failed gate fails. Other outcomes remain unknown and are excluded from rate denominators. The p50 latency is a median; p90 uses nearest rank. Repair or resume counts attempt kinds repair, resume and redispatch, or a recorded remedy.</p><p>The promoted ledger omits dispatch route mode. A matching shadow selection can therefore still enter the matched cohort; a route selection that launched another backend is excluded. The route mode needs a durable ledger field before causal attribution is exact. The 49 fallback rows all name timeout, while codex burn and pace values are absent in offered candidates. These absences are visible in the JSON and are not interpreted as zero spend or zero pressure.</p>
+<table><thead><tr><th>Evidence binding</th><th>Value</th></tr></thead><tbody>
+<tr><th>Base revision</th><td>b1132f73f2e9493dbd5f3f5b134334e56cddedd7</td></tr>
+<tr><th>Base CLI reproduction</th><td>exit 2: No such option &#x27;--outcomes&#x27;. Did you mean &#x27;--comment&#x27;?</td></tr>
+<tr><th>Projects read</th><td>14</td></tr>
+<tr><th>Malformed rows</th><td>0</td></tr>
+<tr><th>Base gate</th><td>194 passed in 88.68s; EXIT=0</td></tr>
+<tr><th>Head gate</th><td>200 passed in 44.18s; EXIT=0, no added failures</td></tr>
+<tr><th>Negative control</th><td>Inverting the success rule failed two known-outcome tests; 2 failed, 4 passed; EXIT=1</td></tr>
+<tr><th>JSON receipt</th><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T151908208690-picker-outcomes/live-outcomes.json</td></tr>
+<tr><th>Run directory</th><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T151908208690-picker-outcomes</td></tr>
+</tbody></table></article></main></body></html>

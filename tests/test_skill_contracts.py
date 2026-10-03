@@ -714,7 +714,9 @@ def test_ship_has_one_advisory_fleet_size_table() -> None:
 # costs 27 estimated tokens and names the state a coordinator reads before
 # restating a manifest's status word. Raised only as far as that line requires
 # against the base reading, not rounded up for headroom.
-FIXED_READ_SET_TOKEN_BUDGET = 15_616
+# The outcome read costs 9 estimated tokens in the fixed command inventory;
+# the coordinator needs the flag when choosing the dispatch read surface.
+FIXED_READ_SET_TOKEN_BUDGET = 15_625
 
 
 def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
@@ -1059,6 +1061,9 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             "--goal",
             "--done-when",
             "--replay",
+            "--outcomes",
+            "--since",
+            "--all-projects",
             "--checkout-path",
         },
         ("crew", "placement"): {"--ensure", "--session", "--project"},
