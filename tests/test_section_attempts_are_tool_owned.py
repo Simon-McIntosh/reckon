@@ -1,10 +1,11 @@
-"""Crew launch accounting on a plan section's typed record."""
+"""A section's attempt history comes from crew runs, including live runs."""
 
 from __future__ import annotations
 
 import json
 import shutil
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,25 @@ def _git(root: Path, *args: str) -> str:
     return subprocess.run(
         ["git", *args], cwd=root, check=True, capture_output=True, text=True
     ).stdout.strip()
+
+
+def _record(section: str) -> dict:
+    return {
+        "id": section,
+        "effort_hours": 1.0,
+        "capability": {
+            "version": "1.0",
+            "class": "general",
+            "requirements": {
+                "reasoning": "standard",
+                "verification": "strict",
+                "risk": "low",
+            },
+        },
+        "attempts": 0,
+        "status": "implementable",
+        "links": [],
+    }
 
 
 def _repository(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
@@ -36,7 +56,7 @@ def _repository(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
         '<!doctype html><html><head><meta name="docs-project" content="sample">'
         '<meta name="reckon-type" content="plan"><title>Fixture</title>'
         '</head><body><main class="plan-doc"><h2 id="work">Work</h2>'
-        "</main></body></html>"
+        '<h2 id="other">Other</h2></main></body></html>'
     )
     plan.write_text(
         _plan_html.write_state(
@@ -47,25 +67,11 @@ def _repository(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
                 "slug": "fixture",
                 "title": "Fixture",
                 "status": "active",
-                "section_declarations": {"work": "implementable"},
-                "sections": [
-                    {
-                        "id": "work",
-                        "effort_hours": 1.0,
-                        "capability": {
-                            "version": "1.0",
-                            "class": "general",
-                            "requirements": {
-                                "reasoning": "standard",
-                                "verification": "strict",
-                                "risk": "low",
-                            },
-                        },
-                        "attempts": 0,
-                        "status": "implementable",
-                        "links": [],
-                    }
-                ],
+                "section_declarations": {
+                    "work": "implementable",
+                    "other": "implementable",
+                },
+                "sections": [_record("work"), _record("other")],
             },
         )
     )
@@ -87,13 +93,20 @@ def _repository(tmp_path: Path, monkeypatch) -> tuple[Path, Path]:
         "-m",
         "test: seed repository",
         "-m",
-        "Provide a typed section for launch accounting.",
+        "Provide typed sections for crew accounting.",
     )
     (home / "mounts.json").write_text(json.dumps({"sample": str(root / "docs")}))
     return root, plan
 
 
-def _dispatch(root: Path, node_id: str, *, launcher=None) -> dict:
+def _dispatch(
+    root: Path,
+    node_id: str,
+    *,
+    role: str = "implement",
+    section: str = "work",
+    launcher=None,
+) -> dict:
     backend = (
         {
             "launch": "cli",
@@ -111,8 +124,8 @@ def _dispatch(root: Path, node_id: str, *, launcher=None) -> dict:
             id=node_id,
             goal="exercise section accounting",
             plan="fixture",
-            section="work",
-            role="implement",
+            section=section,
+            role=role,
             spec_level="exact",
             done_when="pytest reports one passing section accounting case",
             write_paths=[f"src/{node_id}.py"],
@@ -124,7 +137,7 @@ def _dispatch(root: Path, node_id: str, *, launcher=None) -> dict:
         config={
             "default_backend": "native",
             "backends": {"native": backend},
-            "roles": {"implement": {}},
+            "roles": {"implement": {}, "test": {}, "review": {}},
             "fences": {"time_budget": "20m"},
         },
         session=f"session-{node_id}",
@@ -134,32 +147,31 @@ def _dispatch(root: Path, node_id: str, *, launcher=None) -> dict:
     )
 
 
-def test_two_dispatches_increment_the_section_counter(
+def _section(root: Path, section: str = "work") -> dict:
+    state, _version = _store.read_plan("sample", "fixture", root, artifact_type="plan")
+    return next(row for row in state["sections"] if row["id"] == section)
+
+
+def test_attempts_derive_from_executable_runs_and_their_outcomes(
     tmp_path: Path, monkeypatch
 ) -> None:
     root, plan = _repository(tmp_path, monkeypatch)
-    _git(root, "branch", "parallel")
-    other = tmp_path / "parallel"
-    _git(root, "worktree", "add", "-q", str(other), "parallel")
-    (other / "parallel.txt").write_text("independent\n")
-    _git(other, "add", "parallel.txt")
-    _git(
-        other,
-        "commit",
-        "-q",
-        "-m",
-        "test: add independent file",
-        "-m",
-        "Exercise a merge without changing the plan.",
-    )
-
+    before = plan.read_bytes()
+    base = _git(root, "rev-parse", "HEAD")
     first = _dispatch(root, "first")
     second = _dispatch(root, "second")
+    review = _dispatch(root, "review-of-first", role="review")
+    assert review["role"] == "review"
 
-    state, _version = _store.read_plan("sample", "fixture", root, artifact_type="plan")
-    assert state["sections"][0]["attempts"] == 2
-    assert "Attempt 1 launched" in state["comments"]["work"][0]["body"]
-    assert "Attempt 2 launched" in state["comments"]["work"][1]["body"]
+    active = _section(root)
+    assert active["attempts"] == 2
+    assert {row["status"] for row in active["attempt_outcomes"]} == {"in_flight"}
+    assert {row["run_id"] for row in active["attempt_outcomes"]} == {
+        first["run_id"],
+        second["run_id"],
+    }
+    assert plan.read_bytes() == before
+    assert _git(root, "rev-parse", "HEAD") == base
 
     crew.record_resumption(
         second["run_id"],
@@ -168,8 +180,7 @@ def test_two_dispatches_increment_the_section_counter(
         log_path=tmp_path / "resume.jsonl",
         stderr_path=tmp_path / "resume.stderr.log",
     )
-    state, _version = _store.read_plan("sample", "fixture", root, artifact_type="plan")
-    assert state["sections"][0]["attempts"] == 2
+    assert _section(root)["attempts"] == 2
 
     crew.complete(
         first["run_id"],
@@ -178,79 +189,82 @@ def test_two_dispatches_increment_the_section_counter(
         root=root,
         no_impl_change="The fixture checks attempt accounting only.",
     )
-    crew.complete(second["run_id"], gate="not-run", outcome="superseded", root=root)
-    state, version = _store.read_plan("sample", "fixture", root, artifact_type="plan")
-    bodies = [row["body"] for row in state["comments"]["work"]]
-    assert any("Attempt 1: promoted" in body for body in bodies)
-    assert any("Attempt 2: superseded" in body for body in bodies)
-
-    edited = mcp._edit_plan_tool(
-        "sample",
-        "fixture",
-        expected_version=version,
-        checkout_path=str(root),
-        doc_type="plan",
-        mode="state",
-        ops=[{"op": "set", "path": "summary", "value": "Edited through the plan tool"}],
-    )
-    assert edited["ok"] is True, edited
-    _git(root, "add", "docs/plans/fixture.html")
-    _git(
-        root,
-        "commit",
-        "-q",
-        "-m",
-        "test: record plan edit",
-        "-m",
-        "Keep the edited plan for the merge check.",
-    )
-    _git(root, "merge", "--no-ff", "--no-edit", "parallel")
-    state, _version = _store.read_plan("sample", "fixture", root, artifact_type="plan")
-    assert state["sections"][0]["attempts"] == 2
-
-    inventory = [_plan_html.parse_meta(plan)]
-    report = roadmap.build_roadmap(
-        "sample", inventory, [], docs_dir=root / "docs", review={}
-    )
-    assert report["ready_now"][0]["section_attempts"] == {"work": 2}
-    assert mcp_views.ready_set_view(report)["ready"][0]["section_attempts"] == {
-        "work": 2
-    }
-
-
-def test_failed_attempt_carries_its_classification(tmp_path: Path, monkeypatch) -> None:
-    root, _plan = _repository(tmp_path, monkeypatch)
-    run = _dispatch(root, "failure")
     crew.complete(
-        run["run_id"],
+        second["run_id"],
         gate="failed",
         failure_classification="negative-result",
         outcome="The stated check failed",
         root=root,
     )
-    state, _version = _store.read_plan("sample", "fixture", root, artifact_type="plan")
-    assert state["sections"][0]["attempts"] == 1
-    assert "Attempt 1: failed (negative-result)" in state["comments"]["work"][0]["body"]
+    finished = _section(root)
+    assert finished["attempts"] == 2
+    outcomes = {row["run_id"]: row for row in finished["attempt_outcomes"]}
+    assert outcomes[first["run_id"]]["status"] == "promoted"
+    assert outcomes[second["run_id"]] == {
+        "run_id": second["run_id"],
+        "status": "failed",
+        "failure_classification": "negative-result",
+    }
+    assert review["run_id"] not in outcomes
+    assert _plan_html.read_state(plan.read_text())["sections"][0]["attempts"] == 0
+
+    raw = mcp._read_plan(
+        project="sample", slug="fixture", checkout_path=str(root), view="raw"
+    )
+    assert raw["data"]["sections"][0]["attempts"] == 2
+    inventory = [_plan_html.parse_meta(plan)]
+    report = roadmap.build_roadmap(
+        "sample", inventory, [], docs_dir=root / "docs", review={}
+    )
+    assert report["ready_now"][0]["section_attempts"] == {"work": 2, "other": 0}
+    assert mcp_views.ready_set_view(report)["ready"][0]["section_attempts"] == {
+        "work": 2,
+        "other": 0,
+    }
 
 
-def test_plan_edit_cannot_author_an_attempt(tmp_path: Path, monkeypatch) -> None:
-    root, _plan = _repository(tmp_path, monkeypatch)
+def test_concurrent_dispatches_leave_a_plan_edit_uncommitted(
+    tmp_path: Path, monkeypatch
+) -> None:
+    root, plan = _repository(tmp_path, monkeypatch)
+    base = _git(root, "rev-parse", "HEAD")
+    plan.write_text(plan.read_text().replace("Work</h2>", "Updated work</h2>"))
+    dirty = plan.read_bytes()
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        first = pool.submit(_dispatch, root, "parallel-work", section="work")
+        second = pool.submit(_dispatch, root, "parallel-other", section="other")
+        assert first.result()["run_id"] != second.result()["run_id"]
+    assert plan.read_bytes() == dirty
+    assert _git(root, "rev-parse", "HEAD") == base
+    assert _git(root, "status", "--short", "--", "docs/plans/fixture.html") == (
+        " M docs/plans/fixture.html"
+    )
+    assert _section(root, "work")["attempts"] == 1
+    assert _section(root, "other")["attempts"] == 1
+
+
+def test_state_write_preserves_non_authoritative_attribute(
+    tmp_path: Path, monkeypatch
+) -> None:
+    root, plan = _repository(tmp_path, monkeypatch)
+    _dispatch(root, "one")
     state, version = _store.read_plan("sample", "fixture", root, artifact_type="plan")
-    state["sections"][0]["attempts"] = 1
-    with pytest.raises(_store.OpError, match="owned by crew dispatch"):
-        _store.write_plan(
-            "sample", "fixture", state, version, root, artifact_type="plan"
-        )
+    assert state["sections"][0]["attempts"] == 1
+    state["sections"][0]["attempts"] = 99
+    state["summary"] = "An ordinary plan edit"
+    _store.write_plan("sample", "fixture", state, version, root, artifact_type="plan")
+    assert _plan_html.read_state(plan.read_text())["sections"][0]["attempts"] == 0
+    assert _section(root)["attempts"] == 1
 
 
 def test_refused_worker_start_does_not_count(tmp_path: Path, monkeypatch) -> None:
-    root, _plan = _repository(tmp_path, monkeypatch)
+    root, plan = _repository(tmp_path, monkeypatch)
+    before = plan.read_bytes()
 
     def refuse(*_args, **_kwargs):
         raise OSError("unavailable")
 
     with pytest.raises(crew.CrewError, match="could not start"):
         _dispatch(root, "refused", launcher=refuse)
-    state, _version = _store.read_plan("sample", "fixture", root, artifact_type="plan")
-    assert state["sections"][0]["attempts"] == 0
-    assert state.get("comments", {}).get("work", []) == []
+    assert _section(root)["attempts"] == 0
+    assert plan.read_bytes() == before
