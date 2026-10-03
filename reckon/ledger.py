@@ -1121,8 +1121,15 @@ def write(
             _restore_run_files(snapshots)
             raise
         if commit and obstruction is None:
-            _commit_roster_write(
-                project, "chore(roster): retire " + ", ".join(dropped), path
+            _commit_state_write(
+                project,
+                "chore(roster): retire " + ", ".join(dropped),
+                (
+                    "Commit the project roster immediately so this roster change "
+                    "cannot ride an unrelated later change."
+                ),
+                path,
+                "roster",
             )
     return version
 
@@ -1309,9 +1316,51 @@ def _refuse_dirty_roster_commit(
     )
 
 
-def _commit_roster_write(project: str, subject: str, path: Path) -> None:
-    """Commit one requested roster write without sweeping other staged paths."""
-    checkout, relative_path = _state_checkout(project, path)
+def _merge_in_progress(checkout: Path) -> bool:
+    """Whether ``checkout`` has a merge it has not concluded.
+
+    ``MERGE_HEAD`` exists exactly while a merge is unresolved, and it lives in
+    the git directory — the per-worktree one where a linked worktree keeps it,
+    which is why git resolves the path rather than the checkout's ``.git``
+    entry being read here by hand.
+    """
+    probe = subprocess.run(
+        ["git", "-C", str(checkout), "rev-parse", "--git-path", "MERGE_HEAD"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if probe.returncode != 0 or not probe.stdout.strip():
+        return False
+    merge_head = Path(probe.stdout.strip())
+    if not merge_head.is_absolute():
+        merge_head = checkout / merge_head
+    return merge_head.exists()
+
+
+def _commit_state_write(
+    project: str,
+    subject: str,
+    body: str,
+    path: Path,
+    what: str = "state",
+) -> None:
+    """Commit one requested state write without sweeping other staged paths.
+
+    The commit is skipped while a merge is in progress: a commit made there
+    would conclude the merge or fail on the conflicted index, and it is the
+    session that owns the merge which decides what its commit carries. The
+    write stays in the tree, exactly as a caller that asked for no commit
+    would leave it, and the skip is stated on stderr.
+    """
+    checkout, relative_path = _state_checkout(project, path, what)
+    if _merge_in_progress(checkout):
+        print(
+            f"merge in progress in {checkout}: leaving the {what} write at "
+            f"{relative_path} uncommitted",
+            file=sys.stderr,
+        )
+        return
 
     staged = subprocess.run(
         ["git", "-C", str(checkout), "add", "--", str(relative_path)],
@@ -1321,7 +1370,7 @@ def _commit_roster_write(project: str, subject: str, path: Path) -> None:
     )
     if staged.returncode != 0:
         raise LedgerError(
-            f"could not stage roster write {relative_path}: "
+            f"could not stage {what} write {relative_path}: "
             f"{staged.stderr.strip() or staged.stdout.strip()}"
         )
 
@@ -1335,10 +1384,7 @@ def _commit_roster_write(project: str, subject: str, path: Path) -> None:
             "-m",
             subject,
             "-m",
-            (
-                "Commit the project roster immediately so this roster change "
-                "cannot ride an unrelated later change."
-            ),
+            body,
             "--",
             str(relative_path),
         ],
@@ -1363,7 +1409,7 @@ def _commit_roster_write(project: str, subject: str, path: Path) -> None:
             check=False,
         )
         raise LedgerError(
-            f"could not commit roster write {relative_path}: "
+            f"could not commit {what} write {relative_path}: "
             f"{committed.stderr.strip() or committed.stdout.strip()}"
         )
 
@@ -1432,8 +1478,15 @@ def register_member(
     ] + [entry]
     write(project, data, version, root)
     if commit:
-        _commit_roster_write(
-            project, f"chore(roster): register {member_id}", ledger_path(project, root)
+        _commit_state_write(
+            project,
+            f"chore(roster): register {member_id}",
+            (
+                "Commit the project roster immediately so this roster change "
+                "cannot ride an unrelated later change."
+            ),
+            ledger_path(project, root),
+            "roster",
         )
     return entry
 
@@ -2977,6 +3030,14 @@ def record_hold_checks(
     first later clear check closes that record and measures actual wall-clock
     elapsed time; the reported reset remains separate because a scheduled
     resumption can fire early or late.
+
+    A check that changes a hold commits the aggregate it rewrote at once, under
+    a subject naming the transition, so the shared file is not left dirty for
+    whichever session next notices it. The commit is skipped, with the write
+    left in the tree and the skip stated on stderr, while a merge is in
+    progress. A checkout that cannot answer for the write is skipped the same
+    way, so a hold check against a state directory outside git still records
+    the transition.
     """
     moment = _parse_utc(checked_at)
     prepared = [dict(check) for check in checks]
@@ -3045,8 +3106,28 @@ def record_hold_checks(
             last = exc
             _retry_backoff(_attempt)
             continue
+        path = ledger_path(project, root)
+        transitions = ", ".join(
+            f"{'close' if item['action'] == 'closed' else 'open'} "
+            f"{item['hold'].get('hold_id')}"
+            for item in outcomes
+            if item["action"] in {"opened", "closed"}
+        )
+        try:
+            _commit_state_write(
+                project,
+                f"chore(holds): {transitions}",
+                (
+                    "Commit the hold transition immediately so this hold record "
+                    "cannot ride an unrelated later change."
+                ),
+                path,
+                "hold",
+            )
+        except LedgerError as exc:
+            print(f"could not commit hold write {path}: {exc}", file=sys.stderr)
         return {
-            "path": str(ledger_path(project, root)),
+            "path": str(path),
             "version": new_version,
             "outcomes": outcomes,
         }
