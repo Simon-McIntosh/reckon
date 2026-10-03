@@ -23,9 +23,9 @@
   <title>A Finished Worktree Releases Without a Force | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 </head>
 <body>
   <main class="plan-doc">
@@ -158,9 +158,14 @@
 <p><strong>Done when.</strong> A row whose commits were not measured carries <code>null</code> in both fields, with a field naming why. A measured row keeps the lists. A test inspects one divergent dirty worktree both ways and asserts null in one case and a list in the other. Existing gc and residue tests keep passing.</p>
 
     <h2 id="s8">§8 — gc names its subject and reports what it already did</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
 <p><strong>Reported 2026-10-02 at about 23:14Z</strong> by nova-f5, and confirmed in the code by s25-coord. <code>reckon crew gc --repo ~/Code/nova --project nova --apply</code> stopped mid-sweep with <code>Error: git rev-parse HEAD failed: fatal: not a git repository …</code> and named no path. It had already removed <code>…/s21-nova/fsri-krylov-capacity-scan-symbol-name</code>, and nothing reported that. There are two defects. First, <code>_git</code> in reckon/crew/routing.py raises <code>CrewError</code> naming the command but not the directory it ran in. Second, <code>crew_gc</code> in reckon/cli.py turns that error into a <code>ClickException</code> before its report is emitted, so the removed and refused lists of the steps already applied are lost. A gc that has already deleted something must always say so.</p>
 <p><strong>Done when</strong> three things hold. A <code>_git</code> failure names the directory it ran in. A worktree that is not a git repository is reported as a row naming its path and the reason, and the sweep continues past it. Any other mid-sweep failure emits the partial report, with the removed and refused lists and the failing path, before exiting nonzero. A test in a temporary repository and RECKON_HOME registers one worktree whose directory is not a repository, beside one that gc releases, and asserts four things: the release is reported, the broken tree's row names its path, the exit status is stated, and no other worktree is touched. The negative control restores the abort, and the release then goes unreported.</p>
+
+    <h2 id="s9">§9 — A worktree with unique commits releases after its commits are pinned</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<p><strong>The twelve worktrees §4 kept.</strong> Each carries commits with no patch-equivalent on main, mostly S15 <code>wip(crew)</code> commits whose behaviour later landed in a different form, so neither §3 nor §6 releases them. Releasing them without a force needs their commits kept somewhere other than the worktree.</p>
+<p><strong>Done when</strong> <code>crew gc</code> can pin a dirty, unintegrated worktree's commits beyond the integration head to an archive ref, <code>refs/reckon/archive/&lt;worktree name&gt;</code>, recording that ref in the residue directory beside the patch. It then releases the tree through the §3 residue path, and only when pinning was requested explicitly. A test pins and releases one such worktree in a temporary repository, then asserts the archived commits still resolve and the worktree is gone. The two §8 review follow-ons go in the same node: a separate refused list in the partial report, and a programming error surfacing as a traceback rather than as a refusal.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -176,10 +181,16 @@
     <pre class="r-fu-prompt">/reckon-build a-finished-worktree-releases-without-a-force §7</pre>
     <p class="r-fu-outcome">§7 landed at 33f7bb13a (run r-20261002T223224404015-unmeasured-commit-list, reviewed at 98, zero added failures): a row whose commits gc did not measure carries null in both commit lists, with a field naming why. The gc re-run is done: the 2026-10-02 22:29Z dry run over the twelve worktrees §4 kept shows every one carrying commits with no patch-equivalent on main, so §6 releases none of them, and the 22:34Z apply removed only the clean integrated review-of-dry-run-shows-each-set-override tree. The twelve hold unlanded work and stay for a decision on their commits.</p>
     </article>
-<article class="r-fu" data-id="f-afwrwaf-003" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-afwrwaf-003" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="" data-resolved-at="2026-10-03T01:23:27+00:00" data-resolved-by="s22-coord">
     <h4 class="r-fu-title">land §8</h4>
     <div class="r-fu-body"><p>§8: gc names the tree it failed on, reports a broken worktree as a row and continues, and always reports what it already removed. It came from nova-f5 by way of s25-coord. Tell s25-coord when it lands.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-finished-worktree-releases-without-a-force §8</pre>
+    <p class="r-fu-outcome">§8 landed at 9c3b6c5e6 (run r-20261003T001538886711-gc-reports-what-it-already-did, reviewed at 95, zero added failures). A _git failure names its directory. A registered worktree that is not a repository becomes a row naming its path, and the sweep continues. Any other mid-sweep failure emits the partial report before exiting nonzero. The review's two follow-ons are folded into §9.</p>
+    </article>
+<article class="r-fu" data-id="f-afwrwaf-004" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-03" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">land §9</h4>
+    <div class="r-fu-body"><p>§9: pin a worktree's unique commits to an archive ref, then release it, so the twelve kept worktrees can go without a force.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-finished-worktree-releases-without-a-force §9</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -214,7 +225,7 @@
     <div class="r-comment-body"><p>routing.py now returns null for non_equivalent_commits and patch_equivalent_commits on a worktree row whose commits beyond the integration head were not measured, with commits_unmeasured_reason naming why (release_residue false / head is an ancestor / tree is clean / comparison could not run), while a measured row keeps both lists even when empty; gate base 111 passed, head 114 passed (3 new tests), added failure ids none, negative control returning empty lists for an unmeasured row fails the null assertion EXIT=1; landing record docs/evidence/fragments/a-finished-worktree-releases-without-a-force/unmeasured-commit-list.html.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261002T232757136001-review-of-unmeasured-commit-list" data-who="reckon-build" data-when="2026-10-02T23:40:35.719Z">
-    <div class="r-comment-body"><p>attached an independent review of run r-20261002T223224404015-unmeasured-commit-list at base 8c5923360ff7c4ca401047ec8e61df813101741a and head b7373405700abdbb74e6b92ffd3a670394d08d25; scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20, total 98; added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own baseline_suite (111 passed EXIT=0) and after_suite (114 passed EXIT=0) gate logs; one follow-on finding.</p></div>
+    <div class="r-comment-body"><p>attached an independent review of run r-20261002T223224404015-unmeasured-commit-list at base 8c5923360ff7c4ca401047ec8e61df813101741a and head b7373405700abdbb74e6b92ffd3a670394d08d25; scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 20, total 98; added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own baseline_suite (111 passed EXIT=0) and after_suite (114 passed EXIT=0) gate logs; one follow-on finding.</p></div>
 </div>
 </section>
 </main>
