@@ -9,7 +9,7 @@
   <meta name="plan-title" content="verify-gate is ok only when its replay finished and passed">
   <meta name="plan-summary" content="The verify-gate ok rule in rerun_gate_at_integrated_revision read a measured exit status, so a completed failing replay reported ok true and exited 0 while its own report said failed. It now reads the verdict: a timeout, a replay that never ran and a completed failing replay all report ok false and exit non-zero, while the report's exit status, integrated verdict and finding are unchanged.">
   <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
-  <meta name="plan-verifies" content="crew-runtime-positive-controls#s49">
+  <meta name="plan-verifies" content="crew-runtime-positive-controls#s50">
   <meta name="plan-verdict" content="pass">
   <title>verify-gate is ok only when its replay finished and passed &mdash; evidence | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -43,7 +43,7 @@
       <li><strong>Base arm</strong> (<code>ca72765f68fffd904ac46ce6598a0a8bf8fd5ddc</code>, this worktree before the change; the ten files naming <code>verify-gate</code>, <code>verify_gate</code> or <code>rerun_gate_at_integrated_revision</code>): <strong>3 failed, 159 passed in 60.72s</strong>, <code>EXIT=1</code> (<code>base-arm.log</code>). Failure ids: <code>test_a_timed_out_replay_is_not_ok.py::test_a_replay_that_outlives_its_bound_reports_failure</code>, <code>test_crew_promotion.py::test_verify_gate_cli_records_a_finding_against_the_run</code>, <code>test_verify_gate_replay_is_diagnosable.py::test_a_failing_replay_keeps_ids_and_stderr_in_a_log_beside_the_run</code>.</li>
       <li><strong>Head arm</strong> (head <code>a78ac01b0</code>, the same ten files): <strong>162 passed in 58.75s</strong>, <code>EXIT=0</code> (<code>head-arm.log</code>). No failure the base arm does not already fail; the head arm adds none and fixes all three.</li>
       <li><strong>Negative control</strong> (the declared mutation: the base revision in a scratch extraction, <code>ca72765f6</code>): <code>1 failed in 5.83s</code>, <code>EXIT=1</code> (<code>negative-control.log</code>). The failure is the named test, and the printed payload shows the mutation live: <code>"ok": true</code> beside <code>"integrated_verdict": "failed"</code>. The log's header names the scratch tree, the module as imported and the resolved cwd.</li>
-      <li><strong>Ruff</strong>, over the changed paths only: 5 findings at base and 5 at head (<code>promotion.py</code>'s pre-existing backlog), so the commit adds none; the test file is format-clean.</li>
+      <li><strong>Ruff</strong>, over the changed paths only: 3 findings at base and 3 at head, all in <code>promotion.py</code>'s pre-existing backlog, so the commit adds none; the test file is format-clean.</li>
     </ul>
   </section>
 
