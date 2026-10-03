@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="574">
+<meta name="plan-version" content="575">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.58">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -3682,7 +3682,10 @@ if isinstance(argv, list) and argv:
     <div class="r-comment-body"><p>independent review of r-20261002T130153068144-exited-unfinished-run-reads-its-own-state stored as a parsed five-dimension record (goal_fidelity 19, evidence 19, scope_discipline 20, durability 18, fit 18; total 94) about revision pair 53a72f8c..5a5918d18, with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own baseline_suite and after_suite gate logs; two follow-on findings recorded, no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261002T224824119720-attempt-exit-waits-for-its-worker" data-who="reckon-build" data-when="2026-10-02T23:46:38.391Z">
-    <div class="r-comment-body"><p>attempt-exit-waits-for-its-worker: the supervisor becomes a child subreaper before it spawns, so a launcher that exits ahead of its worker leaves that worker parented to the supervisor; the attempt&#x27;s exit record waits for the adopted worker and carries its pid and its exit, while a spawned child that ended by signal is recorded at once; gate base 39 passed (EXIT=0), head 40 passed (EXIT=0), declared mutation red at EXIT=1.</p></div>
+    <div class="r-comment-body"><p>attempt-exit-waits-for-its-worker: the supervisor becomes a child subreaper before it spawns, so a launcher that exits ahead of its worker leaves that worker parented to the supervisor; the attempt's exit record waits for the adopted worker and carries its pid and its exit, while a spawned child that ended by signal is recorded at once; gate base 39 passed (EXIT=0), head 40 passed (EXIT=0), declared mutation red at EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s31" data-id="c-run-r-20261002T234749524023-review-of-attempt-exit-waits-for-its-worker" data-who="reckon-build" data-when="2026-10-03T00:02:04.315Z">
+    <div class="r-comment-body"><p>review-of-attempt-exit-waits-for-its-worker — independent review of run r-20261002T224824119720 stored as a parsed record scoring goal_fidelity 17, evidence 17, scope_discipline 19, durability 17, fit 18 (total 88), added_failure_count 0, reviewed_base_sha 8702883ad00f6379077e3482b41f1cb292213819, reviewed_head_sha 326adf19245ac3c65407d0e23684a4cc190e466e; three follow-ons: the signal short-circuit records early for a launcher killed by signal with a live worker, the wait covers every supervisor child so a live reparented descendant holds the record, and the recorded head gate ran one docs-only commit before the reviewed head.</p></div>
 </div>
 </section>
 </main>
