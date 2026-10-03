@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon"><meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="dispatch-path-regression"><meta name="plan-title" content="Cold dispatch index transactions">
+<meta name="plan-summary" content="Cold index transaction timing and a retained supervisor-lifecycle gate failure"><meta name="plan-recorded-at" content="2026-10-03"><meta name="plan-verdict" content="partial">
+<meta name="plan-evidence-for" content="one-typesafe-model-picker"><meta name="plan-verifies" content="one-typesafe-model-picker#s6">
+<title>Cold dispatch index transactions | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css"><link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc"><article data-reckon="landed" data-node="dispatch-path-regression" id="dispatch-path-regression">
+<h1>Cold dispatch index transactions</h1>
+<table><caption>Phase medians in seconds; five fresh processes and fixture homes per arm. Nested rows overlap; imports precede the dispatch clock.</caption><thead><tr><th>Phase</th><th>base</th><th>before</th><th>after</th><th>negative</th></tr></thead><tbody>
+<tr><td>Driver startup including imports</td><td>0.347833</td><td>0.391310</td><td>0.358789</td><td>0.342413</td></tr>
+<tr><td>Repository resolution (all calls)</td><td>0.027727</td><td>0.026908</td><td>0.029058</td><td>0.026677</td></tr>
+<tr><td>Authority resolution</td><td>0.000297</td><td>0.000247</td><td>0.000286</td><td>0.000258</td></tr>
+<tr><td>Picker inputs, inclusive</td><td>3.052080</td><td>3.681437</td><td>0.631238</td><td>3.544291</td></tr>
+<tr><td>↳ Ledger rows / cold index</td><td>2.978848</td><td>3.611992</td><td>0.566934</td><td>3.476578</td></tr>
+<tr><td>↳ Verdict inputs</td><td>0.000836</td><td>0.000901</td><td>0.000856</td><td>0.000852</td></tr>
+<tr><td>↳ Budget snapshot / picker import</td><td>0.062811</td><td>0.067883</td><td>0.050461</td><td>0.061798</td></tr>
+<tr><td>Pick</td><td>0.019049</td><td>0.017965</td><td>0.019206</td><td>0.018050</td></tr>
+<tr><td>plan_dispatch, inclusive</td><td>0.070296</td><td>0.068803</td><td>0.066062</td><td>0.072836</td></tr>
+<tr><td>Worktree creation</td><td>0.132857</td><td>0.128809</td><td>0.120142</td><td>0.122270</td></tr>
+<tr><td>Supervisor launch</td><td>0.070739</td><td>0.073679</td><td>0.070612</td><td>0.067339</td></tr>
+<tr><td>Supervisor survival confirmation</td><td>2.012506</td><td>2.011523</td><td>2.011355</td><td>2.011376</td></tr>
+<tr><td>Dispatch outside the six timed execution phases</td><td>2.152016</td><td>2.079785</td><td>2.033542</td><td>2.614182</td></tr>
+<tr><td>Total dispatch</td><td>7.705779</td><td>8.170651</td><td>5.052551</td><td>8.532927</td></tr>
+</tbody></table>
+<table><caption>Standalone test samples in execution order; the unchanged dispatch return bound is 8.0 seconds.</caption><thead><tr><th>Arm</th><th>Revision</th><th>Seconds (five samples)</th><th>Median</th><th>Range</th><th>Passed / 5</th><th>Load 1m range</th></tr></thead><tbody>
+<tr><td>base</td><td>4d1feeed905d145a3130e71293f2cfdf1233f1d7</td><td>8.108, 8.094, 7.706, 7.400, 7.271</td><td>7.706</td><td>7.271–8.108</td><td>3</td><td>23.32–27.12</td></tr>
+<tr><td>before</td><td>f83665dcc9474f9a02ae16c92d2a03dab9a5ae75</td><td>8.509, 8.460, 7.676, 8.171, 7.310</td><td>8.171</td><td>7.310–8.509</td><td>2</td><td>23.76–27.29</td></tr>
+<tr><td>after</td><td>8c3d96f4376ea6677823b399826b7ab356a14bb7</td><td>7.866, 5.053, 7.771, 4.436, 4.877</td><td>5.053</td><td>4.436–7.866</td><td>5</td><td>27.25–31.40</td></tr>
+<tr><td>negative</td><td>8c3d96f4376ea6677823b399826b7ab356a14bb7</td><td>7.703, 9.787, 9.927, 8.533, 7.436</td><td>8.533</td><td>7.436–9.927</td><td>2</td><td>27.27–30.88</td></tr>
+</tbody></table>
+<table><caption>SQL timing probe: first cold index build. Transaction flag is read immediately after each operation; context exit commits the transaction.</caption><thead><tr><th>Arm</th><th>Operation</th><th>Seconds</th><th>In transaction</th></tr></thead><tbody>
+<tr><td>base</td><td>CREATE TABLE IF NOT EXISTS records (name TEXT PRIMARY KEY, stamp TEXT, payload TEXT)</td><td>0.364082</td><td>False</td></tr>
+<tr><td>base</td><td>CREATE TABLE IF NOT EXISTS aggregate_rows (ordinal INTEGER PRIMARY KEY, run_id TEXT, payload TEXT)</td><td>0.540412</td><td>False</td></tr>
+<tr><td>base</td><td>CREATE INDEX IF NOT EXISTS aggregate_identity ON aggregate_rows(run_id)</td><td>0.776911</td><td>False</td></tr>
+<tr><td>base</td><td>CREATE TABLE IF NOT EXISTS metadata (name TEXT PRIMARY KEY, payload TEXT)</td><td>0.715944</td><td>False</td></tr>
+<tr><td>base</td><td>PRAGMA user_version=2</td><td>0.000030</td><td>True</td></tr>
+<tr><td>base</td><td>context exit</td><td>0.557153</td><td>False</td></tr>
+<tr><td>before</td><td>PRAGMA user_version=3</td><td>0.697542</td><td>False</td></tr>
+<tr><td>before</td><td>CREATE TABLE IF NOT EXISTS records (name TEXT PRIMARY KEY, stamp TEXT, payload TEXT, picker TEXT)</td><td>0.708737</td><td>False</td></tr>
+<tr><td>before</td><td>CREATE TABLE IF NOT EXISTS aggregate_rows (ordinal INTEGER PRIMARY KEY, run_id TEXT, payload TEXT, picker TEXT)</td><td>0.493112</td><td>False</td></tr>
+<tr><td>before</td><td>CREATE INDEX IF NOT EXISTS aggregate_identity ON aggregate_rows(run_id)</td><td>0.533315</td><td>False</td></tr>
+<tr><td>before</td><td>CREATE TABLE IF NOT EXISTS metadata (name TEXT PRIMARY KEY, payload TEXT)</td><td>0.696975</td><td>False</td></tr>
+<tr><td>before</td><td>context exit</td><td>0.449154</td><td>False</td></tr>
+<tr><td>after</td><td>PRAGMA user_version=3</td><td>0.000052</td><td>True</td></tr>
+<tr><td>after</td><td>CREATE TABLE IF NOT EXISTS records (name TEXT PRIMARY KEY, stamp TEXT, payload TEXT, picker TEXT)</td><td>0.000166</td><td>True</td></tr>
+<tr><td>after</td><td>CREATE TABLE IF NOT EXISTS aggregate_rows (ordinal INTEGER PRIMARY KEY, run_id TEXT, payload TEXT, picker TEXT)</td><td>0.000041</td><td>True</td></tr>
+<tr><td>after</td><td>CREATE INDEX IF NOT EXISTS aggregate_identity ON aggregate_rows(run_id)</td><td>0.000045</td><td>True</td></tr>
+<tr><td>after</td><td>CREATE TABLE IF NOT EXISTS metadata (name TEXT PRIMARY KEY, payload TEXT)</td><td>0.000044</td><td>True</td></tr>
+<tr><td>after</td><td>context exit</td><td>0.234102</td><td>False</td></tr>
+</tbody></table>
+<table><caption>Gate receipts; the head gate includes input-equivalence tests. The mutation removes the explicit BEGIN and restores eager schema/version commits.</caption><thead><tr><th>Arm</th><th>Exact summary</th><th>Exit</th><th>Log</th></tr></thead><tbody>
+<tr><td>before</td><td>394 passed in 401.38s (0:06:41)</td><td>EXIT=0</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T190808184784-dispatch-path-regression/gate-before-1.log</td></tr>
+<tr><td>after</td><td>1 failed, 395 passed in 287.96s (0:04:47)</td><td>EXIT=1</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T190808184784-dispatch-path-regression/gate-after-1.log</td></tr>
+<tr><td>Restored eager schema</td><td>2 failed, 28 deselected in 14.28s</td><td>EXIT=1</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T190808184784-dispatch-path-regression/negative-control.log</td></tr>
+</tbody></table>
+<table><caption>Measurement and implementation bindings</caption><thead><tr><th>Item</th><th>Value</th></tr></thead><tbody>
+<tr><td>Change</td><td>reckon/ledger.py: explicit BEGIN includes schema/version writes and index rows in one transaction; picker fields and selection logic unchanged.</td></tr>
+<tr><td>Regression check</td><td>tests/test_dispatch_speed.py::test_index_schema_and_rows_publish_in_one_transaction[False/True]; SQL tracing observes actual schema writes and bounds them by one BEGIN and COMMIT.</td></tr>
+<tr><td>Flight resolution</td><td>Fixture supplies CONFIG directly to crew.dispatch; flight.resolve is not invoked. The phase wrapper covers resolve when called; repository and authority resolution are tabulated separately.</td></tr>
+<tr><td>Fixture</td><td>tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs; real stub launch and held supervisor scan; original 8.0 s bound.</td></tr>
+<tr><td>Sampling</td><td>Historical base/before alternate, then after/negative alternate, one pytest process at a time; no concurrent node-owned gate during timing. SQL probes are additional samples excluded from medians.</td></tr>
+<tr><td>Storage</td><td>git archive extractions under $TMPDIR/dispatch-path-regression, each with git init and a symlink to the main checkout virtualenv; fixture homes and cache are node-local.</td></tr>
+<tr><td>Environment</td><td>98dci4-clu-2018, allocation 1277272; main checkout .venv/bin/python; no environment sync.</td></tr>
+<tr><td>Provenance</td><td>Each log header names revision, extraction tree, imported dispatch module and resolved pytest cwd. Each driver receipt additionally records its imported module and fixture-repository cwd.</td></tr>
+<tr><td>Module roots</td><td>/tmp/dispatch-path-regression/base/reckon/crew/dispatch.py; /tmp/dispatch-path-regression/before/reckon/crew/dispatch.py; /tmp/dispatch-path-regression/after/reckon/crew/dispatch.py; /tmp/dispatch-path-regression/negative/reckon/crew/dispatch.py</td></tr>
+<tr><td>Timing receipt paths</td><td>phase-{base,before,after,negative}-{1..5}.json and .log, phase-{base,before,after}-sql.json and .log, samples.jsonl under /home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T190808184784-dispatch-path-regression</td></tr>
+<tr><td>Reproduction and runner</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T190808184784-dispatch-path-regression/measure.py; phase_plugin.py; sql_plugin.py; negative_check.py; render_evidence.py</td></tr>
+<tr><td>Recovery</td><td>After minus historical base median: -2.653 s; required no more than +0.200 s. Restored eager schema minus after: +3.480 s.</td></tr>
+<tr><td>Suite delta</td><td>Baseline: 0 failures; head: 1 newly observed failing id, tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated. Its pointer names no supervisor PID (assert 0). No causal attribution established; supervisor lifecycle is outside this node’s write scope and is a follow-on.</td></tr>
+<tr><td>Scope</td><td>Cold empty-history dispatch fixture; populated-history semantic equivalence and cache recovery covered by declared gate. The head gate is not wholly green. Merged-head verification, the supervisor follow-on and plan closure belong to the coordinator.</td></tr>
+</tbody></table>
+</article></main></body></html>
