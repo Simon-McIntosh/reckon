@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="123">
+<meta name="plan-version" content="124">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 </head>
 <body>
@@ -466,9 +466,15 @@
     <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §11</pre>
     <p class="r-fu-outcome">Landed: catalogue at docs/state/reckon/model-catalogue.yaml (merge 7e334b9e2), host keys removed in dotfiles 0d9eda6 with identical resolution for all 14 mounted projects. Record: evidence anchor s11.</p>
     </article>
-<article class="r-fu" data-id="f-otmp-dispatch-prebuild" data-status="open" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-otmp-dispatch-prebuild" data-status="resolved" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-03T14:13:15+00:00" data-resolved-by="s25-picker">
     <h4 class="r-fu-title">Cache the dispatcher&#x27;s pre-pick ledger and budget reads</h4>
     <div class="r-fu-body">A cold dispatch still spends about 3.8 s in _picker_ledger_rows (ledger.runs) and about 3.9 s in _picker_budget_snapshot (budget.preflight) before the pick starts. These sit outside the 5 s pick bound, so they slow dispatch without causing a fallback. Key both on the ledger stamp through capabilities.cached_pick_input. Also close the two review follow-ons of picker-fresh-process-pick: a test pinning the per-run-file verdict stamp, and the overstated comment on stamp and computation drift.</div>
+    <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §6</pre>
+    <p class="r-fu-outcome">Done by dispatch-speed (merge 0c853d542, codex-astra): incremental cross-process ledger index; pick p90 0.974 s over 21 fresh CLI picks with zero timeouts; whole dry-run dispatch 3.6–4.7 s warm. Input build median 1.64 s remains above its 1.0 s target. Record: evidence anchor s6-dispatch-speed.</p>
+    </article>
+<article class="r-fu" data-id="f-otmp-jev-http-guard" data-status="open" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Block the live Jev HTTP call itself under test</h4>
+    <div class="r-fu-body">The conftest isolation stops the client by removing the credential, so a test that sets OPENROUTER_API_KEY_RECKON would still reach OpenRouter. Stub the HTTP call in the autouse fixture, so the network is unreachable whatever the credential, and prove it with a test that sets a fake key and spies urlopen. The same followup records the remaining input-build floor (1.64 s median) and the review follow-ons of dispatch-speed: plans resolved from non-plan roots are missing from the estimate stamp; a stat PermissionError now raises; the profile key stats every run file.</div>
     <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §6</pre>
     </article>
 </section>
