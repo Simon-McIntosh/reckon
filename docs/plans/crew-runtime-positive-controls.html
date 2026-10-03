@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="229">
+<meta name="plan-version" content="230">
 </head>
 <body>
   <main class="plan-doc">
@@ -1939,7 +1939,7 @@
     <div class="r-comment-body"><p>Reviewed run r-20261003T014958539604-reclaimed-run-head-keeps-stored-reviews over the commits gained since it was last reviewed (base 0fc262e3f..head b1b4f898, the repair d69cf81f and the evidence b1b4f898): stored a parsed five-dimension record total 84 (goal_fidelity 18, evidence 16, scope_discipline 18, durability 15, fit 17), 6 production call sites, added_failure_count 1 with id tests/test_member_friction.py::test_member_dispatch_without_a_registered_checkout_names_repo derived from the run's own repair-baseline-arm.log and repair-arm-2.log, with two follow-on findings (the decision figure and fragments overstate the reclaimed branch as identical in both readers; the arms' shifting store-interference error id is counted as an added failure and caps the read total to 5).</p></div>
 </div>
 <div class="r-comment" data-section="s34" data-id="c-run-r-20261003T014958539604-reclaimed-run-head-keeps-stored-reviews" data-who="reckon-build" data-when="2026-10-03T03:23:51.981Z">
-    <div class="r-comment-body"><p>The reading for a run whose record resolves no head now lives in one function, newest_review_for_headless_run: a reclaimed worktree is still refused, and every other headless record reads the store&#x27;s newest record, so the obligations duty reader again produces a live run&#x27;s sub-floor disposition duty instead of skipping it over a head the pointer cannot resolve. The change is d69cf81fa757d40811e716690e516ea1dce43ad1, answering review finding f49b6b9881f; over the same fourteen gate files the base arm at 0fc262e3f reads 7 failed, 111 passed, 1 error and the repair arm at d69cf81f 7 failed, 112 passed, 1 error with no failure id added, and the new case is red under its declared negative control (EXIT=1).</p></div>
+    <div class="r-comment-body"><p>The reading for a run whose record resolves no head now lives in one function, newest_review_for_headless_run: a reclaimed worktree is still refused, and every other headless record reads the store's newest record, so the obligations duty reader again produces a live run's sub-floor disposition duty instead of skipping it over a head the pointer cannot resolve. The change is d69cf81fa757d40811e716690e516ea1dce43ad1, answering review finding f49b6b9881f; over the same fourteen gate files the base arm at 0fc262e3f reads 7 failed, 111 passed, 1 error and the repair arm at d69cf81f 7 failed, 112 passed, 1 error with no failure id added, and the new case is red under its declared negative control (EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s38" data-id="c-run-r-20261003T021640836456-review-of-one-review-head-resolver" data-who="reckon-build" data-when="2026-10-03T02:31:28.433Z">
     <div class="r-comment-body"><p>§38 — reviewed r-20261003T014049918110-one-review-head-resolver at head f85e14802 against base 67c5188478; record scored 99/100 (goal_fidelity 20, evidence 20, scope_discipline 20, durability 19, fit 20) with zero added failure ids.</p></div>
@@ -1952,6 +1952,9 @@
 </div>
 <div class="r-comment" data-section="s35" data-id="c-run-r-20261003T023340624994-review-of-stranded-launch-releases-its-claim" data-who="reckon-build" data-when="2026-10-03T02:44:51.695Z">
     <div class="r-comment-body"><p>review of r-20261003T013928758342-stranded-launch-releases-its-claim is stored as a parsed record at reviewed base faf859078835171eea6c4287a47074ee729e2a31 and head b07593fed906406f532c8420a1e369d4cc5adb85, scoring goal_fidelity 17, evidence 16, scope_discipline 20, durability 18, fit 19 (total 90), with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own base/head gate logs; the diff releases a pre-spawn pointer stranded past 900s and lets the review reflex discard it with the reason recorded and compose again, and I reproduced the negative control (guard removed, pointer stays in flight).</p></div>
+</div>
+<div class="r-comment" data-section="s35" data-id="c-run-r-20261003T013928758342-stranded-launch-releases-its-claim" data-who="reckon-build" data-when="2026-10-03T02:28:06.946Z">
+    <div class="r-comment-body"><p>recovery.py reads a pre-spawn pointer with no pid and no worker record, stream or launch log in its run directory, past a 900-second bound, as a stranded launch (launch-failed family), and the review reflex discards such a standing review with the reason recorded and composes the review again; measured: 4 new tests pass, head arm on 62 pre-spawn-touching test files with -n 8 --timeout=300 gives 3 failed / 878 passed / 1 skipped against the identical 3 failures at base faf859078835 (head adds no failure id), and with the bound removed the release test fails with the pointer still in flight.</p></div>
 </div>
 <div class="r-comment" data-section="s37" data-id="c-run-r-20261003T030001029167-review-of-spawn-retries-a-vanished-bind" data-who="reckon-build" data-when="2026-10-03T03:09:05.956Z">
     <div class="r-comment-body"><p>review recorded for r-20261003T014214828711-spawn-retries-a-vanished-bind (reckon:crew-runtime-positive-controls §37); scores goal_fidelity 20, evidence 19, scope_discipline 18, durability 19, fit 18, total 94.</p></div>
