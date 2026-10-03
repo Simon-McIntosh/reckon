@@ -12,7 +12,10 @@ version: 1
 default_backend: native
 
 routing:
-  picker: shadow
+  # Dispatch is routed by the picker selection by default. A project layer may
+  # set `shadow` to opt out, recording each selection without acting on it, and
+  # a single dispatch opts out with `--route deterministic`.
+  picker: route
 
 backends:
   native:
