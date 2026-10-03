@@ -8,8 +8,10 @@ graph traversal in each surface.
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
+from itertools import pairwise
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -153,6 +155,201 @@ def _plan_declarations(
         return dict(value) if isinstance(value, Mapping) else {}
 
     return memoized("section_declarations", path, read_declarations)
+
+
+_SECTION_WORD_RE = re.compile(
+    r"\b(?:section|sections)\s+(\d+(?:\s*(?:,|and)\s*\d+)*)", re.IGNORECASE
+)
+_REF_TOKEN_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]*")
+_CONTEXT_WINDOW = 8
+
+
+def _declared_stages(plan: Mapping[str, Any]) -> set[str]:
+    """Section identities a plan declares, typed records included.
+
+    Gates and comment mappings anchor the sections they bind to, and a typed
+    section record carries every authored section beside its cost; the union is
+    the set a named section must belong to before a gate's words may bind it.
+    """
+
+    stages = set(plan_section_anchors(plan))
+    for record in plan.get("sections") or []:
+        ident = (
+            record.get("id")
+            if isinstance(record, Mapping)
+            else getattr(record, "id", None)
+        )
+        if ident:
+            stages.add(str(ident))
+    declarations = plan.get("section_declarations")
+    if isinstance(declarations, Mapping):
+        stages.update(str(key) for key in declarations)
+    return stages
+
+
+def _gate_section_refs(
+    plan: Mapping[str, Any],
+    slug: str,
+    gate: Mapping[str, Any],
+    all_plans: Mapping[str, dict[str, Any]],
+    declared_for: Callable[[str, Mapping[str, Any]], set[str]] | None = None,
+) -> list[tuple[str, str, str]]:
+    """Section refs a gate names as its outcome source, with their provenance.
+
+    A gate waits on a section in one of three authored forms: a declared outcome
+    source carrying the ``#section`` anchor; a ``#section`` ref written into the
+    gate's own measure or evidence text; or a section named in words beside the
+    plan it belongs to, as in "cut-cell-current-attribution section 6" or a bare
+    "sections 1 and 2" carrying the gate's own plan by context. The first two are
+    declarations and resolve as written. The third is read from prose, marked as
+    such, and binds only when the named section exists on the named plan, so a
+    passing mention of a section never invents an edge.
+    """
+
+    found: list[tuple[str, str, str]] = []
+
+    def bind(target_slug: str, stage: str, source: str) -> None:
+        if not target_slug or not stage:
+            return
+        if source == "gate-text":
+            target = plan if target_slug == slug else all_plans.get(target_slug)
+            known = (
+                declared_for(target_slug, target)
+                if declared_for is not None and target is not None
+                else _declared_stages(target)
+                if target is not None
+                else set()
+            )
+            if stage not in known:
+                return
+        found.append((f"{target_slug}#{stage}", stage, source))
+
+    declared = str(gate.get("gating_plan") or "").strip()
+    if declared:
+        parsed = parse_plan_ref(declared)
+        if parsed is not None:
+            if parsed.stage:
+                bind(parsed.slug or slug, parsed.stage, "declared")
+            else:
+                found.append((declared, "", "declared"))
+    texts = [
+        str(gate.get(key) or "") for key in ("measure", "required_evidence", "evidence")
+    ]
+    for text in texts:
+        for token in _REF_TOKEN_RE.findall(text):
+            parsed = parse_plan_ref(token)
+            if parsed is not None and parsed.stage:
+                bind(parsed.slug or slug, parsed.stage, "gate-text")
+        for match in _SECTION_WORD_RE.finditer(text):
+            before = _REF_TOKEN_RE.findall(text[: match.start()])
+            context = slug
+            for token in reversed(before[-_CONTEXT_WINDOW:]):
+                named = parse_plan_ref(token)
+                if named is None or named.stage:
+                    continue
+                if named.slug == slug or named.slug in all_plans:
+                    context = named.slug
+                    break
+            for number in re.findall(r"\d+", match.group(1)):
+                bind(context, f"s{int(number)}", "gate-text")
+    return found
+
+
+def _gate_section_edges(
+    project: str,
+    plan: Mapping[str, Any],
+    slug: str,
+    all_plans: Mapping[str, dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Resolve each gate's section refs into dependency rows.
+
+    A gate that names one section of another plan blocks its own section on that
+    section, so the row carries the waiting section, the target ref with its
+    anchor, and the gate it came from. The rows use the ``depends_on`` row shape,
+    which puts them on the same surfaces as a declared section ref: the raw
+    view's edge, the section readiness split, and the critical path's edge list.
+    """
+
+    def declared_for(target_slug: str, target: Mapping[str, Any]) -> set[str]:
+        stages = _declared_stages(target)
+        try:
+            declarations = _plan_declarations(target, None, project, target_slug)
+        except Exception:  # noqa: BLE001 — an unreadable declaration adds nothing
+            declarations = None
+        if isinstance(declarations, Mapping):
+            stages.update(str(key) for key in declarations)
+        return stages
+
+    rows: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    for gate in execution_gates(dict(plan)):
+        gate_section = str(gate.get("section") or "")
+        if not gate_section:
+            gated = list(gate.get("gated_sections") or [])
+            gate_section = str(gated[0]) if gated else ""
+        for ref, stage, source in _gate_section_refs(
+            plan, slug, gate, all_plans, declared_for
+        ):
+            key = (str(gate.get("id") or ""), ref)
+            if key in seen:
+                continue
+            seen.add(key)
+            parsed = parse_plan_ref(ref)
+            if parsed is None:
+                continue
+            row: dict[str, Any] = {
+                "ref": ref,
+                "source_section": gate_section,
+                "stage": stage,
+                "gate": str(gate.get("id") or ""),
+                "source": source,
+            }
+            if parsed.is_external(project):
+                blocking = _blocking_row(plan, ref)
+                row.update(
+                    {
+                        "scope": "external",
+                        "project": parsed.project,
+                        "slug": parsed.slug,
+                        "found": bool(blocking.get("found")) if blocking else True,
+                        "status": blocking.get("status", "")
+                        if blocking
+                        else "satisfied",
+                        "satisfied": blocking is None,
+                    }
+                )
+                rows.append(row)
+                continue
+            target = all_plans.get(parsed.slug)
+            if target is None:
+                row.update(
+                    {
+                        "scope": "local",
+                        "slug": parsed.slug,
+                        "found": False,
+                        "satisfied": False,
+                    }
+                )
+                rows.append(row)
+                continue
+            target_status = _status(target)
+            if stage:
+                section_found = stage in declared_for(parsed.slug, target)
+                satisfied = section_found and _section_satisfied(target, stage)
+                row["section_found"] = section_found
+            else:
+                satisfied = target_status in COMPLETED_STATUSES
+            row.update(
+                {
+                    "scope": "local",
+                    "slug": parsed.slug,
+                    "found": True,
+                    "status": target_status,
+                    "satisfied": satisfied,
+                }
+            )
+            rows.append(row)
+    return rows
 
 
 def _plan_section_deps(
@@ -1245,7 +1442,11 @@ def _sprint_member_counts(members: list[Mapping[str, Any]]) -> tuple[int, int, f
     )
     if not members_count:
         return 0, 0, 0.0
-    return members_count, pending, round(100 * (members_count - pending) / members_count, 1)
+    return (
+        members_count,
+        pending,
+        round(100 * (members_count - pending) / members_count, 1),
+    )
 
 
 def _sprint_recent_days(project: str, docs_dir: str | Path | None) -> int:
@@ -1317,9 +1518,8 @@ def sprint_summary_rows(
         if not live and status not in SPRINT_FINISHED_STATUSES:
             include = True
         elif not live and status in SPRINT_FINISHED_STATUSES:
-            include = (
-                closed_at is not None
-                and moment - closed_at <= timedelta(days=max(0, recent_days))
+            include = closed_at is not None and moment - closed_at <= timedelta(
+                days=max(0, recent_days)
             )
         else:
             include = True
@@ -1766,10 +1966,7 @@ _DRIFT_MEMBER_PROGRESS_STORED = frozenset({"open", "active"})
 
 def _drift_is_member_progress(stored: str, derived: str) -> bool:
     """Return True when a member-derived label does not contradict the stored one."""
-    return (
-        derived == "in-progress"
-        and stored.lower() in _DRIFT_MEMBER_PROGRESS_STORED
-    )
+    return derived == "in-progress" and stored.lower() in _DRIFT_MEMBER_PROGRESS_STORED
 
 
 def _sprint_status_buckets(
@@ -2009,6 +2206,9 @@ def _build_roadmap(
     after_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
     local_graph: dict[str, list[str]] = defaultdict(list)
     dependents: dict[str, set[str]] = defaultdict(set)
+    # The section an edge waits on, when the dependency names one. A plan-level
+    # edge carries no entry, so a reader sees the plan name as before.
+    edge_meta: dict[tuple[str, str], dict[str, str]] = {}
     north_stars = [
         dict(item)
         for item in (project_manifest or {}).get("north_stars", [])
@@ -2220,9 +2420,15 @@ def _build_roadmap(
                         },
                     )
                 )
-            if not satisfied and not parsed.stage and parsed.slug in plans:
+            if not satisfied and parsed.slug in plans:
                 local_graph[slug].append(parsed.slug)
                 dependents[parsed.slug].add(slug)
+                if parsed.stage:
+                    edge_meta[(slug, parsed.slug)] = {
+                        "ref": ref,
+                        "section": parsed.stage,
+                        "gate": "",
+                    }
             if target_status in TERMINAL_STATUSES - COMPLETED_STATUSES:
                 findings.append(
                     _finding(
@@ -2280,6 +2486,27 @@ def _build_roadmap(
             )
             dependency_rows[slug].extend(section_edge_rows)
             findings.extend(section_edge_findings)
+
+        gate_edge_rows = _gate_section_edges(project, plan, slug, all_plans)
+        if gate_edge_rows:
+            dependency_rows[slug].extend(gate_edge_rows)
+            for edge_row in gate_edge_rows:
+                target_slug = str(edge_row.get("slug") or "")
+                if (
+                    edge_row.get("scope") == "local"
+                    and edge_row.get("found")
+                    and not edge_row.get("satisfied")
+                    and target_slug
+                    and target_slug != slug
+                    and target_slug in plans
+                ):
+                    local_graph[slug].append(target_slug)
+                    dependents[target_slug].add(slug)
+                    edge_meta[(slug, target_slug)] = {
+                        "ref": str(edge_row.get("ref") or target_slug),
+                        "section": str(edge_row.get("stage") or ""),
+                        "gate": str(edge_row.get("gate") or ""),
+                    }
 
         # A decision scoped to a section the plan never declares holds nothing
         # and can never be satisfied, so it is reported rather than silently
@@ -2765,6 +2992,25 @@ def _build_roadmap(
                 "effort_unit": _EFFORT_UNIT,
                 "uncalibrated_plans": uncalibrated,
                 "uncalibrated_count": len(uncalibrated),
+                # Each step of the path beside its edge: an edge that waits on
+                # one section of its target names that section, so a plan held
+                # by a single section shows the section rather than the plan.
+                "edges": [
+                    {
+                        "from": dependent,
+                        "to": dependency,
+                        "ref": edge_meta.get((dependent, dependency), {}).get(
+                            "ref", dependency
+                        ),
+                        "section": edge_meta.get((dependent, dependency), {}).get(
+                            "section", ""
+                        ),
+                        "gate": edge_meta.get((dependent, dependency), {}).get(
+                            "gate", ""
+                        ),
+                    }
+                    for dependency, dependent in pairwise(path_plans)
+                ],
             }
         )
     critical = (
@@ -2778,6 +3024,7 @@ def _build_roadmap(
             "effort_unit": _EFFORT_UNIT,
             "uncalibrated_plans": [],
             "uncalibrated_count": 0,
+            "edges": [],
         }
     )
     critical_members = set(critical["plans"])
