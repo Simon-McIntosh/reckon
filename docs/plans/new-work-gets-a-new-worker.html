@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="46">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+<meta name="plan-modified" content="2026-10-03">
+<meta name="plan-version" content="47">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.9">
 <meta name="plan-commits" content="4cfc76a4,798e549d,3a06801e,394acda7,eb8db19a">
 </head>
@@ -432,7 +432,7 @@ resume burn, after</a>.</p>
     </section>
 
     <h2 id="s8">§8 — Post-completion continuity is structural</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p>A followup on landed work should reach the worker that did it, but promotion deletes the live pointer and its <code>session_id</code> with it. The session survives only where <code>capture_session</code> recorded it — the roster entry in committed <code>crew.json</code> — so a node dispatched without <code>--member</code> can never be continued after it lands, and the loss is silent at the moment it matters.</p><p>The reckon-ship skill now states the routing rule (a needs-help brief resumes its live run, a followup within a landed node's scope returns to its roster member, new scope is a new node) and tells orchestrators to dispatch as a member by default. That binds discipline, not the tool. Close the gap in code: either have dispatch attach a default roster member when none is named, or have <code>crew complete</code> retain the run's session against its member before deleting the pointer. Measure it with a test that completes a run and then resumes its session.</p><p><strong>Done when</strong> completing a run and resuming reaches its session without a roster flag.</p><p>Moved from followup f-crl-003 on crew-run-ledger by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): host <code>shipped</code> (S8, impl 1.0); the session-on-the-run-record repair lives in <code>new-work-gets-a-new-worker</code> §3 (active, S22)</p>
 
     <h2 id="s9">§9 — Move sessions off the roster, then lift the stopgap</h2>
@@ -557,6 +557,9 @@ resume burn, after</a>.</p>
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260926T144419857403-review-of-rename-member-tests-by-what-they-assert" data-who="reckon-build" data-when="2026-09-26T15:27:35.703Z">
     <div class="r-comment-body"><p>review node: stored a 93/100 record for r-20260926T131823497018; a review has no gate of its own</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-nwgnw-s8-already-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>§8's done-when (completing a run and resuming reaches its session without a roster flag) was met before this section was moved here from its followup. <code>4cfc76a42</code> (fix(crew): key dispatch session reuse to the task, not the member) and <code>ae05630c1</code> (resolve resume sessions without caching stream identity) are on main. <code>tests/test_session_resumes_only_its_own_task.py</code> and <code>tests/test_run_record_reports_actual_resume.py</code> pin them. Found by the read-only audit moved-sections-already-landed (run r-20261003T055306768573, reviewed at 95). s22-coord confirmed that both commits are ancestors of main and that both test files exist.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20260924T194200-roster-commit" data-who="reckon-build s21-coord" data-when="2026-09-24T19:42:00Z">
     <div class="r-comment-body">Evidence for this section, 2026-09-24. A dispatch naming no member registered one and committed it on main unprompted: 8205ddd4 chore(roster): register session-4663928c5a11330b4056, from s21-coord's first dispatch, and 0dc024c4 for another session minutes later. Neither commit was pushed, so main sat ahead 2 of origin, carrying a peer's unpushed docs commit with it. So the rule 'workers are disposable, register none' is broken by the tool, not by coordinators. §4's 'its own member identity, or none' should also mean no crew.json commit on main per dispatch. Separately, suite-green-at-head registered nine members explicitly (suite-green-a to i), one roster commit each, before that rule was written. With 416 members on the roster, `crew member list` is 167 KB and offers no free-member filter, which is the question a coordinator needs it to answer.</div>

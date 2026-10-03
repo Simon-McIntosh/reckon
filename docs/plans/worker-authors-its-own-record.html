@@ -22,10 +22,10 @@
   <title>The Worker Authors Its Own Record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="8">
+<meta name="plan-modified" content="2026-10-03">
+<meta name="plan-version" content="9">
 <meta name="plan-impl" content="0.75">
-<meta name="plan-section-declarations" content="{&quot;s5&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s5&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -124,7 +124,7 @@
     lands.</p>
 
     <h2 id="s5">§5 — Mirror the runtime contract into the skill clauses, then the coordinator half</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p>§2 and §3 write the same file set and run as one node in section order. Both wait on the runtime prompt's final wording, which the session holding <code>reckon/crew/prompts.py</code> is landing as a narrowing plus two clauses it did not previously carry: the store distinction and the closure-authority limits. Mirror that text rather than composing a second version, so there is one authority for the words and two hands doing the work.</p><p>The measure that matters is not that the prohibitions are gone but that the skill and the prompt say the same thing: assert the skill sentence against the prompt's rather than against a literal, because two copies of one rule drift silently and the test keeps passing. That is the same failure this repository has been finding all week in its gates.</p><p><strong>Done when</strong> the skill's sentence is asserted against the prompt's text (not a literal) and §2/§3 land in order.</p><p>Moved from followup f-waor-001 on worker-authors-its-own-record by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.75; §2/§3 wait on the prompt's final wording (the narrowing plus two clauses); the measure is skill-vs-prompt agreement, not absence of prohibitions</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
@@ -151,6 +151,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-20260915T055500" data-who="reckon-ship" data-when="2026-09-15T05:55:00Z">
     <div class="r-comment-body">Re-homed S17 to S18 to clear a sprint-order inversion: this plan depends on crew-observability-truth, which is scheduled in S18, so scheduling it in S17 placed it before its own prerequisite and guaranteed S17 could not close on it. Same sprint as the prerequisite is the minimal correction; the DAG orders them within the sprint. No status or scope change, and the plan remains blocked on its own open decision (skill-wording-source) independently of this.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-waior-s5-already-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>§5's done-when was met before this section was moved here from its followup. <code>e33f0ca1c</code> (the land-record contract mirrors the runtime prompt, adding the parity test) and <code>77a44905b</code> (alignment) are on main. <code>tests/test_skill_contract_parity.py</code> derives its expected sentence from the prompt's own strings at test time. Found by the read-only audit moved-sections-already-landed (run r-20261003T055306768573, reviewed at 95). s22-coord confirmed that both commits are ancestors of main and that the test file exists.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-read-only-tier-cannot-author" data-who="reckon-ship" data-when="2026-09-15T07:55:00Z">
     <div class="r-comment-body">A limit on this plan's own rule, found by a peer session and measured here before recording it. The rule as written — the worker authors its landing record and its plan comment in its own worktree — holds only for execution-capable roles. A read-only reviewer or investigator cannot write docs/research/ at all: every writable grant on that tier is outside the repository, so the roles that produce investigative output are fenced out of the directory this repository's own rules say it belongs in. The consequence is measured rather than argued: 638 files in the crew reports directory against 15 tracked in docs/research/, counted independently here after a peer reported the same ratio. Essentially all investigative output this project has produced is machine-local and unversioned, and nobody chose that. Two things follow. First, anyone implementing this plan must not write the rule as though it holds for every role, because a worker on a read-only tier told to author its record will be unable to comply and the contract will be wrong for it in the same way the old prohibition was wrong for implement roles. Second, this is not this plan's defect to fix: the fence behaviour belongs to the session that reported it, which is tracking it as one class rather than four separate defects, and a role regression at 86aafc6 today has made review and investigate undispatchable entirely. Until that lands, read-only-shaped work is dispatched at implement role with the report as its only declared write path, which keeps the fence and changes only the tier.</div>

@@ -23,14 +23,14 @@
   <title>Advise The Lane, Never Force It | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="31">
+<meta name="plan-modified" content="2026-10-03">
+<meta name="plan-version" content="32">
 <meta name="plan-graph-handle" content="lane-aware-dispatch">
 <meta name="plan-north-star" content="unattended-execution">
 <meta name="plan-informs" content="a-lane-can-say-where-it-stands">
 <meta name="plan-impl" content="0.4">
 <meta name="plan-commits" content="7059a778,b78dcb95,b952879c">
-<meta name="plan-section-declarations" content="{&quot;s8&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s8&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -254,7 +254,7 @@
     </p>
 
     <h2 id="s8">§8 — The advisory arrives where the choice is made</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p>§3 proved the record survives. §2 is the half that makes the record worth keeping: an advisory a coordinator reads only after the fact advises nobody. §5 stays shut behind its own gate — the local lane's declared context window must be shown to agree with what its endpoint serves before any ceiling curve is drawn against it — so §2 is the ready one.</p><p><strong>Done when</strong> the recorded advisory reaches the coordinator making the lane choice.</p><p>Moved from followup f-20260922T2010-advisory-at-the-choice on advise-the-lane-never-force-it by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.4; §3 proved the record, §2 is the ready half, §5 stays behind its window gate</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
@@ -374,6 +374,9 @@ The instrument is also sharper than I locked it. Running alone is not enough: it
 The conclusion is unchanged and now rests on a narrower margin honestly stated: average_width 1.571 against a lane serving 21 to 25 is still capacity not binding, but the margin is one order of magnitude rather than three.
 
 Also reconciled: my 16:37Z reading of seven concurrent workers saturating the lane. The deployed router was running defaults of 2 in flight and 4 queued rather than its configured 16 and 48, so seven workers hitting a wall was exactly two plus four plus one refused. The observation was right and only the causal reading was wrong - which is the better half to be wrong about, and worth recording as such rather than filed as an error.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-atl-s8-already-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>§8's done-when was met before this section was moved here from its followup. <code>337793287</code> (fix(crew): carry the lane advisory onto the promoted ledger row) is on main, and <code>tests/test_lane_advisory_on_dispatch.py</code> pins it. Found by the read-only audit moved-sections-already-landed (run r-20261003T055306768573, reviewed at 95). s22-coord confirmed that the commit is an ancestor of main and that the test file exists.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-20260914T1745" data-who="reckon-ship" data-when="2026-09-14T17:45:00Z">
     <div class="r-comment-body">THE LANE BUDGET DECAYS AS A FLEET MATURES, WHICH MAKES OCCUPANCY CONTEXT RATHER THAN A TRIGGER. The locked decision is not reopened for this: it already names Waiting above zero and num_preemptions_total leaving zero as the signals, and already says Running is read with KV occupancy or not at all. What this adds is why occupancy must not become the threshold itself.
