@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
 <body>
@@ -266,6 +266,9 @@
 </div>
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261003T142645879083-review-of-a-lost-race-is-refused-not-raised" data-who="reckon-build" data-when="2026-10-03T14:41:02.939Z">
     <div class="r-comment-body"><p>Independent review of run r-20261003T132950880485-a-lost-race-is-refused-not-raised stored as a parsed record (status parsed, total 95/100) scoring goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 19 over base f74b81bfd → head 6e66bdbb0, with added_failure_count 0 and no added failure ids; three follow-on findings, none blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261003T132950880485-a-lost-race-is-refused-not-raised" data-who="reckon-build" data-when="2026-10-03T14:25:14.388Z">
+    <div class="r-comment-body"><p>A writer that loses a landing race is refused, never raised: reckon/_store.py now keeps VersionConflict&#x27;s class object identical across a reload of its own module, so the by-name handlers in reckon/mcp.py keep matching the store&#x27;s raise; the exception escaped at mcp.py:3737, whose `except VersionConflict` bound the pre-reload class once a fixture reloaded the store. tests/test_a_lost_race_is_refused_not_raised.py forces the interleaving through a monkeypatched read and passes 4/4 at head; both negative-control arms fail 3/4 with VersionConflict raised at _store.py:1367; the race file passes 20/20 under -n 8; [landing record](docs/evidence/fragments/plan-writes-are-not-fenced/a-lost-race-is-refused-not-raised.html).</p></div>
 </div>
 </section>
 </main>
