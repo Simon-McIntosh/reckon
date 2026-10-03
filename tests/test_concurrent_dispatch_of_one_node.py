@@ -395,3 +395,89 @@ def test_a_claim_held_by_a_live_process_still_refuses(
     assert live_run_id in str(refusal.value)
     assert seam_calls == []
     assert _claim_path().exists()
+
+
+def test_a_pid_beyond_the_c_int_range_refuses_without_raising(
+    home: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A pid the kernel cannot take must reach the refusal, not an exception.
+
+    ``os.kill`` raises ``OverflowError`` for a pid the kernel's int cannot
+    hold, so without treating that as an unanswerable record the whole
+    dispatch dies with a traceback instead of the D12 refusal.
+    """
+    config_home, repo = home
+    absurd_run_id = "r-20261003T00000000000000-absurd-pid"
+    _plant_claim(
+        run_id=absurd_run_id,
+        project=PROJECT,
+        session=SESSION,
+        worktree_identity=SESSION,
+        node=NODE_ID,
+        pid=10**30,
+        process_start_time="0",
+        created_at="2026-10-03T00:00:00Z",
+    )
+    seam_calls: list[str] = []
+    monkeypatch.setattr(
+        dispatch_module, "_create_worktree", _worktree_seam(tmp_path, seam_calls)
+    )
+
+    with pytest.raises(crew.CrewError) as refusal:
+        _dispatch(config_home, repo)
+
+    assert absurd_run_id in str(refusal.value)
+    assert seam_calls == []
+    assert _claim_path().exists()
+
+
+def _plant_empty_claim(*, age_seconds: float) -> Path:
+    """Write a claim file with no record in it, as a dead writer leaves."""
+    path = _claim_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("", encoding="utf-8")
+    written = time.time() - age_seconds
+    os.utime(path, (written, written))
+    return path
+
+
+def test_a_stale_empty_claim_is_reclaimed_and_the_dispatch_proceeds(
+    home: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A dispatcher killed between exclusive create and record write must not wedge."""
+    config_home, repo = home
+    _plant_empty_claim(
+        age_seconds=dispatch_module._NODE_CLAIM_EMPTY_RECORD_STALE_SECONDS + 60
+    )
+    seam_calls: list[str] = []
+    monkeypatch.setattr(
+        dispatch_module, "_create_worktree", _worktree_seam(tmp_path, seam_calls)
+    )
+
+    record = _dispatch(config_home, repo)
+
+    assert seam_calls == [NODE_ID]
+    reclaimed = record["reclaimed_node_claim"]
+    assert reclaimed["run_id"] is None
+    assert Path(reclaimed["moved_to"]).exists()
+    assert Path(reclaimed["moved_to"]).read_text(encoding="utf-8") == ""
+    assert not _claim_path().exists()
+
+
+def test_a_fresh_empty_claim_refuses(
+    home: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An empty claim still being written must refuse rather than be displaced."""
+    config_home, repo = home
+    _plant_empty_claim(age_seconds=0)
+    seam_calls: list[str] = []
+    monkeypatch.setattr(
+        dispatch_module, "_create_worktree", _worktree_seam(tmp_path, seam_calls)
+    )
+
+    with pytest.raises(crew.CrewError) as refusal:
+        _dispatch(config_home, repo)
+
+    assert "already in flight" in str(refusal.value)
+    assert seam_calls == []
+    assert _claim_path().exists()

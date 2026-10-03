@@ -1593,6 +1593,13 @@ NODE_DISPATCH_CLAIM_DIRECTORY = "claims"
 _NODE_CLAIM_RECORD_ATTEMPTS = 20
 _NODE_CLAIM_RECORD_INTERVAL_SECONDS = 0.01
 
+# How long a claim record that names no holder is left alone before a later
+# dispatch may reclaim it. A dispatcher writes its record microseconds after
+# the exclusive create, so an empty or unreadable file is either one still
+# being written or one whose writer died in that window; only the second may
+# be displaced, and the elapsed time separates them.
+_NODE_CLAIM_EMPTY_RECORD_STALE_SECONDS = 5.0
+
 # How many times a dispatch re-runs the reclaim-or-refuse decision before it
 # gives up. One reclaim is the ordinary case; the bound only exists so a storm
 # of reclaimers cannot spin.
@@ -1631,9 +1638,10 @@ def _claim_holder_is_alive(holder: Mapping[str, Any]) -> bool:
     the question: pid numbers are reused, so the start time pins the pid to
     one process, and a mismatch means the recorded holder is gone whatever now
     wears its number. A record that cannot be interrogated at all — no pid or
-    start time recorded, or no kernel start times to read — gets the
-    conservative answer: the holder counts as present, because displacing a
-    live dispatch whose record is still being written would leave two.
+    start time recorded, no kernel start times to read, or a pid beyond the
+    range the kernel takes — gets the conservative answer: the holder counts
+    as present, because displacing a live dispatch whose record is still being
+    written would leave two.
     """
     holder_pid = holder.get("pid")
     recorded_start = holder.get("process_start_time")
@@ -1645,12 +1653,31 @@ def _claim_holder_is_alive(holder: Mapping[str, Any]) -> bool:
         os.kill(holder_pid, 0)
     except ProcessLookupError:
         return False
-    except PermissionError:
+    except (PermissionError, OverflowError):
         return True
     current_start = _process_start_time(holder_pid)
     if current_start is None:
         return False
     return current_start == recorded_start
+
+
+def _empty_claim_is_stale(path: Path, holder: Mapping[str, Any]) -> bool:
+    """Whether a claim record naming no holder is old enough to reclaim.
+
+    A dispatcher that dies between the exclusive create and its record write
+    leaves a file with nothing in it, and no pid to interrogate, so without
+    this it would block the node for everyone. Its age is the only evidence of
+    whether a writer is still coming, and the modification time answers that:
+    a file that has stayed empty for longer than a record write takes has no
+    writer left to displace.
+    """
+    if holder:
+        return False
+    try:
+        age = time.time() - path.stat().st_mtime
+    except OSError:
+        return False
+    return age >= _NODE_CLAIM_EMPTY_RECORD_STALE_SECONDS
 
 
 def _reclaim_stale_node_dispatch_claim(path: Path, holder: Mapping[str, Any]) -> str:
@@ -1720,7 +1747,10 @@ def _claim_node_dispatch(
     in-flight dispatch, before any worktree exists for it to disturb. A claim
     whose holder process is gone — or whose pid is now a different process —
     no longer owns the path, and is moved aside so one dead dispatcher cannot
-    block every later dispatch of the node.
+    block every later dispatch of the node. A claim that names no holder at
+    all gets a short grace period for its writer to finish, and is reclaimed
+    once that has passed, so a dispatcher killed between the exclusive create
+    and its record write cannot wedge the node either.
     """
     path = _node_dispatch_claim_path(project, worktree_identity, node_id)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1740,7 +1770,9 @@ def _claim_node_dispatch(
             descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
         except FileExistsError:
             holder = _read_node_dispatch_claim(path)
-            if _claim_holder_is_alive(holder):
+            if _claim_holder_is_alive(holder) and not _empty_claim_is_stale(
+                path, holder
+            ):
                 raise CrewError(
                     format_refusal(
                         "D12",
