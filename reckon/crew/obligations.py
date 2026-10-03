@@ -622,21 +622,29 @@ def _held_worktrees_by_session(
     if docs_dir is None:
         return {}
     repository = docs_dir.parent.resolve()
-    command = " ".join(
-        shlex.quote(part)
-        for part in (
-            "reckon",
-            "crew",
-            "gc",
-            "--repo",
-            str(repository),
-            "--project",
-            project,
-            "--apply",
-        )
-    )
     by_session: dict[str, list[dict[str, Any]]] = {}
     for worktree, record in _held_worktree_records(project).items():
+        run_id = str(record.get("run_id") or "")
+        if not run_id:
+            # No run record names this tree, so there is no run a sweep could
+            # be confined to; the ledger itself is the remedy, and the duty
+            # must not widen to a repository-wide sweep.
+            continue
+        command = " ".join(
+            shlex.quote(part)
+            for part in (
+                "reckon",
+                "crew",
+                "gc",
+                "--repo",
+                str(repository),
+                "--project",
+                project,
+                "--run",
+                run_id,
+                "--apply",
+            )
+        )
         retention = record.get("worktree_retention")
         retained_at = (
             retention.get("retained_at") if isinstance(retention, Mapping) else None
@@ -644,7 +652,7 @@ def _held_worktrees_by_session(
         by_session.setdefault(worktree.parent.name, []).append(
             {
                 "kind": "worktree-held",
-                "run_id": str(record.get("run_id") or ""),
+                "run_id": run_id,
                 "node": str(record.get("node") or ""),
                 "plan": str(record.get("plan") or ""),
                 "age_seconds": _seconds_since(

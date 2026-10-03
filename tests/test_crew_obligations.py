@@ -255,7 +255,7 @@ def test_every_session_duty_has_identity_age_and_its_exact_next_command(
         "reckon crew complete --run run-promotable-stale --gate <verdict>"
     )
     assert items["worktree-held"]["next_command"] == (
-        f"reckon crew gc --repo {repository} --project {PROJECT} --apply"
+        f"reckon crew gc --repo {repository} --project {PROJECT} --run run-held --apply"
     )
     assert result["summary"] == {
         "count": 6,

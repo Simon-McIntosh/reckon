@@ -998,6 +998,54 @@ def _pin_archived_commits(repo: Path, ref: str, head: str) -> None:
     _git(repo, "update-ref", ref, head, zeros)
 
 
+def _live_pointer_worktrees() -> dict[Path, list[str]]:
+    """Every worktree a live pointer names, whatever state that pointer is in.
+
+    The phase-gated claim keeps a tree only while the pointer reads as
+    in-flight, and a parked run's pointer is left in a terminal-looking phase
+    while its worker is between turns: the tree then reads as reclaimable in
+    the window from dispatch to first commit, which is exactly where a
+    measure-first node parks on a long job. A tree stays a run's until
+    promotion or discard removes the pointer, so every removal path reads this
+    wider claim rather than the phase it happens to carry.
+    """
+    claims: dict[Path, list[str]] = {}
+    for record in list_live():
+        worktree = record.get("worktree")
+        if not worktree:
+            continue
+        path = Path(str(worktree)).resolve()
+        claims.setdefault(path, []).append(str(record.get("run_id") or "unknown"))
+    return claims
+
+
+def _run_worktree_path(repo: Path, project: str | None, run_id: str) -> Path:
+    """The worktree a run's own records name, preferring its live pointer.
+
+    A retained tree is named by the run's ledger row once its live pointer has
+    been promoted away, so both sources are read; a run neither source names
+    has no tree to confine a sweep to and is refused.
+    """
+    for record in list_live():
+        if str(record.get("run_id") or "") != run_id:
+            continue
+        value = str(record.get("worktree") or "").strip()
+        if value:
+            return Path(value).expanduser().resolve()
+    for record in _ledgered_records(repo, project):
+        if str(record.get("run_id") or "") != run_id:
+            continue
+        retention = record.get("worktree_retention")
+        values: list[str] = []
+        if isinstance(retention, Mapping):
+            values.append(str(retention.get("worktree") or ""))
+        values.append(str(record.get("worktree") or ""))
+        for value in values:
+            if value.strip():
+                return Path(value.strip()).expanduser().resolve()
+    raise CrewError(f"no record names a worktree for run {run_id}")
+
+
 def _save_and_release_worktree(
     repo: Path,
     path: Path,
@@ -1014,7 +1062,7 @@ def _save_and_release_worktree(
     recorded beside the residue patch. Without it the tree must be integrated
     as before.
     """
-    if _live_worktree_claims().get(path.resolve()):
+    if _live_pointer_worktrees().get(path.resolve()):
         raise CrewError(f"refusing residue release of live worktree {path}")
     head = _git(path, "rev-parse", "HEAD").stdout.strip()
     if archive_ref:
@@ -1348,18 +1396,34 @@ def garbage_collect(
     apply: bool = False,
     pin_unique_commits: bool = False,
     now: datetime | None = None,
+    run_id: str | None = None,
 ) -> dict[str, Any]:
     """Inspect or remove disposable workspaces and promoted transient state.
 
     ``pin_unique_commits`` releases a dirty worktree whose commits have no
     patch-equivalent on the integration head by first pinning those commits
     into an archive ref under ``refs/reckon/archive/``; without it such a tree
-    is kept, as before.
+    is kept, as before. ``run_id`` confines the pass to that run's own tree and
+    to that run's pointer and run directory, so clearing one held tree can
+    never reach a peer's.
     """
     if retention_days < 0:
         raise CrewError("retention days cannot be negative")
     repo_root = Path(repo).resolve()
     _git(repo_root, "rev-parse", "--verify", f"{integrated_into}^{{commit}}")
+    confined_to: Path | None = None
+    if run_id:
+        confined_to = _run_worktree_path(repo_root, project, run_id)
+        registered = {
+            path.resolve()
+            for path in _registered_worktrees(repo_root)
+            if path != repo_root
+        }
+        if confined_to not in registered:
+            raise CrewError(
+                f"run {run_id} names worktree {confined_to}, which is not a "
+                "worktree this repository registers"
+            )
     worktrees: list[dict[str, Any]] = []
     removed: list[str] = []
     refused: list[str] = []
@@ -1368,7 +1432,10 @@ def garbage_collect(
     try:
         roots = _workspace_roots(repo_root)
         runs_root = runs_dir()
-        claims = _live_worktree_claims()
+        # A worktree any live pointer names is live-referenced, whatever phase,
+        # process liveness or integration state that pointer carries: only
+        # promotion or discard, which remove the pointer, release the tree.
+        claims = _live_pointer_worktrees()
         shadow_records = _shadow_worktree_records(repo_root, project)
         ledger_records = _ledgered_records(repo_root, project)
         # The managed set is the workspace registry; a tree the promotion boundary
@@ -1382,6 +1449,7 @@ def garbage_collect(
                 any(path.is_relative_to(root) for root in roots)
                 or path.is_relative_to(runs_root)
             )
+            and (confined_to is None or path.resolve() == confined_to)
         ]
         worktrees = []
         for path in sorted(candidates):
@@ -1413,7 +1481,7 @@ def garbage_collect(
                 path = Path(item["path"])
                 failed_path = str(path)
                 try:
-                    current_claims = _live_worktree_claims().get(path.resolve(), [])
+                    current_claims = _live_pointer_worktrees().get(path.resolve(), [])
                     if current_claims:
                         item["classification"] = "live-referenced"
                         item["claimed_by_live_runs"] = sorted(current_claims)
@@ -1537,15 +1605,23 @@ def garbage_collect(
         ledgered = set(ledgered_records)
         pointer_reports: list[dict[str, Any]] = []
         for record in list_live():
-            run_id = str(record.get("run_id") or "")
-            if run_id not in ledgered or record_process_alive(record) is not False:
+            record_run_id = str(record.get("run_id") or "")
+            if run_id and record_run_id != run_id:
                 continue
-            report = {"run_id": run_id, "action": "reap", "removed": False}
+            if (
+                record_run_id not in ledgered
+                or record_process_alive(record) is not False
+            ):
+                continue
+            report = {"run_id": record_run_id, "action": "reap", "removed": False}
             if apply:
-                with _pointer_lock(run_id):
-                    current = read_pointer(run_id)
-                    if run_id in ledgered and record_process_alive(current) is False:
-                        pointer_path(run_id).unlink()
+                with _pointer_lock(record_run_id):
+                    current = read_pointer(record_run_id)
+                    if (
+                        record_run_id in ledgered
+                        and record_process_alive(current) is False
+                    ):
+                        pointer_path(record_run_id).unlink()
                         report["removed"] = True
             pointer_reports.append(report)
 
@@ -1556,6 +1632,8 @@ def garbage_collect(
             for directory in sorted(
                 path for path in runs_root.iterdir() if path.is_dir()
             ):
+                if run_id and directory.name != run_id:
+                    continue
                 if directory.name not in ledgered or directory.name in live_ids:
                     continue
                 modified = datetime.fromtimestamp(
