@@ -25,11 +25,11 @@
   <title>A Review Dies Where Nobody Is Looking | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="93">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192,06a008fb,3263f5a1">
 <meta name="plan-impl" content="0.92">
+<meta name="plan-version" content="94">
+<meta name="plan-modified" content="2026-10-03">
 </head>
 <body>
   <main class="plan-doc">
@@ -532,6 +532,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261003T201046095010-review-of-plan-scalars-are-one-block" data-who="reckon-build" data-when="2026-10-03T20:15:38.125Z">
     <div class="r-comment-body"><p>review of plan-scalars-are-one-block — the lifecycle block writer and the first-wins reader rule are sound at head bac3da242 (gate 11 passed, EXIT=0, re-run independently), the declared negative control fires at base 4d1feeed9 (4 failed), and the population head arm adds no failure id over base (added_failure_count 0); held below full on evidence because the base arm ran at 7dde3c88b, 52 commits ahead of the reviewed base rather than at it, and the fragment mislabels it the revision the branch is stacked on</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261003T162938204236-plan-scalars-are-one-block" data-who="reckon-build" data-when="2026-10-03T20:10:02.456Z">
+    <div class="r-comment-body"><p>plan-scalars-are-one-block — the store&#x27;s plan-write path emits impl, version and modified as one contiguous meta block anchored where the first of them already sits (a scattered document converges onto that line and no other meta changes position; duplicates collapse on write; byte-stable on repeat) and both reader paths resolve a duplicated plan-* scalar to its first occurrence in document order, reporting later copies as warnings; gate 11 passed, both population arms complete with the head arm adding no failure id over base, commits 1ff243d09, ac09245a2</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T010909082395-review-of-the-context-fit-uses-the-effective-window" data-who="reckon-ship" data-when="2026-09-23T01:30:29.516Z">
     <div class="r-comment-body"><p>review stored and parsed; the coordinator read its verdict and findings before acting on the reviewed run</p></div>
