@@ -1674,15 +1674,22 @@ def crew_dispatch(
         # caller that decodes stdout reads the refusal rather than nothing.
         _emit_dry_run_request_error(pretty, str(exc))
         raise click.exceptions.Exit(1) from exc
+    flight_backend_override = _flight_default_backend_override(
+        flight_module, config, overrides
+    )
+    # A lane named on the command line is itself a routing instruction: the
+    # dispatch must run on that backend, so the picker has nothing to select.
+    # When no --route was given the lane implies deterministic routing and the
+    # named lane stands; only an explicit --route picker is a contradiction.
+    named_lane = bool(backend or local or flight_backend_override)
+    if route is None and named_lane:
+        route = "deterministic"
     effective_route = resolve_dispatch_route(config, route)
     if effective_route == "picker" and (backend or local):
         raise click.UsageError(
             "picker routing cannot be combined with --backend or --local; "
             "use --route deterministic to override routing.picker"
         )
-    flight_backend_override = _flight_default_backend_override(
-        flight_module, config, overrides
-    )
     if local:
         try:
             config = flight_module.select_local_backend(config)
@@ -1771,13 +1778,17 @@ def crew_dispatch(
                 resolve_project_repository,
             )
 
-            picker_selection = dispatch_picker_selection(
-                node=node,
-                config=config,
-                project=project,
-                repo=resolve_project_repository(project, repo),
-                session=session,
-                comment=comment,
+            picker_selection = (
+                dispatch_picker_selection(
+                    node=node,
+                    config=config,
+                    project=project,
+                    repo=resolve_project_repository(project, repo),
+                    session=session,
+                    comment=comment,
+                )
+                if effective_route == "picker"
+                else None
             )
             resolution = crew_module.plan_dispatch(
                 node=node,
