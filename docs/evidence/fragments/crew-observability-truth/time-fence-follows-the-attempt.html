@@ -1,0 +1,64 @@
+<article class="landed-report" data-node="time-fence-follows-the-attempt">
+<h3>The time fence follows the attempt through dispatch, a lane change, and a blocker</h3>
+<p>A fence names the attempt's launch instant and the deadline its budget sets
+from it. Three places could leave that statement attached to the wrong attempt:
+the dispatch prompt composer, a lane change relaunching from a retained
+prompt, and the manifest audit accepting a blocker's claim that the fence
+expired.</p>
+<h4>What landed</h4>
+<ul>
+<li><code>reckon/crew/reports.py</code>: <code>audit_manifest</code> now judges a
+blocker that cites an expired time fence against the attempt's own record. It
+derives the deadline from the fence statement the manifest quotes, or from
+<code>attempt.json</code> beside the manifest plus the node's
+<code>time_budget</code>, and reports the claim as a defect when the manifest
+was recorded before that deadline. An unresolvable deadline stays silent
+rather than guessing, so the check adds no finding it cannot date.</li>
+<li><code>tests/test_time_fence_follows_the_attempt.py</code> (new, 4 tests)
+drives the real doors: <code>crew.dispatch()</code> with a stub launcher and the
+composed prompt read back; <code>change_lane</code> against a stopped pointer
+holding a first attempt's fence; and <code>audit_manifest</code> against a
+blocked manifest with an attempt record beside it, in both directions (early
+claim, genuine claim).</li>
+</ul>
+<p>Items (a) and (b) of the section were already wired in the base revision:
+<code>dispatch()</code> reads the clock once and passes the instant to the
+composer, and <code>change_lane</code> already restated the fence. Their tests
+therefore pin existing wiring against regression rather than introducing it.
+Item (c) is new behaviour: its test fails at the base revision and passes at
+this head.</p>
+<h4>Checks that could have failed</h4>
+<p>Gate: 40 test files reaching the change (every file naming
+<code>audit_manifest</code>, <code>change_lane</code>, a dispatch-prompt
+composer, or check-manifest), both arms with <code>pytest -n 8
+--timeout=300</code>, each in the foreground, its own basetemp and its own log.
+The base arm ran from a <code>git archive</code> extraction of
+<code>06449805cf535c33f37f1a5688232d8429f851ea</code> under
+<code>$TMPDIR</code>, and the head arm from the worktree at
+<code>3d5db51d81cf8bea0b2f536d2517af592e40250a</code>; each log names its
+revision, the module under test as imported, and the resolved working
+directory, and ends with a bare <code>EXIT=</code>.</p>
+<ul>
+<li>Base: <strong>14 failed, 764 passed</strong> in 308.5 s, including
+<code>tests/test_time_fence_follows_the_attempt.py::test_an_early_fence_spent_blocker_is_reported_as_a_defect</code>
+— the item (c) change is absent there. Log: <code>gate-base.log</code>.</li>
+<li>Head: <strong>3 failed, 775 passed</strong> in 337.4 s. The three failures
+(<code>test_crew_help_names_its_state.py</code>,
+<code>test_crew_recovery.py</code>, <code>test_skill_contracts.py</code>) are
+all present in the base arm; <code>comm</code> reports no failure id the head
+arm added. Log: <code>gate-head.log</code>.</li>
+</ul>
+<p><strong>Declared mutation</strong> — with <code>change_lane</code>
+relaunching from the unrestated retained prompt, the lane-change case in
+<code>tests/test_time_fence_follows_the_attempt.py</code> reads the old deadline
+and fails — was applied in the worktree and reverted. The red run exits 1 with
+<code>tests/test_time_fence_follows_the_attempt.py::test_a_lane_change_restates_the_fence_for_the_attempt_it_launches</code>
+failing at line 282, an id the head arm passes. Log:
+<code>negative-control.log</code>; <code>git diff</code> over
+<code>reckon/crew/dispatch.py</code> is empty after the revert.</p>
+<h4>Style</h4>
+<p><code>ruff check</code> and <code>ruff format --check</code> over the two
+changed Python paths: the base file carried two findings (an unsorted import
+block and a nested-if simplification) and the head carries one (the nested-if,
+pre-existing and untouched); the new test file is clean.</p>
+</article>
