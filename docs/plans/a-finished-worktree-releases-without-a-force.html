@@ -23,9 +23,9 @@
   <title>A Finished Worktree Releases Without a Force | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;}">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="25">
+<meta name="plan-version" content="26">
 </head>
 <body>
   <main class="plan-doc">
@@ -168,7 +168,7 @@
 <p><strong>Done when</strong> <code>crew gc</code> can pin a dirty, unintegrated worktree's commits beyond the integration head to an archive ref, <code>refs/reckon/archive/&lt;worktree name&gt;</code>, recording that ref in the residue directory beside the patch. It then releases the tree through the §3 residue path, and only when pinning was requested explicitly. A test pins and releases one such worktree in a temporary repository, then asserts the archived commits still resolve and the worktree is gone. The two §8 review follow-ons go in the same node: a separate refused list in the partial report, and a programming error surfacing as a traceback rather than as a refusal.</p>
 
     <h2 id="s10">§10 — crew gc exposes the pin option</h2>
-<section data-reckon="section" data-id="s10" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s10" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p><strong>The remainder of §9.</strong> §9 landed at a0e3f3b48. <code>garbage_collect</code> can pin a worktree's unique commits to an archive ref and then release it, but <code>crew gc</code> has no command-line flag for that option yet, because reckon/cli.py was held by another node.</p>
 <p><strong>Done when</strong> <code>crew gc --pin-unique-commits</code> passes the option through, and a test drives it from the command line over one dirty, unintegrated worktree in a temporary repository, then asserts the archive ref resolves and the tree is gone. The coordinator then dry-runs it over the twelve kept worktrees, applies it, and records each archive ref in the landed evidence.</p>
 
