@@ -8,8 +8,10 @@ from copy import deepcopy
 import pytest
 from click.testing import CliRunner
 
-from reckon import _store, cli, flight
+from reckon import _store, cli, crew, flight
 from reckon.crew import picker
+from reckon.crew.dispatch import change_lane
+from reckon.crew.dispatch import shadow as dispatch_shadow
 from tests.test_picker_in_dispatch import CONFIG, selection
 from tests.test_picker_in_dispatch import (
     repo as repo,  # noqa: PLC0414 - re-export the pytest fixture
@@ -112,3 +114,74 @@ def test_schema_accepts_picker_modes(value):
 def test_schema_refuses_unknown_picker_mode():
     with pytest.raises(flight.FlightConfigError, match=r"routing\.picker"):
         flight.validate_layer({"routing": {"picker": "automatic"}}, "flight.yaml")
+
+
+def _named_backend_node(manifest_path):
+    return crew.TaskNode(
+        id="named-backend",
+        goal="resolve a named backend without asking the picker",
+        plan="example",
+        section="dispatch",
+        spec_level="exact",
+        done_when="pytest checks the named backend",
+        write_paths=["result.json"],
+        time_budget="25m",
+        manifest_path=str(manifest_path),
+    )
+
+
+def _dispatch_primary(repo, config, monkeypatch):
+    """Run one node so a completed ledger record exists to shadow or move."""
+    monkeypatch.setattr(picker, "pick", lambda *_a, **_k: selection())
+    return crew.dispatch(
+        node=_named_backend_node(repo.parent / "named-backend-manifest.md"),
+        project="proj",
+        repo=repo,
+        config=config,
+        session="sess",
+        launcher=lambda *_a, **_k: 0,
+        backend_override="alpha",
+    )
+
+
+def test_shadow_naming_a_backend_stays_deterministic_under_route(
+    repo, monkeypatch
+):
+    """A shadow names its candidate, so the picker route cannot ask it for a selection."""
+    monkeypatch.setattr(picker, "pick", lambda *_a, **_k: selection())
+    primary = _dispatch_primary(repo, deepcopy(CONFIG), monkeypatch)
+    crew.complete(primary["run_id"], gate="passed")
+    route_config = deepcopy(CONFIG)
+    route_config["routing"] = {"picker": "route"}
+
+    record = dispatch_shadow(
+        str(primary["run_id"]),
+        candidate_backend="alpha",
+        config=route_config,
+        repo=repo,
+        session="shadow-session",
+        launcher=lambda *_a, **_k: 0,
+    )
+
+    assert record["backend"] == "alpha"
+    assert record["route"] == "deterministic"
+
+
+def test_lane_change_naming_a_backend_stays_deterministic_under_route(
+    repo, monkeypatch
+):
+    """A lane change names its destination, so the picker route cannot ask it for a selection."""
+    primary = _dispatch_primary(repo, deepcopy(CONFIG), monkeypatch)
+    route_config = deepcopy(CONFIG)
+    route_config["routing"] = {"picker": "route"}
+
+    moved = change_lane(
+        str(primary["run_id"]),
+        "beta",
+        "the named lane is spent",
+        config=route_config,
+        launch=True,
+    )
+
+    assert moved["backend"] == "beta"
+    assert moved["route"] == "deterministic"

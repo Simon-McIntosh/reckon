@@ -5158,6 +5158,9 @@ def shadow(
             repo=repo,
             base=base_sha,
             backend_override=_backend_name,
+            # A shadow names its candidate backend, so the picker has nothing to
+            # select and asking it would only be refused.
+            route="deterministic",
         )
         return {
             "dry_run": True,
@@ -5184,6 +5187,7 @@ def shadow(
         launcher=launcher,
         lineage_override=lineage,
         backend_override=_backend_name,
+        route="deterministic",
     )
 
 
@@ -10647,6 +10651,9 @@ def change_lane(
         ),
         backend_override=destination,
         session=str(record.get("session") or ""),
+        # A lane change names its destination backend, so the picker has
+        # nothing to select and asking it would only be refused.
+        route="deterministic",
     )
     if not resolution.validation.ok:
         raise CrewError(
@@ -10866,6 +10873,10 @@ def change_lane(
         current.update(
             {
                 "backend": resolution.backend,
+                "route": getattr(resolution, "route", current.get("route")),
+                "route_override": getattr(
+                    resolution, "route_override", current.get("route_override")
+                ),
                 "launch": target_launch,
                 "sandbox": backend.get("sandbox"),
                 "sandbox_write_roots": (
