@@ -4568,15 +4568,21 @@ def plan_dispatch(
                     "picker_selection": dict(picker_selection),
                 }
             )
-        if action == "refuse" or (
-            action == "route" and not picker_selection.get("backend")
-        ):
-            raise CrewError(
-                "picker refused dispatch: " + _picker_refusal_reasons(picker_selection)
-            )
-        if action == "route":
-            requested_backend = str(picker_selection["backend"])
-        elif action == "fallback":
+        named_backend = (
+            str(picker_selection["backend"])
+            if action == "route" and picker_selection.get("backend")
+            else ""
+        )
+        if named_backend:
+            requested_backend = named_backend
+        elif action in ("route", "refuse", "fallback"):
+            # The picker names no backend it can route to — it refused, its route
+            # carries no backend, or it fell back — so the dispatch continues
+            # exactly as deterministic routing would: the configured default
+            # stands in and the gates below produce their own refusal or hold.
+            # A picker that finds nothing eligible must never make a refuse worse
+            # than the deterministic routing it replaces. The selection stays
+            # recorded on the run so the reader sees the picker found nothing.
             # A caller that already named a backend keeps its request; otherwise
             # the configured default stands in, which is the routing a
             # deterministic dispatch would have resolved on its own.

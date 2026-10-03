@@ -222,6 +222,13 @@ def test_picker_fallback_uses_default_backend(repo, monkeypatch):
 
 
 def test_picker_refusal_names_exclusions_before_worktree(repo, monkeypatch):
+    """A refused selection falls through to the default backend, exclusions kept.
+
+    The picker found no eligible candidate, so it names no backend the dispatch
+    can use: the dispatch continues as deterministic routing would, resolves the
+    configured default, and records the excluded candidate and its reason on the
+    run — a refusal narrows nothing the deterministic routing would have run.
+    """
     monkeypatch.setattr(
         picker,
         "pick",
@@ -230,12 +237,20 @@ def test_picker_refusal_names_exclusions_before_worktree(repo, monkeypatch):
         ),
     )
     result, payload = invoke(repo, route=True)
-    assert result.exit_code == 1
-    assert "logged out" in payload["detail"]
-    assert not list(repo.parent.glob("**/picker-test/.git"))
+    assert result.exit_code == 0, result.output
+    assert payload["backend"] == "alpha"
+    assert payload["route"] == "picker"
+    assert payload["picker_selection"]["action"] == "refuse"
+    assert "logged out" in payload["picker_selection"]["excluded"][0]["reasons"]
 
 
 def test_null_route_names_exclusions(repo, monkeypatch):
+    """A route naming no backend resolves deterministically, exclusions kept.
+
+    An action of "route" with a null backend names no backend the dispatch can
+    route to, so it stands in for the default exactly as a refusal does, and the
+    excluded candidate and its reason stay recorded on the run.
+    """
     monkeypatch.setattr(
         picker,
         "pick",
@@ -244,8 +259,10 @@ def test_null_route_names_exclusions(repo, monkeypatch):
         ),
     )
     result, payload = invoke(repo, route=True)
-    assert result.exit_code == 1
-    assert "hard ceiling" in payload["detail"]
+    assert result.exit_code == 0, result.output
+    assert payload["backend"] == "alpha"
+    assert payload["picker_selection"]["action"] == "route"
+    assert "hard ceiling" in payload["picker_selection"]["excluded"][0]["reasons"]
 
 
 def test_picker_hold_uses_budget_code_before_worktree(repo, monkeypatch):
