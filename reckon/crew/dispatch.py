@@ -607,6 +607,26 @@ def _live_runs_on_backend(
     ]
 
 
+def _live_runs_across_backends(
+    *, exclude_run_ids: Iterable[str] | None = None
+) -> list[dict[str, Any]]:
+    """Non-terminal live pointers on every backend, newest run id last.
+
+    The reservation roster is not a backend's: one allocation admits every
+    placed worker of the host as a step, whichever backend dispatched it, so the
+    population the roster is counted over is taken across backends. The lane
+    bound beside it stays one backend's, because a served lane is consumed by
+    every caller that sends it a request, placed or not.
+    """
+    excluded = set(exclude_run_ids or ())
+    return [
+        pointer
+        for pointer in list_live()
+        if str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES
+        and str(pointer.get("run_id") or "") not in excluded
+    ]
+
+
 def _refuse_over_reservation_roster(
     backend: Mapping[str, Any],
     occupying: list[dict[str, Any]],
@@ -622,17 +642,19 @@ def _refuse_over_reservation_roster(
     and a host with no reservation has nothing to oversubscribe.
 
     The record is one shared allocation's, and the count is the fleet's. One
-    reservation admits every project's placed workers, so every run actually
-    placed inside it occupies the same roster whichever project dispatched it,
-    and a project whose runs are not placed is unbounded by it. The count is
-    taken from the recorded fact that a run was placed rather than from project
-    membership, and a placed run holds its seat only while its worker can still
-    hold memory — so a finished-but-unpromoted run, a blocked run awaiting
-    resume, and a run waiting on an external condition with no live process all
-    hold none. The lane bound above this counts across projects too and should,
+    reservation admits every project's and every backend's placed workers, so
+    every run actually placed inside it occupies the same roster whichever
+    project or backend dispatched it, and a run whose record names no placement
+    is unbounded by it. The population handed in is the host-wide live set and
+    the seat selection applied here is the same one the hold's reach statement
+    counts with, so the projects the reach names are exactly the runs this guard
+    counts. A placed run holds its seat only while its worker can still hold
+    memory — so a finished-but-unpromoted run, a blocked run awaiting resume,
+    and a run waiting on an external condition with no live process all hold
+    none. The lane bound above this counts one backend's population and should,
     because a served lane is consumed by every caller that sends it a request,
     placed or not; an allocation is consumed only by the workers running inside
-    it as steps.
+    it as steps, wherever they came from.
     """
     from reckon import flight
     from reckon.crew import placement as placement_module
@@ -641,13 +663,14 @@ def _refuse_over_reservation_roster(
         return
     if not placement_module.read_reservation(project):
         return
-    occupants = placement_module.occupying_the_reservation(occupying)
+    occupants = placement_module.roster_occupants(occupying)
     refusal = placement_module.reservation_roster_refusal(len(occupants))
     if refusal is None:
         return
-    occupying_ids = [
-        str(pointer.get("run_id") or "unknown") for pointer in occupying
-    ]
+    # The seats, not the population handed in: with the population host-wide a
+    # reader would otherwise be shown every live run on the machine, most of
+    # which are not inside the allocation at all.
+    occupying_ids = [str(pointer.get("run_id") or "unknown") for pointer in occupants]
     raise CrewError(f"{refusal} Occupying runs: {', '.join(occupying_ids) or 'none'}.")
 
 
@@ -683,18 +706,20 @@ def _refuse_over_concurrency_ceiling(
     them justify refusing work.
     """
     occupying = _live_runs_on_backend(backend_name, exclude_run_ids=exclude_run_ids)
-    # The cores bound is consumed by the workers placed inside the shared
-    # reservation, not by every run on the backend: an unplaced run of the same
-    # backend runs outside the allocation and holds no core of it. So the cores
-    # bound is measured against the reservation's own roster population, the
-    # same one the reservation roster refusal below counts.
+    # The cores bound and the roster refusal are consumed by the workers placed
+    # inside the shared reservation, not by every run on one backend: an
+    # unplaced run runs outside the allocation and holds no core of it, and a
+    # placed run of another backend is still a step inside the same allocation.
+    # So both are measured against the reservation's own roster population,
+    # taken across backends with the one selection the hold's reach statement
+    # counts with, while the lane bound above stays this backend's own.
     reservation_occupancy: int | None = None
+    roster_pointers: list[dict[str, Any]] = []
     if flight.placement_for(backend) is not None:
         from reckon.crew import placement as placement_module
 
-        reservation_occupancy = len(
-            placement_module.occupying_the_reservation(occupying)
-        )
+        roster_pointers = _live_runs_across_backends(exclude_run_ids=exclude_run_ids)
+        reservation_occupancy = len(placement_module.roster_occupants(roster_pointers))
     bounds = summary.concurrency_bounds(
         backend,
         occupancy=len(occupying),
@@ -715,8 +740,10 @@ def _refuse_over_concurrency_ceiling(
     # A placed backend's workers run inside the one shared reservation, and
     # under --overlap the scheduler admits whatever is asked, so the
     # reservation's own roster is a real limit rather than a formality: it is
-    # the only bound nothing else enforces on the fleet's behalf.
-    _refuse_over_reservation_roster(backend, occupying, project)
+    # the only bound nothing else enforces on the fleet's behalf. It is counted
+    # over the host-wide population, because a placed worker of any backend is
+    # a step inside the same allocation.
+    _refuse_over_reservation_roster(backend, roster_pointers, project)
 
 
 def _refuse_against_the_bookend_reserve(
@@ -7080,7 +7107,7 @@ def dispatch(
                     else None
                 )
                 record["session_harness"] = plan.dialect if reuse_session else None
-                plan = resolve_backend_placement(plan, backend, project)
+                plan = resolve_backend_placement(plan, backend, project, payload=record)
             except (_backends.BackendError, flight.FlightConfigError, OSError) as exc:
                 raise CrewError(format_refusal("D22", str(exc))) from exc
             placement = flight.placement_for(backend)
@@ -8298,10 +8325,30 @@ def apply_backend_placement(
     return dataclasses.replace(plan, argv=[*prefix, *plan.argv])
 
 
+def _placement_hold_payload(result: Mapping[str, Any]) -> dict[str, Any]:
+    """The hold's report as a dispatch payload carries it.
+
+    A session that arms the reservation through a dispatch reads the run's
+    record, not the ensure's return value, so what the hold states about the
+    roster cap — its reach, and which projects' placed runs it counts right now
+    — is copied onto the payload where that session reads it. The job id and
+    the reason are carried beside it so a reader can tell an allocation this
+    dispatch minted from one it joined.
+    """
+    return {
+        "job_id": result.get("job_id"),
+        "reason": result.get("reason"),
+        "detail": result.get("detail"),
+        "roster_reach": result.get("roster_reach"),
+    }
+
+
 def resolve_backend_placement(
     plan: _backends.LaunchPlan,
     backend: Mapping[str, Any],
     project: str | None = None,
+    *,
+    payload: dict[str, Any] | None = None,
 ) -> _backends.LaunchPlan:
     """Hold or join the shared reservation, then place the launch inside it.
 
@@ -8316,6 +8363,11 @@ def resolve_backend_placement(
     finds one — or that races another — join the allocation rather than mint a
     second beside it.
 
+    The ensure's result is kept rather than discarded: when a ``payload`` is
+    given, the hold's reach statement is carried on it under
+    ``placement_reservation``, because dispatch is how most sessions arm the
+    reservation and the run's record is the only report they read.
+
     A backend declaring no placement runs outside any reservation, so it is
     returned untouched: nothing is held and the scheduler is not asked after.
     """
@@ -8325,7 +8377,9 @@ def resolve_backend_placement(
         return plan
     from reckon.crew import placement as placement_module
 
-    placement_module.ensure_reservation(project=project)
+    hold = placement_module.ensure_reservation(project=project)
+    if payload is not None:
+        payload["placement_reservation"] = _placement_hold_payload(hold)
     return apply_backend_placement(plan, backend, project)
 
 
@@ -11176,7 +11230,9 @@ def resume_plan(
     # joins, not a child of the coordinator, so the placement is resolved
     # exactly as a dispatch resolves it — holding or adopting the reservation,
     # then prefixing the overlapping step that names its job id.
-    plan = resolve_backend_placement(plan, backend, resume_project or None)
+    plan = resolve_backend_placement(
+        plan, backend, resume_project or None, payload=record
+    )
     plan = _worker_runtime_plan(
         plan,
         run_id=run_id,
@@ -11186,6 +11242,10 @@ def resume_plan(
     )
 
     def capture(current: dict[str, Any]) -> dict[str, Any]:
+        # The held reservation's reach statement, resolved above onto the
+        # pointer this attempt read, so the pointer persisted below carries it.
+        if "placement_reservation" in record:
+            current["placement_reservation"] = record["placement_reservation"]
         _carry_fence_unprotected(current, plan, config)
         # The pointer's fence flag describes the attempt that just launched, not
         # the one before it, so a resumed run records what this composition did
