@@ -6574,6 +6574,14 @@ def _unreconciled_live_runs(pointers: Iterable[Mapping[str, Any]]) -> int:
     return sum(1 for pointer in pointers if _drain_row(pointer)["unreconciled"])
 
 
+# An unmeasured fleet reading names the exception that produced it, so a stale
+# fixture or a real composition break is readable from the promotion result
+# rather than swallowed into an absence with no cause. The bound keeps the
+# stamped reading small: the promotion result lands on the committed row, and a
+# traceback-length string would bloat it without adding signal.
+_FLEET_UNMEASURED_CAUSE_LIMIT = 200
+
+
 def _fleet_state_reading(project: str) -> dict[str, Any]:
     """Return a bounded current reading of the project's fleet state.
 
@@ -6582,6 +6590,13 @@ def _fleet_state_reading(project: str) -> dict[str, Any]:
     the already-derived facts into the result that an orchestrator is about to
     read. The reading deliberately stays outside the ledger because it describes
     the fleet at this moment, not this run.
+
+    When the per-pointer step that derives the unreconciled count cannot be
+    composed, the result is an unmeasured reading that still states the exception
+    type and message under one named key, bounded in length; the exception never
+    blocks landing, but it leaves a cause a reader can act on instead of a bare
+    absence. A failure before the pointers are read leaves the plain unmeasured
+    reading, because there is no per-pointer work whose cause it could name.
     """
     observed_at = _utc_now()
     try:
@@ -6600,21 +6615,42 @@ def _fleet_state_reading(project: str) -> dict[str, Any]:
             for pointer in pointers
             if str(pointer.get("backend") or "").strip()
         }
+        try:
+            unreconciled = _unreconciled_live_runs(pointers)
+        except Exception as exc:  # noqa: BLE001 - a named cause never blocks landing
+            return _unavailable_fleet_reading(observed_at, cause=exc)
         return {
             "fleet_state": "measured",
             "observed_at": observed_at,
             "live_runs": len(pointers),
-            "unreconciled_runs": _unreconciled_live_runs(pointers),
+            "unreconciled_runs": unreconciled,
             "actionable_runs": len(actionable),
             "actionable_classifications": sorted(set(actionable)),
             "occupied_lanes": len(lanes),
         }
     except Exception:  # noqa: BLE001 - an unavailable reading never blocks landing
-        return {
-            "fleet_state": "unmeasured",
-            "observed_at": observed_at,
-            "unmeasured": {"fleet_state": "unavailable"},
-        }
+        return _unavailable_fleet_reading(observed_at)
+
+
+def _unavailable_fleet_reading(
+    observed_at: str, cause: Exception | None = None
+) -> dict[str, Any]:
+    """Return the unmeasured fleet state reading, naming a cause when there is one.
+
+    The reading states only what promotion observed, so a caller's reader sees
+    the same unmeasured state whether or not a cause is carried; the cause, when
+    given, is the exception type and message bounded to a readable length.
+    """
+    unmeasured = {"fleet_state": "unavailable"}
+    if cause is not None:
+        unmeasured["cause"] = f"{type(cause).__name__}: {cause}"[
+            :_FLEET_UNMEASURED_CAUSE_LIMIT
+        ]
+    return {
+        "fleet_state": "unmeasured",
+        "observed_at": observed_at,
+        "unmeasured": unmeasured,
+    }
 
 
 def _review_for_promotion(

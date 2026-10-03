@@ -1,0 +1,10 @@
+<section data-reckon="evidence" data-node="an-unmeasured-fleet-reading-names-its-cause">
+  <h3>An unmeasured fleet reading names its cause</h3>
+  <p><code>reckon/crew/promotion.py::_fleet_state_reading</code> caught every exception
+  and returned an unmeasured reading that said nothing of why. It now carries the
+  exception type and message under one bounded key (<code>unmeasured.cause</code>,
+  at most <code>_FLEET_UNMEASURED_CAUSE_LIMIT</code> = 200 characters), while the
+  exception still never blocks a landing. The sibling fixture
+  <code>tests/test_promotion_beat_carries_fleet_state.py</code> exact-shape
+  expectation follows the new key.</p>
+</section>
