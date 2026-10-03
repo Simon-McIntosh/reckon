@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-title" content="A sweep thread ends with the test that started it">
+  <meta name="plan-summary" content="A helper joins every registered producer's in-flight obligation sweep with a bound and clears the registry, an autouse fixture calls it after each test and joins any live sweep thread by name, and the node's cases show a transition-started sweep is ended before the next test can read through it; the append gate after a producer test file still fails, naming a sweep thread the joins do not reach.">
+  <meta name="plan-evidence-for" content="reckon:the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-verifies" content="reckon:the-obligations-hook-reads-a-snapshot#s17">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="failed">
+  <meta name="plan-tags" content="crew,watch,sweep,threads,tests">
+  <title>A sweep thread ends with the test that started it — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-sweep-thread-ends-with-its-test" data-reckon="landed" data-when="2026-10-03">
+  <h2>A sweep thread ends with the test that started it</h2>
+  <p>The producer starts an obligations sweep on a daemon thread off its own transition path and never joins it, so a sweep one test triggers can still be running while the next test has replaced the modules it reads. <code>join_watch_sweeps</code> in <code>reckon/crew/runs.py</code> (bound bound <code>WATCH_SWEEP_JOIN_SECONDS = 10.0</code>) joins every registered producer's in-flight sweep, returns the names still running past the bound, and clears <code>_WATCH_STREAM_PRODUCERS</code>. An autouse fixture in <code>tests/conftest.py</code> calls it after every test and then joins any live thread whose name starts <code>reckon-obligations-sweep</code>, because a producer that lives inside the watch claim is popped from the registry when the claim exits; a straggler fails the test by name. The fixture sits beside the guards another session added and changes none of them.</p>
+  <p><code>tests/test_a_sweep_thread_ends_with_its_test.py</code> passes at head (3 passed, <code>EXIT=0</code>, 7.16&nbsp;s): one case starts a watch transition whose sweep holds in flight past the end of the test; the next replaces the ledger decoder with a refusal and asserts no sweep thread exception reaches it; the third calls the helper directly and asserts <code>stragglers == []</code>, an empty registry and no live sweep thread.</p>
+  <p><strong>Fence item unmet.</strong> <code>tests/test_append_run_writes_one_run_file.py</code> passes alone in one worker (17 passed, <code>EXIT=0</code>) but still errors after a test file that starts a sweep: after <code>tests/test_obligations_snapshot_is_published.py</code> it reports 4 teardown errors (<code>29 passed, 4 errors, EXIT=1</code>) raised from that file's own <code>forbidden</code> guards by a thread that outlived the boundary — a probe names <code>reckon-obligations-sweep-snapshot-fixture</code> alive at the snapshot file's last teardown. Neither the registry join nor the name join ends it within the bound, so the append gate and the population base/head arms are not recorded as passing. Evidence: <code>/tmp/reckon-crew-scratch/r-20261003T212316369541/{obs-then-append.log,probe-threads-serial.log}</code>.</p>
+  <p><strong>Negative control</strong> (<code>negative-control.log</code>, scratch copy of head without the fixture): <code>EXIT=1</code>, <code>test_no_sweep_thread_exception_reaches_the_next_test</code> fails with <code>AssertionError: an earlier test's sweep thread raised here: [AssertionError('a sweep outlived its test and decoded the ledger')]</code> and <code>PytestUnhandledThreadExceptionWarning: Exception in thread reckon-obligations-sweep-sweep-fixture</code> — the unhandled thread exception reaching the second test, absent from the head arm. This gate measures only this node's own change.</p>
+</article>
+</body>
+</html>

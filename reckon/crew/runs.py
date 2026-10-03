@@ -1869,6 +1869,39 @@ def _run_obligation_sweep(
         producer.sweep_lock.release()
 
 
+# The bound on a sweep a caller joins. A sweep runs off the producer's
+# transition path and the producer never waits on it, so a caller that owns the
+# in-process registry can wait here; the bound keeps a sweep wedged on an
+# unresponsive input from holding the caller open, and a thread still alive
+# past it is reported rather than waited on forever.
+WATCH_SWEEP_JOIN_SECONDS = 10.0
+
+
+def join_watch_sweeps(timeout: float = WATCH_SWEEP_JOIN_SECONDS) -> list[str]:
+    """Join every registered producer's in-flight sweep, then clear the registry.
+
+    The sweep runs on a daemon thread per transition, off the producer's own
+    path, and nothing joins that thread: a sweep can still be running after
+    the seat that started it is gone, and a caller running afterwards — the
+    next test in a suite, which may have replaced the modules the sweep reads
+    — then sees an unhandled exception from a thread it never started. A
+    caller that owns the in-process registry waits for those threads here and
+    drops the registry, so no later trigger starts another sweep for a
+    producer the caller has ended.
+
+    Returns the names of the threads still running when the bound expired.
+    """
+    stragglers: list[str] = []
+    for producer in list(_WATCH_STREAM_PRODUCERS.values()):
+        thread = producer.sweep_thread
+        if thread is not None and thread.is_alive():
+            thread.join(timeout)
+            if thread.is_alive():
+                stragglers.append(thread.name)
+    _WATCH_STREAM_PRODUCERS.clear()
+    return stragglers
+
+
 def _producer_snapshot_identity(project: str) -> dict[str, Any]:
     """The producer's pid, start time and code stamp, read from its registration.
 
