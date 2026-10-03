@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="review-record-is-one-runs-claim">
+  <meta name="plan-title" content="One review record is one run's write claim">
+  <meta name="plan-summary" content="The scope-conflict refusal compares out-of-repository write paths, so a second review dispatched against a record path a live review already holds is refused naming the first run and the shared record path, while a review of a different subject holding a different record path is admitted. Pinned by a test present at the base revision, which passes there: the refusal already held and no dispatch change was needed.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-commits" content="16a2d19c3, 514dc0a91">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,review,write-exclusivity,scope-conflict">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>One review record is one run's write claim | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution record &middot; 2026-10-03</p>
+      <h1>One review record is one run's write claim</h1>
+      <p class="lead" data-node="review-record-is-one-runs-claim" data-reckon="landed" data-when="2026-10-03">
+        The review store's write exclusivity is now asserted by a test that
+        declares one review record as the write path of a live review run and
+        dispatches a second review of the same subject under a fresh node id:
+        the second dispatch is refused by the existing scope conflict, naming
+        the first run and the shared record path, and its discriminating
+        negative &mdash; a review of a different subject, holding a different
+        record path &mdash; is admitted. Gate: base <code>bd621f63c</code>
+        <strong>76 passed</strong>, head <code>514dc0a91</code> <strong>76
+        passed</strong>, no added failure id. The refusal already held at the
+        base revision, so the node pins it and changes no dispatch code.
+        Negative control declared and executed: with out-of-repository paths
+        excluded from the live-claim comparison, <strong>1 failed, 1
+        passed</strong> &mdash; the refusal case fails
+        (<code>test_a_second_review_of_one_record_is_refused</code>,
+        <code>DID NOT RAISE ScopeConflict</code>) and the admission case still
+        passes. <code>ruff check</code> and <code>ruff format --check</code>
+        report no finding on the changed Python path.
+      </p>
+    </header>
+
+    <h2>The measure this pins</h2>
+    <p>The section requires that two runs never hold one review record, and
+    that the check which says so covers the store. The review store lives under
+    the crew configuration home, outside every repository, and a collision
+    there is worse than a collision on a repository path: the loser of a
+    repository-path collision still leaves a commit or a dirty tree, while the
+    second writer of a review record overwrites the first with no trace at all
+    &mdash; and that record is the durable copy of the score. The audit report
+    recorded the remaining gap as no test declaring one review record as two
+    runs' write path and requiring the second dispatch to be refused.</p>
+
+    <h2>The case</h2>
+    <p><code>tests/test_review_record_is_one_runs_claim.py</code> builds a
+    temporary crew home and a repository that looks like a reckon mount, then
+    resolves the record paths through the store's own
+    <code>review_path</code> helper &mdash; the legacy path keyed by the
+    reviewed run and the head-keyed path beside it, the pair a review dispatch
+    grants. A live pointer for the first review run holds that pair; the second
+    dispatch is a review of the same subject under a fresh node id, the shape a
+    retry takes after a review dies seconds into its turn, where the fresh node
+    id is the right call for manifest hygiene and is what puts two live
+    pointers against one file.</p>
+    <p>Two assertions, and the second is what makes the first mean something:
+    the same record path is refused as <code>ScopeConflict</code>, naming the
+    first run, its node and the shared path; a different subject's record path
+    is admitted and the second run's pointer records the paths its own subject
+    owns. A check that refused every out-of-repository path wholesale would
+    fail the second assertion, and one that compares only repository paths
+    would fail the first.</p>
+
+    <h2>Evidence</h2>
+    <ul>
+      <li><strong>Base arm</strong> (<code>bd621f63c</code>, the test file
+      copied into a <code>git archive</code> extraction of the base under the
+      run's scratch): <code>logs/base-arm-final.log</code> &mdash; 76 passed,
+      <code>EXIT=0</code>, module resolved from the extraction. The refusal
+      already held at base, so this node pins existing behaviour rather than
+      repairing it; no change to <code>reckon/crew/dispatch.py</code> was
+      needed.</li>
+      <li><strong>Head arm</strong> (<code>514dc0a91</code>, the delivered
+      tree): <code>logs/head-arm-final.log</code> &mdash; 76 passed,
+      <code>EXIT=0</code>, no added failure id against the base arm.</li>
+      <li><strong>Negative control</strong>:
+      <code>logs/negative-control-final.log</code> &mdash; with
+      out-of-repository claims skipped in
+      <code>_raise_repository_scope_conflict</code>, the refusal case is
+      admitted and fails (<code>EXIT=1</code>,
+      <code>test_a_second_review_of_one_record_is_refused</code>), an id the
+      head arm does not fail, while the admission case still passes.</li>
+    </ul>
+    <p>The gate ran twelve test files that reach the scope-conflict machinery
+    &mdash; the new file plus the existing refusal, granted-path, directory
+    claim, cross-project, release and racing-claim cases &mdash; with
+    <code>pytest-xdist -n 8 --timeout=300</code>, each arm with its own
+    basetemp outside any repository.</p>
+  </main>
+</body>
+</html>
