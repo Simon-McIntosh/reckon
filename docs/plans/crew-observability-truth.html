@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="611">
+<meta name="plan-version" content="612">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.64">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -3136,6 +3136,9 @@ lane-change   2</code></pre><p><strong>Which decides the filter, and rules out t
 </div>
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261003T095908463843-review-of-disposition-reaches-the-ledger-row" data-who="reckon-build" data-when="2026-10-03T10:05:12.515Z">
     <div class="r-comment-body"><p>independent review of disposition-reaches-the-ledger-row stored as a parsed five-dimension record scoring 93/100 (goal_fidelity 19, evidence 16, scope_discipline 20, durability 19, fit 19) over reviewed_base_sha 7fbe5fd8 and reviewed_head_sha 38a1ee19, carrying added_failure_count 0 and three follow-on findings; the change lands the disposition verb on the committed row and adds no failing test id.</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261003T092905759281-disposition-reaches-the-ledger-row" data-who="reckon-build" data-when="2026-10-03T09:58:26.463Z">
+    <div class="r-comment-body"><p>A run&#x27;s disposition verb now reaches its committed ledger row: promotion reads the verb record_run_disposition recorded on the live pointer before deleting it and build_record writes it as a declared `disposition` field (null when the run carried none); tests/test_disposition_reaches_the_ledger_row.py promotes one run carrying a verb and one carrying none and reads both rows back, green at head and red at base.</p></div>
 </div>
 <div class="r-comment" data-section="s20" data-id="c-20260914-row-population-baseline" data-who="reckon-ship" data-when="2026-09-14T13:00:00+00:00">
     <div class="r-comment-body">Population re-measured over the same 554-row spend-carrying corpus. The two dead columns hold: model seconds non-null in 1.3 percent (7 of 554) and generation rate in 1.3 percent (7 of 554), against the 1.9 percent over 366 rows this section was authored from - the rate fell as the corpus grew, so the columns are getting emptier rather than filling. Charged tokens 53.2 percent, notional cost 26.0 percent, wall time 63.5 percent. On dispatched rows specifically, wall time is populated in 88.2 percent (120 of 136) and is noise in every one of them by definition, which is the section's sharpest case: the most-populated cell on the most common row carries no information. Machine seconds is worse than either dead column at 0.5 percent. The ordering and the cut proposed in this section are read against these figures.</div>
