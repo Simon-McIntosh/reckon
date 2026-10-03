@@ -695,18 +695,20 @@ def test_no_follower_leaves_the_hook_silent(repository: Path, tmp_path: Path) ->
     assert stopping.stderr == ""
 
 
-def test_items_sharing_a_command_collapse_to_one_counted_line(
+def test_each_held_worktree_keeps_its_own_run_scoped_line(
     repository: Path, tmp_path: Path
 ) -> None:
-    """A fleet's worth of identical remedies takes one line, and one only.
+    """Each held worktree's remedy names its own run, so each keeps a line.
 
-    Twenty-five promoted runs still hold their worktrees and are all answered
-    by the same gc command; two blocked runs are answered by a command naming
-    each one's own manifest. The collapsed line carries the count, the oldest
-    age and the command once; each blocked item keeps its own line and its run
-    id; and the checklist stays inside the size a coordinator reads at the open
-    of a turn. The retention ages are staggered newest-last, so the collapsed
-    line's age is compared against the oldest member by value.
+    Twenty-five promoted runs still hold their worktrees, and each row's
+    remedy is now a sweep confined to that row's own run, so no two rows share
+    a command and there is nothing for the collapse to fold. Every held run
+    keeps its own line naming its own run and its own command; the two blocked
+    runs keep theirs as before. The checklist therefore grows with the held
+    population, and the line count is pinned exactly rather than bounded by the
+    shared-line size the collapse used to guarantee. The retention ages are
+    staggered newest-last, so the header's oldest figure is compared against
+    the oldest member by value.
     """
     _retained_worktrees(repository, tmp_path, HELD_ITEMS)
     first_manifest = _blocked_run(
@@ -724,11 +726,15 @@ def test_items_sharing_a_command_collapse_to_one_counted_line(
     checklist = json.loads(completed.stdout)["hookSpecificOutput"]["additionalContext"]
     lines = checklist.splitlines()
 
-    collapsed = [line for line in lines if line.startswith("- [worktree-held]")]
-    assert len(collapsed) == 1
-    assert AGE.sub("<age>", collapsed[0]) == (
-        f"- [worktree-held] {HELD_ITEMS} items (oldest <age> old): "
-        f"reckon crew gc --repo {repository} --project {PROJECT} --apply"
+    held = [line for line in lines if line.startswith("- [worktree-held]")]
+    assert sorted(AGE.sub("<age>", line) for line in held) == sorted(
+        (
+            f"- [worktree-held] held-run-{index:02d} "
+            f"(held-node-{index:02d}, <age> old): "
+            f"reckon crew gc --repo {repository} --project {PROJECT} "
+            f"--run held-run-{index:02d} --apply"
+        )
+        for index in range(HELD_ITEMS)
     )
 
     blocked = [line for line in lines if line.startswith("- [blocked]")]
@@ -749,15 +755,14 @@ def test_items_sharing_a_command_collapse_to_one_counted_line(
         f"reckon obligations for session {SESSION} (project {PROJECT}): "
         f"{HELD_ITEMS + 2} outstanding, oldest "
     )
-    rendered_oldest = _age_seconds(
-        re.search(r"oldest (\S+) old", collapsed[0]).group(1)
-    )
+    rendered_oldest = _age_seconds(re.search(r"oldest (\S+)$", lines[0]).group(1))
     newest_member_age = HELD_OLDEST_AGE - HELD_AGE_STEP * (HELD_ITEMS - 1)
     assert rendered_oldest >= HELD_OLDEST_AGE
     assert rendered_oldest > newest_member_age
     assert checklist.endswith(AUTHORITY_LINE)
-    assert len(lines) <= 8
-    assert len(checklist) < 2_000
+    # The header, one line per held run, the two blocked runs, the
+    # unreconciled trailer and the authority line: exact, not a bound.
+    assert len(lines) == HELD_ITEMS + 5
 
 
 def test_two_review_ready_items_sharing_a_run_less_command_keep_their_own_lines(

@@ -5729,6 +5729,15 @@ def crew_suite_waive(project, reason, who, checkout_path, pretty):
     ),
 )
 @click.option(
+    "--run",
+    "run_id",
+    default=None,
+    help=(
+        "Confine the sweep to this run's own worktree, pointer and run "
+        "directory, so clearing one held tree cannot reach a peer's."
+    ),
+)
+@click.option(
     "--pin-unique-commits",
     is_flag=True,
     help=(
@@ -5746,11 +5755,17 @@ def crew_gc(
     apply,
     confirm_cross_repo,
     scratch,
+    run_id,
     pin_unique_commits,
     pretty,
 ):
     """Report workspaces whose integrated state makes them disposable; remove on request."""
     crew_module, flight_module = _crew_modules()
+    if scratch and run_id:
+        raise click.ClickException(
+            "--run names one run's worktree, which the scratch survey does "
+            "not cover; drop either --run or --scratch"
+        )
     try:
         repo_root = _resolved_gc_repo(
             crew_module, flight_module, repo, project, confirm_cross_repo
@@ -5769,6 +5784,7 @@ def crew_gc(
                 retention_days=retention_days,
                 apply=apply,
                 pin_unique_commits=pin_unique_commits,
+                run_id=run_id,
             )
     except crew_module.CrewError as exc:
         partial = getattr(exc, "partial", None)
