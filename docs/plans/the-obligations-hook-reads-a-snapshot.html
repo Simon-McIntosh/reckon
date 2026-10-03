@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="56">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="57">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -240,9 +240,14 @@
 <p>Observed on 2026-10-02 by s22-coord. The stop hook blocked six times on <code>review-missing</code> duties whose review dispatch the lane's fair share had refused with <code>lane-paused</code> (exit 75), while the review reflex was set to take the next free slot. The only way to stop each time was a hand <code>crew ack</code>. One hand dispatch that ran in the same second as the reflex lost both runs (crew-runtime-positive-controls §29).</p><p><strong>Done when</strong> a review duty whose last dispatch was refused with <code>lane-paused</code>, within a stated bound, reads as <code>review-queued</code>. It names the refusal's time and the session's published worker slots, is listed on the prompt path, and does not block the stop hook. Once the bound passes with no review dispatched, it returns to <code>review-missing</code>. A test covers the queued reading and the return after the bound, in a temporary configuration home. The negative control removes the lane-refusal check, and the queued case then blocks.</p>
 
     <h2 id="s12">§12 — One unreadable review record cannot stop the sweep</h2>
-<section data-reckon="section" data-id="s12" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s12" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
 <p><strong>Observed 2026-10-02 at about 23:43Z.</strong> The reckon producer's thread <code>reckon-obligations-sweep-reckon</code> died with <code>json.decoder.JSONDecodeError: Unterminated string</code>. The call chain was <code>_publish_obligation_snapshots</code>, then <code>obligation_snapshot.sweep</code>, <code>fleet_state</code>, <code>obligations._sub_floor_items_by_session</code>, <code>review.read_review</code>, and finally <code>stored_record</code> calling <code>json.loads</code> on a review record caught mid-write. Within a minute every stored record parsed again, but the thread did not come back. The producer process stayed alive and kept streaming transitions, so <code>crew watch --ensure</code> saw nothing to do, and every session's snapshot went stale with it. One unreadable file in one review stopped obligations for the whole project.</p>
 <p><strong>Done when</strong> three things hold. A review record that does not parse is skipped by <code>stored_record</code>, and the skip is reported in the snapshot as a finding naming the path rather than raised. A failure in one sweep is logged and the next sweep runs, so the sweep thread outlives any single exception. Review records are written atomically, by a temporary file and a rename, so a reader never sees a partial record. A test plants a truncated review record in a temporary configuration home and asserts that the sweep publishes a snapshot naming it. A second test makes one sweep raise and asserts the next sweep still publishes. The negative control restores the raise, and the first test then publishes nothing.</p>
+
+    <h2 id="s13">§13 — A skipped review record reaches the checklist</h2>
+<section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p><strong>From the §12 review (90, zero added failures).</strong> §12 landed at 6db27739e. <code>stored_record</code> now skips a review record that does not parse, and the sweep reports it as a finding. Three gaps remain. First, <code>live_payload</code>, which is what the hook renders, strips the findings, so a coordinator sees a skipped record only by opening the snapshot store. Second, <code>_SKIPPED_RECORDS</code> in reckon/crew/review.py is process-global: a review worker's own <code>read_review</code> adds entries that a later sweep attributes to its snapshot, and a process that never sweeps grows the list without bound. Third, review workers still write their record files by hand and non-atomically, so the reader-side skip is the only guard.</p>
+<p><strong>Done when</strong> the hook's checklist names each skipped record, carried through <code>payload_for</code> and the <code>live_payload</code> parity check. Skipped records are returned per call, not held in module state. A test asserts that a skipped record appears in the rendered prompt-path line, and that a read outside a sweep leaves the next sweep's findings unchanged. The negative control strips the findings in <code>live_payload</code> again, and the rendering case then fails.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -311,10 +316,16 @@
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §11</pre>
     <p class="r-fu-outcome">§3's stop path and §11 landed at 87759a6e6 (run r-20261002T224659340678-stop-hook-reads-the-snapshot, reviewed at 94, zero added failures). The stop hook reads the session's snapshot and derives inline under a 5 s budget only when the snapshot is not fresh. A review duty the lane refused reads as review-queued within its bound and does not block the stop. not_fresh_line handles the producer-stale-code state, and an empty list prints no oldest age. Review follow-ons: resolve() in the hook has no caller left; the new-session worker-slots fallback is gated on sessions_present rather than on the admission block's presence; and the evidence fragment's plan-verifies names only #s3, while its evidence-commit names the base.</p>
     </article>
-<article class="r-fu" data-id="f-tohras-008" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tohras-008" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-02" data-recommends-skill="" data-resolved-at="2026-10-03T01:27:27+00:00" data-resolved-by="s22-coord">
     <h4 class="r-fu-title">land §12 with the §3/§11 review follow-ons</h4>
     <div class="r-fu-body"><p>§12: one unreadable review record cannot stop the sweep. Fold in the §3/§11 review's three follow-ons in the same files: remove the dead <code>resolve()</code>, gate the new-session worker-slots fallback on the admission block's presence, and correct the fragment's <code>plan-verifies</code> and <code>evidence-commit</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §12</pre>
+    <p class="r-fu-outcome">§12 landed at 6db27739e (run r-20261003T001809938711-unreadable-review-record-is-reported, reviewed at 90, zero added failures), with the three §3/§11 follow-ons folded in. Its own follow-ons are §13.</p>
+    </article>
+<article class="r-fu" data-id="f-tohras-009" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-03" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">land §13</h4>
+    <div class="r-fu-body"><p>§13: a skipped review record reaches the hook's checklist, and skipped records stop being process-global state.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §13</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -394,7 +405,7 @@
     <div class="r-comment-body"><p>docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/stop-hook-reads-the-snapshot.html</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261002T233152738724-review-of-stop-hook-reads-the-snapshot" data-who="reckon-build" data-when="2026-10-02T23:48:28.957Z">
-    <div class="r-comment-body"><p>review of r-20261002T224659340678-stop-hook-reads-the-snapshot read at base 24ea2cb171817a871d7a4e078140101eab53f170 head 64373b684fe7d100a5d5d75ae129161799fc4103, stored as a parsed record scoring goal_fidelity 19, evidence 19, scope_discipline 19, durability 19, fit 18 (total 94), with added_failure_count 0 and no added ids derived from the reviewed run&#x27;s own base-arm.log and head-arm-final.log, three follow-on findings and no blocking finding; it is a review&#x27;s whole deliverable and lands no repository change.</p></div>
+    <div class="r-comment-body"><p>review of r-20261002T224659340678-stop-hook-reads-the-snapshot read at base 24ea2cb171817a871d7a4e078140101eab53f170 head 64373b684fe7d100a5d5d75ae129161799fc4103, stored as a parsed record scoring goal_fidelity 19, evidence 19, scope_discipline 19, durability 19, fit 18 (total 94), with added_failure_count 0 and no added ids derived from the reviewed run's own base-arm.log and head-arm-final.log, three follow-on findings and no blocking finding; it is a review's whole deliverable and lands no repository change.</p></div>
 </div>
 </section>
 </main>
