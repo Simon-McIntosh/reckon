@@ -461,6 +461,64 @@ def joined_watch_sweeps(request, tmp_path, monkeypatch):
         )
 
 
+# The per-test reap walks every ``*.lock`` seat record under the run's root,
+# which includes the mirror ``preserve_seat_records`` keeps for the session-end
+# reap. A test that forges a process-global reader — ``Path.read_bytes``
+# ``json.loads``, ``Path.open`` — and a record mirrored from an earlier test
+# then collide at teardown: the reap's attribution read lands on the forgery.
+# Measured on 2026-10-03 at c147ccad in one xdist worker: the four teardown
+# errors of ``tests/test_append_run_writes_one_run_file.py`` after
+# ``tests/test_obligations_snapshot_is_published.py`` were all reads by
+# ``reap_watch_producers_armed_by_this_test`` — ``/proc/<pid>/environ`` and a
+# mirrored watch record — landing on that file's own forged guards, not on any
+# thread. The mirror is read only by the session-end reap, so it is moved aside
+# while tests run and restored by a finalizer the session reap outlives.
+_SEAT_RECORD_MIRROR_ASIDE = "_seat-records-aside"
+
+
+def _seat_record_mirror_aside(root: Path) -> Path:
+    # A sibling of ``root``, not a child: the reap looks for ``crew/watch``
+    # directories anywhere under ``root``, so a hidden mirror that kept that
+    # shape would still be read.
+    return root.with_name(f"{root.name}{_SEAT_RECORD_MIRROR_ASIDE}")
+
+
+def _set_aside_seat_record_mirror(root: Path) -> None:
+    mirror = root / _SEAT_RECORDS_DIR
+    if not mirror.exists():
+        return
+    aside = _seat_record_mirror_aside(root)
+    if aside.exists():
+        shutil.rmtree(aside)
+    mirror.rename(aside)
+
+
+def _restore_seat_record_mirror(root: Path) -> None:
+    aside = _seat_record_mirror_aside(root)
+    if not aside.exists():
+        return
+    mirror = root / _SEAT_RECORDS_DIR
+    if mirror.exists():
+        shutil.rmtree(mirror)
+    aside.rename(mirror)
+
+
+@pytest.fixture(autouse=True)
+def seat_records_mirror_is_hidden_from_the_running_tests(tmp_path_factory):
+    """Only the session-end reap reads another test's mirrored seat records."""
+    _set_aside_seat_record_mirror(tmp_path_factory.getbasetemp())
+    yield
+
+
+@pytest.fixture(scope="session", autouse=True)
+def seat_record_mirror_is_restored_for_the_session_reap(
+    reaped_watch_producers, tmp_path_factory
+):
+    """Put the mirror back before the session-end reap reads it."""
+    yield
+    _restore_seat_record_mirror(tmp_path_factory.getbasetemp())
+
+
 def _live_watch_producers() -> list[tuple[int, Path]]:
     """Every live ``crew watch`` process, with the home its environment names.
 
