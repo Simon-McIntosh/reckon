@@ -95,14 +95,19 @@ def _validate_plan_summary(value: Any) -> str:
     return summary
 
 
-class VersionConflict(Exception):
-    """Raised when expected_version doesn't match the file's current version."""
+if "VersionConflict" not in globals():
+    # The class object stays the same across a reload of this module: callers
+    # bind it by name and match it in ``except`` clauses, so a reload that
+    # minted a fresh class would leave their handlers missing the conflict
+    # raised below.
+    class VersionConflict(Exception):
+        """Raised when expected_version doesn't match the file's current version."""
 
-    def __init__(self, expected: int, current: int, current_data: dict) -> None:
-        self.expected = expected
-        self.current = current
-        self.current_data = current_data
-        super().__init__(f"version conflict: expected {expected}, got {current}")
+        def __init__(self, expected: int, current: int, current_data: dict) -> None:
+            self.expected = expected
+            self.current = current
+            self.current_data = current_data
+            super().__init__(f"version conflict: expected {expected}, got {current}")
 
 
 class CorruptEnvelopeError(Exception):
