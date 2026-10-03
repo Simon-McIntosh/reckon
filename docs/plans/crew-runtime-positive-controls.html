@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="247">
+<meta name="plan-version" content="248">
 </head>
 <body>
   <main class="plan-doc">
@@ -2014,7 +2014,10 @@
     <div class="r-comment-body"><p>reckon/crew/dispatch.py takes an exclusive per-node claim file under the crew store immediately before the worktree is cut, records the holder's pid and kernel process start time, releases the claim when the dispatch finishes, and reclaims a claim whose holder process is gone or whose pid now names another process (rename aside, then exclusive create), naming the reclaimed holder on its result, so two dispatches of one node cannot both reach worktree creation and one killed dispatcher cannot block the node; measure - base arm 234 passed, 2 skipped, EXIT=0; head arm (revision 414233c8ee5ccea81b2395f52f0552add3e0c68a) 239 passed, 2 skipped, EXIT=0, no added failure id; declared negative control removes the claim and both dispatches reach worktree creation, 4 failed, EXIT=1 (measured, not modelled).</p></div>
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261003T053517418410-review-of-concurrent-dispatch-of-one-node" data-who="reckon-build" data-when="2026-10-03T05:43:42.083Z">
-    <div class="r-comment-body"><p>review of r-20261003T043715292121-concurrent-dispatch-of-one-node over the range f60124000..e0f111d9b scored goal_fidelity 20, evidence 19, scope_discipline 20, durability 18, fit 20 (total 97); the increment closes the prior review&#x27;s follow-on (a claim now carries its holder pid and kernel process start time and a dead holder&#x27;s claim is reclaimed, live holder still refuses), pinned by three new cases, my independent re-run of the node&#x27;s test file at the reviewed head (5 passed) and an independent mutation that fails exactly the two reclaim cases; one follow-on finding stands: _claim_holder_is_alive calls os.kill without catching OverflowError (dispatch.py:1645).</p></div>
+    <div class="r-comment-body"><p>review of r-20261003T043715292121-concurrent-dispatch-of-one-node over the range f60124000..e0f111d9b scored goal_fidelity 20, evidence 19, scope_discipline 20, durability 18, fit 20 (total 97); the increment closes the prior review's follow-on (a claim now carries its holder pid and kernel process start time and a dead holder's claim is reclaimed, live holder still refuses), pinned by three new cases, my independent re-run of the node's test file at the reviewed head (5 passed) and an independent mutation that fails exactly the two reclaim cases; one follow-on finding stands: _claim_holder_is_alive calls os.kill without catching OverflowError (dispatch.py:1645).</p></div>
+</div>
+<div class="r-comment" data-section="s25" data-id="c-run-r-20261003T072400872556-review-of-granted-path-is-a-claim" data-who="reckon-build" data-when="2026-10-03T07:34:12.250Z">
+    <div class="r-comment-body"><p>review-of-granted-path-is-a-claim — independent review of run r-20261003T063655507273-granted-path-is-a-claim, base 9e5081bb3 head 8483293d0, stores a parsed record scoring goal_fidelity 18 evidence 17 scope_discipline 19 durability 18 fit 19 (total 91) with added_failure_count 0 and no added failure ids; base arm 1 failed/2 passed and head arm 3 passed independently rerun; two follow-on findings — the landing filter drops a peer&#x27;s ancestor-directory claim from the refusal judgement, and the head arm&#x27;s revision header names the base.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
