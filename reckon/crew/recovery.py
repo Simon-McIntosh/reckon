@@ -7252,13 +7252,12 @@ def group_terminal_lane_events(
                 ),
             )
             if isinstance(report.get("fleet_verdict"), Mapping):
-                report["fleet_verdict"] = {
-                    **report["fleet_verdict"],
-                    "state": "lane-event",
-                    "recovery_classification": "lane-event",
-                    "recovery": report["recovery"],
-                    "detail": report["detail"],
-                }
+                report["fleet_verdict"] = _watch_verdict(
+                    report,
+                    report,
+                    moment=time.time(),
+                    stall_seconds=LOG_STALE_AFTER_SECONDS,
+                )
             events[leader] = report
             suppressed.update(index for _stamp, index in cluster[1:])
     return [
@@ -9092,11 +9091,22 @@ def _watch_verdict(
     moment: float,
     stall_seconds: int,
 ) -> dict[str, Any]:
-    """Complete the shared verdict with stream progress and fleet vocabulary.
+    """Complete individual and grouped verdicts with the fleet vocabulary.
 
-    Called only by the classifier: producers carry its result without probing
-    processes, streams or manifests for a second judgement.
+    Producers carry this result without probing processes, streams or manifests
+    for a second judgement.
     """
+    if row.get("lane_event"):
+        state = "lane-event"
+        previous = row.get("fleet_verdict")
+        return {
+            **(previous if isinstance(previous, Mapping) else {}),
+            "state": state,
+            "detail": str(row.get("detail") or ""),
+            "recovery_classification": state,
+            "recovery": str(row.get("recovery") or "inspect"),
+            "lifting_condition": None,
+        }
     stored_phase = str(pointer.get("phase") or "")
     # The stored phase is the launcher's label; the row carries the phase the
     # run's own evidence supports, so a pointer that never advanced past
