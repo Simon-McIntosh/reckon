@@ -1,20 +1,14 @@
-"""Every reader of a reclaimed run's review selects it through the classifier's rule.
+"""A duty raised from a run's stored review is one the disposition command can retire.
 
-A run outlives the worktree it worked in. Once that worktree has been
-reclaimed, the only tree a reader can still reach is the shared checkout, whose
-HEAD is whatever that repository has reached since — a revision the run's review
-is not about. The classifier already reads a reclaimed run's head from the run's
-own record and refuses a headless reclaimed run rather than borrowing the
-checkout's HEAD, but two other readers resolved the head themselves and so
-disagreed with it: the crew disposition command, and the sub-floor dimension
-duty the obligations derivation builds.
-
-This module drives both readers on two reclaimed runs — one whose manifest
-cites its head by a nine-character id, and one whose record names no head — and
-asserts that the record each reader selects is the record the classifier
-selects for the same run. The repository is left holding a later commit at its
-HEAD in every case, so a selection equal to the classifier's is evidence the
-run's own record was read and the checkout's HEAD was not.
+A run outlives the worktree it worked in. The sub-floor dimension duty is
+derived from the run's stored review whether or not that worktree survives, and
+the disposition command is the writer that retires the duty its row names — so
+the two have to select the same record, or the coordinator is shown a row that
+no command can dispose. These cases drive both readers over the same run: a
+reclaimed run whose manifest cites its head by a nine-character id, a reclaimed
+run whose record names no head, and a run with no readable tree. Each case
+asserts the duty row exists, that the disposition command accepts, and that the
+record it selected is the record the duty reader selected.
 
 The fixture stands the runs up inside a temporary configuration home and a
 temporary repository, so the operator's review store and their checkouts are
@@ -33,13 +27,14 @@ from click.testing import CliRunner
 
 from reckon.cli import main as cli_main
 from reckon.crew import obligations as obligations_module
-from reckon.crew import recovery, runs
 from reckon.crew import review as review_module
+from reckon.crew import runs
 
 PROJECT = "review-head-fixture"
 SESSION = "coordinator-fixture"
 SHORT_RUN = "r-reclaimed-head"
 HEADLESS_RUN = "r-reclaimed-headless"
+TREELESS_RUN = "r-no-readable-tree"
 FOLD_NODE = "repair-durability-node"
 
 # The head the runs reached, then a later commit the repository keeps at its
@@ -106,7 +101,13 @@ def _store_review(reviewed_run_id: str, text: str, *, timestamp: str) -> Path:
 
 
 class _Fleet:
-    """One throwaway project: a temporary repository, and two reclaimed runs."""
+    """One throwaway project: a temporary repository, and three runs.
+
+    Every run's stored review is keyed to the revision the run reached, and
+    the shared repository is left holding a later commit at its HEAD, so a
+    selection equal to the run-head record is evidence the run's own record
+    was read rather than whatever the checkout carries now.
+    """
 
     def __init__(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         self.home = tmp_path / "config"
@@ -117,7 +118,7 @@ class _Fleet:
         for arguments in (
             ("init", "-q", "-b", "main"),
             ("config", "user.email", "worker@example.invalid"),
-            ("config", "user.name", "Worker"),
+            ("config", "user.name", "reclaimed"),
             ("add", "seed.txt"),
             ("commit", "-q", "-m", "test: seed the shared repository"),
         ):
@@ -142,21 +143,30 @@ class _Fleet:
             ),
             encoding="utf-8",
         )
-        # Both runs' worktrees have been reclaimed: the path is recorded and
-        # nothing is on disk there.
+        # The reclaimed runs' worktrees are recorded and gone; the treeless
+        # run's repository is recorded and gone too, so neither pointer names
+        # a tree a reader could resolve a head from.
         self.reclaimed_worktree = tmp_path / "worktrees" / "reclaimed"
-        self.pointer(SHORT_RUN, commits=[self.run_head[:9]])
-        self.pointer(HEADLESS_RUN, commits=[])
-        _store_review(
+        self.missing_repo = tmp_path / "checkouts" / "gone"
+        self.pointer(
             SHORT_RUN,
-            _emit(base_sha=self.base_sha, head_sha=self.run_head),
-            timestamp="2026-10-03T01:00:00+00:00",
+            commits=[self.run_head[:9]],
+            worktree=str(self.reclaimed_worktree),
+            repo=str(self.repo),
         )
-        _store_review(
+        self.pointer(
             HEADLESS_RUN,
-            _emit(base_sha=self.base_sha, head_sha=self.run_head),
-            timestamp="2026-10-03T01:00:00+00:00",
+            commits=[],
+            worktree=str(self.reclaimed_worktree),
+            repo=str(self.repo),
         )
+        self.pointer(TREELESS_RUN, commits=[], repo=str(self.missing_repo))
+        for run_id in (SHORT_RUN, HEADLESS_RUN, TREELESS_RUN):
+            _store_review(
+                run_id,
+                _emit(base_sha=self.base_sha, head_sha=self.run_head),
+                timestamp="2026-10-03T01:00:00+00:00",
+            )
 
     def head(self) -> str:
         return _git(self.repo, "rev-parse", "HEAD")
@@ -168,7 +178,14 @@ class _Fleet:
         _git(self.repo, "commit", "-q", "-m", f"chore: add {name}")
         return self.head()
 
-    def pointer(self, run_id: str, *, commits: list[str]) -> dict:
+    def pointer(
+        self,
+        run_id: str,
+        *,
+        commits: list[str],
+        worktree: str = "",
+        repo: str = "",
+    ) -> dict:
         """Write the live pointer and the left-behind manifest of one run."""
         manifest = self.home / "manifests" / f"{run_id}.md"
         manifest.parent.mkdir(parents=True, exist_ok=True)
@@ -181,8 +198,6 @@ class _Fleet:
             "project": PROJECT,
             "session": SESSION,
             "process_alive": False,
-            "repo": str(self.repo),
-            "worktree": str(self.reclaimed_worktree),
             "manifest_path": str(manifest),
             "node": {
                 "id": run_id,
@@ -192,6 +207,10 @@ class _Fleet:
                 "write_paths": ["seed.txt"],
             },
         }
+        if worktree:
+            record["worktree"] = worktree
+        if repo:
+            record["repo"] = repo
         runs._write_json(runs.pointer_path(run_id), record)
         return record
 
@@ -221,7 +240,7 @@ def _assert_reclaimed_premises(fleet: _Fleet) -> None:
 
     The repository is left holding a later commit at its HEAD and the run's
     worktree is gone, so a reader that resolves any tree resolves a revision
-    that is not this run's — the assertion that the two differ is what shows a
+    that is not the run's — the assertion that the two differ is what shows a
     head equalling the run's came from the run's own record.
     """
     assert len(fleet.run_head) == 40
@@ -238,7 +257,7 @@ def _assert_reclaimed_premises(fleet: _Fleet) -> None:
 
 
 class _SelectionAudit:
-    """Every stored record each reader selects, observed at the shared seam."""
+    """Every stored record the two readers selected, per run."""
 
     def __init__(self) -> None:
         self.records: dict[str, list[dict | None]] = {}
@@ -248,47 +267,39 @@ class _SelectionAudit:
 
 
 def _audit_selections(monkeypatch: pytest.MonkeyPatch) -> _SelectionAudit:
-    """Record what each reader selects, at the functions the readers share.
+    """Record what each reader selects, at the reading the readers share.
 
-    Both readers converge on :func:`reckon.crew.recovery.select_review_for_head`
-    or, for a headless record, on the classifier's own headless helper, so the
-    record those functions return is the record the reader went on to use —
-    observed rather than inferred from the reader's final effect.
+    Both the duty reader and the disposition command select their record
+    through ``stored_review_for_run`` in ``reckon/crew/obligations.py``, so the
+    record that function returns is the record the reader went on to use, and
+    the audit observes each reader's choice rather than inferring it from the
+    reader's final effect. Other obligation readers select against other heads
+    and do not pass through this seam, so a recorded selection is the duty
+    reader's or the disposition command's.
     """
     audit = _SelectionAudit()
-    original_select = recovery.select_review_for_head
-    original_headless = recovery.newest_review_for_headless_run
+    original = obligations_module.stored_review_for_run
 
-    def select(project, run_id, head, *, tree=None):
-        record, described = original_select(project, run_id, head, tree=tree)
+    def shared(project: str, run_id: str, pointer):
+        record, described = original(project, run_id, pointer)
         audit.note(run_id, record)
         return record, described
 
-    def headless(project, run_id, *, reclaimed):
-        record = original_headless(project, run_id, reclaimed=reclaimed)
-        audit.note(run_id, record)
-        return record
-
-    monkeypatch.setattr(recovery, "select_review_for_head", select)
-    monkeypatch.setattr(recovery, "newest_review_for_headless_run", headless)
+    monkeypatch.setattr(obligations_module, "stored_review_for_run", shared)
     return audit
 
 
-def _classifier_record(fleet: _Fleet, run_id: str) -> dict | None:
-    """The record ``classify_pointer`` itself reads for this run."""
-    pointer = runs.read_pointer(run_id)
-    record, error = recovery._stored_review(pointer)
-    assert error == "", error
-    return record
-
-
-def _drive_duty(monkeypatch: pytest.MonkeyPatch) -> tuple[_SelectionAudit, list[dict]]:
+def _drive_duty(
+    monkeypatch: pytest.MonkeyPatch, run_id: str
+) -> tuple[_SelectionAudit, list[dict]]:
+    """Run the obligations derivation and return the duty rows for one run."""
     audit = _audit_selections(monkeypatch)
     report = obligations_module.obligations(PROJECT, SESSION)
     rows = [
         row
         for row in report["obligations"]
         if row["kind"] == obligations_module.SUB_FLOOR_DUTY_KIND
+        and row["run_id"] == run_id
     ]
     return audit, rows
 
@@ -297,63 +308,68 @@ def _drive_disposition(run_id: str):
     return CliRunner().invoke(cli_main, [*DISPOSITION, "--run", run_id])
 
 
-def test_the_short_head_run_is_selected_as_the_classifier_selects_it(
-    fleets: Callable[[], _Fleet], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Both readers select the record keyed to the run's own full id.
+def _assert_readers_agree(
+    fleet: _Fleet, monkeypatch: pytest.MonkeyPatch, run_id: str
+) -> dict:
+    """The duty reader and the disposition command select the same record.
 
-    The nine-character citation is what makes the readers' head the resolved
-    full id rather than a copy of what the manifest wrote down, and the
-    repository's later HEAD is what a reader resolving any tree would select
-    against: a review keyed to the run's own head is on file, so a reader on
-    the checkout's HEAD selects nothing where this one selects the record.
+    The duty row is asserted first, because a run whose review this fixture
+    stored owes a row whatever else happens; the disposition then has to
+    accept, and the record observed behind both readers has to be the one
+    record the store holds for the run, keyed to the revision the run reached.
     """
-    fleet = fleets()
-    _assert_reclaimed_premises(fleet)
-    classifier_record = _classifier_record(fleet, SHORT_RUN)
-    assert classifier_record is not None
-    assert classifier_record.get("reviewed_head_sha") == fleet.run_head
+    audit, rows = _drive_duty(monkeypatch, run_id)
+    assert [row["dimension"] for row in rows] == ["durability"], rows
 
-    audit, rows = _drive_duty(monkeypatch)
-    assert [row["dimension"] for row in rows if row["run_id"] == SHORT_RUN] == [
-        "durability"
-    ]
+    duty_seen = list(audit.records.get(run_id, []))
+    assert duty_seen, "the duty reader reached no selection"
+    duty_record = duty_seen[0]
+    assert duty_record is not None
+    assert all(record == duty_record for record in duty_seen), duty_seen
+    assert duty_record.get("reviewed_head_sha") == fleet.run_head, duty_record
 
-    result = _drive_disposition(SHORT_RUN)
+    result = _drive_disposition(run_id)
     assert result.exit_code == 0, result.output
+    selected = audit.records.get(run_id, [])
+    assert len(selected) > len(duty_seen), (
+        "the disposition command reached no selection"
+    )
+    assert all(record == duty_record for record in selected), selected
+
     keyed = review_module.review_path(
-        PROJECT, SHORT_RUN, reviewed_head_sha=fleet.run_head
+        PROJECT, run_id, reviewed_head_sha=duty_record["reviewed_head_sha"]
     )
     assert json.loads(result.output)["path"] == str(keyed)
-
-    selected = audit.records.get(SHORT_RUN, [])
-    assert selected, "neither reader reached the shared selection"
-    assert all(record is not None for record in selected), selected
-    assert all(record == classifier_record for record in selected), selected
+    return duty_record
 
 
-def test_the_headless_run_is_selected_as_the_classifier_selects_it(
+def test_the_reclaimed_run_with_a_short_head_is_disposed_where_its_duty_reads(
     fleets: Callable[[], _Fleet], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Both readers select nothing where the classifier selects nothing.
+    """The nine-character citation resolves to the run's own full id, and both
+    readers select the record keyed to it — not the checkout's later HEAD."""
+    fleet = fleets()
+    _assert_reclaimed_premises(fleet)
+    _assert_readers_agree(fleet, monkeypatch, SHORT_RUN)
 
-    A reclaimed run whose record names no head has no revision to select a
-    review by, and the classifier reads no record for it. Neither reader may
-    read the store's newest record in its place: that is evidence about a
-    revision the run cannot name, and a duty built on it would have the
-    coordinator retire a finding the rest of the runtime does not accept.
+
+def test_the_reclaimed_headless_run_is_disposed_where_its_duty_reads(
+    fleets: Callable[[], _Fleet], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A stored review outlives the worktree, and its duty stays disposable.
+
+    The record names no head, so the duty reader reads the store's newest
+    record for the run; the disposition command takes the same reading and
+    retires the row rather than refusing the run it was raised for.
     """
     fleet = fleets()
     _assert_reclaimed_premises(fleet)
-    assert _classifier_record(fleet, HEADLESS_RUN) is None
+    _assert_readers_agree(fleet, monkeypatch, HEADLESS_RUN)
 
-    audit, rows = _drive_duty(monkeypatch)
-    assert [row for row in rows if row["run_id"] == HEADLESS_RUN] == []
 
-    result = _drive_disposition(HEADLESS_RUN)
-    assert result.exit_code != 0, result.output
-    assert "no stored review" in result.output
-
-    selected = audit.records.get(HEADLESS_RUN, [])
-    assert selected, "neither reader reached the shared selection"
-    assert all(record is None for record in selected), selected
+def test_the_run_with_no_readable_tree_is_disposed_where_its_duty_reads(
+    fleets: Callable[[], _Fleet], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No worktree and no repository still leave the stored review readable."""
+    fleet = fleets()
+    _assert_readers_agree(fleet, monkeypatch, TREELESS_RUN)

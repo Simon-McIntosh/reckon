@@ -638,6 +638,38 @@ def _held_worktrees(
     return _held_worktrees_by_session(project, now=now).get(session, [])
 
 
+def stored_review_for_run(
+    project: str,
+    run_id: str,
+    pointer: Mapping[str, Any],
+) -> tuple[dict[str, Any] | None, str]:
+    """The one reading of a run's stored review, shared by its two readers.
+
+    A dimension duty follows from a stored review that exists, whether or not
+    the run's worktree survives, and the command that disposes a duty has to
+    reach the same record the duty was built from: a row the coordinator is
+    shown and no command can retire is worse than no row. Both readers take
+    this function with these arguments, so the selection cannot drift between
+    them. The head comes from the resolver every other reader uses
+    (:func:`reckon.crew.recovery._review_head_and_tree`), so a run whose
+    worktree has been reclaimed is keyed to the head its own record carries
+    rather than to the shared checkout's HEAD, and the tree alongside it is
+    the one the head belongs to. A record naming no resolvable head is read
+    through the store's newest record for the run, the evidence there is: a
+    low dimension is a finding about a review that exists, and a reclaimed
+    worktree neither supplies nor retires one. The second element is the head
+    a non-matching record named, empty when none, so a writer can name the
+    disagreement rather than report an absence.
+    """
+    head, tree = recovery._review_head_and_tree(pointer)
+    if not head:
+        return (
+            recovery.newest_review_for_headless_run(project, run_id, reclaimed=False),
+            "",
+        )
+    return recovery.select_review_for_head(project, run_id, head, tree=tree)
+
+
 def _sub_floor_items_by_session(
     project: str,
     floors: Mapping[str, Any],
@@ -646,21 +678,15 @@ def _sub_floor_items_by_session(
 ) -> dict[str, list[dict[str, Any]]]:
     """Return one duty per undisposed review dimension below its declared floor.
 
-    The review is selected through the same rule the classifier and the
-    promotion gate use (:func:`reckon.crew.recovery.select_review_for_head`),
-    so a record describing a superseded revision cannot stand in for the
-    current one, and the head it selects by comes from the same resolver those
-    readers use (:func:`reckon.crew.recovery._review_head_and_tree`) rather
-    than from a readable tree, so a run whose worktree has been reclaimed is
-    never keyed to the shared checkout's HEAD. An empty head names no revision
-    to select by, and the reading follows from how it came to be empty, so it
-    is taken from the classifier's own helper
-    (:func:`reckon.crew.recovery.newest_review_for_headless_run`): a duty is
-    derived from exactly the evidence the classifier would read, never from a
-    record the classifier refuses. Each row names the run the review is about —
-    the run whose work carries the low dimension — and carries the dimension,
-    the score it was given and the floor it fell below, so a reader can see the
-    finding without opening the record.
+    The review is selected through :func:`stored_review_for_run`, the reading
+    the disposition command takes too, so a duty row is always one the writer
+    can retire and a record describing a superseded revision cannot stand in
+    for the current one. A run whose worktree has been reclaimed is keyed to
+    the head its own record carries rather than to the shared checkout's HEAD.
+    Each row names the run the review is about — the run whose work carries
+    the low dimension — and carries the dimension, the score it was given and
+    the floor it fell below, so a reader can see the finding without opening
+    the record.
 
     A review with no floor declared for the dimension, and a dimension already
     answered by a disposition in the closed set, produce nothing. The total is
@@ -682,19 +708,7 @@ def _sub_floor_items_by_session(
             # resolving it here would launch one git process per live run per
             # sweep for an answer that cannot name a duty.
             continue
-        head, tree = recovery._review_head_and_tree(pointer)
-        if not head:
-            # The reclaimed flag is the classifier's own, so a duty is derived
-            # from the evidence the classifier reads and never from a record it
-            # refuses: a duty the coordinator would retire sits on a finding
-            # the rest of the runtime does not accept as this run's.
-            record = recovery.newest_review_for_headless_run(
-                project, run_id, reclaimed=recovery._worktree_reclaimed(pointer)
-            )
-        else:
-            record, _described = recovery.select_review_for_head(
-                project, run_id, head, tree=tree
-            )
+        record, _described = stored_review_for_run(project, run_id, pointer)
         if not record:
             continue
         node = pointer.get("node") or {}
