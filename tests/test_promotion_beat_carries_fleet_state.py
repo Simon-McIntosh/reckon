@@ -214,10 +214,12 @@ def test_the_fleet_reading_has_a_constant_shape_for_small_and_large_fleets(
             for index in range(count)
         ]
         monkeypatch.setattr(promotion, "list_live", lambda *, project: pointers)
+        # The reading derives its unreconciled count from the closure drain's
+        # per-pointer step rather than from the whole-project drain, so the stub
+        # stands at that step. Each bare pointer is one unreconciled run, which
+        # is what the count assertions below read.
         monkeypatch.setattr(
-            promotion,
-            "drain",
-            lambda project: {"unreconciled_runs": len(pointers)},
+            promotion, "_drain_row", lambda pointer: {"unreconciled": True}
         )
         monkeypatch.setattr(
             recovery,
