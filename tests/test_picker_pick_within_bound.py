@@ -1,10 +1,12 @@
 """Bound the phases a dispatch-path pick puts on its critical path.
 
 A pick is asked for inside a five-second dispatch bound, so a phase that runs
-twice or that reads a second project's whole ledger is not merely slow: it is
-the difference between a routed selection and a recorded timeout fallback. Each
-test here pins one such phase by making the removed work fail loudly if it runs
-again.
+twice is not merely slow: it is the difference between a routed selection and a
+recorded timeout fallback. Each test here pins one such phase by making the
+removed work fail loudly if it runs again. One test pins the opposite edge of
+the same bound: the wait estimate must still count every live local worker,
+including one from another project, because that figure answers how loaded the
+lane is and a narrowed answer is wrong rather than fast.
 """
 
 from __future__ import annotations
@@ -14,8 +16,6 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 from types import SimpleNamespace
-
-import pytest
 
 # ``reckon.crew.dispatch`` names a function on the package, so bind the module
 # through the import system rather than the package attribute.
@@ -97,28 +97,19 @@ def test_fit_measures_the_context_when_competence_did_not(monkeypatch):
     assert calls == ["beta"]
 
 
-def test_expected_wait_never_reads_a_foreign_project_ledger(monkeypatch):
-    """Only the pick's own project records are in scope for the wait estimate.
+def test_expected_wait_counts_a_foreign_projects_live_worker(monkeypatch):
+    """A live local worker from another project still shapes the wait estimate.
 
-    A live local worker from another project has no profile the caller handed
-    over, and reading that project's whole ledger would put a second ledger's
-    size on the pick's critical path. That read is turned into a hard failure
-    so a reverted cut fails here.
+    The figure is the typical wall time for the local runs now live, so a
+    worker whose project the pick did not read records for must be profiled
+    from its own ledger rather than dropped: dropping it would let the estimate
+    read null while the lane is genuinely busy with that project's runs. The
+    foreign profile is read exactly once and its median is what the estimate
+    reports, so a guard that reinstates the drop fails here.
     """
     now = datetime(2026, 10, 3, 4, 0, tzinfo=UTC)
-    stamp = "2026-10-03T03:00:00Z"
-    records = [
-        {
-            "backend": "clive",
-            "role": "implement",
-            "spec_level": "guided",
-            "agent": {"effort": "standard"},
-            "wall_seconds": 300.0,
-            "completed_at": stamp,
-        }
-    ]
-    own = {
-        "project": "proj",
+    foreign = {
+        "project": "other",
         "backend": "clive",
         "role": "implement",
         "spec_level": "guided",
@@ -126,27 +117,34 @@ def test_expected_wait_never_reads_a_foreign_project_ledger(monkeypatch):
         "agent": {"local": True, "effort": "standard"},
         "node": {"role": "implement", "spec_level": "guided"},
     }
-    foreign = {
-        "project": "other",
-        "backend": 2,
-        "phase": "working",
-        "agent": {"local": True, "effort": "standard"},
-        "node": {"role": "implement", "spec_level": "guided"},
-    }
-    monkeypatch.setattr(lane_context, "list_live", lambda: [own, foreign])
-    monkeypatch.setattr(
-        lane_context,
-        "run_time_profile",
-        lambda *_a, **_k: pytest.fail("foreign project ledger read on the pick path"),
-    )
+    monkeypatch.setattr(lane_context, "list_live", lambda: [foreign])
+    read: list[str] = []
+
+    def profile(project, **_kwargs):
+        read.append(project)
+        return {
+            "groups": [
+                {
+                    "backend": "clive",
+                    "effort": "standard",
+                    "role": "implement",
+                    "spec_level": "guided",
+                    "runs": 3,
+                    "wall_seconds_median": 420.0,
+                }
+            ]
+        }
+
+    monkeypatch.setattr(lane_context, "run_time_profile", profile)
 
     wait = lane_context._expected_wait(
         project="proj",
-        records=records,
+        records=[],
         local_backend="clive",
         now=now,
     )
-    assert wait == 300.0
+    assert read == ["other"]
+    assert wait == 420.0
 
 
 def test_slow_client_still_times_out_as_a_recorded_fallback(monkeypatch):

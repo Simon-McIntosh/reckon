@@ -1,22 +1,29 @@
 <article class="r-evidence" data-plan="one-typesafe-model-picker" data-node="picker-pick-within-bound">
-  <h3>picker-pick-within-bound — a pick measures each phase once and reads no foreign ledger</h3>
+  <h3>picker-pick-within-bound — a pick measures each phase once and counts every live local worker</h3>
 
-  <p><strong>What changed.</strong> Two phases inside <code>pick()</code> were
-  re-done work. <code>snapshot._fit</code> measured every candidate's context
-  window twice: <code>routing._competence_verdict</code> already measures the
-  window and returns it under <code>context</code>, and <code>_fit</code> then
-  called <code>routing._context_fit_verdict</code> a second time. The
-  measurement reads the backend's instruction chain, whose repository lookup
-  shells out to <code>git rev-parse</code>, so each candidate paid that
-  subprocess twice on the pick's critical path. <code>_fit</code> now consumes
-  the measurement the competence verdict already returned and only measures
-  again when that verdict skipped its context check. Separately,
-  <code>lane_context._expected_wait</code> profiled every live local worker by
-  reading <em>its</em> project's whole ledger through
-  <code>run_time_profile</code>; when the pick already holds one project's
-  records, a worker from another project now contributes nothing rather than
-  putting a second ledger's size on the pick's critical path — matching the
-  rule that an unmeasured shape reports no invented duration.</p>
+  <p><strong>What changed.</strong> The dominant in-pick cost was re-done work.
+  <code>snapshot._fit</code> measured every candidate's context window twice:
+  <code>routing._competence_verdict</code> already measures the window and
+  returns it under <code>context</code>, and <code>_fit</code> then called
+  <code>routing._context_fit_verdict</code> a second time. The measurement
+  reads the backend's instruction chain, whose repository lookup shells out to
+  <code>git rev-parse</code> (~1.9 s each on this GPFS), so each candidate paid
+  that subprocess twice on the pick's critical path. <code>_fit</code> now
+  consumes the measurement the competence verdict already returned and only
+  measures again when that verdict skipped its context check.
+  <code>lane_context._expected_wait</code> reuses the pick's own records rather
+  than re-reading its project's ledger through <code>run_time_profile</code>,
+  which is what carries the pick's own ledger size off the critical path.</p>
+
+  <p><strong>A narrowing that was<em>not</em> kept.</strong> An earlier revision
+  also made <code>_expected_wait</code> skip a live local worker whose project
+  differed from the pick's, on the grounds that reading a foreign ledger is
+  slow. That is a latency trade, not a correctness one: the figure
+  <code>expected_wait_s</code> is the median wall time for the local runs
+  <em>now live</em>, so dropping a foreign project's worker makes it read null
+  (or low) while the lane is genuinely busy. Every live local worker's shape is
+  counted again; the only ledger read left on the pick's path is one per
+  distinct foreign project that has a live local worker.</p>
 
   <figure>
     <img src="/reckon/figures/one-typesafe-model-picker/picker-pick-within-bound/pick-phases-before-after.png"
@@ -38,21 +45,28 @@
     <tbody>
       <tr><td>candidate snapshot (git census, run twice)</td><td>2385 / 2652 / 2690</td><td>1432 / 1118 / 1274</td><td>no — bounded by candidate count</td></tr>
       <tr><td>&nbsp;&nbsp;&#8627; <code>_fit</code> context fit (duplicate measurement)</td><td>~1900 per <code>git rev-parse</code></td><td>removed</td><td>no</td></tr>
-      <tr><td>&nbsp;&nbsp;&#8627; <code>_expected_wait</code> foreign-project profile</td><td>235</td><td>0</td><td>yes (cut)</td></tr>
+      <tr><td>&nbsp;&nbsp;&#8627; <code>_expected_wait</code> own-project profile</td><td>reads own ledger</td><td>reuses held records</td><td>no (own ledger off the path)</td></tr>
+      <tr><td>&nbsp;&nbsp;&#8627; <code>_expected_wait</code> foreign-project profile</td><td>reads each live foreign ledger</td><td>reads each live foreign ledger</td><td>yes — kept for correctness</td></tr>
       <tr><td>local-lane load (<code>local_lane</code>)</td><td>5 / 6 / 7</td><td>5 / 6 / 6</td><td>no</td></tr>
-      <tr><td>return-time render (<code>lane_context.build</code>)</td><td>658 / 720 / 643</td><td>84 / 61 / 88</td><td>yes (cut)</td></tr>
-      <tr><td><strong>total <code>pick()</code></strong></td><td><strong>3047 / 3375 / 3336</strong></td><td><strong>1519 / 1181 / 1366</strong></td><td>&nbsp;</td></tr>
+      <tr><td>return-time render (<code>lane_context.build</code>)</td><td>658 / 720 / 643</td><td>84 / 61 / 88</td><td>no (was: own-profile read)</td></tr>
+      <tr><td><strong>total <code>pick()</code>, no live foreign local worker</strong></td><td><strong>3047 / 3375 / 3336</strong></td><td><strong>1519 / 1181 / 1366</strong></td><td>&nbsp;</td></tr>
     </tbody>
   </table>
 
-  <p><strong>Result against the bound.</strong> The median total fell from about
-  3.34 s to about 1.37 s, inside the 1.5 s target and well inside the 5 s
-  dispatch bound. The two ledger-scaling phases that were on the pick's critical
-  path — the duplicate context measurement (whose cost is the instruction-chain
-  read, not the ledger) and the foreign-project wait profile — are both removed;
-  no phase that scales with ledger size remains inside <code>pick()</code>. The
-  observed distribution supports keeping the bound at 5 s: the worst of three
-  runs is 1.52 s, roughly a third of the bound.</p>
+  <p><strong>Result against the bound.</strong> With no live foreign local
+  worker the median total fell from about 3.34 s to about 1.37 s, inside the
+  1.5 s target and well inside the 5 s dispatch bound; the duplicate context
+  measurement is removed and the pick's own profile is read from the records it
+  already holds rather than from its whole ledger. One ledger-scaling phase
+  remains and is kept deliberately: profiling a foreign project that has a live
+  local worker. On this workstation the pick's own project profile costs
+  3377 ms but is avoided; the one live foreign project cost 635 ms to read, so a
+  pick that must wait on it lands near 2.0 s — inside the 5 s bound, above the
+  1.5 s target. Counting that worker is a correctness requirement, not a
+  latency one: the estimate answers how loaded the lane is, so a narrowed
+  answer is wrong rather than fast. A bounded recent-window ledger reader would
+  remove the cost without narrowing the figure; that edit belongs to
+  <code>ledger.py</code> and is recorded as a follow-on.</p>
 
   <p><strong>Cut phase outside this node's fence — reported, not fixed.</strong>
   The dispatch path pre-builds three inputs <em>before</em> <code>pick()</code>
@@ -78,13 +92,22 @@
   <code>{"action": "fallback", "fallback_reason": "timeout"}</code> — the
   recorded fallback, returned before the client finished.</p>
 
-  <p><strong>Negative control.</strong> Reverting the <code>_fit</code> change —
+  <p><strong>Negative controls.</strong> Reverting the <code>_fit</code> change —
   restoring the second <code>_context_fit_verdict</code> call — makes
   <code>test_fit_reuses_the_competence_context_measurement</code> fail: the test
   monkeypatches the second measurement to raise
   <code>AssertionError("context fit measured twice in one _fit")</code>. The
   control ran 1 failed / 3 passed with exit 1, the failing id being exactly that
-  test (<code>negative-control.log</code>).</p>
+  test (<code>negative-control.log</code>). Reinstating the wait-estimate
+  narrowing — restoring
+  <code>if records is not None and owner != project: continue</code> — makes
+  <code>test_expected_wait_counts_a_foreign_projects_live_worker</code> fail,
+  because the foreign worker is dropped and the estimate returns
+  <code>None</code> where the test requires its median. That control ran 1
+  failed / 3 passed, the failing id being exactly that test
+  (<code>negative-control-repair.log</code>).</p>
+
+  <p><strong>Gate.</strong> Base arm and head arm run the picker test files with
 
   <p><strong>Gate.</strong> Base arm and head arm run the picker test files with
   the ledger present; each is judged by delta against the base revision, not by
