@@ -252,7 +252,7 @@ def _published_worker_slots(session: str) -> Any:
         listed.get("worker_slots") if isinstance(listed, Mapping) else None,
         (
             admission.get(lane_document.ADMISSION_NEW_SESSION_WORKER_SLOTS_KEY)
-            if admission.get("sessions_present")
+            if admission.get("present")
             else None
         ),
         admission.get(lane_document.ADMISSION_WORKER_SLOTS_KEY),

@@ -50,8 +50,8 @@ Two modes, selected by ``--hook``:
 A command the hook prints is one a coordinator may type, so it follows the
 configured local lane rather than whichever backend the run was carried on: the
 lane a run arrived on is the right lane to *read* about and the wrong one to
-route new work to silently. Both modes print the checklist ``resolve`` returns,
-so both carry that rewrite.
+route new work to silently. Both modes print a checklist through the same
+formatting, so both carry that rewrite.
 
 Silence is a mode of operation here, not a failure. A working directory
 outside the registered mounts, or a session that armed no follower, both mean
@@ -620,23 +620,6 @@ def follow_each_local_lane(
                 str(item.get("next_command") or ""), project=project
             )
     return obligations
-
-
-def resolve(payload: dict[str, Any]) -> dict[str, Any] | None:
-    """The obligations payload derived at this instant, or None when not ours.
-
-    An empty duty list is not None — the session is coordinating and owes
-    nothing, which is a state the caller has to act on, because the record of
-    what the session was last injected with must not outlive the duties it
-    describes.
-    """
-    located = locate_session(payload)
-    if located is None:
-        return None
-    project, session = located
-    return follow_each_local_lane(
-        _obligations_view()(project, session), project=project
-    )
 
 
 def not_fresh_line(
