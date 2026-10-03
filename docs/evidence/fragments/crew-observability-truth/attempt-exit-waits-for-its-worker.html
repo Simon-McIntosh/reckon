@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="attempt-exit-waits-for-its-worker">
+  <meta name="plan-title" content="An attempt's exit record waits for the worker it launched">
+  <meta name="plan-summary" content="The supervisor becomes a child subreaper before it spawns, so a launcher that exits ahead of its worker leaves the worker parented to the supervisor; the attempt's exit record waits for that worker and carries its pid and its exit, and a spawned child that ended by signal is recorded at once rather than awaited through leftovers. Gate: base 39 passed (EXIT=0); head 40 passed (EXIT=0); the declared mutation writes the record at the launcher's exit and the new case fails at EXIT=1.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-recorded-at" content="2026-10-02">
+  <meta name="plan-tags" content="crew,supervisor,exit-record,subreaper">
+  <title>An attempt's exit record waits for the worker it launched | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="attempt-exit-waits-for-its-worker" data-reckon="landed" data-when="2026-10-02">
+  <h2>An attempt's exit record waits for the worker it launched</h2>
+  <p><strong>Landed.</strong> The supervisor calls <code>prctl(PR_SET_CHILD_SUBREAPER)</code> before it spawns, so a launcher that exits ahead of its worker hands the worker to the supervisor rather than to init; the supervisor reaps it from <code>/proc</code> parentage under the same terminal-manifest grace and stop bounds, and the attempt's exit record carries the worker's pid and its exit. A spawned child that ended by signal ended the attempt itself, so its signal is recorded at once rather than awaited through the leftovers it leaves. Gate: base <code>8702883ad</code> 39 passed (<code>EXIT=0</code>), head <code>49d25e64b</code> 40 passed (<code>EXIT=0</code>); the declared mutation writes the record at the launcher's exit and <code>tests/test_attempt_exit_waits_for_its_worker.py</code> fails at <code>EXIT=1</code>.</p>
+</article>
+</body>
+</html>

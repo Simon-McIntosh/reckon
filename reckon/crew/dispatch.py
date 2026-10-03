@@ -9302,6 +9302,108 @@ def _reap_worker_on_its_terminal_manifest(
         time.sleep(_WORKER_MANIFEST_POLL_SECONDS)
 
 
+# A supervisor's argv is not always the worker itself: some lanes start the
+# worker through an intermediate, which exits while the worker runs on. The
+# worker is then an orphan, and without this the kernel reparents it to init,
+# where its exit cannot be collected and the attempt would be recorded as ended
+# while its worker still works.
+_PR_SET_CHILD_SUBREAPER = 36
+
+
+def _become_child_subreaper() -> None:
+    """Have the kernel reparent an orphaned worker to this supervisor.
+
+    A worker is collectable only where its parent waits for it, and a launcher
+    that exits ahead of its worker would otherwise hand the worker to init. As
+    a child subreaper the supervisor receives it as its own child, so the wait
+    for the worker and the exit record that ends the attempt both stay here.
+    """
+    libc = ctypes.CDLL(None, use_errno=True)
+    if libc.prctl(_PR_SET_CHILD_SUBREAPER, 1, 0, 0, 0) != 0:
+        raise CrewError(
+            f"prctl(PR_SET_CHILD_SUBREAPER) failed: {os.strerror(ctypes.get_errno())}"
+        )
+
+
+def _child_processes_of(pid: int) -> list[int]:
+    """The pids the kernel currently parents to a process.
+
+    Read from /proc rather than from a record, because a reparented worker is
+    named nowhere: it was parented to a launcher that is gone by the time the
+    wait for it begins. A child that already exited shows here too, as the
+    zombie its parent has yet to reap.
+    """
+    children: list[int] = []
+    try:
+        entries = os.listdir("/proc")
+    except OSError:
+        return children
+    for entry in entries:
+        if not entry.isdigit():
+            continue
+        try:
+            stat = Path(f"/proc/{entry}/stat").read_text(encoding="utf-8")
+        except OSError:
+            continue
+        try:
+            parent = int(stat[stat.rindex(")") + 2 :].split()[1])
+        except (ValueError, IndexError):
+            continue
+        if parent == pid:
+            children.append(int(entry))
+    return sorted(children)
+
+
+def _reap_the_launched_worker(
+    pid: int,
+    status: int | None,
+    *,
+    run_directory: Path,
+    manifest_path: Path,
+    grace_seconds: float,
+    baseline_ns: int,
+    stop_requested: threading.Event | None = None,
+    stop_grace_seconds: float = 0.0,
+) -> tuple[int, int | None]:
+    """Collect the exit of the worker a launcher started and left behind.
+
+    Returns the pid and wait status the attempt's exit record should name. When
+    the immediate child was the worker they are unchanged. When it was an
+    intermediate that exited first, the worker it started was reparented to
+    this supervisor as a child subreaper, and it is waited on exactly as a
+    directly spawned worker is — under the same terminal-manifest grace and the
+    same stop bound — so the record names the exit that ended the attempt's
+    worker rather than a launcher's exit taken while the worker still runs.
+    """
+    worker_pid, worker_status = pid, status
+    if status is not None and os.WIFSIGNALED(status):
+        # A launcher hands the attempt to its worker by exiting; it is not
+        # killed. A spawned child that ended by signal ended the attempt's own
+        # worker, and any descendants it leaves behind are leftovers of that
+        # worker rather than a worker still running the attempt. The signal is
+        # the fact the exit record carries, so it is written now rather than
+        # after a leftover ends.
+        return worker_pid, worker_status
+    while True:
+        children = _child_processes_of(os.getpid())
+        if not children:
+            return worker_pid, worker_status
+        for child in children:
+            child_status = _reap_worker_on_its_terminal_manifest(
+                child,
+                run_directory=run_directory,
+                manifest_path=manifest_path,
+                grace_seconds=grace_seconds,
+                baseline_ns=baseline_ns,
+                stop_requested=stop_requested,
+                stop_grace_seconds=stop_grace_seconds,
+            )
+            if child_status is not None:
+                # The exit that ended the wait is the attempt's exit; a child
+                # reaped elsewhere leaves the one already held standing.
+                worker_pid, worker_status = child, child_status
+
+
 def _run_supervisor(spec_path: Path) -> int:
     """Take the snapshot, launch the worker, collect its exit, and stop.
 
@@ -9347,6 +9449,10 @@ def _run_supervisor(spec_path: Path) -> int:
             )
             return 0
         try:
+            # Before the worker exists, so an intermediate that exits ahead of
+            # the worker it starts leaves that worker parented here rather than
+            # to init, where its exit would be uncollectable.
+            _become_child_subreaper()
             pid = _supervisor_spawn_worker(spec)
         except (OSError, ValueError, KeyError, CrewError) as exc:
             failure_record = _supervisor_exit_record(
@@ -9393,10 +9499,22 @@ def _run_supervisor(spec_path: Path) -> int:
         stop_requested=stop_requested,
         stop_grace_seconds=_stop_grace_seconds(),
     )
+    worker_pid, status = _reap_the_launched_worker(
+        pid,
+        status,
+        run_directory=run_directory,
+        manifest_path=_supervisor_manifest_path(run_id),
+        grace_seconds=_terminal_manifest_grace_seconds(),
+        baseline_ns=_supervisor_manifest_baseline_ns(
+            run_id, spec, supervisor_started_at=launched_at
+        ),
+        stop_requested=stop_requested,
+        stop_grace_seconds=_stop_grace_seconds(),
+    )
     exit_record = _supervisor_exit_record(
         run_id=str(spec.get("run_id") or ""),
         attempt=attempt,
-        worker_pid=pid,
+        worker_pid=worker_pid,
         launched_at=launched_at,
         status=status,
         run_directory=run_directory,
