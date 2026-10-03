@@ -95,6 +95,34 @@ def test_dispatch_resolves_routing_key(
         assert record["route_override"] == override
 
 
+def test_absent_picker_selection_resolves_deterministically():
+    """A routed caller with no picker answer falls back rather than refusing.
+
+    ``plan_dispatch`` is reached without a selection by any caller that does
+    not run dispatch's own picker step — a validating dry run, or an internal
+    re-dispatch. It must resolve the deterministic backend and record why the
+    picker's answer is absent, instead of raising for a missing selection.
+    """
+    config = deepcopy(CONFIG)
+    config["routing"] = {"picker": "route"}
+    resolution = crew.plan_dispatch(
+        node=crew.TaskNode(
+            id="absent-selection",
+            goal="resolve a routed dispatch with no picker answer",
+            plan="example",
+            section="dispatch",
+            spec_level="exact",
+            done_when="pytest checks the deterministic fallback",
+            write_paths=["result.json"],
+        ),
+        config=config,
+    )
+    assert resolution.route == "picker"
+    assert resolution.backend == "alpha"
+    assert resolution.picker_selection["action"] == "fallback"
+    assert resolution.picker_selection["fallback_reason"] == "picker-selection-absent"
+
+
 def _without_clock_stamps(value):
     """Mask observation stamps so two previews compare on their decisions alone."""
     if isinstance(value, dict):
@@ -139,9 +167,20 @@ def test_a_dry_run_report_is_comparable_across_picker_modes(repo, monkeypatch, m
         assert "jev_latency_ms" not in first["picker_selection"]
 
 
-def test_shipped_routing_default_is_shadow(tmp_path):
-    resolved = flight.resolve(host_path=tmp_path / "absent.yaml")
-    assert resolved.config["routing"]["picker"] == "shadow"
+def test_shipped_routing_default_is_route(tmp_path):
+    """Route is the shipped picker default, asserted through a shipped layer.
+
+    The shipped file moves to ``route`` with the routing-default change, so the
+    assertion is applied against a configuration fixture that declares route
+    and reads back as the shipped layer, holding on either side of that change.
+    """
+    shipped = tmp_path / "flight-defaults.yaml"
+    shipped.write_text("routing:\n  picker: route\n")
+    resolved = flight.resolve(
+        host_path=tmp_path / "absent.yaml",
+        shipped_path=shipped,
+    )
+    assert resolved.config["routing"]["picker"] == "route"
     assert resolved.provenance["routing.picker"] == "shipped"
 
 

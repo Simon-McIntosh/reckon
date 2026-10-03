@@ -4416,8 +4416,14 @@ def plan_dispatch(
     requested_backend = str(backend_override or default_backend_override or "").strip()
     route_override = route
     route = resolve_dispatch_route(config, route)
-    if route == "picker" and picker_selection is None:
-        raise CrewError("picker route has no selection")
+    selection_absent = route == "picker" and picker_selection is None
+    if selection_absent:
+        # A caller reaches this function without a selection whenever it does
+        # not run dispatch's own picker step — a validating dry run, or an
+        # internal re-dispatch. The route still has to resolve, so fall back to
+        # the routing that would have run without the picker and record why the
+        # picker's answer is absent rather than refusing the whole dispatch.
+        picker_selection = _picker_fallback("picker-selection-absent", "")
     if route == "picker" and picker_selection is not None:
         action = str(picker_selection.get("action") or "")
         if action == "hold":
@@ -4437,7 +4443,11 @@ def plan_dispatch(
         if action == "route":
             requested_backend = str(picker_selection["backend"])
         elif action == "fallback":
-            requested_backend = str(config.get("default_backend") or "")
+            # A caller that already named a backend keeps its request; otherwise
+            # the configured default stands in, which is the routing a
+            # deterministic dispatch would have resolved on its own.
+            if not selection_absent:
+                requested_backend = str(config.get("default_backend") or "")
         else:
             raise CrewError(f"picker returned unknown action {action!r}")
     # The configured local lane, named here so a ``--local`` dispatch has one
