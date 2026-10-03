@@ -9,8 +9,9 @@ builds a request.
 
 These tests hold that boundary rather than the fixture's implementation: the
 network call is never made, the recorded fallback names the disability, a routed
-dispatch resolves the same backend as deterministic routing, and the real
-credential is unreadable while the suite runs.
+dispatch resolves the same backend as deterministic routing, no flight
+resolution reads the repository's model catalogue, and the real credential is
+unreadable while the suite runs.
 """
 
 from __future__ import annotations
@@ -126,3 +127,58 @@ def test_the_real_credential_is_unreadable_under_test():
     assert not path.is_file()
     with pytest.raises(client.LiveJevDisabledError):
         client.load_key(path)
+
+
+def test_a_host_backend_is_not_filled_from_the_repository_catalogue(
+    tmp_path, monkeypatch
+):
+    """A fixture host backend resolves with no catalogue-supplied value.
+
+    The catalogue is repository state living in the checkout's ``docs/state``
+    tree. Without isolation every flight resolution drew alias, effort, model,
+    budget group and rates from it into whatever backend a fixture host
+    declared, so a host naming only a model also resolved the catalogue's
+    alias and effort for that backend.
+    """
+    from reckon import flight
+
+    real_catalogue = (
+        Path(flight.__file__).resolve().parent.parent
+        / "docs"
+        / "state"
+        / "reckon"
+        / "model-catalogue.yaml"
+    )
+    assert real_catalogue.is_file(), "the catalogue to hide is absent"
+    assert flight.model_catalogue_path() != real_catalogue
+
+    host = tmp_path / "host" / "flight.yaml"
+    host.parent.mkdir(parents=True)
+    host.write_text(
+        "default_backend: clive\n"
+        "backends:\n"
+        "  clive:\n"
+        "    launch: cli\n"
+        "    command: clive\n"
+        "    model: fixture-model\n"
+    )
+
+    opened: list[str] = []
+    real_reader = flight.read_layer_file
+
+    def spy(path):
+        opened.append(str(Path(path).resolve()))
+        return real_reader(path)
+
+    monkeypatch.setattr(flight, "read_layer_file", spy)
+
+    resolved = flight.resolve(
+        host_path=host, project_path=tmp_path / "project" / "flight.yaml"
+    )
+
+    clive = resolved.config["backends"]["clive"]
+    assert clive["model"] == "fixture-model"
+    assert "alias" not in clive
+    assert "effort" not in clive
+    assert resolved.origin("backends.clive.alias") is None
+    assert str(real_catalogue.resolve()) not in opened
