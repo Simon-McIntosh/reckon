@@ -3314,9 +3314,12 @@ def shared_verdict_inputs(project: str, repo: Path) -> dict[str, Any]:
             ),
         }
 
+    stamp = _verdict_input_stamp(project, repo)
+    if stamp["ledger"] is None:
+        return build()
     return capabilities.cached_pick_input(
         f"verdict-inputs-{project}",
-        _verdict_input_stamp(project, repo),
+        stamp,
         build,
     )
 
