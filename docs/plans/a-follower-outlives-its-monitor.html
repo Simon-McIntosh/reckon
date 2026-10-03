@@ -17,15 +17,15 @@
   <meta name="plan-capability-risk" content="moderate">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
-  <meta name="plan-modified" content="2026-10-02">
-  <meta name="plan-version" content="59">
+  <meta name="plan-modified" content="2026-10-04">
+  <meta name="plan-version" content="60">
   <meta name="plan-depends-on" content="the-monitor-under-measurement">
   <title>A Follower Outlives Its Monitor | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-impl" content="0.86">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -540,6 +540,10 @@
     <h2 id="s11">§11 — Keep the follower attached across the host&#x27;s expiry</h2>
 <section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
 <p>§2, §3 and §6 are independent. §4 shares <code>reckon/cli.py</code> with §3 and runs after it. §5 waits on the measurement plan's staleness census.</p><p><strong>Done when</strong> a follower survives its host's expiry (§2, §3, §6 independent; §4 after §3).</p><p>Moved from followup f-afoim-001 on a-follower-outlives-its-monitor by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.86; §2/§3/§4/§6 named in body</p>
+
+    <h2 id="s12">§12 — A follower re-arm test never takes down its xdist worker</h2>
+<section data-reckon="section" data-id="s12" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>Measured by the S22 coordinator on 2026-10-03 and 2026-10-04 across stacked population runs at <code>-n 6</code> to <code>-n 10</code> on the fleet allocation. In two of them an xdist worker died partway through a follower re-arm test, and pytest reported the test failed with no traceback:</p><ul><li><code>tests/test_follower_rearm_shows_nothing_twice.py::test_a_pipe_rearm_delivers_only_the_transitions_written_while_away</code>, worker gw7, in a base arm at main. In a later head arm the same test failed instead on <code>assert acquired</code>.</li><li><code>tests/test_follow_rearm_continues.py::test_a_terminal_replay_carries_one_frame_line_and_a_pipe_carries_none</code>, worker gw3, in a head arm whose change did not touch the follower.</li></ul><p>Each passes 3 of 3 alone on both trees. A crashed worker loses every test still queued on it, and it shows up in a base/head delta as an added failure that has to be rechecked by hand. A worker dies like this when the test's own process exits, is signalled, or re-executes in place, not when an assertion fails. The follower's self-reload re-executes in place, and these tests drive re-arm and reload paths.</p><p><strong>Done when</strong> the mechanism that ends the worker process is identified from evidence, such as the worker's exit status or signal, an exec observed with a stub, or a reproduction under load. Neither test can end its runner process any more: anything that re-executes, exits or signals runs in a child the test owns. A loop of each test, 30 times under <code>-n 8</code> with a CPU load generator beside it, finishes with no crashed worker. The negative control is the current revision under the same loop, where at least one worker crashes. If 30 iterations do not reproduce it, the loop is raised until it does, and the iteration count is reported.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
