@@ -416,14 +416,42 @@ def _registered_repository_roots() -> list[Path]:
     return roots
 
 
+def _run_commit_directory(record: Mapping[str, Any]) -> Path:
+    """The directory a run's commit objects are read through.
+
+    A run commits in its own worktree, and a worktree is a checkout of a
+    repository that shares its object store, so the same revisions resolve
+    through the repository as well. The worktree is released once the run ends,
+    and the path it named is then not a directory at all: a git call whose
+    working directory has been removed raises rather than reporting, which left
+    a run whose worktree was already reclaimed impossible to promote. Reading
+    its commits through the repository instead keeps resolution, ancestry and
+    citation checks answering for it as they did while the worktree was there.
+    A record that names no repository keeps the worktree path, so a caller's
+    own unmeasurable case is unchanged.
+    """
+    worktree = Path(str(record.get("worktree") or ""))
+    if str(record.get("worktree") or "").strip() and worktree.is_dir():
+        return worktree
+    if str(record.get("repo") or "").strip():
+        return Path(str(record.get("repo") or ""))
+    return worktree
+
+
 def _commit_canonical_id(root: Path, revision: str) -> str | None:
     """Return the canonical object id one revision names, or None.
 
     The same resolution the scope paths use, returning the canonical id rather
     than a boolean so an abbreviated or branch-named revision can be compared
     against another spelling of the same commit. None is an unresolvable
-    revision, never evidence of absence.
+    revision, never evidence of absence. A root that is not a readable
+    directory is unmeasurable in the same way — a git invocation whose working
+    directory has been removed raises rather than reporting — and a caller
+    holding a run's record reads through ``_run_commit_directory`` so a
+    released worktree is never the directory this call runs in.
     """
+    if not root.is_dir():
+        return None
     probe = subprocess.run(
         [
             "git",
@@ -879,8 +907,10 @@ def _require_gate_evidence(
     # discarded: a coordinator that omitted one flag produced a ledger saying
     # the node succeeded with nothing pointing at the work. Naming the exact
     # revisions is more use than describing the condition, so the manifest is
-    # read before the repository check below.
-    tree = Path(str(record.get("worktree") or ""))
+    # read before the repository check below. A run whose worktree was
+    # reclaimed after it ended is read through its repository, which shares the
+    # object store, so its citations resolve rather than going unmeasured.
+    tree = _run_commit_directory(record)
     manifest_present, fresh = _manifest_freshness(record)
     delivered: dict[str, Any] = {}
     delivered_text = ""
@@ -909,11 +939,11 @@ def _require_gate_evidence(
         # boundary check and the ledger resolve, so a value that names nothing
         # is refused by value here rather than filtered out of the comparison
         # below, where a count would rest on an entry nothing can be found for.
-        # The measurement is taken only in a tree this guard can read, so a run
-        # whose worktree is already gone stays as silent as the commitless
-        # guard keeps when it cannot measure.
+        # The measurement is taken in a tree that can be read, which for a
+        # reclaimed run is its repository rather than the worktree it no longer
+        # has.
         unresolved_presented: list[str] = []
-        if tree.is_dir() and str(record.get("worktree") or "").strip():
+        if tree.is_dir():
             unresolved_presented = [
                 candidate
                 for candidate in presented
@@ -1018,11 +1048,17 @@ def _require_gate_evidence(
         )
 
     base = str(record.get("base_sha") or "").strip()
-    if not base or not tree.is_dir():
+    # This one reads the worktree's own state rather than a commit object, so
+    # the fallback above does not apply: the repository's HEAD belongs to a
+    # tree this run did not work in, and reading it for a run whose worktree is
+    # gone would refuse a truthful promotion on another tree's movement. With
+    # no worktree there is nothing to ask, so the guard stays silent.
+    worktree = Path(str(record.get("worktree") or ""))
+    if not base or not worktree.is_dir():
         return None
     head = subprocess.run(
         ["git", "rev-parse", "--verify", "--quiet", "HEAD"],
-        cwd=tree,
+        cwd=worktree,
         capture_output=True,
         text=True,
         check=False,
