@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="Every removal path reads the wide claim">
+  <meta name="plan-summary" content="_remove_worktree decided liveness through the phase-gated _live_worktree_claims, so a run parked between turns &mdash; its pointer carrying a terminal-looking phase while its worker is gone &mdash; read as finished and its worktree was force-removed. It now reads _live_pointer_worktrees, and a test enumerates every worktree-removal path in the package by parsing its sources, so a removal path that reads the phase-gated claim for a tree it does not own fails it.">
+  <meta name="plan-evidence-for" content="reckon:crew-runtime-positive-controls">
+  <meta name="plan-verifies" content="reckon:crew-runtime-positive-controls#s45">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,worktree,removal,live-pointer,wide-claim">
+  <title>Every removal path reads the wide claim &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Every removal path reads the wide claim</h1>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <p><code>reckon/crew/routing.py</code>: <code>_remove_worktree</code>,
+        the rollback that undoes a worktree created for a dispatch that then
+        failed, read liveness through the phase-gated
+        <code>_live_worktree_claims</code>. A run parked between turns carries
+        a terminal-looking phase and a dead worker process, so a live
+        pointer's tree read as unclaimed and the rollback force-removed it. It
+        now reads <code>_live_pointer_worktrees</code>, the wide claim every
+        gc path already reads, and the phase-gated import leaves the module
+        with it.</p>
+      <p><code>_live_pointer_worktrees</code>, defined in the same module, was
+        already the claim the sweep and residue-release paths read; this
+        change makes its docstring's guarantee true of the remaining path.</p>
+    </section>
+
+    <section id="enumeration">
+      <h2>How the removal paths were enumerated</h2>
+      <p>The test carries no list. It parses every <code>reckon/**/*.py</code>
+        source, and a function is a removal path when its body invokes a
+        command whose literal argument list carries the adjacent pair
+        <code>"worktree", "remove"</code> &mdash; covering both shapes in the
+        package, the <code>_git(...)</code> helper and a subprocess argv
+        list. Four paths were found: <code>_remove_worktree</code>,
+        <code>garbage_collect</code> and <code>_save_and_release_worktree</code>
+        in <code>reckon/crew/routing.py</code>, all reading the wide claim
+        after this change, and <code>_release_run_workspace</code> in
+        <code>reckon/crew/promotion.py</code>, which reads its removal target
+        from the released run's own record &mdash; the sanctioned release
+        door, excluded from the reclaim population by the same derivation,
+        and reported below.</p>
+      <p><code>_live_worktree_claims</code> is kept for its non-removal
+        callers: the worktree audit in <code>reckon/crew/promotion.py</code>,
+        whose read is report-only, and the promotion boundary check, which
+        asks whether a run is in flight rather than whether a tree is
+        reclaimable.</p>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <ul>
+        <li>Base arm over the gate population at <code>dad58ac67</code>:
+          <strong>2 failed, 297 passed</strong> (<code>EXIT=1</code>), both
+          failures in this node's new tests &mdash; the parked run's tree is
+          removed, and <code>_remove_worktree</code> reads
+          <code>reads_phase_gated=True, reads_wide=False</code>.</li>
+        <li>Head arm, same population: <strong>299 passed</strong>
+          (<code>EXIT=0</code>); the new test file alone re-run against its
+          committed bytes: <strong>3 passed</strong>.</li>
+        <li>Negative control, the declared one: a scratch copy of head in
+          which <code>_remove_worktree</code> reads
+          <code>_live_worktree_claims</code> again &mdash; <strong>2 failed,
+          1 passed</strong> (<code>EXIT=1</code>), both failing ids absent
+          from the green head arm. The parked tree the failing case built no
+          longer exists under that run's retained basetemp, while the same
+          tree and its marker are present in the head run's basetemp.</li>
+      </ul>
+    </section>
+
+    <section id="follow-on">
+      <h2>Follow-on</h2>
+      <p><code>_release_run_workspace</code> in
+        <code>reckon/crew/promotion.py</code> is the one removal path outside
+        this node's write scope. It removes a worktree it does not own and
+        decides through the phase-gated claim (excluding the run being
+        released), so the same parked-run case applies to it; its read should
+        become <code>_live_pointer_worktrees()</code> minus its own run.</p>
+    </section>
+  </main>
+</body>
+</html>
