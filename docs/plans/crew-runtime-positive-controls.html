@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="234">
+<meta name="plan-version" content="235">
 </head>
 <body>
   <main class="plan-doc">
@@ -1976,6 +1976,9 @@
 </div>
 <div class="r-comment" data-section="s40" data-id="c-run-r-20261003T035002447065-review-of-promote-a-reclaimed-run" data-who="reckon-build" data-when="2026-10-03T03:58:47.973Z">
     <div class="r-comment-body"><p>review of promote-a-reclaimed-run stored parsed: goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 20, total 99; base 4efd4fdea head e0b05e3a, added_failure_count 0, added_failure_ids []; no blocking finding, two follow-ons.</p></div>
+</div>
+<div class="r-comment" data-section="s39" data-id="c-run-r-20261003T030441001089-failed-landing-leaves-nothing-behind" data-who="reckon-build" data-when="2026-10-03T04:04:44.416Z">
+    <div class="r-comment-body"><p>A refused landing commit now leaves an index with no entry the run&#x27;s own commit never covered — a created path is dropped from the index and its file removed only once the entry is confirmed gone — and removes the store row its own append inserted, so the retry records the landed attempt instead of colliding silently with the refused one; tracked working-tree writes stay as the base revision left them, and the four tests pinning that design pass unchanged.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
