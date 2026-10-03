@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-finished-worktree-releases-without-a-force">
+  <meta name="plan-verifies" content="reckon:a-finished-worktree-releases-without-a-force#s11">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-03">
+  <meta name="evidence-commit" content="fe33d6d04">
+  <title>A worktree that vanishes mid-sweep no longer stops gc | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="gc-vanished-mid-sweep">
+  <h2>A worktree that vanishes mid-sweep no longer stops gc</h2>
+
+  <p><strong>Change (commits <code>088ab8a4a</code> and <code>fe33d6d04</code>).</strong>
+  <code>garbage_collect</code> (<code>reckon/crew/routing.py</code>) reclassifies a row whose
+  action fails because the directory is gone, instead of stopping the sweep. When an action
+  raises and <code>path.is_dir()</code> is false, the row is re-read through
+  <code>_inspect_workspace(..., raise_on_unavailable=False)</code>, marked
+  <code>gone_before_action: true</code>, given a detail naming the vanish, and the pass continues
+  to the remaining worktrees; the row is never appended to <code>removed_worktrees</code>. An
+  action that fails while the directory is still present still refuses the row and propagates,
+  exactly as before — that distinction is the whole change, and the existing stop-mid-pass
+  contract tests still pass unchanged.</p>
+
+  <p><strong>Why the earlier vanished-worktree test did not cover this.</strong>
+  <code>tests/test_gc_applies_past_a_vanished_worktree.py</code> removes the directory
+  <em>before</em> invoking gc, so classification itself reads it missing: <code>_tree_state</code>'s
+  leading <code>path.is_dir()</code> guard returns the <code>unavailable</code> row at
+  classification and nothing ever acts on the tree. It exercises no directory that disappears
+  between classification and an action, and its surviving tree is merged and clean, so the pass's
+  action for it is a plain removal — the <code>--pin-unique-commits</code> path, where the
+  2026-10-03 failure landed, is not exercised at all. The mechanism is that the pin step's first
+  act is <code>git rev-parse HEAD</code> run with the worktree as its working directory, and a
+  missing working directory makes <code>Popen</code> raise <code>FileNotFoundError</code> before
+  git starts: <code>subprocess.run([...], cwd='/nonexistent/dir/xyz', check=False)</code> still
+  raises from <code>_execute_child</code>, because <code>check=False</code> covers a non-zero exit
+  and not cwd resolution. The failure therefore arrives as an OSError rather than as a git error,
+  and the action loop's single <code>except Exception</code> treated it as a defect of the sweep
+  and propagated.</p>
+
+  <p><strong>Reproduction before the fix.</strong> With the new test run at base
+  <code>d6017d33e</code> (<code>logs/reproduce-before-fix.log</code>): exit code 1,
+  <code>ok: false</code>, <code>error: "[Errno 2] No such file or directory:
+  PosixPath('…/session/a-vanishing')"</code>, <code>refused_worktrees</code> naming that tree and
+  <code>removed_worktrees: []</code> — the sweep stopped after the first worktree, the same
+  signature as the recorded failure.</p>
+
+  <p><strong>New test</strong> (<code>tests/test_gc_vanished_mid_sweep.py</code>, temporary
+  repository with <code>RECKON_HOME</code> under <code>tmp_path</code>): three dirty unintegrated
+  worktrees, each carrying one commit that exists nowhere else; the pin step is monkeypatched so
+  its first call removes the directory it was about to pin and then delegates;
+  <code>crew gc --pin-unique-commits --apply</code> runs and the test asserts the sweep completes
+  (<code>exit_code == 0</code>, <code>ok</code> true), the vanished row is
+  <code>classification: unavailable</code> with <code>gone_before_action</code> true, its detail
+  naming the vanish, <code>reclaimable</code> false, withheld <em>left in place</em>, and absent
+  from <code>removed_worktrees</code>; and the other two trees are released with
+  <code>refs/reckon/archive/&lt;name&gt;</code> resolving to their heads and their files
+  reachable through the ref.</p>
+
+  <p><strong>Gate.</strong> Both arms ran under <code>pytest -n 8 --timeout=300
+  -p no:cacheprovider</code>, each in the foreground, each with its own basetemp and its own log.
+  The base arm, from a <code>git archive</code> extraction of
+  <code>d6017d33e2ca3e2489de9d2305667495cb5d6cc6</code> in
+  <code>/tmp/reckon-crew-scratch/r-20261003T041931269950-gc-vanished-mid-sweep/gate-base</code>
+  (9 gc-reachable test files), reports <strong>60 passed</strong>, <code>EXIT=0</code>. The head
+  arm at <code>fe33d6d04b8bcca58d44e0c312e4831fa844f00e</code> (the same 9 files plus the new
+  <code>tests/test_gc_vanished_mid_sweep.py</code>) reports <strong>61 passed</strong>,
+  <code>EXIT=0</code>; added failure ids: none. Each arm's header prints its own
+  <code>module.__file__</code> and cwd — the base arm's is the scratch extraction's
+  <code>reckon/crew/routing.py</code>, the head arm's the worktree's — so neither arm could have
+  been served by the other tree. <code>ruff check</code> reports 9 findings in head
+  <code>routing.py</code> and the same 9 (identical codes and messages) in the base copy, none in
+  the new test file; <code>ruff format --check</code> passes on all three changed paths.</p>
+
+  <p><strong>Negative control</strong> (<code>logs/negative-control.log</code>): in a scratch copy
+  of the head tree, the vanish branch was mutated to force the refuse-and-raise path
+  (<code>if path.is_dir():</code> → <code>if True:</code> at routing.py:1498), letting the vanished
+  path raise again. The new test then fails exactly as declared — <code>EXIT=1</code>, one failed
+  id, <code>tests/test_gc_vanished_mid_sweep.py::test_a_worktree_vanishing_before_its_pin_does_not_stop_the_sweep</code>,
+  which does not fail in the head arm — with the sweep again stopping after the first worktree
+  and <code>removed_worktrees: []</code>.</p>
+
+  <p><strong>Logs.</strong> <code>logs/base-arm.log</code>, <code>logs/head-arm-2.log</code>,
+  <code>logs/reproduce-before-fix.log</code>, <code>logs/negative-control.log</code> in the run
+  directory
+  <code>~/.config/reckon/crew/runs/r-20261003T041931269950-gc-vanished-mid-sweep</code>.</p>
+</section>
+</main>
+</body>
+</html>
