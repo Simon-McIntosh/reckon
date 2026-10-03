@@ -3548,72 +3548,95 @@ class _ParsedStream:
         tuple[tuple[datetime, str] | None, tuple[datetime, str] | None] | None
     ) = None
     pending_events: list[dict[str, Any]] | None = None
+    timestamp_version: int = 0
 
 
 _PARSED_STREAMS: OrderedDict[str, _ParsedStream] = OrderedDict()
+_PARSED_STREAM_LOCK = threading.Lock()
 _PARSED_STREAM_LIMIT = 32 * 1024 * 1024
 
 
-def cached_stream_events(path: str | Path) -> tuple[list[dict[str, Any]], int]:
-    """Return parsed records, extending a stable stream from appended bytes."""
+def _cached_stream_entry(path: str | Path) -> _ParsedStream:
+    """Find or publish one version of a stream without locking during I/O."""
     source = Path(path)
     key = str(source.resolve())
     info = source.stat()
     identity = (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns)
-    stored = _PARSED_STREAMS.get(key)
-    if stored is not None and stored.identity == identity:
-        _PARSED_STREAMS.move_to_end(key)
-        return stored.events, stored.malformed
+    with _PARSED_STREAM_LOCK:
+        stored = _PARSED_STREAMS.get(key)
+        if stored is not None and stored.identity == identity:
+            _PARSED_STREAMS.move_to_end(key)
+            return stored
+        prior_identity = stored.identity if stored is not None else None
+        prior_events = stored.events if stored is not None else []
+        prior_malformed = stored.malformed if stored is not None else 0
+        prior_head = stored.head if stored is not None else None
+        prior_ends_newline = stored.ends_newline if stored is not None else False
     grows = (
-        stored is not None
-        and stored.identity[:2] == identity[:2]
-        and info.st_size > stored.identity[2]
-        and stored.ends_newline
-        and stream_head_fingerprint(source, offset=stored.identity[2]) == stored.head
+        prior_identity is not None
+        and prior_identity[:2] == identity[:2]
+        and info.st_size > prior_identity[2]
+        and prior_ends_newline
+        and stream_head_fingerprint(source, offset=prior_identity[2]) == prior_head
     )
     with source.open("rb") as handle:
         if grows:
-            handle.seek(stored.identity[2])
+            handle.seek(prior_identity[2])
         data = handle.read()
     _count_parsed_bytes(len(data))
     added, malformed = parse_events(data.decode("utf-8", errors="replace").splitlines())
     events = added
     if grows:
-        events = [*stored.events, *added]
-        malformed += stored.malformed
-    current = _ParsedStream(
-        identity=identity,
-        events=events,
-        malformed=malformed,
-        head=stream_head_fingerprint(source, offset=info.st_size),
-        ends_newline=data.endswith(b"\n"),
-        timestamp_reader=stored.timestamp_reader if grows else None,
-        timestamp_bounds=stored.timestamp_bounds if grows else None,
-        pending_events=added if grows else None,
-    )
-    _PARSED_STREAMS[key] = current
-    _PARSED_STREAMS.move_to_end(key)
-    while (
-        sum(entry.identity[2] for entry in _PARSED_STREAMS.values())
-        > _PARSED_STREAM_LIMIT
-        and len(_PARSED_STREAMS) > 1
-    ):
-        _PARSED_STREAMS.popitem(last=False)
-    return events, malformed
+        events = [*prior_events, *added]
+        malformed += prior_malformed
+    head = stream_head_fingerprint(source, offset=info.st_size)
+    with _PARSED_STREAM_LOCK:
+        live = _PARSED_STREAMS.get(key)
+        if live is not None and live.identity == identity:
+            _PARSED_STREAMS.move_to_end(key)
+            return live
+        pending = [*(stored.pending_events or []), *added] if grows else None
+        current = _ParsedStream(
+            identity=identity,
+            events=events,
+            malformed=malformed,
+            head=head,
+            ends_newline=data.endswith(b"\n"),
+            timestamp_reader=stored.timestamp_reader if grows else None,
+            timestamp_bounds=stored.timestamp_bounds if grows else None,
+            pending_events=pending,
+        )
+        if live is not None and live is not stored:
+            return current
+        _PARSED_STREAMS[key] = current
+        _PARSED_STREAMS.move_to_end(key)
+        size = sum(entry.identity[2] for entry in _PARSED_STREAMS.values())
+        while size > _PARSED_STREAM_LIMIT and len(_PARSED_STREAMS) > 1:
+            _unused, evicted = _PARSED_STREAMS.popitem(last=False)
+            size -= evicted.identity[2]
+        return current
+
+
+def cached_stream_events(path: str | Path) -> tuple[list[dict[str, Any]], int]:
+    """Return shared read-only-by-contract events, parsing only appended bytes."""
+    entry = _cached_stream_entry(path)
+    with _PARSED_STREAM_LOCK:
+        return entry.events, entry.malformed
 
 
 def cached_stream_timestamp_bounds(
     path: str | Path, reader: Callable[[object], datetime | None]
 ) -> tuple[tuple[datetime, str] | None, tuple[datetime, str] | None]:
     """Return the earliest and latest zoned stream stamps, scanning only growth."""
-    events, _malformed = cached_stream_events(path)
-    entry = _PARSED_STREAMS[str(Path(path).resolve())]
-    if entry.timestamp_reader is reader and entry.timestamp_bounds is not None:
-        first, last = entry.timestamp_bounds
-        scan = entry.pending_events or []
-    else:
-        first = last = None
-        scan = events
+    entry = _cached_stream_entry(path)
+    with _PARSED_STREAM_LOCK:
+        version = entry.timestamp_version
+        if entry.timestamp_reader is reader and entry.timestamp_bounds is not None:
+            first, last = entry.timestamp_bounds
+            scan = tuple(entry.pending_events or ())
+        else:
+            first = last = None
+            scan = tuple(entry.events)
     for event in scan:
         stamp = event.get("timestamp")
         if not isinstance(stamp, str):
@@ -3626,9 +3649,12 @@ def cached_stream_timestamp_bounds(
             first = point
         if last is None or parsed > last[0]:
             last = point
-    entry.timestamp_reader = reader
-    entry.timestamp_bounds = (first, last)
-    entry.pending_events = None
+    with _PARSED_STREAM_LOCK:
+        if entry.timestamp_version == version:
+            entry.timestamp_reader = reader
+            entry.timestamp_bounds = (first, last)
+            entry.pending_events = None
+            entry.timestamp_version += 1
     return first, last
 
 
@@ -3995,7 +4021,9 @@ def _observe_run_stream(
     except (TypeError, ValueError):
         offset = 0
     key = str(path.resolve())
-    if offset > 0 and isinstance(state, Mapping) and key not in _PARSED_STREAMS:
+    with _PARSED_STREAM_LOCK:
+        cache_present = key in _PARSED_STREAMS
+    if offset > 0 and isinstance(state, Mapping) and not cache_present:
         try:
             size = path.stat().st_size
         except OSError:
@@ -4013,11 +4041,17 @@ def _observe_run_stream(
             obs.stream_state["offset"] = end
             return obs
     events, malformed = cached_stream_events(path)
-    entry = _PARSED_STREAMS.get(key)
     settings = json.dumps(backend, sort_keys=True, default=repr)
     observation_key = repr((backend_name, settings, elapsed_seconds, receipt))
-    if entry is not None and observation_key in entry.observations:
-        return copy.deepcopy(entry.observations[observation_key])
+    with _PARSED_STREAM_LOCK:
+        entry = _PARSED_STREAMS.get(key)
+        if entry is not None and entry.events is events:
+            cached = entry.observations.get(observation_key)
+        else:
+            entry = None
+            cached = None
+    if cached is not None:
+        return copy.deepcopy(cached)
     obs = _observe_events(
         backend_name=backend_name,
         backend=backend,
@@ -4028,5 +4062,6 @@ def _observe_run_stream(
     )
     obs.stream_state["offset"] = _last_line_boundary(path)
     if entry is not None:
-        entry.observations[observation_key] = copy.deepcopy(obs)
+        with _PARSED_STREAM_LOCK:
+            entry.observations.setdefault(observation_key, copy.deepcopy(obs))
     return obs
