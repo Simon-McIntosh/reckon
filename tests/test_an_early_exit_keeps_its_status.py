@@ -26,6 +26,7 @@ import importlib
 import json
 import signal
 import subprocess
+import time
 from pathlib import Path
 
 import pytest
@@ -228,3 +229,35 @@ def test_a_worker_ended_by_a_signal_inside_the_startup_window_keeps_its_signal(
     assert record["exit_code"] is None
     assert record["signal"] == int(EARLY_EXIT_SIGNAL)
     assert record["signal_name"] == EARLY_EXIT_SIGNAL.name
+
+
+def test_a_carried_exit_stands_beside_another_child_of_the_supervisor(
+    isolated_run: tuple[Path, Path, Path],
+) -> None:
+    """A child that is no part of the attempt cannot displace the worker's exit.
+
+    The supervisor runs the attempt in the process this case runs in, so that
+    process also holds whatever children ran here before it — an unreaped probe
+    is enough, and one is planted here so the case does not depend on what ran
+    earlier. The startup poll collected the worker's exit from the worker
+    itself, and a child of the supervisor reaped afterwards belongs to no part
+    of the attempt: it must not be taken as the exit that ended it.
+    """
+    home, directory, worktree = isolated_run
+    argv = _fenced_argv(home, directory, ["/bin/sh", "-c", f"exit {EARLY_EXIT_CODE}"])
+    _assert_reaped_inside_the_window(argv, directory)
+    # Left unreaped on purpose: polling or waiting here would collect it, and
+    # a child of the supervisor is the shape this case is about.
+    leftover = subprocess.Popen(
+        ["/bin/true"],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    time.sleep(0.1)
+    try:
+        record = _supervise(argv, directory=directory, worktree=worktree)
+        assert record["exit_code"] == EARLY_EXIT_CODE
+        assert record["signal"] is None
+    finally:
+        leftover.wait(timeout=10)

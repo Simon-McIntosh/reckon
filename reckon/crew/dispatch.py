@@ -10307,7 +10307,13 @@ def _run_supervisor(spec_path: Path) -> int:
     # signal, so the carried exit is the attempt's exit. A worker that outlived
     # the poll carries none and is supervised exactly as before.
     status = getattr(pid, "collected_wait_status", None)
-    if status is None:
+    if status is not None:
+        # The exit was collected from the worker itself, so it stands as the
+        # attempt's exit on its own: the worker has been reaped, so no child of
+        # this supervisor is a still-running worker whose later exit could be
+        # the one that ended the attempt.
+        worker_pid = pid
+    else:
         status = _reap_worker_on_its_terminal_manifest(
             pid,
             run_directory=run_directory,
@@ -10319,18 +10325,18 @@ def _run_supervisor(spec_path: Path) -> int:
             stop_requested=stop_requested,
             stop_grace_seconds=_stop_grace_seconds(),
         )
-    worker_pid, status = _reap_the_launched_worker(
-        pid,
-        status,
-        run_directory=run_directory,
-        manifest_path=_supervisor_manifest_path(run_id),
-        grace_seconds=_terminal_manifest_grace_seconds(),
-        baseline_ns=_supervisor_manifest_baseline_ns(
-            run_id, spec, supervisor_started_at=launched_at
-        ),
-        stop_requested=stop_requested,
-        stop_grace_seconds=_stop_grace_seconds(),
-    )
+        worker_pid, status = _reap_the_launched_worker(
+            pid,
+            status,
+            run_directory=run_directory,
+            manifest_path=_supervisor_manifest_path(run_id),
+            grace_seconds=_terminal_manifest_grace_seconds(),
+            baseline_ns=_supervisor_manifest_baseline_ns(
+                run_id, spec, supervisor_started_at=launched_at
+            ),
+            stop_requested=stop_requested,
+            stop_grace_seconds=_stop_grace_seconds(),
+        )
     exit_record = _supervisor_exit_record(
         run_id=str(spec.get("run_id") or ""),
         attempt=attempt,
