@@ -19,7 +19,8 @@ from pathlib import Path
 
 import pytest
 
-from reckon import capabilities
+from reckon import agent_context, capabilities
+from reckon.agent_context import ContextRequest
 from reckon.crew import routing
 
 
@@ -171,3 +172,78 @@ def test_the_second_process_skips_the_cached_build(tmp_path):
         )
 
     assert spy.read_text(encoding="utf-8").splitlines() == ["built"]
+
+
+def _context_fixture(tmp_path):
+    home = tmp_path / "home"
+    (home / ".agents").mkdir(parents=True)
+    (home / ".agents" / "AGENTS.md").write_text("canonical policy\n")
+    agent_root = tmp_path / "codex"
+    agent_root.mkdir()
+    (agent_root / "AGENTS.md").write_text("entrypoint policy\n")
+    config = agent_root / "config.toml"
+    config.write_text("project_doc_max_bytes = 100\n")
+    repo = tmp_path / "repo"
+    subprocess.run(
+        ["git", "init", "--quiet", str(repo)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    (repo / "AGENTS.md").write_text("project policy\n")
+    package = repo / "pkg"
+    package.mkdir()
+    (package / "AGENTS.md").write_text("package policy\n")
+    return home, agent_root, config, repo, package
+
+
+def test_cached_context_manifest_tracks_every_input_it_reads(cache_dir, tmp_path):
+    """On real files the cached manifest equals the uncached one, change by change.
+
+    The context manifest reads instruction files, the agent config and the skill
+    roots; the cache trusts a stamp of those paths instead of re-reading them.
+    If the stamp misses an input, the cached manifest silently diverges from a
+    fresh build. This builds both on a real fixture repository and moves each
+    input in turn — the agent config included — asserting the two stay equal.
+    """
+
+    home, agent_root, config, repo, package = _context_fixture(tmp_path)
+
+    def both():
+        request = ContextRequest(
+            target=package, user_home=home, agent="codex", agent_root=agent_root
+        )
+        return agent_context.build_context_manifest(
+            request
+        ), agent_context.cached_context_manifest(request)
+
+    uncached, cached = both()
+    assert cached == uncached
+
+    changes = [
+        (config, "project_doc_max_bytes = 999999\n"),
+        (repo / "AGENTS.md", "project policy changed\n"),
+        (agent_root / "AGENTS.md", "entrypoint policy changed\n"),
+        (home / ".agents" / "AGENTS.md", "canonical policy changed\n"),
+        (package / "AGENTS.md", "package policy changed\n"),
+    ]
+    for path, text in changes:
+        path.write_text(text)
+        uncached, cached = both()
+        assert cached == uncached, (
+            f"cached manifest diverged after changing {path.name}"
+        )
+
+    # The config change is the one the earlier stamp left out: it must be seen,
+    # or the cached budget would still read the original limit.
+    assert cached["budget"]["limit_bytes"] == 999999
+
+    # A new instruction file appearing in a scanned directory changes the
+    # selected instruction, and must be a miss rather than a stale hit.
+    (package / "AGENTS.override.md").write_text("package override policy\n")
+    uncached, cached = both()
+    assert cached == uncached
+    assert (
+        cached["instructions"]["project_chain"][-1]["selected_name"]
+        == "AGENTS.override.md"
+    )

@@ -1137,7 +1137,7 @@ def load_capabilities(path: str | Path | None = None) -> dict[str, Any]:
 # process skip the recomputation. The key is a cheap stamp of the files the
 # input reads, so a changed file is a miss. A missing, unreadable, corrupt or
 # version-mismatched entry is a miss too, never an error: the input is rebuilt.
-PICK_INPUT_CACHE_VERSION = 1
+PICK_INPUT_CACHE_VERSION = 2
 
 
 def pick_input_cache_root() -> Path:
