@@ -83,7 +83,6 @@ from reckon._store import (
     write_json_atomically,
 )
 from reckon._timestamps import parse_utc
-from reckon.crew.runs import follower_code_stamp
 from reckon.evidence import (
     EvidenceSynthesisError,
     compose_landed_record,
@@ -972,7 +971,6 @@ _SIGNATURE_TTL_S = 0.0
 # The package source the served process started with, recorded by main() so
 # /_server can report when the code on disk has moved past the code running.
 _SOURCE_SNAPSHOT: served_code.SourceSnapshot | None = None
-_SERVER_CODE_STAMP: str | None = None
 # Which of those files the served process has run since start; the report counts
 # only changes to these, because a file the server never runs cannot change
 # what it serves.
@@ -988,6 +986,101 @@ _SIGNATURE_MEMO_LOCK = threading.Lock()
 # The served process opts into the longer window; the library default stays 0
 # so a caller that never starts the fleet watch never reads a stale walk.
 _SERVED_SIGNATURE_TTL_S = 60.0
+
+
+def _served_code_report() -> dict | None:
+    """Use the same executed-source report for requests and the status route."""
+
+    if _SOURCE_SNAPSHOT is None:
+        return None
+    executed = None
+    if _EXECUTED_SOURCE is not None:
+        definitions = getattr(_EXECUTED_SOURCE, "definitions", None)
+        executed = (
+            definitions()
+            if callable(definitions)
+            else _EXECUTED_SOURCE.relative_paths()
+        )
+    return served_code.served_report(_SOURCE_SNAPSHOT, executed)
+
+
+def _code_fingerprints(
+    snapshot: served_code.SourceSnapshot, report: Mapping[str, object]
+) -> tuple[str, str]:
+    """Fingerprint exactly the source files the executed-code report counted."""
+
+    names = sorted(set(report["changed"] + report["added"] + report["removed"]))
+    running = hashlib.sha256()
+    disk = hashlib.sha256()
+    for name in names:
+        known = snapshot.files.get(name)
+        before = known[1] if known is not None else "missing"
+        try:
+            after = hashlib.sha256((snapshot.root / name).read_bytes()).hexdigest()
+        except OSError:
+            after = "missing"
+        running.update(f"{name}:{before}\n".encode())
+        disk.update(f"{name}:{after}\n".encode())
+    return running.hexdigest(), disk.hexdigest()
+
+
+class _CodeReload:
+    """Stop the listener, drain active handlers briefly, then replace the image."""
+
+    def __init__(self, server: ThreadingHTTPServer, exec_=os.execv) -> None:
+        self.server = server
+        self.exec_ = exec_
+        self.requested = False
+        self._lock = threading.Lock()
+        self._idle = threading.Condition()
+        self._active = 0
+        self._process_request = server.process_request
+        self._process_request_thread = server.process_request_thread
+        self._verify_request = server.verify_request
+        server.process_request = self._tracked_request
+        server.process_request_thread = self._tracked_thread
+        server.verify_request = self._verify
+        server._code_reload = self
+
+    def _verify(self, request: socket.socket, address: tuple) -> bool:
+        return not self.requested and self._verify_request(request, address)
+
+    def _tracked_request(self, request: socket.socket, address: tuple) -> None:
+        with self._idle:
+            self._active += 1
+        try:
+            self._process_request(request, address)
+        except BaseException:
+            with self._idle:
+                self._active -= 1
+                self._idle.notify_all()
+            raise
+
+    def _tracked_thread(self, request: socket.socket, address: tuple) -> None:
+        try:
+            self._process_request_thread(request, address)
+        finally:
+            with self._idle:
+                self._active -= 1
+                self._idle.notify_all()
+
+    def request_reload(self) -> None:
+        with self._lock:
+            if self.requested:
+                return
+            self.requested = True
+        threading.Thread(target=self.server.shutdown, daemon=True).start()
+
+    def finish(self) -> None:
+        if not self.requested:
+            return
+        with self._idle:
+            self._idle.wait_for(lambda: self._active == 0, timeout=3)
+        self.server.server_close()
+        argv = [sys.executable, *sys.orig_argv[1:]]
+        self.exec_(sys.executable, argv)
+
+
 _FLEET_WATCH: _FleetChangeWatch | None = None
 _GIT_CREATION_CACHE: dict[tuple[str, str], _GitCreationEntry] = {}
 _GIT_CREATION_SCHEMA = "reckon.git-creation-map"
@@ -2304,30 +2397,48 @@ class Handler(BaseHTTPRequestHandler):
     def _refuse_stale_code(self) -> bool:
         """Stop a request before it can import code newer than this process."""
 
-        if _SOURCE_SNAPSHOT is None or _SERVER_CODE_STAMP is None:
+        report = _served_code_report()
+        if _SOURCE_SNAPSHOT is None or report is None or not report["stale"]:
             return False
-        report = served_code.drift(_SOURCE_SNAPSHOT)
-        if not report["stale"]:
+        running, disk = _code_fingerprints(_SOURCE_SNAPSHOT, report)
+        if running == disk:
             return False
-        self._send_json(
-            HTTPStatus.SERVICE_UNAVAILABLE,
+        body = json.dumps(
             {
                 "error": "stale-code",
-                "running_code_stamp": _SERVER_CODE_STAMP,
-                "disk_code_stamp": follower_code_stamp(),
+                "running_code_stamp": running,
+                "disk_code_stamp": disk,
                 "changed_files": report["changed"]
                 + report["added"]
                 + report["removed"],
-                "detail": "The server's loaded code differs from disk; restart the service.",
-            },
+                "detail": "The server is loading the changed code; retry this request.",
+            }
+        ).encode()
+        self._send(
+            HTTPStatus.SERVICE_UNAVAILABLE,
+            body,
+            "application/json",
+            headers={"Retry-After": "5"},
         )
+        reload = getattr(self.server, "_code_reload", None)
+        if reload is not None:
+            reload.request_reload()
         return True
 
-    def _send(self, status: int, body: bytes, ctype: str = "text/html") -> None:
+    def _send(
+        self,
+        status: int,
+        body: bytes,
+        ctype: str = "text/html",
+        *,
+        headers: Mapping[str, str] | None = None,
+    ) -> None:
         self.send_response(status)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(body)
 
@@ -2675,9 +2786,9 @@ class Handler(BaseHTTPRequestHandler):
         self._send_json(HTTPStatus.OK, payload)
 
     def do_GET(self) -> None:  # noqa: N802
-        if self._refuse_stale_code():
-            return
         path = unquote(urlsplit(self.path).path)
+        if path != "/_server" and self._refuse_stale_code():
+            return
 
         if path == "/favicon.ico":
             # Browsers auto-request this; answer cleanly instead of 404-ing
@@ -2765,12 +2876,7 @@ class Handler(BaseHTTPRequestHandler):
                 {
                     "host": socket.gethostname(),
                     "pid": os.getpid(),
-                    "code": served_code.served_report(
-                        _SOURCE_SNAPSHOT,
-                        _EXECUTED_SOURCE.relative_paths()
-                        if _EXECUTED_SOURCE is not None
-                        else None,
-                    ),
+                    "code": _served_code_report(),
                 },
             )
             return
@@ -3762,15 +3868,17 @@ def start_fleet_change_watch(mounts: dict[str, Path]) -> _FleetChangeWatch:
 
 
 def main(
-    port: int = 8765, host: str | None = None, mounts_file: Path | None = None
+    port: int = 8765,
+    host: str | None = None,
+    mounts_file: Path | None = None,
+    *,
+    exec_=os.execv,
 ) -> None:
     global _SIGNATURE_TTL_S  # noqa: PLW0603 — the served process opts into reuse
     global _SOURCE_SNAPSHOT  # noqa: PLW0603 — recorded once, as the code loads
-    global _SERVER_CODE_STAMP  # noqa: PLW0603 — one stamp per served process
     global _CHECK_REFRESH_ENABLED  # noqa: PLW0603 — the served process opts in
     global _EXECUTED_SOURCE  # noqa: PLW0603 — recorded from here on
     _SOURCE_SNAPSHOT = served_code.take_snapshot()
-    _SERVER_CODE_STAMP = follower_code_stamp()
     executed = served_code.ExecutedSource(_SOURCE_SNAPSHOT.root)
     _EXECUTED_SOURCE = executed if executed.start() else None
     _CHECK_REFRESH_ENABLED = True
@@ -3794,6 +3902,7 @@ def main(
         # port must answer throughout that walk; the watch is armed on its own
         # thread and a tree is covered by the discovery reuse window until then.
         server = ThreadingHTTPServer((_host, _port), Handler)
+        reload = _CodeReload(server, exec_)
 
         start_fleet_change_watch(load_mounts())
 
@@ -3810,6 +3919,7 @@ def main(
         print(f"  state:   {_STATE_ROOT}", flush=True)
         print(f"  shared:  {_SHARED_ROOT}", flush=True)
         server.serve_forever()
+        reload.finish()
     finally:
         # Serving has stopped, or never started (a port already bound): release
         # what this function set up for the served process, so a caller that
@@ -3820,7 +3930,6 @@ def main(
         _EXECUTED_SOURCE = None
         _CHECK_REFRESH_ENABLED = False
         _SOURCE_SNAPSHOT = None
-        _SERVER_CODE_STAMP = None
 
 
 if __name__ == "__main__":
