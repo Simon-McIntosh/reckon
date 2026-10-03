@@ -993,6 +993,61 @@ def _emit(payload, pretty: bool) -> None:
     )
 
 
+def _crew_result_ok(result: Mapping[str, Any]) -> bool:
+    """Read a crew command's outcome from its published result fields."""
+    if "ok" in result:
+        return result["ok"]
+    if not result:
+        return False
+    if any(
+        result.get(key)
+        for key in (
+            "error",
+            "refusal",
+            "refused",
+            "skipped",
+            "unusable",
+            "finding",
+            "timed_out",
+            "over_budget",
+        )
+    ):
+        return False
+    if "exit_status" in result and result["exit_status"] != 0:
+        return False
+    if any(result.get(key) is False for key in ("ran", "measured", "completed")):
+        return False
+    if result.get("held") and "held_backends" in result:
+        return False
+    if result.get("event") == "watcher-live":
+        return False
+    validation = result.get("validation")
+    if isinstance(validation, Mapping) and validation.get("ok") is False:
+        return False
+    reviews = result.get("reviews")
+    if isinstance(reviews, Mapping) and (
+        reviews.get("error") or reviews.get("refused")
+    ):
+        return False
+    projects = result.get("projects")
+    return not (
+        "dry_run" in result
+        and isinstance(projects, Mapping)
+        and any(row.get("skipped") or row.get("stopped") for row in projects.values())
+    )
+
+
+def _emit_crew_result(
+    result: Mapping[str, Any], pretty: bool, *, failure_exit: int = 1
+) -> None:
+    """Publish one crew verdict and give a negative verdict a matching exit."""
+    payload = dict(result)
+    payload["ok"] = _crew_result_ok(payload)
+    _emit(payload, pretty)
+    if not payload["ok"]:
+        raise click.exceptions.Exit(failure_exit)
+
+
 def _emit_dry_run_request_error(
     pretty: bool, detail: str, resolution: dict | None = None
 ) -> None:
@@ -1416,7 +1471,7 @@ def crew_pick(
             )
         except (ValueError, OSError) as exc:
             raise click.ClickException(str(exc)) from exc
-        _emit(payload, pretty)
+        _emit_crew_result(payload, pretty)
         return
     if since or all_projects:
         raise click.ClickException("--since and --all-projects require --outcomes")
@@ -1464,7 +1519,7 @@ def crew_pick(
             ).as_dict()
     except (ValueError, OSError) as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit(payload, pretty)
+    _emit_crew_result(payload, pretty)
 
 
 @crew.command(name="preflight")
@@ -1558,7 +1613,7 @@ def crew_preflight(
         from reckon.crew.refusals import format_refusal
 
         raise click.ClickException(format_refusal("D01", str(exc))) from exc
-    _emit({"ok": True, **report}, pretty)
+    _emit_crew_result(report, pretty, failure_exit=3)
     raise click.exceptions.Exit(3 if report["held"] else 0)
 
 
@@ -2138,8 +2193,10 @@ def crew_dispatch(
                 pretty,
             )
             raise click.exceptions.Exit(75)
-        payload = {"ok": True, "dry_run": True, **resolution.as_dict()}
-        _emit(_with_resolved_overrides(payload, override_resolution), pretty)
+        payload = {"dry_run": True, **resolution.as_dict()}
+        _emit_crew_result(
+            _with_resolved_overrides(payload, override_resolution), pretty
+        )
         raise click.exceptions.Exit(0)
 
     try:
@@ -2296,7 +2353,7 @@ def crew_dispatch(
         _emit({"ok": False, "error": "dispatch-refused", "detail": str(exc)}, pretty)
         click.echo(f"Error: {exc}", err=True)
         raise click.exceptions.Exit(1) from exc
-    _emit({"ok": True, **record}, pretty)
+    _emit_crew_result(record, pretty)
 
 
 @crew.command(name="shadow")
@@ -2430,7 +2487,7 @@ def crew_shadow(run_id, session, wave, backend, overrides, member, dry_run, pret
         raise click.exceptions.Exit(6) from exc
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **record}, pretty)
+    _emit_crew_result(record, pretty)
 
 
 @crew.command(name="attach")
@@ -2444,7 +2501,7 @@ def crew_attach(run_id, task, pretty):
         record = crew_module.attach(run_id, task)
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **record}, pretty)
+    _emit_crew_result(record, pretty)
 
 
 def _resolved_session(run_id, record=None) -> dict[str, Any]:
@@ -2490,7 +2547,7 @@ def crew_observe(run_id, project, pretty):
         record = crew_module.observe(run_id, config=config)
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **record, **resolved}, pretty)
+    _emit_crew_result({**record, **resolved}, pretty)
 
 
 def _follow_selects(
@@ -4457,7 +4514,7 @@ def crew_follow(
                 # This one line is about the follower, not the fleet, so it is
                 # printed as it was written rather than rendered as a fleet row.
                 if json_output:
-                    _emit({"ok": True, **event}, pretty)
+                    _emit_crew_result(event, pretty)
                 else:
                     _echo_follow_line(str(event.get("line") or ""))
                 continue
@@ -4468,7 +4525,7 @@ def crew_follow(
                 # them and the new ones; the DIM row is the reader's signal that
                 # the drawing style changed here.
                 if json_output:
-                    _emit({"ok": True, **event}, pretty)
+                    _emit_crew_result(event, pretty)
                 elif session is not None:
                     _echo_follow_line(replay_dim(history_module.FORMAT_CHANGED_TEXT))
                     history_module.append_history(
@@ -4493,7 +4550,7 @@ def crew_follow(
                 # terminal, the burst opens under one dim frame line that names
                 # it as earlier history, so a restored row is never acted on.
                 if json_output:
-                    _emit({"ok": True, **event}, pretty)
+                    _emit_crew_result(event, pretty)
                 elif session is not None and _follow_replay_visible():
                     restored = history_module.cap_history(
                         history_module.read_history(project, session),
@@ -4519,12 +4576,12 @@ def crew_follow(
                 # object with the stamps (and the remedy when there is one), and
                 # text mode prints the one dim line.
                 if json_output:
-                    _emit({"ok": True, **event}, pretty)
+                    _emit_crew_result(event, pretty)
                 else:
                     _echo_follow_line(replay_dim(str(event.get("line") or "")))
                 continue
             if json_output:
-                _emit({"ok": True, **event}, pretty)
+                _emit_crew_result(event, pretty)
             elif not _row_is_stale_inventory(event):
                 # An observing follower draws the owner column on every row so
                 # the grid stays aligned, and the owning session's own rows are
@@ -4652,7 +4709,7 @@ def crew_watch(
             result = runs_module.ensure_watcher_service(project)
         except crew_module.CrewError as exc:
             raise click.ClickException(str(exc)) from exc
-        _emit({"ok": True, **result}, pretty)
+        _emit_crew_result(result, pretty)
         return
     # --exit-on-empty only means anything to the single-event mode, so asking
     # for it selects that mode rather than being silently ignored.
@@ -4698,7 +4755,7 @@ def crew_watch(
                             "baseline",
                             "transition",
                         }:
-                            _emit({"ok": True, **result}, pretty)
+                            _emit_crew_result(result, pretty)
                         elif not _row_is_stale_inventory(result):
                             click.echo(
                                 format_watch_transition(result, ticker=grid), color=True
@@ -4729,7 +4786,7 @@ def crew_watch(
         )
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **result}, pretty)
+    _emit_crew_result(result, pretty)
 
 
 @crew.command(name="resume-ready")
@@ -4756,7 +4813,7 @@ def crew_resume_ready(project, dry_run, pretty):
         report = sweep(project, dry_run=dry_run)
     except CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **report}, pretty)
+    _emit_crew_result(report, pretty)
 
 
 @crew.command(name="unwatch")
@@ -4771,7 +4828,7 @@ def crew_unwatch(project, pretty):
         result = unwatch(project)
     except CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **result}, pretty)
+    _emit_crew_result(result, pretty)
 
 
 @crew.command(name="placement")
@@ -4819,14 +4876,13 @@ def crew_placement(ensure, session, project, pretty):
             )
         except CrewError as exc:
             raise click.ClickException(str(exc)) from exc
-        _emit({"ok": True, **result}, pretty)
+        _emit_crew_result(result, pretty)
         return
     from reckon.crew import placement as placement_module
 
     record = placement_module.read_reservation(project)
-    _emit(
+    _emit_crew_result(
         {
-            "ok": True,
             "project": project,
             "job_id": (record or {}).get("job_id"),
             "held": bool(record),
@@ -4909,7 +4965,7 @@ def crew_list(project, phase, session, mine, pretty):
                 "next_action": classified.get("next_action"),
             }
         )
-    payload = {"ok": True, "runs": runs}
+    payload = {"runs": runs}
     if project is not None:
         payload["watcher"] = project_watch_visibility(project, session=session)
     else:
@@ -4924,7 +4980,7 @@ def crew_list(project, phase, session, mine, pretty):
             project_watch_visibility(project_name, session=session)
             for project_name in projects
         ]
-    _emit(payload, pretty)
+    _emit_crew_result(payload, pretty)
 
 
 @crew.command(name="directory")
@@ -4940,7 +4996,7 @@ def crew_directory(project, run_id, node_id, pretty):
         result = directory(project, run_id=run_id, node_id=node_id)
     except DirectoryError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit(result, pretty)
+    _emit_crew_result(result, pretty)
 
 
 # The storage kinds `crew path` resolves, in the vocabulary a consumer script
@@ -5209,9 +5265,8 @@ def crew_dispose(project, reviewed_run_id, dimension, kind, node_id, reason, pre
         project, reviewed_run_id, reviewed_head_sha=reviewed_head_sha
     )
     dispositions = (record or {}).get(review_module.DIMENSION_DISPOSITIONS_KEY) or {}
-    _emit(
+    _emit_crew_result(
         {
-            "ok": True,
             "project": project,
             "run_id": reviewed_run_id,
             "dimension": dimension,
@@ -5500,9 +5555,8 @@ def crew_widen(run_id, write_paths, pretty):
         return pointer
 
     updated = crew_module._mutate_pointer(run_id, widen)
-    _emit(
+    _emit_crew_result(
         {
-            "ok": True,
             "run_id": run_id,
             "phase": str(updated.get("phase") or ""),
             # The status the run's own manifest reported. It is carried because
@@ -5571,9 +5625,8 @@ def crew_drain(project, session, leaves, pretty):
         result = crew_module.drain(project, session=session)
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit(
+    _emit_crew_result(
         {
-            "ok": True,
             **result,
             "recorded": [
                 {
@@ -5618,9 +5671,8 @@ def crew_ack(run_id, reason, until, pretty):
         updated = runs_module.record_run_acknowledgement(run_id, reason, until)
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit(
+    _emit_crew_result(
         {
-            "ok": True,
             "run_id": run_id,
             "acknowledgement": updated.get("acknowledgement"),
         },
@@ -5686,7 +5738,7 @@ def crew_suite_run(project, checkout_path, pretty):
     )
     record = standing_suite.run(root, declaration, log_path)
     standing_suite.record(root, project, record)
-    _emit({"ok": True, "project": project, **record}, pretty)
+    _emit_crew_result({"project": project, **record}, pretty)
 
 
 @crew_suite.command(name="waive")
@@ -5708,7 +5760,7 @@ def crew_suite_waive(project, reason, who, checkout_path, pretty):
         raise click.ClickException("--reason must not be empty")
     root = _suite_project_root(project, checkout_path)
     path = standing_suite.record_waiver(root, project, who=who, why=reason)
-    _emit({"ok": True, "project": project, "waiver": str(path)}, pretty)
+    _emit_crew_result({"project": project, "waiver": str(path)}, pretty)
 
 
 @crew.command(name="gc")
@@ -5824,7 +5876,7 @@ def crew_gc(
         # gc that has deleted something must say so before it exits nonzero.
         _emit({"ok": False, "error": str(exc), **partial}, pretty)
         raise click.exceptions.Exit(1) from exc
-    _emit({"ok": True, **report}, pretty)
+    _emit_crew_result(report, pretty)
 
 
 @crew.command(name="resume")
@@ -5874,7 +5926,7 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
                 advice=advice,
                 launch=not print_only,
             )
-            _emit({"ok": True, **moved}, pretty)
+            _emit_crew_result(moved, pretty)
             return
         plan = crew_module.resume_plan(run_id, advice, config=config)
     except crew_module.BudgetHold as exc:
@@ -5890,9 +5942,9 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
         raise click.exceptions.Exit(3) from exc
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    payload = {"ok": True, "run_id": run_id, **plan.as_dict()}
+    payload = {"run_id": run_id, **plan.as_dict()}
     if print_only:
-        _emit(payload, pretty)
+        _emit_crew_result(payload, pretty)
         return
     directory = crew_module.run_dir(run_id)
     turn = len(list(directory.glob("resume-*.jsonl"))) + 1
@@ -5920,7 +5972,7 @@ def crew_resume(run_id, advice, backend, reason, print_only, pretty):
         manifest_baseline_mtime_ns=manifest_baseline_mtime_ns,
     )
     payload.update({"pid": pid, "log_path": str(log_path), "resumed_turn": turn})
-    _emit(payload, pretty)
+    _emit_crew_result(payload, pretty)
 
 
 @crew.command(name="redispatch")
@@ -5988,7 +6040,7 @@ def crew_redispatch(
         raise click.exceptions.Exit(3) from exc
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **moved}, pretty)
+    _emit_crew_result(moved, pretty)
 
 
 @crew.command(name="stop")
@@ -6001,7 +6053,7 @@ def crew_stop(run_id, pretty):
         record = crew_module.terminate(run_id)
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **record}, pretty)
+    _emit_crew_result(record, pretty)
 
 
 @crew.command(name="discard")
@@ -6014,7 +6066,7 @@ def crew_discard(run_id, pretty):
         result = crew_module.discard(run_id)
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **result}, pretty)
+    _emit_crew_result(result, pretty)
 
 
 @crew.command(name="repair-status")
@@ -6049,7 +6101,7 @@ def crew_repair_status(run_id, status, reason, pretty):
         result = runs_module.repair_manifest_status(run_id, status, reason)
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **result}, pretty)
+    _emit_crew_result(result, pretty)
 
 
 def _ledger_module():
@@ -6346,7 +6398,7 @@ def crew_complete(
         raise click.ClickException(detail) from exc
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **result}, pretty)
+    _emit_crew_result(result, pretty)
 
 
 @crew.command(name="verify-gate")
@@ -6426,7 +6478,7 @@ def crew_verify_gate(
             f"run `reckon crew verify-gate --project {project} --run {run_id} "
             f"--checkout-path {checkout_path}` again"
         ) from exc
-    _emit({"ok": True, **result}, pretty)
+    _emit_crew_result(result, pretty)
 
 
 @crew.command(name="recover")
@@ -6455,7 +6507,7 @@ def crew_recover(project, dispatch_reviews, pretty):
         )
     except crew_module.CrewError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **report}, pretty)
+    _emit_crew_result(report, pretty)
 
 
 @crew.group(name="member")
@@ -6495,7 +6547,7 @@ def crew_member_add(project, member_id, harness, role, session, checkout_path, p
         )
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, "project": project, "member": entry}, pretty)
+    _emit_crew_result({"project": project, "member": entry}, pretty)
 
 
 @crew_member.command(name="list")
@@ -6514,7 +6566,7 @@ def crew_member_list(project, checkout_path, pretty):
         roster = ledger_module.members(project, checkout_path)
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, "project": project, "members": roster}, pretty)
+    _emit_crew_result({"project": project, "members": roster}, pretty)
 
 
 @crew.command(name="ledger")
@@ -6550,7 +6602,7 @@ def crew_ledger(project, view, checkout_path, pretty):
             payload = ledger_module.summary(project, root=checkout_path)
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, "project": project, **payload}, pretty)
+    _emit_crew_result({"project": project, **payload}, pretty)
 
 
 @crew.command(name="velocity")
@@ -6612,7 +6664,7 @@ def crew_velocity(project, since, until, fields, limit, cursor, pretty):
     if not payload.get("ok"):
         detail = payload.get("detail") or payload.get("message") or str(payload)
         raise click.ClickException(str(detail))
-    _emit(payload, pretty)
+    _emit_crew_result(payload, pretty)
 
 
 @crew.command(name="split-runs")
@@ -6629,7 +6681,7 @@ def crew_split_runs(dry_run, pretty):
         report = ledger_module.split_runs(dry_run=dry_run)
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **report}, pretty)
+    _emit_crew_result(report, pretty)
 
 
 @crew.command(name="repair-completion")
@@ -6659,7 +6711,7 @@ def crew_repair_completion(project, write_changes, checkout_path, pretty):
         )
     except ledger_module.LedgerError as exc:
         raise click.ClickException(str(exc)) from exc
-    _emit({"ok": True, **report}, pretty)
+    _emit_crew_result(report, pretty)
 
 
 @main.group(name="service")
