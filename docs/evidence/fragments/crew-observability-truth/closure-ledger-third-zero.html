@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="closure-ledger-third-zero">
+  <meta name="plan-title" content="The closure ledger carries the executable remainder as its third zero">
+  <meta name="plan-summary" content="The reckon-build closure ledger and its fence named two termination figures, foldable-remaining and unreconciled-runs, so a session could close while the declared executable set still held work; the ledger now carries executable-remaining beside them, read from the drain view's executable_remainder, and the fence holds on it being zero. Gate: base 1 failed/91 passed, head 1 failed/91 passed with no added failure id; the declared mutation, removing executable-remaining from the skill's ledger line, reddens the skill-contract assertion at EXIT=1.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-tags" content="crew,reckon-tooling,skill-contract">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <title>The closure ledger carries the executable remainder as its third zero | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="closure-ledger-third-zero" data-reckon="landed" data-when="2026-10-03">
+  <h2>The closure ledger carries the executable remainder as its third zero</h2>
+  <p><b>Defect, measured.</b> The reckon-build skill's closure ledger named two
+  termination figures, <code>foldable-remaining</code> and
+  <code>unreconciled-runs</code>, and its closure fence held a session open on
+  those two alone. The string <code>executable-remaining</code> occurred nowhere
+  in <code>skills/</code>, <code>reckon/</code> or <code>docs/</code> except the
+  plan text, so a session could end tidily while the declared executable set still
+  held work &mdash; the state the section this fragment anchors was written from. The
+  figure it needed already existed: <code>plan_executable_remainder</code> in
+  <code>reckon/_schema.py</code>, surfaced by the drain view as
+  <code>executable_remainder</code> beside <code>unreconciled_runs</code>. At base
+  <code>7fbe5fd8963b</code> the ledger line reads
+  <code>foldable-remaining: 0   unreconciled-runs: 0</code> and the drain view's
+  third figure has no reader in the skill.</p>
+  <p><b>Change.</b> Commits <code>0c01c836c801</code> and
+  <code>1d04fc5d3cd2</code>. The ledger's line now reads
+  <code>foldable-remaining: 0   unreconciled-runs: 0   executable-remaining: 0</code>
+  in both <code>skills/reckon-build/SKILL.md</code> and
+  <code>skills/reckon-build/references/sprint-orchestration.md</code>, and the
+  fence names it wherever the stopping condition is stated: the closure rule, the
+  &sect;4d fence, &sect;7c's termination properties, &sect;7d's stopping quantities, and the
+  &sect;7c/&sect;11 handoff rules. The figure is the drain view's
+  <code>executable_remainder</code>, never a number from memory; a nonzero
+  remainder folds back into the DAG. The bound's definition, its lower-bound
+  shape over the plans that carry a declaration, and the empty-ledger case live in
+  the reference (read conditionally), which keeps <code>SKILL.md</code> inside the
+  fixed read-set token budget: 15,588 estimated tokens at head against the 15,600
+  ceiling, base 15,530.</p>
+  <p><b>Measure.</b>
+  <code>tests/test_skill_contracts.py::test_closure_ledger_carries_all_drain_counts</code>
+  asserts the three-figure ledger line in the skill and its reference and the
+  fence sentence naming the third figure. The assertion fails at the base skill
+  text (<code>EXIT=1</code>, <code>base-assertion-against-base-skill.log</code>).
+  The gate over the six test files that read the two edited files
+  (<code>test_skill_contracts.py</code>, <code>test_skill_contract_parity.py</code>,
+  <code>test_skill_session_ownership_rules.py</code>, <code>test_crew_directory.py</code>,
+  <code>test_runs_view_shows_brief_runs.py</code>,
+  <code>test_skills_name_no_host_path.py</code>) ran with
+  <code>pytest -n 8 --timeout=300</code>: the base arm at <code>7fbe5fd8963b</code>
+  reads <code>1 failed, 91 passed</code> and the head arm at
+  <code>1d04fc5d3cd2</code> reads <code>1 failed, 91 passed</code>, the same single
+  id <code>test_every_registered_crew_verb_is_documented_or_exempt</code> at both
+  revisions &mdash; a pre-existing gap between the registered verbs and the base skill
+  text, unrelated to this scope &mdash; so the head arm adds no failure id. The negative
+  control removes <code>executable-remaining</code> from the skill's ledger line
+  and the assertion reddens (<code>EXIT=1</code>,
+  <code>negative-control.log</code>), failing an id the head arm does not fail. An
+  earlier head arm at <code>0c01c836c801</code> is superseded: it reddened the
+  read-set budget case that the reference relocation fixed, and is kept in
+  <code>gate-head.log</code> for the record.</p>
+  <p><b>Remainder.</b> None for this node. The pre-existing verb-documentation
+  failure is red at the base revision and belongs to the change that registers
+  <code>reckon crew repair-status</code>, not to this one.</p>
+</article>
+</body>
+</html>
