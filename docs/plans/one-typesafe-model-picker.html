@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="112">
+<meta name="plan-version" content="113">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -399,7 +399,7 @@
     <div class="r-comment-body"><p>Reviewed the single delta commit e8745033048cb67247b6f6cc2bbc4f3ed8b01dac (base 21f99fdee85a0b4c301d8297b151655b8ebecdc7) that closes the prior review's config.toml staleness gap; stored a parsed review scoring goal_fidelity 18, evidence 17, scope_discipline 19, durability 17, fit 18 (total 89) with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's baseline_suite (0 failed) and after_suite (0 failed).</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261003T044618264909-picker-fresh-process-pick" data-who="reckon-build" data-when="2026-10-03T05:43:18.459Z">
-    <div class="r-comment-body"><p>Cached the picker&#x27;s pure-function-of-files inputs under a per-input, cross-process cache whose stamp covers every file the cached computation reads (the agent config included), resolving its root RECKON_PICK_CACHE then RECKON_HOME then XDG_CACHE_HOME then ~/.cache/reckon so a test never writes into the real user cache; the warm bounded pick median fell from 1673 ms to 916 ms, cold 1497 ms inside the 5 s bound, and the cached inputs are proven equal to the uncached build on a real fixture with every stamped file moved in turn.</p></div>
+    <div class="r-comment-body"><p>Cached the picker's pure-function-of-files inputs under a per-input, cross-process cache whose stamp covers every file the cached computation reads (the agent config included), resolving its root RECKON_PICK_CACHE then RECKON_HOME then XDG_CACHE_HOME then ~/.cache/reckon so a test never writes into the real user cache; the warm bounded pick median fell from 1673 ms to 916 ms, cold 1497 ms inside the 5 s bound, and the cached inputs are proven equal to the uncached build on a real fixture with every stamped file moved in turn.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T035044694750-review-of-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T03:59:23.147Z">
     <div class="r-comment-body"><p>Independent review of r-20261003T032115043790-model-catalogue-in-reckon stored: 92/100 (goal 16, evidence 19, scope 20, durability 18, fit 19); the catalogue layer, its two rules, the 32-shadow report and the no-value-moves proof all verified by independent re-run.</p></div>
@@ -412,10 +412,11 @@
     <div class="r-fu-body">Pointer, not work: tests/test_preflight_pace.py::test_one_stamp_reader_dates_a_record_for_both_surfaces fails at every base this plan measured, because the lanes view publishes the composition time instead of the record's created_at. The fix belongs to a-window-paces-the-lane.</div>
     <pre class="r-fu-prompt">/reckon-build a-window-paces-the-lane</pre>
     </article>
-<article class="r-fu" data-id="f-otmp-pick-timeouts" data-status="open" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-otmp-pick-timeouts" data-status="resolved" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-03T06:11:26+00:00" data-resolved-by="s25-picker">
     <h4 class="r-fu-title">Seven of 37 picks time out at the 5 s bound</h4>
     <div class="r-fu-body">After the availability fix, 7 of 37 ledger picks hit the 5 s dispatch bound and fell back to the flight default lane; the 90th-percentile pick sits at the bound. Profile where the time goes on the dispatch path under fleet load, and cut it or justify a different bound from the measured distribution. A timed-out pick is a recorded fallback, not a refusal, so nothing blocks meanwhile.</div>
     <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §6</pre>
+    <p class="r-fu-outcome">Fixed on main by picker-pick-within-bound (f9bde4705: context measured once, no foreign ledger read; median 3.34 s to 1.37 s), picker-foreign-wait-bounded (a93869291: cross-process run-time profiles, expected-wait 3826 ms cold to 8.5 ms warm), picker-route-keeps-availability-refusal (14b3153f2: one pick per dispatch, inputs built outside the bound) and picker-fresh-process-pick (613cca6d3: warm bounded pick 916 ms, cold 1497 ms). Record: evidence anchors s6-fallout and s6-fresh-process.</p>
     </article>
 <article class="r-fu" data-id="f-otmp-week-compare" data-status="open" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Compare picker routing with deterministic once a week has run</h4>
@@ -426,6 +427,11 @@
     <h4 class="r-fu-title">Move the model catalogue from dotfiles into reckon</h4>
     <div class="r-fu-body">§11: family, model, alias, effort, budget group and rates move from the host layer into reckon's shipped or project layer; the host layer keeps placement, paths, commands and credentials.</div>
     <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §11</pre>
+    </article>
+<article class="r-fu" data-id="f-otmp-dispatch-prebuild" data-status="open" data-written-by="s25-picker" data-written-at="2026-10-03" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Cache the dispatcher&#x27;s pre-pick ledger and budget reads</h4>
+    <div class="r-fu-body">A cold dispatch still spends about 3.8 s in _picker_ledger_rows (ledger.runs) and about 3.9 s in _picker_budget_snapshot (budget.preflight) before the pick starts. These sit outside the 5 s pick bound, so they slow dispatch without causing a fallback. Key both on the ledger stamp through capabilities.cached_pick_input. Also close the two review follow-ons of picker-fresh-process-pick: a test pinning the per-run-file verdict stamp, and the overstated comment on stamp and computation drift.</div>
+    <pre class="r-fu-prompt">/reckon-build one-typesafe-model-picker §6</pre>
     </article>
 </section>
 </main>
