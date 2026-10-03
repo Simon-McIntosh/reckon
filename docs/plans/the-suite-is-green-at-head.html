@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="258">
+<meta name="plan-version" content="259">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1271,9 +1271,15 @@
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §2</pre>
     <p class="r-fu-outcome">Two of the three landed. The nested-launch tests now run in a tree with no .venv (0af97282e), and the stamp-reader test pins its probe (439ed8b40). The third, the dispatch return-time red, turned out to be a real slowdown at head: +1.00 s on the median, p 0.023, with both trees on node-local disk. s25-picker owns it. Evidence anchor s2-three-reds-after-4d1feeed9.</p>
     </article>
-<article class="r-fu" data-id="f-tsigah-final-measure-after-the-dispatch-fix" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-03T18:56:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tsigah-final-measure-after-the-dispatch-fix" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-03T18:56:00Z" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-03T21:23:53+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Measure the whole suite once s25-picker&#x27;s dispatch fix and probe guard land</h4>
     <div class="r-fu-body">§2 waits on two of s25-picker's nodes. The first fixes the dispatch regression, about 1 s added since 4d1feeed9 by the picker commits on dispatch.py, keeping the 8.0 s bound. The second is suite-never-probes-live-accounts, which guards run_probe across the whole suite. Once both are on main, run one whole-suite measure at that head. Split it into foreground chunks under 40 min, or use a single peer arm that is not running alongside another arm. Give the tree a .venv symlink and a git repository. Re-run each red alone, and close §2 if none is §2's. The bound already fails half the time at 4d1feeed9 when the fleet node is at load about 30. If the dispatch test is the only red left, note the node's load beside it.</div>
+    <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §2</pre>
+    <p class="r-fu-outcome">Measured in two foreground halves at heads 935bb39e8 and b5f74d36b, both carrying dc4e52cc7 and 015ca29a4. 13,094 passed, with 1 failure and 1 error, and no id fails when run alone. Both reds are threads from an earlier test that outlive it. Evidence anchor s2-final-measure-after-the-dispatch-fix.</p>
+    </article>
+<article class="r-fu" data-id="f-tsigah-close-after-the-thread-leaks" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-03T21:30:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Close §2 once the two thread leaks between tests are repaired</h4>
+    <div class="r-fu-body">The final measure has no deterministic red. Its two reds are threads that outlive the test that started them. §2's own node, the-change-stream-test-leaves-no-scanner-running, makes test_two_change_streams_recompute_discovery_once wait for its HTTP handler threads. It is gated by 20 passes in a row of the two-test pair under CPU load. s22-coord's a-sweep-thread-ends-with-its-test (the-obligations-hook-reads-a-snapshot §17) adds a runs.py helper and an autouse conftest fixture that join every producer's sweep thread after each test. Once both are merged, re-run the two affected files under -n 8 together with their neighbours. If they are green, collapse §2 and set the plan to shipped. No further whole-suite run is needed: neither repair touches anything outside those threads' tests and the shared fixture, and the fixture's own gate covers the suite population that uses the producer.</div>
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §2</pre>
     </article>
 </section>
