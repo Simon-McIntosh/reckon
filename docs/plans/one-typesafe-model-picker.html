@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="89">
+<meta name="plan-version" content="90">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -339,7 +339,10 @@
     <div class="r-comment-body"><p>in reckon/crew/dispatch.py plan_dispatch records picker_selection on the resolved plan only when route == "picker" and strips the per-call latency_ms/jev_latency_ms, so two dry runs of one node are identical in every field the picker touched — a shadow or deterministic preview carries no picker answer at all, a routed preview keeps the selected action and backend with no per-call timing; evidence fragment docs/evidence/fragments/one-typesafe-model-picker/dry-run-picker-is-comparable.html (commit 00cef9d6c)</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261003T021226951044-review-of-dry-run-picker-is-comparable" data-who="reckon-build" data-when="2026-10-03T02:23:40.512Z">
-    <div class="r-comment-body"><p>independent review of r-20261003T011436676083-dry-run-picker-is-comparable stored as a five-dimension record (total 89) at the revision pair 28c5ae1a3..00cef9d6c, with added_failure_count 0 derived from the reviewed run&#x27;s own gate logs; the change makes a dry-run report comparable by recording the picker answer on the resolved plan only when route == &quot;picker&quot; and stripping the per-call latencies, and the one unmet done-when clause (a shadow preview still calls the picker at reckon/cli.py:1750) is out of this node&#x27;s write scope and recorded as a follow-on finding</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261003T011436676083-dry-run-picker-is-comparable stored as a five-dimension record (total 89) at the revision pair 28c5ae1a3..00cef9d6c, with added_failure_count 0 derived from the reviewed run's own gate logs; the change makes a dry-run report comparable by recording the picker answer on the resolved plan only when route == "picker" and stripping the per-call latencies, and the one unmet done-when clause (a shadow preview still calls the picker at reckon/cli.py:1750) is out of this node's write scope and recorded as a follow-on finding</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261003T022415893541-picker-absent-selection-falls-back" data-who="reckon-build" data-when="2026-10-03T02:48:14.159Z">
+    <div class="r-comment-body"><p>plan_dispatch on the picker route with no selection now falls back to the deterministic backend and records picker_selection.fallback_reason=picker-selection-absent instead of raising; new test test_absent_picker_selection_resolves_deterministically drives it and the gate (routing_picker_key + flight + picker_in_dispatch + a_brief_points_rather_than_quotes) is 128 passed/2 skipped at base and 129 passed/2 skipped at head with zero added failure ids.</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
