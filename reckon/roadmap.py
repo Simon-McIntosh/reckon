@@ -1483,7 +1483,7 @@ def sprint_summary_rows(
     every sprint closed within ``recent_days``. Rows are ordered live first,
     then open, then recently closed.
 
-    Liveness is §2's: the same derived read the fleet pane uses, never a stored
+    Liveness is shared with the fleet pane: the same derived read, never a stored
     marker. ``liveness`` and ``resolved_items`` may be passed in when the caller
     has already derived them — the roadmap does — so one read serves every
     surface; when they are omitted the function derives them itself from
