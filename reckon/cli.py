@@ -919,16 +919,22 @@ def _emit(payload, pretty: bool) -> None:
     click.echo(json.dumps(payload, indent=2 if pretty else None, sort_keys=True))
 
 
-def _emit_dry_run_request_error(pretty: bool, detail: str) -> None:
+def _emit_dry_run_request_error(
+    pretty: bool, detail: str, resolution: dict | None = None
+) -> None:
     """Answer a request error on the dry run's JSON channel.
 
     A request error is the same fact whether it came from a leaf key the
     flight schema refuses or from a keyed-map name no layer defines, so both
     answer in the same decodable document rather than one in plain text on
-    stderr.
+    stderr. A caller holding the --set resolution passes it, so a request
+    error also tells an override that resolved from one that never applied.
     """
     _emit(
-        {"ok": False, "dry_run": True, "error": "request-error", "detail": detail},
+        _with_resolved_overrides(
+            {"ok": False, "dry_run": True, "error": "request-error", "detail": detail},
+            resolution or {},
+        ),
         pretty,
     )
 
@@ -1683,14 +1689,24 @@ def crew_dispatch(
         except flight_module.FlightConfigError as exc:
             from reckon.crew.refusals import format_refusal
 
-            _emit(
-                {
-                    "ok": False,
-                    "error": "request-error",
-                    "detail": format_refusal("D03", str(exc)),
-                },
-                pretty,
-            )
+            detail = format_refusal("D03", str(exc))
+            if dry_run:
+                # The local selection is what failed, so the echo reports what
+                # the layers and the prompt alone resolved: a caller can still
+                # tell a --set override that resolved from one that never
+                # applied on this refusal.
+                _emit_dry_run_request_error(
+                    pretty,
+                    detail,
+                    _dispatch_override_resolution(
+                        flight_module, overrides, config, base_config, local=False
+                    ),
+                )
+            else:
+                _emit(
+                    {"ok": False, "error": "request-error", "detail": detail},
+                    pretty,
+                )
             raise click.exceptions.Exit(1) from exc
 
     node = crew_module.TaskNode(
@@ -1711,25 +1727,7 @@ def crew_dispatch(
         peer_scopes=_peer_scopes(peers),
     )
 
-    availability_refusal = (
-        None
-        if effective_route == "picker"
-        else _model_availability_refusal(crew_module, flight_module, config, node)
-    )
-    if availability_refusal is not None:
-        from reckon.crew.refusals import format_refusal
-
-        _emit(
-            {
-                "ok": False,
-                "error": "competence-refusal",
-                "detail": format_refusal("D04", str(availability_refusal["reason"])),
-                "competence": availability_refusal,
-            },
-            pretty,
-        )
-        raise click.exceptions.Exit(5)
-
+    override_resolution: dict = {}
     if dry_run:
         try:
             override_resolution = _dispatch_override_resolution(
@@ -1741,6 +1739,32 @@ def crew_dispatch(
             # caller keying on ``error`` reads a refusal rather than a preview.
             _emit_dry_run_request_error(pretty, str(exc))
             raise click.exceptions.Exit(1) from exc
+
+    availability_refusal = (
+        None
+        if effective_route == "picker"
+        else _model_availability_refusal(crew_module, flight_module, config, node)
+    )
+    if availability_refusal is not None:
+        from reckon.crew.refusals import format_refusal
+
+        refusal = {
+            "ok": False,
+            "error": "competence-refusal",
+            "detail": format_refusal("D04", str(availability_refusal["reason"])),
+            "competence": availability_refusal,
+        }
+        if dry_run:
+            # A dry-run refusal document, so it carries the same dry_run
+            # marker and --set echo every other refusal the preview emits
+            # does, and a caller can tell an override that resolved from one
+            # that never applied on this refusal too.
+            refusal["dry_run"] = True
+            refusal = _with_resolved_overrides(refusal, override_resolution)
+        _emit(refusal, pretty)
+        raise click.exceptions.Exit(5)
+
+    if dry_run:
         try:
             from reckon.crew.dispatch import (
                 dispatch_picker_selection,
@@ -1780,13 +1804,16 @@ def crew_dispatch(
             )
         except crew_module.BudgetHold as exc:
             _emit(
-                {
-                    "ok": False,
-                    "dry_run": True,
-                    "error": "budget-hold",
-                    "detail": str(exc),
-                    "hold": exc.verdict,
-                },
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "dry_run": True,
+                        "error": "budget-hold",
+                        "detail": str(exc),
+                        "hold": exc.verdict,
+                    },
+                    override_resolution,
+                ),
                 pretty,
             )
             raise click.exceptions.Exit(3) from exc

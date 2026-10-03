@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-dry-run-must-resolve-what-the-real-call-resolves">
+  <meta name="plan-verifies" content="reckon:a-dry-run-must-resolve-what-the-real-call-resolves#s7">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-03">
+  <title>Every dry-run refusal carries the override echo | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="every-dry-run-refusal-carries-the-echo">
+  <h2>Every dry-run refusal carries the override echo</h2>
+  <p>The availability competence refusal (exit 5) is now emitted after the <code>--set</code>
+  override resolution is computed, and its dry-run document carries <code>dry_run: true</code>
+  beside the same <code>overrides.&lt;path&gt;.before</code> / <code>.resolved</code> echo a
+  successful preview carries. The <code>--local</code> backend-selection failure on the dry-run
+  path answers through the same <code>request-error</code> channel with <code>dry_run: true</code>
+  and the echo computed with <code>local=False</code> (the local selection is exactly what failed,
+  so the echo reports the layers and the prompt alone). Both real-path documents are unchanged.</p>
+  <p>Reproduction: <code>tests/test_every_dry_run_refusal_carries_the_echo.py</code> drives each
+  refusal in dry-run form and asserts the exit code, the error key, <code>dry_run</code> and the
+  echo; at the base revision the availability case dies on <code>KeyError: 'dry_run'</code> and
+  the <code>--local</code> case on <code>KeyError: 'overrides'</code>. The negative control —
+  the availability refusal emitted before the override resolution, its pre-fix order — fails the
+  availability case 1 failed / EXIT=1 with the same <code>KeyError: 'dry_run'</code>; the log is
+  kept at the manifest's <code>negative_control_log</code> path.</p>
+  <p>The base-failing test <code>tests/test_a_brief_points_rather_than_quotes.py::test_a_report_changes_no_other_dry_run_field</code>
+  fails because the two dry runs it compares differ in <code>picker_selection.latency_ms</code>
+  (measured 38.584 against 2.343, and different values likewise today), a wall-clock duration the
+  test's clock mask missed: the mask covered keys ending <code>_at</code> only, so a measured
+  millisecond duration leaked into the comparison. The check was wrong, not the code — the
+  duration is an intended measured field of the dry run — and the mask now covers <code>_ms</code>
+  as well; the file's 13 cases pass at head.</p>
+  <p>Focused gate arms (<code>-n 8 --timeout=300</code>, own basetemp and log each, base from a
+  <code>git archive</code> extraction of <code>41e6fc48f</code> under <code>/tmp</code>): base
+  <strong>6 failed / 494 passed / 1 error</strong>, head <strong>6 failed / 496 passed</strong>,
+  both EXIT=1, five failure ids common to both arms. The base-only set is the brief-field test
+  (fixed at head) and one error in <code>tests/test_review_lane_follows_its_run.py</code> that
+  disappears at head. One id is added: <code>tests/test_crew.py::test_no_watch_dispatch_records_the_override_on_pointer_and_ledger</code>,
+  which records pid 4242 through a spawn stub and has the promotion guard take the worker's
+  liveness from the host process table, so its outcome tracks whichever unrelated process occupies
+  that pid at that moment; it passes 4/4 isolated re-runs interleaved at both trees and no file
+  this node changed lies on its executed path (the diff touches only the dry-run and
+  <code>--local</code> branches of <code>reckon/cli.py</code> plus two test files). Per the gate
+  rule the node is held blocked on that id for coordinator adjudication rather than promoted
+  through it. Ruff: <code>reckon/cli.py</code> carries the same four pre-existing findings at
+  base and head, and both changed test files are clean and formatted.</p>
+  <p>Repair round. An independent review found the dry-run budget-hold refusal (exit 3) emitted
+  with <code>dry_run: true</code> but without <code>_with_resolved_overrides</code>, so a
+  <code>--set</code>-carrying dry run that hit a held wave still could not tell an override that
+  resolved from one that never applied — the same defect one handler over. The refusal is now
+  wrapped like its siblings in that handler, and the case is driven by the refusal test file
+  (exit 3, <code>budget-hold</code>, <code>dry_run</code>, the echo). The negative control — the
+  wrapper reverted — fails that case on <code>KeyError: 'overrides'</code>, EXIT=1, and the
+  mutation was reverted immediately after. Gate arms re-run on the repaired head: base 6 failed /
+  494 passed, head 5 failed / 498 passed with <strong>no added failure id</strong>; the single id
+  the earlier head arm added does not recur here, nor in four isolated interleaved re-runs at both
+  trees, consistent with the host process-table race that test's fixed-pid stub exposes; it stays
+  named for adjudication rather than erased.</p>
+</section>
+</main>
+</body>
+</html>
