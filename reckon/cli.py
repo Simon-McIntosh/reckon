@@ -5562,7 +5562,7 @@ def crew_drain(project, session, leaves, pretty):
     "--run",
     "run_id",
     required=True,
-    help="Live run whose obligations are deliberately deferred.",
+    help="Run whose obligations are deliberately deferred; live or promoted.",
 )
 @click.option(
     "--reason",
@@ -5576,7 +5576,11 @@ def crew_drain(project, session, leaves, pretty):
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
 def crew_ack(run_id, reason, until, pretty):
-    """Defer one live run's obligations until an instant, recording why."""
+    """Defer one run's obligations until an instant, recording why.
+
+    A live run's deferral is written beside its pointer; one for a run already
+    promoted is written under the crew home and swept once its instant passes.
+    """
     crew_module, _ = _crew_modules()
     from reckon.crew import runs as runs_module
 
