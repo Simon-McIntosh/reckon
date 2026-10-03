@@ -17,7 +17,6 @@ from pathlib import Path
 import pytest
 
 from reckon import _plan_html, crew, ledger
-from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
 
 PROJECT = "proj"
@@ -122,28 +121,18 @@ def _write_pointer(
     _write_json(pointer_path(run_id), pointer)
 
 
-def _stored_review(run_id: str) -> None:
-    """Attach a complete independent review so the review gate is satisfied."""
-    emitted = "\n".join(
-        f"SCORE {dimension}: 20" for dimension in review_module.REVIEW_DIMENSIONS
-    )
-    record = review_module.parse_review(emitted)
-    record.update(
-        {
-            "project": PROJECT,
-            "reviewed_run_id": run_id,
-            "review_run_id": f"review-of-{run_id}",
-        }
-    )
-    review_module.store_review(record)
-
-
 def _promote(repository: Path, run_id: str) -> dict:
-    _stored_review(run_id)
+    # The review gate is not this node's subject, and its verdict depends on
+    # the tree the promotion resolves the run's revision in — a fixture whose
+    # pointer names no worktree resolves that tree from the working directory,
+    # so a review record would make this test pass or fail by where pytest was
+    # started rather than by what the ledger row carries. The waiver states
+    # that directly instead.
     return crew.complete(
         run_id,
         gate="passed",
         no_commit="test: the report is the deliverable",
+        review_waiver="test: the row's disposition field is the subject, not the review gate",
         root=repository,
     )
 
