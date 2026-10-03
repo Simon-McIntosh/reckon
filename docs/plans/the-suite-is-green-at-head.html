@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="251">
+<meta name="plan-version" content="252">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
 <meta name="plan-commits" content="7ff63a7d,238f5e77,4e813fec,0fa8733c,24d4a264,66a118f1,f3015a58,bc89b5fd,e5dbe176,de851cfa,83d48d25,14995811,000c7881,28e281cc,b4bef72b,a45d8b9c,c2b30b1f,24aeb95b,ed2054cc,4bef6acc,a06da1de">
@@ -1810,7 +1810,10 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
     <div class="r-comment-body"><p>the review record for r-20261003T181305675712 is stored at both the legacy and head-keyed review paths (status parsed; goal_fidelity 20, evidence 18, scope_discipline 19, durability 14, fit 17; total 88; reviewed_base_sha 7dde3c88b, reviewed_head_sha 6d8c4f3a9; added_failure_count 0, added_failure_ids [] derived from the reviewed run's own parent arm negative-control.log and head arm gate-unprovisioned.log), and I independently reproduced both arms.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261003T181209322589-dispatch-return-time-at-head-beside-4d1feeed9" data-who="reckon-build" data-when="2026-10-03T18:32:32.642Z">
-    <div class="r-comment-body"><p>Dispatch return time sampled 8x per tree at head 7dde3c88b beside 4d1feeed9 — head 2/8 passed, dispatch_seconds min/median/max 6.705/9.043/10.748 s (IQR 1.966 s); base 6/8 passed, 7.278/7.622/16.163 s (IQR 0.258 s); head median minus base median = 1.420 s does not exceed the larger IQR, so no regression is charged and no candidate commit is attributed; the probed id is pre-existing (red in both arms, 6/8 vs 2/8) and no new failure was added — reports in the run dir&#x27;s dispatch-timing.md/json, copied to reports/reckon.</p></div>
+    <div class="r-comment-body"><p>Dispatch return time sampled 8x per tree at head 7dde3c88b beside 4d1feeed9 — head 2/8 passed, dispatch_seconds min/median/max 6.705/9.043/10.748 s (IQR 1.966 s); base 6/8 passed, 7.278/7.622/16.163 s (IQR 0.258 s); head median minus base median = 1.420 s does not exceed the larger IQR, so no regression is charged and no candidate commit is attributed; the probed id is pre-existing (red in both arms, 6/8 vs 2/8) and no new failure was added — reports in the run dir's dispatch-timing.md/json, copied to reports/reckon.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261003T181237456404-the-lanes-stamp-red-is-reproduced-in-one-process" data-who="reckon-build" data-when="2026-10-03T18:35:02.900Z">
+    <div class="r-comment-body"><p>no tracked change (investigation only). The run records its landing point as an empty local commit 962657cec in the run&#x27;s worktree; deliverables are the two report files and the run-directory logs.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
