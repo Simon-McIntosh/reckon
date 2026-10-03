@@ -156,18 +156,20 @@ def _overlap_reports(payload: dict) -> list[str]:
 
 
 def _without_clock_stamps(value):
-    """Mask wall-clock stamps so two dry runs compare on their content alone.
+    """Mask wall-clock readings so two dry runs compare on their content alone.
 
-    Each invocation reads the lane at its own moment, so a field whose value is a
-    timestamp legitimately differs between two runs of the same dispatch. Masking
-    those keeps the comparison about everything the brief controls rather than
-    about when it happened to be composed.
+    Each invocation reads the lane at its own moment, so a field holding a
+    timestamp — and equally one holding a measured duration in milliseconds,
+    such as the picker's own latency — legitimately differs between two runs of
+    the same dispatch. Masking those keeps the comparison about everything the
+    brief controls rather than about when it happened to be composed or how
+    long an unrelated measurement took.
     """
     if isinstance(value, dict):
         return {
             key: (
                 "<clock>"
-                if key.endswith("_at")
+                if key.endswith(("_at", "_ms"))
                 else _without_clock_stamps(item)
             )
             for key, item in value.items()
