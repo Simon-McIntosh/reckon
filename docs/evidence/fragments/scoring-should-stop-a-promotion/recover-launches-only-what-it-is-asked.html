@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="Recovery reviews require scoped opt-in">
+  <meta name="plan-summary" content="Recovery launches no reviews by default. Scoped opt-in requires a live coordinator and routes reviews locally unless the node declared a backend. The scoped gate added zero failure IDs; the project-filter mutation failed the two-project case.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <title>Recovery reviews require scoped opt-in | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>Recovery reviews require scoped opt-in</h1>
+    <section id="outcome">
+      <h2>Outcome</h2>
+      <table>
+        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Original unscoped call</td><td>Two projects, two unintended review launches</td></tr>
+          <tr><td>Default after change</td><td>Two projects classified, zero review launches</td></tr>
+          <tr><td>Opted-in scope</td><td>Only the named project's review launches</td></tr>
+          <tr><td>Departed session</td><td>Zero launches; awaiting-coordinator</td></tr>
+          <tr><td>Lane</td><td>Local by default; explicit node declaration retained</td></tr>
+          <tr><td>Base, six files</td><td>10 failed, 412 passed; nine new cases fail</td></tr>
+          <tr><td>Head, six files</td><td>1 failed, 421 passed; zero added failure IDs</td></tr>
+          <tr><td>Project-filter mutation</td><td>Named-project case fails; foreign launch recorded; EXIT=1</td></tr>
+          <tr><td>Ruff delta</td><td>14 findings at base and head; one previously unformatted file at both</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

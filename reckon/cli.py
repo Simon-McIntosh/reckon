@@ -6381,19 +6381,31 @@ def crew_verify_gate(
 
 @crew.command(name="recover")
 @click.option("--project", default=None, help="Limit to one project's runs.")
+@click.option(
+    "--dispatch-reviews",
+    is_flag=True,
+    help="Launch reviews for scoring runs in the named project with live coordinators.",
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_recover(project, pretty):
-    """Classify live pointers left by an interrupted orchestrator; never launch, resume, or promote work.
+def crew_recover(project, dispatch_reviews, pretty):
+    """Classify live pointers; launch reviews only with --dispatch-reviews and --project.
 
     Reports running, completed-but-unpromoted (with its manifest path) and
-    abandoned runs. It repairs the record only: no worktree is removed, no
-    process is signalled, and nothing is promoted on its own initiative.
+    abandoned runs. By default it repairs the record and launches nothing.
+    An opted-in review stays awaiting-coordinator when its session is no longer
+    live. No worktree is removed or run promoted on this command's initiative.
     """
     crew_module, flight_module = _crew_modules()
     config = None
     if project:
         config = _resolved_flight(flight_module, project, None, ())
-    _emit({"ok": True, **crew_module.recover(project=project, config=config)}, pretty)
+    try:
+        report = crew_module.recover(
+            project=project, config=config, dispatch_reviews=dispatch_reviews
+        )
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit({"ok": True, **report}, pretty)
 
 
 @crew.group(name="member")
