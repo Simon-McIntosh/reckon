@@ -1,0 +1,379 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "e947890bca294329f03cae5353fdff65a1e272bc",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 7243054,
+      "input_tokens_cumulative": 7243054,
+      "output_tokens": 34620,
+      "output_tokens_cumulative": 34620,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 32,
+    "files": 3,
+    "removed": 3
+  },
+  "clone_matches": [],
+  "commit_resolution": null,
+  "commits": [
+    "df876e6b5136b3badae12fa463c64a9229d876c6"
+  ],
+  "completed_at": "2026-10-03T00:17:57.695Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-02T23:59:34Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_picker_cached_availability.py tests/test_picker.py tests/test_picker_pressure.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T235857425086-picker-never-offers-in-harness/gate-head.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": null,
+    "plan": "one-typesafe-model-picker",
+    "reason": "no-impl-recorded-at-dispatch",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-03T00:39:00.015501+00:00",
+    "horizon_seconds": 2400,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-02T23:59:00Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 10,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 7,
+    "headroom": 7,
+    "mean_context": 145000,
+    "observed_at": "2026-10-02T23:58:50Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-03T00:17:57.695Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T235857425086-picker-never-offers-in-harness/manifest.md",
+  "member": "disposable-r-20261002T235857425086-picker-never-offers-in-harness",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_picker_cached_availability.py::test_in_harness_backend_is_never_offered"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_picker_cached_availability.py::test_in_harness_backend_is_never_offered"
+    ],
+    "declaration": "drop the in-harness exclusion; the in-harness candidate test must fail",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T235857425086-picker-never-offers-in-harness/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T235857425086-picker-never-offers-in-harness/negative-control.log",
+    "test_paths": [
+      "tests/test_picker_cached_availability.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "picker-never-offers-in-harness",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1091,
+          "cached_input_tokens": 861330,
+          "input_tokens": 862423,
+          "output_tokens": 1278,
+          "reasoning_output_tokens": 583,
+          "total_tokens": 863701,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "2d0412cd-9d81-48d8-9d5c-32537d1c4e2b",
+      "session_id": "s25-picker"
+    },
+    "done_when": "At the committed head, the picker's candidate filter removes every backend whose resolved launch is in-harness (native today), with reason in-harness-backend: a routed CLI dispatch cannot execute it, because it needs a coordinator to attach a harness task. A test in tests/test_picker_cached_availability.py builds candidates including an in-harness backend with unknown availability, and asserts it is excluded with that reason while CLI backends with unknown availability are still offered. It fails at the base revision in a recorded log. The gate is every tests/test_picker*.py file plus every test file under tests/ that imports reckon/crew/picker/snapshot.py (found by grep), at base and head, with zero added failure ids.",
+    "estimated_hours": null,
+    "goal": "Never offer an in-harness backend to a routed CLI dispatch",
+    "id": "picker-never-offers-in-harness",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-02T23:59:00Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 10,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 7,
+      "headroom": 7,
+      "mean_context": 145000,
+      "observed_at": "2026-10-02T23:58:50Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T235857425086-picker-never-offers-in-harness/manifest.md",
+    "negative_control": "drop the in-harness exclusion; the in-harness candidate test must fail",
+    "plan": "one-typesafe-model-picker",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§10",
+    "spec_level": "exact",
+    "time_budget": "40m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/picker/snapshot.py",
+      "tests/test_picker_cached_availability.py",
+      "docs/evidence/fragments/one-typesafe-model-picker/picker-never-offers-in-harness.html",
+      "docs/figures/one-typesafe-model-picker/picker-never-offers-in-harness"
+    ]
+  },
+  "orientation_input_tokens": 1474893.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "picker-never-offers-in-harness",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-02T23:59:19.230497+00:00",
+    "score": 0.56875,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5001.155,
+    "model": null,
+    "offered": [],
+    "probabilities": {}
+  },
+  "plan": "one-typesafe-model-picker",
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "df876e6b5136b3badae12fa463c64a9229d876c6",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "e947890bca294329f03cae5353fdff65a1e272bc",
+    "reviewed_head_sha": "df876e6b5136b3badae12fa463c64a9229d876c6",
+    "scores": {
+      "durability": 20,
+      "evidence": 19,
+      "fit": 20,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 99
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20261002T235857425086-picker-never-offers-in-harness",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§10",
+  "session": "s25-picker",
+  "session_harness": "claude",
+  "session_id": "194a0f4f-299d-4d60-947f-06110e9246f4",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": 1,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 7243054,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 1093.69,
+    "generated_tokens": 34620,
+    "generation_seconds": 737.405,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 60.5,
+    "machine_seconds": 356.285,
+    "peak_input_tokens": 139296,
+    "tokens_per_second": 46.95,
+    "wall_tokens_per_second": 31.65
+  },
+  "time_budget": "40m",
+  "tool_steps": 76.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 1103,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-03T00:18:00Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-02T23:59:38Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261002T235857425086-picker-never-offers-in-harness",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 6329,
+    "worker_pid": 2755813
+  },
+  "worker_seconds": 1081,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}

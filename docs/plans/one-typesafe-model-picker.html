@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="84">
+<meta name="plan-version" content="85">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 </head>
 <body>
@@ -296,6 +296,9 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T225036298487-picker-cached-availability-is-unknown" data-who="reckon-build" data-when="2026-10-02T23:55:47.703Z">
     <div class="r-comment-body"><p>picker-cached-availability-is-unknown — a cached pick with no fresh serving observation now offers the lane as unknown instead of unavailable; a lane declaring an endpoints document is read from it (clive reads served) and a fresh refusal still excludes; the two shared picker test files this required are edited inside the granted scope (commits 144ee0dd3 revert, 05a08f5a4 re-apply); gate base 92 passed/0 failed, head 96 passed/0 failed, zero added failure ids.</p></div>
 </div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261002T235857425086-picker-never-offers-in-harness" data-who="reckon-build" data-when="2026-10-03T00:17:57.695Z">
+    <div class="r-comment-body"><p>picker&#x27;s candidate filter now removes every backend whose resolved launch is in-harness with reason in-harness-backend, applied before any serving/budget/probe check; new test tests/test_picker_cached_availability.py::test_in_harness_backend_is_never_offered</p></div>
+</div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261002T175200268541-picker-in-dispatch" data-who="reckon-build" data-when="2026-10-02T18:41:00Z">
     <div class="r-comment-body"><p>Every dispatch records a bounded cached picker selection and optional picker routing; base 163 passed, final head 175 passed, zero added failure ids; the real dry run printed a fallback selection in 96.897 ms.</p></div>
 </div>
@@ -324,7 +327,7 @@
     <div class="r-comment-body"><p>A shadow and a lane change now pass route=deterministic, so each resolves through the backend it already names and records route deterministic on the run instead of refusing at plan_dispatch's "picker route has no selection" guard; two cases in tests/test_routing_picker_key.py fail at base (EXIT=1, both with that refusal) and pass at head, and the named gate is 94 passed / EXIT=0 at head with zero added failure ids.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261003T000524263505-review-of-explicit-lane-paths-stay-deterministic" data-who="reckon-build" data-when="2026-10-03T00:16:03.699Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261002T232007359279 stored as a parsed record at reviews/reckon/r-20261002T232007359279-explicit-lane-paths-stay-deterministic.json (and the .at-21bac19e4 revision copy); read 1aca1ea23..21bac19e4, scoring goal_fidelity 19 / evidence 16 / scope_discipline 19 / durability 18 / fit 18 (total 90), two follow-on findings, and added_failure_count 0 with no added ids derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20261002T232007359279 stored as a parsed record at reviews/reckon/r-20261002T232007359279-explicit-lane-paths-stay-deterministic.json (and the .at-21bac19e4 revision copy); read 1aca1ea23..21bac19e4, scoring goal_fidelity 19 / evidence 16 / scope_discipline 19 / durability 18 / fit 18 (total 90), two follow-on findings, and added_failure_count 0 with no added ids derived from the reviewed run's own baseline_suite and after_suite gate logs.</p></div>
 </div>
 </section>
 <section data-reckon="followups" id="followups" class="r-followups">
