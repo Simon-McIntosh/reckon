@@ -9,9 +9,10 @@ ok at its word read a gate that measured nothing as a gate that passed.
 These cases pin the classification. A replay cut short by its bound reports
 ``ok: false`` with a finding naming the timeout and the seconds it ran before
 it was stopped, records no passing verdict, and leaves a log that says it was
-cut short. A replay that completes keeps its own exit status and verdict — a
-green one and a non-zero one alike — and reports ``ok: true``, because ok
-reports that a status was measured rather than that the gate passed.
+cut short. A replay that completes keeps its own exit status and verdict:
+a green one reports ``ok: true`` and exits 0, while a non-zero one reports
+``ok: false`` and exits non-zero, because ok reports whether the replay
+finished and passed rather than only that a status was measured.
 
 Every case runs in a temporary config home and asserts the real one gained
 nothing under this run's own id.
@@ -150,8 +151,8 @@ def environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ReplayEnviro
     return ReplayEnvironment(config_home=config_home, repository=repository)
 
 
-def _payload(result) -> dict:
-    assert result.exit_code == 0, result.output
+def _payload(result, exit_code: int = 0) -> dict:
+    assert result.exit_code == exit_code, result.output
     return json.loads(result.output)
 
 
@@ -160,7 +161,7 @@ def test_a_replay_that_outlives_its_bound_reports_failure(
 ) -> None:
     """A command that outlives a short --timeout-seconds is reported ok false,
     with a finding naming the timeout and the seconds it ran, no passing
-    verdict, and a replay log that says it was cut short."""
+    verdict, a non-zero exit, and a replay log that says it was cut short."""
     escaped = _real_run_directory(environment.run_id)
     assert not escaped.exists(), "a stale run directory of this run's own id is present"
     environment.promote()
@@ -172,7 +173,7 @@ def test_a_replay_that_outlives_its_bound_reports_failure(
         str(BOUND_SECONDS),
     )
 
-    payload = _payload(result)
+    payload = _payload(result, exit_code=1)
     report = payload["report"]
     assert payload["ok"] is False, (
         "a replay cut short by its bound reported ok, so a caller reading the "
@@ -242,16 +243,16 @@ def test_a_replay_that_completes_reports_its_own_green_status(
 def test_a_replay_that_completes_failing_reports_its_own_failure(
     environment: ReplayEnvironment,
 ) -> None:
-    """A completed replay's non-zero status is its verdict, not a failure of
-    the replay: ok stays true and the finding names the verdict, not a
-    timeout."""
+    """A completed replay's non-zero status is its verdict: ok is false and
+    the verb exits non-zero, while the report keeps the real status and
+    verdict and the finding names the failing verdict, not a timeout."""
     environment.promote()
 
     result = environment.verify_gate("--command", COMPLETES_RED)
 
-    payload = _payload(result)
+    payload = _payload(result, exit_code=1)
     report = payload["report"]
-    assert payload["ok"] is True, payload
+    assert payload["ok"] is False, payload
     assert report["timed_out"] is False, report
     assert report["exit_status"] == 7, report
     assert report["integrated_verdict"] == "failed", report
