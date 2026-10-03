@@ -1430,6 +1430,7 @@ def test_one_stamp_reader_dates_a_record_for_both_surfaces() -> None:
         {"backends": {"solo": {"launch": "cli", "command": "codex"}}},
         [{**run, "backend": "solo", "session_id": "sess-created-at"}],
         receipt_reader=lambda session_id: _rollout_receipt({300: _quota(300, 11.0)}),
+        probe_reader=lambda backend, settings: None,
         composed_at=_iso(NOW),
     )
     lane = next(item for item in lanes["lanes"] if item["backend"] == "solo")
@@ -1439,6 +1440,7 @@ def test_one_stamp_reader_dates_a_record_for_both_surfaces() -> None:
         {"backends": {"solo": {"launch": "cli", "command": "codex"}}},
         [{**undated, "backend": "solo", "session_id": "sess-undated"}],
         receipt_reader=lambda session_id: _rollout_receipt({300: _quota(300, 11.0)}),
+        probe_reader=lambda backend, settings: None,
         composed_at=_iso(NOW),
     )
     undated_lane = next(
