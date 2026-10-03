@@ -38,7 +38,9 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return config_home
 
 
-def _write_promoted_run(tmp_path: Path, run_id: str, repo: Path) -> None:
+def _write_recorded_run(
+    tmp_path: Path, run_id: str, repo: Path, *, commits: list[str] | None = None
+) -> None:
     """A completed run whose ledger row is written while its pointer lives.
 
     This is the promote window exactly: the row exists, so the run reads
@@ -47,10 +49,12 @@ def _write_promoted_run(tmp_path: Path, run_id: str, repo: Path) -> None:
     repository it was read from and the row is written where that repository
     resolves.
     """
+    commits = ["HEAD"] if commits is None else commits
     manifest = tmp_path / "manifests" / f"{tmp_path.name}-{run_id}.md"
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text(
-        "node: node-a\nstatus: complete\ncommits: HEAD\nblockers: none\n",
+        "node: node-a\nstatus: complete\n"
+        f"commits: {'HEAD' if commits else 'none'}\nblockers: none\n",
         encoding="utf-8",
     )
     crew._write_json(
@@ -68,7 +72,10 @@ def _write_promoted_run(tmp_path: Path, run_id: str, repo: Path) -> None:
     )
     row = ledger.run_path(PROJECT, run_id, str(repo))
     row.parent.mkdir(parents=True, exist_ok=True)
-    row.write_text(json.dumps({"run_id": run_id, "project": PROJECT}), encoding="utf-8")
+    record = {"run_id": run_id, "project": PROJECT, "commits": commits}
+    if not commits:
+        record["no_commit"] = "the report is the deliverable"
+    row.write_text(json.dumps(record), encoding="utf-8")
 
 
 def _snapshot(run_id: str) -> dict:
@@ -83,7 +90,7 @@ def test_a_promoted_live_run_is_held_and_announced_once(
     run_id = "r-promoted-live"
     repo = tmp_path / "repo"
     repo.mkdir()
-    _write_promoted_run(tmp_path, run_id, repo)
+    _write_recorded_run(tmp_path, run_id, repo)
 
     promoted = _snapshot(run_id)
     # Precondition: with the row written and the pointer still live, the run
@@ -118,3 +125,27 @@ def test_a_promoted_live_run_is_held_and_announced_once(
         ledger_run_ids=recovery._ledger_run_id_reader(PROJECT),
     )
     assert events == []
+
+
+def test_a_commitless_live_run_is_held_once_and_does_not_reannounce(
+    home: Path, tmp_path: Path
+) -> None:
+    run_id = "r-recorded-live"
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write_recorded_run(tmp_path, run_id, repo, commits=[])
+
+    recorded = _snapshot(run_id)
+    assert recovery._promote_record_holds(crew.read_pointer(run_id))
+    assert recorded["state"] == "recorded"
+    known = {run_id: {**recorded, "state": "completed_unpromoted"}}
+
+    seen = []
+    for _ in range(3):
+        events, known = recovery.fleet_transitions(known, {run_id: _snapshot(run_id)})
+        seen.extend((previous, state) for _snap, previous, state, _counts in events)
+    assert seen == [("completed_unpromoted", "recorded")]
+
+    departed, remaining = recovery.fleet_transitions(known, {})
+    assert departed == []
+    assert run_id not in remaining

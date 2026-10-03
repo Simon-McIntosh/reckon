@@ -1,4 +1,4 @@
-"""A promoted run reads promoted from the promote record, never unpromoted.
+"""A committed row settles a run before its live pointer is removed.
 
 Promotion appends the run's ledger row and then removes the live pointer. A
 classifier that reads the pointer alone calls the run unpromoted for the whole
@@ -8,8 +8,8 @@ awaiting a review it already has. The follower then renders a landing as
 unfinished work — the measured ``complete -> unpromoted`` flicker — before the
 pointer's absence and the ledger row finally agree on ``promoted``.
 
-The ledger row is the fleet's evidence that the work landed, and it exists
-before the pointer is removed. The first test drives a synthesized completed run
+The ledger row is the fleet's evidence that the run was reconciled, and it exists
+before the pointer is removed. The first test drives a report-only completed run
 through promotion and classifies it at exactly the boundary between the two
 writes. The rest hold the three departure routes that leave a pointer behind
 without a recorded promotion to the word each still earns.
@@ -175,10 +175,10 @@ def _snapshot(run_id: str) -> dict:
     )
 
 
-def test_a_promoted_run_reads_promoted_at_the_promote_boundary(
+def test_a_recorded_report_reads_recorded_at_the_promote_boundary(
     repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The instant between the promote record and the pointer removal is promoted."""
+    """A report-only run is settled during the pointer-removal window."""
     run_id = "r-20260926T133400000000-node-a"
     _write_completed_pointer(repository, tmp_path, run_id)
     _store_review(run_id, _git(repository, "rev-parse", "HEAD"))
@@ -197,11 +197,18 @@ def test_a_promoted_run_reads_promoted_at_the_promote_boundary(
 
     monkeypatch.setattr(promotion, "_capture_member_session", boundary_hook)
 
-    crew.complete(run_id, gate="passed", root=repository)
+    result = crew.complete(
+        run_id,
+        gate="passed",
+        no_commit="the report is the deliverable",
+        root=repository,
+    )
 
     assert observed, "the promotion never reached the promote-record boundary"
     assert len(observed) == 1
-    assert observed[0] == ("promoted", "promoted")
+    assert observed[0] == ("recorded", "promoted")
+    assert result["record"]["commits"] == []
+    assert result["record"]["no_commit"] == "the report is the deliverable"
     assert ledger.run_path(PROJECT, run_id, repository).is_file()
     assert not pointer_path(run_id).exists()
 
@@ -251,7 +258,7 @@ def _record_project_run(run_id: str) -> None:
     """Write a promoted run's row into the project's own ledger."""
     row = ledger.run_path(PROJECT, run_id)
     row.parent.mkdir(parents=True, exist_ok=True)
-    _write_json(row, {"run_id": run_id, "project": PROJECT})
+    _write_json(row, {"run_id": run_id, "project": PROJECT, "commits": ["HEAD"]})
 
 
 def test_a_refused_dispatch_departs_withdrawn(repository: Path) -> None:

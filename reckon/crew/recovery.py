@@ -9223,20 +9223,19 @@ EXPLAINED_STATES = frozenset(
 
 
 def _promote_record_holds(record: Mapping[str, Any]) -> bool:
-    """Whether this live pointer's ledger row records landed commits.
+    """Whether this live pointer's completed run has a committed ledger row.
 
     Promotion appends the run's ledger row and then removes the live pointer,
     so for the length of that window the pointer still exists while the work
     has already landed. A classifier that reads only the pointer sees a
     completed manifest whose review no longer matches the moved head and calls
-    the run unpromoted — a landing reported as unfinished work. The ledger row's
-    commits are the evidence that work landed, so they are read here rather than
-    inferred from the pointer's absence, which arrives a poll later. A row with
-    no commits records a completion but cannot claim a code landing.
+    the run unpromoted — a settled completion reported as unfinished work. The
+    ledger row settles the run even when it declares no repository change, so
+    row presence, rather than its commit list, answers this question.
 
     The row is read from the run's own repository, the root promotion wrote it
     under. Promotion writes the per-run file before it touches the aggregate,
-    so this reads that file directly.
+    so a single stat answers whether the row was committed.
     An unreadable or absent row answers False — the run then takes the word its
     pointer earns, which is the safe direction because the alternative promises
     a landing nothing recorded.
@@ -9253,15 +9252,35 @@ def _promote_record_holds(record: Mapping[str, Any]) -> bool:
     if not run_id or not project or not repo:
         return False
     try:
-        path = ledger_module.run_path(project, run_id, repo)
-        row = json.loads(path.read_text(encoding="utf-8"))
-        return (
-            isinstance(row, Mapping)
-            and row.get("run_id") == run_id
-            and bool(row.get("commits"))
-        )
-    except (OSError, ValueError, ledger_module.LedgerError):
+        return ledger_module.run_path(project, run_id, repo).is_file()
+    except (OSError, ValueError):
         return False
+
+
+def _recorded_pointer_word(record: Mapping[str, Any]) -> str:
+    """Name a settled pointer's committed work or recorded completion.
+
+    The row existence check already established settlement. A row that cannot
+    be decoded cannot establish a code landing, so its safe word is recorded.
+    """
+    from reckon import ledger as ledger_module
+
+    try:
+        path = ledger_module.run_path(
+            str(record.get("project") or ""),
+            str(record.get("run_id") or ""),
+            str(record.get("repo") or ""),
+        )
+        row = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, ledger_module.LedgerError):
+        return "recorded"
+    return (
+        "promoted"
+        if isinstance(row, Mapping)
+        and row.get("run_id") == record.get("run_id")
+        and row.get("commits")
+        else "recorded"
+    )
 
 
 def _stall_window_seconds(row: Mapping[str, Any], stall_seconds: int) -> int:
@@ -9354,18 +9373,14 @@ def _watch_verdict(
     alive = row.get("process_alive")
 
     if _promote_record_holds(pointer):
-        # A recorded promotion outranks every reading of the pointer. The row
-        # is written before the pointer is removed, so for that window the
-        # pointer still describes completed-but-awaiting work; the ledger row
-        # is the fleet's evidence the work landed, and reading it here keeps
-        # the run promoted across the whole of promotion rather than only once
-        # the pointer has gone. The state has no reason clause and no owed
-        # action: the work is done, and nothing about it asks a reader for
-        # anything.
+        # A committed row outranks every reading of the pointer, including a
+        # report-only completion with no code commit. The pointer remains for
+        # a short window after that row lands; both outcomes are settled there.
+        state = _recorded_pointer_word(pointer)
         return {
-            "state": "promoted",
+            "state": state,
             "detail": "",
-            "recovery_classification": "promoted",
+            "recovery_classification": state,
             "recovery": "",
             "lifting_condition": None,
         }
@@ -9939,6 +9954,9 @@ def _watch_snapshot(
 # keeping healthy waits out of both work-in-progress and needs-action figures.
 # Every snapshot belongs to exactly one bucket, so the figures still add up.
 FLEET_WORKING_STATES = ("dispatched", "working", "running")
+# Both words say that the ledger settled the run. One records landed commits;
+# the other records a completed run with no repository commit to claim.
+FLEET_SETTLED_STATES = frozenset({"promoted", "recorded"})
 # ``departed`` is the word a departure with no resolvable ledger carries: the
 # run has gone and no record says whether it landed. It sits with the delivered
 # family here so the state vocabulary names every word the fold can emit, while
@@ -10032,27 +10050,26 @@ def _manifest_rewritten(
     )
 
 
-def _ledger_run_id_reader(project: str) -> Callable[[], Iterable[str]]:
-    """A lazy reader of run ids whose ledger rows record landed commits.
+def _ledger_run_id_reader(project: str) -> Callable[[], Mapping[str, str]]:
+    """A lazy reader of each recorded run's committed or commitless word.
 
     The ledger is a shared file another process rewrites, so its read degrades
-    to an empty set rather than failing the whole fleet observation: a partial
+    to an empty map rather than failing the whole fleet observation: a partial
     read must not stop the fold from reporting everything else. An empty answer
-    withholds the promoted word — the safe direction, because the alternative
-    promises a landing that was never recorded.
+    withholds either settled word, because neither is justified without a row.
     """
     from reckon import ledger as ledger_module
 
-    def read() -> Iterable[str]:
+    def read() -> Mapping[str, str]:
         try:
             rows, _version = ledger_module.read_records(project, with_figures=False)
             return {
-                str(row["run_id"])
+                str(row["run_id"]): ("promoted" if row.get("commits") else "recorded")
                 for row in rows
-                if row.get("run_id") and row.get("commits")
+                if row.get("run_id")
             }
         except (OSError, ValueError, ledger_module.LedgerError):
-            return ()
+            return {}
 
     return read
 
@@ -10060,12 +10077,13 @@ def _ledger_run_id_reader(project: str) -> Callable[[], Iterable[str]]:
 def _departure_recorded_run_ids(
     known: Mapping[str, Mapping[str, Any]],
     departures: Sequence[str],
-    ledger_run_ids: Callable[[], Iterable[str]] | None,
-) -> set[str] | None:
-    """The recorded run ids a departure fold resolves its words against.
+    ledger_run_ids: Callable[[], Iterable[str] | Mapping[str, str]] | None,
+) -> dict[str, str] | None:
+    """The recorded departure words a fold resolves against.
 
-    A reader the caller supplies is used as given. When none is supplied, one is
-    resolved from the departing run's own project, because a caller holding no
+    An id-only reader means its ids are promotions, preserving the existing
+    direct-call contract. When no reader is supplied, one is resolved from the
+    departing run's own project, because a caller holding no
     reader — the published fleet stream builds its transitions without one — has
     no way to tell a promotion from a pointer that vanished, and a word chosen
     without that fact promises a landing nobody recorded. Resolving it here
@@ -10085,14 +10103,17 @@ def _departure_recorded_run_ids(
                 break
     if reader is None:
         return None
-    return {str(run) for run in reader()}
+    recorded = reader()
+    if isinstance(recorded, Mapping):
+        return {str(run_id): str(word) for run_id, word in recorded.items()}
+    return {str(run_id): "promoted" for run_id in recorded}
 
 
-def _departure_word(run_id: str, recorded: set[str] | None) -> str:
+def _departure_word(run_id: str, recorded: Mapping[str, str] | None) -> str:
     """The word a departing run's absence carries.
 
-    Promotion has first claim, because a recorded ledger row is the fleet's
-    evidence that work landed and a run directory cannot argue with it. Failing
+    A recorded ledger row has first claim, because it settles the run whether
+    it carries landed commits or a declared commitless completion. Failing
     that, a marker the run's directory holds from a deliberate discard names the
     departure discarded whatever else is known: the discard is a fact the run's
     own home records, so it outranks a ledger that cannot be resolved. Only when
@@ -10103,7 +10124,7 @@ def _departure_word(run_id: str, recorded: set[str] | None) -> str:
     the bare withdrawal a reaped or hand-removed pointer earns.
     """
     if recorded is not None and run_id in recorded:
-        return "promoted"
+        return recorded[run_id]
     if _discard_recorded(run_id):
         return "discarded"
     if recorded is None:
@@ -10131,7 +10152,7 @@ def fleet_transitions(
     known: Mapping[str, Mapping[str, Any]],
     current: Mapping[str, Mapping[str, Any]],
     *,
-    ledger_run_ids: Callable[[], Iterable[str]] | None = None,
+    ledger_run_ids: Callable[[], Iterable[str] | Mapping[str, str]] | None = None,
 ) -> tuple[
     list[tuple[dict[str, Any], str | None, str, dict[str, int]]],
     dict[str, dict[str, Any]],
@@ -10150,8 +10171,8 @@ def fleet_transitions(
     its slot, which is the order a reader infers from the numbers. A manifest
     rewrite that leaves the state unchanged is folded after the state changes of
     the same observation: its classification word did not move, so nothing else
-    about the fold could have either. A run worded promoted from its terminal
-    ledger row settles there: the landing is announced once, a later pointer
+    about the fold could have either. A run worded from its terminal ledger row
+    settles there: the completion is announced once, a later pointer
     reading cannot move it back to ``dispatched``, and the pointer's own
     disappearance — a gc reap included — emits nothing further for the run.
     """
@@ -10172,12 +10193,12 @@ def fleet_transitions(
 
     departures = [item for item in known if item not in current]
     # A run leaves the fleet for reasons a pointer cannot tell apart on its own:
-    # a promotion that wrote its ledger row, a deliberate discard that left its
+    # a completion that wrote its ledger row, a deliberate discard that left its
     # marker in the run directory, and a pointer that vanished with nothing
     # recorded behind it — a reaped pointer, a file removed by hand. A reader
     # acts on the word, and each of the three asks for a different response, so
-    # the fold resolves all three. A promotion is read from the ledger alone and
-    # claims the run whenever a row records it; failing that, a discard marker
+    # the fold resolves all three. A settled word is read from the ledger alone:
+    # promoted for recorded commits, recorded for a commitless completion. A discard marker
     # in the run directory names the departure discarded. With neither, a ledger
     # that resolves and records no row leaves the word withdrawn, while a ledger
     # that cannot be resolved leaves it departed — the honest unknown, which
@@ -10191,9 +10212,9 @@ def fleet_transitions(
     if departures:
         recorded = _departure_recorded_run_ids(known, departures, ledger_run_ids)
     else:
-        recorded = set()
+        recorded = {}
     for run_id in departures:
-        if str(known[run_id].get("state") or "") == "promoted":
+        if str(known[run_id].get("state") or "") in FLEET_SETTLED_STATES:
             # The run already settled on its terminal ledger row: the landing
             # was announced once, so the pointer's later disappearance — a gc
             # reap included — is not news and emits nothing for the run. The
@@ -10224,7 +10245,7 @@ def fleet_transitions(
     for run_id in (item for item in current if item in known):
         previous = str(known[run_id]["state"])
         state = str(current[run_id]["state"])
-        if previous == "promoted":
+        if previous in FLEET_SETTLED_STATES:
             # A terminal ledger row settles the run: once worded promoted, the
             # run stays promoted whatever the live pointer later reads. The
             # landing was announced once, when the row was written, so a stale
@@ -10262,7 +10283,7 @@ def fleet_transitions(
             running.pop(run_id, None)
         elif (
             run_id in running
-            and str(running[run_id].get("state") or "") == "promoted"
+            and str(running[run_id].get("state") or "") in FLEET_SETTLED_STATES
         ):
             # Settled on its terminal ledger row: hold the promoted memory
             # rather than adopting a later pointer reading.
@@ -10296,7 +10317,7 @@ def _watch_transition(
     derives those from these facts, so the log stays re-renderable.
 
     ``spend_runs`` is the record set the accumulator folds (the live fleet, or
-    rows already promoted); omitted, the project's own live pointers are read.
+    rows already settled); omitted, the project's own live pointers are read.
     ``rate_statuses`` maps a backend to its dated rate standing for the notional
     cost figure; omitted, the resolved configuration is read.
     """
@@ -10360,7 +10381,7 @@ def _watch_transition(
         event["waiting"] = counts.get("waiting", 0)
     recorded = (
         _recorded_transition_spend(project, str(snapshot.get("run_id") or ""))
-        if kind == "transition" and current == "promoted"
+        if kind == "transition" and current in FLEET_SETTLED_STATES
         else None
     )
     event.update(
@@ -10378,7 +10399,7 @@ def _watch_transition(
 
 
 def _recorded_transition_spend(project: str, run_id: str) -> dict[str, Any] | None:
-    """Read a promoted run's spend from the row committed before pointer unlink.
+    """Read a settled run's spend from the row committed before pointer unlink.
 
     The live-pointer fold is empty by the time this transition is published.
     The ledger's throughput block is the measurement promotion already

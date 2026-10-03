@@ -37,11 +37,21 @@ def _snapshot(run_id: str, state: str = "working") -> dict:
     }
 
 
-def _row(root: Path, run_id: str, *, commits: list[str], throughput=None) -> None:
+def _row(
+    root: Path,
+    run_id: str,
+    *,
+    commits: list[str],
+    throughput=None,
+    no_commit: str | None = None,
+) -> None:
     path = ledger.run_path("sample", run_id, root)
     path.parent.mkdir(parents=True, exist_ok=True)
+    record = {"run_id": run_id, "commits": commits, "throughput": throughput}
+    if no_commit is not None:
+        record["no_commit"] = no_commit
     path.write_text(
-        json.dumps({"run_id": run_id, "commits": commits, "throughput": throughput}),
+        json.dumps(record),
         encoding="utf-8",
     )
 
@@ -90,16 +100,19 @@ def test_four_departures_render_four_words(home: Path, monkeypatch) -> None:
 
 def test_a_row_with_no_commits_cannot_claim_promotion(home: Path) -> None:
     run_id = "r-no-commits"
-    _row(home, run_id, commits=[])
+    _row(home, run_id, commits=[], no_commit="the report is the deliverable")
     snapshot = _snapshot(run_id)
     word = recovery.fleet_transitions({run_id: snapshot}, {})[0][0][2]
-    assert word != "promoted"
+    assert word == "recorded"
     assert "promoted" not in _plain(_event(snapshot, word))
+    assert "recorded" in _plain(_event(snapshot, word))
 
     pointer = {"run_id": run_id, "project": "sample", "repo": str(home)}
-    assert not recovery._promote_record_holds(pointer)
+    assert recovery._promote_record_holds(pointer)
+    assert recovery._recorded_pointer_word(pointer) == "recorded"
     _row(home, run_id, commits=["recorded-commit"])
     assert recovery._promote_record_holds(pointer)
+    assert recovery._recorded_pointer_word(pointer) == "promoted"
 
 
 def test_promoted_transition_keeps_the_live_pointer_figures(home: Path) -> None:

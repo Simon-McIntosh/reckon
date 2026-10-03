@@ -30,7 +30,9 @@ def _record_promotion(project: str, run_id: str) -> None:
     """
     row = ledger.run_path(project, run_id)
     row.parent.mkdir(parents=True, exist_ok=True)
-    row.write_text(json.dumps({"run_id": run_id}), encoding="utf-8")
+    row.write_text(
+        json.dumps({"run_id": run_id, "commits": ["HEAD"]}), encoding="utf-8"
+    )
 
 
 CONFIG = {
