@@ -22,10 +22,22 @@ behind the read-only overlay. The properties proved here, through
   the write lands in the operator's file, while a write to any other path under
   ``~/.codex`` is refused read-only.
 
+The writable bind that lets a refresh through is also what would let a run
+blank the operator's only login, so the file's guarantees are asserted rather
+than assumed: a fenced run cannot remove it at either path (the run home's
+mount point refuses the unlink, the operator's directory is read-only) and
+cannot replace it, by rename over it or by unlink and recreate. A truncation to
+zero bytes is possible through the bind, and is detected after the run by
+comparing the size recorded before the launch with the size read back — two
+``stat`` calls that never open the credential — and reported on the run's
+record and on the run's stderr log, and healed rather than pinned when the
+write that follows a refresh's truncate lands.
+
 The declared negative control restores the read-only bind of ``auth.json``; the
-read-write bind assertion must then fail. That red log's first line is the
-mutation string below, verbatim.
-"""
+read-write bind assertion must then fail, and its red log's first line is the
+mutation string below, verbatim. The truncation check's own negative control is
+the second mutation string below: with the post-run size check removed, the
+zero-byte truncation case finds no report and fails."""
 
 from __future__ import annotations
 
@@ -44,14 +56,22 @@ NEGATIVE_CONTROL_MUTATION = (
     "restore the read-only bind of auth.json; the read-write bind assertion must fail"
 )
 
+TRUNCATION_NEGATIVE_CONTROL_MUTATION = (
+    "With the post-run size check removed, the zero-byte truncation case in "
+    "tests/test_fenced_codex_can_persist_its_login.py finds no report and fails."
+)
+
 requires_bwrap = pytest.mark.skipif(
     shutil.which("bwrap") is None, reason="bubblewrap is not installed"
 )
 
-# The stand-in harness. It rewrites the codex login the way the real binary
-# does on a refresh — in place, same path — and tries to write a second file
-# under the operator's codex home, which the fence must refuse. Each step is
-# appended to the record as it happens so a crash still leaves evidence.
+# The stand-in harness. Its default action rewrites the codex login the way the
+# real binary does on a refresh — in place, same path — and tries to write a
+# second file under the operator's codex home, which the fence must refuse. The
+# other actions probe what the writable bind lets a run do to the login it must
+# not: remove it at either of its two paths, replace it by rename or by unlink
+# and recreate, and truncate it to zero bytes. Each step is appended to the
+# record as it happens so a crash still leaves evidence.
 _STUB = """import os
 from pathlib import Path
 
@@ -67,18 +87,50 @@ def note(text):
 home = Path(os.environ["HOME"])
 codified = Path(os.environ["CODEX_HOME"])
 login = codified / "auth.json"
+action = os.environ.get("STUB_ACTION", "refresh")
 
-try:
-    login.write_text('{"auth_mode": "chatgpt", "tokens": {"refresh_token": "rotated"}}')
-    note("codex-login-rewrite ok " + str(login))
-except OSError as exc:
-    note("codex-login-rewrite refused {} :: {}".format(login, exc))
+if action == "refresh":
+    try:
+        login.write_text('{"auth_mode": "chatgpt", "tokens": {"refresh_token": "rotated"}}')
+        note("codex-login-rewrite ok " + str(login))
+    except OSError as exc:
+        note("codex-login-rewrite refused {} :: {}".format(login, exc))
 
-try:
-    (home / ".codex" / "shadow.json").write_text("x")
-    note("codex-home-sibling-write ok")
-except OSError as exc:
-    note("codex-home-sibling-write refused :: {}".format(exc))
+    try:
+        (home / ".codex" / "shadow.json").write_text("x")
+        note("codex-home-sibling-write ok")
+    except OSError as exc:
+        note("codex-home-sibling-write refused :: {}".format(exc))
+elif action == "truncate":
+    try:
+        os.truncate(login, 0)
+        note("codex-login-truncate ok size={}".format(login.stat().st_size))
+    except OSError as exc:
+        note("codex-login-truncate refused :: {}".format(exc))
+elif action == "remove":
+    for label, target in (
+        ("run-home", login),
+        ("operator-path", home / ".codex" / "auth.json"),
+    ):
+        try:
+            target.unlink()
+            note("codex-login-remove-at-{} ok".format(label))
+        except OSError as exc:
+            note("codex-login-remove-at-{} refused :: {}".format(label, exc))
+elif action == "replace":
+    try:
+        replacement = codified / "replacement.json"
+        replacement.write_text("replacement")
+        os.replace(replacement, login)
+        note("codex-login-rename-over ok")
+    except OSError as exc:
+        note("codex-login-rename-over refused :: {}".format(exc))
+    try:
+        login.unlink()
+        login.write_text("recreated")
+        note("codex-login-unlink-recreate ok")
+    except OSError as exc:
+        note("codex-login-unlink-recreate refused :: {}".format(exc))
 """
 
 
@@ -134,7 +186,9 @@ class Fixture:
             **extra,
         )
 
-    def run_stub(self) -> tuple[list[str], subprocess.CompletedProcess[str]]:
+    def run_stub(
+        self, action: str = "refresh"
+    ) -> tuple[list[str], subprocess.CompletedProcess[str]]:
         plan = self.plan()
         repo = Path(__file__).resolve().parents[1]
         environment = {
@@ -144,6 +198,7 @@ class Fixture:
             "RECKON_HOME": str(self.config),
             "RECKON_STATE_ROOT": str(self.state),
             "STUB_RECORD": str(self.record),
+            "STUB_ACTION": action,
             "PYTHONPATH": os.pathsep.join(
                 part for part in (str(repo), os.environ.get("PYTHONPATH", "")) if part
             ),
@@ -238,3 +293,136 @@ def test_a_fenced_run_persists_a_refreshed_login(
         lines, "codex-home-sibling-write refused"
     )
     assert not (fixture.codex / "shadow.json").exists()
+
+
+@requires_bwrap
+def test_a_fenced_run_cannot_remove_the_login(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The login survives an unlink at either of its two paths.
+
+    The run's own codex home holds the bind's mount point, which the kernel
+    refuses to unlink, and the operator's ``~/.codex`` is behind the read-only
+    overlay. Neither attempt may take the operator's only login.
+    """
+    fixture = Fixture(tmp_path)
+    fixture.isolate(monkeypatch)
+    lines, completed = fixture.run_stub("remove")
+
+    assert completed.returncode == 0, completed.stderr
+    # Errno 16: the kernel refuses to unlink the bind's mount point. Errno 30:
+    # the operator's own directory is behind the read-only overlay.
+    assert "Errno 16" in _line(lines, "codex-login-remove-at-run-home refused")
+    assert "Errno 30" in _line(lines, "codex-login-remove-at-operator-path refused")
+    assert fixture.auth.read_text() == "operator-login"
+    assert (fixture.home / ".codex" / "auth.json").read_text() == "operator-login"
+
+
+@requires_bwrap
+def test_a_fenced_run_cannot_replace_the_login(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The login survives a rename over it and an unlink-and-recreate.
+
+    A rename onto the bind's mount point is refused by the kernel, and the
+    unlink that would have to precede a recreate is refused for the same reason
+    the removal case is.
+    """
+    fixture = Fixture(tmp_path)
+    fixture.isolate(monkeypatch)
+    lines, completed = fixture.run_stub("replace")
+
+    assert completed.returncode == 0, completed.stderr
+    # Errno 16 on both: nothing may be renamed onto, or unlinked from, the
+    # bind's mount point.
+    assert "Errno 16" in _line(lines, "codex-login-rename-over refused")
+    assert "Errno 16" in _line(lines, "codex-login-unlink-recreate refused")
+    assert fixture.auth.read_text() == "operator-login"
+
+
+@requires_bwrap
+def test_a_truncated_login_is_reported_after_the_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A run that blanks the login is reported, not silently persisted.
+
+    The writable bind makes the truncation possible, so the run composes a
+    record of the login's size before the fence opens; the reading after the
+    run compares it with a second ``stat``, writes the loss onto the run's own
+    record and appends it to the run's stderr, and a later observation of the
+    run carries it too. The credential is never opened, copied or printed.
+    """
+    fixture = Fixture(tmp_path)
+    fixture.isolate(monkeypatch)
+    lines, completed = fixture.run_stub("truncate")
+
+    assert completed.returncode == 0, completed.stderr
+    assert "codex-login-truncate ok size=0" in _line(lines, "codex-login-truncate ok")
+    # The truncation landed on the operator's only login through the bind.
+    assert fixture.auth.stat().st_size == 0
+
+    # The run recorded the size to compare against before its launch.
+    record_path = _backends.codex_login_record_path(fixture.run)
+    recorded = json.loads(record_path.read_text(encoding="utf-8"))
+    assert recorded["size_before"] == len("operator-login")
+
+    report = _backends.observe_codex_login(fixture.run)
+    assert report is not None
+    assert report["truncated"] is True
+    assert report["size_after"] == 0
+    detail = _backends.codex_login_truncation_detail(report)
+
+    # Reported on the run's record and on the run's stderr.
+    assert json.loads(record_path.read_text(encoding="utf-8"))["truncated"] is True
+    assert detail in (fixture.run / "stderr.log").read_text(encoding="utf-8")
+    # Two sizes were compared; the credential's contents were not read or
+    # printed anywhere the report reaches.
+    assert "operator-login" not in json.dumps(report)
+    assert "operator-login" not in (fixture.run / "stderr.log").read_text(
+        encoding="utf-8"
+    )
+
+    # A reader of the run's stream observation is told as well, and one loss is
+    # reported once however many times the run is observed.
+    observation = _backends.observe_log(
+        backend_name="stub",
+        backend={"launch": "cli", "command": str(fixture.stub), "dialect": "codex"},
+        log_path=str(fixture.run / "stream.jsonl"),
+    )
+    assert detail in observation.detail
+    assert (fixture.run / "stderr.log").read_text(encoding="utf-8").count(detail) == 1
+
+
+@requires_bwrap
+def test_a_login_rewritten_after_a_truncation_clears_the_report(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A zero caught mid-refresh is cleared once the rewrite lands.
+
+    A refresh truncates and rewrites the same file, so a reading between the
+    two sees zero momentarily. The record heals rather than pinning a loss that
+    did not happen, while keeping the moment the zero was seen.
+    """
+    fixture = Fixture(tmp_path)
+    fixture.isolate(monkeypatch)
+    fixture.run_stub("truncate")
+    assert _backends.observe_codex_login(fixture.run) is not None
+
+    fixture.auth.write_text("operator-login")  # the refresh's write completed
+    assert _backends.observe_codex_login(fixture.run) is None
+
+    record_path = _backends.codex_login_record_path(fixture.run)
+    recorded = json.loads(record_path.read_text(encoding="utf-8"))
+    assert recorded["truncated"] is False
+    assert recorded["healed_at"]
+    assert recorded["detected_at"]
+
+
+def test_a_run_without_a_login_record_is_never_reported_on(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Every other lane stays silent: no record, no report."""
+    fixture = Fixture(tmp_path)
+    fixture.isolate(monkeypatch)
+
+    assert _backends.observe_codex_login(fixture.run) is None
