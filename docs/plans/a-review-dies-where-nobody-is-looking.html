@@ -28,7 +28,7 @@
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="910657ad,3c8ce05f,c8cc423a,9f39346e,2b14b314,ed2bc107,b2edc192,06a008fb,3263f5a1">
 <meta name="plan-impl" content="0.92">
-<meta name="plan-version" content="96">
+<meta name="plan-version" content="97">
 <meta name="plan-modified" content="2026-10-03">
 </head>
 <body>
@@ -781,7 +781,10 @@
     <div class="r-comment-body"><p>§11 landed: merge 3f8304f08 of bba3c0816 (run r-20261003T204354888755-the-duplicate-audit-states-the-reader-rule, four commits ending bba3c0816; reviewed at 96). <code>_scalar_duplicate_findings</code> in <code>reckon/doccheck.py</code> now names the first copy of a duplicated plan scalar as the one in force, in its message and docstring, which is the rule <code>reckon/_plan_html.py</code> applies since §6. <code>tests/test_the_duplicate_audit_states_the_reader_rule.py</code> reads the duplicate through both the reader and the audit, in both orders, and requires them to agree. Measured stacked over main eada32da7 on the 26 files importing <code>reckon.doccheck</code>: 330 to 333 passed, 0 failed. One stale comment remains, outside the node's scope: <code>tests/test_audit.py</code> around line 429 still says the reader keeps the last value.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T204354888755-the-duplicate-audit-states-the-reader-rule" data-who="reckon-build" data-when="2026-10-03T20:53:30.870Z">
-    <div class="r-comment-body"><p>the-duplicate-audit-states-the-reader-rule — the duplicate-plan-scalar audit now states the reader&#x27;s first-copy rule: the message quotes the copy in force (&#x27;0.9&#x27; in the (&#x27;0.9&#x27;, &#x27;0.1&#x27;) fixture) and the docstring and the module comment above _SCALAR_META_PREFIX say the same, matching read_state and _set_meta; the new test reads a duplicated plan-impl through the reader and the audit and asserts the audit-named copy equals the reader&#x27;s returned copy in both copy orders (head 21 passed EXIT=0; base 3 failed, 18 passed EXIT=1, the declared mutation failing as assert 0.1 == 0.9), commit 4aa3059ef</p></div>
+    <div class="r-comment-body"><p>the-duplicate-audit-states-the-reader-rule — the duplicate-plan-scalar audit now states the reader's first-copy rule: the message quotes the copy in force ('0.9' in the ('0.9', '0.1') fixture) and the docstring and the module comment above _SCALAR_META_PREFIX say the same, matching read_state and _set_meta; the new test reads a duplicated plan-impl through the reader and the audit and asserts the audit-named copy equals the reader's returned copy in both copy orders (head 21 passed EXIT=0; base 3 failed, 18 passed EXIT=1, the declared mutation failing as assert 0.1 == 0.9), commit 4aa3059ef</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261003T205349645871-review-of-the-duplicate-audit-states-the-reader-rule" data-who="reckon-build" data-when="2026-10-03T20:57:43.816Z">
+    <div class="r-comment-body"><p>review of r-20261003T204354888755-the-duplicate-audit-states-the-reader-rule stored as a parsed record for base b5f74d36b → head bba3c0816 at the review store&#x27;s bare and .at-bba3c0816 paths; goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 19 (total 96), six item verdicts, two production call sites, one follow-on finding (tests/test_audit.py:429 comment still says the reader keeps the last value, now false); added_failure_count 0, added_failure_ids empty, derived from the reviewed run&#x27;s own base-population.log (3 failed, EXIT=1) and head-population.log (21 passed, EXIT=0)</p></div>
 </div>
 </section>
 </main>
