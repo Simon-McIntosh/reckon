@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Landing record: a stranded launch releases its review claim</title>
+</head>
+<body>
+<h1>Landing record: a stranded launch releases its review claim</h1>
+
+<p>A dispatch cut off between publishing its pointer and spawning the supervisor
+leaves a pointer at a pre-spawn phase with no pid, no worker record, no stream
+and no launch log. Nothing about it is in flight, and nothing ended it, so it
+held its claim — including the review claim a scoring run was told was covered.
+The review reflex keyed a standing review on the pointer alone and waited on it
+indefinitely.</p>
+
+<p>The classifier now reads a pre-spawn pointer with no launch evidence past a
+900-second bound as a stranded launch, named in the launch-failed family with a
+clause saying not even an end was recorded. The reflex releases the claim: it
+discards the pointer, writes the reason onto the discard marker and onto the
+reviewed run's dispatch record, and composes the review again in the same
+pass. A pointer inside the bound is still a young launch and stays in
+flight.</p>
+
+<table>
+<tr><th>measure</th><th>result</th></tr>
+<tr><td>new tests, <code>tests/test_stranded_launch_releases_its_claim.py</code></td><td>4 passed</td></tr>
+<tr><td>gate, head arm (62 pre-spawn-touching test files, <code>-n 8 --timeout=300</code>)</td><td>878 passed, 3 failed, 1 skipped</td></tr>
+<tr><td>gate, base arm at <code>faf859078835</code>, scoped to the three head failure ids</td><td>same 3 failed — head adds no failure id</td></tr>
+<tr><td>negative control (bound removed)</td><td>release test fails, stranded pointer stays in flight as the report reads "a review is already in flight as a live run". The bound was restored.</td></tr>
+</table>
+
+<p>Head-arm failures are the three <code>crew follow</code> end-to-end tests that
+write the real crew home, refused read-only in this worker sandbox; they fail
+identically at base. Gate logs and JSON arm records live under
+<code>gate/</code> in the run directory.</p>
+</body>
+</html>
