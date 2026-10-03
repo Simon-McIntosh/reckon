@@ -4977,6 +4977,11 @@ def crew_dispose(project, reviewed_run_id, dimension, kind, node_id, reason, pre
             head = _reviewed_head_from_run_records(project, reviewed_run_id)
         except ValueError as exc:
             raise click.ClickException(str(exc)) from exc
+    else:
+        # The revision the run's work is at, named by the refusal below when the
+        # store's record describes another; the record itself is selected
+        # through the reading both readers share.
+        head, _tree = recovery._review_head_and_tree(pointer)
     try:
         if pointer is None:
             stored, described = recovery.select_review_for_head(
