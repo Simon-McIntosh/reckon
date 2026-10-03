@@ -70,7 +70,6 @@ from reckon.crew.routing import (
     mounted_repository_projects,
     run_directory_of,
     section_anchor,
-    section_id_candidates,
     section_record_id,
 )
 from reckon.crew.runs import (
@@ -3674,40 +3673,6 @@ def _record_landing_comment(
         f"could not record landing comment for plan {plan!r}: "
         "the plan changed during four consecutive write attempts"
     )
-
-
-def _record_section_attempt_outcome(
-    record: Mapping[str, Any],
-    run_id: str,
-    gate: str,
-    failure_classification: str,
-    root: str | Path | None,
-) -> Path | None:
-    node = record.get("node") or {}
-    project = str(record.get("project") or "")
-    plan = str(node.get("plan") or "")
-    section = str(node.get("section") or "")
-    if not project or not plan or not section or root is None:
-        return None
-    outcome = (
-        "promoted"
-        if gate == "passed"
-        else "failed"
-        if gate == "failed"
-        else "superseded"
-    )
-    recorded = _store.record_section_outcome(
-        project,
-        plan,
-        sorted(section_id_candidates(section)),
-        run_id,
-        outcome,
-        failure_classification,
-        root,
-    )
-    if not recorded:
-        return None
-    return _store._resolve_html_file(project, plan, root, artifact_type="plan")
 
 
 # The git state files whose presence means another operation owns the index.
@@ -7745,17 +7710,6 @@ def _complete_locked(
             ledger_path=existing_path,
             row_present=lambda: _ledger_holds_row(project, ledger_root, run_id),
         ):
-            attempt_path = (
-                None
-                if shadow
-                else _record_section_attempt_outcome(
-                    record,
-                    run_id,
-                    str(gate).strip().lower(),
-                    failure_classification,
-                    ledger_root,
-                )
-            )
             comment = (
                 {"recorded": False, "reason": "shadow evidence does not land code"}
                 if shadow
@@ -7783,7 +7737,7 @@ def _complete_locked(
                     comment=comment,
                     root=ledger_root,
                     checkout=checkout,
-                ) + ([attempt_path] if attempt_path is not None else []),
+                ),
             )
             capture = _capture_member_session(record)
             path = pointer_path(run_id)
@@ -8198,17 +8152,6 @@ def _complete_locked(
     # attempt's narrative pins the outcome every later attempt must repeat
     # byte-identical to avoid the narrative-conflict refusal. None of the
     # checks above needs the comment to exist, so none of them follows it.
-    attempt_path = (
-        None
-        if shadow
-        else _record_section_attempt_outcome(
-            record,
-            run_id,
-            str(gate).strip().lower(),
-            failure_classification,
-            ledger_root,
-        )
-    )
     comment = (
         {"recorded": False, "reason": "shadow evidence does not land code"}
         if shadow
@@ -8282,7 +8225,6 @@ def _complete_locked(
             checkout=checkout,
             paths=[
                 Path(written["path"]),
-                *([attempt_path] if attempt_path is not None else []),
                 *_plan_comment_store_path(
                     project=project,
                     plan=str(node.get("plan") or ""),

@@ -6147,78 +6147,6 @@ def _dispatch_lane_allowance(
     return _lane_worker_allowance(payload, session=session)
 
 
-def _commit_section_attempt_plan(
-    repo_root: Path, plan_path: Path, *, undo: bool = False
-) -> None:
-    relative = plan_path.relative_to(repo_root)
-    subject = (
-        "chore(crew): undo refused section launch"
-        if undo
-        else "chore(crew): record section attempt"
-    )
-    body = (
-        "Remove the counted attempt because the worker did not start."
-        if undo
-        else "Keep the tool-owned launch count in committed section state."
-    )
-    result = subprocess.run(
-        [
-            "git",
-            "-C",
-            str(repo_root),
-            "commit",
-            "--only",
-            "-m",
-            subject,
-            "-m",
-            body,
-            "--",
-            str(relative),
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if result.returncode:
-        raise CrewError(
-            f"section attempt {'rollback' if undo else 'write'} could not commit: "
-            f"{result.stderr.strip() or result.stdout.strip()}"
-        )
-
-
-def _record_dispatch_section_launch(
-    *,
-    project: str,
-    node: TaskNode,
-    run_id: str,
-    repo_root: Path,
-) -> dict[str, Any] | None:
-    plan_path = _store._resolve_html_file(
-        project, node.plan, repo_root, artifact_type="plan"
-    )
-    if plan_path is None:
-        return None
-    relative = plan_path.relative_to(repo_root)
-    status = subprocess.run(
-        ["git", "-C", str(repo_root), "status", "--porcelain", "--", str(relative)],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if status.returncode or status.stdout.strip():
-        raise CrewError(f"section attempt plan {relative} must be clean before launch")
-    counted = _store.record_section_launch(
-        project,
-        node.plan,
-        sorted(section_id_candidates(node.section)),
-        run_id,
-        repo_root,
-    )
-    if counted and counted["recorded"]:
-        _commit_section_attempt_plan(repo_root, plan_path)
-    return counted
-
-
 def dispatch(
     *,
     node: TaskNode,
@@ -6888,7 +6816,6 @@ def dispatch(
     spawned_start_time: str | None = None
     wired_peer_run_ids: list[str] = []
     node_claim: _NodeDispatchClaim | None = None
-    counted_section: dict[str, Any] | None = None
     try:
         # The claim over this node's worktree path is taken here, immediately
         # before the worktree, so a dispatch that loses it refuses before
@@ -7323,12 +7250,6 @@ def dispatch(
                 own_run_id=run_id,
                 own_registered_at=claim_registered_at,
             )
-        if not shadow_lineage and node.plan and node.section:
-            counted_section = _record_dispatch_section_launch(
-                project=project, node=node, run_id=run_id, repo_root=repo_root
-            )
-            if counted_section is not None:
-                record["section_attempt"] = counted_section["attempts"]
         # Publish the pointer before probing the watcher. Otherwise a watcher
         # could drain an empty fleet between the probe and this write, leaving
         # a new run behind a payload that incorrectly said it was watched.
@@ -7433,19 +7354,6 @@ def dispatch(
         # It is printed here too, where a caller that shows only the original's
         # message would otherwise lose the tree the rollback could not remove.
         try:
-            if (
-                counted_section
-                and counted_section["recorded"]
-                and spawned_pid is None
-                and _store.remove_section_launch(
-                    project, node.plan, counted_section["section"], run_id, repo_root
-                )
-            ):
-                plan_path = _store._resolve_html_file(
-                    project, node.plan, repo_root, artifact_type="plan"
-                )
-                if plan_path is not None:
-                    _commit_section_attempt_plan(repo_root, plan_path, undo=True)
             _unwire_peer_channels(run_id, wired_peer_run_ids)
             if spawned_pid is not None:
                 try:

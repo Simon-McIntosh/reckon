@@ -49,7 +49,12 @@ from reckon.lifecycle import (
     effective_status,
     unpassed_gate_blockers,
 )
-from reckon.mcp_views import compose_review, load_composed_review, partition_live_runs
+from reckon.mcp_views import (
+    compose_review,
+    load_composed_review,
+    partition_live_runs,
+    section_attempts_by_plan,
+)
 from reckon.project_state import focus_sprint_id, live_sprint_ids
 from reckon.resources import (
     read_plan_record,
@@ -2200,7 +2205,16 @@ def _build_roadmap(
     schedule_boundary = schedule_ready_sprints[-1] if schedule_ready_sprints else None
     selected_slugs = _scope_slugs(all_plans, membership, sprint_id)
     plans = {slug: all_plans[slug] for slug in selected_slugs}
-    live_runs, interrupted_runs = partition_live_runs(project)
+    from reckon import crew
+    from reckon.crew.routing import section_record_id
+
+    pointers = crew.list_live()
+    live_runs, interrupted_runs = partition_live_runs(project, pointers)
+    attempts_by_plan = section_attempts_by_plan(
+        project,
+        root=resolved_docs.parent if resolved_docs is not None else None,
+        pointers=pointers,
+    )
     findings: list[dict[str, Any]] = []
     dependency_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
     after_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -2857,7 +2871,9 @@ def _build_roadmap(
                 _plan_declarations(plan, docs_dir, project, slug)
             ),
             "section_attempts": {
-                section: (plan.get("section_attempts") or {}).get(section)
+                section: attempts_by_plan.get(slug, {})
+                .get(section_record_id(section), {})
+                .get("attempts", 0)
                 for section in implementable_sections(
                     _plan_declarations(plan, docs_dir, project, slug)
                 )

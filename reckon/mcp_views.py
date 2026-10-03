@@ -1469,6 +1469,81 @@ def _run_target_plan(pointer: Mapping[str, Any]) -> str:
     return str(node.get("plan") or "").strip()
 
 
+def section_attempts_by_plan(
+    project: str,
+    root: str | Path | None = None,
+    pointers: list[dict[str, Any]] | None = None,
+) -> dict[str, dict[str, dict[str, Any]]]:
+    """Derive section attempts from distinct executable run ids.
+
+    Committed rows settle an outcome; a live pointer for the same run id adds
+    nothing. The legacy ``data-attempts`` attribute is not an input.
+    """
+    from reckon import crew
+    from reckon.crew.routing import section_record_id
+
+    history, _version = ledger.load(project, root, use_index=False)
+    observed: dict[str, tuple[str, str, dict[str, Any]]] = {}
+    for row in history.get("runs", []):
+        if not isinstance(row, Mapping) or row.get("role") not in {"implement", "test"}:
+            continue
+        run_id = str(row.get("run_id") or "")
+        plan = str(row.get("plan") or "")
+        section = section_record_id(row.get("section"))
+        if not run_id or not plan or not section:
+            continue
+        gate = str(row.get("gate") or "")
+        status = (
+            "promoted"
+            if gate == "passed"
+            else "failed"
+            if gate == "failed"
+            else "superseded"
+        )
+        observed[run_id] = (
+            plan,
+            section,
+            {
+                "run_id": run_id,
+                "status": status,
+                **(
+                    {"failure_classification": row.get("failure_classification")}
+                    if status == "failed"
+                    else {}
+                ),
+            },
+        )
+    if pointers is None:
+        pointers = crew.list_live()
+    for pointer in pointers:
+        if (
+            not isinstance(pointer, Mapping)
+            or pointer.get("project") != project
+            or pointer.get("role") not in {"implement", "test"}
+        ):
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        node = pointer.get("node") or {}
+        plan = str(node.get("plan") or "") if isinstance(node, Mapping) else ""
+        section = (
+            section_record_id(node.get("section")) if isinstance(node, Mapping) else ""
+        )
+        if run_id and run_id not in observed and plan and section:
+            observed[run_id] = (
+                plan,
+                section,
+                {"run_id": run_id, "status": "in_flight"},
+            )
+    grouped: dict[str, dict[str, dict[str, Any]]] = {}
+    for plan, section, outcome in (observed[key] for key in sorted(observed)):
+        record = grouped.setdefault(plan, {}).setdefault(
+            section, {"attempts": 0, "attempt_outcomes": []}
+        )
+        record["attempts"] += 1
+        record["attempt_outcomes"].append(outcome)
+    return grouped
+
+
 def _recorded_live_run_classifications(project: str) -> dict[str, dict[str, Any]]:
     """Return the latest watcher event for every run recorded in its stream."""
 

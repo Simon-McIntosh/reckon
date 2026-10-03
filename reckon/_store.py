@@ -61,7 +61,6 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
 from contextvars import ContextVar
-import html
 import json
 import os
 import re
@@ -1260,8 +1259,6 @@ def _write_state(
     root: str | Path | None = None,
     artifact_type: str | None = None,
     retire_preimages: list[str] | None = None,
-    attempt_owner: bool = False,
-    empty_comment_id: str = "",
 ) -> int:
     """Atomically rewrite the semantic HTML state for a plan slug.
 
@@ -1282,8 +1279,6 @@ def _write_state(
             root,
             artifact_type,
             retire_preimages,
-            attempt_owner,
-            empty_comment_id,
         )
 
 
@@ -1295,8 +1290,6 @@ def _write_state_locked(
     root: str | Path | None = None,
     artifact_type: str | None = None,
     retire_preimages: list[str] | None = None,
-    attempt_owner: bool = False,
-    empty_comment_id: str = "",
 ) -> int:
     """The version check and the replacement of one plan HTML file.
 
@@ -1380,24 +1373,29 @@ def _write_state_locked(
     section_collapses = _consume_section_collapses(data)
 
     if expected_version != cur_version:
-        if attempt_owner:
-            raise VersionConflict(expected_version, cur_version, cur_state)
         merged_comments = _comment_append_onto_current(data, cur_state)
         if merged_comments is None:
             raise VersionConflict(expected_version, cur_version, cur_state)
         data = {**dict(data), "comments": merged_comments}
 
     new_data = dict(data)
-    if not attempt_owner:
-        held_attempts = {
+    # A read may carry the derived count and outcomes. Preserve only the
+    # source attribute through a state write; no caller authors the count.
+    if isinstance(new_data.get("sections"), list):
+        source_attempts = {
             str(row["id"]): row["attempts"] for row in cur_state.get("sections", [])
         }
-        for row in new_data.get("sections", []):
-            identity = str(row.get("id") or "")
-            if row.get("attempts") != held_attempts.get(identity, 0):
-                raise OpError(
-                    f"sections[{identity!r}].attempts is owned by crew dispatch"
-                )
+        new_data["sections"] = [
+            {
+                **{
+                    key: value
+                    for key, value in row.items()
+                    if key != "attempt_outcomes"
+                },
+                "attempts": source_attempts.get(str(row.get("id") or ""), 0),
+            }
+            for row in new_data["sections"]
+        ]
     state_type = canonical_type(new_data.get("type"))
     if selected_resource_type and state_type != selected_resource_type:
         raise ValueError(
@@ -1445,9 +1443,7 @@ def _write_state_locked(
     authored_text_changed = source_text != text
     if state_type == "plan":
         _require_heading_for_section_records(source_text, new_data.get("sections"))
-    new_text = _plan_html.write_state(
-        source_text, new_data, empty_comment_id=empty_comment_id
-    )
+    new_text = _plan_html.write_state(source_text, new_data)
 
     # Idempotency guard: if the patch carries no real content change (e.g. a
     # no-op edit or a round-trip through BeautifulSoup entity-normalisation),
@@ -1518,7 +1514,21 @@ def read_plan(
                 data = compose_project_state(docs_dir, project)
                 return data, 0
         return _load_json_envelope(state_path(project, slug, root))
-    return _read_state(project, slug, root, artifact_type)
+    data, version = _read_state(project, slug, root, artifact_type)
+    if data.get("type") == "plan" and data.get("sections"):
+        from reckon.crew.routing import section_record_id
+        from reckon.mcp_views import section_attempts_by_plan
+
+        attempts = section_attempts_by_plan(project, root).get(slug, {})
+        enriched = []
+        for record in data["sections"]:
+            details = attempts.get(section_record_id(record["id"]))
+            item = {**record, "attempts": details["attempts"] if details else 0}
+            if details:
+                item["attempt_outcomes"] = details["attempt_outcomes"]
+            enriched.append(item)
+        data["sections"] = enriched
+    return data, version
 
 
 def write_plan(
@@ -1582,155 +1592,6 @@ def write_plan(
         artifact_type,
         retire_preimages,
     )
-
-
-def record_section_launch(
-    project: str,
-    slug: str,
-    section_ids: Sequence[str],
-    run_id: str,
-    root: str | Path,
-) -> dict[str, Any] | None:
-    """Count one launched run on its typed section, once per run identity."""
-    comment_id = f"c-attempt-{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
-    for _ in range(4):
-        state, version = read_plan(project, slug, root, artifact_type="plan")
-        if not state or state.get("type") != "plan":
-            return None
-        record = next(
-            (row for row in state.get("sections", []) if row.get("id") in section_ids),
-            None,
-        )
-        if record is None:
-            return None
-        anchor = str(record["id"])
-        comments = {key: list(rows) for key, rows in state.get("comments", {}).items()}
-        items = comments.setdefault(anchor, [])
-        if any(item.get("id") == comment_id for item in items):
-            return {
-                "section": anchor,
-                "attempts": record["attempts"],
-                "recorded": False,
-            }
-        attempts = int(record["attempts"]) + 1
-        sections = [
-            {**row, "attempts": attempts} if row["id"] == anchor else row
-            for row in state["sections"]
-        ]
-        items.append(
-            {
-                "id": comment_id,
-                "who": "reckon crew",
-                "when": datetime.now(UTC).isoformat(),
-                "body": f"<p>Attempt {attempts} launched: {html.escape(run_id)}</p>",
-            }
-        )
-        try:
-            _write_state(
-                project,
-                slug,
-                {**state, "sections": sections, "comments": comments},
-                version,
-                root,
-                "plan",
-                attempt_owner=True,
-            )
-        except VersionConflict:
-            continue
-        return {"section": anchor, "attempts": attempts, "recorded": True}
-    raise OpError(f"section {section_ids!r} changed during four launch writes")
-
-
-def record_section_outcome(
-    project: str,
-    slug: str,
-    section_ids: Sequence[str],
-    run_id: str,
-    outcome: str,
-    classification: str,
-    root: str | Path,
-) -> bool:
-    """Finish a section's launch comment without changing its count."""
-    comment_id = f"c-attempt-{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
-    for _ in range(4):
-        state, version = read_plan(project, slug, root, artifact_type="plan")
-        if not state or state.get("type") != "plan":
-            return False
-        comments = {key: list(rows) for key, rows in state.get("comments", {}).items()}
-        found = next(
-            (
-                (anchor, position)
-                for anchor in section_ids
-                for position, row in enumerate(comments.get(anchor, []))
-                if row.get("id") == comment_id
-            ),
-            None,
-        )
-        if found is None:
-            return False
-        section, index = found
-        items = comments[section]
-        prior = items[index]
-        suffix = f" ({html.escape(classification)})" if classification else ""
-        launched = re.search(r"Attempt \d+", str(prior.get("body") or ""))
-        label = launched.group() if launched else "Attempt"
-        body = f"<p>{label}: {html.escape(outcome)}{suffix}; {html.escape(run_id)}</p>"
-        if prior.get("body") == body:
-            return True
-        items[index] = {**prior, "body": body}
-        try:
-            write_plan(
-                project,
-                slug,
-                {**state, "comments": comments},
-                version,
-                root,
-                artifact_type="plan",
-            )
-        except VersionConflict:
-            continue
-        return True
-    raise OpError(f"section {section_ids!r} changed during four outcome writes")
-
-
-def remove_section_launch(
-    project: str,
-    slug: str,
-    section: str,
-    run_id: str,
-    root: str | Path,
-) -> bool:
-    """Undo a counted launch whose worker could not start."""
-    comment_id = f"c-attempt-{re.sub(r'[^A-Za-z0-9._-]+', '-', run_id)}"
-    for _ in range(4):
-        state, version = read_plan(project, slug, root, artifact_type="plan")
-        if not state:
-            return False
-        comments = {key: list(rows) for key, rows in state.get("comments", {}).items()}
-        items = comments.get(section, [])
-        kept = [item for item in items if item.get("id") != comment_id]
-        if len(kept) == len(items):
-            return False
-        comments[section] = kept
-        sections = [
-            {**row, "attempts": row["attempts"] - 1} if row["id"] == section else row
-            for row in state["sections"]
-        ]
-        try:
-            _write_state(
-                project,
-                slug,
-                {**state, "sections": sections, "comments": comments},
-                version,
-                root,
-                "plan",
-                attempt_owner=True,
-                empty_comment_id=comment_id,
-            )
-        except VersionConflict:
-            continue
-        return True
-    raise OpError(f"section {section!r} changed during four launch rollbacks")
 
 
 def _replace_authored_html(

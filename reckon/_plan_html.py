@@ -376,7 +376,11 @@ def _document_carries_records(html_text: str) -> bool:
 
 
 def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]:
-    """Validate explicitly opted-in metadata without changing legacy declarations."""
+    """Validate stored metadata; data-attempts is legacy, not the live count.
+
+    The read API derives attempts from distinct crew run ids. The attribute
+    survives HTML edits for compatibility but never counts a launch.
+    """
     records = []
     for element in _section_record_elements(soup):
         if element.name == "h2":
@@ -798,6 +802,7 @@ def read_state_and_text_file(path: Path) -> tuple[dict, str]:
 
 
 def _section_record_attributes(record: dict) -> str:
+    """Preserve the legacy attempts attribute while rendering authored metadata."""
     return (
         f' data-effort-hours="{_esc(record["effort_hours"])}"'
         + _capability_attributes(record["capability"])
@@ -1336,22 +1341,7 @@ def _impl_is_carried_by_records(state: dict, html_text: str) -> bool:
     return bool(_section_record_elements(BeautifulSoup(html_text or "", "html.parser")))
 
 
-def _only_owned_comment_remains(html_text: str, comment_id: str) -> bool:
-    section = BeautifulSoup(html_text, "html.parser").select_one(
-        'section[data-reckon="comments"]'
-    )
-    if section is None:
-        return False
-    children = [child for child in section.children if getattr(child, "name", None)]
-    return (
-        len(children) == 1
-        and children[0].name == "div"
-        and "r-comment" in children[0].get("class", [])
-        and children[0].get("data-id") == comment_id
-    )
-
-
-def write_state(html_text: str, state: dict, *, empty_comment_id: str = "") -> str:
+def write_state(html_text: str, state: dict) -> str:
     """Regenerate the reckon-owned meta + sections from `state`.
 
     Authored prose (everything outside the data-reckon sections) is untouched.
@@ -1442,13 +1432,7 @@ def write_state(html_text: str, state: dict, *, empty_comment_id: str = "") -> s
             collection = state[sid]
             if sid == "comments":
                 collection = _comments_in_section(collection, body_resident_comments)
-            if not (
-                sid == "comments"
-                and empty_comment_id
-                and not collection
-                and _only_owned_comment_remains(out, empty_comment_id)
-            ):
-                _reject_emptying_unparsed_section(out, sid, collection)
+            _reject_emptying_unparsed_section(out, sid, collection)
             out = _splice_section(out, sid, _RENDERERS[sid](collection))
     return out
 
@@ -1618,10 +1602,6 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
             parsed_state = read_state(text)
         except ValueError:
             parsed_state = None
-        if parsed_state is not None:
-            rec["section_attempts"] = {
-                row["id"]: row["attempts"] for row in parsed_state.get("sections", [])
-            }
         derived = (
             None
             if parsed_state is None
