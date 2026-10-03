@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="41">
+<meta name="plan-version" content="42">
 <meta name="plan-commits" content="56e13e11,98d99673,f9d08b55,f6529a51,b097918e,26d03b02,267cdb69">
 <meta name="plan-impl" content="0.83">
 <meta name="plan-informs" content="a-follower-outlives-its-monitor">
@@ -537,6 +537,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261003T063458462919-review-of-server-serves-one-code-version" data-who="reckon-build" data-when="2026-10-03T06:44:22.952Z">
     <div class="r-comment-body"><p>Independent review of run r-20261003T054514895506 stored at both review paths (identical, 7451 bytes): parsed, 93/100 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 17), reviewed base 810e9a31..head d102a85e9, added_failure_count 0 with added_failure_ids [], one follow-on finding at tests/test_server_serves_one_code_version.py:72.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261003T054514895506-server-serves-one-code-version" data-who="reckon-build" data-when="2026-10-03T06:32:52Z">
+    <div class="r-comment-body"><p>The cached executed-code report excludes unused-module edits and compares once across six requests; changed executed code gives one HTTP 503 stale-code with distinct report-derived stamps and Retry-After, closes the listener, drains up to three seconds and calls injectable exec with original argv; 16-file gate fell from 5 failures to 1 with zero added IDs; guard removal restored ImportError 500.</p></div>
 </div>
 </section>
 </main>
