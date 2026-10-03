@@ -18,12 +18,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="spa,reckon-tooling">
   <meta name="plan-sprint" content="S22">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;}">
   <title>A Page Load Reads Each File Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="40">
+<meta name="plan-version" content="41">
 <meta name="plan-commits" content="56e13e11,98d99673,f9d08b55,f6529a51,b097918e,26d03b02,267cdb69">
 <meta name="plan-impl" content="0.83">
 <meta name="plan-informs" content="a-follower-outlives-its-monitor">
@@ -394,7 +394,7 @@
     </div>
 
     <h2 id="s8">§8 — A long-running server never serves a mix of old and new modules</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p>Measured on 2026-09-29. <code>reckon.service</code> started at 07:31:12 and imported <code>reckon.crew.recovery</code> then. 2eabd341, committed at 06:39 but merged to main after that start, added <code>local_liveness</code> to <code>recovery.py</code> and a lazy import of it in <code>reckon/sprint_liveness.py</code>. The running server later loaded the new <code>sprint_liveness.py</code> from disk against its old in-memory <code>recovery</code>. <code>/_discover/imas-codex</code> answered 500 with <code>cannot import name 'local_liveness'</code>, and <code>/_projects/index.json</code> gave no response, until s21-coord restarted the service at 08:53:40. This is the same class as the MCP servers holding a pre-<code>ec03ba9e</code> reader: any merge that adds a name can break a long-running process lazily, and nothing reports it.</p><p>Done when a running server either reloads onto one consistent revision when its code changes, or refuses with a named, visible <code>stale-code</code> error rather than a mid-request ImportError. A test changes a module on disk under a running server, making a lazily imported name appear, and asserts the server does not answer with an ImportError. A negative control keeps today's behaviour and reproduces the ImportError.</p><p><strong>Done when</strong> a running server either reloads onto one consistent revision or refuses with a named, visible stale-code error instead of a mid-request ImportError.</p><p>Moved from followup f-aplref-server-serves-one-code-version on a-page-load-reads-each-file-once by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.83; followup recommends §5; <code>reckon/serve.py</code> shows no reload or named stale-code refusal on a code change (no <code>reload</code>/revision guard found)</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -528,6 +528,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-aplref-moved-to-s22" data-who="s21-1c" data-when="2026-10-01T16:45:00Z">
     <div class="r-comment-body">Moved from S21 to S22 on 2026-10-01 at the operator's direction. No section is open. Two followups remain, both larger server work rather than S21's stability tail: the stream re-parse that still dominates page load, and a long-running server never serving a mix of old and new modules after a merge.</div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-aplref-s8-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>Landed in merge <code>f3bc6109c</code> of <code>d102a85e9</code> (run r-20261003T054514895506-server-serves-one-code-version, codex lane). The first head, <code>810e9a319</code>, was reviewed at 91 but held. It ran <code>served_code.drift</code> with no reuse window over the whole package on every request, so it re-statted the package on GPFS per request. It also refused every request until a manual restart, so any merge touching reckon would have taken the live service down. Resumed with that advice, the repaired head was reviewed at 93 with no added failures. Drift is now judged through <code>served_code.served_report</code>, which keeps its reuse window and counts only executed definitions, and both fingerprints come from that report's changed files. On drift, the triggering request gets a 503 <code>stale-code</code> body with Retry-After. <code>_CodeReload</code> then stops accepting, drains in-flight requests for up to 3 s and re-execs in place with the server's own argv. <code>tests/test_server_serves_one_code_version.py</code> covers four cases: the ImportError reproduction, an unexecuted module edit that is ignored, one 503 then an exec, and a single comparison per window. The 85-file serve.py population passes at base <code>8d5f02101</code> and at the stacked head. It takes effect on the live <code>reckon.service</code> at its next restart. Review follow-on: the test helper still monkeypatches the deleted <code>_SERVER_CODE_STAMP</code>, which is now a no-op.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261003T060602744120-review-of-server-serves-one-code-version" data-who="reckon-build" data-when="2026-10-03T06:12:49.221Z">
     <div class="r-comment-body"><p>Stored the independent review of r-20261003T054514895506-server-serves-one-code-version scoring all five dimensions (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 16; total 91) over base 9b66ff8a768e734c9e39da17f846cca1ca6c94d6 and head 810e9a319f689a2b7e94b4265add55242ee6f2bc, with added_failure_count 0 and no added ids, and three follow-on findings on the new request guard.</p></div>
