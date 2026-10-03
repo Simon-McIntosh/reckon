@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="634">
+<meta name="plan-version" content="635">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.64">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -3112,6 +3112,9 @@ review-of-reason     2,390 tok / 1,714 s = 1.39 tok/s
 </div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261003T141202269116-review-of-an-overrun-names-its-cause" data-who="reckon-build" data-when="2026-10-03T14:19:26.435Z">
     <div class="r-comment-body"><p>Independent review of run r-20261003T130845405108-an-overrun-names-its-cause at base aff594161 over head f237a2f20: scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 19, total 96, status parsed, added_failure_count 0 with empty added_failure_ids derived from the run's own baseline_suite and after_suite gate logs; one follow-on finding (the call-graph signal guard is a bounded detector over a fixed callee set and four start functions).</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261003T130845405108-an-overrun-names-its-cause" data-who="reckon-build" data-when="2026-10-03T14:09:50Z">
+    <div class="r-comment-body"><p>Overrun causes reach live queries; 41,434 tokens at 11.53 tokens/s classify lane-saturated against a 54.79 tokens/s reference from 1,375 runs, seven added tests pass, and the completed suite arms add zero failures.</p></div>
 </div>
 <div class="r-comment" data-section="s19" data-id="c-20260914-promoted-spend-baseline" data-who="reckon-ship" data-when="2026-09-14T13:00:00+00:00">
     <div class="r-comment-body">Baseline re-measured before dispatch over the whole watch corpus on this workstation, 6,844 transition rows of which 554 carry the spend schema. Promoted rows: 121, and every spend figure is null on all 121 - wall seconds, charged tokens, model seconds, generation rate, notional cost and machine seconds all at 0.0 percent. The section was authored against 90 of 90; it is now 121 of 121, and the figure moves because the corpus grows, so a node must read it at dispatch rather than quote this one. The mechanism is no longer inferred: spend_folded_run_count and spend_measured_stream_count are present on all 121 promoted rows and both are zero on every one, which is the fold running against a pointer list the promotion has already emptied, reported as an honest zero rather than as an absence. That is the first measure's negative half made concrete - a run that generated nothing and a run whose evidence was deleted are today indistinguishable, both reading zero. Verified independently of the peer report that raised it.</div>
