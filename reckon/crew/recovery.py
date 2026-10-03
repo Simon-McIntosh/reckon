@@ -319,16 +319,20 @@ def select_review_for_head(
     the second is a head a non-matching record did name, empty when none, so a
     refusal can name the two revisions that disagree rather than report an
     absence. A record naming a different revision is not this run's review
-    however recently it was written.
+    however recently it was written. An empty ``head`` names no revision, so
+    no stored record can describe it: an empty head accepts no record and
+    selects none before the store is read, because reading whatever the store
+    holds newest would let a review of an unknown revision stand as this run's
+    evidence.
     """
-    stored = review_module.read_review(project, run_id, reviewed_head_sha=head or None)
+    if not head:
+        return None, ""
+    stored = review_module.read_review(project, run_id, reviewed_head_sha=head)
     if stored is not None:
         return stored, ""
     newest = review_module.read_review(project, run_id)
     if newest is None:
         return None, ""
-    if not head:
-        return newest, ""
     described = review_described_head(newest, tree=tree)
     if not described:
         # A record naming no revision predates the field; refusing every review

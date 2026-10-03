@@ -465,11 +465,12 @@ def test_a_reclaimed_worktree_with_no_recorded_head_does_not_accept_the_newest(
     """A run whose own record names no head cannot stand on whatever is newest.
 
     With the worktree reclaimed and the run's manifest naming no resolvable
-    commit, the run's own head is unknown; the repository fallback resolves the
-    head the base code used, and a review of any other revision must not be read
-    as this run's evidence merely because it is the newest stored record. The
-    head the repository does carry is the only key left, and a review of it
-    stands.
+    commit, the run's own head is unknown, and a record of no known revision is
+    evidence of nothing: a review of an earlier revision is not accepted merely
+    because it is the newest stored record, and neither is a review of the head
+    the shared checkout happens to carry, which is not the run's own. An empty
+    head accepts no record, and the reflex composes no review for it; the
+    missing head is what the refusal names.
     """
     config_home, repo, heads = isolated_project
     run_id = "r-no-recorded-head"
@@ -485,11 +486,16 @@ def test_a_reclaimed_worktree_with_no_recorded_head_does_not_accept_the_newest(
     assert error == ""
     assert stored is None
 
+    # The checkout's own head is no substitute key: a record stored at it is
+    # still a record of a revision the run's own record never named.
     _store_review(run_id, base=heads["earlier"], head=heads["current"])
     stored, error = recovery._stored_review(record)
     assert error == ""
-    assert stored is not None
-    assert recovery.same_revision(stored["reviewed_head_sha"], heads["current"])
+    assert stored is None
+
+    report = _compose(record)
+    assert report["dispatched"] is False
+    assert "no resolvable head" in report["reason"]
 
 
 def test_a_recorded_attempt_naming_no_head_does_not_demote_its_lane(
