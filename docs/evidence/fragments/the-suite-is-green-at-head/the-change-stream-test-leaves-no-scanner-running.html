@@ -1,0 +1,18 @@
+<section data-reckon="evidence" data-node="the-change-stream-test-leaves-no-scanner-running">
+  <h3>The change-stream test leaves no scanner running</h3>
+  <p><code>tests/test_page_paints_from_the_index.py</code>: <code>_ChangeStream.close()</code>
+  now closes the <code>HTTPResponse</code> as well as the connection. The response holds a
+  makefile over the socket, so closing the connection alone left the file descriptor open,
+  the server's change-stream handler never saw EOF, and it blocked in its
+  <code>select</code> wait past the end of the test — where it could call
+  <code>serve._discover_plans_uncached</code> after the next test had patched it, inflating
+  that test's scan count to the failing <code>assert 2 == 1</code>. Both threaded servers in
+  the file now run with <code>daemon_threads = False</code>, so the standard library's
+  <code>server_close()</code> joins every handler thread the test started before it returns.
+  The later test's assertion is unchanged and no assertion is weakened or removed. Whole
+  file: <strong>8 passed, EXIT=0</strong> (<code>gate-file.log</code>); the two tests in file
+  order 20 times under eight CPU-bound load processes: <strong>20 passed, 0 failed,
+  EXIT=0</strong> (<code>gate-loaded.log</code>). The parent-commit test file under the same
+  load: <strong>0 passed, 20 failed, EXIT=20</strong>, every run reddening the later test
+  with <code>assert 2 == 1</code> (<code>negative-control.log</code>).</p>
+</section>
