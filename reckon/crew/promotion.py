@@ -62,6 +62,7 @@ from reckon.crew.routing import (
     _disposable_member_id,
     _git,
     _inspect_workspace,
+    _live_pointer_worktrees,
     _repository_tree_snapshot,
     _shadow_patch_retained,
     _shadow_worktree_records,
@@ -6107,7 +6108,10 @@ def _release_run_workspace(
     second policy: a worktree is released only when it is clean and its HEAD
     is an ancestor of the repository's integration branch, or when it is a
     shadow whose patch was already retained. Everything else is left in place
-    and named with the condition that withheld it. Called only after the
+    and named with the condition that withheld it. Liveness is judged by the
+    wide claim — every worktree a live pointer names, apart from the released
+    run itself — so a peer parked on an external wait keeps the share of the
+    tree its pointer still names. Called only after the
     ledger append and pointer delete already succeeded; any exception raised
     here is caught by the caller and folded into the result instead of being
     allowed to obscure those two writes.
@@ -6136,9 +6140,12 @@ def _release_run_workspace(
         result["worktree_withheld"] = "repository root is unavailable"
     else:
         run_id = str(record.get("run_id") or "")
+        # The wide claim, not the phase-gated one: a peer parked on an external
+        # wait carries a terminal-looking phase while its pointer still names
+        # this tree, and a tree another live pointer names is not released.
         claims = [
             claim
-            for claim in _live_worktree_claims().get(worktree.resolve(), [])
+            for claim in _live_pointer_worktrees().get(worktree.resolve(), [])
             if claim != run_id
         ]
         shadow_record = record if _is_shadow(record) else None

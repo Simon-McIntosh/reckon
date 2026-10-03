@@ -13,11 +13,11 @@ against a parked run's worktree.
 A path whose removal target is read from the released run's own record
 (``record["worktree"]``) is the sanctioned release door: promotion and discard
 remove the pointer that names the tree and then release it, which is how a
-tree is released at all. Such a path is outside the population driven here,
-because the parked run's tree is not a tree it merely encountered. The
-remaining population — every path that reclaims a tree it does not own — must
-read the wide claim, and calling it directly must leave the parked tree in
-place.
+tree is released at all. That door is driven here too, because a peer parked
+on an external wait may name the same tree: the release must then leave it
+standing rather than remove it under the peer. Every path discovered here —
+releasing or reclaiming — decides liveness through the wide claim, so calling
+it directly must leave a parked run's tree in place.
 
 Every case works on synthesised pointers, mounts and repositories under a
 temporary config home; no real fleet directory is read or written.
@@ -39,6 +39,7 @@ from reckon.crew.node import CrewError
 from reckon.crew.runs import _write_json, pointer_path, run_dir
 
 routing_module = importlib.import_module("reckon.crew.routing")
+promotion_module = importlib.import_module("reckon.crew.promotion")
 
 PROJECT = "wide-claim-removal-fixture"
 SESSION = "wide-claim-fixture-session"
@@ -99,7 +100,6 @@ class _RemovalPath:
     key: str
     reads_wide: bool
     reads_phase_gated: bool
-    owns_target: bool
 
 
 def _literal_argv(call: ast.Call) -> list[str]:
@@ -140,34 +140,6 @@ def _references(node: ast.AST, name: str) -> bool:
     )
 
 
-def _owns_target(node: ast.AST) -> bool:
-    """Whether the function reads its removal target from a run record.
-
-    A release path names the tree through the record of the run it is
-    releasing; a reclaim path receives it as an argument or discovers it in
-    the repository, so its liveness question is about a tree it does not own.
-    """
-    for child in ast.walk(node):
-        if (
-            isinstance(child, ast.Call)
-            and isinstance(child.func, ast.Attribute)
-            and child.func.attr == "get"
-            and child.args
-            and isinstance(child.args[0], ast.Constant)
-            and child.args[0].value == "worktree"
-            and "record" in ast.unparse(child.func.value)
-        ):
-            return True
-        if (
-            isinstance(child, ast.Subscript)
-            and isinstance(child.slice, ast.Constant)
-            and child.slice.value == "worktree"
-            and "record" in ast.unparse(child.value)
-        ):
-            return True
-    return False
-
-
 def _scan_source(source: str, module_key: str) -> dict[str, _RemovalPath]:
     """The removal paths in one module's source, keyed by module and function."""
     found: dict[str, _RemovalPath] = {}
@@ -181,7 +153,6 @@ def _scan_source(source: str, module_key: str) -> dict[str, _RemovalPath]:
             key=key,
             reads_wide=_references(node, WIDE_CLAIM),
             reads_phase_gated=_references(node, PHASE_GATED_CLAIM),
-            owns_target=_owns_target(node),
         )
     return found
 
@@ -213,12 +184,29 @@ def _driver_save_and_release_worktree(fleet: Path, tree: Path) -> None:
         routing_module._save_and_release_worktree(fleet, tree, "HEAD", None)
 
 
+RELEASED_RUN = "r-20261003T120048839647-release-subject"
+
+
+def _driver_release_run_workspace(fleet: Path, tree: Path) -> None:
+    """The sanctioned release door, whose own tree a parked peer also names."""
+    record = {
+        "run_id": RELEASED_RUN,
+        "worktree": str(tree),
+        "repo": str(fleet),
+        "pid": _dead_pid(),
+    }
+    result = promotion_module._release_run_workspace(record)
+    assert result["worktree_released"] is False, result
+    assert "live run pointer" in str(result.get("worktree_withheld") or "")
+
+
 REMOVAL_DRIVERS = {
     "reckon/crew/routing.py::_remove_worktree": _driver_remove_worktree,
     "reckon/crew/routing.py::garbage_collect": _driver_garbage_collect,
     "reckon/crew/routing.py::_save_and_release_worktree": (
         _driver_save_and_release_worktree
     ),
+    "reckon/crew/promotion.py::_release_run_workspace": (_driver_release_run_workspace),
 }
 
 
@@ -228,6 +216,7 @@ def fleet(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
+    monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(tmp_path / "scratch"))
     repository = tmp_path / "repo"
     repository.mkdir()
     (repository / "docs" / "state" / PROJECT).mkdir(parents=True)
@@ -258,18 +247,15 @@ def _worktree(repository: Path, name: str) -> Path:
 def test_each_removal_path_leaves_a_parked_runs_worktree_in_place(
     fleet: Path,
 ) -> None:
-    """Every reclaim path, called directly, spares a parked run's tree.
+    """Every removal path, called directly, spares a parked run's tree.
 
     Each path gets its own parked tree, so one path removing the tree cannot
-    mask whether the others would have spared it.
+    mask whether the others would have spared it. The release door is driven
+    here as well: its own record names the tree, and the parked peer's pointer
+    names the same tree.
     """
-    reclaim = {
-        key: driver
-        for key, driver in REMOVAL_DRIVERS.items()
-        if not _removal_paths()[key].owns_target
-    }
-    assert reclaim, "no reclaim path was driven; the enumeration lost its subject"
-    for key, driver in sorted(reclaim.items()):
+    assert REMOVAL_DRIVERS, "no driver was registered; the enumeration lost its subject"
+    for key, driver in sorted(REMOVAL_DRIVERS.items()):
         name = key.rsplit("::", 1)[-1].strip("_").replace("_", "-")
         tree = _worktree(fleet, f"parked-{name}")
         _park(fleet, f"r-20261003T120048839648-{name}", tree)
@@ -283,31 +269,29 @@ def test_each_removal_path_leaves_a_parked_runs_worktree_in_place(
 
 
 def test_no_removal_path_decides_liveness_from_the_phase_gated_claim() -> None:
-    """A reclaim path reads the wide claim; a release path reads its own record.
+    """Every removal path reads the wide claim, none the phase-gated one.
 
     The enumeration discovers the paths by parsing the package, so a removal
-    path added later is judged by the same rule as the ones here: reading the
-    phase-gated claim for a tree it does not own fails this test.
+    path added later is judged by the same rule as the ones here. The rule
+    covers the sanctioned release door too: the door removes a tree its own
+    record names, but a peer parked on an external wait may name the same
+    tree, so that liveness question is answered by the wide claim as well.
     """
     paths = _removal_paths()
     assert paths, "the removal-command scan found nothing; its subject is gone"
-    assert {key for key, path in paths.items() if not path.owns_target} == set(
-        REMOVAL_DRIVERS
-    ), (
-        "the set of reclaim paths changed; every one of them needs a direct "
+    assert set(paths) == set(REMOVAL_DRIVERS), (
+        "the set of removal paths changed; every one of them needs a direct "
         "driver in REMOVAL_DRIVERS so it is called against a parked tree"
     )
     for key, path in sorted(paths.items()):
-        if path.owns_target:
-            continue
         assert path.reads_wide, (
-            f"{key} removes a worktree it does not own but reads neither claim; "
-            "no live pointer's tree is protected without the wide claim"
+            f"{key} removes a worktree but reads neither claim; no live "
+            "pointer's tree is protected without the wide claim"
         )
         assert not path.reads_phase_gated, (
-            f"{key} decides liveness for a worktree it does not own through "
-            f"the phase-gated {PHASE_GATED_CLAIM}: a parked run's pointer reads "
-            "as terminal-looking there, so its tree reads as reclaimable"
+            f"{key} decides liveness through the phase-gated "
+            f"{PHASE_GATED_CLAIM}: a parked run's pointer reads as "
+            "terminal-looking there, so its tree reads as reclaimable"
         )
 
 
@@ -324,4 +308,3 @@ def test_the_scan_flags_a_phase_gated_reclaim_path() -> None:
     planted = found["reckon/scratch.py::_scratch_reclaim"]
     assert planted.reads_phase_gated
     assert not planted.reads_wide
-    assert not planted.owns_target

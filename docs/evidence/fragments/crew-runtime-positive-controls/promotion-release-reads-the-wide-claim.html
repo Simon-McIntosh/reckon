@@ -1,0 +1,78 @@
+<!doctype html>
+<html><head>
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+<meta name="plan" content="crew-runtime-positive-controls">
+<meta name="node" content="promotion-release-reads-the-wide-claim">
+<title>promotion-release-reads-the-wide-claim</title>
+</head><body>
+
+<h2 id="landing">Promotion's workspace release reads the wide live claim</h2>
+
+<p>Landed at <code>9c26ee1d8</code> on <code>reckon/crew/promotion.py</code>,
+with <code>tests/test_promotion_release_reads_the_wide_claim.py</code> added
+and <code>tests/test_every_removal_path_reads_the_wide_claim.py</code>
+extended.</p>
+
+<p><code>_release_run_workspace</code> removes a promoted or discarded run's
+worktree after the pointer naming it has been deleted. To decide whether the
+tree was still claimed it read the phase-gated
+<code>_live_worktree_claims</code>, excluding its own run. A peer parked on an
+external wait keeps its live pointer while its phase reads terminal, so that
+reading missed the peer and the release classified the shared tree as clean
+and integrated and removed it. The release now reads
+<code>_live_pointer_worktrees</code> minus the released run, the wide claim
+the gc and residue-release paths already read.</p>
+
+<h3 id="reproduction">The recorded defect, reproduced against the base tree</h3>
+
+<p>The new test file ran against the base product code
+(<code>acff5221202a3e13585c98d23f28ebf171464552</code> extracted with
+<code>git archive</code>; its header names the module under test and the
+resolved cwd): <code>1 failed, 1 passed in 25.89s</code>, <code>EXIT=1</code>
+(<code>base-reproduction.log</code>). The parked-peer case failed with
+<code>assert True is False</code> on
+<code>release["worktree_released"]</code> &mdash; promotion removed the tree
+the parked peer's pointer still names. The unshared case passed, so the file
+discriminates on the shared tree rather than on promotion failing generally.</p>
+
+<h3 id="gate">Gate</h3>
+
+<p>Base arm: the four pre-existing test files naming
+<code>_release_run_workspace</code>, <code>_live_worktree_claims</code> or
+<code>_live_pointer_worktrees</code> at
+<code>acff5221202a3e13585c98d23f28ebf171464552</code> &mdash;
+<strong>26 passed in 226.20s</strong>, <code>EXIT=0</code>
+(<code>base-population.log</code>). Head arm over the same population plus
+the new file at <code>9c26ee1d8</code> &mdash; <strong>28 passed in
+222.03s</strong>, <code>EXIT=0</code>
+(<code>head-population-final.log</code>). The two directly-changed files
+alone after formatting: <strong>5 passed in 32.78s</strong>,
+<code>EXIT=0</code> (<code>head-changed-tests-final.log</code>). Each arm ran
+in its own tree, its header naming the revision, the command and the resolved
+module.</p>
+
+<p>The extended removal-path test keeps its existing cases and now drives the
+release door too: it enumerates the removal paths by parsing the package,
+requires every discovered path to read the wide claim and none to read the
+phase-gated one, requires a direct driver for each, and calls
+<code>_release_run_workspace</code> against a tree a parked peer's pointer
+names, asserting the tree and its marker survive.</p>
+
+<h3 id="negative-control">Negative control</h3>
+
+<p>A scratch copy of head in which <code>_release_run_workspace</code> reads
+<code>_live_worktree_claims</code> again &mdash; the declared mutation:
+<strong>1 failed, 1 passed in 25.50s</strong>, <code>EXIT=1</code>, failing id
+<code>test_promotion_spares_a_worktree_a_parked_peer_names</code>, which the
+green head arm does not fail; the tree is removed
+(<code>negative-control.log</code>, named in the manifest).</p>
+
+<h3 id="unmet">Unmet within this node's write scope</h3>
+
+<p>None. <code>_live_worktree_claims</code> keeps its report-only callers
+(the worktree audit and the promotion boundary check), which do not remove a
+tree, and a later test file establishing merged-result behaviour belongs to a
+separately dispatched node.</p>
+
+</body></html>
