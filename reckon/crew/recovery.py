@@ -1453,6 +1453,73 @@ def _changed_paths_between(tree: Path | None, older: str, newer: str) -> list[st
     return [line.strip() for line in completed.stdout.splitlines() if line.strip()]
 
 
+def _repo_relative_cited_path(value: str, roots: Sequence[Path | None]) -> str:
+    """A finding's cited file as a repository-relative path, or empty.
+
+    A reviewer may cite a path relative to the repository or absolute under the
+    tree it read, and the two spellings name one file. Both are reduced to the
+    repository-relative form the changed-path lists carry, so a cited path can
+    be compared against a moved path without comparing two encodings of the
+    same location. An absolute path under none of the known roots names no file
+    in this repository and is dropped rather than compared against.
+    """
+    text = str(value or "").strip().replace("\\", "/")
+    if not text:
+        return ""
+    candidate = Path(text)
+    if candidate.is_absolute():
+        for root in roots:
+            if root is None:
+                continue
+            try:
+                return str(candidate.relative_to(root)).replace("\\", "/")
+            except ValueError:
+                continue
+        return ""
+    while text.startswith("./"):
+        text = text[2:]
+    return text
+
+
+def _review_delivered_paths(tree: Path, review: Mapping[str, Any]) -> list[str] | None:
+    """The repo-relative paths the reviewed run delivered or a finding cites.
+
+    The delivered diff is the pair the stored record itself carries, so it names
+    the work that review is about, not whichever revision the run has since
+    reached. Its findings cite the files the review found things in. ``None``
+    means the delivered diff could not be read: the caller must treat the move
+    as touching the run's own work rather than prove safety from the half it
+    holds, because a history git cannot compare cannot be shown to leave the
+    delivered work alone.
+    """
+    delivered: list[str] = []
+    _, base, _, head = review_module.carried_revision_pair(review)
+    base_sha = str(base or "").strip()
+    head_sha = str(head or "").strip()
+    if base_sha and head_sha:
+        changed = _changed_paths_between(tree, base_sha, head_sha)
+        if changed is None:
+            return None
+        delivered.extend(changed)
+    roots: list[Path | None] = [tree]
+    reviewed_worktree = str(review.get("reviewed_worktree") or "").strip()
+    if reviewed_worktree:
+        roots.append(Path(reviewed_worktree))
+    findings = review.get("findings")
+    if isinstance(findings, Sequence) and not isinstance(findings, (str, bytes)):
+        for finding in findings:
+            if not isinstance(finding, Mapping):
+                continue
+            cited = _repo_relative_cited_path(str(finding.get("file") or ""), roots)
+            if cited:
+                delivered.append(cited)
+    unique: list[str] = []
+    for path in delivered:
+        if path not in unique:
+            unique.append(path)
+    return unique
+
+
 def review_head_move(record: Mapping[str, Any]) -> dict[str, Any]:
     """How a run's head moved past the head its stored review read.
 
@@ -1485,11 +1552,21 @@ def review_head_move(record: Mapping[str, Any]) -> dict[str, Any]:
     paths = _changed_paths_between(tree, reviewed_head, head)
     if paths is None:
         return {}
+    delivered = _review_delivered_paths(tree, stored)
+    if delivered is None:
+        touches_delivered_work = True
+        touched: list[str] = []
+    else:
+        delivered_set = set(delivered)
+        touched = [path for path in paths if path in delivered_set]
+        touches_delivered_work = bool(touched)
     return {
         "reviewed_head": reviewed_head,
         "head": head,
         "paths": paths,
         "changes_runtime_source": review_tiers.changes_runtime_source(paths),
+        "touches_delivered_work": touches_delivered_work,
+        "deliverable_paths": touched,
     }
 
 
@@ -1503,12 +1580,19 @@ def carry_review_forward(
     record selection every reader shares, so the classifier, the promotion gate
     and the obligation producer cannot disagree about which review a run owes.
 
-    A move over paths that change no runtime source is carried: the stored
-    record is re-stored at the run's new head, marked with the revision it came
-    from and the paths the move touched, so a review exists at the head the run
-    now carries and the run raises no review requirement. A move that does
-    change runtime source is not carried — it earns a light re-review scoped to
-    a new commit alone, and the caller is told the paths.
+    A move over paths that change neither runtime source nor any path the run
+    delivered is carried: the stored record is re-stored at the run's new head,
+    marked with the revision it came from and the paths the move touched, so a
+    review exists at the head the run now carries and the run raises no review
+    requirement.
+
+    A move is not carried when it touches runtime source, or when it touches a
+    path the reviewed diff changed or a stored finding cites. Runtime source
+    earns a light re-review scoped to the new commit alone, as before. A move
+    over the run's own deliverable or a finding's file is new work a reviewer
+    must read: the review is not re-stamped onto a head no reviewer read, and
+    the refusal is written to the run's record so a reader sees the head was
+    left unreviewed on purpose.
     """
     move = review_head_move(record)
     if not move:
@@ -1522,6 +1606,44 @@ def carry_review_forward(
             "review_tier": review_tiers.LIGHT,
             "scope": list(move["paths"]),
             "paths": list(move["paths"]),
+            "reviewed_head": move["reviewed_head"],
+            "head": move["head"],
+        }
+    if move["touches_delivered_work"]:
+        touched = list(move["deliverable_paths"])
+        if touched:
+            detail = "touches the delivered work: " + ", ".join(touched)
+        else:
+            detail = (
+                "cannot be shown to leave the delivered work alone, because the "
+                "reviewed diff could not be read"
+            )
+        declined = (
+            f"the move {detail}; the stored review does not carry to the new head"
+        )
+        _mutate_pointer(
+            run_id,
+            lambda pointer: {
+                **pointer,
+                CARRY_FORWARD_FIELD: {
+                    "carried": False,
+                    "from": move["reviewed_head"],
+                    "to": move["head"],
+                    "paths": list(move["paths"]),
+                    "deliverable_paths": touched,
+                    "reason": declined,
+                    "at": _utc_now(),
+                },
+            },
+        )
+        return {
+            "run_id": run_id,
+            "carried": False,
+            "review_tier": review_tiers.LIGHT,
+            "scope": list(move["paths"]),
+            "paths": list(move["paths"]),
+            "deliverable_paths": touched,
+            "reason": declined,
             "reviewed_head": move["reviewed_head"],
             "head": move["head"],
         }
