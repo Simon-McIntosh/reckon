@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-page-load-reads-each-file-once">
+  <meta name="plan-verifies" content="reckon:a-page-load-reads-each-file-once#s8">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <title>Server serves one code version — landing record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="server-serves-one-code-version" data-reckon="landed" data-when="2026-10-03">
+  <h2>Server serves one code version</h2>
+  <p>The request guard reads the same 30-second, executed-definition report published by
+  <code>/_server</code>. Six requests inside that window compare package source once, and
+  editing a module the server never executed leaves the next request at HTTP 204. When
+  executed code changes, the refusal names only the report's changed files and derives
+  both distinct fingerprints from those files. It returns HTTP 503
+  <code>stale-code</code> with <code>Retry-After: 5</code>, stops serving new requests,
+  waits up to three seconds for active handlers, then calls the injected exec function
+  with the process's interpreter and original arguments.</p>
+  <p>In the temporary-package reproduction, the server executed an old recovery function
+  before the copy gained a new import name and a changed definition. Discovery receives
+  the named refusal before it can lazy-load the replacement roadmap. With the guard
+  removed, that same request returns HTTP 500 with
+  <code>cannot import name 'stale_code_probe'</code>.</p>
+  <table>
+    <thead><tr><th>Gate</th><th>Result</th><th>Failure IDs</th></tr></thead>
+    <tbody>
+      <tr><td>Base, 16 test files</td><td>5 failed, 193 passed, 1 skipped</td><td>four guard checks; discovery cache</td></tr>
+      <tr><td>Head, 16 test files</td><td>1 failed, 197 passed, 1 skipped</td><td>discovery cache</td></tr>
+      <tr><td>Guard removed from head</td><td>1 failed</td><td>lazy import; HTTP 500 returned</td></tr>
+    </tbody>
+  </table>
+  <p>The discovery cache failure is present in both gate arms. The head adds zero failure
+  IDs. The guard-removal control fails the lazy-import case with HTTP 500 and exit 1.</p>
+</article>
+</body>
+</html>
