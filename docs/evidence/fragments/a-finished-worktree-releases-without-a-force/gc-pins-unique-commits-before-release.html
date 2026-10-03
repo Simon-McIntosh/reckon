@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-finished-worktree-releases-without-a-force">
+  <meta name="plan-verifies" content="reckon:a-finished-worktree-releases-without-a-force#s9">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-03">
+  <meta name="evidence-commit" content="553f23f6a">
+  <title>A worktree with unique commits releases after its commits are pinned | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="gc-pins-unique-commits-before-release">
+  <h2>A worktree with unique commits releases after its commits are pinned</h2>
+  <p><strong>Change (commit <code>553f23f6a</code>).</strong> <code>garbage_collect</code>
+  (<code>reckon/crew/routing.py</code>), the function <code>crew gc</code> calls, gains
+  <code>pin_unique_commits</code> (default false). When requested, a dirty worktree that no live
+  run claims and whose commits beyond the integration head were measured with no patch-equivalent
+  on it is released through the existing residue-preserving path after
+  <code>_pin_archived_commits</code> points <code>refs/reckon/archive/&lt;worktree directory
+  name&gt;</code> at the worktree head, and the ref is recorded as <code>archive_ref</code> in
+  the classification record beside <code>residue.patch</code>. The pin runs before the removal
+  and before the residue is written, so the commits stay reachable however the rest of the
+  residue step ends. An occupied ref that resolves to a different commit is refused rather than
+  overwritten. The reclaimable flag on the row honours the same predicate the removal branch
+  uses, so a dry run with the option reports those rows as reclaimable. Without the option
+  nothing changes: such a tree stays with classification <code>dirty</code> and
+  <code>reclaimable</code> false, exactly as before.</p>
+
+  <p><strong>The two review follow-ons also land here.</strong> The partial report a sweep
+  stopped mid-pass emits now carries <code>refused_worktrees</code> beside
+  <code>removed_worktrees</code>: a tree whose removal was attempted and did not complete is
+  recorded in its own list at the moment it fails, so a reader no longer recovers it by walking
+  the classifications. And <code>garbage_collect</code> re-raises <code>TypeError</code>,
+  <code>AttributeError</code> and <code>NameError</code> untouched — a defect in the sweep's own
+  code surfaces with its traceback instead of reading as an ordinary refusal with
+  <code>ok: false</code>.</p>
+
+  <p><strong>Gate.</strong> Both arms ran under <code>pytest -n 8 --timeout=300
+  -p no:cacheprovider</code>, each in the foreground with its own basetemp under the run's
+  scratch and its own log in the run directory. The base arm, from a <code>git archive</code>
+  extraction of <code>41e6fc48f5b7f9293694519d4c13c4e8c146bb82</code> in
+  <code>/tmp/reckon-crew-scratch/r-20261003T014450129925-gc-pins-unique-commits-before-release/gate-base</code>
+  (7 test files),
+  reports <strong>49 passed</strong>, <code>EXIT=0</code>. The head arm at
+  <code>553f23f6a34f9bf41220f70a39218ad9c384fc0d</code> (the same 7 files plus the new
+  <code>tests/test_gc_pins_unique_commits_before_release.py</code>) reports <strong>56
+  passed</strong>, <code>EXIT=0</code>; added failure ids: none. The head arm's
+  <code>module.__file__</code> is the worktree's own <code>reckon/crew/routing.py</code> and the
+  base arm's is the scratch extraction's, so neither arm could have been served by the other
+  tree. <code>ruff check</code> over the changed Python paths reports 11 findings in
+  <code>routing.py</code> — the same eleven the base copy reports, line numbers shifted — and
+  none in the new test file; <code>ruff format --check</code> passes on both.</p>
+
+  <p><strong>Negative control</strong> (<code>logs/negative-control.log</code>): with the pin
+  step in <code>_pin_archived_commits</code> replaced by an early return, the release case leaves
+  the archived commits unresolvable — <code>rev-parse
+  refs/reckon/archive/pinned^{commit}</code> returns nothing — and the run exits <code>1</code>
+  with <code>FAILED …::test_a_unique_commit_tree_releases_after_its_commits_are_pinned</code>
+  beside <code>…::test_an_occupied_archive_ref_is_refused_and_the_earlier_pin_survives</code>,
+  two failed of seven. Neither id fails in the head arm.</p>
+
+  <p><strong>New tests</strong> (<code>tests/test_gc_pins_unique_commits_before_release.py</code>,
+  each in a temporary repository with <code>RECKON_HOME</code> under <code>tmp_path</code>):</p>
+  <ul>
+    <li>a dirty tree with one commit that exists nowhere else is released with the option: the
+      row names <code>refs/reckon/archive/&lt;name&gt;</code>, the worktree directory is gone,
+      the commit resolves through the ref and still carries its file, and the residue
+      classification records the ref beside the patch;</li>
+    <li>the same tree without the option stays: classification <code>dirty</code>,
+      <code>reclaimable</code> false, no ref, directory and its file intact;</li>
+    <li>an occupied archive ref is refused, the earlier pin still resolves to what it did, and
+      the tree stays — with the row named in the partial report's refused list;</li>
+    <li>a sweep that releases one tree and then fails on a locked one exits carrying
+      <code>removed_worktrees</code> with the released tree and <code>refused_worktrees</code>
+      with the locked one, neither conflated with the other;</li>
+    <li>a <code>TypeError</code>, <code>AttributeError</code> or <code>NameError</code> raised
+      inside the sweep reaches the caller as itself, not as a sweep refusal.</li>
+  </ul>
+
+  <p><strong>Logs.</strong> <code>logs/base-arm.log</code>, <code>logs/head-arm.log</code>,
+  <code>logs/base-arm.json</code>, <code>logs/head-arm.json</code>,
+  <code>logs/negative-control.log</code> in the run directory
+  <code>~/.config/reckon/crew/runs/r-20261003T014450129925-gc-pins-unique-commits-before-release</code>.</p>
+</section>
+</main>
+</body>
+</html>
