@@ -42,6 +42,7 @@ from reckon.crew.runs import (
     pointer_path,
     read_pointer,
 )
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 PROJECT = "review-promotion-fixture"
 PLAN = "review-promotion-target"
@@ -131,7 +132,7 @@ def _manifest_body(changed_paths: list[str], *, commits: str = "none") -> str:
         f"commits: {commits}\n"
         "changed_paths:\n"
         + "".join(f"  - {path}\n" for path in changed_paths)
-        + "tests: record parsed, stored and parse-checked\n"
+        + f"tests: {EXECUTABLE_GATE_COMMAND}\n"
     )
 
 

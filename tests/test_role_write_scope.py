@@ -30,6 +30,7 @@ from reckon.crew.runs import (
     run_dir,
     runs_dir,
 )
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 PROJECT = "sample"
 
@@ -486,7 +487,7 @@ def test_a_test_run_that_slipped_through_is_still_refused_at_promotion(
         "status: complete\n"
         f"commits: {commit}\n"
         "changed_paths: source.py\n"
-        "tests: source-edit refusal exercised\n",
+        f"tests: {EXECUTABLE_GATE_COMMAND}\n",
         encoding="utf-8",
     )
     run_id = "r-role-scope-slipped-through"
@@ -857,7 +858,7 @@ def test_promoting_a_run_that_wrote_both_landing_paths_is_accepted(
         f"commits: {commit}\n"
         "changed_paths: docs/plans/plan-a.html "
         "docs/evidence/archive/plan-a-landed.html\n"
-        "tests: landing promotion exercised\n",
+        f"tests: {EXECUTABLE_GATE_COMMAND}\n",
         encoding="utf-8",
     )
     run_id = "r-landing-promotion"

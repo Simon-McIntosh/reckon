@@ -20,6 +20,7 @@ import pytest
 from reckon import crew, ledger
 from reckon.crew import routing
 from reckon.crew.runs import _write_json, pointer_path
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 PROJECT = "sample"
 
@@ -298,7 +299,7 @@ def test_an_unmeasured_run_is_not_recorded_as_an_empty_match_list(
         "node: clone-check\n"
         "status: complete\n"
         f"changed_paths: {delivered}\n"
-        "tests: report-only promotion; nothing to run\n",
+        f"tests: {EXECUTABLE_GATE_COMMAND}\n",
         encoding="utf-8",
     )
     _write_json(

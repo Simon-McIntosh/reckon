@@ -14,6 +14,7 @@ from reckon.cli import main as cli_main
 from reckon.crew import promotion
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -152,7 +153,7 @@ def _write_complete_manifest_pointer(
         "status: complete\n"
         f"{commit_line}"
         f"changed_paths: {changed_paths}\n"
-        "tests: focused promotion check passed\n",
+        f"tests: {EXECUTABLE_GATE_COMMAND}\n",
         encoding="utf-8",
     )
     _write_commit_pointer(repository, run_id, base)
@@ -555,7 +556,7 @@ def _invoke_complete_cli(run_id: str, gate_log: Path, commit: str) -> Result:
             "--commit",
             commit,
             "--gate-command",
-            "probe check",
+            EXECUTABLE_GATE_COMMAND,
             "--gate-exit-status",
             "0",
             "--gate-log-path",
@@ -1473,7 +1474,7 @@ def test_promotion_records_stream_figures_on_the_committed_row(
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text(
         "node: node-a\nstatus: complete\nchanged_paths: none\n"
-        "tests: focused promotion check passed\n",
+        f"tests: {EXECUTABLE_GATE_COMMAND}\n",
         encoding="utf-8",
     )
     _write_json(

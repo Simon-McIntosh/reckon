@@ -26,6 +26,7 @@ import pytest
 
 from reckon import _plan_html, crew, ledger
 from reckon.crew.runs import _write_json, pointer_path
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 PROJECT = "report-only-fixture"
 PLAN = "report-only-target"
@@ -117,7 +118,7 @@ def _manifest(
         "status: complete\n"
         f"{commit_line}"
         f"changed_paths: {changed_paths}\n"
-        "tests: focused report-only promotion check passed\n",
+        f"tests: {EXECUTABLE_GATE_COMMAND}\n",
         encoding="utf-8",
     )
     return manifest

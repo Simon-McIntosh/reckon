@@ -22,6 +22,7 @@ from reckon import _plan_html, crew, ledger
 from reckon.cli import main as cli_main
 from reckon.crew import promotion
 from reckon.crew.runs import _write_json, pointer_path
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -207,7 +208,7 @@ def test_a_runnable_gate_command_still_promotes(repository: Path) -> None:
     command that can: an ordinary gate command promotes and is recorded."""
     run_id = "r-20260926T090600000000-gate-command-runnable"
     _write_pointer(repository, run_id)
-    command = "/repo/.venv/bin/python -m pytest -q tests/test_crew_promotion.py"
+    command = EXECUTABLE_GATE_COMMAND
 
     crew.complete(
         run_id,

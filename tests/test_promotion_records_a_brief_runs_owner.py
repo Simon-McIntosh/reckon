@@ -24,6 +24,7 @@ import pytest
 
 from reckon import crew
 from reckon.crew.runs import _write_json, pointer_path
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 PROJECT = "proj"
 BRIEF_SHA = "b" * 64
@@ -206,7 +207,7 @@ def _invoke_complete_cli(run_id: str, gate_log: Path, *extra: str):
             "--outcome",
             "the brief landed",
             "--gate-command",
-            "probe check",
+            EXECUTABLE_GATE_COMMAND,
             "--gate-exit-status",
             "0",
             "--gate-log-path",

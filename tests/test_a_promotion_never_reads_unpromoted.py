@@ -28,6 +28,7 @@ from reckon import _plan_html, crew, ledger
 from reckon.crew import promotion, recovery
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path, read_pointer, run_dir
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 PROJECT = "proj"
 PLAN = "plan-a"
@@ -119,7 +120,7 @@ def _write_completed_pointer(
         "node: node-a\n"
         "status: complete\n"
         "changed_paths: none (the sole deliverable is the report)\n"
-        "tests: focused promotion check passed\n",
+        f"tests: {EXECUTABLE_GATE_COMMAND}\n",
         encoding="utf-8",
     )
     # Dispatch creates the run's own home, which is where a discard leaves its

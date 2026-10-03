@@ -26,6 +26,7 @@ from reckon import crew
 from reckon.crew import recovery, runs
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, pointer_path
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 # `reckon.crew` carries a `dispatch` function that shadows the submodule of the
 # same name, so the module is fetched by name rather than by attribute.
@@ -126,7 +127,7 @@ def _manifest(tmp_path: Path, run_id: str, commits: str) -> Path:
         "status: complete\n"
         f"commits: [{commits}]\n"
         f"changed_paths: [{FILE}]\n"
-        "tests: focused check passed\n",
+        f"tests: {EXECUTABLE_GATE_COMMAND}\n",
         encoding="utf-8",
     )
     return manifest

@@ -28,6 +28,7 @@ from reckon.crew.dispatch import _resolved_write_paths
 from reckon.crew.promotion import _outside_declared_scope
 from reckon.crew.runs import _write_json, pointer_path
 from reckon.flight import resolve
+from tests.conftest import EXECUTABLE_GATE_COMMAND
 
 PROJECT = "sample"
 PRE_EXISTING_FAILURE = "tests/test_environment.py::test_external_service"
@@ -151,7 +152,7 @@ def synthetic_wave(tmp_path: Path, home: Path) -> dict[str, object]:
 def _suite_observation(revision: str, failures: list[str]) -> dict[str, object]:
     return {
         "revision": revision,
-        "command": "pytest -q",
+        "command": EXECUTABLE_GATE_COMMAND,
         "exit_status": 1 if failures else 0,
         "log_digest": f"sha256:{revision}",
         "completed": True,
@@ -181,7 +182,7 @@ def _write_attribution_manifest(
                 # reads as silence about what changed and is granted the fuller
                 # review instead.
                 "changed_paths: " + str(path.parent / "attribution-report.md"),
-                "tests: synthetic paired suite observations complete",
+                f"tests: {EXECUTABLE_GATE_COMMAND}",
                 "baseline_suite: " + json.dumps(baseline),
                 "after_suite: " + json.dumps(after),
                 "failure_attribution: " + json.dumps(attribution),
@@ -327,7 +328,7 @@ def test_a_test_node_commit_touching_a_source_path_is_refused_at_promotion(
         "status: complete\n"
         f"commits: {commit}\n"
         "changed_paths: source.py\n"
-        "tests: source-edit refusal exercised\n",
+        f"tests: {EXECUTABLE_GATE_COMMAND}\n",
         encoding="utf-8",
     )
     run_id = "r-test-source-edit"
@@ -396,7 +397,7 @@ def test_synthetic_wave_attribution_survives_in_the_promoted_ledger(
         base=base,
         manifest=manifest,
         write_paths=[str(manifest.parent)],
-        suite_command="pytest -q",
+        suite_command=EXECUTABLE_GATE_COMMAND,
     )
 
     promoted = crew.complete(
@@ -438,7 +439,7 @@ def test_test_role_cannot_waive_missing_attribution_for_an_added_failure(
         base=synthetic_wave["base"],
         manifest=manifest,
         write_paths=[str(manifest.parent)],
-        suite_command="pytest -q",
+        suite_command=EXECUTABLE_GATE_COMMAND,
     )
 
     with pytest.raises(ledger.SuiteDeltaError, match="candidate commit"):
