@@ -257,9 +257,6 @@ def test_an_unavailable_fleet_reading_does_not_block_promotion(
     assert result["fleet_state"] == {
         "fleet_state": "unmeasured",
         "observed_at": result["fleet_state"]["observed_at"],
-        "unmeasured": {
-            "fleet_state": "unavailable",
-            "cause": "OSError: fleet pointers are temporarily unreadable",
-        },
+        "unmeasured": {"fleet_state": "unavailable"},
     }
     assert "fleet_state" not in stored
