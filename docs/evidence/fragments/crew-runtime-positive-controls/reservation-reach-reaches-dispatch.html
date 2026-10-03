@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="A dispatch carries the reservation's reach">
+  <meta name="plan-summary" content="The dispatch route armed the reservation for its side effect and discarded the ensure's report, so a session whose workers run inside the allocation never saw the hold's reach; the already-held read-back named neither the roster cap nor the reach; and the reach counted every backend's placed live runs while the guard that refuses past the cap counted only the calling backend's, so with two placing backends the projects named exceeded what the refusal measured. The dispatch now keeps the ensure result and copies the hold's job id, reason, detail and reach onto the run's payload on both the arming and the already-held paths; the read-back states the cap and the reach as the hold does; and the guard and the reach select one host-wide population through a shared seat selection, so 26 placed runs across two backends are refused as 26 and named as both projects.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verdict" content="pass">
+  <title>A dispatch carries the reservation's reach &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A dispatch carries the reservation's reach &mdash; evidence</h1>
+  <p>One unkeyed record holds the host's placement allocation, and its roster cap is summed over the placed live runs on the host. Three things disagreed with that fact. The dispatch route called <code>ensure_reservation</code> for its side effect and discarded the report, so a session that armed the reservation through a dispatch was never told the cap or which projects' placed runs it counts. The already-held read-back stated the job id and &ldquo;started nothing&rdquo; but named neither the cap nor the reach. And the reach statement counted every backend's placed live runs while the guard that refuses past the cap counted only the calling backend's, so with two placing backends the projects the statement named exceeded the population the refusal was taken over.</p>
+
+  <section id="change">
+    <h2>The change</h2>
+    <p>In <code>reckon/crew/placement.py</code> a single seat selection, <code>roster_occupants</code>, now applies the phase filter and the memory-holding test once, and both the reach statement and the dispatch guard call it. The already-held result carries a detail stating the cap and the reach &mdash; the same sentence the arming hold states &mdash; and every hold result carries its <code>roster_reach</code> beside the record.</p>
+    <p>In <code>reckon/crew/dispatch.py</code> the backend-placement resolution keeps the ensure's result and writes the hold's job id, reason, detail and reach onto the run's payload under <code>placement_reservation</code>, on both the fresh-dispatch and the resume routes; the resume route carries the key into the pointer it persists. The concurrency ceiling hands the roster guard, and the reservation's cores bound, one host-wide population collected across every backend &mdash; the population the hold's reach counts with &mdash; while the lane bound stays the calling backend's own occupancy, because the lane is the backend's queue and the allocation is the host's. The refusal's &ldquo;Occupying runs&rdquo; list names the seats rather than the population handed in, so a reader is not shown every live run on the machine.</p>
+    <p>The direction chosen is to broaden the guard rather than narrow the reach: one host allocation admits every backend's placed workers as steps under <code>--overlap</code>, so a reach that counted one backend would under-count what is resident, and the dangerous direction is oversubscription. The reach statement's landed host-wide wording is unchanged.</p>
+  </section>
+
+  <section id="measure">
+    <h2>The measure</h2>
+    <p>Both arms ran with <code>pytest -n 8 --timeout=300</code>, each with its own basetemp under a run-named directory in <code>/tmp</code>, over the seven test files that reach the changed symbols (<code>ensure_reservation</code>, <code>_held_result</code>, <code>_roster_reach</code>, <code>RESERVATION_ROSTER_LIMIT</code>). Each log's first line names its revision and its last line is a bare <code>EXIT=</code>.</p>
+    <ul>
+      <li><strong>Base arm</strong> (<code>bd621f63ce227fb31b8627fe9f4ac69d2115f90e</code>, a <code>git archive</code> extraction under <code>/tmp/r-20261003T105036595106-base</code>, this node's test file copied in): <strong>2 failed, 32 passed</strong>, <code>EXIT=1</code> (<code>gate-base.log</code> in the run directory). Both failures are this node's two cases: the arming case dies on <code>KeyError: 'placement_reservation'</code> &mdash; the route discarded the report &mdash; and the two-backend case fails because the guard counted one backend's thirteen against a cap of twenty five and admitted the twenty sixth. The other five files pass at base.</li>
+      <li><strong>Head arm</strong> (<code>aae9a9e5f3711f8ae7a668ed969e8744a4473892</code>, this worktree): <strong>34 passed</strong>, <code>EXIT=0</code> (<code>gate-head.log</code>). It adds no failure id, and the base arm's two ids are gone.</li>
+      <li><strong>Negative control</strong> (the declared mutation &mdash; the dispatch route discards the <code>ensure_reservation</code> result again &mdash; applied to the head revision's working tree and reverted; the tree is clean at the committed revision): the arming case in <code>tests/test_reservation_reach_reaches_dispatch.py</code> fails on the missing payload key while the guard case passes &mdash; <strong>1 failed, 1 passed</strong>, <code>EXIT=1</code> (<code>negative-control.log</code>). The case discriminates the exact defect it exists to catch.</li>
+      <li><strong>Ruff</strong>, in place at each revision over that revision's own paths: <code>ruff check</code> reports <strong>7 findings at each</strong> &mdash; the same seven in <code>dispatch.py</code>, none added &mdash; and <code>ruff format --check</code> reports the same one file (<code>dispatch.py</code>) unformatted at each revision, with <code>placement.py</code> and the new test file formatted at head. No finding is added; a missing final newline in the new test file was caught and fixed before the commit.</li>
+    </ul>
+  </section>
+
+  <section id="scope">
+    <h2>Scope</h2>
+    <p>The merged head's own gate belongs to the separate test node, as does any suite wide check; this fragment measures this node's two arms and its control alone. The lane bound and the login-memory bound keep their existing populations; only the reservation's roster and cores bounds moved to the host-wide set, which is the set the allocation actually admits.</p>
+  </section>
+ </main>
+</body>
+</html>

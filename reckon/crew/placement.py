@@ -355,15 +355,24 @@ def _await_probe(
 
 
 def _held_result(record: Mapping[str, Any], *, unknown: bool = False) -> dict[str, Any]:
-    """The report for a reservation that is already held and not replaced."""
+    """The report for a reservation that is already held and not replaced.
+
+    The read-back states the same reach the arming hold states: the cap and the
+    projects it counts right now. A session that finds the reservation held is
+    still about to run inside it, so the cap's blast radius is the reservation's
+    own fact at the moment it is read rather than only an arming-time detail.
+    """
     job_id = record.get("job_id")
+    reach = _roster_reach()
     if unknown:
         detail = (
             f"the reservation {job_id} is recorded but the scheduler could not "
-            "be asked about it; started nothing"
+            f"be asked about it; started nothing; {reach['statement']}"
         )
     else:
-        detail = f"the reservation {job_id} is held; started nothing"
+        detail = (
+            f"the reservation {job_id} is held; started nothing; {reach['statement']}"
+        )
     result: dict[str, Any] = {
         "job_id": job_id,
         "held": True,
@@ -371,6 +380,7 @@ def _held_result(record: Mapping[str, Any], *, unknown: bool = False) -> dict[st
         "record": record,
         "detail": detail,
         "reason": "already-held",
+        "roster_reach": reach,
     }
     if unknown:
         result["probe"] = "unknown"
@@ -400,6 +410,7 @@ def _adopted_result(record: Mapping[str, Any]) -> dict[str, Any]:
             f"{record['roster_reach']['statement']}"
         ),
         "reason": "adopted",
+        "roster_reach": record.get("roster_reach"),
     }
 
 
@@ -626,6 +637,7 @@ def _ensure_reservation_locked(
             f"{memory_gb} GB; {reach['statement']}"
         ),
         "reason": "held",
+        "roster_reach": reach,
     }
 
 
@@ -741,6 +753,35 @@ def occupying_the_reservation(
     ]
 
 
+def roster_occupants(
+    pointers: Iterable[Mapping[str, Any]],
+    *,
+    alive: Callable[[Any], bool | None] | None = None,
+    now: float | None = None,
+) -> list[Mapping[str, Any]]:
+    """The pointers holding a seat in the reservation's roster.
+
+    One selection for the two readers that must agree: the reach statement a
+    hold carries and the dispatch guard that refuses past the cap. A pointer
+    holds a seat when it is still live — a terminal phase describes a run that
+    has stopped, whatever its stored record still names — it recorded a
+    placement, and its placed worker can still hold memory in the allocation.
+    The reservation is host-global and one unkeyed record holds it, so the
+    population is every backend's and every project's, never one of each.
+    """
+    from reckon.crew.node import _TERMINAL_RUN_PHASES
+
+    return occupying_the_reservation(
+        [
+            pointer
+            for pointer in pointers
+            if str(pointer.get("phase") or "") not in _TERMINAL_RUN_PHASES
+        ],
+        alive=alive,
+        now=now,
+    )
+
+
 def _roster_reach() -> dict[str, Any]:
     """The roster cap's reach, and the projects it counts against it right now.
 
@@ -750,13 +791,13 @@ def _roster_reach() -> dict[str, Any]:
     flight configuration, so the hold reads the live pointers and states it: the
     projects whose placed runs the cap counts at this moment, resolved through
     the same population and the same liveness reading the dispatch guard counts
-    with. The projects are named rather than merely counted, because a reader at
-    the point of the decision needs to see whose work the cap reaches, not just
-    how far it extends.
+    with, because both call :func:`roster_occupants`. The projects are named
+    rather than merely counted, because a reader at the point of the decision
+    needs to see whose work the cap reaches, not just how far it extends.
     """
     from reckon.crew import runs as runs_module
 
-    counted = occupying_the_reservation(runs_module.list_live())
+    counted = roster_occupants(runs_module.list_live())
     projects = sorted({str(pointer.get("project") or "unknown") for pointer in counted})
     named = ", ".join(projects) if projects else "none"
     return {
