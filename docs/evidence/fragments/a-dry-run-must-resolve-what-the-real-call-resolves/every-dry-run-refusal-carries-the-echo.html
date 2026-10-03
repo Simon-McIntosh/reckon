@@ -53,6 +53,18 @@
   rule the node is held blocked on that id for coordinator adjudication rather than promoted
   through it. Ruff: <code>reckon/cli.py</code> carries the same four pre-existing findings at
   base and head, and both changed test files are clean and formatted.</p>
+  <p>Repair round. An independent review found the dry-run budget-hold refusal (exit 3) emitted
+  with <code>dry_run: true</code> but without <code>_with_resolved_overrides</code>, so a
+  <code>--set</code>-carrying dry run that hit a held wave still could not tell an override that
+  resolved from one that never applied — the same defect one handler over. The refusal is now
+  wrapped like its siblings in that handler, and the case is driven by the refusal test file
+  (exit 3, <code>budget-hold</code>, <code>dry_run</code>, the echo). The negative control — the
+  wrapper reverted — fails that case on <code>KeyError: 'overrides'</code>, EXIT=1, and the
+  mutation was reverted immediately after. Gate arms re-run on the repaired head: base 6 failed /
+  494 passed, head 5 failed / 498 passed with <strong>no added failure id</strong>; the single id
+  the earlier head arm added does not recur here, nor in four isolated interleaved re-runs at both
+  trees, consistent with the host process-table race that test's fixed-pid stub exposes; it stays
+  named for adjudication rather than erased.</p>
 </section>
 </main>
 </body>
