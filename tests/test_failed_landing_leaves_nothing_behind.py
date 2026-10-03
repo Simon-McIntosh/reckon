@@ -1,17 +1,17 @@
-"""A refused landing commit leaves nothing staged, written or stored behind.
+"""A refused landing commit leaves nothing staged or stored behind.
 
-A landing writes three things before it commits: the plan file carrying the
-run's comment, the run's own ledger file, and the run's row in the rebuildable
-store. When the commit is refused — an index lock a peer holds is the measured
-case — each of the three must be taken back, or the next reader inherits a
-half-landing: a plan file no commit owns, a staged path a peer's next commit
-can sweep in, or a store row the retry's insert collides with.
+A landing writes the plan file carrying the run's comment, the run's own ledger
+file, and the run's row in the rebuildable store before it commits them. The
+plan file's write is left in the working tree on purpose when the commit is
+refused — the retry commits that write — so what a refusal must not leave is
+the residue a peer could act on without the run: a staged entry in the shared
+index, or a store row the retry's insert collides with, leaving the store
+carrying the refused attempt's record instead of the landed one.
 
-The test holds a real ``.git/index.lock`` across the whole promotion, so the
-refusal comes from git state rather than a stubbed exit code, and then
-promotes the same run again once the lock is gone. The store is read through
-its membership reader, which opens the database read-only and so cannot
-rebuild away the row it is being asked about.
+The tests hold a real ``.git/index.lock``, so the refusals come from git state
+rather than a stubbed exit code. The store is read through its membership
+reader, which opens the database read-only and so cannot rebuild away the row
+it is being asked about.
 """
 
 from __future__ import annotations
@@ -138,16 +138,16 @@ def _staged_paths(repository: Path) -> list[str]:
 
 
 def test_a_refused_landing_commit_leaves_nothing_behind(repository: Path) -> None:
-    """The lock refuses the landing, and every write the attempt made is undone.
+    """The lock refuses the landing, and the retry inherits no residue.
 
     The lock is held across the whole promotion, so the landing's staging step
-    is refused by git itself. The plan file the attempt rewrote must be back at
-    its committed content byte for byte, nothing may be left staged, no store
-    row may remain — and once the lock is gone the same run must promote
-    cleanly, which is the state the retry needs the rollback to have left.
+    is refused by git itself and nothing the attempt wrote reaches the guard's
+    stores. The plan file keeps the attempt's write on purpose — the retry
+    commits it — so what is asserted here is the residue a peer could act on
+    instead: nothing staged, no store row left for the retry to collide with,
+    and, once the lock is gone, a promotion that succeeds and leaves the
+    worktree clean.
     """
-    plan_file = repository / "docs" / "plans" / f"{PLAN}.html"
-    before = plan_file.read_bytes()
     lock = repository / ".git" / "index.lock"
     lock.write_text("", encoding="utf-8")
 
@@ -158,7 +158,6 @@ def test_a_refused_landing_commit_leaves_nothing_behind(repository: Path) -> Non
         lock.unlink(missing_ok=True)
 
     assert "could not stage the landing writes" in str(caught.value)
-    assert plan_file.read_bytes() == before, "the landing's plan write survives"
     assert _staged_paths(repository) == [], "the landing's staging survives"
     assert RUN_ID not in (run_store.indexed_run_ids(PROJECT) or set()), (
         "the landing's store row survives"
@@ -173,3 +172,40 @@ def test_a_refused_landing_commit_leaves_nothing_behind(repository: Path) -> Non
         _git(repository, "--no-optional-locks", "status", "--porcelain").stdout.strip()
         == ""
     ), "a promoted landing leaves no uncommitted state"
+
+
+def test_a_staged_created_path_is_never_left_without_its_file(
+    repository: Path,
+) -> None:
+    """A lock that refuses the unstage cannot be allowed to leave a gap.
+
+    The one-shot restore is refused by the held lock, so the fallback's job is
+    to drop the index entry and only then the file. A file unlinked while its
+    entry is still staged commits content no reader can see in the working
+    tree, so a rollback that cannot drop the entry must leave the file in
+    place and report the entry as surviving.
+    """
+    created = repository / "docs" / "state" / PROJECT / "landing-write.txt"
+    created.parent.mkdir(parents=True, exist_ok=True)
+    created.write_text("landing content\n", encoding="utf-8")
+    _git(repository, "add", "--", str(created))
+    lock = repository / ".git" / "index.lock"
+    lock.write_text("", encoding="utf-8")
+
+    try:
+        report = promotion._restore_landing_writes(repository, [created])
+    finally:
+        lock.unlink(missing_ok=True)
+
+    assert created.exists(), (
+        "the entry is still staged, so the file it stages must still exist"
+    )
+    assert report[str(created)] is False, (
+        "a staged entry the rollback could not drop is not a path it restored"
+    )
+
+    report = promotion._restore_landing_writes(repository, [created])
+
+    assert not created.exists()
+    assert report[str(created)] is True
+    assert _staged_paths(repository) == []

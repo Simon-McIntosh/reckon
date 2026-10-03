@@ -3740,9 +3740,13 @@ def _restore_landing_writes(
 
     Each path promotion wrote returns to its committed state: tracked paths
     are restored from HEAD; a path absent from HEAD (created by this
-    promotion) is dropped from the index and the working tree. Recovery is
-    best-effort because the refusal that triggers it (a stuck index or other
-    git failure) can itself block these git calls.
+    promotion) is dropped from the index and, once its entry is gone, from the
+    working tree. Recovery is best-effort because the refusal that triggers it
+    (a stuck index or other git failure) can itself block these git calls, and
+    a tracked path whose restore is refused keeps its working-tree write — the
+    retry commits that write, so taking it back would discard the recorded
+    comment. What a refusal does not leave behind is a staged entry the run's
+    own commit never covered.
 
     The result is a per-path report keyed by the path as written: True for a
     path that no longer carries the landing write — restored from HEAD, or
@@ -3772,18 +3776,20 @@ def _restore_landing_writes(
 
 
 def _restore_one_landing_write(checkout: Path, path: Path) -> bool:
-    """Return one landing write to its committed state without the index lock.
+    """Settle one landing write as far as a held index lock allows.
 
     The whole-path restore is a single index-writing call, so a lock another
-    process holds refuses it and leaves the working-tree write in place. This
-    fallback separates the halves: the working tree comes back from HEAD's
-    blob, read through the object store and written directly, while only the
-    index entry needs the lock — reset to HEAD for a tracked path, dropped
-    for a path this promotion created. The index is read before it is
-    written, so an attempt that never staged anything (its staging call was
-    the one the lock refused) takes no index-writing call here. A path whose
-    entry is still staged answers False even when its content was restored: a
-    staged entry the next commit can take is not nothing left behind.
+    process holds refuses it and leaves the working-tree write in place. The
+    working tree is left as the attempt wrote it on purpose: the retry commits
+    that write, so a plan file taken back from HEAD would lose the comment the
+    retry is recording. What must not survive is a staged entry, because a
+    peer's next commit could take it without this run ever having committed.
+
+    A tracked path therefore keeps its write and is reported as surviving. A
+    path HEAD never carried is dropped from the index, and its file is removed
+    only once the entry is confirmed gone: a lock that refuses the drop would
+    otherwise leave the index staging a path no longer on disk, which is a
+    commit of content a reader cannot see in the working tree.
     """
     try:
         relative = Path(path).resolve().relative_to(checkout.resolve()).as_posix()
@@ -3791,49 +3797,15 @@ def _restore_one_landing_write(checkout: Path, path: Path) -> bool:
         return False
     committed = _git(checkout, "cat-file", "-e", f"HEAD:{relative}", check=False)
     if committed.returncode == 0:
-        content = _git_blob(checkout, relative)
-        if content is None:
-            return False
-        try:
-            Path(path).write_bytes(content)
-        except OSError:
-            return False
-        if not _path_has_a_staged_change(checkout, path):
-            return True
-        _git(
-            checkout,
-            "restore",
-            "--source=HEAD",
-            "--staged",
-            "--",
-            str(path),
-            check=False,
-        )
-    else:
-        try:
-            Path(path).unlink(missing_ok=True)
-        except OSError:
-            return False
-        if not _path_has_a_staged_change(checkout, path):
-            return True
-        _git(checkout, "rm", "--cached", "--force", "--", str(path), check=False)
-    return not _path_has_a_staged_change(checkout, path)
-
-
-def _git_blob(checkout: Path, relative: str) -> bytes | None:
-    """HEAD's committed content for one path, or None when git will not answer.
-
-    Read as bytes because the restore it feeds must reproduce the committed
-    file exactly; a text-mode read would fold newlines and write back a file
-    that differs from HEAD.
-    """
-    result = subprocess.run(
-        ["git", "cat-file", "blob", f"HEAD:{relative}"],
-        cwd=checkout,
-        capture_output=True,
-        check=False,
-    )
-    return result.stdout if result.returncode == 0 else None
+        return False
+    _git(checkout, "rm", "--cached", "--force", "--", str(path), check=False)
+    if _path_has_a_staged_change(checkout, path):
+        return False
+    try:
+        Path(path).unlink(missing_ok=True)
+    except OSError:
+        return False
+    return True
 
 
 def _path_has_a_staged_change(checkout: Path, path: Path) -> bool:
