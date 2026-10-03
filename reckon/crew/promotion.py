@@ -1401,6 +1401,23 @@ def _promoted_worker_exit(run_id: str) -> dict[str, Any] | None:
     return dict(data) if isinstance(data, Mapping) else None
 
 
+def _recorded_disposition(record: Mapping[str, Any]) -> str:
+    """The disposition verb a live pointer carries, empty when it carries none.
+
+    ``record_run_disposition`` writes the verb a coordinator recorded for why a
+    pointer may outlive its session, and the pointer is the only copy: this
+    promotion deletes it, so a row that does not read the verb here has lost
+    the distinction between a run that was deliberately disposed of and one
+    that simply disappeared. A pointer with no such block, or one whose kind is
+    empty, is a run that carried no recorded disposition rather than a defect —
+    the verb is not inferred from anything else.
+    """
+    recorded = record.get("closure_disposition")
+    if not isinstance(recorded, Mapping):
+        return ""
+    return str(recorded.get("kind") or "").strip()
+
+
 _PRESERVED_GATE_LOG_NAME = "gate.log"
 
 # The re-run's own capture, written beside the preserved gate log rather than
@@ -7813,6 +7830,11 @@ def _complete_locked(
     # no pointer named one, because every key in ``RECORD_FIELDS`` is present on
     # every promoted row.
     pointer_session = str(record.get("session") or "").strip() or None
+    # The disposition verb rides the committed row for the same reason: the
+    # live pointer that carries it is deleted by this promotion, so a row that
+    # does not read it here can never recover it. A run with no recorded
+    # disposition records null, never an inferred verb.
+    disposition = _recorded_disposition(record)
     run = ledger.build_record(
         run_id=run_id,
         plan=str(node.get("plan") or ""),
@@ -7844,6 +7866,7 @@ def _complete_locked(
         gate=gate,
         failure_classification=failure_classification,
         outcome=outcome,
+        disposition=disposition,
         manifest_path=str(record.get("manifest_path") or ""),
         scope_changed=scope_changed,
         session=pointer_session,
