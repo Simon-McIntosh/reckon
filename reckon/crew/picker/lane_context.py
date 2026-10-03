@@ -230,7 +230,9 @@ def _expected_wait(
 ) -> float | None:
     """Median historical wall time for the shapes of local workers now live.
 
-    Each live worker contributes its matching profile median once. This is a
+    Each live worker contributes its matching profile median once, from
+    whichever project it belongs to, so the figure reflects the whole live
+    local load rather than only the picking project's share of it. This is a
     typical total run duration, not a prediction of the next slot's release.
     Unmeasured shapes contribute no invented duration.
     """
@@ -252,6 +254,15 @@ def _expected_wait(
         owner = row.get("project")
         if not owner:
             continue
+        # Every live local worker contributes its shape's median once, whatever
+        # project it belongs to: the figure is the typical wall time for the
+        # local runs now live, so a worker from another project must be
+        # profiled rather than dropped. Dropping it would let the estimate read
+        # null (or low) while the lane is genuinely busy with that project's
+        # runs -- a wrong answer about load, not merely a slow one. The pick's
+        # own records are reused rather than re-read; each other owner is read
+        # once from its own ledger, and only owners with live local workers are
+        # read at all.
         if owner not in profiles:
             if owner == project and records is not None:
                 recent = [

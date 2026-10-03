@@ -157,13 +157,21 @@ def _fit(
     reasons = (
         [] if execution.allowed else ["execution-fit: " + execution.refusal_detail()]
     )
-    context = routing._context_fit_verdict(resolution=resolution, repo=repo)
+    # The competence verdict measures this backend's context window on every
+    # path that reaches its context check and returns the measurement under
+    # ``context``. Read it there rather than measuring the same window a second
+    # time: the measurement reads the instruction chain, whose repository lookup
+    # shells out to git, so a second call costs a second subprocess on the
+    # pick's critical path under the dispatch bound.
     competence = routing._competence_verdict(
         resolution=resolution,
         project=request.project,
         repo=repo,
         verdict_inputs=verdict_inputs,
     )
+    context = competence.get("context")
+    if context is None:
+        context = routing._context_fit_verdict(resolution=resolution, repo=repo)
     if context and not context["allowed"]:
         reasons.append("context-fit: " + context["reason"])
     if context and request.estimated_context > context["window_tokens"]:
