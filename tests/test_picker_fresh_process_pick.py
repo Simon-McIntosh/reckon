@@ -76,6 +76,33 @@ def test_corrupt_cache_is_a_miss(cache_dir):
     assert value == {"ok": True}
 
 
+def test_the_repository_home_wins_over_the_xdg_cache(tmp_path, monkeypatch):
+    """The cache lands under RECKON_HOME, never under XDG_CACHE_HOME.
+
+    A test isolates the repository home but has no handle on XDG_CACHE_HOME,
+    which on many hosts points at the real user cache. If XDG were consulted
+    first, a pick under test would write into the user's cache — and a second
+    run the same day would read that entry back, calling a spy or a loader the
+    test expected to run. So the order is RECKON_HOME, then XDG, and this pins
+    it: the entry appears under the repository home and nothing appears under
+    XDG.
+    """
+
+    reckon_home = tmp_path / "reckon-home"
+    xdg_home = tmp_path / "xdg-cache"
+    monkeypatch.delenv("RECKON_PICK_CACHE", raising=False)
+    monkeypatch.setenv("RECKON_HOME", str(reckon_home))
+    monkeypatch.setenv("XDG_CACHE_HOME", str(xdg_home))
+
+    value = capabilities.cached_pick_input(
+        "resolution", {"stamp": 1}, lambda: {"ok": True}
+    )
+
+    assert value == {"ok": True}
+    assert (reckon_home / "cache" / "picker-resolution.json").exists()
+    assert not xdg_home.exists()
+
+
 def test_cached_selection_inputs_match_the_uncached_build(cache_dir, monkeypatch):
     """The dispatcher's shared verdict inputs are identical cached and fresh.
 

@@ -1144,19 +1144,23 @@ def pick_input_cache_root() -> Path:
     """The directory the picker input cache lives under.
 
     Outside every repository, so a cache write never dirties a checkout. An
-    explicit ``RECKON_PICK_CACHE`` wins, so a test points it at a temp dir; then
-    ``XDG_CACHE_HOME``, then ``RECKON_HOME``, then the user's cache directory.
+    explicit ``RECKON_PICK_CACHE`` wins, so a test points it at a temp dir. Then
+    ``RECKON_HOME`` (the repository's own home), then ``XDG_CACHE_HOME``, then
+    the user's cache directory. The repository home precedes the XDG directory
+    because a test isolates ``RECKON_HOME`` but not ``XDG_CACHE_HOME``; reading
+    XDG first would let a test write into — and on a second run read back from —
+    the real user cache.
     """
 
     configured = os.environ.get("RECKON_PICK_CACHE")
     if configured:
         return Path(configured).expanduser()
-    cache_home = os.environ.get("XDG_CACHE_HOME")
-    if cache_home:
-        return Path(cache_home) / "reckon"
     reckon_home = os.environ.get("RECKON_HOME")
     if reckon_home:
         return Path(reckon_home) / "cache"
+    cache_home = os.environ.get("XDG_CACHE_HOME")
+    if cache_home:
+        return Path(cache_home) / "reckon"
     return Path.home() / ".cache" / "reckon"
 
 
