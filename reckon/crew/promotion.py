@@ -6574,6 +6574,14 @@ def _unreconciled_live_runs(pointers: Iterable[Mapping[str, Any]]) -> int:
     return sum(1 for pointer in pointers if _drain_row(pointer)["unreconciled"])
 
 
+# An unmeasured fleet reading names the exception that produced it, so a stale
+# fixture or a real composition break is readable from the promotion result
+# rather than swallowed into an absence with no cause. The bound keeps the
+# stamped reading small: the promotion result lands on the committed row, and a
+# traceback-length string would bloat it without adding signal.
+_FLEET_UNMEASURED_CAUSE_LIMIT = 200
+
+
 def _fleet_state_reading(project: str) -> dict[str, Any]:
     """Return a bounded current reading of the project's fleet state.
 
@@ -6582,6 +6590,11 @@ def _fleet_state_reading(project: str) -> dict[str, Any]:
     the already-derived facts into the result that an orchestrator is about to
     read. The reading deliberately stays outside the ledger because it describes
     the fleet at this moment, not this run.
+
+    When the reading cannot be composed, the result is an unmeasured reading that
+    still states the exception type and message under one named key, bounded in
+    length; the exception never blocks landing, but it leaves a cause a reader
+    can act on instead of a bare absence.
     """
     observed_at = _utc_now()
     try:
@@ -6609,11 +6622,14 @@ def _fleet_state_reading(project: str) -> dict[str, Any]:
             "actionable_classifications": sorted(set(actionable)),
             "occupied_lanes": len(lanes),
         }
-    except Exception:  # noqa: BLE001 - an unavailable reading never blocks landing
+    except Exception as exc:  # noqa: BLE001 - an unavailable reading never blocks landing
         return {
             "fleet_state": "unmeasured",
             "observed_at": observed_at,
-            "unmeasured": {"fleet_state": "unavailable"},
+            "unmeasured": {
+                "fleet_state": "unavailable",
+                "cause": f"{type(exc).__name__}: {exc}"[:_FLEET_UNMEASURED_CAUSE_LIMIT],
+            },
         }
 
 
