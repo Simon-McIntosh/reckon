@@ -565,9 +565,11 @@ Every exempt open followup records which exemption it claims and the concrete
 authority, decision, plan, or repository behind that claim. Capacity,
 inconvenience, and ordinary unfinished work are not exemptions.
 
-Session closure also drains current run pointers. Read
-`crew(project, view="drain")`; its `unreconciled_runs` count is derived from the
-live pointer directory, not reconstructed from dispatch memory. A pointer may
+Session closure also drains current run pointers and the executable remainder.
+Read `crew(project, view="drain")`; its `unreconciled_runs` count is derived from
+the live pointer directory, not reconstructed from dispatch memory, and its
+`executable_remainder` is the count of declared sections no `done`
+reclassification has closed. A pointer may
 remain only after `reckon crew drain --project <project> --leave
 <run-id>=<disposition>` records one of the closed-set dispositions:
 
@@ -576,12 +578,17 @@ remain only after `reckon crew drain --project <project> --leave
   disposition stops excusing the pointer as soon as the run turns terminal.
 
 Every other pointer counts. Promotion removes a run from the drain by deleting
-its pointer. The committed closure ledger records both termination figures on
-one line:
+its pointer. The committed closure ledger records all three termination figures
+on one line:
 
 ```text
-  rows: N   foldable-remaining: 0   unreconciled-runs: 0
+  rows: N   foldable-remaining: 0   unreconciled-runs: 0   executable-remaining: 0
 ```
+
+A session does not end while any of the three is nonzero. The remainder is a
+lower bound over the plans that carry a declaration, so a nonzero figure refutes
+a stop, while the view reports the plans it could not count beside it. An empty
+ledger beside a nonzero remainder is an unfinished drain, not a tidy stop.
 
 Fold eligible entries into sections and DAG nodes, execute the newly ready
 nodes, then re-read the plan because their landings may have created more
