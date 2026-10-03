@@ -9388,8 +9388,47 @@ def _worker_default_signals() -> None:
     signal.signal(signal.SIGHUP, signal.SIG_DFL)
 
 
+def _wait_status_from_returncode(returncode: int) -> int:
+    """The wait status a ``Popen`` return code stands for.
+
+    ``subprocess`` reports a signalled child as the negated signal number and an
+    exited one as its code, while the supervisor's exit record is composed from
+    the wait statuses ``os.waitpid`` returns. A status the startup poll
+    collected is a ``Popen`` return code, so it is converted back at this
+    boundary and the record is composed by the same path a reaped wait uses.
+    """
+    if returncode < 0:
+        return -returncode
+    return (returncode & 0xFF) << 8
+
+
+class _WorkerPid(int):
+    """A spawned worker's pid, carrying any exit its startup poll collected.
+
+    The vanished-bind retry polls the worker it has just spawned, and a poll of
+    a child that has exited collects its status. That status is then the only
+    copy — the pid is no longer waitable — so it is carried rather than dropped:
+    a supervisor waiting on such a pid gets ECHILD and writes an exit record
+    naming neither a code nor a signal. The carrier stays an int because every
+    other reader wants only the pid, and it must keep comparing and serialising
+    as one.
+    """
+
+    collected_wait_status: int | None
+
+    def __new__(cls, pid: int, collected_wait_status: int | None = None) -> _WorkerPid:
+        worker_pid = super().__new__(cls, pid)
+        worker_pid.collected_wait_status = collected_wait_status
+        return worker_pid
+
+
 def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
-    """Spawn the worker inside the supervisor's own process group."""
+    """Spawn the worker inside the supervisor's own process group.
+
+    The answer names the pid and, when the spawn retry's startup poll already
+    collected the worker's exit, carries that exit — as an ``_WorkerPid`` — so
+    the supervisor writes it instead of waiting on a pid that has been reaped.
+    """
     plan = spec["plan"]
     record = read_pointer(str(spec["run_id"]))
     environment = _worker_runtime_environment(
@@ -9431,7 +9470,15 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
         argv=argv,
         stderr_path=Path(str(spec["stderr_path"])),
     )
-    return process.pid
+    # A poll of a child that has already exited collects its status, and the
+    # retry's startup check is such a poll. The status is carried on the pid
+    # from here: the child is no longer waitable, so a supervisor that only
+    # held the pid would record neither its code nor its signal.
+    collected = getattr(process, "returncode", None)
+    return _WorkerPid(
+        process.pid,
+        None if collected is None else _wait_status_from_returncode(collected),
+    )
 
 
 def _plan_composed_the_fence(plan: _backends.LaunchPlan | None) -> bool:
@@ -10257,29 +10304,42 @@ def _run_supervisor(spec_path: Path) -> int:
         attempt=attempt,
     )
     _publish_stored_phase(spec, ended=False)
-    status = _reap_worker_on_its_terminal_manifest(
-        pid,
-        run_directory=run_directory,
-        manifest_path=_supervisor_manifest_path(run_id),
-        grace_seconds=_terminal_manifest_grace_seconds(),
-        baseline_ns=_supervisor_manifest_baseline_ns(
-            run_id, spec, supervisor_started_at=launched_at
-        ),
-        stop_requested=stop_requested,
-        stop_grace_seconds=_stop_grace_seconds(),
-    )
-    worker_pid, status = _reap_the_launched_worker(
-        pid,
-        status,
-        run_directory=run_directory,
-        manifest_path=_supervisor_manifest_path(run_id),
-        grace_seconds=_terminal_manifest_grace_seconds(),
-        baseline_ns=_supervisor_manifest_baseline_ns(
-            run_id, spec, supervisor_started_at=launched_at
-        ),
-        stop_requested=stop_requested,
-        stop_grace_seconds=_stop_grace_seconds(),
-    )
+    # The spawn retry's startup poll reaps a worker that exits inside its
+    # window, and the pid it hands back then carries that exit: waiting on the
+    # pid would get ECHILD and the record would name neither a code nor a
+    # signal, so the carried exit is the attempt's exit. A worker that outlived
+    # the poll carries none and is supervised exactly as before.
+    status = getattr(pid, "collected_wait_status", None)
+    if status is not None:
+        # The exit was collected from the worker itself, so it stands as the
+        # attempt's exit on its own: the worker has been reaped, so no child of
+        # this supervisor is a still-running worker whose later exit could be
+        # the one that ended the attempt.
+        worker_pid = pid
+    else:
+        status = _reap_worker_on_its_terminal_manifest(
+            pid,
+            run_directory=run_directory,
+            manifest_path=_supervisor_manifest_path(run_id),
+            grace_seconds=_terminal_manifest_grace_seconds(),
+            baseline_ns=_supervisor_manifest_baseline_ns(
+                run_id, spec, supervisor_started_at=launched_at
+            ),
+            stop_requested=stop_requested,
+            stop_grace_seconds=_stop_grace_seconds(),
+        )
+        worker_pid, status = _reap_the_launched_worker(
+            pid,
+            status,
+            run_directory=run_directory,
+            manifest_path=_supervisor_manifest_path(run_id),
+            grace_seconds=_terminal_manifest_grace_seconds(),
+            baseline_ns=_supervisor_manifest_baseline_ns(
+                run_id, spec, supervisor_started_at=launched_at
+            ),
+            stop_requested=stop_requested,
+            stop_grace_seconds=_stop_grace_seconds(),
+        )
     exit_record = _supervisor_exit_record(
         run_id=str(spec.get("run_id") or ""),
         attempt=attempt,
