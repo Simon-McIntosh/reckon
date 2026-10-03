@@ -189,9 +189,11 @@ def environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ReplayEnviro
     return ReplayEnvironment(config_home=config_home, repository=repository)
 
 
-def _report(result) -> dict:
-    assert result.exit_code == 0, result.output
-    return json.loads(result.output)["report"]
+def _report(result, *, ok: bool = True) -> dict:
+    assert result.exit_code == (0 if ok else 1), result.output
+    payload = json.loads(result.output)
+    assert payload["ok"] is ok
+    return payload["report"]
 
 
 def test_a_recorded_gate_longer_than_the_default_derives_a_bound_above_it(
@@ -247,7 +249,7 @@ def test_a_run_with_no_recorded_duration_keeps_the_default_bound(
 
     result = environment.verify_gate()
 
-    report = _report(result)
+    report = _report(result, ok=False)
     assert report["replay_bound_source"] == "default", report
     assert report["replay_bound_seconds"] == pytest.approx(300.0)
     assert report["recorded_gate_seconds"] is None
@@ -267,7 +269,7 @@ def test_an_explicit_timeout_overrides_the_derived_bound(
 
     result = environment.verify_gate("--timeout-seconds", "120")
 
-    report = _report(result)
+    report = _report(result, ok=False)
     assert report["replay_bound_source"] == "explicit", report
     assert report["replay_bound_seconds"] == pytest.approx(120.0)
     # The derivation ran and is reported, but the explicit value is the bound.

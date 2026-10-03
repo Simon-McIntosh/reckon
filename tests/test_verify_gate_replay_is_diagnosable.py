@@ -272,8 +272,10 @@ def test_a_failing_replay_keeps_ids_and_stderr_in_a_log_beside_the_run(
 
     result = environment.verify_gate()
 
-    assert result.exit_code == 0, result.output
-    report = json.loads(result.output)["report"]
+    assert result.exit_code == 1, result.output
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    report = payload["report"]
     assert report["exit_status"] == 1, report
     assert report["integrated_verdict"] == "failed"
     assert report["worktree_roots_rewritten"] == [str(environment.worktree)], report

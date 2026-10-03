@@ -375,8 +375,10 @@ def test_a_checkout_past_the_merge_is_refused_when_a_changed_path_differs(
 
     result = _verify_gate(repository, run_id, merged)
 
-    assert result.exit_code == 0, result.output
-    report = json.loads(result.output)["report"]
+    assert result.exit_code == 1, result.output
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    report = payload["report"]
     assert report["ran"] is False
     assert report["changed_paths_differing"] == ["pkg/target.py"]
     assert "wrong tree" in (report["reason"] or "")
@@ -401,8 +403,10 @@ def test_a_checkout_past_the_merge_with_unknown_run_paths_is_refused(
 
     result = _verify_gate(repository, run_id, merged)
 
-    assert result.exit_code == 0, result.output
-    report = json.loads(result.output)["report"]
+    assert result.exit_code == 1, result.output
+    payload = json.loads(result.output)
+    assert payload["ok"] is False
+    report = payload["report"]
     assert report["ran"] is False
     assert report["changed_paths_differing"] is None
     assert "wrong tree" in (report["reason"] or "")

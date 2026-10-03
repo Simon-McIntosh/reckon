@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="verify-gate is ok only when its replay finished and passed">
+  <meta name="plan-summary" content="The verify-gate ok rule in rerun_gate_at_integrated_revision read a measured exit status, so a completed failing replay reported ok true and exited 0 while its own report said failed. It now reads the verdict: a timeout, a replay that never ran and a completed failing replay all report ok false and exit non-zero, while the report's exit status, integrated verdict and finding are unchanged.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verifies" content="crew-runtime-positive-controls#s49">
+  <meta name="plan-verdict" content="pass">
+  <title>verify-gate is ok only when its replay finished and passed &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <h1>verify-gate is ok only when its replay finished and passed &mdash; evidence</h1>
+  <p>The replay rule reached this node reading a measurement rather than an outcome: <code>rerun_gate_at_integrated_revision</code> in <code>reckon/crew/promotion.py</code> set <code>ok</code> from whether an exit status existed, so a replay that completed failing carried <code>ok: true</code> beside its own <code>integrated_verdict: "failed"</code> and the verb exited 0. The coordinator ruling of 2026-10-03T21:58Z is explicit: verify-gate is <code>ok</code> only when its replay finished and passed, a timeout, a never-run replay and a completed failing replay all report <code>ok: false</code> and exit non-zero, and the report's exit status, verdict and finding are unchanged.</p>
+
+  <section id="reproduction">
+    <h2>The recorded defect, reproduced at the base revision</h2>
+    <p>Base <code>ca72765f68fffd904ac46ce6598a0a8bf8fd5ddc</code>, the integration commit of the derived-ok work over main. Two named tests fail there, each with <code>assert 0 == 1</code> on the verb's exit code, and each printed payload carries <code>"ok": true</code> beside <code>"integrated_verdict": "failed"</code> and <code>"exit_status": 1</code>:</p>
+    <ul>
+      <li><code>tests/test_crew_promotion.py::test_verify_gate_cli_records_a_finding_against_the_run</code>: <code>assert result.exit_code == 1</code>, observed <code>0</code>.</li>
+      <li><code>tests/test_verify_gate_replay_is_diagnosable.py::test_a_failing_replay_keeps_ids_and_stderr_in_a_log_beside_the_run</code>: same assertion, same observation.</li>
+    </ul>
+    <p>A third red in the population is the timeout case of <code>tests/test_a_timed_out_replay_is_not_ok.py</code>, whose helper asserted exit 0 for a payload the derived-ok exit rule had already made non-zero: the file pinned the payload's <code>ok: false</code> but not the exit status that now follows it.</p>
+  </section>
+
+  <section id="change">
+    <h2>The change</h2>
+    <p><code>reckon/crew/promotion.py</code>: <code>report["ok"] = report["integrated_verdict"] == "passed"</code>, with the docstrings of <code>rerun_gate_at_integrated_revision</code> and <code>record_gate_rerun_at_integrated_revision</code> stating the rule. Nothing else in the report changes: <code>exit_status</code>, <code>integrated_verdict</code>, <code>finding</code>, the timeout fields and the replay log are untouched, so a completed failing replay still keeps its real status and verdict and its finding still names the failing verdict rather than a timeout. <code>reckon/cli.py</code> is unchanged and keeps the <code>ok</code> a result already carries, which is why the repair lives at the rule's source.</p>
+    <p><code>tests/test_a_timed_out_replay_is_not_ok.py</code>: the timeout case and the completed-failing case now assert exit code 1, and the completed-failing case asserts <code>ok</code> false. The completed-green case is unchanged and still asserts <code>ok</code> true with exit 0.</p>
+  </section>
+
+  <section id="measure">
+    <h2>The measure</h2>
+    <ul>
+      <li><strong>Focused head run</strong> (head <code>e37fc22e71093ac54afe23017294a2f9fecadcfe</code>, this worktree): the two named tests, the whole timeout-replay file and the derived-ok file — <strong>31 passed in 18.00s</strong>, <code>EXIT=0</code> (<code>head-focused.log</code>).</li>
+      <li><strong>Base arm</strong> (<code>ca72765f68fffd904ac46ce6598a0a8bf8fd5ddc</code>, this worktree before the change; the ten files naming <code>verify-gate</code>, <code>verify_gate</code> or <code>rerun_gate_at_integrated_revision</code>): <strong>3 failed, 159 passed in 60.72s</strong>, <code>EXIT=1</code> (<code>base-arm.log</code>). Failure ids: <code>test_a_timed_out_replay_is_not_ok.py::test_a_replay_that_outlives_its_bound_reports_failure</code>, <code>test_crew_promotion.py::test_verify_gate_cli_records_a_finding_against_the_run</code>, <code>test_verify_gate_replay_is_diagnosable.py::test_a_failing_replay_keeps_ids_and_stderr_in_a_log_beside_the_run</code>.</li>
+      <li><strong>Head arm</strong> (head <code>a78ac01b0</code>, the same ten files): <strong>162 passed in 58.75s</strong>, <code>EXIT=0</code> (<code>head-arm.log</code>). No failure the base arm does not already fail; the head arm adds none and fixes all three.</li>
+      <li><strong>Negative control</strong> (the declared mutation: the base revision in a scratch extraction, <code>ca72765f6</code>): <code>1 failed in 5.83s</code>, <code>EXIT=1</code> (<code>negative-control.log</code>). The failure is the named test, and the printed payload shows the mutation live: <code>"ok": true</code> beside <code>"integrated_verdict": "failed"</code>. The log's header names the scratch tree, the module as imported and the resolved cwd.</li>
+      <li><strong>Ruff</strong>, over the changed paths only: 5 findings at base and 5 at head (<code>promotion.py</code>'s pre-existing backlog), so the commit adds none; the test file is format-clean.</li>
+    </ul>
+  </section>
+
+  <section id="scope">
+    <h2>Scope</h2>
+    <p>Every test file naming <code>verify-gate</code>, <code>verify_gate</code> or <code>rerun_gate_at_integrated_revision</code> passes at head. Verifying the merged result belongs to a separately dispatched test node. The node is closed by the coordinator.</p>
+  </section>
+</main>
+</body>
+</html>

@@ -2060,9 +2060,9 @@ def test_verify_gate_cli_records_a_finding_against_the_run(repository: Path) -> 
         ],
     )
 
-    assert result.exit_code == 0, result.output
+    assert result.exit_code == 1, result.output
     payload = json.loads(result.output)
-    assert payload["ok"] is True
+    assert payload["ok"] is False
     finding = payload["finding"]
     assert finding["base_verdict"] == "passed"
     assert finding["integrated_verdict"] == "failed"

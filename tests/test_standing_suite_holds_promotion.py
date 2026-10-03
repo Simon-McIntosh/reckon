@@ -300,8 +300,9 @@ def test_the_suite_commands_run_and_waive(repository: Path) -> None:
     runner = CliRunner()
 
     run_result = runner.invoke(main, ["crew", "suite", "run", "--project", PROJECT])
-    assert run_result.exit_code == 0, run_result.output
+    assert run_result.exit_code == 1, run_result.output
     payload = json.loads(run_result.output)
+    assert payload["ok"] is False
     assert payload["exit_status"] == 5
     assert payload["collection_failed"] is True
     assert payload["collected"] == 0

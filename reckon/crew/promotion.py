@@ -2051,15 +2051,16 @@ def rerun_gate_at_integrated_revision(
     as ``not-run`` with its reason, never as passed: an unmeasured re-run must
     not read as a verified one.
 
-    ``ok`` is true only when the re-run produced an exit status. A re-run that
+    ``ok`` is true only when the re-run finished and passed. A re-run that
     exits by timeout, or otherwise ends without a status, reports ``ok: false``
     with a finding naming the timeout and the seconds it ran before it was cut
     short, so the one field a caller reads first cannot call an unmeasured
     re-run a success. Its log carries a ``# cut short:`` line saying the bound
     stopped it rather than ending on header lines a reader takes for a gate
-    that printed nothing. A re-run that completes keeps its exit status and
-    verdict unchanged, whatever that status is: ``ok`` reports that a status
-    was measured, not that the gate passed.
+    that printed nothing. A re-run that completes keeps its exit status,
+    verdict and finding unchanged, and reports ``ok: false`` when that verdict
+    is failed, so the first field a caller reads answers whether the merged
+    tree passed rather than only whether the command returned.
 
     The bound the re-run executes under resolves from three inputs, and the
     report names which applied and its value: an explicit ``timeout_seconds``
@@ -2268,11 +2269,12 @@ def rerun_gate_at_integrated_revision(
         timed_out=report["timed_out"],
         replay_elapsed_seconds=report["replay_elapsed_seconds"],
     )
-    # A replay with no exit status measured nothing to stand behind: it was cut
-    # short by the bound, or it never started. ``ok`` therefore reads as "a
-    # status was produced", never as "the gate passed" — a caller taking ok at
-    # its word on an unmeasured replay would conclude the opposite of the fact.
-    report["ok"] = report["exit_status"] is not None
+    # ``ok`` reads the verdict, not the measurement: only a replay that finished
+    # and passed is a success. A replay cut short by the bound, or one that never
+    # started, produced no status; one that completed failing carries a red
+    # verdict. A caller taking ok at its word on either would conclude the
+    # opposite of the fact.
+    report["ok"] = report["integrated_verdict"] == "passed"
     return report
 
 
@@ -2313,9 +2315,9 @@ def record_gate_rerun_at_integrated_revision(
     output is written under this run's directory beside the preserved gate log
     and its path is recorded on the report, so a failure carries the text that
     explains it rather than only an exit status. The payload's ``ok`` reports
-    whether the re-run produced an exit status at all, so a replay cut short by
-    its bound reaches a coordinator as a failure rather than as a success with
-    a null status.
+    whether the re-run finished and passed, so a replay cut short by its bound
+    and a gate the merged tree fails both reach a coordinator as failures
+    rather than as successes.
     """
     checkout = Path(repository).expanduser().resolve()
     ledger_root = root if root is not None else checkout
