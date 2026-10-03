@@ -709,7 +709,12 @@ def test_ship_has_one_advisory_fleet_size_table() -> None:
 # a decision, and the verb census requires every registered crew command to be
 # named there, so the line is a rule the decision point needs rather than
 # reference that can be read conditionally.
-FIXED_READ_SET_TOKEN_BUDGET = 15_600
+#
+# Raised from 15_600 when the inventory gained the repair-status verb, whose
+# line costs 35 estimated tokens and names the state a coordinator reads before
+# restating a manifest's status word. Raised by the line's own cost rather than
+# rounded up for headroom.
+FIXED_READ_SET_TOKEN_BUDGET = 15_616
 
 
 def test_engine_generated_dispatch_keeps_fixed_read_set_bounded() -> None:
@@ -1060,6 +1065,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "preflight"): {"--project", "--role"},
         ("crew", "recover"): set(),
         ("crew", "redispatch"): {"--run", "--backend", "--reason"},
+        ("crew", "repair-status"): {"--run", "--status", "--reason"},
         ("crew", "resume"): {"--run", "--advice"},
         ("crew", "resume-ready"): {"--project"},
         ("crew", "shadow"): set(),
