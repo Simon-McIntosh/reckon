@@ -70,6 +70,7 @@ from reckon.crew.recovery import (
     classify_pointer,
     dispatch_awaiting_reviews,
     external_wait,
+    live_worker_pid,
     local_liveness,
     resume_window_refusal,
     stream_paths_newest_first,
@@ -596,8 +597,11 @@ def _launcher_refusal(
     if record.get("launch") != "cli":
         return CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
     if record_process_alive(record, process_alive) is True:
+        pid = record.get("pid")
+        named = f" (pid {pid})" if pid else ""
         return CrewError(
-            f"run {run_id!r} still has a live process; observe or stop it before resuming"
+            f"run {run_id!r} still has a live process{named}; observe or stop it "
+            "before resuming"
         )
     verdict = _readonly_budget_verdict(record, config=config)
     if verdict["held"]:
@@ -653,11 +657,17 @@ def _observed_end_refusal(record: Mapping[str, Any]) -> CrewError | None:
         # The bare pid probe above can answer not-alive while the work itself is
         # still running — a supervisor that exits before its worker takes the
         # pointer's pid with it — so the host-gated reading is asked as well and
-        # can still answer alive here.
+        # can still answer alive here. The refusal names the pid that supplied
+        # the reading, so a coordinator can check it against the process table
+        # rather than take the refusal on faith. Where the reading came from a
+        # stored answer carrying no process, there is no pid to name and the
+        # refusal stands without one.
+        pid = live_worker_pid(record)
+        named = f" (pid {pid})" if pid is not None else ""
         return CrewError(
             f"run {run_id!r} reads 'alive' for a lift: the run's own liveness "
-            "reading has not observed the worker's end, and resuming under a "
-            "living worker collides with the worker that holds it"
+            f"reading has not observed the worker's end{named}, and resuming "
+            "under a living worker collides with the worker that holds it"
         )
     return CrewError(
         f"run {run_id!r} is not resumed: the process reading is "
