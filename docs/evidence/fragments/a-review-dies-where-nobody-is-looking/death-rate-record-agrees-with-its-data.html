@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-title" content="The death-rate record carries the after window it states">
+  <meta name="plan-summary" content="The scan now writes the post-move after block the page states: 22 deaths in 467 review attempts at high since 2026-09-30T18:36Z (4.7%, Wilson 3.1-7.0%), against 393 in 1342 for the before window, with the published 392 of 1333 accounted for as corpus drift rather than a rerun that reproduces it.">
+  <meta name="plan-evidence-for" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <title>The death-rate record carries the after window it states | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The death-rate record carries the after window it states</h1>
+
+    <section id="measure">
+      <h2>The measure</h2>
+      <p>The plan asked the record to agree with its own data: the page stated the moved
+      review reflex's post-move rate while <code>docs/research/data/local-lane-deaths.json</code>
+      carried <code>after: null</code> and <code>after_state: not_produced</code>, so the
+      window's figures existed in no committed measurement. The scanner already accepted
+      <code>--since</code>; the run that last produced the committed file did not pass it.
+      The rescan does, and the after block now carries the window it measured, its
+      population, its rate and its Wilson interval, its time-source split, its
+      discrimination counters, and fixed controls.</p>
+      <p>One deviation, reported: the after block's death count is written in the same
+      headline shape as the before block — <code>deaths.headline</code> beside
+      <code>within_window_all_efforts</code> — rather than as a bare count. The committed
+      stated-rate test's after branch requires <code>after["deaths"]["headline"]</code>, and
+      that branch had never executed because the block was null; the null was hiding it.</p>
+    </section>
+
+    <section id="figures">
+      <h2>The figures</h2>
+      <p>Scanner <code>docs/research/scripts/scan_local_lane_deaths.py</code>, digest
+      <code>61214e44</code>, tree revision <code>605a4d9d5</code>, run 2026-10-02T23:17:20Z
+      over the lane's whole recorded history, after window [2026-09-30T18:36:00Z,
+      2026-10-02T23:17:20Z) — 52.7 hours.</p>
+      <ul>
+        <li><strong>After window, review at <code>high</code>:</strong> 467 attempts, 22
+        deaths — 4.7%, Wilson 95% 3.1% to 7.0%. 466 attempts carry their own stream
+        timestamps and one is mtime-dated. 46 review attempts at this effort started before
+        the window, and zero review attempts at any other effort started inside it.</li>
+        <li><strong>Before window, headline cell review at <code>xhigh</code>:</strong> 393
+        deaths in 1342 attempts (29.3%). The plan published 392 in 1333 (29.4%); the cell
+        still gains attempts from pre-move runs resumed after the move — one of which has
+        died since the plan's figure was written — so the rerun does not reproduce it, and
+        it is not meant to.</li>
+        <li><strong>Corpus:</strong> 3909 local-lane runs, 3907 carrying streams, 5034
+        attempts, 636 deaths; 1905 attempts carry a supervisor exit record and 179 of the
+        636 deaths among them.</li>
+        <li><strong>After-window exit records:</strong> 17 of the 22 deaths carry one; 16
+        name a signal, all <code>SIGKILL</code>; 375 completions recorded, 374 clean
+        exits.</li>
+      </ul>
+      <p>Every figure on <code>docs/research/local-lane-death-rate.html</code> that reads the
+      data file is updated to that scan. Landed as <code>da03f91bd</code>.</p>
+    </section>
+
+    <section id="controls">
+      <h2>The controls</h2>
+      <p><strong>The after block's fixed control is out of window by construction.</strong>
+      <code>r-20260928T044354744785-review-of-reflex-keys-on-reviewed-run-and-head</code> is a
+      review at the before effort that predates the window; the block reads it as dead on
+      its first attempt and completed on its resumed attempt, so the control aims the
+      classifier and not the window, and the block's <code>controls_note</code> says so.</p>
+      <p><strong>The death count is a liveness reading and is stated as one:</strong> an
+      attempt without a result record is counted dead only once its process is gone, so the
+      file states a measurement at one moment rather than a frozen fact, and a later rescan
+      reads whatever has ended since.</p>
+    </section>
+
+    <section id="gates">
+      <h2>The gate and the negative control</h2>
+      <p><code>tests/test_death_scan_after_window.py</code> builds a synthetic runs root with
+      review attempts on both sides of a cutoff — six before it, two of them dead, and 65
+      inside it, three dead — and asserts the window's own count and death count, its rate
+      and Wilson interval, the time-source split, the discrimination counters, the
+      not-measurable state below the 60-attempt floor, and the controls.</p>
+      <ul>
+        <li><strong>Base arm</strong> (<code>test_the_local_lane_death_rate_is_stated.py</code>
+        at revision <code>605a4d9d5</code>, base data file reading
+        <code>after_state=not_produced</code>): 7 passed, <code>EXIT=0</code>.</li>
+        <li><strong>Head arm, stated test</strong> (against this scan, 467/22): 7 passed,
+        <code>EXIT=0</code>.</li>
+        <li><strong>Head arm, after-window test:</strong> 3 passed, <code>EXIT=0</code>.</li>
+        <li><strong>Negative control</strong> — the declared mutation, removing the
+        after-window filter from the scan: <code>test_the_after_window_counts_only_attempts_started_inside_it</code>
+        fails, counting 71 where the window holds 65, one further case fails,
+        <code>EXIT=1</code>.</li>
+      </ul>
+      <p>Logs in this run's directory: <code>test-base-stated.log</code>,
+      <code>test-head-stated.log</code>, <code>test-head-after-window.log</code>,
+      <code>negative-control-window-removed.log</code>, <code>scan-after-window.log</code>.</p>
+    </section>
+
+    <section id="limits">
+      <h2>What this does not establish</h2>
+      <p>The after window is not a post-repair rate: the review-reliability repair has not
+      landed, and the window measures the configuration the effort move created.</p>
+      <p>One attempt's place in the window rests on its file's mtime rather than on its own
+      records, so its day is the file's clock and not the stream's.</p>
+    </section>
+  </main>
+</body>
+</html>
