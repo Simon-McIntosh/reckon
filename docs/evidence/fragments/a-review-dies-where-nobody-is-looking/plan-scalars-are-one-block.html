@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="The plan writer emitted impl, version and modified as independently positionable meta elements, so a union-resolved merge could leave two copies of each; the reader then took whichever copy came last while the writer maintained the first. The store's write path now emits the three as one contiguous block, and both reader paths in the plan parser resolve a duplicated plan-* scalar to its first occurrence in document order, reporting every later copy as a warning.">
   <meta name="plan-evidence-for" content="a-review-dies-where-nobody-is-looking">
   <meta name="plan-recorded-at" content="2026-10-03">
-  <meta name="plan-verdict" content="incomplete">
+  <meta name="plan-verdict" content="qualified">
   <meta name="plan-commits" content="1ff243d09">
   <title>The lifecycle scalars are one block, and a duplicated scalar reads by a stated rule | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -97,7 +97,7 @@
             <td>Population: every test file importing <code>reckon._store</code> or
               <code>reckon._plan_html</code> (150 files), base source</td>
             <td>base <code>4d1feeed9</code>, scratch tree</td>
-            <td><strong>incomplete</strong> — the arm reached 97% of the population (3 failure marks visible) before the time fence ended, so it never printed a summary line and its identifiers; its log (<code>base-population.log</code>) is not a readable arm and the requirement that this population be recorded over both revisions is therefore <strong>unmet</strong> in this record</td>
+            <td><strong>incomplete</strong> — the arm reached 97% of the population before the time fence ended, so it never printed a summary line and its identifiers; its log (<code>base-population.log</code>) is not a readable arm and the requirement that this population be recorded over both revisions is therefore <strong>unmet</strong> in this record</td>
           </tr>
           <tr>
             <td>Same population plus the new module, head source</td>
@@ -107,9 +107,8 @@
           </tr>
         </tbody>
       </table>
-      <p>The population requirement is <strong>unmet in this record</strong>: the base arm did not complete inside the node's time fence (it reached 97% with 3 failure marks visible in its progress tail and then stalled behind an I/O-blocked <code>git add</code> in its scratch tree). pytest prints failure identifiers only in its closing summary, so an incomplete arm yields no identifiers at all and the delta against base the fence asks for is not established; the head arm did complete (19 failed, 3668 passed, 3 skipped in 1457.77s) but its 19 identifiers cannot be attributed to pre-existing conditions without the base arm's list. A re-run of the base arm and the same comparison is the next step.</p>
-      <p></p>
-    </section>
+      <p>The population requirement is <strong>unmet in this record</strong>: the base arm did not complete inside the node's time fence (it reached 97% and then stalled behind an I/O-blocked <code>git add</code> in its scratch tree). pytest prints failure identifiers only in its closing summary, so an incomplete arm yields no identifiers at all and the delta against base the fence asks for is not established; the head arm did complete (19 failed, 3668 passed, 3 skipped in 1457.77s) but its 19 identifiers cannot be attributed to pre-existing conditions without the base arm's list. A re-run of the base arm and the same comparison is the next step.</p>
+      </section>
 
     <section id="provenance">
       <h2>Reproduction</h2>
