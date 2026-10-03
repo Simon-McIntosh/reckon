@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="No test spawns a real provider account probe">
+  <meta name="plan-summary" content="An autouse conftest fixture replaces reckon._backends.run_probe with the documented no-answer stub, so no test spawns codex app-server however the machine's codex home is configured; a new test spying on subprocess.Popen/run proves no subprocess is attempted, and its negative control fails when the guard is disabled.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s6">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,picker,test-isolation,account-probe,evidence">
+  <title>No test spawns a real provider account probe | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="suite-never-probes-live-accounts" data-reckon="landed" data-when="2026-10-03">
+  <h2>No test spawns a real provider account probe</h2>
+  <p>A lane whose receipt-derived position is stale makes the lanes view re-query
+  the backend's account probe. For a codex-backed lane that probe is
+  <code>reckon._backends.run_probe</code>, which spawns <code>&lt;command&gt;
+  app-server</code>. Whether it answers depends on the machine's codex login
+  (<code>CODEX_HOME</code>, fallback <code>$HOME/.codex</code>): a logged-in home
+  answers in about four seconds and the lane adopts the probe's own observation
+  stamp, an unanswerable home costs the probe's twenty-second wait. A test's
+  outcome and runtime therefore depended on ambient account state.</p>
+
+  <h3>Change</h3>
+  <ul>
+    <li><strong>Guard.</strong> A new autouse fixture <code>no_live_account_probe</code> in
+    <code>tests/conftest.py</code>, beside <code>no_live_jev</code>, replaces
+    <code>reckon._backends.run_probe</code> with a stub returning <code>None</code> — the
+    exchange's documented no-answer result — so <code>probe_budget</code> returns its existing
+    unknown block and every caller's no-answer path stays exercised. The guard is disabled for a
+    negative-control run by <code>RECKON_TEST_DISABLE_ACCOUNT_PROBE_GUARD=1</code>.</li>
+    <li><strong>Opt-in.</strong> A test whose own subject is the probe exchange passes
+    <code>probe_budget</code> its own <code>runner=</code>/<code>fetch=</code>, or patches
+    <code>reckon._backends.run_probe</code> itself, which replaces the guard for that test.
+    <strong>No existing test file newly needed to opt in:</strong> every caller of
+    <code>probe_budget</code> in the suite already passes <code>runner=</code> or
+    <code>fetch=</code> and so never reached <code>run_probe</code>. The seam-patch opt-in is
+    demonstrated by <code>test_a_test_may_opt_in_by_patching_the_launch_seam</code>.</li>
+    <li><strong>Test.</strong> New file <code>tests/test_suite_never_probes_live_accounts.py</code>
+    points <code>CODEX_HOME</code> at a home that would answer, spies
+    <code>subprocess.Popen</code> and <code>subprocess.run</code>, composes a lanes view over a
+    stale codex-backed lane with no <code>probe_reader</code>, and asserts no subprocess is
+    attempted and the lane carries the run's record stamp
+    (<code>budget.run_observed_stamp(run)</code>).</li>
+  </ul>
+
+  <h3>Negative control</h3>
+  <p>With the guard disabled (<code>RECKON_TEST_DISABLE_ACCOUNT_PROBE_GUARD=1</code>), the
+  no-subprocess test fails: <code>AssertionError: a live account probe was spawned: [('Popen',
+  ['codex', 'app-server'])]</code>, <code>1 failed, 1 passed in 21.18s</code>,
+  <code>EXIT=1</code> (<code>negative-control.log</code>). The 21&nbsp;s is the real probe wait.
+  With the guard, the same file is <code>2 passed in 0.96s</code>, <code>EXIT=0</code>.</p>
+
+  <h3>Measure</h3>
+  <ul>
+    <li><strong>Focused falsifier</strong>, <code>tests/test_preflight_pace.py</code> alone,
+    same foreground tree, one arm per guard state: guard on <code>37 passed in 43.11s</code>
+    (<code>EXIT=0</code>) vs guard off <code>37 passed in 66.74s</code> (<code>EXIT=0</code>).
+    The ~23.6&nbsp;s gap is the real account-probe wait the guard removes. Both arms are green
+    here because this host's codex home currently cannot answer; the guard closes the spawn
+    regardless, whereas a passing outcome alone could not.</li>
+    <li><strong>Gate</strong> (<code>-n 8</code>, foreground, main checkout's venv):
+    base = the eight gate files with the guard disabled (the new file does not exist at base),
+    <code>194 passed in 155.35s</code>, <code>EXIT=0</code>; head = the same eight files plus the
+    new file, <code>196 passed in 126.71s</code>, <code>EXIT=0</code>. Zero added failures, two
+    tests added.</li>
+    <li><strong>Adjacent lanes-view files</strong> with the guard on
+    (<code>test_lanes_view_is_live</code>, <code>_shows_local_congestion</code>,
+    <code>_serving_state</code>, <code>_borrowed_figure</code>,
+    <code>test_promotion_harvests_the_receipt</code>, <code>test_crew_lanes_view</code>,
+    <code>test_resume_evidence_freshness</code>): <code>60 passed in 50.01s</code>,
+    <code>EXIT=0</code>.</li>
+  </ul>
+  <p>Logs under
+  <code>r-20261003T183827626055-suite-never-probes-live-accounts/</code>:
+  <code>gate-base.log</code>, <code>gate-head.log</code>, <code>pace-on.log</code>,
+  <code>pace-off.log</code>, <code>negative-control.log</code>,
+  <code>lanes-view-files.log</code>.</p>
+</article>
+</body>
+</html>
