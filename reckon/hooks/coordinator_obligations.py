@@ -16,7 +16,10 @@ Two modes, selected by ``--hook``:
   snapshot module is loaded by file path and the derivation modules are never
   imported, so a turn's opening costs one stat, one small JSON read and a
   formatting pass. A snapshot that is not fresh is answered by one line naming
-  the reason and the remedy -- except while a producer reload is in progress,
+  the reason and the remedy that matches the reading: the command that arms
+  the seat when no producer lease is live, and this session's own follower
+  when a live producer stands behind a snapshot gone stale because the session
+  stopped its follower. The exception is a producer reload in progress,
   which shows the last snapshot's checklist headed by its age and the words
   ``producer reloading`` with no remedy, because the replacement is already on
   its way and cycling the seat would be the wrong thing to do. The hook never
@@ -76,9 +79,11 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import shlex
 import signal
 import sys
+import time
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from functools import cache
@@ -632,6 +637,67 @@ def follow_each_local_lane(
     return obligations
 
 
+# A producer's lease is renewed by the seat when it claims and by every live
+# follower on its wait pass, so a renewal instant inside one lease interval is
+# the seat's liveness as a reader can see it without probing a process. Mirrors
+# the watcher's own default and environment override -- its module is not
+# imported on this path -- so a test asserts the two figures agree.
+PRODUCER_LEASE_SECONDS = 600.0
+PRODUCER_LEASE_ENV = "RECKON_PRODUCER_LEASE_SECONDS"
+
+
+def producer_lease_seconds() -> float:
+    """The producer's lease interval in seconds, honouring the override."""
+    try:
+        value = float(os.environ[PRODUCER_LEASE_ENV])
+    except (KeyError, ValueError):
+        return PRODUCER_LEASE_SECONDS
+    return value if value > 0 else PRODUCER_LEASE_SECONDS
+
+
+def producer_lease_path(project: str) -> Path:
+    """The lease registration one project's producer renews.
+
+    The name mirrors the seat lock's own derivation -- readable stem plus a
+    digest of the name -- so this reader looks for exactly the file the
+    producer writes beside the seat record the reload reading already consults.
+    A test pins it against the writer's own path so the two cannot drift.
+    """
+    readable = re.sub(r"[^A-Za-z0-9._-]", "-", project).strip("-") or "project"
+    digest = hashlib.sha256(project.encode()).hexdigest()[:12]
+    return (
+        snapshot_module().crew_home()
+        / "watch"
+        / f"{readable}-{digest}.lock.registration"
+    )
+
+
+def producer_lease_is_live(project: str, *, now: float | None = None) -> bool:
+    """Whether the lease record says a producer still stands behind the seat.
+
+    A renewal inside one lease interval means the seat is held: the record is
+    rewritten as the seat is claimed and on every live follower's wait pass,
+    and it is the same record the producer's identity is published from. A
+    missing or unreadable record, or one whose renewal has fallen a full
+    interval behind, answers no -- the reader then keeps the command that can
+    (re)arm the seat rather than telling a coordinator to arm a follower
+    against no producer.
+    """
+    try:
+        record = json.loads(
+            producer_lease_path(project).read_text(encoding="utf-8") or "{}"
+        )
+    except (OSError, ValueError):
+        return False
+    if not isinstance(record, dict):
+        return False
+    renewed = record.get("lease_renewed_at")
+    if isinstance(renewed, bool) or not isinstance(renewed, (int, float)):
+        return False
+    moment = time.time() if now is None else now
+    return (moment - float(renewed)) < producer_lease_seconds()
+
+
 def not_fresh_line(
     state: str, *, project: str, session: str, document: Mapping[str, Any] | None
 ) -> str:
@@ -639,12 +705,16 @@ def not_fresh_line(
 
     Each of the three not-fresh states is said in its own words a coordinator
     reads at the open of a turn: no producer, a producer running older code
-    than the checkout, or the age of a snapshot. None of them is a reload the
-    producer is expected to finish on this path, so the remedy is the one
-    command that publishes a snapshot again. A caller that routes a live stale
-    producer through the reload reading never reaches this line for it, and a
-    direct caller gets the state it asked about rather than the no-producer
-    sentence.
+    than the checkout, or the age of a snapshot. A stale snapshot beside a live
+    producer lease -- the seat is healthy and only this session's list is old,
+    because a session's snapshot is refreshed only while that session has a
+    live follower -- is answered with the follower arming, which is the command
+    that can actually refresh it; the seat command only reports that the seat
+    is held. Every other reading, including a stale snapshot whose lease has
+    lapsed, keeps the command that publishes a snapshot again. A caller that
+    routes a live stale producer through the reload reading never reaches this
+    line for it, and a direct caller gets the state it asked about rather than
+    the no-producer sentence.
     """
     module = snapshot_module()
     if state == module.STALE_CODE:
@@ -658,9 +728,17 @@ def not_fresh_line(
         )
     else:
         reason = "no producer"
+    if state == module.STALE_SNAPSHOT and producer_lease_is_live(project):
+        remedy = (
+            "the producer is live, so run "
+            f"`reckon crew follow --project {project} --session {session}` "
+            "to arm this session's follower"
+        )
+    else:
+        remedy = f"run `reckon crew watch --ensure --project {project}`"
     return (
         f"reckon obligations for session {session} (project {project}) are not "
-        f"current: {reason}; run `reckon crew watch --ensure --project {project}`"
+        f"current: {reason}; {remedy}"
     )
 
 
