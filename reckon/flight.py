@@ -183,14 +183,30 @@ def shipped_defaults_path() -> Path:
 
 
 def model_catalogue_path() -> Path:
-    """Path to the model catalogue shipped inside the package.
+    """Path to the model catalogue, versioned data in the reckon checkout.
 
-    The catalogue is reckon-owned data, so it ships beside the defaults rather
-    than being configured. A wheel whose catalogue is missing resolves exactly
-    as it did before the catalogue existed, because its values are applied only
-    as fills for backends another layer already defines.
+    The catalogue is data rather than code, so it lives under the repository's
+    ``docs/state`` tree and is not shipped in the wheel. It is located from the
+    running package's own file — the checkout root above the ``reckon`` package
+    directory — rather than from the operator's home or a mount, so no other
+    project's name enters the path and no foreign mount is consulted.
+    ``RECKON_MODEL_CATALOGUE`` overrides the location for tests and unusual
+    installs.
+
+    A missing file means no catalogue layer, and the resolved values are then
+    exactly what the host layer supplies; a wheel install, which carries no
+    ``docs/``, resolves as it did before the catalogue existed.
     """
-    return Path(__file__).resolve().parent / "schema" / "model-catalogue.yaml"
+    override = os.environ.get("RECKON_MODEL_CATALOGUE")
+    if override:
+        return Path(override)
+    return (
+        Path(__file__).resolve().parent.parent
+        / "docs"
+        / "state"
+        / "reckon"
+        / "model-catalogue.yaml"
+    )
 
 
 # The operator-home files a dialect's harness reads at startup. reckon owns the
@@ -1175,9 +1191,7 @@ def resolve(
     """
     shipped_file = Path(shipped_path) if shipped_path else shipped_defaults_path()
     host_file = Path(host_path) if host_path else host_config_path()
-    catalogue_file = (
-        Path(catalogue_path) if catalogue_path else model_catalogue_path()
-    )
+    catalogue_file = Path(catalogue_path) if catalogue_path else model_catalogue_path()
 
     project_file: Path | None = None
     if project_path is not None:
@@ -1818,7 +1832,11 @@ def flight_report(
                 "path": layer.path,
                 "present": layer.present,
                 **(
-                    {"shadows": [s for s in resolved.shadows if s["layer"] == layer.name]}
+                    {
+                        "shadows": [
+                            s for s in resolved.shadows if s["layer"] == layer.name
+                        ]
+                    }
                     if any(s["layer"] == layer.name for s in resolved.shadows)
                     else {}
                 ),

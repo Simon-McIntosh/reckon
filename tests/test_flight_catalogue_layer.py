@@ -1,6 +1,6 @@
 """Tests for the reckon-owned model catalogue layer (reckon/flight.py).
 
-Covers the three rules the catalogue layer exists to hold:
+Covers the rules the catalogue layer exists to hold:
 
   - a catalogue entry alone never creates a backend, so a host that does not
     declare codex resolves no codex backend and no other workstation or
@@ -10,6 +10,9 @@ Covers the three rules the catalogue layer exists to hold:
     keys without the resolved values moving
   - with the host catalogue keys removed, every resolved value is unchanged and
     the catalogue is the layer the value resolves later reports
+  - every project's resolution applies the catalogue, not only project reckon's
+  - the catalogue is located from the running package's own checkout root with
+    an environment override, and its absence leaves the host values standing
 """
 
 from __future__ import annotations
@@ -194,3 +197,95 @@ def test_flight_report_carries_the_shadow_list(layers):
         "project",
         "override",
     ]
+
+
+def test_a_second_project_resolves_the_catalogue_not_only_project_reckon(tmp_path):
+    """The catalogue is applied by shared resolution, not for one project.
+
+    A synthetic project — a temp project layer under a temp mount root, for a
+    name that is not reckon — gets its backends filled from the catalogue just
+    as project reckon's do. The default host layer is empty here, so every
+    value below can only have come from the project layer or the catalogue.
+    """
+    project = (
+        tmp_path
+        / "mounts"
+        / "other-project"
+        / "docs"
+        / "state"
+        / "other-project"
+        / "flight.yaml"
+    )
+    write(
+        project,
+        "default_backend: codex\n"
+        "backends:\n"
+        "  codex:\n"
+        "    launch: cli\n"
+        "    command: codex\n",
+    )
+
+    resolved = resolve(
+        host_path=tmp_path / "host" / "flight.yaml",
+        project_path=project,
+    )
+
+    codex = resolved.config["backends"]["codex"]
+    assert codex["model"] == CATALOGUE["backends"]["codex"]["model"]
+    assert codex["alias"] == CATALOGUE["backends"]["codex"]["alias"]
+    assert resolved.origin("backends.codex.model") == CATALOGUE_LAYER
+    # The project's own choice still wins over the catalogue.
+    write(
+        project,
+        "default_backend: codex\n"
+        "backends:\n"
+        "  codex:\n"
+        "    launch: cli\n"
+        "    command: codex\n"
+        "    model: project-pinned\n",
+    )
+    pinned = resolve(
+        host_path=tmp_path / "host" / "flight.yaml",
+        project_path=project,
+    )
+    assert pinned.config["backends"]["codex"]["model"] == "project-pinned"
+    assert pinned.origin("backends.codex.model") == "project"
+
+
+def test_a_missing_catalogue_leaves_the_layer_below_standing(tmp_path):
+    """No catalogue file means no catalogue layer, exactly as before it existed.
+
+    A wheel install carries no ``docs/`` tree, so the located path does not
+    exist; resolution must then hold the values a higher layer supplied, with
+    their own provenance, rather than fail or empty them.
+    """
+    host = write(
+        tmp_path / "host" / "flight.yaml",
+        "default_backend: codex\n"
+        "backends:\n"
+        "  codex:\n"
+        "    launch: cli\n"
+        "    command: codex\n"
+        "    model: gpt-host-pinned\n",
+    )
+
+    resolved = resolve(
+        host_path=host,
+        project_path=tmp_path / "project" / "flight.yaml",
+        catalogue_path=tmp_path / "absent" / "model-catalogue.yaml",
+    )
+
+    codex = resolved.config["backends"]["codex"]
+    assert codex["model"] == "gpt-host-pinned"
+    assert resolved.origin("backends.codex.model") == "host"
+    # Nothing the catalogue would have filled arrived from anywhere.
+    assert "alias" not in codex
+    assert resolved.shadows == []
+
+
+def test_environment_override_locates_the_catalogue(tmp_path, monkeypatch):
+    """``RECKON_MODEL_CATALOGUE`` relocates the file for tests and odd installs."""
+    custom = write(tmp_path / "custom-catalogue.yaml", "version: 1\nbackends: {}\n")
+    monkeypatch.setenv("RECKON_MODEL_CATALOGUE", str(custom))
+
+    assert model_catalogue_path() == custom
