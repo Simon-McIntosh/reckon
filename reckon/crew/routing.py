@@ -1495,11 +1495,35 @@ def garbage_collect(
                         _git(repo_root, "worktree", "remove", str(path))
                     removed.append(str(path))
                 except Exception:
-                    # A removal this pass attempted and did not complete: the
-                    # tree is neither removed nor an unreached row, so it is
-                    # recorded in its own list before the failure propagates.
-                    refused.append(str(path))
-                    raise
+                    if path.is_dir():
+                        # A removal this pass attempted and did not complete:
+                        # the tree is neither removed nor an unreached row, so
+                        # it is recorded in its own list before the failure
+                        # propagates.
+                        refused.append(str(path))
+                        raise
+                    # The directory vanished between classification and this
+                    # action — a peer's release, typically. Nothing was pinned,
+                    # saved or removed, so the row is reported as gone before
+                    # action and the sweep carries on to the remaining trees.
+                    # An action that fails while the directory is still there
+                    # stays a refused row and a stopped sweep, as above.
+                    item.update(
+                        _inspect_workspace(
+                            repo_root,
+                            path,
+                            integrated_into,
+                            (),
+                            raise_on_unavailable=False,
+                        )
+                    )
+                    item["gone_before_action"] = True
+                    item["detail"] = (
+                        "gone before action: the directory was removed between "
+                        "this pass's classification and its action, so no "
+                        "commit was pinned, no residue saved and nothing was "
+                        "removed"
+                    )
             # No blanket `worktree prune` after the pass: each removal above already
             # deregisters its own tree, while a prune would also drop the
             # registration of a tree whose directory vanished outside git — exactly
