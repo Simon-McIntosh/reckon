@@ -179,7 +179,11 @@ def _acknowledgements_in_force(
     pointer of a run still in flight, and the ledger record of a promoted run
     whose remainder is still owed. The promoted record is the only store left
     once the pointer is gone, and it names the same deferral — so a deliberate
-    remainder of a promoted run is withheld exactly as a live run's is.
+    remainder of a promoted run is withheld exactly as a live run's is. The
+    promoted half is read from the aggregate copy of the ledger the records
+    are written through, which the ledger's writer keeps identical to each
+    per-run file; every recorded run therefore costs its row and not a scan of
+    the run store.
 
     A deferral whose ``until`` has passed is not returned, so the run it named
     re-enters the list on the next read rather than lingering in the
@@ -196,9 +200,14 @@ def _acknowledgements_in_force(
         until = parse_utc(record.get("until"))
         if until is not None and until > now:
             in_force[run_id] = record
-    for holder in _held_worktree_records(project).values():
-        run_id = str(holder.get("run_id") or "")
-        record = runs.run_acknowledgement(holder)
+    docs_dir = _store._docs_dir_for_project(project)
+    if docs_dir is None:
+        return in_force
+    for row in _aggregate_rows(project, docs_dir.parent.resolve()):
+        if not isinstance(row, Mapping):
+            continue
+        run_id = str(row.get("run_id") or "")
+        record = runs.run_acknowledgement(row)
         if not run_id or not record or run_id in in_force:
             continue
         until = parse_utc(record.get("until"))
