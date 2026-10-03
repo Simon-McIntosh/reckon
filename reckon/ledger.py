@@ -894,6 +894,10 @@ def _indexed_data(
                     "refusing to read conflicting history"
                 )
             data = json.loads(meta["header"])
+            if not isinstance(data, dict) or not all(
+                isinstance(data.get(name), list) for name in ("members", "holds")
+            ):
+                raise ValueError("invalid index header")
             version = int(meta["version"])
             if headers_only:
                 data["runs"] = [
@@ -951,14 +955,15 @@ def indexed_headers(
     project: str, root: str | Path | None = None
 ) -> tuple[dict[str, Any], int]:
     """Read roster and history identities without decoding complete run payloads."""
-    try:
-        return _indexed_data(project, root, headers_only=True)
-    except (OSError, sqlite3.Error):
-        return load(project, root, use_index=False)
+    return load(project, root, headers_only=True)
 
 
 def load(
-    project: str, root: str | Path | None = None, *, use_index: bool = True
+    project: str,
+    root: str | Path | None = None,
+    *,
+    use_index: bool = True,
+    headers_only: bool = False,
 ) -> tuple[dict[str, Any], int]:
     """Read the union of aggregate and per-run records, refusing disagreements.
 
@@ -968,7 +973,7 @@ def load(
     """
     if use_index:
         try:
-            return _indexed_data(project, root)
+            return _indexed_data(project, root, headers_only=headers_only)
         except (OSError, sqlite3.Error):
             # A disposable cache cannot make an otherwise readable ledger fail.
             pass

@@ -244,6 +244,12 @@ def candidates(
         if budget_snapshot is not None
         else budget_view(request.project, config, repo, rows, cached_only=cached_only)
     )
+    # The node's estimate is independent of the candidate. Parsing its plan
+    # once keeps a backend census from multiplying identical repository reads.
+    shared = {
+        **shared,
+        "node_estimate": routing._estimated_hours(repo, request.project, request.node),
+    }
     budget_by_backend = {row["backend"]: row for row in view["backends"]}
     group_by_backend = {
         member: group for group in view["groups"] for member in group["members"]

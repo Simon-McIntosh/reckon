@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import os
 import subprocess
 import tomllib
@@ -229,7 +230,7 @@ def cached_context_manifest(request: ContextRequest) -> dict[str, Any]:
         "activated_skills": list(request.activated_skills),
     }
     return capabilities.cached_pick_input_stamped(
-        "context-manifest",
+        "context-manifest-" + _digest(json.dumps(request_key, sort_keys=True).encode()),
         request_key,
         manifest_file_stamp,
         lambda: build_context_manifest(request),

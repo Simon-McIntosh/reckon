@@ -259,6 +259,9 @@ def test_picker_inputs_and_rendered_state_equal_full_build(tmp_path, monkeypatch
         indexed = dispatch.build_picker_inputs("sample", config, root, ledger_root=root)
         with monkeypatch.context() as patch:
             patch.setattr(
+                capabilities, "cached_pick_input", lambda name, stamp, build: build()
+            )
+            patch.setattr(
                 ledger,
                 "load",
                 lambda project, root=None: original_load(
@@ -311,3 +314,89 @@ def test_picker_inputs_and_rendered_state_equal_full_build(tmp_path, monkeypatch
             for rows, view in zip((indexed[0], full[0]), views, strict=True)
         ]
         assert rendered[0] == rendered[1]
+
+
+def test_candidate_census_reads_the_node_estimate_once(tmp_path, monkeypatch):
+    from reckon.crew import routing
+    from reckon.crew.picker.types import PickRequest
+
+    calls = []
+
+    def estimate(*args):
+        calls.append(args)
+        return 3.0, "plan-fallback"
+
+    monkeypatch.setattr(routing, "_estimated_hours", estimate)
+    monkeypatch.setattr(routing, "_context_fit_verdict", lambda **kw: None)
+    monkeypatch.setattr(
+        snapshot, "_serving_observation", lambda backend: {"status": "served"}
+    )
+    config = {
+        "roles": {"implement": {}},
+        "backends": {
+            f"worker-{i}": {"model": "model", "launch": "cli"} for i in range(8)
+        },
+    }
+    node = TaskNode(
+        id="work",
+        goal="Measure",
+        plan="example",
+        role="implement",
+        spec_level="guided",
+        done_when="test",
+        time_budget="20m",
+    )
+    request = PickRequest("sample", node)
+    shared = {"capability_cache": {}, "cache_status": "untracked"}
+    view = {"backends": [], "groups": []}
+    candidates = snapshot.candidates(
+        request,
+        config,
+        tmp_path,
+        records=[],
+        verdict_inputs=shared,
+        budget_snapshot=view,
+        cached_only=True,
+    )
+    assert len(candidates) == 8
+    assert len(calls) == 1
+    assert "node_estimate" not in shared
+
+
+def test_plan_estimate_cache_tracks_edits_and_duplicate_identity(tmp_path, monkeypatch):
+    from reckon import resources
+    from reckon.crew import routing
+
+    root, _aggregate, directory = _fixture(tmp_path, monkeypatch)
+    plans = root / "docs" / "plans"
+    plans.mkdir()
+    plan = plans / "example.html"
+    plan.write_text(
+        '<meta name="reckon-type" content="plan"><meta name="plan-slug" content="example"><meta name="plan-effort-hours" content="2">'
+    )
+    node = TaskNode(
+        id="work",
+        goal="Measure",
+        plan="example",
+        role="implement",
+        spec_level="guided",
+        done_when="test",
+        time_budget="20m",
+    )
+    calls = []
+    resolve = resources.resolve_resource
+
+    def read(*args, **kwargs):
+        calls.append(1)
+        return resolve(*args, **kwargs)
+
+    monkeypatch.setattr(resources, "resolve_resource", read)
+    assert routing._estimated_hours(root, "sample", node) == (2.0, "plan-fallback")
+    _write(directory, _row("added"))
+    assert routing._estimated_hours(root, "sample", node) == (2.0, "plan-fallback")
+    assert len(calls) == 1
+    plan.write_text(plan.read_text().replace('content="2"', 'content="3"'))
+    assert routing._estimated_hours(root, "sample", node) == (3.0, "plan-fallback")
+    (plans / "duplicate.html").write_text(plan.read_text())
+    with pytest.raises(resources.ResourceCollision, match="duplicate resource"):
+        routing._estimated_hours(root, "sample", node)
