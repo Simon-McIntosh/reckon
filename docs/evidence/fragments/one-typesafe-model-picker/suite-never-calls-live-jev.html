@@ -33,8 +33,17 @@
   <code>urlopen</code> spy is never reached, the fallback reason names the disabled live call, the
   routed exit code equals the deterministic one for the same dispatch, and the real credential is
   unreadable under test.</p>
-  <p>Gate: 154 passed at head against a 152-passed base (the two new tests), zero new failures.
-  The declared negative control — removing the autouse fixture — turns the urlopen spy test red.</p>
+  <p>The same autouse fixture also points <code>RECKON_MODEL_CATALOGUE</code> at an absent
+  temp path, so the checkout's <code>docs/state/reckon/model-catalogue.yaml</code> no longer
+  leaks alias, effort, model, budget group and rates into any backend a fixture host declares;
+  the module whose subject is the catalogue keeps the repository file by name. A third case
+  asserts a fixture host backend resolves with no catalogue-supplied value and the real
+  catalogue is never read.</p>
+  <p>Gate: picker population 155 passed at head against 152 at base; the flight and ticker
+  population moves from 15 failed / 337 passed at base to 1 failed / 354 passed at head — 14
+  repository-catalogue-caused failures resolved, one pre-existing failure left (unchanged at
+  base), the new tests passing. The declared negative control — removing the autouse fixture —
+  turns the urlopen spy test, the credential case and the catalogue case red.</p>
 </article>
 </body>
 </html>
