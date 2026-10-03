@@ -1442,11 +1442,7 @@ def _sprint_member_counts(members: list[Mapping[str, Any]]) -> tuple[int, int, f
     )
     if not members_count:
         return 0, 0, 0.0
-    return (
-        members_count,
-        pending,
-        round(100 * (members_count - pending) / members_count, 1),
-    )
+    return members_count, pending, round(100 * (members_count - pending) / members_count, 1)
 
 
 def _sprint_recent_days(project: str, docs_dir: str | Path | None) -> int:
@@ -1518,8 +1514,9 @@ def sprint_summary_rows(
         if not live and status not in SPRINT_FINISHED_STATUSES:
             include = True
         elif not live and status in SPRINT_FINISHED_STATUSES:
-            include = closed_at is not None and moment - closed_at <= timedelta(
-                days=max(0, recent_days)
+            include = (
+                closed_at is not None
+                and moment - closed_at <= timedelta(days=max(0, recent_days))
             )
         else:
             include = True
@@ -1966,7 +1963,10 @@ _DRIFT_MEMBER_PROGRESS_STORED = frozenset({"open", "active"})
 
 def _drift_is_member_progress(stored: str, derived: str) -> bool:
     """Return True when a member-derived label does not contradict the stored one."""
-    return derived == "in-progress" and stored.lower() in _DRIFT_MEMBER_PROGRESS_STORED
+    return (
+        derived == "in-progress"
+        and stored.lower() in _DRIFT_MEMBER_PROGRESS_STORED
+    )
 
 
 def _sprint_status_buckets(
