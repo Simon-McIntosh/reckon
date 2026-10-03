@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon"><meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="dispatch-speed"><meta name="plan-title" content="Fresh-process dispatch latency">
+<meta name="plan-summary" content="Incremental history reads, measured CLI phases, equivalence controls and retained latency limits">
+<meta name="plan-evidence-for" content="one-typesafe-model-picker"><meta name="plan-verifies" content="one-typesafe-model-picker#s6">
+<meta name="plan-recorded-at" content="2026-10-03"><meta name="plan-verdict" content="partial">
+<meta name="plan-environment" content="98dci4-clu-2018, allocation 1277272, shared root Python environment">
+<meta name="plan-tags" content="picker,crew,dispatch,latency,cache">
+<title>Fresh-process dispatch latency | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css"><link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc"><article data-reckon="landed" data-node="dispatch-speed" id="dispatch-speed">
+<h1>Fresh-process dispatch latency</h1>
+<table><caption>Actual CLI dry-run phase timings in seconds; fresh process per sample. Preflight is nested, so rows are not additive.</caption>
+<thead><tr><th>Phase</th><th>Reckon base</th><th>Nova base</th><th>Reckon head</th><th>Nova head</th></tr></thead>
+<tbody><tr><th>Flight resolution</th><td>0.112</td><td>0.101</td><td>0.110</td><td>0.102</td></tr><tr><th>Picker input build</th><td>9.369</td><td>1.167</td><td>1.966</td><td>0.432</td></tr><tr><th>Budget preflight (inside input build)</th><td>4.600</td><td>0.406</td><td>0.208</td><td>0.052</td></tr><tr><th>Bounded pick</th><td>5.001</td><td>5.017</td><td>4.646</td><td>1.860</td></tr><tr><th>Availability probe</th><td>0.007</td><td>0.023</td><td>0.003</td><td>0.002</td></tr><tr><th>Plan dispatch</th><td>0.044</td><td>0.191</td><td>0.050</td><td>0.036</td></tr><tr><th>CLI total</th><td>14.538</td><td>6.502</td><td>6.783</td><td>2.435</td></tr>
+<tr><th>Worktree creation</th><td colspan="4">Dry-run skips this phase. Separate real creation attempt refused after 2.208 s: canonical .git/worktrees is read-only in the worker fence. No worker launched.</td></tr>
+</tbody></table>
+<figure><img src="/reckon/figures/one-typesafe-model-picker/dispatch-speed/fresh-process-latency.png" alt="Input-build and pick duration for 21 fresh CLI processes, with one run appended before each sample after the first."><figcaption>Real CLI dry-run path on a copy of Reckon's ledger. Sample zero initializes the index; each later process sees one appended run. The plan and context caches are populated; live availability and budget clocks are evaluated on each call. The pick threshold is the p90 target.</figcaption></figure>
+<table><caption>Quantitative outcomes</caption><thead><tr><th>Measure</th><th>Result</th><th>Bound or qualification</th></tr></thead><tbody>
+<tr><th>Pick p90, 21 fresh CLI processes</th><td>0.974 s</td><td>Target ≤1.5 s; nearest-rank percentile</td></tr>
+<tr><th>Picker timeouts, same cohort</th><td>0/21</td><td>Target zero</td></tr>
+<tr><th>Input build after an append</th><td>median 1.642 s; p90 1.767 s; range 1.576–1.805 s</td><td>Target ≤1.0 s remains unmet; decoding the full picker records is the remaining dominant cost.</td></tr>
+<tr><th>Authoritative run-file reads</th><td>1673 initially; exactly one for every append</td><td>20/20 append samples; retained rows are read from the cross-process index</td></tr>
+<tr><th>Cold plan-estimate cache</th><td>Reckon 3.982 s; Nova 1.336 s</td><td>The initial document census remains expensive. Cached estimates invalidate on possible plan identity edits, not ledger promotion.</td></tr>
+<tr><th>Base gate</th><td>468 passed in 284.35s (0:04:44)</td><td>EXIT=0</td></tr>
+<tr><th>Head gate</th><td>482 passed in 283.97s (0:04:43)</td><td>See durable gate log</td></tr>
+<tr><th>Negative control</th><td>test_append_reads_only_the_new_run fails: 41 reads instead of 1</td><td>Incremental index disabled; EXIT=1</td></tr>
+<tr><th>Equivalence</th><td>Full rows, verdict inputs, budget snapshot and rendered state agree after appends and in-place edits</td><td>Conflicting duplicate history refuses; corrupt cache rebuilds; shared verdict edits recompute</td></tr>
+</tbody></table>
+<table><caption>Reproducible inputs and source bindings</caption><thead><tr><th>Item</th><th>Binding</th></tr></thead><tbody>
+<tr><th>Base / product head</th><td><code>a0f72d439aa15a57b2e2379279a612ca2b764060</code> / <code>97192e83c8b29d9353604618da1cfde6b77742c1</code></td></tr>
+<tr><th>Index and consumers</th><td><code>reckon/ledger.py</code>, <code>reckon/budget.py</code>, <code>reckon/capabilities.py</code>, <code>reckon/crew/routing.py</code>, <code>reckon/crew/picker/lane_context.py</code>, <code>reckon/crew/picker/snapshot.py</code>, <code>reckon/agent_context.py</code></td></tr>
+<tr><th>Tests</th><td><code>tests/test_dispatch_speed.py</code>, <code>tests/test_picker_fresh_process_pick.py</code></td></tr>
+<tr><th>Durable run directory</th><td><code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T114532582934-dispatch-speed</code></td></tr>
+<tr><th>Phase receipts</th><td><code>base-cli.jsonl</code>, <code>final-head-cli.jsonl</code>, <code>final-cli-churn-picks.jsonl</code>, <code>metrics.json</code>, <code>worktree-measure.json</code></td></tr>
+<tr><th>Measured ledger copy</th><td><code>measured-ledger.tar.gz</code> in the durable run directory; gzip integrity verified</td></tr>
+<tr><th>Gate receipts</th><td><code>base-gate.log</code>, <code>final-head-gate.log</code>, <code>negative-control.log</code></td></tr>
+<tr><th>Retained limits</th><td>Cold index initialization is a full read. Cache/storage failures fall back to authoritative files. The 1 s input target and real worktree-to-launch verification remain open.</td></tr>
+</tbody></table>
+</article></main></body></html>
