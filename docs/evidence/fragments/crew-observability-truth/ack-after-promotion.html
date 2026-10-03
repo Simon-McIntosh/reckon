@@ -1,0 +1,47 @@
+<article class="landed-report" data-run-id="r-20261003T063805035021-ack-after-promotion">
+  <h3>ack-after-promotion &mdash; a promoted run's remainder can be acknowledged</h3>
+  <p>
+    A run promoted with its worktree retained leaves a duty the obligations reader raises from its
+    ledger record, and that duty outlives the live pointer. <code>crew ack</code> wrote only beside
+    the live pointer, so once the run was promoted the deferred remainder could not be recorded and
+    the stop hook blocked every turn on a remainder the coordinator held on purpose. At base the
+    refusal reproduces: acknowledging the promoted run raises
+    <code>reckon.crew.CrewError: no live run 'r-20261003T060000000000-promoted-remainder' (looked in
+    &hellip;/config/crew/live/r-20261003T060000000000-promoted-remainder.json)</code>, and all four
+    cases fail on that line. The deferral is written to one small file of its own per run under the
+    crew home, atomically, carrying the run id, project, reason, until and recorded time; the run is
+    still required to exist, found by reading the run's own file beside its project's ledger rather
+    than loading the ledger. Nothing under the project's committed state is written: the earlier
+    design stored the deferral by rewriting the promoted run's ledger record through the ledger's
+    writer, and the case added here shows that defect &mdash; at the reviewed head it read
+    <code>M docs/state/&lt;project&gt;/crew.json</code>, the tracked aggregate rewritten and left
+    uncommitted, which is the single-file ledger the split closed and which an acknowledgement must
+    never reinstate. The obligations reader, <code>_acknowledgements_in_force</code>, honours these
+    files beside the live pointers' deferrals and ignores an expired one, so the duty returns on the
+    next read with no second write. Implemented in <code>reckon/crew/runs.py</code> and
+    <code>reckon/crew/obligations.py</code> at <code>732c29a45</code> (readers first at
+    <code>6f9bb1056</code>, ledger aggregate lookup replaced at <code>bb0347100</code>);
+    <code>tests/test_ack_after_promotion.py</code>, 4 passed.
+  </p>
+  <p>
+    <strong>Measure.</strong> Gate: the new test plus every test naming <code>crew ack</code>,
+    <code>record_run_acknowledgement</code> and the acknowledgement readers &mdash; 12 files, run
+    <code>-n 8 --timeout=300</code> with a per-arm basetemp outside any repository. Base arm
+    (9e5081bb3): 4 failed / 75 passed, <code>EXIT=1</code>, the four failures being the new cases
+    against a build with no promoted-run acknowledgement at all. Head arm (732c29a45): 79 passed,
+    <code>EXIT=0</code>. The negative control restores the live-pointer requirement in
+    <code>record_run_acknowledgement</code>: the three promoted-run cases are refused and the file
+    reads 3 failed / 1 passed, <code>EXIT=1</code>. The gate also carries a pre-existing
+    load-sensitive pair in <code>tests/test_obligations_snapshot_is_published.py</code>
+    (<code>test_a_slow_sweep_does_not_hold_the_next_transition</code>,
+    <code>test_a_file_change_and_the_floor_tick_each_republish</code>): identical arms swing
+    22&ndash;59&nbsp;s and a base repeat failed both the same ids, so neither is added by this
+    change.
+  </p>
+  <p>
+    <strong>Follow_ons.</strong> The <code>crew ack</code> help text in <code>reckon/cli.py</code>
+    still says a live run only; that file is outside this node's write paths. An acknowledgement
+    file left behind after its <code>until</code> passes is ignored by the reader and left for
+    cleanup.
+  </p>
+</article>
