@@ -108,7 +108,7 @@ read task requirements + apply explicit runtime routing + applicable skill
 → read and merge the worker-authored record, may edit or append (§5 step 7), then write impl
 → emit the completion summary, WHY carrying the gate evidence
 → re-triage open followups + manifest follow_ons; fold them into the DAG until dry
-→ write the drain ledger; foldable-remaining and unreconciled-runs must read 0
+→ write the drain ledger; foldable-remaining, unreconciled-runs and executable-remaining must read 0
 → record any deliberate live-pointer remainder through reckon crew drain
 → record plan/evidence/sprint outcomes + continuation at all three altitudes
 → prove commits reachable → remove worktrees → close sprint when complete
@@ -246,7 +246,8 @@ measured instances: `~/.agents/AGENTS.md`, *Name The Target*.
     Write the §7c drain ledger before any closing report: every row disposed as
     `folded` (with its node id), `authority-required`, `dissent-reopen`,
     `foreign-owner`, or `context-exhausted` (with its figure). **A session does not
-    end while `foldable-remaining` or `unreconciled-runs` is nonzero** — see
+    end while `foldable-remaining`, `unreconciled-runs` or
+    `executable-remaining` is nonzero** — see
     the closure fence, §4d. A deliberate pointer remainder must be recorded by
     `reckon crew drain --project <project> --leave <run-id>=<disposition>` using
     only `handed-off` or `still-working`; the latter expires when the run turns
@@ -748,9 +749,9 @@ in the harness it opens every turn with that checklist and refuses a Stop while 
 item is unacknowledged.
 
 Before the closing summary, **refuse to end the session while any queue row is
-foldable or any live pointer is unreconciled.** Run the followup drain of §7c,
-then call `crew(project, view="drain")`, write both figures into the ledger, and
-read it back:
+foldable, any live pointer is unreconciled, or any executable section remains
+open.** Run the followup drain of §7c, then call `crew(project, view="drain")`,
+write all three figures into the ledger, and read it back:
 
 - every open row carries a disposition from the closed set, or the session
   continues;
@@ -764,10 +765,17 @@ read it back:
 - the run-disposition set is exactly `handed-off` and `still-working`;
   `still-working` remains valid only while the live classifier reports
   `running`, while a promoted run leaves the count by losing its pointer.
+- `executable-remaining` is the same view's `executable_remainder`, never a
+  figure from memory: the count of sections declared `implementable` that no
+  `done` reclassification has closed, summed over the plans that carry a
+  declaration. It is a lower bound, so any nonzero figure refutes a stop — fold
+  those sections back into the DAG and execute them before closing. An empty
+  ledger beside a nonzero remainder is an unfinished drain, not a tidy stop.
 
 Report the fence on the four axes of §4e with occasion `close`. A session ending
-with `foldable-remaining: 0` and `unreconciled-runs: 0` has earned its summary;
-one ending with an unexplained nonzero count has not, and the ledger says so.
+with `foldable-remaining: 0`, `unreconciled-runs: 0` and
+`executable-remaining: 0` has earned its summary; one ending with an
+unexplained nonzero count has not, and the ledger says so.
 
 ### 4e. The summary reflex — what, why, how, when
 
@@ -1097,7 +1105,7 @@ DRAIN LEDGER — <plan|sprint> @ <iso-now>
   <id or one-line description>   foreign-owner → <owning plan or repo>
   <id or one-line description>   context-exhausted → <the figure>
   ---
-  rows: N   foldable-remaining: 0   unreconciled-runs: 0
+  rows: N   foldable-remaining: 0   unreconciled-runs: 0   executable-remaining: 0
 ```
 
 Write it into the landing beat's plan comment or the cumulative evidence record,
@@ -1107,11 +1115,14 @@ so it is committed rather than conversational. Three properties do the work:
 - **`folded` requires a dispatched node id.** A row marked folded with no node is
   a stop with paperwork on it — the most convincing form of this failure, and the
   one a reader can now catch.
-- **Both zeroes are the termination condition.** `foldable-remaining` is checked
-  against the followup rows; `unreconciled-runs` comes from
-  `crew(project, view="drain")`, never from memory. Record deliberate pointers
-  first with `reckon crew drain --project <project> --leave
-  <run-id>=handed-off|still-working`.
+- **All three zeroes are the termination condition.** `foldable-remaining` is
+  checked against the followup rows; `unreconciled-runs` and
+  `executable-remaining` come from `crew(project, view="drain")`, never from
+  memory. `unreconciled-runs` counts live pointers without a valid disposition;
+  `executable-remaining` is the view's `executable_remainder`, the declared
+  sections not yet reclassified `done`, and a session does not end while it is
+  nonzero. Record deliberate pointers first with `reckon crew drain --project
+  <project> --leave <run-id>=handed-off|still-working`.
 
 **Terminal status is gated on this drain.** Do not set `status` to `shipped` or
 `done` while any foldable followup is open. Exempt rows may remain open only with
@@ -1131,8 +1142,8 @@ from the inside.** Convergence and creep differ only in direction — test it:
 
 **Do not count layers and do not budget them** — a ten-layer chain converging on a
 one-line fix is healthy, and the deepest layers are usually the cheapest and
-highest-leverage. The only quantity that governs stopping is the drain ledger's
-`foldable-remaining`, and the only session-level exemption is `context-exhausted`
+highest-leverage. The only quantities that govern stopping are the drain ledger's
+three zeroes, and the only session-level exemption is `context-exhausted`
 with its figure. Worked example: `references/sprint-orchestration.md` §10.
 
 ### 8. Final validation — eat the dog food
@@ -1211,9 +1222,9 @@ Rules:
 - One fenced prompt per advised follow-on; if several follow-ons are advised
   for one session, stack them in ONE fence in execution order.
 - Every fenced line traces to an exempt ledger row. If the ledger says
-  `foldable-remaining: 0` and no row is `context-exhausted`, there is nothing to
-  hand over and the block is omitted entirely — that is the good outcome, not a
-  missing section.
+  `foldable-remaining: 0` and `executable-remaining: 0` and no row is
+  `context-exhausted`, there is nothing to hand over and the block is omitted
+  entirely — that is the good outcome, not a missing section.
 - The fenced line is exactly the slash invocation the next session needs. The
   plan owns all guidance, so never append a parenthetical brief or pasted wall.
 - Mention the followup id at most once, in passing (e.g. "tracked as

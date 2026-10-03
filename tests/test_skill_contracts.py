@@ -1204,7 +1204,7 @@ def test_every_registered_crew_verb_is_documented_or_exempt() -> None:
         assert phrase in ship, f"{phrase} is registered and the skill never names it"
 
 
-def test_closure_ledger_carries_both_drain_counts() -> None:
+def test_closure_ledger_carries_all_drain_counts() -> None:
     ship = normalized((ROOT / "skills" / "reckon-build" / "SKILL.md").read_text())
     reference = normalized(
         (
@@ -1213,9 +1213,19 @@ def test_closure_ledger_carries_both_drain_counts() -> None:
     )
 
     for text in (ship, reference):
-        assert "foldable-remaining: 0 unreconciled-runs: 0" in text
+        assert (
+            "foldable-remaining: 0 unreconciled-runs: 0 executable-remaining: 0" in text
+        )
         assert "`handed-off`" in text
         assert "`still-working`" in text
+
+    # The remainder is part of the termination condition, not only of the
+    # ledger line: the fence that holds a session open names it beside the
+    # other two figures, so a revert of the fence alone still reddens.
+    assert (
+        "does not end while `foldable-remaining`, `unreconciled-runs` or "
+        "`executable-remaining` is nonzero" in ship
+    )
 
 
 def _expression_descendants(statement: ast.stmt):
