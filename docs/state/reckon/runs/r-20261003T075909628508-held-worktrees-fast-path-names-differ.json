@@ -1,0 +1,754 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "f9c5d2cfc3b8f531809c0c30d11a1b2bcb2ac1aa",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 11563968,
+      "input_tokens_cumulative": 11563968,
+      "output_tokens": 90489,
+      "output_tokens_cumulative": 90489,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 105,
+    "files": 3,
+    "removed": 55
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 2120,
+        "name": "_tag_audit_findings",
+        "path": "reckon/mcp.py"
+      },
+      "run_function": {
+        "line": 613,
+        "name": "_held_worktrees_by_session",
+        "path": "reckon/crew/obligations.py"
+      },
+      "window_line": 626
+    },
+    {
+      "existing_function": {
+        "line": 334,
+        "name": "test_a_manifest_with_no_commits_line_is_unaffected",
+        "path": "tests/test_cited_identifier_resolves.py"
+      },
+      "run_function": {
+        "line": 613,
+        "name": "_held_worktrees_by_session",
+        "path": "reckon/crew/obligations.py"
+      },
+      "window_line": 628
+    },
+    {
+      "existing_function": {
+        "line": 504,
+        "name": "test_a_non_passing_verdict_beside_a_contradictory_log_is_unaffected",
+        "path": "tests/test_crew_gate_log_agrees.py"
+      },
+      "run_function": {
+        "line": 613,
+        "name": "_held_worktrees_by_session",
+        "path": "reckon/crew/obligations.py"
+      },
+      "window_line": 628
+    },
+    {
+      "existing_function": {
+        "line": 770,
+        "name": "payload_for",
+        "path": "reckon/crew/obligation_snapshot.py"
+      },
+      "run_function": {
+        "line": 774,
+        "name": "obligations",
+        "path": "reckon/crew/obligations.py"
+      },
+      "window_line": 834
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "a5576b7ff37dffc80d8d53ac7d7edf5610eb3586",
+    "f44a2df141a9146030657eb925881681d44bc8ea"
+  ],
+  "completed_at": "2026-10-03T08:25:17.090Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-03T07:59:43Z",
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": "pytest",
+    "override": false,
+    "role": "implement",
+    "status": "compatible"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [
+    "ledger.load"
+  ],
+  "gate": "passed",
+  "gate_check": {
+    "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -n 8 --timeout=300 tests/test_held_worktrees_read_run_files.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T075909628508-held-worktrees-fast-path-names-differ/gate-head-a5576b7.log"
+  },
+  "impl_move": {
+    "at_complete": 0.9540229885057471,
+    "at_dispatch": 0.9080459770114943,
+    "plan": "the-obligations-hook-reads-a-snapshot",
+    "verdict": "moved"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-03T08:59:10.406866+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-03T07:59:10Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 9,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 0,
+    "headroom": 16,
+    "mean_context": 120000,
+    "observed_at": "2026-10-03T07:59:01Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-03T08:25:17.090Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T075909628508-held-worktrees-fast-path-names-differ/manifest.md",
+  "member": "disposable-r-20261003T075909628508-held-worktrees-fast-path-names-differ",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_held_worktrees_read_run_files.py::test_a_mixed_state_goes_to_the_run[node-id-differs-from-tree-name]"
+    ],
+    "baseline_failure_ids": [
+      "tests/test_held_worktrees_read_run_files.py::test_a_mixed_state_goes_to_the_run[node-id-differs-from-tree-name]"
+    ],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_held_worktrees_read_run_files.py::test_a_mixed_state_goes_to_the_run[node-id-differs-from-tree-name]"
+    ],
+    "declaration": "With the fast path admitting a per-run file again only when the run id's node token equals the directory name, the differing-name case in the parity test resolves to a different run than the whole-ledger reader and fails.",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T075909628508-held-worktrees-fast-path-names-differ/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T075909628508-held-worktrees-fast-path-names-differ/negative-control.log",
+    "test_paths": [
+      "tests/test_held_worktrees_read_run_files.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "held-worktrees-fast-path-names-differ",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 391,
+          "cached_input_tokens": 553771,
+          "input_tokens": 554166,
+          "output_tokens": 1652,
+          "reasoning_output_tokens": 448,
+          "total_tokens": 555818,
+          "uncached_input_tokens": 4
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "Read section 8 of the-obligations-hook-reads-a-snapshot first. This node carries the code half only: the evidence corrections the section names concern an earlier run's record and stay with the coordinator. The fast path in reckon/crew/obligations.py admits a per-run file only when the node token in its run id equals the worktree's directory name (_run_id_names_node). A record whose node id differs from its retained tree's directory name, while another record names the same tree, can therefore resolve in the fast path to a different run than the whole-ledger reader picks. First show that this still reproduces at your base, using the existing parity test's generated states. Then _held_worktrees agrees with the whole-ledger reader in that shape, and in every shape the parity test already generates. The parity test in tests/ (grep for _held_worktrees and parity to find it) gains a case with a node id that differs from its tree's directory name and a second record naming the same tree. The case fails at your base and passes at your head. Existing tests reaching _held_worktrees, _held_worktrees_by_session and _run_id_names_node keep passing; grep tests/ for each to build the gate. Record the outcome in docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/held-worktrees-fast-path-names-differ.html. Run `date -u` first and treat that instant as your start; your deadline is 60 minutes later. Write your manifest before starting any long command. Run both gate arms with pytest-xdist (-n 8 --timeout=300), never serially. Run the base arm, from a `git archive` extraction of your base under /tmp in a directory named for this run, and then the head arm, each in the foreground: a background command dies when your turn ends. Keep the gate to the test files that reach your change, tens of files rather than hundreds. Each arm uses its own basetemp outside any repository and writes to its own new log path, which it never overwrites. Each arm is recorded as JSON carrying completed true and a literal command with absolute paths and no angle-bracket placeholder. Each log names its revision on the first line as revision= followed by the full sha, and ends with a bare line reading EXIT= followed by the exit code. The head arm adds no failure id; any added id means status blocked, naming each id. ruff check and ruff format --check over the changed Python paths report no finding the base did not. Scratch goes under /tmp in a directory named for this run and is deleted before status complete. The turn ends once the manifest reads complete or blocked.",
+    "estimated_hours": null,
+    "goal": "The held-worktrees fast path agrees with the whole-ledger reader when a node's id differs from its tree's directory name",
+    "id": "held-worktrees-fast-path-names-differ",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-03T07:59:10Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 9,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 0,
+      "headroom": 16,
+      "mean_context": 120000,
+      "observed_at": "2026-10-03T07:59:01Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T075909628508-held-worktrees-fast-path-names-differ/manifest.md",
+    "negative_control": "With the fast path admitting a per-run file again only when the run id's node token equals the directory name, the differing-name case in the parity test resolves to a different run than the whole-ledger reader and fails.",
+    "plan": "the-obligations-hook-reads-a-snapshot",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§8",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew/obligations.py",
+      "tests/test_held_worktrees_read_run_files.py",
+      "docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/held-worktrees-fast-path-names-differ.html",
+      "docs/figures/the-obligations-hook-reads-a-snapshot/held-worktrees-fast-path-names-differ"
+    ]
+  },
+  "orientation_input_tokens": 3384990.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "held-worktrees-fast-path-names-differ",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-03T07:59:26.001013+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "route",
+    "answering_model": "typesafe/jev-1.13-20260917",
+    "backend": "clive",
+    "comment": "",
+    "confidence": 0.77,
+    "decision_source": "jev",
+    "effort": "xhigh",
+    "excluded": [
+      {
+        "availability": "not-probed",
+        "backend": "native",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "in-harness",
+        "local": false,
+        "model": null,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "in-harness-backend"
+        ],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "fallback_reason": null,
+    "family": "local",
+    "jev_latency_ms": 491.486,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 4714.201,
+    "model": "deepseek-v4.1-flash",
+    "offered": [
+      {
+        "availability": "unknown",
+        "backend": "claude",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": 0.9173109790972223,
+        "effort": "xhigh",
+        "family": "claude",
+        "local": false,
+        "model": "claude-sonnet-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": "2026-10-04T06:00:00Z",
+        "utilisation_pct": 88.0,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-haiku",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "claude",
+        "local": false,
+        "model": "claude-haiku-4-5-20251001",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-opus",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "claude",
+        "local": false,
+        "model": "claude-opus-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "clive",
+        "burn_multiple": null,
+        "congestion": {
+          "admission_verdict": "open",
+          "running": 0,
+          "slots_state": "measured",
+          "stale": false,
+          "waiting": 0
+        },
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "local",
+        "local": true,
+        "model": "deepseek-v4.1-flash",
+        "outcomes": {
+          "failed": 13,
+          "not-run": 16,
+          "passed": 572,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": 52
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-sol",
+        "outcomes": {
+          "failed": 1,
+          "not-run": 0,
+          "passed": 3,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-astra",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-astra",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 1,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-luna",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-luna",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-terra",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-5.6-terra",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "probabilities": {
+      "claude": 0.02,
+      "claude-haiku": 0,
+      "claude-opus": 0.03,
+      "clive": 0.79,
+      "codex": 0.06,
+      "codex-astra": 0.01,
+      "codex-luna": 0.03,
+      "codex-terra": 0,
+      "hold": 0.06
+    },
+    "rendered_token_estimate": 1639,
+    "usage": {
+      "cost": 0.000159222,
+      "input_tokens": 3791,
+      "output_tokens": 99
+    }
+  },
+  "plan": "the-obligations-hook-reads-a-snapshot",
+  "plan_impl_at_dispatch": 0.9080459770114943,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "f44a2df141a9146030657eb925881681d44bc8ea",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "f9c5d2cfc3b8f531809c0c30d11a1b2bcb2ac1aa",
+    "reviewed_head_sha": "f44a2df141a9146030657eb925881681d44bc8ea",
+    "scores": {
+      "durability": 19,
+      "evidence": 17,
+      "fit": 19,
+      "goal_fidelity": 20,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 94
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "run_id": "r-20261003T075909628508-held-worktrees-fast-path-names-differ",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§8",
+  "session": "s22-coord",
+  "session_harness": "claude",
+  "session_id": "231af7c3-64c8-4206-9083-33cb5dca13b3",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 11758172,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 1524.21,
+    "generated_tokens": 98291,
+    "generation_seconds": 1099.589,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 83.8,
+    "machine_seconds": 424.621,
+    "peak_input_tokens": 192904,
+    "tokens_per_second": 89.39,
+    "wall_tokens_per_second": 64.49
+  },
+  "time_budget": "60m",
+  "tool_steps": 90.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "budget_overrun": false,
+        "budget_overrun_seconds": 0,
+        "budget_seconds": 3600,
+        "classification": "promotable",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 3032,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-10-03T07:39:15Z",
+          "last_record_type": "turn.completed",
+          "launched_at": "2026-10-03T07:08:50Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20261003T070755624002-recover-launches-only-what-it-is-asked",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 353,
+          "worker_pid": 2704407
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "promote",
+          "recovery_classification": "promotable",
+          "stall_base_detail": null,
+          "stall_base_state": null,
+          "stall_pause_reason": null,
+          "stall_process_state": null,
+          "stall_quiet_seconds": null,
+          "stall_window_seconds": 900,
+          "state": "complete"
+        },
+        "interruption": null,
+        "lifting_condition": null,
+        "liveness_proven": true,
+        "log_age_seconds": 1212,
+        "log_fresh": false,
+        "manifest_commits": [
+          "9db44ea62bc82cc0608a8c7b6cdf95423c79ef76 cb6a06013e20e72d8bfa65e1a218df80bdcafaa6 6edf45ebb457bd75d5ee8b62aac40bf5b43e6b84"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "9eec3a4957ae1198278f07b7aa81072fd03c6cf1d5fc35dc07eedb09437c73cd",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T070755624002-recover-launches-only-what-it-is-asked/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew complete --run r-20261003T070755624002-recover-launches-only-what-it-is-asked --gate <verdict> --commit 9db44ea62bc82cc0608a8c7b6cdf95423c79ef76",
+        "node": "recover-launches-only-what-it-is-asked",
+        "phase": "complete",
+        "plan": "scoring-should-stop-a-promotion",
+        "process_alive": false,
+        "process_descendant_alive": null,
+        "project": "reckon",
+        "recovery": "promote",
+        "recovery_classification": "promotable",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": true,
+        "review_status": "parsed",
+        "run_id": "r-20261003T070755624002-recover-launches-only-what-it-is-asked",
+        "session": "s22-coord",
+        "stored_phase": "complete",
+        "terminal_age_seconds": 1243,
+        "terminal_at": "2026-10-03T07:38:32Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/recover-launches-only-what-it-is-asked"
+      }
+    ]
+  },
+  "wall_seconds": 1534,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-03T08:25:21Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-03T07:59:47Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261003T075909628508-held-worktrees-fast-path-names-differ",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 24768,
+    "worker_pid": 3269483
+  },
+  "worker_seconds": 1512,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
