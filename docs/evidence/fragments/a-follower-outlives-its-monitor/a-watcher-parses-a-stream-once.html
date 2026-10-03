@@ -12,4 +12,27 @@
       <tr><td>Cache-disabled snapshots requiring a full parse</td><td>—</td><td>10 of 10; expected failure</td></tr>
     </tbody>
   </table>
+  <h3>Concurrent cache verification</h3>
+  <table>
+    <thead><tr><th>Measure</th><th>Unsafe source <code>977aaf754</code></th><th>Repair <code>a0c434743</code></th></tr></thead>
+    <tbody>
+      <tr><td>Threads; distinct streams; bound</td><td>16; 49 reached; 3 seconds</td><td>16; 52 reached; 3 seconds</td></tr>
+      <tr><td>Iterations; cache evictions</td><td>1,581; 1,509</td><td>2,347; 3,974</td></tr>
+      <tr><td>Thread and classification verdict</td><td><code>RuntimeError</code> and <code>KeyError</code>; exit 1</td><td>No thread exception; every classification matched a full re-parse; exit 0</td></tr>
+      <tr><td>Focused suite</td><td>3 failed, 21 passed; two promotion fixtures stopped at the review gate in the extracted base</td><td>24 passed; no added failure id</td></tr>
+      <tr><td>Ten snapshots, CPU seconds</td><td>1.1761 at <code>ea557e5a2</code></td><td>1.2370</td></tr>
+      <tr><td>Warm discovery of 30 pointers, wall seconds</td><td>12.8680 at <code>ea557e5a2</code></td><td>12.1168</td></tr>
+    </tbody>
+  </table>
+  <h3>Readers of the shared event objects</h3>
+  <table>
+    <thead><tr><th>Call site</th><th>Use of cached events</th></tr></thead>
+    <tbody>
+      <tr><td><code>_backends._cached_stream_entry</code></td><td>Creates a new list and entry for each changed file identity; it never appends to a published event list.</td></tr>
+      <tr><td><code>_backends._observe_run_stream</code> through <code>_observe_events</code></td><td>Dialect folds, message helpers, and timestamp refinement read event fields; they write fresh observation, usage, and timestamp-state objects.</td></tr>
+      <tr><td><code>recovery._admission_refusal</code></td><td>Reads event, message, and usage fields; writes scalar marks and a new refusal dictionary.</td></tr>
+      <tr><td><code>_backends.cached_stream_timestamp_bounds</code> for <code>promotion._terminal_stream_data</code></td><td>Reads each timestamp; writes new datetime/string bound tuples. Promotion receives those tuples, not event dictionaries.</td></tr>
+      <tr><td><code>test_concurrent_stream_readers_survive_eviction_and_growth</code></td><td>Compares the returned list and dictionaries with a fresh parse; does not modify them.</td></tr>
+    </tbody>
+  </table>
 </section>
