@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-page-load-reads-each-file-once">
+  <meta name="plan-verifies" content="reckon:a-page-load-reads-each-file-once#s8">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <title>Server serves one code version — landing record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="server-serves-one-code-version" data-reckon="landed" data-when="2026-10-03">
+  <h2>Server serves one code version</h2>
+  <p>A server started from a temporary package copy held an older recovery module while a
+  replacement roadmap imported a newly added name. At the base revision, discovery
+  answered HTTP 500 with <code>cannot import name 'stale_code_probe'</code>. The committed
+  server refuses the request before the lazy import with HTTP 503,
+  <code>error: stale-code</code>, and different running and disk code stamps.</p>
+  <table>
+    <thead><tr><th>Gate</th><th>Result</th><th>Failure IDs</th></tr></thead>
+    <tbody>
+      <tr><td>Base, 16 test files</td><td>2 failed, 193 passed, 1 skipped</td><td>lazy import; discovery cache</td></tr>
+      <tr><td>Head, 16 test files</td><td>1 failed, 194 passed, 1 skipped</td><td>discovery cache</td></tr>
+      <tr><td>Guard removed from head</td><td>1 failed</td><td>lazy import; HTTP 500 returned</td></tr>
+    </tbody>
+  </table>
+  <p>The discovery cache failure is present in both gate arms. The head adds zero failure
+  IDs. Removing the request guard restores the lazy import failure.</p>
+</article>
+</body>
+</html>
