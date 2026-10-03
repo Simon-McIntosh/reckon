@@ -1,0 +1,93 @@
+<article class="r-evidence" data-plan="one-typesafe-model-picker" data-node="picker-pick-within-bound">
+  <h3>picker-pick-within-bound — a pick measures each phase once and reads no foreign ledger</h3>
+
+  <p><strong>What changed.</strong> Two phases inside <code>pick()</code> were
+  re-done work. <code>snapshot._fit</code> measured every candidate's context
+  window twice: <code>routing._competence_verdict</code> already measures the
+  window and returns it under <code>context</code>, and <code>_fit</code> then
+  called <code>routing._context_fit_verdict</code> a second time. The
+  measurement reads the backend's instruction chain, whose repository lookup
+  shells out to <code>git rev-parse</code>, so each candidate paid that
+  subprocess twice on the pick's critical path. <code>_fit</code> now consumes
+  the measurement the competence verdict already returned and only measures
+  again when that verdict skipped its context check. Separately,
+  <code>lane_context._expected_wait</code> profiled every live local worker by
+  reading <em>its</em> project's whole ledger through
+  <code>run_time_profile</code>; when the pick already holds one project's
+  records, a worker from another project now contributes nothing rather than
+  putting a second ledger's size on the pick's critical path — matching the
+  rule that an unmeasured shape reports no invented duration.</p>
+
+  <figure>
+    <img src="/reckon/figures/one-typesafe-model-picker/picker-pick-within-bound/pick-phases-before-after.png"
+         alt="Per-phase pick cost before and after the cut, with the 5 s bound marked">
+    <figcaption>Per-phase cost of one dispatch-path pick on the same fixture with
+    the ledger held, so the bars are the pick's own critical path rather than
+    the dispatch pre-builds outside its bound. Median of three runs.</figcaption>
+  </figure>
+
+  <p><strong>Per-phase profile</strong> (median of three runs, milliseconds, the
+  same fixture and ledger held so only in-<code>pick()</code> phases appear; Jev
+  stubbed to zero here, its live cost is reported separately). Phase, before
+  &rarr; after:</p>
+
+  <table>
+    <thead>
+      <tr><th>phase (inside <code>pick()</code>)</th><th>before [ms]</th><th>after [ms]</th><th>scales with ledger?</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>candidate snapshot (git census, run twice)</td><td>2385 / 2652 / 2690</td><td>1432 / 1118 / 1274</td><td>no — bounded by candidate count</td></tr>
+      <tr><td>&nbsp;&nbsp;&#8627; <code>_fit</code> context fit (duplicate measurement)</td><td>~1900 per <code>git rev-parse</code></td><td>removed</td><td>no</td></tr>
+      <tr><td>&nbsp;&nbsp;&#8627; <code>_expected_wait</code> foreign-project profile</td><td>235</td><td>0</td><td>yes (cut)</td></tr>
+      <tr><td>local-lane load (<code>local_lane</code>)</td><td>5 / 6 / 7</td><td>5 / 6 / 6</td><td>no</td></tr>
+      <tr><td>return-time render (<code>lane_context.build</code>)</td><td>658 / 720 / 643</td><td>84 / 61 / 88</td><td>yes (cut)</td></tr>
+      <tr><td><strong>total <code>pick()</code></strong></td><td><strong>3047 / 3375 / 3336</strong></td><td><strong>1519 / 1181 / 1366</strong></td><td>&nbsp;</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Result against the bound.</strong> The median total fell from about
+  3.34 s to about 1.37 s, inside the 1.5 s target and well inside the 5 s
+  dispatch bound. The two ledger-scaling phases that were on the pick's critical
+  path — the duplicate context measurement (whose cost is the instruction-chain
+  read, not the ledger) and the foreign-project wait profile — are both removed;
+  no phase that scales with ledger size remains inside <code>pick()</code>. The
+  observed distribution supports keeping the bound at 5 s: the worst of three
+  runs is 1.52 s, roughly a third of the bound.</p>
+
+  <p><strong>Cut phase outside this node's fence — reported, not fixed.</strong>
+  The dispatch path pre-builds three inputs <em>before</em> <code>pick()</code>
+  runs and outside its 5 s bound: <code>ledger.runs</code> (one
+  <code>ledger.load</code> over 1567 per-run files, ~3.4–5.4 s),
+  <code>routing.shared_verdict_inputs</code> together with
+  <code>capabilities.project_cache_status</code> (~3.1–6.0 s), and
+  <code>budget.preflight</code> (~2.7–6.5 s). These sit in
+  <code>ledger.py</code>, <code>capabilities.py</code> and <code>budget.py</code>,
+  outside this node's write scope, and they scale with ledger size. They do not touch the pick's
+  bound, but they make a cold dispatch slow overall; the measured per-phase
+  figures are recorded here and the follow-on node carries the repair. They are
+  <em>not</em> a reason to raise the 5 s pick bound — they are a separate
+  dispatch-latency defect.</p>
+
+  <p><strong>Slow-Jev fallback.</strong> A pick whose Jev client runs longer than
+  the bound must yield a recorded fallback, never a refusal. The bound is
+  enforced in <code>dispatch.dispatch_picker_selection</code>, which runs
+  <code>pick()</code> in a thread with
+  <code>PICKER_DISPATCH_TIMEOUT_SECONDS = 5.0</code>. The new test
+  <code>test_slow_client_still_times_out_as_a_recorded_fallback</code> lowers the
+  bound to 0.05 s against a client that sleeps 0.4 s and asserts the result is
+  <code>{"action": "fallback", "fallback_reason": "timeout"}</code> — the
+  recorded fallback, returned before the client finished.</p>
+
+  <p><strong>Negative control.</strong> Reverting the <code>_fit</code> change —
+  restoring the second <code>_context_fit_verdict</code> call — makes
+  <code>test_fit_reuses_the_competence_context_measurement</code> fail: the test
+  monkeypatches the second measurement to raise
+  <code>AssertionError("context fit measured twice in one _fit")</code>. The
+  control ran 1 failed / 3 passed with exit 1, the failing id being exactly that
+  test (<code>negative-control.log</code>).</p>
+
+  <p><strong>Gate.</strong> Base arm and head arm run the picker test files with
+  the ledger present; each is judged by delta against the base revision, not by
+  an absolute count. Results are recorded in the manifest's
+  <code>baseline_suite</code> and <code>after_suite</code> keys.</p>
+</article>
