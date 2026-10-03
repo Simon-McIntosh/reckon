@@ -428,8 +428,9 @@ def test_verify_gate_command_reports_a_stored_prose_command_as_not_run(
         ],
     )
 
-    assert result.exit_code == 0, result.output
+    assert result.exit_code == 1, result.output
     payload = json.loads(result.output)
+    assert payload["ok"] is False
     report = payload["report"]
     assert report["integrated_verdict"] == "not-run"
     assert report["ran"] is False

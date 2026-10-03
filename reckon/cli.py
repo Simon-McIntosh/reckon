@@ -994,7 +994,7 @@ def _emit(payload, pretty: bool) -> None:
 
 
 def _crew_result_ok(result: Mapping[str, Any], *, observation: bool = False) -> bool:
-    """Read a crew command's outcome from its published result fields."""
+    """Refusals and missing measures fail; deliberate skips remain successful."""
     if "ok" in result:
         return result["ok"]
     if not result:
@@ -1007,14 +1007,11 @@ def _crew_result_ok(result: Mapping[str, Any], *, observation: bool = False) -> 
             "error",
             "refusal",
             "refused",
-            "skipped",
             "unusable",
             "finding",
             "timed_out",
             "over_budget",
             "reviews_refused",
-            "reviews_awaiting_lane",
-            "reviews_awaiting_coordinator",
         )
     ):
         return False
@@ -1024,23 +1021,15 @@ def _crew_result_ok(result: Mapping[str, Any], *, observation: bool = False) -> 
         return False
     if result.get("held") and "held_backends" in result:
         return False
-    if result.get("event") == "watcher-live":
-        return False
-    if result.get("action") in {"hold", "refuse", "skipped", "unmeasured"}:
+    if result.get("action") in {"hold", "refuse", "unmeasured"}:
         return False
     validation = result.get("validation")
     if isinstance(validation, Mapping) and validation.get("ok") is False:
         return False
     reviews = result.get("reviews")
-    if isinstance(reviews, Mapping) and (
-        reviews.get("error") or reviews.get("refused")
-    ):
-        return False
-    projects = result.get("projects")
     return not (
-        "dry_run" in result
-        and isinstance(projects, Mapping)
-        and any(row.get("skipped") or row.get("stopped") for row in projects.values())
+        isinstance(reviews, Mapping)
+        and (reviews.get("error") or reviews.get("refused"))
     )
 
 
