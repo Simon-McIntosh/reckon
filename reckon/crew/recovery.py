@@ -319,11 +319,12 @@ def select_review_for_head(
     the second is a head a non-matching record did name, empty when none, so a
     refusal can name the two revisions that disagree rather than report an
     absence. A record naming a different revision is not this run's review
-    however recently it was written. An empty ``head`` names no revision, so
-    no stored record can describe it: an empty head accepts no record and
-    selects none before the store is read, because reading whatever the store
-    holds newest would let a review of an unknown revision stand as this run's
-    evidence.
+    however recently it was written. An empty ``head`` names no revision to
+    key a record on, and this selection accepts none for it: reading whatever
+    the store holds newest would let a review of an unknown revision stand as
+    this run's evidence. The classifier, which holds the record the head came
+    from, reads the newest record itself for the one empty-head case with no
+    reclaimed worktree behind it.
     """
     if not head:
         return None, ""
@@ -662,6 +663,16 @@ def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, st
     revision is not called promotable on evidence about code that no longer
     exists. The selection it uses is the one promotion uses, so the two agree
     on which stored record is evidence about a revision.
+
+    An empty head names no revision to select by, and the reading follows from
+    how it came to be empty. A worktree that has been reclaimed, with a record
+    naming no resolvable head, is refused: the head such a run would resolve
+    through is the shared checkout's HEAD, which its review is not about, so no
+    stored record is selected and the compose path refuses in turn naming the
+    missing head. A record that names no worktree at all, or one whose worktree
+    resolves no head, has no checkout fallback to borrow and never had one — the
+    store's newest record for the run is the only evidence there is, and it is
+    read, the reading held before the reclaimed-run rule existed.
     """
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
@@ -669,7 +680,12 @@ def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, st
         return None, ""
     head, tree = _review_head_and_tree(record)
     try:
-        review, _stale = select_review_for_head(project, run_id, head, tree=tree)
+        if not head:
+            if _worktree_reclaimed(record):
+                return None, ""
+            review = review_module.read_review(project, run_id)
+        else:
+            review, _stale = select_review_for_head(project, run_id, head, tree=tree)
     except (OSError, ValueError) as exc:
         return {}, str(exc)
     if review is not None and not isinstance(review, dict):
