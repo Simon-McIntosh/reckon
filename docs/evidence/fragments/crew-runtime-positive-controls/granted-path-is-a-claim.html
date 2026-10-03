@@ -1,0 +1,55 @@
+<section id="granted-path-is-a-claim">
+  <h2>granted-path-is-a-claim — a plan's landing files are compared against live claims like any other path</h2>
+
+  <p><strong>Defect.</strong> <code>crew dispatch --dry-run</code> reported
+  <code>live_conflicts: []</code> for a node granted the plan HTML, its cumulative evidence
+  record and its figures topic while a live pointer claimed all three. Two concurrent runs
+  were therefore handed the same file — the record every node on a plan appends its landing
+  to — with nothing naming the other holder, and a whole-file write by either silently takes
+  the other's landed section. The report skipped them because
+  <code>_live_conflict_rows</code> built its candidates with <code>_candidate_scope_entries</code>
+  and skipped every claim whose path was one of the plan's landing files, so the paths dispatch
+  grants were the only paths the live-claim report never compared.</p>
+
+  <p><strong>Reproduction at
+  <code>9e5081bb32085947e24a8b17921c94c7935e32df</code></strong> (temporary config home,
+  one plan, a live pointer holding the three granted paths, then a second dispatch dry-run):
+  <code>live_conflicts == []</code>; the new case
+  <code>test_a_granted_landing_collision_is_reported</code> fails at base while the caller-named
+  and promoted-holder cases pass (base arm 1 failed, 230 passed).</p>
+
+  <p><strong>Fix, one commit.</strong> The reporting check now resolves the node's whole scope
+  (<code>_resolved_node_scope_entries</code>) and holds the landing paths the node actually
+  claims (<code>_granted_landing_paths</code>): a live claim on a landing path the node itself
+  holds is reported like any other collision, and one on a landing path it does not hold is
+  still skipped, so the fragment default's ordinary work is untouched. The refusal path is
+  unchanged — a granted collision is admitted and reported, which is what lets two nodes'
+  appends meet in a merge. Directory-claim refusal is unchanged for the same reason: pairs
+  involving a held landing path are reported and never judged as a directory claim
+  (<code>_live_conflict_outside_granted_landing</code>), while every other pair keeps the
+  judgement it had.</p>
+
+  <p><strong>Evidence — three cases</strong> in
+  <code>tests/test_granted_path_is_a_claim.py</code>, each driving the real dry-run CLI in a
+  temporary config home:</p>
+
+  <ul>
+    <li><strong>Granted collision reported.</strong> A live pointer holds the plan HTML, the
+    cumulative evidence record and the figures topic; the second dispatch is granted the same
+    three and reads one row per shared path, naming the holder's run and node and the shared
+    path on both sides. Head arm: 231 passed (exit 0).</li>
+    <li><strong>Caller-named collision unchanged.</strong> A live claim on an ordinary
+    exclusive path reads exactly the row it read at base.</li>
+    <li><strong>Promoted holder not reported.</strong> The holder's claim is asserted through
+    <code>scope_claims</code> while live, then its pointer is removed as promotion removes it;
+    the second dispatch reads <code>live_conflicts == []</code>, because a released claim is
+    not a conflict.</li>
+  </ul>
+
+  <p><strong>Arms.</strong> Base <code>9e5081bb3</code> (git-archive extraction): 1 failed,
+  230 passed, exit 1 — the granted-collision case only. Head: 231 passed, exit 0, no added
+  failure id. Declared mutation (<code>landing = set()</code>, the check comparing only
+  caller-named paths again): 1 failed, 2 passed, exit 1 — the granted-collision case. Logs:
+  <code>base-arm.log</code>, <code>head-arm.log</code>, <code>negative-control.log</code> under
+  the run directory's <code>logs/</code>.</p>
+</section>
