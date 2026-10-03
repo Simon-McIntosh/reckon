@@ -973,17 +973,53 @@ def _residue_digests() -> set[tuple[str, str]]:
     return found
 
 
+# Where a release with the archive option keeps a worktree's commits. One ref
+# per worktree directory name; the ref is what keeps the commits reachable
+# after the tree is gone, so it must be created before the removal, not after.
+ARCHIVE_REF_PREFIX = "refs/reckon/archive/"
+
+
+def _pin_archived_commits(repo: Path, ref: str, head: str) -> None:
+    """Point ``ref`` at ``head`` so its commits survive the worktree's removal.
+
+    An existing ref is refused unless it already points at the same commit:
+    overwriting it would drop an earlier worktree's pinned commits out of reach,
+    which is the very loss the archive exists to prevent.
+    """
+    existing = _git(repo, "rev-parse", "--verify", "--quiet", ref, check=False)
+    if existing.returncode == 0:
+        if existing.stdout.strip() == head:
+            return
+        raise CrewError(
+            f"archive ref {ref} already resolves to {existing.stdout.strip()}; "
+            "refusing to overwrite the earlier pin"
+        )
+    zeros = "0" * 40
+    _git(repo, "update-ref", ref, head, zeros)
+
+
 def _save_and_release_worktree(
     repo: Path,
     path: Path,
     integrated_into: str,
     record: Mapping[str, Any] | None = None,
+    *,
+    archive_ref: str = "",
 ) -> dict[str, Any]:
-    """Save, verify, and clear a finished tree before a non-forced removal."""
+    """Save, verify, and clear a finished tree before a non-forced removal.
+
+    ``archive_ref`` pins the tree's commits into that ref before the removal
+    clears the working copy, so a tree holding commits with no patch-equivalent
+    on the integration head can be released without losing them; the ref is
+    recorded beside the residue patch. Without it the tree must be integrated
+    as before.
+    """
     if _live_worktree_claims().get(path.resolve()):
         raise CrewError(f"refusing residue release of live worktree {path}")
     head = _git(path, "rev-parse", "HEAD").stdout.strip()
-    if _git(
+    if archive_ref:
+        _pin_archived_commits(repo, archive_ref, head)
+    elif _git(
         repo, "merge-base", "--is-ancestor", head, integrated_into, check=False
     ).returncode:
         landed = _commits_beyond_merge_base(repo, path, integrated_into)
@@ -1097,10 +1133,14 @@ def _save_and_release_worktree(
             category = "unique"
         classes[relative] = category
         detail[relative] = {"class": category, "digest": digest}
-    class_path.write_text(
-        json.dumps({"worktree": str(path), "head": head, "paths": detail}, indent=2)
-        + "\n"
-    )
+    class_payload: dict[str, Any] = {
+        "worktree": str(path),
+        "head": head,
+        "paths": detail,
+    }
+    if archive_ref:
+        class_payload["archive_ref"] = archive_ref
+    class_path.write_text(json.dumps(class_payload, indent=2) + "\n")
     if _tree_state(path)["status_digest"] != status_before:
         raise CrewError(
             f"worktree {path} changed while residue was saved; preserved copy at {destination}"
@@ -1124,13 +1164,16 @@ def _save_and_release_worktree(
             f"worktree {path} remains dirty after residue was saved at {destination}"
         )
     _git(repo, "worktree", "remove", str(path))
-    return {
+    saved: dict[str, Any] = {
         "residue_patch": str(patch_path),
         "residue_tar": str(tar_path),
         "residue_classification": str(class_path),
         "residue_classes": classes,
         "head": head,
     }
+    if archive_ref:
+        saved["archive_ref"] = archive_ref
+    return saved
 
 
 # The extraction's reason is held in its own constant rather than joining
@@ -1232,6 +1275,13 @@ def _explicitly_absent_figures(record: Mapping[str, Any]) -> tuple[str, ...]:
     )
 
 
+# A failure of this family is a defect in the sweep's own code rather than a
+# refusal of the tree it happened on. Reported as an ordinary refusal it would
+# read to the caller as gc declining a worktree, so it is re-raised with its
+# traceback and names the line that is wrong.
+PROGRAMMING_ERRORS = (TypeError, AttributeError, NameError)
+
+
 class GcSweepError(CrewError):
     """A sweep that stopped mid-pass, carrying the steps it already applied.
 
@@ -1248,20 +1298,42 @@ class GcSweepError(CrewError):
         self.partial = partial
 
 
+def _pinnable_unique_commits(item: Mapping[str, Any], pin_unique_commits: bool) -> bool:
+    """Whether an explicit pin request makes this row reclaimable.
+
+    Only a dirty row carrying measured non-equivalent commits qualifies: the
+    archive ref is what makes its removal safe, so a row whose commits were
+    never measured is not released on the strength of an unread comparison.
+    """
+    return bool(
+        pin_unique_commits
+        and item["classification"] == "dirty"
+        and item.get("non_equivalent_commits")
+    )
+
+
 def _gc_partial_report(
     repo_root: Path,
     integrated_into: str,
     apply: bool,
     removed: list[str],
+    refused: list[str],
     worktrees: list[dict[str, Any]],
     failed_path: str,
 ) -> dict[str, Any]:
-    """The report a sweep stopped mid-pass can still make."""
+    """The report a sweep stopped mid-pass can still make.
+
+    ``refused`` is separate from ``removed``: a tree whose removal was
+    attempted and failed is neither gone nor still just an unreached row, and a
+    caller must not have to infer which rows those were by walking the
+    classifications.
+    """
     return {
         "repo": str(repo_root),
         "integrated_into": integrated_into,
         "dry_run": not apply,
         "removed_worktrees": list(removed),
+        "refused_worktrees": list(refused),
         "worktrees": list(worktrees),
         "failed_path": failed_path,
     }
@@ -1274,15 +1346,23 @@ def garbage_collect(
     integrated_into: str = "HEAD",
     retention_days: int = 30,
     apply: bool = False,
+    pin_unique_commits: bool = False,
     now: datetime | None = None,
 ) -> dict[str, Any]:
-    """Inspect or remove disposable workspaces and promoted transient state."""
+    """Inspect or remove disposable workspaces and promoted transient state.
+
+    ``pin_unique_commits`` releases a dirty worktree whose commits have no
+    patch-equivalent on the integration head by first pinning those commits
+    into an archive ref under ``refs/reckon/archive/``; without it such a tree
+    is kept, as before.
+    """
     if retention_days < 0:
         raise CrewError("retention days cannot be negative")
     repo_root = Path(repo).resolve()
     _git(repo_root, "rev-parse", "--verify", f"{integrated_into}^{{commit}}")
     worktrees: list[dict[str, Any]] = []
     removed: list[str] = []
+    refused: list[str] = []
     residue_report: list[dict[str, Any]] = []
     failed_path = ""
     try:
@@ -1325,61 +1405,101 @@ def garbage_collect(
         if apply:
             for item in worktrees:
                 if item["classification"] not in RECLAIMABLE_CLASSES:
-                    continue
+                    # An explicit pin is the one thing that reclaims an
+                    # otherwise-withheld dirty row; the branch below releases it.
+                    pin_reclaims = _pinnable_unique_commits(item, pin_unique_commits)
+                    if not pin_reclaims:
+                        continue
                 path = Path(item["path"])
                 failed_path = str(path)
-                current_claims = _live_worktree_claims().get(path.resolve(), [])
-                if current_claims:
-                    item["classification"] = "live-referenced"
-                    item["claimed_by_live_runs"] = sorted(current_claims)
-                    continue
-                if item["classification"] == "dirty-integrated":
-                    current = _inspect_workspace(
-                        repo_root,
-                        path,
-                        integrated_into,
-                        (),
-                        raise_on_unavailable=False,
-                        release_residue=True,
-                    )
-                    if (
-                        current["classification"] != "dirty-integrated"
-                        or current["head"] != item["head"]
-                    ):
-                        item.update(current)
+                try:
+                    current_claims = _live_worktree_claims().get(path.resolve(), [])
+                    if current_claims:
+                        item["classification"] = "live-referenced"
+                        item["claimed_by_live_runs"] = sorted(current_claims)
                         continue
-                    saved = _save_and_release_worktree(
-                        repo_root,
-                        path,
-                        integrated_into,
-                        _residue_run_record(path, ledger_records),
-                    )
-                    item.update(saved)
-                    if "unique" in saved["residue_classes"].values():
-                        residue_report.append({"worktree": str(path), **saved})
-                elif item["classification"] == "disposable":
-                    shadow_record = shadow_records.get(path.resolve())
-                    if shadow_record is None or not _shadow_patch_retained(
-                        shadow_record
-                    ):
-                        item["classification"] = "unintegrated"
-                        continue
-                    _git(repo_root, "worktree", "remove", "--force", str(path))
-                elif _git(
-                    path, "status", "--porcelain", "--untracked-files=all"
-                ).stdout.strip():
-                    saved = _save_and_release_worktree(
-                        repo_root,
-                        path,
-                        integrated_into,
-                        _residue_run_record(path, ledger_records),
-                    )
-                    item.update(saved)
-                    if "unique" in saved["residue_classes"].values():
-                        residue_report.append({"worktree": str(path), **saved})
-                else:
-                    _git(repo_root, "worktree", "remove", str(path))
-                removed.append(str(path))
+                    if item["classification"] == "dirty-integrated":
+                        current = _inspect_workspace(
+                            repo_root,
+                            path,
+                            integrated_into,
+                            (),
+                            raise_on_unavailable=False,
+                            release_residue=True,
+                        )
+                        if (
+                            current["classification"] != "dirty-integrated"
+                            or current["head"] != item["head"]
+                        ):
+                            item.update(current)
+                            continue
+                        saved = _save_and_release_worktree(
+                            repo_root,
+                            path,
+                            integrated_into,
+                            _residue_run_record(path, ledger_records),
+                        )
+                        item.update(saved)
+                        if "unique" in saved["residue_classes"].values():
+                            residue_report.append({"worktree": str(path), **saved})
+                    elif item["classification"] == "dirty":
+                        # Pinning was requested for this row: re-read it against
+                        # the live tree, then keep its commits in an archive ref
+                        # before the residue-preserving release clears the tree.
+                        current = _inspect_workspace(
+                            repo_root,
+                            path,
+                            integrated_into,
+                            (),
+                            raise_on_unavailable=False,
+                            release_residue=True,
+                        )
+                        if (
+                            current["classification"] != "dirty"
+                            or current["head"] != item["head"]
+                        ):
+                            item.update(current)
+                            continue
+                        archive_ref = f"{ARCHIVE_REF_PREFIX}{path.name}"
+                        saved = _save_and_release_worktree(
+                            repo_root,
+                            path,
+                            integrated_into,
+                            _residue_run_record(path, ledger_records),
+                            archive_ref=archive_ref,
+                        )
+                        item.update(saved)
+                        if "unique" in saved["residue_classes"].values():
+                            residue_report.append({"worktree": str(path), **saved})
+                    elif item["classification"] == "disposable":
+                        shadow_record = shadow_records.get(path.resolve())
+                        if shadow_record is None or not _shadow_patch_retained(
+                            shadow_record
+                        ):
+                            item["classification"] = "unintegrated"
+                            continue
+                        _git(repo_root, "worktree", "remove", "--force", str(path))
+                    elif _git(
+                        path, "status", "--porcelain", "--untracked-files=all"
+                    ).stdout.strip():
+                        saved = _save_and_release_worktree(
+                            repo_root,
+                            path,
+                            integrated_into,
+                            _residue_run_record(path, ledger_records),
+                        )
+                        item.update(saved)
+                        if "unique" in saved["residue_classes"].values():
+                            residue_report.append({"worktree": str(path), **saved})
+                    else:
+                        _git(repo_root, "worktree", "remove", str(path))
+                    removed.append(str(path))
+                except Exception:
+                    # A removal this pass attempted and did not complete: the
+                    # tree is neither removed nor an unreached row, so it is
+                    # recorded in its own list before the failure propagates.
+                    refused.append(str(path))
+                    raise
             # No blanket `worktree prune` after the pass: each removal above already
             # deregisters its own tree, while a prune would also drop the
             # registration of a tree whose directory vanished outside git — exactly
@@ -1470,11 +1590,21 @@ def garbage_collect(
                     shutil.rmtree(directory)
                     report["removed"] = True
                 run_reports.append(report)
+    except PROGRAMMING_ERRORS:
+        # Re-raised untouched: the traceback names the defective line, where a
+        # refusal would have named only the tree the defect happened to hit.
+        raise
     except Exception as exc:
         raise GcSweepError(
             str(exc),
             _gc_partial_report(
-                repo_root, integrated_into, apply, removed, worktrees, failed_path
+                repo_root,
+                integrated_into,
+                apply,
+                removed,
+                refused,
+                worktrees,
+                failed_path,
             ),
         ) from exc
 
@@ -1486,7 +1616,9 @@ def garbage_collect(
     # that would not says which condition holds it back.
     for item in worktrees:
         classification = str(item["classification"])
-        item["reclaimable"] = classification in RECLAIMABLE_CLASSES
+        item["reclaimable"] = classification in RECLAIMABLE_CLASSES or (
+            _pinnable_unique_commits(item, pin_unique_commits)
+        )
         if not item["reclaimable"]:
             if classification == "extraction":
                 item["withheld"] = RUN_DIRECTORY_EXTRACTION_REASON
