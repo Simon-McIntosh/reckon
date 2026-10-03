@@ -28,6 +28,7 @@ import json
 import re
 from collections import Counter
 from html.parser import HTMLParser
+from itertools import pairwise
 from pathlib import Path
 
 from bs4 import BeautifulSoup
@@ -485,9 +486,19 @@ def read_state(html_text: str) -> dict:
     st: dict = {}
     meta_values: dict[str, str] = {}
 
-    # Scalars from <meta name="plan-*">
+    # Scalars from <meta name="plan-*">. A name carried more than once
+    # resolves to its FIRST occurrence in document order; every later copy is
+    # ignored and reported. ``_set_meta`` replaces the first occurrence, so
+    # this rule is the one the writer maintains — last-wins read a different
+    # line than the writer updated, and a write then reported a value the
+    # reader never saw.
+    duplicated: list[str] = []
     for m in soup.find_all("meta"):
         name = (m.get("name") or "").lower()
+        if name in meta_values:
+            if name.startswith("plan-"):
+                duplicated.append(name)
+            continue
         meta_values[name] = m.get("content", "")
         if not name.startswith("plan-"):
             continue
@@ -504,6 +515,11 @@ def read_state(html_text: str) -> dict:
                 pass
 
     warnings: list[str] = []
+    for duplicate_name in dict.fromkeys(duplicated):
+        warnings.append(
+            f"{duplicate_name}: duplicated in the document; the first "
+            "occurrence in document order wins and every later copy is ignored"
+        )
     raw_declarations = meta_values.get("plan-section-declarations")
     if raw_declarations is not None:
         try:
@@ -1148,6 +1164,74 @@ def _remove_meta(html_text: str, name: str) -> str:
     return pat.sub("", html_text)
 
 
+def _metas_are_contiguous(html_text: str, names: list[str]) -> bool:
+    """True when each name occurs exactly once, in order, separated by whitespace only."""
+    spans: list[tuple[int, int]] = []
+    for name in names:
+        matches = list(
+            re.finditer(
+                rf'<meta\s+name="{re.escape(name)}"[^>]*>', html_text, re.IGNORECASE
+            )
+        )
+        if len(matches) != 1:
+            return False
+        spans.append(matches[0].span())
+    for (_, end), (start, _) in pairwise(spans):
+        if start < end or html_text[end:start].strip():
+            return False
+    return True
+
+
+def _set_meta_block(html_text: str, pairs: list[tuple[str, str]]) -> str:
+    """Insert or replace several ``<meta>`` tags as ONE contiguous block.
+
+    Three lifecycle scalars written as three independently positionable lines
+    are three independently unionisable hunks: a merge of two landing records
+    takes a line from each, and the document then carries two ``plan-version``
+    lines whose writer updates one and whose reader takes the other. One
+    contiguous block makes a three-way merge treat them as a single hunk.
+
+    An existing document is changed as little as the block allows. A document
+    that already carries every name contiguously is rewritten in place, and
+    otherwise the block is written where the FIRST pair's tag already sits —
+    for the lifecycle scalars, where ``plan-impl`` sits when it is emitted —
+    so that tag holds its position and only the later names move to it. The
+    placement is not tidiness: a writer that relocates a scalar another reader
+    or test pins in place rewrites bytes no edit asked it to rewrite, which is
+    churn in every plan on every write. Every later occurrence of a name is
+    removed, so a document that already carries duplicates converges to one
+    copy, and a document carrying none gets the block before ``</head>``.
+    """
+    if not pairs:
+        return html_text
+    names = [name for name, _ in pairs]
+    block = "\n".join(
+        f'<meta name="{name}" content="{_esc(content)}">' for name, content in pairs
+    )
+    if _metas_are_contiguous(html_text, names):
+        out = html_text
+        for name, content in pairs:
+            out = _set_meta(out, name, content)
+        return out
+    anchor = re.search(
+        rf'<meta\s+name="{re.escape(names[0])}"[^>]*>', html_text, re.IGNORECASE
+    )
+    if anchor is None:
+        out = html_text
+        for name in names:
+            out = _remove_meta(out, name)
+        idx = out.lower().find("</head>")
+        if idx != -1:
+            return out[:idx] + block + "\n" + out[idx:]
+        return block + "\n" + out
+    head = html_text[: anchor.start()]
+    rest = html_text[anchor.start() :]
+    for name in names:
+        head = _remove_meta(head, name)
+        rest = _remove_meta(rest, name)
+    return head + block + "\n" + rest
+
+
 # A section the parser selects nothing from can still hold authored content in
 # a spelling the parser does not recognise. read_state reports that as an empty
 # collection — indistinguishable on its own from "nothing was authored" — and a
@@ -1266,6 +1350,9 @@ def write_state(html_text: str, state: dict) -> str:
             out = _remove_meta(out, meta_name)
         out = _splice_section_records(out, [])
     for f in _SCALARS:
+        if f == "modified":
+            # Emitted with impl and version as one block, below.
+            continue
         if f in state and state[f] is not None:
             out = _set_meta(out, f"plan-{f.replace('_', '-')}", state[f])
     if "effort_hours" in state and state.get("effort_calibrated") is not False:
@@ -1299,14 +1386,22 @@ def write_state(html_text: str, state: dict) -> str:
                 out = _remove_meta(out, meta_name)
         if "tier" not in state:
             out = _remove_meta(out, "plan-tier")
-    # A plan carrying records holds its impl as records, so the writer leaves the
-    # meta alone there — on either side of the write, since regeneration must
-    # stay byte-stable whether the records are on disk or only in the state, and
-    # a derived figure must never be stored as the authored one.
+    # impl, version and modified are the lifecycle scalars a landing merge
+    # rewrites on both sides, so they are emitted as one contiguous block: a
+    # single hunk for a three-way merge rather than three independently
+    # unionisable lines. A plan carrying records holds its impl as records, so
+    # that figure stays out of the block there — on either side of the write,
+    # since regeneration must stay byte-stable whether the records are on disk
+    # or only in the state, and a derived figure must never be stored as the
+    # authored one.
+    lifecycle_block: list[tuple[str, str]] = []
     if "impl" in state and not _impl_is_carried_by_records(state, html_text):
-        out = _set_meta(out, "plan-impl", state["impl"])
+        lifecycle_block.append(("plan-impl", state["impl"]))
     if "version" in state:
-        out = _set_meta(out, "plan-version", int(state.get("version") or 0))
+        lifecycle_block.append(("plan-version", int(state.get("version") or 0)))
+    if state.get("modified") is not None:
+        lifecycle_block.append(("plan-modified", state["modified"]))
+    out = _set_meta_block(out, lifecycle_block)
     if artifact_type == "plan" and "section_declarations" in state:
         declarations = state.get("section_declarations") or {}
         out = _set_meta(
@@ -1447,12 +1542,18 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
     head = text[:16384]
     rec = dict(_DEFAULTS)
     metas: dict[str, str] = {}
+    duplicated: list[str] = []
     for tag in _META_RE.findall(head):
         nm = _NAME_RE.search(tag)
         if not nm:
             continue
+        key = nm.group(2).lower()
+        if key in metas:
+            if key.startswith("plan-"):
+                duplicated.append(key)
+            continue
         ct = _CONTENT_RE.search(tag)
-        metas[nm.group(2).lower()] = ct.group(2) if ct else ""
+        metas[key] = ct.group(2) if ct else ""
     for name, content in metas.items():
         if not name.startswith("plan-") or content == "":
             continue
@@ -1483,6 +1584,11 @@ def _parse_meta_uncached(path: Path, slug: str | None) -> dict:
             rec["capability"] = mapped
             rec["compatibility_warnings"] = [f"plan: {diagnostic}"]
     warnings = list(rec.get("compatibility_warnings") or [])
+    for duplicate_name in dict.fromkeys(duplicated):
+        warnings.append(
+            f"{duplicate_name}: duplicated in the document; the first "
+            "occurrence in document order wins and every later copy is ignored"
+        )
     # The record contract is validated in one place only: a document carrying
     # record metadata is read by the parser, so this path can never report a
     # figure the parsed read refuses to produce.

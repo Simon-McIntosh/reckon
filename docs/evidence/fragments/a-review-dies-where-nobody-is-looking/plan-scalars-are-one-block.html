@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-title" content="The lifecycle scalars are one block, and a duplicated scalar reads by a stated rule">
+  <meta name="plan-summary" content="The plan writer emitted impl, version and modified as independently positionable meta elements, so a union-resolved merge could leave two copies of each; the reader then took whichever copy came last while the writer maintained the first. The store's write path now emits the three as one contiguous block, anchored where the first of them already sits so no scalar is relocated, and both reader paths in the plan parser resolve a duplicated plan-* scalar to its first occurrence in document order, reporting every later copy as a warning.">
+  <meta name="plan-evidence-for" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-commits" content="1ff243d09, ac09245a2">
+  <title>The lifecycle scalars are one block, and a duplicated scalar reads by a stated rule | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The lifecycle scalars are one block, and a duplicated scalar reads by a stated rule</h1>
+
+    <section id="defect">
+      <h2>The defect</h2>
+      <p>A union-resolved merge of two landing records leaves a document carrying two copies of a
+        <code>plan-*</code> scalar line, and the three lifecycle scalars — <code>plan-impl</code>,
+        <code>plan-version</code> and <code>plan-modified</code> — are the lines both merge sides
+        rewrite. Written as three independently positionable meta elements they are three
+        independently unionisable hunks, so the merge keeps a line from each side.</p>
+      <p>The reader then resolved the duplicate by document order: <code>read_state</code> walked
+        every meta and overwrote each field in turn, so the last copy won — while the writer
+        (<code>_set_meta</code>) replaces only the first occurrence in place. Reader and writer
+        named different lines, so two successful <code>set impl</code> calls could coexist with a
+        promotion refusing that impl had not moved. Reproduced before repair on a document carrying
+        <code>plan-impl</code> twice: <code>0.9</code> then <code>0.1</code> reads as
+        <code>0.1</code>, and the same document with the copies swapped reads as
+        <code>0.9</code>.</p>
+      <p>The first block writer carried a second defect of its own, measured in review: it anchored
+        the block at the earliest of the three names in document order, which in the plan corpus is
+        <code>plan-modified</code> — a line that sits above <code>plan-impl</code>. Every write then
+        relocated the <code>plan-impl</code> line up to that anchor, rewriting bytes no edit asked
+        to rewrite. The corpus write test compares a plan outside the version/modified stamps before
+        and after an edited write, and failed on exactly that relocation for the corpus plans whose
+        impl sits after version or modified.</p>
+    </section>
+
+    <section id="changes">
+      <h2>What changed</h2>
+      <ol>
+        <li><code>reckon/_plan_html.py</code>: <code>_set_meta_block</code> emits several metas as
+          one contiguous block, and <code>write_state</code> routes <code>plan-impl</code>,
+          <code>plan-version</code> and <code>plan-modified</code> through it. The block is anchored
+          at the FIRST pair's own tag — where <code>plan-impl</code> sits when it is emitted — so
+          that line is rewritten in place and only the later names move to it; a document already
+          carrying the three contiguously is rewritten in place and changes no placement at all.
+          Duplicates collapse: every later occurrence is removed, so a document carrying two copies
+          converges to one on its next write, and a document carrying none gets the block before
+          <code>&lt;/head&gt;</code>. A three-way merge of two landing records then sees one hunk
+          for the three scalars rather than three independently unionisable lines. The plan writer
+          in <code>reckon/_store.py</code> reaches the block through <code>write_state</code>, which
+          both of its plan-write paths call — no separate emission site can drift from it. A plan
+          whose records carry its impl keeps that figure out of the block, as before.</li>
+        <li>Both reader paths in <code>reckon/_plan_html.py</code> — <code>read_state</code> and
+          <code>parse_meta</code> — resolve a duplicated plan scalar by one stated rule:
+          <strong>the first occurrence in document order wins; every later copy is ignored and
+          reported as a compatibility warning</strong>. Chosen over refusal because the writer
+          already replaces the first occurrence, so first-wins makes reader and writer name the same
+          line and removes the disagreement at its source; refusing would instead make every read of
+          a document carrying a duplicate fail, the same project-wide read outage this plan measures
+          for an absent resource island. The warning keeps the duplicate visible rather than silent,
+          and <code>audit-doc</code>'s <code>duplicated-plan-scalar</code> error already reports
+          it.</li>
+        <li><code>tests/test_plan_scalars_are_one_block.py</code>: a plan written through the
+          store's <code>write_plan</code> carries the three lifecycle metas as adjacent elements
+          (asserted as next-element adjacency, so a non-meta element between them fails the test); a
+          document carrying each of the three twice resolves to the first copy in both copy orders,
+          with the duplicated names in the warnings, through <code>read_state</code> and through
+          <code>parse_meta</code>; and a scattered document (impl after version and modified, the
+          corpus shape) keeps every other meta in document position through a real write while the
+          three converge onto the block.</li>
+      </ol>
+    </section>
+
+    <section id="evidence">
+      <h2>Evidence</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Declared mutation: the new test module run against base source, copies in both
+              orders</td>
+            <td>base <code>4d1feeed9</code>, scratch tree</td>
+            <td><strong>4 failed</strong>, exit 1 — the swapped-copies case fails as the
+              declaration says (<code>assert 0.9 == 0.1</code>, the reader taking the last copy) and
+              its unswapped twin as <code>assert 0.1 == 0.9</code>; the metadata reader fails as
+              <code>assert 0.1 == 0.9 ± 9.0e-07</code>; the store write fails as
+              <code>assert &lt;meta content="Scalar block" name="plan-title"/&gt; is
+              &lt;meta content="3" name="plan-version"/&gt;</code>, so the three metas are not
+              adjacent</td>
+          </tr>
+          <tr>
+            <td>Review measurement: the corpus write test at the first block writer</td>
+            <td>integrated head <code>9f861133</code> (this branch stacked on main, per the
+              log's own header)</td>
+            <td><strong>1 failed</strong> — the test reproduces alone (base: 6 of 6 pass) and fails
+              on the relocated <code>plan-impl</code> line
+              (<code>coordinator-recheck-section-body-head.log</code>); this is the defect the
+              placement anchor repairs</td>
+          </tr>
+          <tr>
+            <td>Gate: both test modules at the placement fix, in the worktree</td>
+            <td>head <code>ac09245a2</code></td>
+            <td><strong>11 passed</strong> in 18.84s, exit 0</td>
+          </tr>
+          <tr>
+            <td>Population: every test file importing <code>reckon._store</code> or
+              <code>reckon._plan_html</code> (the coordinator's 181-file list; the 180 that exist at
+              this revision — <code>tests/test_plan_scalars_are_one_block.py</code> does not), base
+              source</td>
+            <td>base <code>7dde3c88b</code>, scratch tree verified byte-identical to the
+              revision</td>
+            <td><strong>19 failed, 4290 passed, 3 skipped, 4 warnings in 1677.66s (0:27:57)</strong>, exit 1 — <code>test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs</code>; <code>test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated</code>; <code>test_dispatch_returns_without_worker.py::test_dispatch_returns_when_its_supervisor_finished_the_launch</code>; <code>test_crew_promotion.py::test_a_reviewed_run_carries_its_dimensions_on_the_ledger_row</code>; <code>test_crew_promotion.py::test_a_run_promoted_without_a_review_is_distinguishable_from_a_zero_scored_one</code>; <code>test_schema.py::test_well_formed_evidence_record_with_resolving_shas_is_quiet</code>; <code>test_routing_evidence_fields.py::test_promotion_records_an_empty_follow_on_list_not_a_missing_key</code>; <code>test_routing_evidence_fields.py::test_promotion_records_paths_named_in_follow_ons</code>; <code>test_routing_evidence_fields.py::test_promotion_records_a_stated_dispute_count</code>; <code>test_routing_evidence_fields.py::test_a_run_with_no_predecessor_omits_the_continuation_link</code>; <code>test_routing_evidence_fields.py::test_a_coordinator_supplied_predecessor_is_recorded</code>; <code>test_routing_evidence_fields.py::test_a_predecessor_derived_from_the_base_names_the_earlier_run</code>; <code>test_routing_evidence_fields.py::test_a_promoted_row_carries_all_three_fields_together</code>; <code>test_promotion_reads_the_terminal_record.py::test_a_terminal_record_landing_after_exit_is_folded_into_the_row</code>; <code>test_promotion_reads_the_terminal_record.py::test_a_stream_that_never_receives_a_terminal_record_keeps_the_mtime_fallback</code>; <code>test_receipt_after_release.py::test_a_live_writer_that_never_emits_a_receipt_keeps_the_fallback</code>; <code>test_receipt_after_release.py::test_an_already_terminal_quiet_run_is_unchanged</code>; <code>test_receipt_after_release.py::test_a_writer_that_never_stops_cannot_hang_the_folded_promotion</code>; <code>test_receipt_after_release.py::test_a_live_writer_is_ended_first_and_its_receipt_is_folded</code></td>
+          </tr>
+          <tr>
+            <td>Same population, all 181 files present, head source</td>
+            <td>head <code>ac09245a2</code>, scratch tree verified byte-identical to the
+              commit</td>
+            <td><strong>16 failed, 4298 passed, 3 skipped, 4 warnings in 1659.57s (0:27:39)</strong>, exit 1 — <code>test_crew_promotion.py::test_a_reviewed_run_carries_its_dimensions_on_the_ledger_row</code>; <code>test_crew_promotion.py::test_a_run_promoted_without_a_review_is_distinguishable_from_a_zero_scored_one</code>; <code>test_routing_evidence_fields.py::test_promotion_records_an_empty_follow_on_list_not_a_missing_key</code>; <code>test_routing_evidence_fields.py::test_promotion_records_paths_named_in_follow_ons</code>; <code>test_routing_evidence_fields.py::test_promotion_records_a_stated_dispute_count</code>; <code>test_routing_evidence_fields.py::test_a_run_with_no_predecessor_omits_the_continuation_link</code>; <code>test_routing_evidence_fields.py::test_a_coordinator_supplied_predecessor_is_recorded</code>; <code>test_routing_evidence_fields.py::test_a_predecessor_derived_from_the_base_names_the_earlier_run</code>; <code>test_routing_evidence_fields.py::test_a_promoted_row_carries_all_three_fields_together</code>; <code>test_schema.py::test_well_formed_evidence_record_with_resolving_shas_is_quiet</code>; <code>test_promotion_reads_the_terminal_record.py::test_a_terminal_record_landing_after_exit_is_folded_into_the_row</code>; <code>test_promotion_reads_the_terminal_record.py::test_a_stream_that_never_receives_a_terminal_record_keeps_the_mtime_fallback</code>; <code>test_receipt_after_release.py::test_a_live_writer_is_ended_first_and_its_receipt_is_folded</code>; <code>test_receipt_after_release.py::test_a_live_writer_that_never_emits_a_receipt_keeps_the_fallback</code>; <code>test_receipt_after_release.py::test_an_already_terminal_quiet_run_is_unchanged</code>; <code>test_receipt_after_release.py::test_a_writer_that_never_stops_cannot_hang_the_folded_promotion</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Judged by delta against the base revision as the repository's test protocol requires: the head arm adds <strong>no failure identifier</strong> over base — every identifier it reports is also in the base arm, so none is a condition this change introduced; the base arm additionally carries 3 identifier(s) the head arm does not (<code>test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated</code>; <code>test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs</code>; <code>test_dispatch_returns_without_worker.py::test_dispatch_returns_when_its_supervisor_finished_the_launch</code>), all in <code>test_dispatch_returns_without_worker.py</code>, which measures dispatch timing under load — recorded rather than attributed to this change, since the two arms ran concurrently on the same node. The corpus write test named above appears in neither arm's failure list: at the corrected head it passes unedited.</p>
+    </section>
+
+    <section id="provenance">
+      <h2>Reproduction</h2>
+      <table>
+        <thead><tr><th>Item</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Base revision</td><td><code>7dde3c88b</code> (the main revision this branch is
+            stacked on)</td></tr>
+          <tr><td>Head commits</td><td><code>1ff243d094da42dcaa38702f4539de8415324c50</code> (the block writer and reader
+            rule), <code>ac09245a2d27a23a8b6ad0c0b1a2410e2568baf9</code> (the placement anchor)</td></tr>
+          <tr><td>Logs</td>
+            <td><code>fix-gate4.log</code>, <code>negative-control.log</code>,
+              <code>coordinator-recheck-section-body-head.log</code>, <code>base-181.log</code>,
+              <code>head-181.log</code> in the run directory
+              (<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T162938204236-plan-scalars-are-one-block</code>),
+              each headed by its revision, tree, module under test, resolved working directory and
+              literal command, and ending with a bare <code>EXIT=</code> line</td></tr>
+          <tr><td>Scratch trees</td>
+            <td><code>base-181</code> (base) and <code>head-181</code> (head) under
+              <code>$TMPDIR</code> of the run, removed with the run's scratch</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
