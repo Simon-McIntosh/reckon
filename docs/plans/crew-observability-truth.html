@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="610">
+<meta name="plan-version" content="611">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.64">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -2623,6 +2623,9 @@ resume-2.jsonl           0 bytes   (no parsable record)</pre><p><strong>The refu
 </div>
 <div class="r-comment" data-section="_top" data-id="c-cot-s14-landed" data-who="" data-when="">
     <div class="r-comment-body"><p>Measure 8, the last of the eight, landed in merge <code>447071db1</code> of <code>3d6d2cdeb</code> (run r-20261003T092704179408-closure-ledger-third-zero, local lane, reviewed at 97 with no added failures). The reckon-build skill's closure ledger now names a third zero, <code>executable-remaining</code>, read from <code>plan_executable_remainder</code>, beside <code>foldable-remaining</code> and <code>unreconciled-runs</code>. A session does not end while it is nonzero. The sprint-orchestration reference adds the same rule and its empty-ledger negative: an empty ledger beside a nonzero remainder is an unfinished drain. <code>tests/test_skill_contracts.py</code> asserts the three-figure ledger line. The 15-file skill population fails the same one id at base <code>6b0c84113</code> and at the stacked head.</p><p>Review follow-ons. The reference's empty-ledger negative is not pinned by any test. The skill's fixed read-set now sits 12 estimated tokens under <code>FIXED_READ_SET_TOKEN_BUDGET</code> (15,600), so the next addition to <code>SKILL.md</code> will trip the budget test.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-cot-s19-write-half-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>The write half of measure 1 landed in merge <code>e16419d70</code> of <code>38a1ee192</code> (run r-20261003T092905759281-disposition-reaches-the-ledger-row, local lane, reviewed at 93 with no added failures). A run's disposition verb, from the closed set <code>record_run_disposition</code> writes, now reaches its committed ledger row at promotion. The field is declared in the row schema and present on every row, null when the run carried none. <code>tests/test_disposition_reaches_the_ledger_row.py</code> promotes a run with a disposition and one without and reads both rows back. The 176-file ledger and promotion population fails the same eight ids at base <code>50baeed1b</code> and at the stacked head. Before promotion, s22-coord corrected the manifest's <code>after_suite</code> revision, which named an unresolvable sha, to the head log's own header <code>3e23dbe10</code>; the delivered copy is kept beside it.</p><p><strong>§19 stays open.</strong> No production reader renders the field yet, so the part of measure 1 that has the rendered row read the disposition is unserved. That is the remaining work.</p></div>
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260903T091121108445-display-cumulative-evidence-record" data-who="doc-evidence" data-when="2026-09-03T09:16:07.351Z">
     <div class="r-comment-body"><p>Cumulative evidence record created with an anchor per landed outcome, a dedicated anchor for each of the three corrections, and an outage-timeline figure; audit-doc clean</p></div>
