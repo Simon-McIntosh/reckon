@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="260">
+<meta name="plan-version" content="261">
 <meta name="plan-modified" content="2026-10-03">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1844,6 +1844,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261003T212143648453-the-change-stream-test-leaves-no-scanner-running" data-who="reckon-build" data-when="2026-10-03T21:42:24.417Z">
     <div class="r-comment-body"><p>Repaired tests/test_page_paints_from_the_index.py so a change-stream handler cannot outlive its test: _ChangeStream.close() now closes the HTTPResponse whose makefile kept the socket fd open, and both threaded servers run daemon_threads=False so server_close() joins every handler thread. Whole file 8 passed EXIT=0; the two tests 20/20 under load EXIT=0; the parent-commit file reddens the later test 20/20 with assert 2 == 1.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261003T214311321865-review-of-the-change-stream-test-leaves-no-scanner-running" data-who="reckon-build" data-when="2026-10-03T21:56:01.657Z">
+    <div class="r-comment-body"><p>Independent review of r-20261003T212143648453-the-change-stream-test-leaves-no-scanner-running stored at reviewed head 65617b3f2 (base d6d1f4ef3): total 94 (goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 20), added_failure_count 0, added_failure_ids []; one follow-on finding -- the declared negative control did not reproduce on this host.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
