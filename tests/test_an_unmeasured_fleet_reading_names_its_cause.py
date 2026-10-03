@@ -143,6 +143,24 @@ def _raise_from_the_pointer_step(
     return failure
 
 
+def _raise_from_the_pointer_listing(
+    message: str, monkeypatch: pytest.MonkeyPatch
+) -> _PointerStepError:
+    """Make the pointer listing raise, so no pointer is read before the failure.
+
+    This is the pre-pointer path: the reading fails before it reaches the
+    per-pointer step, and it must still name the exception rather than fall back
+    to a bare absence.
+    """
+    failure = _PointerStepError(message)
+
+    def raising(*, project: str) -> list[dict[str, Any]]:
+        raise failure
+
+    monkeypatch.setattr(promotion, "list_live", raising)
+    return failure
+
+
 def test_an_unmeasured_reading_names_the_exception_type_and_message(
     repository: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -156,6 +174,21 @@ def test_an_unmeasured_reading_names_the_exception_type_and_message(
     assert reading["unmeasured"]["cause"] == (f"{type(failure).__name__}: {failure}")
     assert type(failure).__name__ in reading["unmeasured"]["cause"]
     assert str(failure) in reading["unmeasured"]["cause"]
+
+
+def test_a_failure_before_the_pointers_are_read_still_names_its_cause(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    failure = _raise_from_the_pointer_listing(
+        "fleet pointers are temporarily unreadable", monkeypatch
+    )
+
+    reading = promotion._fleet_state_reading(PROJECT)
+
+    assert reading["fleet_state"] == "unmeasured"
+    assert reading["unmeasured"]["fleet_state"] == "unavailable"
+    assert set(reading["unmeasured"]) == {"fleet_state", "cause"}
+    assert reading["unmeasured"]["cause"] == f"{type(failure).__name__}: {failure}"
 
 
 def test_the_named_cause_is_bounded_in_length(

@@ -6591,12 +6591,14 @@ def _fleet_state_reading(project: str) -> dict[str, Any]:
     read. The reading deliberately stays outside the ledger because it describes
     the fleet at this moment, not this run.
 
-    When the per-pointer step that derives the unreconciled count cannot be
-    composed, the result is an unmeasured reading that still states the exception
-    type and message under one named key, bounded in length; the exception never
-    blocks landing, but it leaves a cause a reader can act on instead of a bare
-    absence. A failure before the pointers are read leaves the plain unmeasured
-    reading, because there is no per-pointer work whose cause it could name.
+    When the reading cannot be composed, at the per-pointer step that derives the
+    unreconciled count or earlier when the pointers cannot be listed at all, the
+    result is an unmeasured reading that still states the exception type and
+    message under one named key, bounded in length; the exception never blocks
+    landing, but it leaves a cause a reader can act on instead of a bare absence.
+    Every unmeasured reading names the exception that produced it, whatever step
+    failed, so a stale fixture and a real composition break are distinguishable
+    from the promotion result alone.
     """
     observed_at = _utc_now()
     try:
@@ -6628,8 +6630,8 @@ def _fleet_state_reading(project: str) -> dict[str, Any]:
             "actionable_classifications": sorted(set(actionable)),
             "occupied_lanes": len(lanes),
         }
-    except Exception:  # noqa: BLE001 - an unavailable reading never blocks landing
-        return _unavailable_fleet_reading(observed_at)
+    except Exception as exc:  # noqa: BLE001 - a named cause never blocks landing
+        return _unavailable_fleet_reading(observed_at, cause=exc)
 
 
 def _unavailable_fleet_reading(
