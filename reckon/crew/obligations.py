@@ -669,10 +669,13 @@ def _sub_floor_items_by_session(
     The review is selected through the same rule the classifier and the
     promotion gate use (:func:`reckon.crew.recovery.select_review_for_head`),
     so a record describing a superseded revision cannot stand in for the
-    current one. Each row names the run the review is about — the run whose
-    work carries the low dimension — and carries the dimension, the score it
-    was given and the floor it fell below, so a reader can see the finding
-    without opening the record.
+    current one. A pointer naming no readable tree has no head to select by,
+    and its newest record is read through the same headless reading the
+    classifier uses (:func:`reckon.crew.recovery.newest_review_for_headless_run`),
+    so a duty is not lost to a head the pointer can no longer resolve. Each row
+    names the run the review is about — the run whose work carries the low
+    dimension — and carries the dimension, the score it was given and the floor
+    it fell below, so a reader can see the finding without opening the record.
 
     A review with no floor declared for the dimension, and a dimension already
     answered by a disposition in the closed set, produce nothing. The total is
@@ -695,12 +698,20 @@ def _sub_floor_items_by_session(
             # resolving it here would launch one git process per live run per
             # sweep for an answer that cannot name a duty.
             continue
-        record, _described = recovery.select_review_for_head(
-            project,
-            run_id,
-            recovery._reviewed_run_head(pointer) if tree is not None else "",
-            tree=tree,
-        )
+        if tree is None:
+            # No readable tree names no revision to select by, and resolving a
+            # head would launch one git process per live run per sweep for an
+            # answer that cannot name a duty. The store's newest record is the
+            # evidence there is, read through the same headless reading the
+            # classifier uses: a duty names a dimension the record scored low,
+            # and a reclaimed worktree neither supplies nor retires one.
+            record = recovery.newest_review_for_headless_run(
+                project, run_id, reclaimed=False
+            )
+        else:
+            record, _described = recovery.select_review_for_head(
+                project, run_id, recovery._reviewed_run_head(pointer), tree=tree
+            )
         if not record:
             continue
         node = pointer.get("node") or {}

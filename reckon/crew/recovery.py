@@ -655,6 +655,27 @@ def _review_lane_hold_action(
     )
 
 
+def newest_review_for_headless_run(
+    project: str, run_id: str, *, reclaimed: bool
+) -> dict[str, Any] | None:
+    """The stored record to read for a run whose record resolves no head.
+
+    An empty head names no revision to select by, and the reading follows from
+    how it came to be empty, so every reader of a headless record takes it from
+    here rather than holding a rule of its own. ``reclaimed`` is the
+    classifier's case: a record naming a worktree that is no longer on disk
+    would resolve, through the shared checkout, a head its review is not about,
+    so nothing is read for it and the compose path refuses in turn naming the
+    missing head. Every other headless record — one naming no worktree at all,
+    or one whose tree resolves no head — has no checkout fallback to borrow and
+    never had one, so the store's newest record for the run is the only
+    evidence there is and it is read.
+    """
+    if reclaimed:
+        return None
+    return review_module.read_review(project, run_id)
+
+
 def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, str]:
     """Read the review of the head being classified, not just any record.
 
@@ -664,15 +685,9 @@ def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, st
     exists. The selection it uses is the one promotion uses, so the two agree
     on which stored record is evidence about a revision.
 
-    An empty head names no revision to select by, and the reading follows from
-    how it came to be empty. A worktree that has been reclaimed, with a record
-    naming no resolvable head, is refused: the head such a run would resolve
-    through is the shared checkout's HEAD, which its review is not about, so no
-    stored record is selected and the compose path refuses in turn naming the
-    missing head. A record that names no worktree at all, or one whose worktree
-    resolves no head, has no checkout fallback to borrow and never had one — the
-    store's newest record for the run is the only evidence there is, and it is
-    read, the reading held before the reclaimed-run rule existed.
+    An empty head names no revision to select by; how it came to be empty
+    decides the reading, and every reader of a headless record takes it from
+    :func:`newest_review_for_headless_run`.
     """
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
@@ -681,9 +696,9 @@ def _stored_review(record: Mapping[str, Any]) -> tuple[dict[str, Any] | None, st
     head, tree = _review_head_and_tree(record)
     try:
         if not head:
-            if _worktree_reclaimed(record):
-                return None, ""
-            review = review_module.read_review(project, run_id)
+            review = newest_review_for_headless_run(
+                project, run_id, reclaimed=_worktree_reclaimed(record)
+            )
         else:
             review, _stale = select_review_for_head(project, run_id, head, tree=tree)
     except (OSError, ValueError) as exc:

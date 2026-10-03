@@ -7,13 +7,17 @@ and neither reading resolved a revision, so the review fell through to the
 shared checkout's HEAD. Each review's own promotion commit moved that HEAD, the
 next sweep found the stored review stale, and the loop dispatched another.
 
-Two readings are asserted here. An abbreviated ``commits:`` entry resolves to
+Three readings are asserted here. An abbreviated ``commits:`` entry resolves to
 this run's commit through the run's repository, which shares the object store
 the reclaimed worktree wrote into. And a reclaimed run whose record names no
 resolvable head composes no review and records the missing head as the reason,
 because a review of the checkout's HEAD is a review of code this run never
 carried. The repository keeps a later commit at its HEAD in both cases, so the
-empty reading is a refusal and not an absent repository.
+empty reading is a refusal and not an absent repository. And a live run whose
+pointer names no readable tree still owes its sub-floor dimension duty: the
+duty reader takes a headless run's record through the same reading the
+classifier uses, so an unresolvable head does not leave a low dimension
+undisposed.
 """
 
 from __future__ import annotations
@@ -25,7 +29,9 @@ from pathlib import Path
 
 import pytest
 
+from reckon.crew import obligations as obligations_module
 from reckon.crew import recovery, runs
+from reckon.crew import review as review_module
 
 PROJECT = "reclaimed-fixture"
 SESSION = "coordinator-fixture"
@@ -211,3 +217,88 @@ def test_a_reclaimed_run_with_no_resolvable_head_composes_no_review(fleets) -> N
     recorded = runs.read_pointer(SOURCE_RUN).get("review_dispatch") or {}
     assert recorded.get("status") == "refused"
     assert "no resolvable head" in str(recorded.get("reason"))
+
+
+def _write_host_flight(home: Path, floors: dict[str, int]) -> None:
+    """Declare dimension floors in the temporary config home's host layer."""
+    (home / "flight.yaml").write_text(
+        "gates:\n  dimension_floors:\n"
+        + "".join(f"    {dimension}: {floor}\n" for dimension, floor in floors.items()),
+        encoding="utf-8",
+    )
+
+
+def _store_review(run_id: str, scores: dict[str, int], *, head: str) -> None:
+    """Store one review of ``run_id`` through the production writer."""
+    text = "\n".join(
+        [f"reviewed_base_sha: {head}", f"reviewed_head_sha: {head}"]
+        + [f"SCORE {dimension}: {score}" for dimension, score in scores.items()]
+    )
+    record = review_module.parse_review(text + "\n")
+    record.update(
+        {
+            "project": PROJECT,
+            "reviewed_run_id": run_id,
+            "timestamp": "2026-10-03T01:00:00+00:00",
+        }
+    )
+    review_module.store_review(record)
+
+
+def test_a_live_run_with_no_readable_tree_still_owes_its_sub_floor_duty(
+    fleets, tmp_path
+) -> None:
+    """A headless live run's low dimension stays a duty rather than a silent skip.
+
+    One pointer names a worktree that is no longer on disk and another names no
+    tree at all; neither can resolve a head to select a review by, and the
+    store's newest record is the evidence a dimension duty is derived from. The
+    duty reader takes it through the same headless reading the classifier uses,
+    so no dimension is left undisposed over a head the pointer cannot name.
+    """
+    fleet = fleets()
+    _write_host_flight(fleet.home, {"durability": 10})
+    cases = {
+        "r-vanished-tree": str(tmp_path / "worktrees" / "gone"),
+        "r-no-tree": "",
+    }
+    for run_id, worktree in cases.items():
+        pointer = {
+            "run_id": run_id,
+            "project": PROJECT,
+            "session": SESSION,
+            "process_alive": False,
+            "node": {
+                "id": run_id,
+                "plan": "fixture",
+                "section": "s1",
+                "time_budget": "20m",
+                "write_paths": ["seed.txt"],
+            },
+        }
+        if worktree:
+            pointer["worktree"] = worktree
+        runs._write_json(runs.pointer_path(run_id), pointer)
+        _store_review(
+            run_id,
+            {
+                "goal_fidelity": 19,
+                "evidence": 19,
+                "scope_discipline": 18,
+                "durability": 5,
+                "fit": 18,
+            },
+            head=fleet.head(),
+        )
+
+    report = obligations_module.obligations(PROJECT, SESSION)
+    rows = [
+        row
+        for row in report["obligations"]
+        if row["kind"] == obligations_module.SUB_FLOOR_DUTY_KIND
+    ]
+
+    assert {row["run_id"] for row in rows} == set(cases)
+    assert {(row["dimension"], row["score"], row["floor"]) for row in rows} == {
+        ("durability", 5, 10)
+    }
