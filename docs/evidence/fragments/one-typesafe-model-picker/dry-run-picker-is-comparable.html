@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-typesafe-model-picker">
+  <meta name="plan-title" content="A dry-run report is comparable when the picker answers">
+  <meta name="plan-summary" content="A resolved plan records the picker answer only when the route used it, and without the per-call latencies, so two dry runs of one node differ in no field the picker touched. A shadow preview carries no picker answer at all.">
+  <meta name="plan-evidence-for" content="reckon:one-typesafe-model-picker">
+  <meta name="plan-verifies" content="reckon:one-typesafe-model-picker#s6">
+  <meta name="plan-recorded-at" content="2026-10-03">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,dispatch,picker,dry-run,evidence">
+  <title>A dry-run report is comparable when the picker answers | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="dry-run-picker-is-comparable" data-reckon="landed" data-when="2026-10-03">
+  <h2>A dry-run report is comparable when the picker answers</h2>
+  <p>A dry run resolves the node and prints the <code>DispatchPlan</code> without launching
+  anything. When the picker answered, that report carried the selection's per-call
+  <code>latency_ms</code> and <code>jev_latency_ms</code>, so two previews of one node <em>differed
+  in a field the picker happened to measure</em> — a comparison between two dry runs read as two
+  different dispatches for a reason unrelated to what was being compared. Under
+  <code>routing.picker=shadow</code> the preview carried the picker's answer even though the route
+  never used it, so the report moved with the picker while the dispatch did not.</p>
+
+  <h3>What changed</h3>
+  <p><code>plan_dispatch</code> now records the picker answer on the resolved plan only when the
+  route used it (<code>route == "picker"</code>), and strips the per-call latency fields from what
+  it records. A shadow or deterministic preview therefore carries no <code>picker_selection</code>
+  at all, and a routed preview keeps the decision it routed by — action, backend, model,
+  probabilities, reason — minus the timing behind it. The live dispatch record is unchanged: it
+  takes the selection from its own local, not from the plan's.</p>
+
+  <h3>Measure</h3>
+  <p><code>test_a_report_changes_no_other_dry_run_field</code> masks <code>_at</code> stamps and
+  compares a reported against a quiet dry run; it fails at the base revision on
+  <code>picker_selection.latency_ms</code> and passes at the committed head. The new
+  <code>test_a_dry_run_report_is_comparable_across_picker_modes</code> pins both modes with the
+  picker stubbed to report a different latency on each ask: shadow carries no selection, route
+  carries the decision with no latency field, and the two previews compare equal once clock
+  stamps are masked. The 22-file gate reports <code>1 failed, 441 passed</code> at the base
+  revision — the target test alone — and <code>444 passed, 0 failed</code> at the committed head;
+  the two extra tests are the new parametrised case. No failure id is added.</p>
+
+  <h3>Check and commits</h3>
+  <p><code>1cc3d749e</code> — implementation and tests. Logs under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T011436676083-dry-run-picker-is-comparable/logs/</code>.</p>
+</article>
+</body>
+</html>
