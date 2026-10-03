@@ -1,0 +1,44 @@
+<section id="unreadable-review-record-is-reported">
+  <h2>An unreadable review record is skipped, named, and cannot stop a sweep</h2>
+  <p>
+    A review worker writes its record file itself, so a reader can meet one
+    mid-write. <code>stored_record</code> in <code>reckon/crew/review.py</code> parsed
+    each candidate with a bare <code>json.loads</code>, and a truncated file raised
+    <code>json.decoder.JSONDecodeError</code> out of <code>read_review</code> into the
+    producer's sweep through the sub-floor lookup, killing the sweep thread — so every
+    session's snapshot stayed stale behind the one unreadable file, for as long as it
+    stayed unreadable.
+  </p>
+  <p>
+    The reader now skips a candidate it cannot read or parse, answers from the records
+    it could read, and keeps each skipped path with its error for
+    <code>drain_read_failures</code>. The published snapshot document carries those
+    rows under <code>findings</code>, so a reader sees the path and the parse error
+    rather than a run that reads as carrying no review at all. A failure deriving the
+    fleet state, or slicing one session, is caught in
+    <code>obligation_snapshot.sweep</code>, logged to stderr with its traceback, and
+    costs only that sweep or session; the next sweep publishes as usual. Also folded
+    in from the section's review: the unused <code>resolve()</code> left
+    <code>coordinator_obligations.py</code>, and the new-session worker-slots fallback
+    is gated on the admission block being present rather than on a session map.
+  </p>
+  <p>
+    <strong>Reproduction.</strong> The declared mutation — <code>stored_record</code>
+    raising on a record that does not parse — turns the truncated-record case red:
+    <code>1 failed in 3.51s</code>, <code>EXIT=1</code>,
+    <code>test_a_truncated_record_is_skipped_and_named_in_the_snapshot</code> failing
+    at <code>assert written</code> ("the sweep publishes despite the truncated
+    record"), with the <code>JSONDecodeError</code> traceback in the log as the
+    sweep's own failure report. The mutation was reverted by edit and the case
+    re-verified green before the change was committed.
+  </p>
+  <p>
+    <strong>Gate.</strong> Base <code>d5015e753</code>, from a
+    <code>git archive</code> extraction under the run's scratch directory: 179 passed,
+    <code>EXIT=0</code>. Head <code>e2d680f80</code>, in this worktree: 182 passed,
+    <code>EXIT=0</code>. Both arms run the same twenty pre-existing test files under
+    pytest-xdist with a 300&nbsp;s per-test timeout, each from its own basetemp outside
+    any repository and writing its own log in the run directory; the head adds the new
+    case file and no failure id.
+  </p>
+</section>
