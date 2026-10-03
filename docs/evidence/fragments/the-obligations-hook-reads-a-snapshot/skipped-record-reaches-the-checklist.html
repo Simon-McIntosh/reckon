@@ -1,0 +1,50 @@
+<section id="skipped-record-reaches-the-checklist">
+  <h2>A skipped review record reaches the coordinator's checklist</h2>
+  <p>
+    The sweep records a path it could not read under <code>findings</code> in the
+    published snapshot document, but <code>live_payload</code> — the reader the
+    prompt and stop hooks render — dropped that key, and
+    <code>payload_for</code> never turned a finding into a duty, so a coordinator
+    read a checklist that named no skipped record at all.
+  </p>
+  <p>
+    <code>payload_for</code> in <code>reckon/crew/obligation_snapshot.py</code> now
+    appends one row per finding under the kind
+    <code>unreadable-review-record</code>, and <code>live_payload</code> rebuilds
+    those rows from the stored <code>findings</code> key — dropping any echoed row
+    of that kind first — so the writer and the reader render the same row and both
+    parity checks extend to it. The parity case in
+    <code>tests/test_skipped_record_reaches_the_checklist.py</code> asserts the two
+    readings are equal. In the same file, <code>_parse_instant</code> now reads
+    through <code>reckon._timestamps.parse_utc</code>, keeping the no-zone-is-UTC
+    policy, imported where it is used because the hook loads the module by path.
+  </p>
+  <p>
+    In <code>reckon/crew/review.py</code>, <code>stored_record</code> hands the
+    records it skipped to its caller — or to the region a
+    <code>collect_read_failures</code> caller opened around the read, which
+    <code>fleet_state</code> opens — in place of the module-level
+    <code>_SKIPPED_RECORDS</code> list and <code>drain_read_failures</code>, so
+    a read made outside a sweep is nobody's finding and cannot reach a later
+    sweep's snapshot.
+  </p>
+  <p>
+    <strong>Reproduction.</strong> The declared mutation — <code>live_payload</code>
+    stripping the finding rows again — turns the rendering case red:
+    <code>1 failed in 5.75s</code>, <code>EXIT=1</code>,
+    <code>test_a_skipped_record_is_named_in_the_prompt_checklist</code> failing at
+    <code>assert named</code> ("the checklist names no skipped record") with the
+    rendered checklist in the log. The mutation was reverted by edit and the case
+    re-verified green before the change was committed.
+  </p>
+  <p>
+    <strong>Gate.</strong> Base <code>41e6fc48f</code>, from a <code>git archive</code>
+    extraction under the revision's scratch directory, with the new case file copied
+    in: 3 failed, 31 passed, <code>EXIT=1</code> — every failure the new file's own
+    cases, the pre-existing files green. Head, this worktree at the same revision
+    plus the change: 34 passed, <code>EXIT=0</code>, no failure id added. Both arms
+    run the five test files that reach the change under pytest-xdist
+    (<code>-n 8 --timeout=300</code>), each from its own basetemp outside any
+    repository and writing its own log in the run directory.
+  </p>
+</section>
