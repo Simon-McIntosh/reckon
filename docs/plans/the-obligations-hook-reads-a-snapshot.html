@@ -24,8 +24,8 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="61">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;implementable&quot;}">
+<meta name="plan-version" content="62">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -245,9 +245,14 @@
 <p><strong>Done when</strong> three things hold. A review record that does not parse is skipped by <code>stored_record</code>, and the skip is reported in the snapshot as a finding naming the path rather than raised. A failure in one sweep is logged and the next sweep runs, so the sweep thread outlives any single exception. Review records are written atomically, by a temporary file and a rename, so a reader never sees a partial record. A test plants a truncated review record in a temporary configuration home and asserts that the sweep publishes a snapshot naming it. A second test makes one sweep raise and asserts the next sweep still publishes. The negative control restores the raise, and the first test then publishes nothing.</p>
 
     <h2 id="s13">§13 — A skipped review record reaches the checklist</h2>
-<section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s13" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p><strong>From the §12 review (90, zero added failures).</strong> §12 landed at 6db27739e. <code>stored_record</code> now skips a review record that does not parse, and the sweep reports it as a finding. Three gaps remain. First, <code>live_payload</code>, which is what the hook renders, strips the findings, so a coordinator sees a skipped record only by opening the snapshot store. Second, <code>_SKIPPED_RECORDS</code> in reckon/crew/review.py is process-global: a review worker's own <code>read_review</code> adds entries that a later sweep attributes to its snapshot, and a process that never sweeps grows the list without bound. Third, review workers still write their record files by hand and non-atomically, so the reader-side skip is the only guard.</p>
 <p><strong>Done when</strong> the hook's checklist names each skipped record, carried through <code>payload_for</code> and the <code>live_payload</code> parity check. Skipped records are returned per call, not held in module state. A test asserts that a skipped record appears in the rendered prompt-path line, and that a read outside a sweep leaves the next sweep's findings unchanged. The negative control strips the findings in <code>live_payload</code> again, and the rendering case then fails.</p>
+
+    <h2 id="s14">§14 — An ack, a released tree and a skipped record do not block a stop</h2>
+<section data-reckon="section" data-id="s14" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p><strong>Two hook defects observed 2026-10-03.</strong> First, <code>crew ack</code> triggers no snapshot republish, so a snapshot computed seconds before an ack keeps listing the deferred obligation, and the stop hook blocks on it until the next sweep (comment c-tohras-ack-no-republish). Second, s25-coord reported a <code>worktree-held</code> raised for a run whose promotion had just released its worktree. The tree and pointer were gone, so the obligation's remedy, a project-wide <code>crew gc --apply</code>, would sweep peers' trees to clear an entry that holds nothing. It was seen on r-20261002T231500763833 and r-20261003T000528520994, and on two of s22-coord's review runs. Separately, the §13 review notes that an unreadable-record finding now blocks a stop, because its kind is not among the hook's <code>_NON_BLOCKING_KINDS</code>.</p>
+<p><strong>Done when</strong> an ack republishes the session's snapshot, or the stop hook re-applies the acknowledgements in force to a fresh snapshot before refusing. <code>worktree-held</code> is raised only when the tree still exists on disk and no promotion record shows it released. An unreadable-record finding prompts but does not block a stop. One test per defect, in a temporary configuration home.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -322,10 +327,16 @@
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §12</pre>
     <p class="r-fu-outcome">§12 landed at 6db27739e (run r-20261003T001809938711-unreadable-review-record-is-reported, reviewed at 90, zero added failures), with the three §3/§11 follow-ons folded in. Its own follow-ons are §13.</p>
     </article>
-<article class="r-fu" data-id="f-tohras-009" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-03" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tohras-009" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-03" data-recommends-skill="" data-resolved-at="2026-10-03T02:52:24+00:00" data-resolved-by="s22-coord">
     <h4 class="r-fu-title">land §13</h4>
     <div class="r-fu-body"><p>§13: a skipped review record reaches the hook's checklist, and skipped records stop being process-global state.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §13</pre>
+    <p class="r-fu-outcome">§13 landed at a0e3f3b48 (run r-20261003T014336335022-skipped-record-reaches-the-checklist, reviewed at 96, zero added on a 101-file stacked population). The checklist names each skipped record, stored_record returns its skips to the caller, and _parse_instant routes through parse_utc. Its follow-ons, with the ack and released-tree defects, are §14.</p>
+    </article>
+<article class="r-fu" data-id="f-tohras-010" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-03" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">land §14</h4>
+    <div class="r-fu-body"><p>§14: an ack, a released tree and a skipped record must not hold a stop open.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §14</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">

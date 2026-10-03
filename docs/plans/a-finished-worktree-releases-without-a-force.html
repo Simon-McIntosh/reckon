@@ -23,9 +23,9 @@
   <title>A Finished Worktree Releases Without a Force | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="23">
+<meta name="plan-version" content="24">
 </head>
 <body>
   <main class="plan-doc">
@@ -163,9 +163,14 @@
 <p><strong>Done when</strong> three things hold. A <code>_git</code> failure names the directory it ran in. A worktree that is not a git repository is reported as a row naming its path and the reason, and the sweep continues past it. Any other mid-sweep failure emits the partial report, with the removed and refused lists and the failing path, before exiting nonzero. A test in a temporary repository and RECKON_HOME registers one worktree whose directory is not a repository, beside one that gc releases, and asserts four things: the release is reported, the broken tree's row names its path, the exit status is stated, and no other worktree is touched. The negative control restores the abort, and the release then goes unreported.</p>
 
     <h2 id="s9">§9 — A worktree with unique commits releases after its commits are pinned</h2>
-<section data-reckon="section" data-id="s9" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
 <p><strong>The twelve worktrees §4 kept.</strong> Each carries commits with no patch-equivalent on main, mostly S15 <code>wip(crew)</code> commits whose behaviour later landed in a different form, so neither §3 nor §6 releases them. Releasing them without a force needs their commits kept somewhere other than the worktree.</p>
 <p><strong>Done when</strong> <code>crew gc</code> can pin a dirty, unintegrated worktree's commits beyond the integration head to an archive ref, <code>refs/reckon/archive/&lt;worktree name&gt;</code>, recording that ref in the residue directory beside the patch. It then releases the tree through the §3 residue path, and only when pinning was requested explicitly. A test pins and releases one such worktree in a temporary repository, then asserts the archived commits still resolve and the worktree is gone. The two §8 review follow-ons go in the same node: a separate refused list in the partial report, and a programming error surfacing as a traceback rather than as a refusal.</p>
+
+    <h2 id="s10">§10 — crew gc exposes the pin option</h2>
+<section data-reckon="section" data-id="s10" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p><strong>The remainder of §9.</strong> §9 landed at a0e3f3b48. <code>garbage_collect</code> can pin a worktree's unique commits to an archive ref and then release it, but <code>crew gc</code> has no command-line flag for that option yet, because reckon/cli.py was held by another node.</p>
+<p><strong>Done when</strong> <code>crew gc --pin-unique-commits</code> passes the option through, and a test drives it from the command line over one dirty, unintegrated worktree in a temporary repository, then asserts the archive ref resolves and the tree is gone. The coordinator then dry-runs it over the twelve kept worktrees, applies it, and records each archive ref in the landed evidence.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -187,10 +192,16 @@
     <pre class="r-fu-prompt">/reckon-build a-finished-worktree-releases-without-a-force §8</pre>
     <p class="r-fu-outcome">§8 landed at 9c3b6c5e6 (run r-20261003T001538886711-gc-reports-what-it-already-did, reviewed at 95, zero added failures). A _git failure names its directory. A registered worktree that is not a repository becomes a row naming its path, and the sweep continues. Any other mid-sweep failure emits the partial report before exiting nonzero. The review's two follow-ons are folded into §9.</p>
     </article>
-<article class="r-fu" data-id="f-afwrwaf-004" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-03" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-afwrwaf-004" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-03" data-recommends-skill="" data-resolved-at="2026-10-03T02:53:10+00:00" data-resolved-by="s22-coord">
     <h4 class="r-fu-title">land §9</h4>
     <div class="r-fu-body"><p>§9: pin a worktree's unique commits to an archive ref, then release it, so the twelve kept worktrees can go without a force.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-finished-worktree-releases-without-a-force §9</pre>
+    <p class="r-fu-outcome">§9 landed at a0e3f3b48 (run r-20261003T014450129925-gc-pins-unique-commits-before-release, reviewed at 95, zero added on a 101-file stacked population). Its command-line flag is §10.</p>
+    </article>
+<article class="r-fu" data-id="f-afwrwaf-005" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-03" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">land §10, then release the twelve</h4>
+    <div class="r-fu-body"><p>§10: the <code>crew gc</code> flag for pinning. Then release the twelve kept worktrees with it.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-finished-worktree-releases-without-a-force §10</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
