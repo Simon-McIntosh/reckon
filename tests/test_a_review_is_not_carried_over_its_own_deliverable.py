@@ -220,6 +220,9 @@ def test_a_move_over_an_unrelated_record_is_still_carried(world):
     carried = review_module.read_review(PROJECT, run_id, reviewed_head_sha=new_head)
     assert carried is not None
     assert recovery.same_revision(carried["reviewed_head_sha"], new_head)
+    mark = carried["carried_forward"]
+    assert mark["from"] == world["reviewed"]
+    assert mark["paths"] == ["data/record.txt"]
 
 
 def test_a_move_over_runtime_source_still_earns_the_light_rereview(world):
