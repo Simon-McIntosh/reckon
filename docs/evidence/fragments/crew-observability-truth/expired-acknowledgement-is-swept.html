@@ -1,0 +1,38 @@
+<article class="landed-report" data-run-id="r-20261003T083030014948-expired-acknowledgement-is-swept">
+  <h3>expired-acknowledgement-is-swept &mdash; crew ack names the promoted path, and an expired deferral is swept</h3>
+  <p>
+    The <code>crew ack</code> help and docstring described a live run only, although a promoted
+    run's deferral has been accepted since <code>6417983b9</code>; the help now says the run may be
+    live or promoted, and the docstring says where each deferral is written.
+    <code>recorded_promoted_acknowledgements</code> also read every file under the crew home's
+    <code>acknowledgements/</code> directory on each obligations read and removed none once its
+    <code>until</code> had passed, so the directory grew and every expired deferral was parsed on
+    every read. The reader now removes a file whose <code>until</code> has passed as it reads it,
+    judged against the obligations reader's own clock so a sweep never discards a record the reader
+    still withholds a duty for; a deferral whose instant cannot be read is left alone, because a
+    removal has to prove expiry before it acts. Implemented in <code>reckon/cli.py</code> and
+    <code>reckon/crew/runs.py</code> at <code>c6418c51d</code>;
+    <code>tests/test_expired_acknowledgement_is_swept.py</code> carries the cases.
+  </p>
+  <p>
+    <strong>Measure.</strong> Gate: the new test plus every test naming <code>crew ack</code>,
+    <code>record_run_acknowledgement</code> and the acknowledgement readers &mdash; 11 files, run
+    <code>-n 8 --timeout=300</code> with a per-arm basetemp outside any repository. Base arm
+    (<code>c7664e486</code>): 3 failed / 112 passed, <code>EXIT=1</code> &mdash; the removal case
+    fails on <code>assert expired_path.exists() is False</code> with the expired file still in
+    place, and the help case reads zero occurrences of "promoted". Head arm
+    (<code>c6418c51d</code>): 1 failed / 114 passed, <code>EXIT=1</code>, the sole failure being
+    <code>test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt</code>,
+    which fails at base with the same id, so the head arm adds no failure id. Negative control: the
+    sweep removed from <code>recorded_promoted_acknowledgements</code> and the removal case rerun
+    &mdash; 1 failed, <code>EXIT=1</code>, the expired file found still in place.
+  </p>
+  <p>
+    <strong>Follow_ons.</strong>
+    <code>test_every_registered_crew_verb_is_documented_or_exempt</code> fails at both arms on
+    <code>reckon crew repair-status</code> being registered and unnamed in the build skill; it is
+    outside this node's write paths. Ruff reports the same four pre-existing findings in
+    <code>reckon/cli.py</code> at base and head; the changed Python paths add none, and both are
+    already formatted.
+  </p>
+</article>

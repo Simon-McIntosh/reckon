@@ -14,7 +14,7 @@ import sys
 import threading
 import time
 from collections.abc import Callable, Iterable, Mapping
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1071,6 +1071,20 @@ def acknowledgement_path(run_id: str) -> Path:
     return acknowledgements_dir() / f"{run_id}.json"
 
 
+def _deferral_clock() -> datetime:
+    """The instant the obligations reader judges a deferral's ``until`` against.
+
+    The sweep and the reader that honours a deferral must agree on whether a
+    record has expired, or one would delete a deferral the other still
+    withholds a duty for. The reader's clock is the one seam that settles it,
+    read at call time so a caller that patches the reader's clock is answered
+    by the same instant.
+    """
+    from reckon.crew import obligations as obligations_module
+
+    return obligations_module._utc_now()
+
+
 def recorded_promoted_acknowledgements(
     project: str | None = None,
 ) -> list[dict[str, Any]]:
@@ -1080,18 +1094,30 @@ def recorded_promoted_acknowledgements(
     the acknowledgements cost and nothing of any ledger. A file that cannot be
     parsed is skipped rather than guessed at, on the same principle as an
     unreadable ``until``: absence of a readable record is not proof of one.
+    A file whose ``until`` has passed is removed as it is read: the deferral
+    it carried excuses nothing, and leaving it behind charges every later read
+    for a record no reader can honour.
     """
     records: list[dict[str, Any]] = []
     try:
         paths = sorted(acknowledgements_dir().glob("*.json"))
     except OSError:
         return records
+    now = _deferral_clock()
     for path in paths:
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
         if not isinstance(payload, dict):
+            continue
+        until = parse_utc(payload.get("until"))
+        if until is not None and until <= now:
+            # A failed removal keeps the read intact: the file stays on disk
+            # for a later sweep, and the expired deferral is still not
+            # returned, exactly as if it had been removed.
+            with suppress(OSError):
+                path.unlink()
             continue
         if project is not None and str(payload.get("project") or "") != project:
             continue
