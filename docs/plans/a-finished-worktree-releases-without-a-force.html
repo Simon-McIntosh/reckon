@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="24">
+<meta name="plan-version" content="25">
 </head>
 <body>
   <main class="plan-doc">
@@ -249,6 +249,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261003T022400156116-review-of-gc-pins-unique-commits-before-release" data-who="reckon-build" data-when="2026-10-03T02:33:45.772Z">
     <div class="r-comment-body"><p>independent review of r-20261003T014450129925-gc-pins-unique-commits-before-release stored at both fenced paths — total 95/100 (goal_fidelity 17, evidence 19, scope_discipline 20, durability 19, fit 20), reviewed_base_sha 41e6fc48f5b7f9293694519d4c13c4e8c146bb82, reviewed_head_sha b083c0071777f62c5c0e78890d5e57f8943ec74d, added_failure_count 0, two follow-on findings.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261003T014450129925-gc-pins-unique-commits-before-release" data-who="reckon-build" data-when="2026-10-03T02:21:11.710Z">
+    <div class="r-comment-body"><p>crew gc (garbage_collect) gained pin_unique_commits: with it, a dirty unclaimed worktree whose measured commits have no patch-equivalent on the integration head is pinned to refs/reckon/archive/&lt;worktree name&gt; (an occupied ref is refused, never overwritten), the ref recorded as archive_ref in the classification record beside residue.patch, and the tree then released through the residue-preserving path; without it nothing changes. The partial report now carries refused_worktrees beside removed_worktrees, and TypeError/AttributeError/NameError inside the sweep propagate with their traceback. Gate base 49 passed EXIT=0, head 56 passed EXIT=0, added failure ids none; negative control (pin step removed) 2 failed of 7, EXIT=1.</p></div>
 </div>
 </section>
 </main>
