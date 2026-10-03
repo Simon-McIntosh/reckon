@@ -2,8 +2,9 @@
 
 A plan held by a gate on one section of another plan, or by a ``#section`` ref,
 shows that section rather than the whole plan: the raw view's edge names the
-anchor, and the critical path's edge list names the section beside the plan. A
-plan-level ``depends_on`` keeps its plan-level edge.
+anchor, and each ``open_paths`` entry carries an ``edges`` list naming the
+section and gate beside the plan. The critical path keeps the key set every
+summary already carries. A plan-level ``depends_on`` keeps its plan-level edge.
 
 Every fixture is written into a synthetic docs tree under the test's own
 ``tmp_path``, so no test reads a mounted project's state.
@@ -187,7 +188,18 @@ def test_a_ref_carrying_a_section_reports_the_section(wired_project):
     assert edge["section_found"] is True
 
 
-def test_the_critical_path_carries_the_section_on_each_such_edge(wired_project):
+CRITICAL_PATH_KEYS = {
+    "plans",
+    "length_hours",
+    "length_unit",
+    "worker_hours",
+    "effort_unit",
+    "uncalibrated_plans",
+    "uncalibrated_count",
+}
+
+
+def test_the_raw_view_paths_carry_the_section_on_each_such_edge(wired_project):
     result = mcp_module._roadmap(wired_project[0])
 
     edges = _edges(result)
@@ -198,7 +210,12 @@ def test_the_critical_path_carries_the_section_on_each_such_edge(wired_project):
     assert any(
         edge["ref"] == f"{TARGET}#s2" and edge["section"] == "s2" for edge in edges
     )
-    assert isinstance(result["critical_path"]["edges"], list)
+
+
+def test_the_critical_path_keeps_the_shape_every_summary_carries(wired_project):
+    result = mcp_module._roadmap(wired_project[0])
+
+    assert set(result["critical_path"]) == CRITICAL_PATH_KEYS
 
 
 def test_a_plain_plan_level_depends_on_keeps_its_plan_level_edge(wired_project):

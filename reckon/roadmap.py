@@ -3013,8 +3013,11 @@ def _build_roadmap(
                 ],
             }
         )
+    # The critical path keeps the shape every reader has always seen; the
+    # section an edge waits on rides on the raw view's ``open_paths`` entries,
+    # so no summary of the path has to carry a key it never had.
     critical = (
-        open_paths[0]
+        {key: value for key, value in open_paths[0].items() if key != "edges"}
         if open_paths
         else {
             "plans": [],
@@ -3024,7 +3027,6 @@ def _build_roadmap(
             "effort_unit": _EFFORT_UNIT,
             "uncalibrated_plans": [],
             "uncalibrated_count": 0,
-            "edges": [],
         }
     )
     critical_members = set(critical["plans"])
