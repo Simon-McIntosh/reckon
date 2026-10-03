@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-03">
-<meta name="plan-version" content="587">
+<meta name="plan-version" content="588">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.64">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
@@ -3722,6 +3722,9 @@ if isinstance(argv, list) and argv:
 </div>
 <div class="r-comment" data-section="s29" data-id="c-run-r-20261003T062906986007-review-of-dispatch-stdout-is-one-document" data-who="reckon-build" data-when="2026-10-03T06:39:12.752Z">
     <div class="r-comment-body"><p>review stored for r-20261003T054853253343-dispatch-stdout-is-one-document — 5 dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 18; total 94), reviewed_base_sha 9b66ff8a768e734c9e39da17f846cca1ca6c94d6 and reviewed_head_sha 7c41483ec0d10129f55ff49b38e10c0a4961efda, added_failure_count 0 with no added ids; the change meets plan section 29's done-when.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261003T054853253343-dispatch-stdout-is-one-document" data-who="reckon-build" data-when="2026-10-03T06:28:34.180Z">
+    <div class="r-comment-body"><p>landed - `crew dispatch` now runs every outcome with stdout redirected to a notice channel that forwards to stderr while only the final emission writes the payload, so a caller&#x27;s json.loads(stdout) sees exactly one document whatever code beneath the command prints; verify it landed with: /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -q tests/test_dispatch_stdout_is_one_document.py (8 passed at 74bb83d47eda) and by reading the landed record below.</p></div>
 </div>
 </section>
 </main>
