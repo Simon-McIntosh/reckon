@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping
@@ -110,6 +111,32 @@ _DELIVERABLE_CONJUNCTIONS = (*_DELIVERABLE_SEPARATORS, *_NOUN_OR_ACTION_CONJUNCT
 _EVIDENCE_SIGNALS = re.compile(
     r"\d|\btests?\b|\bpytest\b|\bexit\b|\breturns?\b|\bpasses\b|\bcommand\b"
     r"|\bgrep\b|\bstat\b|[/\\][\w.-]+",
+    re.IGNORECASE,
+)
+
+_INDEPENDENT_READING = re.compile(
+    r"\bindependent\b.*\b(?:reading|measurement|measure)\b"
+    r"|\b(?:reading|measurement|measure)\b.*\bindependent\b",
+    re.IGNORECASE,
+)
+_NUMERIC_AGREEMENT = re.compile(
+    r"(?:\b(?:agree(?:s|ment)?|difference|disagreement)\b"
+    r".{0,45}?\b(?:within|under|below|at most|no more than|to|<=|≤)\s*"
+    r"|\btolerance\b\s*(?:of|:|=)?\s*)"
+    r"\d+(?:\.\d+)?\s*(?:%|percent|seconds?|ms|milliseconds?)",
+    re.IGNORECASE,
+)
+_ABSENCE_ALTERNATIVE = re.compile(
+    r"\bmeasured\s+or\s+(?:explicitly[- ]?)?unmeasured\b",
+    re.IGNORECASE,
+)
+_COVERAGE_FLOOR = re.compile(
+    r"\bmeasured[- ]coverage\b\s*(?:is\s+)?"
+    r"(?:at\s+least|>=|>|of\s+at\s+least)\s*(\d+(?:\.\d+)?)\s*%",
+    re.IGNORECASE,
+)
+_BASE_COUNT = re.compile(
+    r"\bbase\s+(?:count|corpus|population)\s*(?:of\s*)?(\d+)\b",
     re.IGNORECASE,
 )
 
@@ -932,6 +959,73 @@ _GATE_POPULATION = re.compile(
     r"(?<![\w.*?\[\]{}/-])([\w.*?\[\]{}-]+(?:/[\w.*?\[\]{}-]+)+)"
 )
 _GATE_POPULATION_IS_A_SET = re.compile(r"[?*\[]")
+_ABSOLUTE_GREEN_GATE = re.compile(
+    r"\bpytest\s+(tests/[\w./-]+\.py(?:\:\:[\w-]+)?)\s+exits?\s+0\b",
+    re.IGNORECASE,
+)
+
+
+def _red_base_gate_finding(node: TaskNode, repository: Path) -> dict[str, str] | None:
+    """Read a concrete named check before accepting an absolute-green demand."""
+    done_when = node.done_when
+    match = _ABSOLUTE_GREEN_GATE.search(done_when)
+    if not match or not re.search(r"\b(?:before|base)\b", done_when, re.IGNORECASE):
+        return None
+    selector = match.group(1)
+    test_path = selector.split("::", 1)[0]
+    test_file = (repository / test_path).resolve()
+    if not test_file.is_relative_to(repository.resolve()) or not test_file.is_file():
+        return {
+            "property": "base-gate",
+            "detail": f"named base check {selector} does not resolve to a test file",
+        }
+    tracked = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", "--", test_path],
+        cwd=repository,
+        capture_output=True,
+        check=False,
+    )
+    unchanged = subprocess.run(
+        ["git", "diff", "--quiet", "HEAD", "--", test_path],
+        cwd=repository,
+        capture_output=True,
+        check=False,
+    )
+    if tracked.returncode or unchanged.returncode:
+        return {
+            "property": "base-gate",
+            "detail": f"named base check {selector} is not committed at this checkout's HEAD",
+        }
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", selector],
+            cwd=repository,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "property": "base-gate",
+            "detail": f"named base check {selector} did not finish within 10 seconds",
+        }
+    if result.returncode == 0:
+        return None
+    failures = re.findall(r"^FAILED\s+(\S+)", result.stdout, re.MULTILINE)
+    if failures:
+        failure_word = "failure" if len(failures) == 1 else "failures"
+        detail = (
+            f"named base check {selector} is red with {len(failures)} base "
+            f"{failure_word}: {', '.join(failures)}; account for these failures "
+            "with a delta measure instead of demanding absolute green"
+        )
+    else:
+        detail = (
+            f"named base check {selector} exited {result.returncode} without a "
+            "readable failure list; its base is not established green"
+        )
+    return {"property": "base-gate", "detail": detail}
 
 
 def gate_population_patterns(gate_command: str) -> list[str]:
@@ -983,7 +1077,7 @@ def _population_covers_a_declared_write_path(pattern: str, declared: set[str]) -
 def gate_population_finding(
     node: TaskNode, *, repository: str | Path
 ) -> dict[str, str] | None:
-    """Compose the dispatch refusal for a gate population the repository lacks.
+    """Compose the dispatch refusal for a gate the repository cannot support.
 
     The gate command is the node's own measure — the check the brief tells the
     worker to run — and the populations it names are evidence about what was run.
@@ -993,6 +1087,9 @@ def gate_population_finding(
     holds a match; the pattern's spelling is never the subject.
     """
     repository_path = Path(repository)
+    red_base = _red_base_gate_finding(node, repository_path)
+    if red_base is not None:
+        return red_base
     declared = {
         str(path).strip().strip("/") for path in node.write_paths if str(path).strip()
     }
@@ -1120,6 +1217,28 @@ def validate_node(
                 "done-when emits no evidence; name a test, a command output or "
                 "a numeric result against a stated bound",
             )
+        if _INDEPENDENT_READING.search(done_when) and not _NUMERIC_AGREEMENT.search(
+            done_when
+        ):
+            fail(
+                "demonstrable",
+                "an independent reading of the same quantity needs a numerical "
+                "agreement tolerance; a plausibility band cannot establish agreement",
+            )
+        if _ABSENCE_ALTERNATIVE.search(done_when):
+            floor = _COVERAGE_FLOOR.search(done_when)
+            count = _BASE_COUNT.search(done_when)
+            if (
+                not floor
+                or float(floor.group(1)) <= 0
+                or not count
+                or int(count.group(1)) <= 0
+            ):
+                fail(
+                    "demonstrable",
+                    "measured-or-unmeasured evidence can pass with universal absence; "
+                    "name a positive numerical measured-coverage floor and a base count",
+                )
 
     unlocked = [key for key in node.requires_decisions if key not in locked]
     if unlocked:
