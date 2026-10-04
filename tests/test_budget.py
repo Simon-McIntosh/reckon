@@ -36,6 +36,7 @@ from click.testing import CliRunner
 from reckon import _backends, budget, crew, ledger, run_store
 from reckon.cli import main as cli_main
 from tests import test_a_live_run_never_reads_dead as liveness
+from tests.conftest import TEST_TEMP_ROOT_ENV
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "backends"
 
@@ -235,17 +236,27 @@ def _node_manifest_path() -> str:
     """A manifest path no other test process can name.
 
     Under pytest the path lives under the running test's temporary directory.
-    Called outside a test run the helper falls back to a per-process directory,
-    so two concurrent processes never share one path either way. The directory
-    is created here, where a test has actually asked for a path, so a fixture
-    promoted to a session-wide plugin leaves the temporary tree of a test that
-    asks for nothing untouched.
+    A process with no fixture of its own — one a test spawns, importing this
+    helper directly — reads the session's published temporary root, so its
+    manifests still land in the tree pytest retains and prunes. Only a call
+    made outside a pytest session altogether falls back to a per-process
+    directory under the system temp directory, so two concurrent processes
+    never share one path either way. The directory is created here, where a
+    test has actually asked for a path, so a fixture promoted to a session-wide
+    plugin leaves the temporary tree of a test that asks for nothing untouched.
     """
     directory = _NODE_MANIFEST["directory"]
     if directory is None:
-        directory = Path(tempfile.gettempdir()) / f"reckon-node-manifests-{os.getpid()}"
+        directory = _unbound_manifest_directory()
     directory.mkdir(parents=True, exist_ok=True)
     return str(directory / "node-a-manifest.md")
+
+
+def _unbound_manifest_directory() -> Path:
+    """Where a process with no bound test tree names its manifests."""
+    root = os.environ.get(TEST_TEMP_ROOT_ENV)
+    parent = Path(root) if root else Path(tempfile.gettempdir())
+    return parent / f"reckon-node-manifests-{os.getpid()}"
 
 
 def _node(**overrides) -> crew.TaskNode:

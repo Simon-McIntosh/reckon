@@ -551,19 +551,52 @@ def _environ_config_home(environ: list[bytes]) -> Path | None:
     return None
 
 
-def test_temp_config_home(prefix: str) -> Path:
+# The session's temporary root, published for helpers a test calls indirectly.
+# A process a test spawns has no pytest fixture to ask for ``tmp_path``, and a
+# helper it calls must still place its files in the tree pytest retains and
+# prunes rather than the shared system temp directory. The session exports the
+# base temp directory's path here, and such a helper reads it when nothing has
+# bound a directory for the running test.
+TEST_TEMP_ROOT_ENV = "RECKON_TEST_TEMP_ROOT"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _publish_session_temp_root(tmp_path_factory):
+    """Publish the base temp directory for helpers running without a fixture."""
+    root = tmp_path_factory.getbasetemp()
+    previous = os.environ.get(TEST_TEMP_ROOT_ENV)
+    os.environ[TEST_TEMP_ROOT_ENV] = str(root)
+    yield root
+    if previous is None:
+        os.environ.pop(TEST_TEMP_ROOT_ENV, None)
+    else:
+        os.environ[TEST_TEMP_ROOT_ENV] = previous
+
+
+def test_temp_config_home(
+    prefix: str,
+    *,
+    directory: Path | None = None,  # noqa: PT028 - a helper callers import, not a collected test; optional so the arming cases keep their own home
+) -> Path:
     """A throwaway configuration home a test created, registered for attribution.
 
-    Some tests must place a home where the arming guard does not look — the one
-    that shows arming proceeding for an ordinary home, and the one that shows a
-    record under another home is refused. Those cannot live under the pytest base
-    temp directory, because that directory is exactly what the guard treats as a
-    throwaway. Recording the prefix keeps them attributable anyway: a producer
-    still naming one after the reaper ran is this run's leak even though the
-    directory sat outside the base temp tree and the test has since removed it.
+    With ``directory`` given — the requesting test's ``tmp_path`` — the home is
+    created inside it, so pytest's retention removes it with the rest of that
+    tree. Without one the home is created under the system temp directory and
+    its prefix is recorded instead: two tests must place a home where the
+    arming guard does not look — the one that shows arming proceeding for an
+    ordinary home, and the one that shows a record under another home is
+    refused. Those cannot live under the pytest base temp directory, because
+    that directory is exactly what the guard treats as a throwaway, and each
+    removes its own home when it is done. Recording the prefix keeps such a
+    home attributable anyway: a producer still naming one after the reaper ran
+    is this run's leak even though the directory sat outside the base temp tree
+    and the test has since removed it.
     """
     _TEST_TEMP_HOME_PREFIXES.add(prefix)
-    return Path(tempfile.mkdtemp(prefix=prefix))
+    if directory is not None:
+        directory.mkdir(parents=True, exist_ok=True)
+    return Path(tempfile.mkdtemp(prefix=prefix, dir=directory))
 
 
 def _home_is_test_owned(home: Path, base: Path) -> bool:
