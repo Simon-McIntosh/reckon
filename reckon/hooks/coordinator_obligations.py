@@ -23,7 +23,10 @@ Two modes, selected by ``--hook``:
   which shows the last snapshot's checklist headed by its age and the words
   ``producer reloading`` with no remedy, because the replacement is already on
   its way and cycling the seat would be the wrong thing to do. The hook never
-  writes the snapshot itself.
+  writes the snapshot itself. A worktree-held row is rechecked as it is read,
+  against the run's committed record and the tree on disk, because a promotion
+  can release that tree between the sweep and the read; a row whose tree the
+  fleet has released is dropped, at a cost of one stat per row.
   It speaks when the duties *change* and stays quiet otherwise: a checklist
   repeated at the open of every turn is one a coordinator learns to skip. The
   session's last-injected set of ``(kind, run_id)`` pairs is kept beside that
@@ -843,7 +846,9 @@ def _prompt(payload: dict[str, Any]) -> int:
             payload,
             project=project,
             session=session,
-            obligations=module.live_payload(document),
+            obligations=recheck_worktree_held_rows(
+                module.live_payload(document), project=project
+            ),
             reloading=False,
         )
         return 0
@@ -857,7 +862,9 @@ def _prompt(payload: dict[str, Any]) -> int:
             payload,
             project=project,
             session=session,
-            obligations=module.live_payload(document),
+            obligations=recheck_worktree_held_rows(
+                module.live_payload(document), project=project
+            ),
             reloading=True,
             note=f"producer reloading, last snapshot {_format_age(age)} old",
         )
@@ -867,6 +874,149 @@ def _prompt(payload: dict[str, Any]) -> int:
         not_fresh_line(state, project=project, session=session, document=document),
     )
     return 0
+
+
+# A snapshot is a reading of the fleet at one instant, and the fleet can move
+# between that instant and the read: a promotion releases its run's worktree
+# after a sweep has already published the row, so the checklist would offer
+# housekeeping whose own remedy is refused for a run with no tree. A
+# worktree-held row is therefore rechecked where it is offered, against the
+# run's committed ledger record and the tree on disk, and dropped when the
+# record shows the tree released or the tree is no longer a directory. The
+# record is the per-run file a project's ledger writes under its own state
+# directory, and the tree check costs one stat per row.
+_WORKTREE_HELD_KIND = "worktree-held"
+
+# A run id is a path component when the record is resolved, so only the shape
+# the ledger itself accepts is resolved at all.
+_RUN_ID = re.compile(r"[A-Za-z0-9._-]+")
+
+
+def _read_record(path: Path) -> Mapping[str, Any] | None:
+    """One JSON object from disk, or None when it cannot stand for a record."""
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return record if isinstance(record, Mapping) else None
+
+
+def _run_ledger_record(
+    project: str, run_id: str, *, docs_dir: Path | None
+) -> Mapping[str, Any] | None:
+    """The committed record for one run, from the project's own state.
+
+    The per-run file is the ledger's leaf; a run the split has written no file
+    for still lives as a row of the aggregate, which is read only when that
+    file is absent. A record that cannot be read answers None, which the caller
+    reads as no evidence about the tree rather than as the tree being gone.
+    """
+    if docs_dir is None or not _RUN_ID.fullmatch(run_id):
+        return None
+    record = _read_record(docs_dir / "state" / project / "runs" / f"{run_id}.json")
+    if record is not None:
+        return record
+    aggregate = _read_record(docs_dir / "state" / project / "crew.json")
+    rows = aggregate.get("runs") if aggregate is not None else None
+    if not isinstance(rows, list):
+        return None
+    for row in rows:
+        if isinstance(row, Mapping) and str(row.get("run_id") or "") == run_id:
+            return row
+    return None
+
+
+def _recorded_tree(record: Mapping[str, Any]) -> str:
+    """The worktree path a run's record names, or empty when it names none.
+
+    The release audit's reading is the most recent path a promotion wrote, a
+    retained tree is named by its retention block, and the record's own
+    worktree field is the dispatcher's. The audit is read first because a
+    released run's own worktree field is not carried on the committed row.
+    """
+    release = record.get("release")
+    if isinstance(release, Mapping):
+        audit = release.get("worktree_audit")
+        if isinstance(audit, Mapping):
+            trees = audit.get("worktrees")
+            if isinstance(trees, list):
+                for entry in trees:
+                    if isinstance(entry, Mapping):
+                        path = str(entry.get("path") or "").strip()
+                        if path:
+                            return path
+    retention = record.get("worktree_retention")
+    if isinstance(retention, Mapping):
+        path = str(retention.get("worktree") or "").strip()
+        if path:
+            return path
+    return str(record.get("worktree") or "").strip()
+
+
+def _worktree_row_is_stale(
+    item: Mapping[str, Any], *, project: str, docs_dir: Path | None
+) -> bool:
+    """Whether one worktree-held row's run no longer holds a tree."""
+    run_id = str(item.get("run_id") or "").strip()
+    if not run_id or docs_dir is None:
+        return False
+    record = _run_ledger_record(project, run_id, docs_dir=docs_dir)
+    if record is None:
+        return False
+    release = record.get("release")
+    if isinstance(release, Mapping) and release.get("worktree_released") is True:
+        return True
+    tree = _recorded_tree(record)
+    if not tree:
+        return False
+    return not Path(tree).expanduser().is_dir()
+
+
+def recheck_worktree_held_rows(
+    payload: dict[str, Any], *, project: str
+) -> dict[str, Any]:
+    """The payload minus worktree-held rows whose tree the fleet has released.
+
+    A row whose run still holds its tree is left exactly as the snapshot
+    carried it; only a row whose record shows the tree released, or whose
+    recorded tree is no longer a directory, is dropped, and the summary is
+    recomputed so the header counts the rows actually shown. A row whose run
+    record cannot be read is kept: the snapshot's own derivation is the
+    evidence it was raised on, and dropping a duty on an unreadable file would
+    turn a damaged ledger into a silent omission.
+    """
+    items = payload.get("obligations") or ()
+    if not any(
+        isinstance(item, Mapping) and str(item.get("kind") or "") == _WORKTREE_HELD_KIND
+        for item in items
+    ):
+        return payload
+    docs_dir = _mounts().get(project)
+    kept: list[Any] = []
+    dropped = False
+    for item in items:
+        if (
+            isinstance(item, Mapping)
+            and str(item.get("kind") or "") == _WORKTREE_HELD_KIND
+            and _worktree_row_is_stale(item, project=project, docs_dir=docs_dir)
+        ):
+            dropped = True
+            continue
+        kept.append(item)
+    if not dropped:
+        return payload
+    summary = payload.get("summary")
+    summary = dict(summary) if isinstance(summary, Mapping) else {}
+    summary["count"] = len(kept)
+    summary["oldest_age_seconds"] = max(
+        (
+            int(item.get("age_seconds") or 0)
+            for item in kept
+            if isinstance(item, Mapping)
+        ),
+        default=0,
+    )
+    return {**payload, "obligations": kept, "summary": summary}
 
 
 def reapply_acknowledgements(
@@ -932,7 +1082,9 @@ def _stop(payload: dict[str, Any]) -> int:
     document = module.read_snapshot(project, session)
     state = module.freshness(document)
     if state == module.FRESH:
-        resolved = module.live_payload(document)
+        resolved = recheck_worktree_held_rows(
+            module.live_payload(document), project=project
+        )
     else:
         resolved = derive_within_budget(project, session, stop_derivation_budget())
         if resolved is None:
