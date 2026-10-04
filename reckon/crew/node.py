@@ -334,9 +334,23 @@ def _member_worker_liveness(pointer: Mapping[str, Any]) -> tuple[bool | None, st
     this host, and ``None`` means the question cannot be answered here. Every
     non-``False`` answer blocks, so a foreign launching host and a pointer with
     no recorded pid are both closed rather than assumed dead.
+
+    A pid that can never name a worker is separated out before the probe,
+    because the kernel gives pid 0 and every negative number to no process a
+    launch could have produced: ``os.kill(0, 0)`` tests the caller's own process
+    group and answers about the reader, and a record carrying such a value is a
+    launch that produced no worker at all. That record blocks nothing -- there
+    is no writer to collide with -- and it is not the same shape as a pointer
+    written before its worker spawned, which carries no pid and stays with the
+    probe as unanswerable.
     """
     from reckon.crew.claims import _worker_liveness
 
+    pid = pointer.get("pid")
+    if pid is not None and (
+        isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0
+    ):
+        return False, ""
     return _worker_liveness(pointer)
 
 

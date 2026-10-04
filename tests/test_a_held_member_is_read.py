@@ -366,3 +366,30 @@ def test_the_member_guard_and_the_session_guard_agree(
         ),
     )
     assert dispatch_module._prior_session_still_held(pointer, [pointer]) is None
+
+
+def test_a_record_that_names_no_process_does_not_hold_its_member() -> None:
+    """A launch that produced no process left nothing to collide with.
+
+    A launcher that returns no worker writes the recorded pid as zero, which
+    names no process on this host or any other, so the member is free. The
+    phase is not what frees it: the same pointer with no recorded pid at all
+    still blocks as unknown, because a pointer is written before its worker is
+    spawned and the worker may yet arrive.
+    """
+    from reckon.crew import node as node_module
+
+    holder = {
+        "run_id": "r-stub-launch",
+        "phase": "complete",
+        "pid": 0,
+        "launcher_host": socket.gethostname(),
+    }
+    verdict = node_module.member_in_flight_verdict(holder)
+    assert verdict.blocks is False
+    assert verdict.liveness == "gone"
+
+    unborn = {**holder, "pid": None}
+    unproven = node_module.member_in_flight_verdict(unborn)
+    assert unproven.blocks is True
+    assert unproven.liveness == "unknown"
