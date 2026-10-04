@@ -14,9 +14,9 @@
 <meta name="plan-status" content="active">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-informs" content="a-sprint-closes-on-completable-work">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-10-04">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 </head>
 <body>
 <main class="plan-doc">
@@ -26,12 +26,16 @@
 
 
 <h2 id="s2">§2 — A cleared held blocker releases a plan stored as blocked</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
 <p>From the §1 worker. A plan persisted with the legacy status <code>blocked</code> stays blocked on the roadmap after its held blocker clears. <code>reckon/roadmap.py</code> synthesizes an unrecorded blocker for that status, so the clear that §1 records never reaches the plan's readiness.</p><p><strong>Done when</strong> the node first shows the defect reproduces at main. Then a plan whose only blocker is a held blocker cleared by its probe reads ready on the roadmap, and a plan stored as blocked with no blocker resource keeps reading blocked. A test covers both. The negative control is main, where the first case reads blocked.</p>
 
 <h2 id="s3">§3 — A cleared blocker reports its clear even after its probe is withdrawn</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p>From the §1 review (score 96). In <code>evaluate_held_blocker</code> the already-cleared early return sits after the registry lookup. A blocker cleared while its probe was registered therefore raises "unknown held blocker probe id" once that probe leaves the registry, instead of reporting the clear it already recorded, and no test exercises that path.</p><p><strong>Done when</strong> a cleared blocker reports its recorded clear whatever the registry now holds. An uncleared blocker with an unknown probe id is still refused. A test covers both, and the negative control is main, where the first case raises.</p>
+
+<h2 id="s4">§4 — A graph target reads readiness from the one computation</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>From the §2 review (score 97). <code>resolve_graph_target</code> in <code>reckon/roadmap.py</code> (about line 1893) builds its own readiness list, whose membership still requires <code>_status(plan)</code> in <code>_AUTHORISED_STATUSES</code>. A plan released by §2 therefore appears in the roadmap's <code>ready_now</code> but is absent from a graph target's ready set. One readiness fact now has two computations, and only one was updated.</p><p><strong>Done when</strong> a graph target's ready set is derived from the same readiness the roadmap's ready set uses, so a plan released by a cleared hold appears in both. A test builds a graph whose member is such a plan and asserts it is ready in both views. A second test covers §2's untested partial-clear case, one blocker cleared and one still holding, and asserts the plan stays blocked in both. The negative control is main, where the graph view omits the released plan.</p>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
@@ -57,11 +61,17 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261004T095607714902-review-of-a-cleared-blocker-reports-its-clear" data-who="reckon-build" data-when="2026-10-04T10:00:06.983Z">
     <div class="r-comment-body"><p>review of r-20261004T094224172449-a-cleared-blocker-reports-its-clear scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 20 (total 97 of 100), zero added failures, no blocking findings — the cleared-status return is moved ahead of the probe-id lookup so a cleared blocker reports its recorded clear after its probe leaves the registry, the unknown-probe refusal is preserved, and the new test is independently shown red at the base revision.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-20261004-s3-landed" data-who="s22-coord" data-when="2026-10-04T13:02:00Z">
+    <div class="r-comment-body"><p><strong>Landed at merge fc6e8a9e1.</strong> <code>evaluate_held_blocker</code> returns a cleared blocker's recorded clear before looking its probe up in the registry. An uncleared blocker with an unknown probe id is still refused. A focused gate at the merged head passed 67 tests. Review scored 97.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261004T102147828761-review-of-a-cleared-hold-releases-a-blocked-plan" data-who="reckon-build" data-when="2026-10-04T10:27:06.792Z">
     <div class="r-comment-body"><p>review of run r-20261004T094153078389-a-cleared-hold-releases-a-blocked-plan (base 39ed4f2d8, head 858d0ffe9) scored goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19, total 97 with added_failure_count 0; both clauses of §2 verified and the defect reproduced red at base.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261004T094153078389-a-cleared-hold-releases-a-blocked-plan" data-who="reckon-build" data-when="2026-10-04T10:21:17.703Z">
     <div class="r-comment-body"><p>Roadmap readiness now reads a cleared held blocker as a release of the plan it gated: a plan persisted blocked whose only blocker was a probe-cleared held blocker reads ready, while a persisted blocked status with no blocker resource keeps reading blocked (new test 1 failed/1 passed at base 39ed4f2d8 and 2 passed at head; 44-file importer population 402 passed at both arms, zero added failures).</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-20261004-s2-landed" data-who="s22-coord" data-when="2026-10-04T13:02:00Z">
+    <div class="r-comment-body"><p><strong>Landed at merge 306903ad0.</strong> Composition drops a cleared blocker from the sprint item that named it, so a released plan read exactly like one that never carried a hold. The roadmap then synthesized an unrecorded blocker for the legacy <code>blocked</code> status. <code>_plans_released_by_cleared_blockers</code> in <code>reckon/roadmap.py</code> reads the raw sprint record. A plan whose every recorded blocker is a cleared resource with a reason reads ready; a blocked status with no blocker resource still reads blocked. Measured at a stacked merge of main 488bb4992 over 48 head-tree importer files: 538 passed at base and 540 at head. Review scored 97. Its follow-on that matters is §4.</p></div>
 </div>
 </section>
 </main>
