@@ -8902,9 +8902,12 @@ def _commits_beyond_base(record: Mapping[str, Any]) -> int:
     that revision. A run whose tree has not moved is answered without spawning
     git again; when the head moves the count is taken afresh.
     """
-    worktree = Path(str(record.get("worktree") or ""))
+    worktree_value = str(record.get("worktree") or "").strip()
     base = str(record.get("base_sha") or record.get("base") or "").strip()
-    if not base or not worktree.is_dir():
+    if not worktree_value or not base:
+        return 0
+    worktree = Path(worktree_value)
+    if not worktree.is_dir():
         return 0
     head = _worktree_head_identity(worktree)
     cacheable = head not in {"no-tree", "no-git", "no-head"}
@@ -8932,9 +8935,12 @@ def _commits_beyond_base(record: Mapping[str, Any]) -> int:
 
 def _worktree_diff_paths(record: Mapping[str, Any]) -> list[str]:
     """Return the base-to-worktree path census used for recovery evidence."""
-    worktree = Path(str(record.get("worktree") or ""))
+    worktree_value = str(record.get("worktree") or "").strip()
     base = str(record.get("base_sha") or record.get("base") or "").strip()
-    if not base or not worktree.is_dir():
+    if not worktree_value or not base:
+        return []
+    worktree = Path(worktree_value)
+    if not worktree.is_dir():
         return []
     tracked = subprocess.run(
         ["git", "diff", "--name-only", "--no-renames", "-z", base, "--"],
