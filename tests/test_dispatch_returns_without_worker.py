@@ -45,6 +45,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import uuid
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -1202,7 +1203,11 @@ def test_a_discarded_run_is_not_recreated(host: dict[str, Any], tmp_path: Path) 
     marker_dir = tmp_path / "markers"
     marker_dir.mkdir()
     run = _start_dispatch(
-        host, tag="discarded", marker_dir=marker_dir, stub_sleep=5, hold=False
+        host,
+        tag=f"discarded-{uuid.uuid4().hex[:8]}",
+        marker_dir=marker_dir,
+        stub_sleep=5,
+        hold=False,
     )
     outcome: dict[str, Any] = {"case": "a discarded run is not recreated"}
     try:
@@ -1278,6 +1283,31 @@ def test_a_discarded_run_is_not_recreated(host: dict[str, Any], tmp_path: Path) 
     finally:
         _finish(run, outcome)
         host["outcomes"].append(outcome)
+
+
+def test_a_phase_publish_does_not_restore_an_unlinked_pointer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path))
+    run_id = "discarded-publish"
+    run_directory = dispatch_module.run_dir(run_id)
+    run_directory.mkdir(parents=True)
+    pointer = dispatch_module.pointer_path(run_id)
+    pointer.parent.mkdir(parents=True)
+    pointer.write_text(json.dumps({"run_id": run_id, "phase": "starting"}))
+    original_write = dispatch_module._write_json
+    writes: list[Path] = []
+
+    def discard_during_write(path: Path, payload: dict[str, Any]) -> None:
+        assert pointer.exists()
+        pointer.unlink()
+        writes.append(path)
+        original_write(path, payload)
+
+    monkeypatch.setattr(dispatch_module, "_write_json", discard_during_write)
+    dispatch_module._publish_stored_phase({"run_id": run_id}, ended=False)
+    assert writes, "the supervisor did not reach its pointer write"
+    assert not pointer.exists(), "the publish recreated the discarded pointer"
 
 
 def test_a_delegated_launch_records_a_boundary_snapshot(
