@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import copy
 import json
 import re
 import sqlite3
@@ -76,6 +77,9 @@ BORROWED = "borrowed"
 
 _PROBE_CACHE_LOCK = threading.Lock()
 _PROBE_CACHE: dict[tuple[int, str], tuple[object, datetime, dict[str, Any]]] = {}
+_ATTEMPT_CACHE_LOCK = threading.RLock()
+_ATTEMPT_CACHE: dict[tuple[Any, ...], tuple[object, Any]] = {}
+_ATTEMPT_CACHE_LIMIT = 64
 
 
 def _unmeasured_reason(value: object) -> str | None:
@@ -1471,6 +1475,77 @@ def _run_target_plan(pointer: Mapping[str, Any]) -> str:
     return str(node.get("plan") or "").strip()
 
 
+def _attempt_inputs(
+    project: str, root: str | Path | None, pointers: list[dict[str, Any]] | None
+) -> (
+    tuple[
+        list[Any],
+        tuple[str, int, int, int] | None,
+        tuple[tuple[str, int, int], ...],
+        str | None,
+    ]
+    | None
+):
+    """Stamp the ledger index, newest run, and live-pointer names and times."""
+    from reckon.crew import runs
+
+    try:
+        newest = max(
+            (ledger.ledger_path(project, root).parent / "runs").glob("*.json"),
+            default=None,
+        )
+        newest_stamp = None
+        if newest is not None:
+            info = newest.stat()
+            newest_stamp = (
+                newest.name,
+                info.st_mtime_ns,
+                info.st_ctime_ns,
+                info.st_size,
+            )
+        live = []
+        for path in sorted(runs.live_dir().glob("*.json")):
+            info = path.stat()
+            live.append((path.name, info.st_mtime_ns, info.st_size))
+        supplied = (
+            json.dumps(pointers, sort_keys=True, default=str)
+            if pointers is not None
+            else None
+        )
+        return ledger.index_stamp(project, root), newest_stamp, tuple(live), supplied
+    except OSError:
+        return None
+
+
+def _cached_attempts(
+    key: tuple[Any, ...],
+    project: str,
+    root: str | Path | None,
+    pointers: list[dict[str, Any]] | None,
+    compute: Callable[[], Any],
+) -> Any:
+    """Serialize cache misses so concurrent reads aggregate a snapshot once."""
+    with _ATTEMPT_CACHE_LOCK:
+        before = _attempt_inputs(project, root, pointers)
+        cached = _ATTEMPT_CACHE.get(key)
+        if before is not None and cached is not None and cached[0] == before:
+            return copy.deepcopy(cached[1])
+        value = compute()
+        after = _attempt_inputs(project, root, pointers)
+        # Reading can refresh the index file itself. Source and live-pointer
+        # stamps must remain stable; the post-read index stamp becomes the key.
+        if (
+            before is not None
+            and after is not None
+            and before[0][:4] == after[0][:4]
+            and before[1:] == after[1:]
+        ):
+            _ATTEMPT_CACHE[key] = (after, copy.deepcopy(value))
+            if len(_ATTEMPT_CACHE) > _ATTEMPT_CACHE_LIMIT:
+                _ATTEMPT_CACHE.pop(next(iter(_ATTEMPT_CACHE)))
+        return value
+
+
 def section_attempts_by_plan(
     project: str,
     root: str | Path | None = None,
@@ -1484,17 +1559,30 @@ def section_attempts_by_plan(
     Committed rows settle an outcome; a live pointer for the same run id adds
     nothing. The legacy ``data-attempts`` attribute is not an input.
     """
-    from reckon.crew import runs
 
-    history, _version = ledger.load(project, root)
-    if pointers is None:
-        pointers = runs._list_live_records(project=project)
-    return _group_section_attempts(
+    def aggregate() -> dict[str, dict[str, dict[str, Any]]]:
+        from reckon.crew import runs
+
+        history, _version = ledger.load(project, root)
+        live = (
+            pointers
+            if pointers is not None
+            else runs._list_live_records(project=project)
+        )
+        return _group_section_attempts(
+            project,
+            history.get("runs", []),
+            live,
+            only_plan=only_plan,
+            only_section=only_section,
+        )
+
+    return _cached_attempts(
+        ("group", project, str(root), only_plan, only_section),
         project,
-        history.get("runs", []),
+        root,
         pointers,
-        only_plan=only_plan,
-        only_section=only_section,
+        aggregate,
     )
 
 
@@ -1600,12 +1688,25 @@ def section_attempt_count(
     The indexed query decodes only rows for this plan; section spelling is then
     normalized in Python, as it is for full plan views.
     """
-    from reckon.crew import runs
     from reckon.crew.routing import section_record_id
 
     wanted = section_record_id(section)
     if not project or not plan or not wanted:
         return 0
+    return _cached_attempts(
+        ("count", project, str(root), plan, wanted),
+        project,
+        root,
+        None,
+        lambda: _section_attempt_count_uncached(project, plan, section, wanted, root),
+    )
+
+
+def _section_attempt_count_uncached(
+    project: str, plan: str, section: str, wanted: str, root: str | Path | None
+) -> int:
+    from reckon.crew import runs
+
     headers, _version = ledger.indexed_headers(project, root)
     header_rows = headers.get("runs", [])
     settled = {
