@@ -1875,7 +1875,11 @@ def crew_dispatch(
     ``launch`` kind.
     """
     crew_module, flight_module = _crew_modules()
-    from reckon.crew.dispatch import LanePaused, resolve_dispatch_route
+    from reckon.crew.dispatch import (
+        LanePaused,
+        TmpHeadroomError,
+        resolve_dispatch_route,
+    )
     from reckon.crew.node import PlanReviewMissingError
 
     base_config = None
@@ -2133,6 +2137,22 @@ def crew_dispatch(
                 pretty,
             )
             raise click.exceptions.Exit(8) from exc
+        except TmpHeadroomError as exc:
+            _emit(
+                _with_resolved_overrides(
+                    {
+                        "ok": False,
+                        "dry_run": True,
+                        "error": "tmp-headroom-refusal",
+                        "detail": str(exc),
+                        "free_bytes": exc.free_bytes,
+                        "floor_bytes": exc.floor_bytes,
+                    },
+                    override_resolution,
+                ),
+                pretty,
+            )
+            raise click.exceptions.Exit(75) from exc
         except crew_module.CrewError as exc:
             _emit(
                 _with_resolved_overrides(
@@ -2375,6 +2395,18 @@ def crew_dispatch(
             pretty,
         )
         raise click.exceptions.Exit(9) from exc
+    except TmpHeadroomError as exc:
+        _emit(
+            {
+                "ok": False,
+                "error": "tmp-headroom-refusal",
+                "detail": str(exc),
+                "free_bytes": exc.free_bytes,
+                "floor_bytes": exc.floor_bytes,
+            },
+            pretty,
+        )
+        raise click.exceptions.Exit(75) from exc
     except crew_module.CrewError as exc:
         if str(exc).startswith("node is not dispatchable"):
             _emit(

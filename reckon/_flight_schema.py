@@ -530,6 +530,8 @@ class WorktreeConfig(ConfiguredBaseModel):
     Worktree lifecycle policy.
     """
     cleanup: WorktreeCleanup | None = Field(default=None)
+    scratch_min_free_bytes: int | None = Field(default=None, description="""Minimum free bytes on the worker scratch filesystem before a dispatch.""", ge=0)
+    scratch_min_free_pct: int | None = Field(default=None, description="""Minimum free percentage on the worker scratch filesystem before a dispatch.""", ge=0, le=100)
 
 
 class SummaryConfig(ConfiguredBaseModel):

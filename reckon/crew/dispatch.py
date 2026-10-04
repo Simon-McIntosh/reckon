@@ -5107,6 +5107,7 @@ def plan_dispatch(
             f"spec level {node.spec_level!r} is not one of exact, guided, open, "
             "or empty (undeclared)"
         )
+    require_worker_scratch_headroom(config)
     # Proven here rather than at worktree creation so that a dry run, whose
     # documented job is to validate the call, cannot report a dispatchable
     # node that the real dispatch then refuses on a missing precondition.
@@ -8252,6 +8253,38 @@ WORKER_SCRATCH_ROOT_DEFAULT = "/tmp"  # noqa: S108 - the node's own tmp, never s
 # allocation, so the figure is a report and never a refusal: a run that legitimately
 # needs more space is not stopped, it is named.
 WORKER_SCRATCH_BUDGET_BYTES = 2 * 1024**3
+
+
+class TmpHeadroomError(CrewError):
+    """The scratch filesystem cannot admit another worker."""
+
+    def __init__(self, free_bytes: int, floor_bytes: int):
+        self.free_bytes = free_bytes
+        self.floor_bytes = floor_bytes
+        super().__init__(
+            f"tmp-headroom-refusal: {free_bytes} bytes free, floor "
+            f"{floor_bytes} bytes; run `reckon crew gc --project <project>` "
+            "to inspect reclaimable worker scratch"
+        )
+
+
+def require_worker_scratch_headroom(config: Mapping[str, Any]) -> dict[str, int]:
+    """Check the filesystem that will hold run scratch before worktree creation."""
+    root = worker_scratch_root()
+    probe = root
+    while not probe.exists() and probe != probe.parent:
+        probe = probe.parent
+    stat = os.statvfs(probe)
+    free = stat.f_bavail * stat.f_frsize
+    total = stat.f_blocks * stat.f_frsize
+    worktree = config.get("worktree") or {}
+    floor = max(
+        int(worktree.get("scratch_min_free_bytes", 5 * 1024**3)),
+        total * int(worktree.get("scratch_min_free_pct", 10)) // 100,
+    )
+    if free < floor:
+        raise TmpHeadroomError(free, floor)
+    return {"free_bytes": free, "floor_bytes": floor}
 
 
 def worker_scratch_root() -> Path:
