@@ -2823,6 +2823,41 @@ def _raise_repository_scope_conflict(
             raise refusal
 
 
+def refuse_widen_scope_conflicts(
+    pointer: Mapping[str, Any], added_paths: Iterable[str]
+) -> None:
+    """Judge added fence paths with the same claim rule as dispatch."""
+    node = pointer.get("node")
+    if not isinstance(node, Mapping):
+        raise CrewError("the run records no node holding a write scope")
+    repo_value = str(pointer.get("repo") or "")
+    if not repo_value:
+        raise CrewError("the run records no repository for its write scope")
+    repo = claim_repository(pointer) or Path(repo_value).expanduser().resolve()
+    project = str(pointer.get("project") or "")
+    authority = pointer.get("authority")
+    authority = authority if isinstance(authority, Mapping) else {}
+    candidate = TaskNode(
+        id=str(node.get("id") or ""),
+        goal=str(node.get("goal") or ""),
+        plan=str(node.get("plan") or ""),
+        section=str(node.get("section") or ""),
+        write_paths=list(added_paths),
+    )
+    claims = _repository_scope_claims(
+        exclude_run_ids=(str(pointer.get("run_id") or ""),)
+    )
+    _raise_repository_scope_conflict(
+        candidate,
+        project=project,
+        repo=repo,
+        authority=authority,
+        claims=claims,
+        own_run_id=str(pointer.get("run_id") or ""),
+        own_registered_at=_utc_now(),
+    )
+
+
 def _scoped_python_files(paths: Iterable[str], repo: Path) -> tuple[Path, ...]:
     """Return existing Python files covered by repository-relative scopes."""
     files: set[Path] = set()

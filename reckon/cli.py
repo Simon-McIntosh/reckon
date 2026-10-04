@@ -5697,7 +5697,9 @@ def crew_widen(run_id, write_paths, pretty):
     decision outstanding. Eligibility is read twice -- once on the pointer as it
     stands and again on the record read under the per-run lock -- so a run that
     reaches either read in a non-wideniable state is refused rather than widened
-    in place.
+    in place. Added paths are checked against other binding live claims during
+    that locked write; a conflict names its holder and leaves this pointer
+    unchanged.
     """
     crew_module, _ = _crew_modules()
     try:
@@ -5739,6 +5741,13 @@ def crew_widen(run_id, write_paths, pretty):
             if path not in declared:
                 declared.append(path)
                 added.append(path)
+        if added:
+            from reckon.crew.dispatch import refuse_widen_scope_conflicts
+
+            try:
+                refuse_widen_scope_conflicts(pointer, added)
+            except crew_module.CrewError as exc:
+                raise click.ClickException(str(exc)) from exc
         node["write_paths"] = declared
         pointer["node"] = node
         return pointer
