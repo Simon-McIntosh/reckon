@@ -129,3 +129,40 @@ sibling.mkdir()
         str(scratch): 5,
         str(sibling): 6,
     }
+
+
+def test_discard_names_each_removed_scratch_directory(
+    tmp_path: Path, monkeypatch
+) -> None:
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    scratch_root = tmp_path / "scratch"
+    monkeypatch.setenv(dispatch.WORKER_SCRATCH_ROOT_ENV, str(scratch_root))
+    bare_id = "r-20261004T140100000000"
+    run_id = f"{bare_id}-sample"
+    scratch = dispatch.ensure_worker_scratch(run_id)
+    sibling = scratch_root / bare_id
+    sibling.mkdir()
+    (scratch / "inside.bin").write_bytes(b"inner")
+    (sibling / "outside.bin").write_bytes(b"outer!")
+    crew.run_dir(run_id).mkdir(parents=True, exist_ok=True)
+    _write_json(
+        pointer_path(run_id),
+        {
+            "run_id": run_id,
+            "repo": str(tmp_path),
+            "worktree": str(tmp_path / "absent"),
+            "scratch": str(scratch),
+            "pid": None,
+            "node": {"id": "sample"},
+        },
+    )
+
+    discarded = crew.discard(run_id)
+
+    assert not scratch.exists()
+    assert not sibling.exists()
+    assert {
+        row["path"]: row["bytes"] for row in discarded["scratch_removed_paths"]
+    } == {str(scratch): 5, str(sibling): 6}
