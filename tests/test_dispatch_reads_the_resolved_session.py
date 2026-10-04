@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import os
+import socket
+import subprocess
+import sys
 from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
@@ -15,6 +18,13 @@ from reckon.crew.runs import _write_json, capture_run_session, pointer_path, run
 dispatch = import_module("reckon.crew.dispatch")
 
 THREAD_ID = "01a0635f-62a3-7283-a81b-61cd39bedb60"
+
+
+def _dead_pid() -> int:
+    """A pid the kernel has already reaped, so a liveness probe reads gone."""
+    process = subprocess.Popen([sys.executable, "-c", "pass"])
+    process.wait()
+    return process.pid
 
 
 @pytest.fixture
@@ -40,6 +50,8 @@ def run_with_stream(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
         "log_path": str(stream),
         "session_id": None,
         "session_harness": "codex",
+        "pid": _dead_pid(),
+        "launcher_host": socket.gethostname(),
     }
 
 
