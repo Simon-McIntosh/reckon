@@ -36,9 +36,11 @@ as it found it.
 from __future__ import annotations
 
 import contextlib
+import ctypes
 import importlib
 import json
 import os
+import select
 import shutil
 import signal
 import subprocess
@@ -106,6 +108,7 @@ REFERENCE_SAMPLES = 3
 REFERENCE_UNITS = 8.0
 MARKER_BOUND = 60.0
 EXIT_RECORD_BOUND = 10.0
+COMPLETION_RECORD_BOUND = 120.0
 SPAWN_BOUND = 60.0
 DISCARD_BOUND = 60.0
 
@@ -292,6 +295,15 @@ if [ "$charge" = "1" ]; then
   here=$(pwd)
   printf '%s\\t%s\\t%s\\t%s\\n' "$PPID" "$(date +%s.%N)" "$here" "$*" \\
     >> "$RECKON_SHIM_LOG"
+  if [ -n "$RECKON_SHIM_SUPERVISOR_CPU" ]; then
+    case "$(ps -o args= -p "$PPID")" in
+      *"__supervise__"*)
+        taskset -pc "$RECKON_SHIM_SUPERVISOR_CPU" "$PPID" \\
+          >> "$RECKON_SHIM_LOG.affinity" 2>&1
+        renice -n 15 -p "$PPID" >> "$RECKON_SHIM_LOG.affinity" 2>&1
+        ;;
+    esac
+  fi
   # A call run from under the scan root by a process that is not the dispatch
   # process is the boundary scan's: a fenced supervisor scans its own worktree
   # and the main checkout, while dispatch's own pre-return calls are made by the
@@ -1475,9 +1487,9 @@ def test_dispatch_returns_when_its_supervisor_finished_the_launch(
 ) -> None:
     """A supervisor that completed its launch is not read as a refusal.
 
-    No scan gate is armed, so the supervisor's two-tree scan completes at once,
+    No scan gate is armed, so the supervisor scans two trees and then
     spawns the stub worker, collects its exit and writes the completion exit
-    record -- all inside dispatch's survival window. Dispatch must return that
+    record -- possibly after dispatch's survival window. Dispatch must return that
     run rather than refuse it: a dispatch that launched a worker is never a
     refusal, whatever the worker then did.
     """
@@ -1511,16 +1523,29 @@ def test_dispatch_returns_when_its_supervisor_finished_the_launch(
         assert output.get("pid"), (
             "the dispatch process named no supervisor for a launch that completed"
         )
-        # The supervisor's own receipt: its completion exit record names the
-        # worker it spawned, which is the record dispatch read as a launch. A
-        # launch that outran dispatch's survival window on a loaded host is
-        # still being written when dispatch returns, so the wait is bounded by
-        # a multiple of the launch dispatch itself measured.
-        launch_seconds = float(output.get("dispatch_seconds") or 0.0)
-        exit_record = _wait_for(
-            lambda: _load_json(run.run_directory() / "exit.json"),
-            timeout=max(EXIT_RECORD_BOUND, launch_seconds * DRIVER_EXIT_SLACK),
-        )
+        # The supervisor publishes exit.json by atomic rename. Watch that
+        # directory before reading the receipt, then wait for the rename event.
+        record_path = run.run_directory() / "exit.json"
+        exit_record = _load_json(record_path)
+        if exit_record is None:
+            libc = ctypes.CDLL(None, use_errno=True)
+            events = libc.inotify_init1(os.O_CLOEXEC)
+            assert events >= 0, os.strerror(ctypes.get_errno())
+            try:
+                directory = os.fsencode(record_path.parent)
+                watch = libc.inotify_add_watch(events, directory, 0x80)
+                assert watch >= 0, os.strerror(ctypes.get_errno())
+                deadline = time.monotonic() + COMPLETION_RECORD_BOUND
+                while (exit_record := _load_json(record_path)) is None:
+                    remaining = max(0.0, deadline - time.monotonic())
+                    ready, _, _ = select.select([events], [], [], remaining)
+                    assert ready and remaining > 0, (
+                        f"missing exit.json at {record_path} in run directory "
+                        f"{record_path.parent} after {COMPLETION_RECORD_BOUND} s"
+                    )
+                    os.read(events, 4096)
+            finally:
+                os.close(events)
         outcome["exit_record"] = exit_record
         assert exit_record is not None and exit_record.get("worker_pid") is not None, (
             "the supervisor left no completion exit record naming its worker, so "
