@@ -1,0 +1,31 @@
+<!doctype html>
+<html><head>
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+<meta name="plan" content="crew-runtime-positive-controls">
+<meta name="node" content="the-last-blank-worktree-idioms-are-audited">
+<title>the-last-blank-worktree-idioms-are-audited</title>
+</head><body>
+
+<h2 id="the-last-blank-worktree-idioms-are-audited-landing">The last blank-worktree idioms are audited</h2>
+
+<p id="the-last-blank-worktree-idioms-are-audited-landing-line">Landed on
+<code>reckon/crew/promotion.py</code>: all seven remaining
+<code>Path(str(record.get("worktree") or ""))</code> sites can reach a blank
+field, so each was resolved &mdash; <code>_run_commit_directory</code> through
+<code>_record_tree</code> (the repository is the right fallback for commit
+objects, which it shares), and <code>_worktree_repository_changes</code>,
+<code>_manifest_declares_no_change</code>,
+<code>_worktree_unchanged_since_base</code> and the commitless gate guard in
+<code>_require_gate_evidence</code>, the own-tree exclusion in
+<code>_repository_tree_boundary_violations</code> and
+<code>_write_shadow_patch</code> through the new worktree-only
+<code>_record_worktree</code>, which refuses the repository as a substitute
+for the tree the run worked in; <code>tests/test_promotion_blank_worktree_sites.py</code>
+adds one case per site, each run from inside an unrelated git repository whose
+adversarial facts make a cwd-fallback reader fail; the seven cases fail at
+base <code>b65b7c6da</code> (negative control) and the population of test
+files importing <code>reckon.crew.promotion</code> records 515 passed at base
+and 515 passed at head, adding no failure.</p>
+
+</body></html>
