@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-resumability-reader-keys-on-the-resolution">
+  <meta name="plan-title" content="The recovery surface reads resumability from the resolution, and the lagging-field readers that remain are named">
+  <meta name="plan-summary" content="Census at main a90a37174 of every reader in reckon/crew that decides resumability, discard or recovery routing from the raw session_id field: none remains in reckon/crew/recovery.py or reckon/crew/resumption.py, where the blocked, interrupted, stopped and abandoned arms all resolve through resolve_session and the only raw read is the pointer source of that resolution itself (resumption.py:405); the readers that remain are outside this node's write fence and are named for follow-on (dispatch.py:10909 and 10959 same-task reuse, dispatch.py:11097 and 11120 the current-harness session, dispatch.py:12114 the resumed flag, promotion.py:4467 the promotion resume gate, promotion.py:7836 the promoted row's session, runs.py:85 session capture). Gate: base 1520 passed, 1 skipped (EXIT=0) over the 162 test files importing reckon.crew.recovery or reckon.crew.resumption; after, with the new file, 1522 passed, 1 skipped (EXIT=0), zero added failures. The new test builds a pointer whose session_id is null whose stream opens with a thread record and requires the recovery classification to read it resumable naming the stream as its source; the declared mutation restores the raw field read in _blocked_session_resolution and both cases fail at EXIT=1, the incident case on resolved is True.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-tags" content="crew,resumability,session-resolution,recovery">
+  <title>The recovery surface reads resumability from the resolution | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-resumability-reader-keys-on-the-resolution" data-reckon="landed" data-when="2026-10-04">
+  <h2>The recovery surface reads resumability from the resolution, and the lagging-field readers that remain are named</h2>
+  <p><strong>Landed.</strong> The census at <code>a90a37174</code> finds no raw <code>session_id</code>-field read deciding resumability, discard or recovery routing inside <code>reckon/crew/recovery.py</code> or <code>reckon/crew/resumption.py</code>: the blocked, interrupted, stopped and abandoned arms resolve through <code>resolve_session</code>, and the one raw read there (<code>resumption.py:405</code>) is the resolution's own pointer source. The readers that still answer from the field are outside this node's write fence and are named for follow-on in the manifest. New evidence: <code>tests/test_resumability_reads_the_resolution.py</code> builds the incident's run &mdash; a pointer with <em>session_id: null</em> over a stream whose first record names a thread &mdash; and requires the recovery classification to read it resumable, <code>source: "stream"</code>, with a companion case where nothing names a session and the resolution stays unresolved. Gate over the population of test files importing <code>reckon.crew.recovery</code> or <code>reckon.crew.resumption</code>: base 1520 passed, 1 skipped (<code>EXIT=0</code>); after, with the new file, 1522 passed, 1 skipped (<code>EXIT=0</code>); zero added failures. The declared mutation restores the raw field read in <code>_blocked_session_resolution</code> and the incident case fails at <code>EXIT=1</code> on <code>resolved is True</code>.</p>
+</article>
+</body>
+</html>
