@@ -1,7 +1,7 @@
 """A blocked run's fence is widened through the pointer it will be judged by.
 
 The fence starts with the paths declared at dispatch. A blocked run can add a
-path through the command surface, which must refuse a peer's live claim and
+path through the command surface, which must apply dispatch's peer-claim rule and
 carry an accepted path into the committed record. These cases drive the CLI
 runner rather than the pointer helper because they exercise the coordinator's
 verb and the field promotion reads.
@@ -28,13 +28,18 @@ from click.testing import CliRunner
 
 from reckon import crew, ledger
 from reckon.cli import main as cli_main
-from reckon.crew.dispatch import _repository_scope_claims
+from reckon.crew.dispatch import (
+    _raise_repository_scope_conflict,
+    _repository_scope_claims,
+)
+from reckon.crew.node import ScopeConflict
 from reckon.crew.runs import _write_json, crew_home, pointer_path
 
 BLOCKED_RUN_ID = "r-20260921T000000000000-widen-blocked"
 WORKING_RUN_ID = "r-20260921T000000000000-widen-working"
 DECLARED = "reckon/crew/runs.py"
 GRANTED = "reckon/crew/node.py"
+SHAREABLE = "reckon/crew/dispatch.py"
 SESSION_ID = "s19-codex-20260916"
 COMMITS = ["1a2b3c4d5e6f", "0f1e2d3c4b5a"]
 
@@ -266,6 +271,18 @@ def test_a_peer_held_path_refuses_without_changing_pointer_bytes(
         claim.run_id == holder_id and claim.binding and claim.path == GRANTED
         for claim in _repository_scope_claims()
     )
+    candidate = crew.TaskNode(
+        id="widen", goal="", plan="fixture", write_paths=[GRANTED]
+    )
+    with pytest.raises(ScopeConflict, match=holder_id):
+        _raise_repository_scope_conflict(
+            candidate,
+            project="sample",
+            repo=(tmp_path / "repo").resolve(),
+            authority={},
+            claims=_repository_scope_claims(exclude_run_ids=(BLOCKED_RUN_ID,)),
+            own_run_id=BLOCKED_RUN_ID,
+        )
     before = pointer_path(BLOCKED_RUN_ID).read_bytes()
 
     result = _widen(BLOCKED_RUN_ID, GRANTED)
@@ -273,6 +290,45 @@ def test_a_peer_held_path_refuses_without_changing_pointer_bytes(
     assert result.exit_code != 0, result.output
     assert holder_id in result.output
     assert pointer_path(BLOCKED_RUN_ID).read_bytes() == before
+    crew_home_watch.assert_untouched()
+
+
+def test_a_shareable_path_matches_dispatch_admission(
+    blocked_run: dict, tmp_path: Path, crew_home_watch: CrewHomeWatch
+) -> None:
+    repo = tmp_path / "repo"
+    subprocess.run(
+        ["git", "init", "-q", "-b", "main"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+    )
+    shared = repo / "docs" / "state" / "sample" / "shared-write-paths.json"
+    shared.parent.mkdir(parents=True)
+    shared.write_text(
+        json.dumps({"paths": [{"path": SHAREABLE, "reason": "independent edits"}]})
+    )
+    holder_id = "r-20260921T000000000000-shareable-holder"
+    holder = _blocked_pointer(tmp_path, holder_id, phase="working")
+    holder["node"]["write_paths"] = [SHAREABLE]
+    _write_json(pointer_path(holder_id), holder)
+    candidate = crew.TaskNode(
+        id="widen", goal="", plan="fixture", write_paths=[SHAREABLE]
+    )
+    _raise_repository_scope_conflict(
+        candidate,
+        project="sample",
+        repo=repo.resolve(),
+        authority={},
+        claims=_repository_scope_claims(exclude_run_ids=(BLOCKED_RUN_ID,)),
+        own_run_id=BLOCKED_RUN_ID,
+    )
+
+    result = _widen(BLOCKED_RUN_ID, SHAREABLE)
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["added"] == [SHAREABLE]
+    assert _read(BLOCKED_RUN_ID)["node"]["write_paths"] == [DECLARED, SHAREABLE]
     crew_home_watch.assert_untouched()
 
 

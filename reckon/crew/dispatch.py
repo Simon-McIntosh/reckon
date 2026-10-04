@@ -2826,7 +2826,7 @@ def _raise_repository_scope_conflict(
 def refuse_widen_scope_conflicts(
     pointer: Mapping[str, Any], added_paths: Iterable[str]
 ) -> None:
-    """Refuse a new fence path while another live run binds its claim."""
+    """Judge added fence paths with the same claim rule as dispatch."""
     node = pointer.get("node")
     if not isinstance(node, Mapping):
         raise CrewError("the run records no node holding a write scope")
@@ -2844,25 +2844,18 @@ def refuse_widen_scope_conflicts(
         section=str(node.get("section") or ""),
         write_paths=list(added_paths),
     )
-    entries = _resolved_node_scope_entries(
-        candidate, project=project, repo=repo, authority=authority
-    )
     claims = _repository_scope_claims(
         exclude_run_ids=(str(pointer.get("run_id") or ""),)
     )
-    for repository, path, absolute, _declared, _derived_from in entries:
-        for claim in claims:
-            if (
-                claim.binding
-                and repository == claim.repository
-                and _scopes_overlap(absolute.as_posix(), claim.absolute_path.as_posix())
-            ):
-                raise ScopeConflict(
-                    run_id=claim.run_id,
-                    node_id=claim.node_id,
-                    candidate_path=path,
-                    claimed_path=claim.path,
-                )
+    _raise_repository_scope_conflict(
+        candidate,
+        project=project,
+        repo=repo,
+        authority=authority,
+        claims=claims,
+        own_run_id=str(pointer.get("run_id") or ""),
+        own_registered_at=_utc_now(),
+    )
 
 
 def _scoped_python_files(paths: Iterable[str], repo: Path) -> tuple[Path, ...]:
