@@ -4178,7 +4178,11 @@ def _crew(
     the session-closure count, declared executable remainder, and recorded
     dispositions from those pointers;
     ``scopes`` reads live path claims and partitions the optional ordered
-    ``candidates`` wave manifest into mutually independent serial lanes;
+    ``candidates`` wave manifest into mutually independent serial lanes,
+    reporting under ``candidate_wave`` whether such a wave was supplied — so
+    an empty conflict list is not read as an evaluated wave with no conflicts
+    when no wave was asked about — and marking each claim with the binding
+    verdict the dispatch scope check itself would apply to that path;
     ``runs`` joins compact, filterable rows from live pointers and the ledger;
     its default project scope reads one repository, while workstation scope
     labels rows from every configured project with their owning repository;
@@ -4369,15 +4373,18 @@ def _crew(
                 repo=repo_root,
                 derivations=manifest.get("derivations") or {},
             )
-            claim_map: dict[str, list[dict[str, str]]] = {}
+            claim_map: dict[str, list[dict[str, Any]]] = {}
             for claim in planned["claims"]:
-                owner = {
+                owner: dict[str, Any] = {
                     "run_id": claim["run_id"],
                     "node": claim["node"],
                     "declared_path": claim["declared_path"],
                 }
                 if claim.get("derived_from") is not None:
                     owner["derived_from"] = claim["derived_from"]
+                if "binding" in claim:
+                    owner["binding"] = claim["binding"]
+                    owner["disposition_reason"] = claim.get("disposition_reason", "")
                 claim_map.setdefault(claim["path"], []).append(owner)
             return {
                 "ok": True,

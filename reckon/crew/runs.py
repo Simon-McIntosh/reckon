@@ -648,6 +648,13 @@ class _LiveScopeClaim:
     # dropped when it is rebuilt from the read model.
     registered_at: str = ""
     launched: bool = False
+    # Whether this claim still fences its path, judged by the same rule the
+    # dispatch scope check applies (a stopped run holding no unintegrated work
+    # is walked past), so a reader of the registry reaches the enforcer's
+    # disposition rather than a stricter one of its own. The reason travels
+    # with the verdict so a disregarded claim does not read as a bare false.
+    binding: bool = True
+    disposition_reason: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         """Return the stable read-model representation of this claim."""
@@ -656,6 +663,8 @@ class _LiveScopeClaim:
             "run_id": self.run_id,
             "node": self.node_id,
             "declared_path": self.declared_path,
+            "binding": self.binding,
+            "disposition_reason": self.disposition_reason,
         }
         if self.derived_from is not None:
             claim["derived_from"] = self.derived_from
@@ -756,6 +765,7 @@ def _live_scope_claims(
 ) -> list[_LiveScopeClaim]:
     """Derive this repository's claimed paths from its project live pointers."""
     from reckon.crew.dispatch import _UNLAUNCHED_CLAIM_PHASES
+    from reckon.crew.node import claim_disposition
 
     claims: list[_LiveScopeClaim] = []
     for pointer in list_live(project=project):
@@ -775,6 +785,10 @@ def _live_scope_claims(
         launched = bool(pointer.get("worktree") or pointer.get("pid")) or (
             str(pointer.get("phase") or "") not in _UNLAUNCHED_CLAIM_PHASES
         )
+        # The same per-pointer disposition the dispatch scope check takes, so
+        # the registry a worker reads carries the verdict the enforcer would
+        # apply instead of leaving the reader to derive a stricter one.
+        disposition = claim_disposition(pointer)
         for path, declared, derived_from in _expanded_scope_paths(
             node.get("write_paths") or (), repo, derivations
         ):
@@ -787,6 +801,8 @@ def _live_scope_claims(
                     derived_from=derived_from,
                     registered_at=registered_at,
                     launched=launched,
+                    binding=disposition.binding,
+                    disposition_reason=disposition.reason,
                 )
             )
     return sorted(claims, key=lambda claim: (claim.run_id, claim.node_id, claim.path))
@@ -872,6 +888,14 @@ def plan_scope_lanes(
     A lane is a serial sequence. Conflicting nodes therefore stay in the same
     lane, while disconnected components may run concurrently as separate lanes.
     Candidate order is retained both between lanes and within each lane.
+
+    The lane partition, the candidate conflicts and the live-claim
+    intersections are all computed against the supplied wave manifest, so with
+    no candidates there is no question to answer rather than an answer of
+    none. ``candidate_wave`` reports which of the two this payload carries, so
+    an empty ``conflicts`` is never read as an evaluated wave that happened to
+    be clean. Every listed claim carries ``binding``, judged by the dispatch
+    scope check's own rule.
     """
     repo_root = Path(repo).expanduser().resolve()
     nodes = _candidate_nodes(candidates, repo_root, derivations)
@@ -950,6 +974,16 @@ def plan_scope_lanes(
         "live_conflicts": live_conflicts,
         "lane_count": len(lanes),
         "lanes": lanes,
+        "candidate_wave": {
+            "state": "evaluated" if nodes else "unevaluated",
+            "detail": (
+                ""
+                if nodes
+                else "no candidate wave manifest was supplied, so the lane "
+                "partition, candidate conflicts and live-claim intersections "
+                "were not evaluated"
+            ),
+        },
     }
 
 
