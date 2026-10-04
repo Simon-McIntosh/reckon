@@ -1473,6 +1473,9 @@ def section_attempts_by_plan(
     project: str,
     root: str | Path | None = None,
     pointers: list[dict[str, Any]] | None = None,
+    *,
+    only_plan: str | None = None,
+    only_section: str | None = None,
 ) -> dict[str, dict[str, dict[str, Any]]]:
     """Derive section attempts from distinct executable run ids.
 
@@ -1482,14 +1485,22 @@ def section_attempts_by_plan(
     from reckon.crew import runs
     from reckon.crew.routing import section_record_id
 
+    wanted_section = section_record_id(only_section) if only_section else None
     history, _version = ledger.load(project, root)
     observed: dict[str, tuple[str, str, dict[str, Any]]] = {}
+    settled_ids: set[str] = set()
     for row in history.get("runs", []):
         if not isinstance(row, Mapping) or row.get("role") not in {"implement", "test"}:
             continue
         run_id = str(row.get("run_id") or "")
         plan = str(row.get("plan") or "")
         section = section_record_id(row.get("section"))
+        if run_id:
+            settled_ids.add(run_id)
+        if (only_plan is not None and plan != only_plan) or (
+            wanted_section is not None and section != wanted_section
+        ):
+            continue
         if not run_id or not plan or not section:
             continue
         gate = str(row.get("gate") or "")
@@ -1528,7 +1539,18 @@ def section_attempts_by_plan(
         section = (
             section_record_id(node.get("section")) if isinstance(node, Mapping) else ""
         )
-        if run_id and run_id not in observed and plan and section:
+        if (
+            run_id
+            and (
+                (only_plan is None and wanted_section is None)
+                or run_id not in settled_ids
+            )
+            and run_id not in observed
+            and plan
+            and section
+            and (only_plan is None or plan == only_plan)
+            and (wanted_section is None or section == wanted_section)
+        ):
             observed[run_id] = (
                 plan,
                 section,
