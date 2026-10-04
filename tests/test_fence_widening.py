@@ -214,6 +214,16 @@ def test_a_free_path_reaches_the_promoted_ledger(
 
     result = _widen(BLOCKED_RUN_ID, GRANTED)
     assert result.exit_code == 0, result.output
+    held_path = "reckon/crew/dispatch.py"
+    holder_id = "r-20260921T000000000000-later-holder"
+    holder = _blocked_pointer(tmp_path, holder_id, phase="working")
+    holder["node"]["write_paths"] = [held_path]
+    _write_json(pointer_path(holder_id), holder)
+    before_refusal = pointer_path(BLOCKED_RUN_ID).read_bytes()
+    refused = _widen(BLOCKED_RUN_ID, held_path)
+    assert refused.exit_code != 0, refused.output
+    assert holder_id in refused.output
+    assert pointer_path(BLOCKED_RUN_ID).read_bytes() == before_refusal
     pointer = _read(BLOCKED_RUN_ID)
     pointer["phase"] = "complete"
     _write_json(pointer_path(BLOCKED_RUN_ID), pointer)
