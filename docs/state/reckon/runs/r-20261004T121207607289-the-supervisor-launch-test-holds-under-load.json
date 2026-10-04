@@ -1,0 +1,523 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "e49e4731a1a2849ac2a3cc8b1aec295c1be8f811",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 10913838,
+      "input_tokens_cumulative": 10913838,
+      "output_tokens": 111089,
+      "output_tokens_cumulative": 111089,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 17,
+    "files": 1,
+    "removed": 5
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 1068,
+        "name": "test_sigkill_to_the_worker_is_recorded",
+        "path": "tests/test_dispatch_returns_without_worker.py"
+      },
+      "run_function": {
+        "line": 1124,
+        "name": "test_a_discarded_run_is_not_recreated",
+        "path": "tests/test_dispatch_returns_without_worker.py"
+      },
+      "window_line": 1126
+    },
+    {
+      "existing_function": {
+        "line": 1329,
+        "name": "test_dispatch_returns_when_its_supervisor_finished_the_launch",
+        "path": "tests/test_dispatch_returns_without_worker.py"
+      },
+      "run_function": {
+        "line": 1207,
+        "name": "test_a_delegated_launch_records_a_boundary_snapshot",
+        "path": "tests/test_dispatch_returns_without_worker.py"
+      },
+      "window_line": 1234
+    },
+    {
+      "existing_function": {
+        "line": 1068,
+        "name": "test_sigkill_to_the_worker_is_recorded",
+        "path": "tests/test_dispatch_returns_without_worker.py"
+      },
+      "run_function": {
+        "line": 1329,
+        "name": "test_dispatch_returns_when_its_supervisor_finished_the_launch",
+        "path": "tests/test_dispatch_returns_without_worker.py"
+      },
+      "window_line": 1330
+    },
+    {
+      "existing_function": {
+        "line": 1207,
+        "name": "test_a_delegated_launch_records_a_boundary_snapshot",
+        "path": "tests/test_dispatch_returns_without_worker.py"
+      },
+      "run_function": {
+        "line": 1329,
+        "name": "test_dispatch_returns_when_its_supervisor_finished_the_launch",
+        "path": "tests/test_dispatch_returns_without_worker.py"
+      },
+      "window_line": 1348
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "89e4c221c49afe53f2356f636462007a4ea6d28a"
+  ],
+  "completed_at": "2026-10-04T13:04:27.557Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-04T12:12:29Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": "pre-existing-failure",
+  "follow_on_paths": [
+    "reckon/crew/dispatch.py:7566-7568",
+    "reckon/crew/runs.py:523-536)."
+  ],
+  "gate": "failed",
+  "gate_check": {
+    "command": "env TERM=dumb NO_COLOR=1 .venv/bin/python -m pytest -p no:cacheprovider -q --timeout=300 tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_when_its_supervisor_finished_the_launch tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated",
+    "exit_status": null,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T121207607289-the-supervisor-launch-test-holds-under-load/coordinator-gate-merged-targets.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.96,
+    "plan": "a-dispatch-returns-without-its-worker",
+    "reason": "gate-not-passing",
+    "verdict": "exempt"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-04T13:12:08.689777+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-04T12:12:08Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 13,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 2,
+    "headroom": 14,
+    "mean_context": 180000,
+    "observed_at": "2026-10-04T12:11:55Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-04T13:04:27.557Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T121207607289-the-supervisor-launch-test-holds-under-load/manifest.md",
+  "member": "disposable-r-20261004T121207607289-the-supervisor-launch-test-holds-under-load",
+  "negative_control": {
+    "reason": "gate-not-passing",
+    "test_paths": [
+      "tests/test_dispatch_returns_without_worker.py"
+    ],
+    "verdict": "exempt"
+  },
+  "no_commit": null,
+  "node": "the-supervisor-launch-test-holds-under-load",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 433,
+          "cached_input_tokens": 643573,
+          "input_tokens": 644008,
+          "output_tokens": 1026,
+          "reasoning_output_tokens": 521,
+          "total_tokens": 645034,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "The manifest names the timing with file and line and records 20 runs at -n 8 beside a CPU-bound load failing at least once at base and passing 20 of 20 at head; test_a_discarded_run_is_not_recreated is examined the same way; the population of test files importing reckon.crew.dispatch adds no failure against base",
+    "estimated_hours": null,
+    "goal": "Name the timing tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_when_its_supervisor_finished_the_launch depends on, show it fails under contention, and make it wait on the event it asserts or bound its window from a measured figure, as section 12 states",
+    "id": "the-supervisor-launch-test-holds-under-load",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-04T12:12:08Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 13,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 2,
+      "headroom": 14,
+      "mean_context": 180000,
+      "observed_at": "2026-10-04T12:11:55Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T121207607289-the-supervisor-launch-test-holds-under-load/manifest.md",
+    "negative_control": "At base 6926b382d the contended runs fail at least once, so the 20-of-20 measure fails there",
+    "plan": "a-dispatch-returns-without-its-worker",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§12",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "tests/test_dispatch_returns_without_worker.py",
+      "docs/evidence/fragments/a-dispatch-returns-without-its-worker/the-supervisor-launch-test-holds-under-load.html",
+      "docs/figures/a-dispatch-returns-without-its-worker/the-supervisor-launch-test-holds-under-load"
+    ]
+  },
+  "orientation_input_tokens": 8857592.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "the-supervisor-launch-test-holds-under-load",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-04T12:12:18.336611+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout",
+    "family": null,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 5000.804,
+    "model": null,
+    "offered": [],
+    "probabilities": {}
+  },
+  "plan": "a-dispatch-returns-without-its-worker",
+  "plan_impl_at_dispatch": 0.96,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "89e4c221c49afe53f2356f636462007a4ea6d28a",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "e49e4731a1a2849ac2a3cc8b1aec295c1be8f811",
+    "reviewed_head_sha": "89e4c221c49afe53f2356f636462007a4ea6d28a",
+    "scores": {
+      "durability": 18,
+      "evidence": 16,
+      "fit": 19,
+      "goal_fidelity": 19,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 92
+  },
+  "review_tier": "none",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261004T121207607289-the-supervisor-launch-test-holds-under-load",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§12",
+  "session": "s22-coord",
+  "session_harness": "claude",
+  "session_id": "749897bd-cb97-4eb5-9a92-0b28b98d56cd",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 11107417,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 3111.708,
+    "generated_tokens": 120520,
+    "generation_seconds": 2151.844,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 83.5,
+    "machine_seconds": 959.864,
+    "peak_input_tokens": 192279,
+    "tokens_per_second": 56.01,
+    "wall_tokens_per_second": 38.73
+  },
+  "time_budget": "60m",
+  "tool_steps": 106.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": [
+      {
+        "backend": "clive",
+        "budget_overrun": true,
+        "budget_overrun_cause": "unknown",
+        "budget_overrun_rate": null,
+        "budget_overrun_reference_rate": null,
+        "budget_overrun_reference_runs": 0,
+        "budget_overrun_reference_source": "recent committed runs, same backend and model",
+        "budget_overrun_seconds": 3303,
+        "budget_seconds": 3600,
+        "classification": "promotable",
+        "commits_beyond_base": 0,
+        "detail": "the worker manifest reports completion and an independent parsed review is attached; the run is ready for promotion",
+        "effective_phase": "complete",
+        "elapsed_seconds": 6903,
+        "exit_record": {
+          "attempt": 1,
+          "ended_during": "working",
+          "exit_code": 0,
+          "exited_at": "2026-10-04T10:50:08Z",
+          "last_record_type": "result",
+          "launched_at": "2026-10-04T10:17:22Z",
+          "recorded_by": "supervisor",
+          "run_id": "r-20261004T101655975444-a-test-run-scratch-stays-in-its-temp-root",
+          "signal": null,
+          "signal_name": null,
+          "stream_records_seen": 20328,
+          "worker_pid": 1700759
+        },
+        "external_wait": null,
+        "fleet_verdict": {
+          "detail": "",
+          "lifting_condition": null,
+          "recovery": "promote",
+          "recovery_classification": "promotable",
+          "stall_base_detail": null,
+          "stall_base_state": null,
+          "stall_pause_reason": null,
+          "stall_process_state": null,
+          "stall_quiet_seconds": null,
+          "stall_window_seconds": 900,
+          "state": "complete"
+        },
+        "interruption": null,
+        "lane_cause": null,
+        "lane_ended_at": "2026-10-04T10:50:08Z",
+        "lane_event": null,
+        "lifting_condition": null,
+        "liveness_proven": true,
+        "log_age_seconds": 4926,
+        "log_fresh": false,
+        "manifest_commits": [
+          "774da08f913541fd45636f65aafb5c74650d6e00",
+          "3437cffab84019a78742077fe03054a6274ecd1b"
+        ],
+        "manifest_derived": false,
+        "manifest_digest": "f3ecefc34f167788dd09071092935b7fb99872f2da17251932696bb572ed7586",
+        "manifest_error": null,
+        "manifest_file_present": true,
+        "manifest_fresh": true,
+        "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T101655975444-a-test-run-scratch-stays-in-its-temp-root/manifest.md",
+        "manifest_present": true,
+        "manifest_reported_status": "complete",
+        "manifest_status": "complete",
+        "marker": null,
+        "needs_help_complete": null,
+        "next_action": "reckon crew complete --run r-20261004T101655975444-a-test-run-scratch-stays-in-its-temp-root --gate <verdict> --commit 774da08f913541fd45636f65aafb5c74650d6e00 --commit 3437cffab84019a78742077fe03054a6274ecd1b",
+        "node": "a-test-run-scratch-stays-in-its-temp-root",
+        "phase": "complete",
+        "plan": "crew-runtime-positive-controls",
+        "process_alive": false,
+        "process_descendant_alive": null,
+        "project": "reckon",
+        "recovery": "promote",
+        "recovery_classification": "promotable",
+        "resets_at": null,
+        "review_error": null,
+        "review_present": true,
+        "review_status": "parsed",
+        "run_id": "r-20261004T101655975444-a-test-run-scratch-stays-in-its-temp-root",
+        "session": "s22-coord",
+        "stored_phase": "complete",
+        "terminal_age_seconds": 5018,
+        "terminal_at": "2026-10-04T10:48:34Z",
+        "wait_age_seconds": null,
+        "wait_condition_state": null,
+        "wait_key_defect": null,
+        "wait_observed": null,
+        "wait_overdue": null,
+        "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/a-test-run-scratch-stays-in-its-temp-root"
+      }
+    ]
+  },
+  "wall_seconds": 3118,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-04T13:04:31Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-04T12:12:32Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261004T121207607289-the-supervisor-launch-test-holds-under-load",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 32223,
+    "worker_pid": 3101279
+  },
+  "worker_seconds": 3088,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": {
+    "classification": "retained-for-resume",
+    "retained_at": "2026-10-04T13:04:27.557Z",
+    "session_id": "749897bd-cb97-4eb5-9a92-0b28b98d56cd",
+    "session_source": "stream",
+    "worktree": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/the-supervisor-launch-test-holds-under-load"
+  }
+}
