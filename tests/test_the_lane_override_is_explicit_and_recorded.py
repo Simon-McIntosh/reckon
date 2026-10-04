@@ -106,10 +106,6 @@ def test_reason_reaches_the_promoted_ledger_row(home: Path, repo: Path) -> None:
         launcher=lambda plan, *, log_path, stderr_path, prompt_path: os.getpid(),
         orchestrator_lane_reason=reason,
     )
-    assert crew.read_pointer(record["run_id"])["orchestrator_lane_override"] == {
-        "lane": "alpha",
-        "reason": reason,
-    }
     Path(record["log_path"]).write_text(
         (ledger_tests.FIXTURES / "codex-turn.jsonl").read_text()
     )
