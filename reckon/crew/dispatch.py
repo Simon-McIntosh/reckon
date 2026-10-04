@@ -11854,13 +11854,14 @@ def _worktree_git_read(
 def _inherited_worktree_reading(record: Mapping[str, Any]) -> str:
     """Describe a lane successor's retained worktree without blocking handoff."""
     taken_at = _utc_now()
-    worktree = Path(str(record.get("worktree") or ""))
+    worktree_value = str(record.get("worktree") or "").strip()
+    worktree = Path(worktree_value) if worktree_value else None
     lines = [
         "INHERITED WORKTREE READING (measured fact)",
         f"Reading taken at: {taken_at}",
-        f"Worktree: {worktree}",
+        f"Worktree: {worktree_value or '(unset)'}",
     ]
-    if not worktree.is_dir():
+    if worktree is None or not worktree.is_dir():
         return "\n".join(
             [
                 *lines,
