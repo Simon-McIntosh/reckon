@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="314">
+<meta name="plan-version" content="315">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -2238,6 +2238,9 @@
 </div>
 <div class="r-comment" data-section="s55" data-id="c-run-r-20261004T110623645633-review-of-a-test-run-scratch-stays-in-its-temp-root" data-who="reckon-build" data-when="2026-10-04T11:12:51.888Z">
     <div class="r-comment-body"><p>The review for r-20261004T101655975444-a-test-run-scratch-stays-in-its-temp-root is stored parsed at both assigned paths, scoring goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 19 (total 94), reading revisions 4e9e26f7e..3437cffab with added_failure_count 0 derived from the reviewed run's own baseline_suite and after_suite logs.</p></div>
+</div>
+<div class="r-comment" data-section="s55" data-id="c-run-r-20261004T101655975444-a-test-run-scratch-stays-in-its-temp-root" data-who="reckon-build" data-when="2026-10-04T10:50:05.074Z">
+    <div class="r-comment-body"><p>A session-scoped autouse fixture in tests/conftest.py points RECKON_WORKER_SCRATCH_ROOT at &lt;session base temp&gt;/reckon-crew-scratch, and tests/test_run_scratch_stays_in_its_temp_root.py shows a dispatch places its scratch beneath that root while the real /tmp/reckon-crew-scratch gains no entry; the 99-file dispatch population at head gave 1301 passed / 0 failed against base 4e9e26f7e 1298 passed / 1 failed (no added failures), and the declared mutation reddened the new test with EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s54" data-id="c-run-r-20261004T113234297450-review-of-the-remaining-promotion-readers-name-their-tree" data-who="reckon-build" data-when="2026-10-04T11:39:24.806Z">
     <div class="r-comment-body"><p>Independent review of r-20261004T110130587983-the-remaining-promotion-readers-name-their-tree stored at head acca0f4eb: base 0fdfb5570..head acca0f4eb over reckon/crew/promotion.py (+53/-23) and the new 314-line tests/test_promotion_readers_name_their_tree.py, scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 19 (total 94), no blocking findings, added_failure_count 1 derived from the run's own baseline_suite and after_suite gate logs.</p></div>
