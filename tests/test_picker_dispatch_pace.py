@@ -169,6 +169,9 @@ def test_missing_recorded_window_names_absence_without_inventing_figures(
 ):
     config = _config()
     monkeypatch.setattr(snapshot.budget.crew, "list_live", list)
+    paid_lanes.write_document_atomically(
+        paid_lanes.compose_document(("codex", "codex-astra"), moment=datetime.now(UTC))
+    )
     view = dispatch._picker_budget_snapshot("demo", config, tmp_path, [])
     _candidates(monkeypatch, tmp_path, config, [], view)
     selection = _dispatch_selection(monkeypatch, tmp_path, config, [], view)
@@ -252,6 +255,13 @@ def test_dispatch_uses_published_window_as_direct_pick_does(monkeypatch, tmp_pat
             assert actual[name][field] == pytest.approx(expected[name][field], rel=0.01)
         assert actual[name]["budget_reason"] is None
         assert dispatched["backends"][0]["state"]["observed_at"] == now.isoformat()
+        budget_block = lane_context._budget_block(
+            dispatched["backends"][0]["state"],
+            moment=now,
+            shelf_life_minutes=30,
+        )
+        assert budget_block["budget_age_s"] == pytest.approx(0, abs=1)
+        assert budget_block["stale"] is False
 
 
 def test_dispatch_marks_old_published_window_stale(monkeypatch, tmp_path):
@@ -281,6 +291,11 @@ def test_dispatch_marks_old_published_window_stale(monkeypatch, tmp_path):
     monkeypatch.setattr(snapshot.budget.crew, "list_live", list)
     view = dispatch._picker_budget_snapshot("demo", config, tmp_path, [])
     candidates = _candidates(monkeypatch, tmp_path, config, [], view)
+    budget_block = lane_context._budget_block(
+        view["backends"][0]["state"], moment=now, shelf_life_minutes=30
+    )
+    assert budget_block["budget_age_s"] == pytest.approx(7200, abs=1)
+    assert budget_block["stale"] is True
     for candidate in candidates.values():
         assert candidate["burn_multiple"] is None
         assert candidate["pace_allowance"] is None
