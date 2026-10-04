@@ -9,7 +9,7 @@ from typing import Any
 
 from reckon import _backends, budget, capability, ledger
 from reckon._timestamps import parse_utc
-from reckon.crew import lane_document, recovery, resumption, routing
+from reckon.crew import lane_document, paid_lanes, recovery, resumption, routing
 from reckon.crew.dispatch import (
     DispatchPlan,
     _dispatch_lane_gate,
@@ -210,7 +210,15 @@ def budget_view(
                 for name, backend in config.get("backends", {}).items()
             },
         }
+    moment = datetime.now(UTC)
     windows = budget.recorded_windows(project, config, root=repo, records=records)
+    document = paid_lanes.read_document()
+    published = paid_lanes.document_windows(document, moment=moment)
+    # Preflight prefers fresh published figures to recorded ones. Preserve an
+    # older published figure only where no run has recorded that account, so
+    # the candidate can report its age and stale reason instead of an absence.
+    for account, reading in published.items():
+        windows.setdefault(account, reading)
     # Every configured backend is budget-probed; nothing is filtered by name, so a
     # refusal can only come from a live serving observation, never a fixed list.
     probeable = list(config.get("backends", {}))
@@ -223,7 +231,8 @@ def budget_view(
         backends=probeable,
         windows=windows,
         records=records,
-        now=datetime.now(UTC),
+        now=moment,
+        document=document,
         **({"probe_runner": lambda _: {}} if cached_only else {}),
     )
     by_backend = {entry["backend"]: entry for entry in report["backends"]}
@@ -249,14 +258,14 @@ def budget_view(
             state.update(
                 source=source,
                 observed_at=observed.isoformat(),
-                expired=stale and source == "ledger",
+                expired=stale,
                 headroom="known",
                 utilisation_pct=allowance["utilisation"] * 100,
                 burn_multiple=allowance["burn_multiple"],
                 resets_at=allowance["resets_at"],
                 detail=(
                     "recorded account-window reading is stale"
-                    if stale and source == "ledger"
+                    if stale
                     else state.get("detail", "")
                 ),
             )
