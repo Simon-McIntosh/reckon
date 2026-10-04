@@ -228,3 +228,62 @@ def test_exception_writes_stop_reason(tmp_path, monkeypatch) -> None:
 
     assert result.exit_code != 0
     assert "reckon crew watch stopped: RuntimeError: tick failed" in result.output
+
+
+def _follow_text(tmp_path, monkeypatch, *, phase: str | None) -> str:
+    """Arm the real ``crew follow`` command against a stopped producer.
+
+    The command is invoked end to end so the pane line is decided by its own
+    ``pane_line`` handling rather than by a value the test injected. ``phase``
+    is the live pointer's state: ``None`` leaves the fleet with nothing to
+    watch, while a non-terminal phase gives the stop a population to name.
+    """
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path))
+    log = runs.watch_log_path("sample")
+    log.parent.mkdir(parents=True, exist_ok=True)
+    log.write_text("reckon crew watch stopped: producer lease expired\n")
+    if phase is not None:
+        runs._write_json(
+            runs.pointer_path("r-live"),
+            {"run_id": "r-live", "project": "sample", "phase": phase, "session": ""},
+        )
+    monkeypatch.setattr(runs, "producer_live", lambda project: False)
+    result = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            "follow",
+            "--project",
+            "sample",
+            "--session",
+            "s1",
+            "--lifetime",
+            "1s",
+            "--no-color",
+            "--width",
+            "200",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    return result.output
+
+
+def test_the_pane_echoes_a_producer_stop_only_when_work_is_at_stake(
+    tmp_path, monkeypatch
+) -> None:
+    """A stop with nothing to watch is JSON-only; a live fleet gets the pane line.
+
+    A producer's idle exit is not news when the follower's own population holds
+    nothing left to watch, so the pane stays quiet and only the JSON stream
+    carries the event. The same stop while a run is live is the silent fleet a
+    reader has to see, and the pane line appears exactly then.
+    """
+    quiet = _follow_text(tmp_path, monkeypatch, phase=None)
+    assert "producer sample is gone" not in quiet, (
+        "a stop with no live work echoed a pane line"
+    )
+
+    loud = _follow_text(tmp_path, monkeypatch, phase="working")
+    assert "producer sample is gone" in loud, (
+        "a stop with a live run never reached the pane line"
+    )
