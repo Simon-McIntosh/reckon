@@ -11192,9 +11192,9 @@ def _is_review_run(record: Mapping[str, Any]) -> bool:
     and a review left unrecognised would take a fresh session where its own
     task has one to continue.
     """
-    return str(record.get("role") or "") == "review" or _record_node_id(
-        record
-    ).startswith(REVIEW_NODE_PREFIX)
+    from reckon.crew.recovery import _is_review_node
+
+    return str(record.get("role") or "") == "review" or _is_review_node(record)
 
 
 def _reviewed_run_id(source: str, records: Iterable[Mapping[str, Any]]) -> str:

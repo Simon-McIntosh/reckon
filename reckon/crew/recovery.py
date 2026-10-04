@@ -215,6 +215,7 @@ RESUMPTION_READING_CLASSIFICATIONS = frozenset(
 
 
 REVIEW_NODE_PREFIX = "review-of-"
+PLAN_REVIEW_NODE_PREFIX = "plan-review-of-"
 
 # The dispatch role that produces reviews. A run carrying it is the reviewer,
 # never the reviewed, so no classification may compose a review of it: the
@@ -235,7 +236,8 @@ def _is_review_node(record: Mapping[str, Any]) -> bool:
     and each link of that chain is a real dispatch against a real member.
     """
     node = record.get("node") or {}
-    return str(node.get("id") or "").startswith((REVIEW_NODE_PREFIX, "plan-review-of-"))
+    node_id = node.get("id") if isinstance(node, Mapping) else node
+    return str(node_id or "").startswith((REVIEW_NODE_PREFIX, PLAN_REVIEW_NODE_PREFIX))
 
 
 def _review_tree(record: Mapping[str, Any]) -> Path | None:
@@ -481,7 +483,7 @@ def plan_review_subject(
         "session": session,
         "rubric": rubric,
         "local": local,
-        "run_id": runs.new_run_id(f"plan-review-of-{slug}"),
+        "run_id": runs.new_run_id(f"{PLAN_REVIEW_NODE_PREFIX}{slug}"),
     }
 
 
@@ -593,7 +595,7 @@ def _review_dispatch_fields(
             "plan": "",
             "section": "",
             "source_node": slug,
-            "node_id": f"plan-review-of-{slug}",
+            "node_id": f"{PLAN_REVIEW_NODE_PREFIX}{slug}",
             "session": record["session"],
             "time_budget": "20m",
             "brief": str(brief),
@@ -2276,7 +2278,7 @@ def _standing_plan_review(project: str, plan_slug: str) -> str:
     """
     for pointer in list_live(project=project):
         node = pointer.get("node") or {}
-        if node.get("id") == f"plan-review-of-{plan_slug}":
+        if node.get("id") == f"{PLAN_REVIEW_NODE_PREFIX}{plan_slug}":
             return str(pointer.get("run_id") or "")
     return ""
 
