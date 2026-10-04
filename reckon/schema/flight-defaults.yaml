@@ -129,6 +129,11 @@ review:
   tiers:
     light_changed_lines: 50
     light_time_budget: 10m
+  # Quiet seconds a changed plan must sit unreviewed before the plan-review
+  # sweep composes one, so a burst of edits settles into a single review of the
+  # settled version. Reckon-owned: the generated schema does not carry it, and
+  # the flight module's own validator checks its shape.
+  plan_settle_seconds: 600
 
 # The plan-review gate ships advisory, whatever every other gate here does.
 # Almost no plan carries a stored review yet, and the node that writes one is

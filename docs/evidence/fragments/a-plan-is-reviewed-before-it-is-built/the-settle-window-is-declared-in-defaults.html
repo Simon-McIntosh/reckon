@@ -1,0 +1,11 @@
+<section data-reckon="evidence" data-node="the-settle-window-is-declared-in-defaults">
+  <h3>The settle window is declared in the defaults file</h3>
+  <p><code>review.plan_settle_seconds: 600</code> now ships in
+  <code>reckon/schema/flight-defaults.yaml</code> beside <code>review.tiers</code>,
+  so the interval the plan-review sweep reads through
+  <code>reckon/flight.py:plan_review_settle_seconds</code> is declared data rather
+  than a code fallback alone. <code>tests/test_plan_settle_window_is_declared.py</code>
+  pins the resolved value to the shipped layer — origin <code>shipped</code>, key
+  present in the resolved mapping — so deleting the declaration reddens the test
+  even though the accessor's fallback still answers 600.</p>
+</section>
