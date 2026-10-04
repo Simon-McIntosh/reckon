@@ -83,6 +83,7 @@ from reckon._store import (
     write_json_atomically,
 )
 from reckon._timestamps import parse_utc
+from reckon.crew.recovery import _PRE_SPAWN_PHASES
 from reckon.evidence import (
     EvidenceSynthesisError,
     compose_landed_record,
@@ -690,12 +691,18 @@ def _crew_plan_details(docs: Path, slug: str) -> tuple[str, float | None]:
         if not plan_path.is_file():
             continue
         try:
-            metadata = _plan_html.parse_meta(plan_path)
+            with plan_path.open(encoding="utf-8") as source:
+                head = re.split(
+                    r"</head\s*>", source.read(16384), maxsplit=1, flags=re.IGNORECASE
+                )[0]
+            metadata = _plan_html.read_state(head)
+            if metadata.get("effort_hours") is None or not metadata.get("sprint"):
+                metadata = _plan_html.parse_meta(plan_path)
             return (
                 str(metadata.get("sprint") or ""),
                 metadata.get("effort_hours"),
             )
-        except (OSError, ValueError):
+        except (OSError, ValueError, UnicodeError):
             return "", None
     return "", None
 
@@ -714,7 +721,12 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
     for name in referenced_projects:
         docs = mounts[name]
         try:
-            roster, _version = ledger.load(name, docs.parent)
+            try:
+                roster, _version = ledger.load(name, docs.parent, headers_only=True)
+            except TypeError as exc:
+                if "unexpected keyword argument 'headers_only'" not in str(exc):
+                    raise
+                roster, _version = ledger.load(name, docs.parent)
         except (OSError, ledger.LedgerError):
             roster = {"members": []}
         roster_by_project[name] = {
@@ -738,7 +750,7 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
         # phase. Only a pre-spawn label needs its evidence read again: the
         # worker may have started while the launcher still says starting.
         phase = str(pointer.get("phase") or "")
-        if phase in {"starting", "launching", "launcher", "dispatching"} or not phase:
+        if phase in _PRE_SPAWN_PHASES or not phase:
             phase = str(crew.classify_pointer(pointer).get("phase") or "")
         if not phase:
             phase = (
