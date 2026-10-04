@@ -6,140 +6,308 @@
   <meta name="docs-project" content="reckon">
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-sprint-closes-on-completable-work-landed">
-  <meta name="plan-title" content="A sprint closes on completable work &mdash; landed evidence">
-  <meta name="plan-summary" content="A blocker whose subject is outside the sprint's reach is authored kind=held in its own resource and now reads as held rather than explicit everywhere a caller reads the payload: the lifecycle derivation carries the resource kind into the blocking rows, roadmap reports held rows under a distinct held_blockers key beside an unchanged explicit_blockers, and the sprint close is gated so a sprint carrying an item that is not held is refused while one whose incomplete items are all held closes and carries the held work to the advancing sprint.">
-  <meta name="plan-evidence-for" content="reckon:a-sprint-closes-on-completable-work">
-  <meta name="plan-verifies" content="reckon:a-sprint-closes-on-completable-work#s2,reckon:a-sprint-closes-on-completable-work#s3">
-  <meta name="plan-recorded-at" content="2026-09-15">
+  <meta name="plan-title" content="A Sprint Closes On Completable Work — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Sprint Closes On Completable Work: 3 committed run(s), 2 section-anchored comment(s), and 5 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-sprint-closes-on-completable-work">
   <meta name="plan-verdict" content="pass">
-  <meta name="plan-environment" content="Linux workstation; Python 3.12; uv; detached git worktree; pytest">
-  <meta name="plan-commits" content="d6715087,b297348d,e3b160c7">
-  <meta name="plan-artifacts" content="reckon/serve.py,reckon/roadmap.py,reckon/mcp.py,reckon/project_state.py,tests/test_roadmap.py,tests/test_project_state.py,docs/figures/sprint-close-carry-forward/close-carry-forward.svg">
-  <title>A sprint closes on completable work &mdash; landed evidence | reckon</title>
+  <meta name="plan-recorded-at" content="2026-09-28T06:12:02.339Z">
+  <meta name="plan-commits" content="d67150875d2a2705221573a46452027bacf67f97,b297348d734a2789f37bdd923452301f02da7670,8199d182aa6af093b4d9c0cdc307d20e4898896a,e3b160c7b2ae8c0612c62fb5b971eb522adddbb2,01eb2c74126e33816a0e1b1fc6678c422a83152a">
+  <title>A Sprint Closes On Completable Work — landed record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
 <body>
-<main class="plan-doc">
-  <header class="plan-header">
-    <h1>A sprint closes on completable work &mdash; landed evidence</h1>
-    <p class="plan-summary">The &sect;2 and &sect;3 done-whens pass. A plan carrying a held
-    blocker is reported by <code>roadmap</code> as held rather than merely blocked, the row
-    carrying <code>kind=held</code> with explicit-blocker behaviour unchanged. And a sprint is
-    closable only when every incomplete item is held: closing one carrying a single un-held
-    incomplete item is refused, naming that item. The record below is the part worth reading
-    &mdash; the two sections counted and refused separately, the explicit plan unchanged in
-    every reported field, and the existing endpoint-row <code>held</code> key left alone
-    because it counts a different quantity.</p>
-  </header>
+ <main class="plan-doc">
+  <h1>A Sprint Closes On Completable Work — landed record</h1>
+  <p>Closure synthesis for A Sprint Closes On Completable Work: 3 committed run(s), 2 section-anchored comment(s), and 5 landed commit(s).</p>
 
-  <section id="record-scope">
-    <h2>Record scope</h2>
-    <p>This record covers &sect;2 and &sect;3, the two implementable sections of the plan.
-    They land as separate commits: &sect;2 established the held vocabulary, and &sect;3, the
-    closure rule that reads that vocabulary, is the follow-on this record now closes.
-    &sect;4 is a deferral and is recorded as f-ascocw-003 rather than implemented here.</p>
-    <p>Two decisions already recorded on the plan constrain these sections without being part
-    of them: who may clear a held blocker and what the clearing must record, and where the
-    executable probe's evaluating code lives. Both are locked and unchanged.</p>
+  <section id="s2">
+    <h2>§2 — Held is a kind of blocker, not a new dependency type</h2>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20260915T120542787897-a-held-blocker-reads-as-held</code></td>
+        <td>a-held-blocker-reads-as-held</td>
+        <td><code>d67150875d2a2705221573a46452027bacf67f97</code><br><code>b297348d734a2789f37bdd923452301f02da7670</code><br><code>8199d182aa6af093b4d9c0cdc307d20e4898896a</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>113m 31s</td>
+        <td><code>{&quot;added&quot;:244,&quot;files&quot;:6,&quot;removed&quot;:5}</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
   </section>
 
-  <section id="held-blocker">
-    <h2>Held reads held beside an unchanged explicit plan</h2>
-    <p>Commit <code>d6715087</code>. The blocker's own resource <code>kind</code> now survives
-    end to end. <code>_derive_lifecycle</code> in <code>reckon/serve.py</code> accepts the
-    composed blocker rows and maps each sprint item's <code>blocked_by</code> id to its
-    resource kind, defaulting to <code>explicit</code> only when the resource says nothing;
-    the <code>blocking</code> rows it builds therefore carry the authored kind instead of
-    hardcoding <code>explicit</code> for every id. <code>build_roadmap</code> in
-    <code>reckon/roadmap.py</code> reports held rows on a pending plan under a new
-    <code>held_blockers</code> key placed beside the unchanged <code>explicit_blockers</code>,
-    and a held blocker still holds the plan open: it keeps the plan out of the synthetic
-    persisted-ready fallback, out of <code>is_ready</code>, into <code>is_blocked</code>, and
-    into the effective-status derivation. The graph resolver treats explicit and held rows as
-    blockers and ignores every other kind. The plan-resource view in
-    <code>reckon/mcp.py</code> exposes the held ids as <code>held_by</code> alongside the
-    unchanged <code>blocked_by</code>.</p>
-    <p><strong>The fixture and the two digits.</strong> A fixture carries one held blocker and
-    one <code>explicit</code> blocker on two plans. The held plan reports
-    <code>len(blocked) == 2</code> and <code>held_blockers</code> carrying one row of kind
-    <code>held</code> with <code>explicit_blockers</code> empty; the explicit plan reports
-    <code>explicit_blockers</code> carrying one row of kind <code>explicit</code> with
-    <code>held_blockers</code> empty. Each count is stated as a digit in the test. <strong>The
-    case that fails if held rows are treated as explicit was written first and observed failing
-    against the base revision</strong>, before any implementation: at base the fixture yields a
-    single blocked plan and the two-row assertion fails, because every <code>blocked_by</code>
-    read as <code>explicit</code>. A second test drives the lifecycle derivation directly with
-    a blocker resource of kind <code>held</code> and asserts the derived <code>blocking</code>
-    rows carry <code>kind=held</code>.</p>
-    <p><strong>The quantity that was not overloaded.</strong> <code>roadmap</code>'s existing
-    endpoint-row <code>held</code> key is a count of blocked members per execution-path
-    endpoint &mdash; schedule-deferred members whose path still holds them open. It is a
-    different quantity from a blocker kind and is left untouched; the new reporting rides only
-    on the per-plan <code>blocking</code> rows.</p>
-    <p><strong>Proven at the entry point, not at a helper.</strong> The failing-then-passing
-    case exercises <code>build_roadmap</code> itself over a composed project state, which is
-    the surface an agent, a CLI caller and the MCP read. The end-to-end chain through
-    <code>discover_plans</code> over a git-backed fixture was verified separately and reports
-    the held plan as held and the explicit plan unchanged, both blocked.</p>
+  <section id="s3">
+    <h2>§3 — Closable means nothing completable remains</h2>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20260915T140915223249-closing-a-sprint-refuses-unheld-work</code></td>
+        <td>closing-a-sprint-refuses-unheld-work</td>
+        <td><code>e3b160c7b2ae8c0612c62fb5b971eb522adddbb2</code><br><code>01eb2c74126e33816a0e1b1fc6678c422a83152a</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>125m 31s</td>
+        <td><code>{&quot;added&quot;:486,&quot;files&quot;:5,&quot;removed&quot;:36}</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
   </section>
 
-  <section id="closure-rule">
-    <h2>A closing sprint is refused while any incomplete item is not held</h2>
-    <p>Commit <code>e3b160c7</code>. Closing a sprint is now a gated operation on the sprint
-    resource itself: setting its status to a completed status runs a closability check in the
-    close path. The check reads every item whose plan is not lifecycle-terminal and refuses
-    the close, naming the offending plan, unless each such item is held by a blocker resource
-    of kind <code>held</code>. The refusal leaves the closing sprint byte-identical.</p>
-    <p><strong>The carry-forward mirrors an item move.</strong> A sprint whose incomplete
-    items are all held closes normally; the held items move to the next open sprint in
-    composed order, retaining their blocker references, under the same two-resource version
-    check, move journal, and compensating recovery as <code>move_sprint_item</code>, so an
-    interrupted close restores both resources. Completed items stay on the closing sprint. A
-    held-incomplete sprint with no open advancing sprint to receive its work is also refused.</p>
-    <p><strong>Both measures are the refusals the plan demands.</strong> The refusal case is
-    demonstrated as its own test rather than only the success, and the carry-forward is proven
-    by set membership: after the close, the moved item is asserted present in
-    <code>roadmap</code>'s <code>pending_work</code> over the returned set, never as a count.
-    The failing case was observed at the base revision before any implementation, exactly as
-    the &sect;2 record describes for its own first-written test.</p>
-    <p><strong>Reading held, not re-deriving it.</strong> Held is read from the same
-    composed blocker state the &sect;2 work defined &mdash; the resource's blocker
-    <code>kind == held</code> &mdash; not re-implemented in this section. The measure drives
-    <code>apply_resource_ops</code>, the operation a caller performs to close a sprint, so the
-    surface exercised is the one an agent, a CLI caller, and the MCP reach.</p>
+  <section id="outcome">
+    <h2>Plan-level outcome</h2>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20260928T052343734109-s22-currency-closure-candidates</code></td>
+        <td>s22-currency-closure-candidates</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>47m 13s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report" data-run-id="r-20260928T052343734109-s22-currency-closure-candidates" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s22-currency-closure-candidates/report.md">
+      <h3>s22-currency-closure-candidates &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/s22-currency-closure-candidates/report.md</code>.</p>
+      <div class="landed-report-body"><pre># S22 plan-currency audit — closure candidates and remaining nodes
+
+Node `s22-currency-closure-candidates`, run `r-20260928T052343734109-s22-currency-closure-candidates`.
+
+**Base:** worktree HEAD `231e605510ceddee586dfc75560f2ca53dbf70dc` (the dispatch base). `origin/main` and `main` have advanced to `b91c433e8638333b3633a6028658723ed2aa4527` — this audit describes the named base; re-run at main if a merged-vs-audit drift matters.
+
+**Read-only:** `git status --porcelain` is empty; no repository file was created, edited or committed. The report and the evidence log live outside the repository.
+
+**Evidence base:** every claim below is checkable from `~/.config/reckon/crew/runs/r-20260928T052343734109-s22-currency-closure-candidates/verify.log`, produced by `/tmp/s22_verify.sh`: 77 cited shas resolved with `git cat-file -e &lt;sha&gt;^{commit}`, all 12 plan files confirmed present, mechanism greps with line numbers, and a negative control (`git cat-file -e` on an all-zero sha, refused → `CONTROL-OK (bogus sha refused)`, verify.log `=== negative control` section). A resolver that returned success unconditionally would have failed the control.
+
+**Closure candidates** (all declared sections done, status still `active`): **work-does-not-fall-to-the-coordinator**, **a-lane-can-say-where-it-stands**, **a-sprint-closes-on-completable-work**, **dependency-edge-semantics**. Each is gated by one or two open followups, stated below; none can be closed by changing its `plan-status` alone without disposing of those followups first.
+
+---
+
+## 1. a-lane-can-say-where-it-stands — `active`, impl 1.0, v48, modified 2026-09-24
+
+`docs/plans/a-lane-can-say-where-it-stands.html` (653 lines)
+
+- **§1 (stale-clearance defect)** — `landed`. Mechanism present: `reckon/crew/dispatch.py:7016,7021,7134` and `reckon/_backends.py:1650` carry `window, window_basis = _resolved_window(announced, usable_input_window)` through dispatch.
+- **§2 (account endpoint)** — `landed`. Account surface with cached-fetch age: `reckon/calibration.py:65,77`, `reckon/_backends.py:1010,1020,1211,1215`; landed record 44ccaa7 (2026-09-15).
+- **§3 (dialect owns transport)** — `landed`. `reckon/_backends.py:1503,1551,1593`; landed record a736189, 748a7a5d (2026-09-15).
+- **§4 (strict parsing)** — `landed`. Same landing set; `reckon/_flight_schema.py:230` carries the field in the flight schema.
+- **§5 (coordinator reserve)** — `landed`. `reckon/crew/routing.py:1541-1542,1910` compute the reserve off `usable_input_window`.
+- **§5b (denominator inheritance)** — `landed`. Reconstruction keeps rather than discards, fe3e9231 (2026-09-15).
+- **§5c (reading carries observation time)** — `landed`. Cache fallback rendered beside age: 3f970456 (2026-09-15); `tests/test_cached_account_age.py` added at 5a3372c2 (2026-09-21), 9 passed per the plan&#x27;s record at `…html:290`.
+- **§5d (two prose requirements as measures)** — `landed`. Both halves: 3f970456 (cache fallback + age) and fe3e9231 (window).
+- **§6 (what this plan does not cover)** — non-work; no done-when.
+
+**Open followup** `f-alcs-005` (`…html:528`, plan text read at the run log digest): the declared lane window is still wrong and the guard that would catch it cannot fire — flight config declares `usable_input_window: 1016576` while a real engine launch reports `context_length: 204800` with usable 172,800; and the context-fit check is never invoked on the resume path. The plan is deliberately held open so this finding does not leave with it. **Closure gate:** dispatch the node below (or move the finding to an owned plan); the plan itself says re-derive from the endpoint, never by hand.
+
+**Proposed node — `lane-window-matched-to-served-context`.** Goal: the declared usable window is re-derived from the endpoint&#x27;s served context (per the launch formula, re-derived, not hand-computed) and the context-fit refusal fires before dispatch *and* on the resume path. Done-when: a test asserts that a declared window above the endpoint&#x27;s real context produces a fit refusal on the resume path as well as on dispatch (fails before — the check is not invoked on resume), with a negative control that an undersized window passes. Write paths: `reckon/schema/flight-defaults.yaml`, `reckon/_backends.py`, `reckon/crew/dispatch.py`, `tests/`. Estimate: 6h. **Overlap: `reckon/crew/dispatch.py` and `reckon/_backends.py` are claimable today by other work (brief §2 repair; codex login fence) — this node must wait for or be fenced around both.**
+
+## 2. work-does-not-fall-to-the-coordinator — `active`, impl 1.0, v119, modified 2026-09-25
+
+`docs/plans/work-does-not-fall-to-the-coordinator.html` (1391 lines)
+
+- **§1–§11** — all `landed` per the plan&#x27;s own landed records and the resolved followups. Verified mechanism sites: §6&#x27;s `verify-gate --command` (landed e4209d1a; `reckon/crew/promotion.py:1004,1047,1060`), §11&#x27;s prompt-carries-the-declaration (343ee2a8), the closure and widen records (d53318f6, 8cb11888, 37de7907, 4e813fec, dff74cb0). The plan&#x27;s remaining prose in comments is explicitly recorded as closed at `…html` §9/§3 records.
+- **§Decisions** — locked (`unpromoted-grace-seconds=900` @926, `member-registration-owner=the-writing-function` @940).
+- **Followups** — 6 of 7 resolved (f-cdocw-001, f-cdocw-002, f-cdocw-the-promotion-contract…, f-cdocw-the-declared-branch…, f-cdocw-a-referral…, f-cdocw-two-red-cases…); **`f-cdocw-three-surfaces-hold-the-fact-and-decline-to-act` [open] @984**.
+
+**Closure candidate.** All declared sections done, impl 1.0, one open followup. The open followup is not ceremonial — it records three residual cross-surface defects met while closing: (a) `verify-gate` compares verdicts where only a delta is informative (`integrated_verdict: failed` from `exit_status` alone, no failure ids, no log path — cite `…html` FU body); (b) the review reflex retries into the condition that stopped it, because its node id is composed deterministically in `reckon/crew/recovery.py` and its member is the session-derived one, so contexts accumulate until the dispatch dies before its first turn. **Closure gate:** dispatch the two nodes below (or move them to a successor plan), then close. **Node pair:**
+
+**Proposed node — `verify-gate-reports-added-failure-ids`.** Goal: a re-run gate reports base failure ids beside head failure ids and a verdict of *no added ids* rather than *exit statuses differ*. Done-when: a test where the cohort is red at both base and head with identical ids reports a pass-equivalent delta (fails before — today it reports `failed` from exit status alone). Write paths: `reckon/crew/promotion.py`, `tests/test_crew_promotion.py`. Estimate: 4h. Overlap: none of the six claimed files.
+
+**Proposed node — `review-reflex-fresh-context`.** Goal: the review reflex gives each review a context that cannot grow without bound (a fresh identity or a scoped context — `reckon/crew/recovery.py` composes the node id today). Done-when: a test asserting the review of a large node does not inherit the source node&#x27;s accumulated context&quot;. Write paths: `reckon/crew/recovery.py`, `tests/`. Estimate: 4h. Overlap: none claimed.
+
+## 3. a-sprint-closes-on-completable-work — `active`, impl 0.95, v5, modified 2026-09-24
+
+`docs/plans/a-sprint-closes-on-completable-work.html` (205 lines)
+
+- **§1 (a sprint can be unable to finish and unable to close)** — context/problem; no done-when of its own.
+- **§2 (held is a kind of blocker)** — `landed`. Landed evidence: §2 carries `&lt;section class=&quot;section-landed&quot;&gt;` @66 with `landed 2026-09-15`; mechanism `held_blockers`/`explicit_blockers` at `reckon/roadmap.py:1952,1957,1979-1980,1985,1998-1999,2006-2007,2036`.
+- **§3 (closable means nothing completable remains)** — `landed`. Landed badge @106 (2026-09-15); the closure rule reads a held blocker&#x27;s kind (per f-ascocw-003&#x27;s body).
+- **§4 (what this does not do)** — non-work; the executable probe is deliberately deferred to its own plan.
+
+**Followups:** f-ascocw-001, f-ascocw-002 resolved; **f-ascocw-003 [open] @186** — build the held-clearing probe as its own plan (`/reckon-create`), per the locked `probe-execution-boundary` = *named-probe-in-the-repository*.
+
+**Closure candidate.** §2/§3 landed; plan holds itself at 0.95 so the open row is not hidden (the plan&#x27;s own comment says closing with that row open would hide the work). **Closure gate:** create the probe plan (a coordinator-owned /reckon-create action) or supersede f-ascocw-003, then close.
+
+**Proposed node — `held-blocker-clearing-probe`** (after the probe plan is created by the coordinator). Goal: the executable probe validates the subject of a held blocker and clears it when that subject arrives — Python in the repository, reviewed and tested like any other code (locked decision). Done-when: a test where a held blocker whose subject has arrived is cleared when the probe runs, and one whose subject has not is left held and still reported (fails before — no probe exists). Write paths: new module under `reckon/` named for the mechanism + its test file. Estimate: 6h. Overlap: none of the six claimed files.
+
+## 4. dependency-edge-semantics — `active`, impl 0.97, v31, modified 2026-09-25
+
+`docs/plans/dependency-edge-semantics.html` (590 lines)
+
+- **§1 (a feature that is parsed and then discarded)** — context.
+- **§2 (honour the anchor, or refuse it)** — `landed` (heading carries `✓ landed 2026-09-15` @66; code 9e666e3, verification node 1790e61, both 2026-08-26).
+- **§3 (an obligation that neither project can see)** — `landed` (heading @113; fd0b1d4, 2026-09-15).
+- **§4 (execution is finished and closure is not the same question)** — `landed` (b8f97e4e, 2026-09-25).
+- **§5 (what this plan deliberately does not own)** — non-work.
+- **§6 (every surface reads the same split)** — `landed` (40e10a80, 0bbeb7ec).
+- **§7 (a soft after edge orders the ready set without blocking it)** — `landed` (4ce2d39b; schema 4a1d7a15, 29df6835; readers 5bdf633b, 5aa30835; merged acdfa75b).
+
+- **§Decisions** — locked (`honour-the-anchor` @434, `one-edge-with-transition` @448).
+- **Followups** — resolved: f-des-001, f-des-002, f-des-003, f-des-soft-after-edge, f-des-004, f-des-005. **Open:** `f-des-source-section-depends` @490 and `f-des-section-scoped-decisions` @495 — both explicitly declared new scope, both carrying a `/reckon-build dependency-edge-semantics §4` invocation.
+
+**Closure candidate.** All declared sections landed; the two open followups are declared new scope. **Closure gate:** either dispatch the two nodes below against this plan, or move them to a successor plan and close. They share the `_schema.py`/`roadmap.py` surface with rabs §4&#x27;s membership work (both need `plan_section_anchors` to stop ignoring `section_declarations` and authored `&lt;h2 id&gt;` — see §12 below), so sequence them together.
+
+**Proposed node — `source-section-depends-edges`.** Goal: a `section_depends_on` mapping beside `section_declarations` lets one section wait without hiding the others; roadmap blocks only named sections, the ready set lists dispatchable sections, and `read_plan`&#x27;s deps resolves each ref. Done-when: a test where plan A §5 waits on plan B §3 while A §2 stays in the ready set and A §5 stays out (fails before — the source is always the whole plan today). Write paths: `reckon/_schema.py`, `reckon/roadmap.py`, `tests/test_schema.py`, `tests/test_roadmap.py`. Estimate: 6h. Overlap: none claimed (not dispatch.py/cli.py/node.py/crew.py/_backends.py/pace_replay.py).
+**Proposed node — `section-scoped-decision-blocks`.** Goal: an optional sections list on a decision so only named sections are decision-blocked, plus an optional recommended value with `recommended_by` that the lead accepts in one action and that never becomes the choice by default. Done-when: a test where a decision scoped to s3/s4 blocks only those sections while the rest of the plan dispatches, and an unanswered recommendation stays open and blocking (fails before). Write paths: `reckon/_schema.py`, `reckon/roadmap.py`, `tests/test_schema.py`, `tests/test_roadmap.py`. Estimate: 5h. Overlap: none claimed.
+
+## 5. execution-orchestration-hardening — `active`, impl 0.8, v26, modified 2026-09-24
+
+`docs/plans/execution-orchestration-hardening.html` (224 lines)
+
+- **§1 (outcome)** — the umbrella statement; delivered piecewise via the followup chain (36d5bdd sprint delivery, bc30c9a cross-repo dispatch, ab19ab37+fd0c4b0b verify-gate caller, 1908947f worktree provisioning, d3a27bc8/c2771094 merge-time re-run mechanism).
+- **§2 (MCP and sprint improvements)** — `partial`. Bounded projections, cursors, checkout/branch/digest on reads, sprint validate/close operations are not evidenced as landed anywhere in the plan&#x27;s own records; no followup claims them.
+- **§3 (reckon-ship redesign)** — `partial`. The sprint-orchestration slice landed (36d5bdd); the capability-preflight/ledger/evidence-gate refactor is not evidenced as landed.
+- **§4 (acceptance and observability)** — `partial`. The merge-time gate re-run now runs and records (verify-gate closed, f-eoh-merge-gate-call-site resolved), but the broad acceptance list in §4 has no landed control.
+- **§Followups** — 8 of 9 resolved; **`f-eoh-promotion-truth-remaining` [open] @158**: &quot;Keep the still-open repairs that distinguish committed, merged and content-surviving outcomes. Do not repeat the already-landed session attachment or first promotion repair.&quot;
+
+**Not a closure candidate** (impl 0.8; sections genuinely partial). **Proposed node — `promotion-outcome-truth-repairs`.** Goal: the promotion surface distinguishes *committed*, *merged* and *content-surviving* outcomes, discharging the narrowed continuation recorded on the open followup without repeating the session-attachment or first-promotion repair. Done-when: a test where a merge that does not carry one of a run&#x27;s commits is classified distinctly from a merge that carries all of them (fails before — no such distinction exists). Write paths: `reckon/crew/promotion.py`, `tests/test_crew_promotion.py`. Estimate: 6h. Overlap: none claimed.
+
+## 6. a-live-worker-can-be-reached — `active`, impl 0.7, v18, modified 2026-09-24
+
+`docs/plans/a-live-worker-can-be-reached.html` (262 lines)
+
+- **§1 (what fails, and what it costs)** — context/measurement (0 delivered in 3,949 worker streams).
+- **§2 (two defects, separable)** — context; the two defects are §3 (false clearance) and §4 (missing channel).
+- **§3 (refuse the send at the layer that knows)** — `landed` (`✓ landed 2026-09-15` @76). Mechanism: `reckon/cli.py:100,102,105,122,237,258` (`_worker_message_guard_path` and hook install), `reckon/hooks/worker_message_guard.py`; tests `tests/test_worker_message_guard.py:10`, `tests/test_guard_install.py:122,124,128,165,178`, `tests/test_sync_hook_wiring.py:111,113,153,168` (20 passed vs 7-passed baseline, per plan record).
+- **§4 (an inbox a working worker reads)** — `not-started`. The plan&#x27;s own text: &quot;Contended. The prompt contract lives in `reckon/crew/prompts.py`, which is mid-repair under another coordinator.&quot;
+- **§5 (make the written instruction name a mechanism)** — `landed` `2026-09-15` (orchestration reference now names `crew resume`; grep `message the worker` fell 1 → 0).
+- **§6 (what is deliberately not proposed)** — non-work.
+- **Followups** — lock-channel-scope, land-the-guard-and-the-inbox (superseded), qualify-the-three-remaining-instruction-sites all resolved; **`land-the-inbox-and-clear-two-ledger-rows` [open] @209**.
+
+**Not a closure candidate.** **Proposed node — `live-worker-inbox`.** Goal: a coordinator-written message into a live run&#x27;s own directory is read by the worker at its declared checkpoints and quoted back, and a run that received none says so rather than being silent. Done-when: (a) a contract assertion that the composed worker prompt instructs a blocking read of the run directory at the stop-and-take-stock points (fails before — none of the ten points reads the run dir today, per the plan&#x27;s measurement), and (b) a harness case where a message written mid-turn appears quoted in the manifest. Write paths: `reckon/crew/prompts.py`, `reckon/crew/runs.py`, `reckon/cli.py`, `tests/`. Estimate: 8h. **Overlap: `reckon/cli.py` is claimed today (worker-message guard).** Gate it behind that claim. The two outstanding ledger rows in the followup stay unreconciled behind promotion-surface defects owned elsewhere and are not this node&#x27;s work.
+
+## 7. a-plan-is-reviewed-before-it-is-built — `active`, impl 0.6, v15, modified 2026-09-26
+
+`docs/plans/a-plan-is-reviewed-before-it-is-built.html` (186 lines)
+
+- **§1 (why every plan needs a second reader)** — context/measurement.
+- **§2 (a rubber-duck review of every plan create and edit)** — `partial`. PR-1 landed (b906f66b; repair b0027963; merged 8a11525c), PR-3 landed (eb2fc40f, e2685b55, merged fe707812), PR-4 landed (557fb583, e95c1d6d, 4cf5d6f3…, plus launch-path case 35da2422; enforce mode behind flight key, report-only default). **PR-2 (eligibility sweep) and PR-5 (responses and surface) remain** — §2&#x27;s done-when (create + prose edit each produce one review within the debounce window; burst → one; impl-only → none; surface shows state; responses stored) cannot hold without them.
+- **§3 (a prior-art and depth review before a plan is built)** — `partial`. The rubric prompt landed (`reckon/crew/prompts/plan_design_review.md`, loader `load_plan_design_review_prompt` in `reckon/crew/review.py`); the dispatch of the §3 review itself rides PR-2/PR-5.
+- **§Decisions** — both locked (review-store @83, surface-recurrence @91).
+
+**Not a closure candidate.** **Proposed node — `plan-review-eligibility-sweep`** (PR-2). Goal: eligibility is derived by a sweep (fingerprint changed and quiet longer than the settle window), never enqueued by a write hook, so MCP, POST and hand edits are all caught; the sweep dispatches one review per settled fingerprint. Done-when: a test where a prose edit produces one queued review, five rapid edits produce one, and an impl-only edit produces none (fails before). Write paths: `reckon/crew/plan_review.py`, the sweep entrypoint surface, `tests/test_plan_review_sweep.py`. Estimate: 6h. **Overlap: the sweep entrypoint may touch `reckon/crew/dispatch.py` — claimed (brief §2). Confirm the call site and fence around it.**
+**Proposed node — `plan-review-responses-and-surface`** (PR-5). Goal: the author&#x27;s act-or-decline with a one-line reason is recorded per finding and the review&#x27;s state is shown beside the plan version it reviewed. Done-when: a test where declining a finding with a reason stores the response and the plan&#x27;s surface payload carries the review state (fails before). Write paths: `reckon/crew/plan_review.py`, `docs/ui/plan.jsx`, `reckon/serve.py`, `tests/`. Estimate: 4h. Overlap: none claimed.
+
+## 8. history-persists-as-detail-washes-out — `active`, impl 0.75, v20, modified 2026-09-24
+
+`docs/plans/history-persists-as-detail-washes-out.html` (462 lines)
+
+- **§1 (one file, parsed whole)** — context/measurement (4.31 MB, 818 runs at authoring).
+- **§2 (what the store is)** — `superseded`. The SQLite-shadow direction did land (c5687cd, e75db3b, 1ddd326, 99e3da1, 7764b522, merged dff74cb0 …) but §7&#x27;s locked decision reverses it: committed per-run files are the record, the database is only an index.
+- **§3 (the swap is hot)** — `superseded` by the same decision; the expand/dual-write order this section designs is explicitly &quot;not executed&quot; (f-hpdw-002).
+- **§4 (the committed file becomes the export)** — `superseded`; per-run committed files are the record instead (`docs/state/&lt;project&gt;/runs/&lt;run_id&gt;.json`).
+- **§5 (rotation is the last switch, gated)** — `not-started`. Rotation is enabled last, after the cutover holds, and it needs the detail-horizon decision (below) plus the record-at-promotion prerequisites. Restated for per-run files after that plan&#x27;s §3 split.
+- **§6 (what each stage has to prove)** — non-work (stage table).
+- **§7 (one committed file per promoted run)** — `landed`. `committed-export-scope` locked to durable rows as one file per run; per-run ledger work moved to `the-ledger-is-one-file-per-run` (8637fa06).
+- **Decisions** — `committed-export-scope` locked @370; **`detail-horizon` open, `choice=&#x27;&#x27;` @357** (options 30d / 90d / by-count; not committed, and it is the lead&#x27;s).
+- **Followups** — f-hpdw-001 resolved (superseded); **f-hpdw-002 [open] @396** = pointer to the successor plan, not work here.
+
+**Not a closure candidate** (§5 remains). **Proposed node — `rotate-per-run-detail-at-horizon` (blocked on the open `detail-horizon` decision).** Goal: rotation washes detail out of a run&#x27;s own file past the horizon while its durable row keeps every durable field, rewriting only that run&#x27;s file. Done-when: a test where a run file past the horizon loses its detail fields and retains all durable fields (asserted as a count), and a byte-snapshot proves no other run&#x27;s file changed (fails before). Write paths: `reckon/ledger.py`, `reckon/run_store.py`, `tests/test_ledger.py`. Estimate: 5h. Overlap: none claimed. **Do not dispatch before the lead locks `detail-horizon`.**
+
+## 9. rendered-evidence-on-this-host — `active`, impl 0.9, v21, modified 2026-09-24
+
+`docs/plans/rendered-evidence-on-this-host.html` (286 lines)
+
+- **§1 (why this exists as its own plan)** — context.
+- **§2 (the fault, bounded by elimination)** — `landed`. Done-when satisfied: the cause is identified with the trace that demonstrates it and the host change is stated (Chrome Network Service never creates an Internet socket; trace 2,457,438 bytes, sha256 ec765601).
+- **§3 (the next discriminating test)** — `landed` (the trace above; all three preflights green).
+- **§6 (a bounded rendered capability; four of six captures)** — `landed`. File-URL delivery path; 4 of 6 captures discharged with paired geometry and 4/4 mutation controls.
+- **§4 (the captures owed once a browser works)** — `blocked`. 2 of 6 remain: paired first-load/reload wall clock; new-plan visibility without navigation. Both are live-fetch subjects, &quot;AUTHORITY-REQUIRED, not unfinished work&quot; per f-reoth-002: the host/browser runtime owner must repair or replace Chrome&#x27;s Network Service; acceptance gate = both controls (data: URL *and* HTTP control), not one.
+- **§5 (what is already in place)** — `landed` (classifier with three classifications; 28 skips with stated reason; AssertionError boundary regression).
+- **Followups** — f-reoth-001 resolved; **f-reoth-002 [open] @226** (authority-required).
+
+**Not a closure candidate.** **Proposed node — `capture-live-fetch-pair` (blocked on the host change).** Goal: take the two remaining captures once a network-capable browser exists. Done-when: paired first-load and reload wall clock with the count of third-party origins recorded, and new-plan visibility with document identity unchanged and zero navigation entries, under `docs/figures/`. Estimate: 3h. Requires an execution-role worker (an investigate-role sandbox denies AF_INET and cannot reproduce anything here). Overlap: none claimed.
+
+## 10. plan-writes-are-not-fenced — `active`, **no `plan-impl` meta**, v5, modified 2026-09-24
+
+`docs/plans/plan-writes-are-not-fenced.html` (190 lines)
+
+- **§1 (a lost update that advances the version counter)** — context/measurement.
+- **§2 (the same boundary, the other side)** — context/measurement.
+- **§3 (two workers appending, six times)** — context/measurement.
+- **§4 (why the obvious fences are each wrong)** — context/design; the decision it motivates is locked: `who-loses-a-race` = `make-the-append-commutative` @155.
+- **§5 (what a repair must demonstrate)** — `landed`. 36330a4 (2026-09-18): per-file lock across the version check and the replacement; a comment append whose base moved is merged by section and id rather than refused; the falsifier fails at base in the measured shape (`AssertionError: a comment was discarded on the meeting: [&#x27;c-edit&#x27;] at version 1`); positive control passes; cohort 1 failed/181 passed at base → 1 failed/183 passed at change (zero added, two passing); review 91.
+- **Followups** — **`f-pwanf-001` [open] @172** — but its body (read at the run log) says &quot;lock who-loses-a-race before any node is cut&quot;, which is now stale: the decision is locked and the §5 repair implements it. The residual is the version-counter question the locked decision&#x27;s rationale names (&quot;the meaning of the version counter has to be revisited as part of it&quot;) plus disposing of this followup.
+
+**Hygiene:** the plan carries no `plan-impl` meta (confirmed by grep across the 12 plans — 9 of 12 carry one). Flag for the audit surface.
+
+**Not a closure candidate.** **Proposed node — `append-version-counter-semantics`.** Goal: define and pin the plan-version counter&#x27;s meaning under a merged append (one advance per landed append, not per meeting) and resolve f-pwanf-001 as discharged by 36330a4 plus this. Done-when: a test where two appends meet and both survive, the version advances exactly once per landed append, and a sequential append still advances it (fails before — the counter&#x27;s meaning under a merge is unpinned). Write paths: the plan-write module carrying 36330a4&#x27;s lock (confirm the file set from `git show --stat 36330a4`), `tests/test_schema.py`. Estimate: 3h. Overlap: none claimed.
+
+## 11. agent-plan-authoring — `draft`, **no `plan-impl` meta**, v11, modified 2026-09-24
+
+`docs/plans/agent-plan-authoring.html` (365 lines)
+
+- **§1–§9** — design content (the plan is the design document: model, contract, templates, dos/don&#x27;ts, lifecycle, agile models, MCP&#x27;s role, recommendations). No code done-when per section).
+- **Decisions** — locked: `tool-mediation` = prompt-first-mcp-optional @270; `schema-enforcement` = ci-roundtrip @278; `state-derivation` = derive-single-source @286.
+- **Followups** — resolved: f-apa-roundtrip (cf5fb2b — state-level round-trip invariant in `tests/test_schema.py`, 702 passed), f-apa-section-guard-pair (write guard 1c4ae4c `UnparsedSectionWriteError`; read warning d587c38; gate 11 passed; base 7351b63 deltas zero-added). **Open:** `f-apa-prompt` @298 (canonical authoring prompt + `docs/_exemplar-plan.html` into the reckon-create/reckon-edit skills) and `f-apa-milestone-tools` @323 (milestone create/update path; imas-ambix milestones repopulated as a test case).
+
+**Not a closure candidate** (two open followups carry the executable work). **Proposed node — `plan-authoring-exemplar-and-prompt`.** Goal: distil §3–§5 into one agent-facing prompt and a fully-annotated `docs/_exemplar-plan.html` foldable into the create/edit skills. Done-when: `docs/_exemplar-plan.html` — which already exists; this node audits and completes its annotations — parses and round-trips clean under the schema tests, and the authoring prompt block is present in both `skills/reckon-create/SKILL.md` and `skills/reckon-edit/SKILL.md`; the failing half before the change is the skills assertion (a grep/test that the prompt block exists in both) and any annotation gaps found. Write paths: `docs/_exemplar-plan.html`, `skills/reckon-create/SKILL.md`, `skills/reckon-edit/SKILL.md` (both directories confirmed present in this checkout). Estimate: 3h. Overlap: none claimed.
+**Proposed node — `milestone-create-update-tools`.** Goal: a milestone create/update path (MCP tool or documented index.json edit) so milestone rollups stop being read-only-and-empty. Done-when: a test driving the new path writes and reads back a milestone on a fixture project (fails before — no tool exists; the sibling surface is `_add_sprint_item` at `reckon/mcp.py:2496`). Write paths: `reckon/mcp.py`, `tests/test_mcp_milestones.py`. Estimate: 4h. Overlap: none claimed. (The imas-ambix M0–M3 repopulation is a cross-repo acceptance step for a separate dispatch.)
+
+## 12. roadmap-answers-both-shapes — `draft`, **no `plan-impl` meta**, v12, modified 2026-09-24
+
+`docs/plans/roadmap-answers-both-shapes.html` (246 lines)
+
+- **§1 (a coordinator asked for a dispatch order and got the wrong shape, twice)** — context/measurement.
+- **§2 (thirty findings, none about an unshippable outcome)** — `landed`. `endpoint-without-handle` at warn severity: `reckon/roadmap.py:1918` (finding code) with the suppression keyed on live descendants (repair 894406f; original 981e323, follow-on 35bd95d; review 89, one unauthorised suppression found and repaired; verify at `reckon/roadmap.py:1501` region).
+- **§3 (one call, both answers)** — `partial`. `endpoint_closures` is derived per row with project/slug/ref/handle/addressable (51361af0, merged 1a9fa39c), but **the field is derived on `immediate_roadmap` rows only** — the single derivation site is `reckon/roadmap.py:2240` — while §3&#x27;s done-when names &quot;the ready set&quot;, the field `ready_now`. The plan&#x27;s own post-merge live read recorded the absence (&quot;a reader who queries the ready set by name gets nothing&quot;), and the review (93) recorded that the node&#x27;s test aliased `immediate_roadmap` as &quot;ready&quot;. So the done-when does not yet hold on the surface it names.
+- **§4 (a completion figure that cannot reach its own total)** — `not-started`. `denominator-repair` is **locked to `both-denominator-first`** (@184, `data-choice` present) — note the plan&#x27;s older comments still describe it as open and authority-required; the HTML carries both, and the locked attribute is the machine-readable one. Either way no code exists: no terminal-member denominator change exists.
+- **§5 (why this is a plan)** — context.
+- **Decisions** — `denominator-repair` locked (both, denominator first) @184; `handle-finding-severity` locked (warn) @193.
+- **Followups** — **`f-rabs-001` [open] @206** — the chain followup (§2 → §3 → §4), open while §3&#x27;s surface question and §4 remain. Also recorded in-plan is the source defect that blocks stage-scoped refs: `plan_section_anchors` (`reckon/_schema.py:385`) derives a plan&#x27;s section identities from gate sections and comment mapping keys only — it does not read `section_declarations` nor authored `&lt;h2 id&gt;` values — so a declared section with no gate/comment is invisible to stage-ref validation (a peer&#x27;s `gs-absolute-accuracy-gates#s3` was rejected as missing-dependency-section).
+
+**Not a closure candidate.** **Proposed node — `ready-set-carries-endpoint-closures`.** Goal: the ready set the section names carries the closures (§3&#x27;s done-when on its own surface). Done-when: a test asserting `ready_now` rows carry `endpoint_closures` with an explicit empty list for items outside every closure (fails before — the field is on `immediate_roadmap` rows only). Write paths: `reckon/roadmap.py`, `tests/test_roadmap.py`. Estimate: 2h. Overlap: none claimed.
+**Proposed node — `terminal-member-leaves-closure-denominator`** (§4 first change, per the locked decision). Goal: a closure containing a terminal non-shipped member reaches a completion figure that can report complete when every shippable member has shipped, with the reported total stating which members it counts. Done-when: a test where a closure with one will-not-do member reports complete once all shippable members ship, and an all-live closure&#x27;s figure is unchanged (fails before). Write paths: `reckon/roadmap.py`, `tests/test_roadmap.py`. Estimate: 4h. Overlap: none claimed.
+**Proposed node — `section-scoped-closure-membership`** (§4 second change, after the denominator change lands). Goal: a stage-scoped dependency resolves membership to the section rather than the plan, and `plan_section_anchors` (`reckon/_schema.py:385`) recognises `section_declarations` and authored `&lt;h2 id&gt;` values so a declared section is addressable. Done-when: a test where `slug#s3` on a plan that carries `&lt;section id=&quot;s3&quot;&gt;`/`section_declarations` resolves (fails before — rejected as missing-dependency-section) and closure membership follows the declared stage, not the plan. Write paths: `reckon/_schema.py`, `reckon/roadmap.py`, `tests/test_schema.py`, `tests/test_roadmap.py`. Estimate: 6h. Overlap: none claimed. **Sequence with `source-section-depends-edges` (des §4) — same `plan_section_anchors` defect, same files.**
+
+---
+
+## Overlap summary against currently claimed files
+
+| Proposed node | Overlapping claimed file | Note |
+|---|---|---|
+| lane-window-matched-to-served-context | `reckon/crew/dispatch.py`, `reckon/_backends.py` | both claimed today (brief §2 repair; codex login fence) — wait or fence |
+| live-worker-inbox | `reckon/cli.py` | claimed (worker-message guard) — gate behind it |
+| plan-review-eligibility-sweep | `reckon/crew/dispatch.py` (possible call site) | confirm call site; fence around the claim |
+| all other proposed nodes | none of the six claimed files | — |
+
+## Follow-ons for the coordinator
+
+1. **Base drift:** worktree base `231e6055` vs `main` at `b91c433e` — if the audit must describe main, re-run the script at main&#x27;s head.
+2. **Missing `plan-impl` meta** on `plan-writes-are-not-fenced`, `agent-plan-authoring`, `roadmap-answers-both-shapes`; two of these are draft-status plans, so the `MISSING_IMPL` audit rule (shipped/done only) does not fire, but the field is absent where sibling plans carry it.
+3. **rabs decision vs comment divergence:** `denominator-repair` carries `data-choice` but the plan&#x27;s own comments still carry the authority-required framing; a reader following the comments will believe §4 is undispatchable behind a decision that is machine-readably locked.
+4. **pwanf followup staleness:** f-pwanf-001 asks for a decision that is locked and a repair that landed (36330a4); it should be resolved with that record rather than redispatched.
+5. Where I could not verify a landing from code (eoh §2/§3/§4 breadth; apa §1–§9 design sections), the classification above states the absence rather than assuming it.</pre></div>
+    </article>
   </section>
 
-  <section id="measure">
-    <h2>Measure</h2>
-    <p>Gate <code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p
-    no:cacheprovider tests/test_roadmap.py tests/test_project_state.py tests/test_edit_plan.py
-    -q</code>: at the landed &sect;2 state <strong>181 passed &mdash; 0 failed</strong>
-    against a base of 179 passed &mdash; 0 failed at <code>b9a0fa41</code> (+2 tests, both the
-    new ones in <code>tests/test_roadmap.py</code>); after &sect;3 the same gate reports
-    <strong>183 passed &mdash; 0 failed</strong> against the &sect;2 state, a +2 delta from
-    the two new tests in <code>tests/test_project_state.py</code>
-    (<code>test_closing_a_sprint_carries_held_incomplete_items_forward</code> and
-    <code>test_closing_a_sprint_refuses_a_single_unheld_incomplete_item</code>). No new
-    failures at either step. Ruff findings over the staged paths are unchanged against the
-    base tree.</p>
+  <section id="top">
+    <h2>top</h2>
+    <article class="landed-comment" data-comment-id="c-20260915T162213070089">
+      <p><small>reckon-ship · undated</small></p>
+      <div class="r-comment-body"><p><strong>Both deliverable sections are landed. The plan is deliberately NOT at 1.0, and the missing 0.05 is not remaining implementation.</strong> §2 and §3 are complete and merged; §4 is a scope statement rather than work. The plan is held just short of closure because <code>f-ascocw-003</code> is open and routes to <code>/reckon-create</code>, and <code>roadmap</code> drops a plan from <code>pending_work</code> at impl 1.0 <em>or</em> a terminal status — so closing this plan with that row open would hide the work rather than carry it. That is the same failure the plan itself exists to prevent, one level up: closing a container over work nobody can then see.</p><p><strong>§3 landed as a gate in the close path itself</strong> (<code>e3b160c7</code>, <code>01eb2c74</code>, merged): closing a sprint that still holds un-held incomplete work is refused, naming the offending plan, and the refusal leaves the closing sprint byte-identical. A sprint whose incomplete items are all held closes and carries them to the next open sprint with their blocker references intact, under the same two-version check, journal and compensating recovery the existing item move already uses. Carry-forward is proven by <strong>set membership</strong> in <code>roadmap</code>'s <code>pending_work</code>, never a count — a count agrees by coincidence, and the distinction between carrying work forward and hiding it in a closed container is exactly what the membership assertion tests.</p><p><strong>Three choices beyond the brief, all conservative in the same direction.</strong> The gate lives in <code>apply_resource_ops</code>, the operation a caller performs, rather than in a helper that computes closability with no refusing caller. A missing plan status counts as incomplete <em>and</em> un-held. And a sprint whose held items have <strong>no open advancing sprint</strong> is also refused — a case neither the section nor the brief named, and one where closing would have silently dropped the carried work.</p><p>Gate 1,595 passed at the merged head across plan-editing, project-state, roadmap and schema, including the byte-identity round-trip over every live plan after the HTML edits. Ruff over the staged paths went from 15 findings at base to 13. The <a href="/reckon/figures/sprint-close-carry-forward/close-carry-forward.svg">close-and-carry figure</a> was written outside the declared write scope because the fence granted the evidence record without the figures directory that record needs — a coordinator fencing error, accepted at promotion with the reason recorded.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260928T052343734109-s22-currency-closure-candidates">
+      <p><small>reckon-build · 2026-09-28T06:12:02.339Z</small></p>
+      <div class="r-comment-body"><p>read-only closure audit of twelve active S22 plans; report at the node's reports dir</p></div>
+    </article>
   </section>
-
-  <section id="scope">
-    <h2>Scope and follow-ons</h2>
-    <p><code>reckon/project_state.py</code> gained the closability check and carry-forward
-    (plus a life-cycle import it already had precedent for); <code>reckon/lifecycle.py</code>
-    and <code>reckon/serve.py</code> needed no change this time, because held is read from
-    the same composed blocker rows the &sect;2 work defined. The endpoint-row
-    <code>held</code> count in <code>roadmap</code> and the schedule it derives from remain
-    untouched by design &mdash; a per-execution-path count, not a blocker kind. The close
-    path rejects a plan whose status is missing entirely, treating it as incomplete and
-    un-held, which is the conservative direction.</p>
-    <p>What remains is the &sect;4 deferral: the executable probe that validates and clears a
-    held blocker's subject. It is a separate plan by the locked probe-execution-boundary
-    decision, unblocked now that the closure rule reads a held blocker's kind, and it is
-    recorded as f-ascocw-003 on the plan rather than folded into this record.</p>
-  </section>
-</main>
+ </main>
 </body>
 </html>

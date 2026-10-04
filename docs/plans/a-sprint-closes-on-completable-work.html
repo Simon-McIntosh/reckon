@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-sprint-closes-on-completable-work">
   <meta name="plan-title" content="A Sprint Closes On Completable Work">
   <meta name="plan-summary" content="Work held by something outside the sprint should not pin it open. Mark it held, close on what is completable, carry the held work forward.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="5.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,9 +23,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-04">
-<meta name="plan-version" content="7">
+<meta name="plan-version" content="8">
 <meta name="plan-impl" content="0.95">
 <meta name="plan-informs" content="work-scheduling-surface">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -194,6 +195,12 @@
     <pre class="r-fu-prompt">/reckon-create</pre>
     <p class="r-fu-outcome">Moved into its own plan, a-held-blocker-clears-on-its-probe §1, as this followup and the locked probe-execution-boundary decision direct (work-is-a-section-not-a-followup §4). done — no followup on this plan.</p>
     </article>
+<article class="r-fu" data-id="f-ascocw-closure" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-04T11:28:00Z" data-recommends-skill="/reckon-build a-sprint-closes-on-completable-work" data-resolved-at="2026-10-04T09:15:25+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Closure</h4>
+    <div class="r-fu-body"><p>Every section is done; the deferred probe lives in a-held-blocker-clears-on-its-probe.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-sprint-closes-on-completable-work</pre>
+    <p class="r-fu-outcome">done — no followup</p>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-20260915T162213070089" data-who="reckon-ship" data-when="">
@@ -201,6 +208,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260928T052343734109-s22-currency-closure-candidates" data-who="reckon-build" data-when="2026-09-28T06:12:02.339Z">
     <div class="r-comment-body"><p>read-only closure audit of twelve active S22 plans; report at the node's reports dir</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20261004-shipped" data-who="s22-coord" data-when="2026-10-04T11:28:00Z">
+    <div class="r-comment-body"><p><strong>Shipped 2026-10-04.</strong> The plan carried no section declarations and an authored impl of 0.95, so the roadmap read it as open with nothing implementable. Its rule landed in e3b160c7b (2026-09-15, an ancestor of main). Closing a sprint now runs a closability check in the close path. Any item whose plan is not lifecycle-terminal must be held by a blocker of kind <code>held</code>, or the close is refused naming it. Held work moves to the next open sprint with its blocker references. It is tested in <code>tests/test_project_state.py</code>. §1 to §3 describe that rule and §4 is a scope note, so all four are declared done. The executable probe §4 deferred now has its own plan, a-held-blocker-clears-on-its-probe. The closure record synthesizes 3 runs and 5 commits and reads <code>plan-verdict</code> pass.</p></div>
 </div>
 </section>
 </main>

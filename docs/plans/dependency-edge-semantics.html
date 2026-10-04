@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="dependency-edge-semantics">
   <meta name="plan-title" content="Edges That Mean What They Say">
   <meta name="plan-summary" content="A dependency ref accepts a section anchor and the roadmap discards it, so partial dependencies block whole plans and hide ready work.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="12.0">
   <meta name="plan-capability-version" content="1.0">
@@ -22,10 +22,10 @@
   <title>Edges That Mean What They Say | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-02">
+<meta name="plan-modified" content="2026-10-04">
 <meta name="plan-impl" content="0.99">
-<meta name="plan-version" content="47">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;}">
+<meta name="plan-version" content="48">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="fd0b1d4,bea76f1,ec8fb56d">
 </head>
 <body>
@@ -716,6 +716,12 @@
     <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics</pre>
     <p class="r-fu-outcome">Moved into §10 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
+<article class="r-fu" data-id="f-des-closure" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-04T11:24:00Z" data-recommends-skill="/reckon-build dependency-edge-semantics" data-resolved-at="2026-10-04T09:14:45+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Closure</h4>
+    <div class="r-fu-body"><p>Every section is done and the closure record exists.</p></div>
+    <pre class="r-fu-prompt">/reckon-build dependency-edge-semantics</pre>
+    <p class="r-fu-outcome">done — no followup</p>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-s2-landed" data-who="reckon-ship" data-when="2026-08-26">
@@ -735,6 +741,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260928T142158788659-review-of-section-scoped-decision-blocks" data-who="reckon-build" data-when="2026-09-28T15:10:04.523Z">
     <div class="r-comment-body"><p>review stored at e3abf94e: total 94, zero added failures; two edge findings queued as f-des-decision-recommendation-and-edges</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20261004-shipped" data-who="s22-coord" data-when="2026-10-04T11:24:00Z">
+    <div class="r-comment-body"><p><strong>Shipped 2026-10-04.</strong> Every section is done. The closure record synthesizes 31 committed runs, 34 comments and 40 commits. It audits with no error and reads <code>plan-verdict</code> pass.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260915T054942427549-a-followup-naming-a-terminal-foreign-plan-is-reported" data-who="skill-verb-surface" data-when="2026-09-15T08:50:59.180Z">
     <div class="r-comment-body"><p>reckon audit now reports a followup naming a foreign plan in a terminal state, with three distinct codes for terminal, unmounted and missing targets, so an obligation invisible to both projects' roadmaps becomes a finding. Count over the registered mounts stated as 2. Gate 7 passed with 5 new tests; test_schema 1282 passed; 75 passed across the doccheck-importing files. Two failures in test_provenance and test_mcp_recovery were verified pre-existing by reproducing them at base with pristine doccheck.py installed, so zero added. Its manifest is unreadable to the parser because it reports status 'done', which is outside the recognised set, so commit and gate evidence are supplied from independent verification.</p></div>
@@ -818,7 +827,10 @@
     <div class="r-comment-body"><p>§10 implemented — decisions gain optional recommended/recommended_by values (parsed from and rendered to the plan HTML and returned by read_plan), the new accept edit_plan op sets the choice from the recommendation in one action recording when and by whom, an unanswered recommendation never becomes the choice, a decision scoped to an undeclared section is refused at write time naming the section and the plan's declared identities and is reported by the roadmap as a missing-decision-section finding, and the roadmap's persisted-blocked fallback tests the same plan-level decision list is_blocked consumes so both blocked readings agree; the 7 tests in tests/test_decision_recommendation_and_scope.py fail at base and pass at head (base arm 8 failed / 2268 passed at 89690489, head arm 2278 passed / EXIT=0 at ef7b8fcbc)</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261002T181445402596-review-of-a-decision-recommendation-is-accepted" data-who="reckon-build" data-when="2026-10-02T18:43:40.216Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261002T165113632436-a-decision-recommendation-is-accepted stored as a parsed record at reviewed base 89690489f0b9c717bc6f532fdce7e5a275e8faed / head ef7b8fcbce2566b7f7d6af2fe9fd784871a1738f, scoring all five dimensions (goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 19; total 96) with six checklist verdicts, four production call sites, added_failure_count 0 with no added ids, and one follow-on finding on the reviewed manifest&#x27;s stale failure_attribution field.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20261002T165113632436-a-decision-recommendation-is-accepted stored as a parsed record at reviewed base 89690489f0b9c717bc6f532fdce7e5a275e8faed / head ef7b8fcbce2566b7f7d6af2fe9fd784871a1738f, scoring all five dimensions (goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 19; total 96) with six checklist verdicts, four production call sites, added_failure_count 0 with no added ids, and one follow-on finding on the reviewed manifest's stale failure_attribution field.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20261004-s8-declared" data-who="s22-coord" data-when="2026-10-04T11:24:00Z">
+    <div class="r-comment-body"><p><strong>Declared done; it had landed but was never declared.</strong> Commit 2f870c2bf (2026-09-28, an ancestor of main) adds <code>section_depends_on</code> to <code>reckon/_schema.py</code>, charges each wait to its named section in <code>reckon/roadmap.py</code>, and asserts both directions in <code>tests/test_roadmap.py</code> and <code>tests/test_schema.py</code>. The worker's implementation note is already in this section's body. With every other section done, the missing declaration was the only thing holding the plan at impl 0.99.</p></div>
 </div>
 </section>
 </main>
