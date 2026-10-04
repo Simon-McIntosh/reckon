@@ -406,3 +406,40 @@ def test_launch_returns_harness_directive_and_writes_a_live_pointer(
     again = recovery.dispatch_review_for_run(_subject(), config=CONFIG)
     assert again["dispatched"] is False
     assert again["review_run_id"] == payload["review_run_id"]
+
+
+def test_sidecar_hashes_exact_plan_bytes_and_keeps_snapshot_metadata(
+    project, monkeypatch
+):
+    from reckon import _plan_html
+
+    _, repo, path = project
+    document = path.read_bytes().replace(b"><", b">\r\n<")
+    path.write_bytes(document)
+    read_state = _plan_html.read_state_file
+
+    def read_snapshot(snapshot):
+        path.write_bytes(document.replace(b'content="3"', b'content="4"'))
+        return read_state(snapshot)
+
+    monkeypatch.setattr(_plan_html, "read_state_file", read_snapshot)
+    fields = recovery._review_dispatch_fields(_subject())
+    sidecar = json.loads(Path(fields["sidecar"]).read_text())
+    snapshot = Path(fields["sidecar"]).with_name("plan.html")
+    assert snapshot.read_bytes() == document
+    expected = (
+        subprocess.run(
+            ["git", "hash-object", "--stdin"],
+            input=document,
+            cwd=repo,
+            check=True,
+            capture_output=True,
+        )
+        .stdout.decode()
+        .strip()
+    )
+    assert sidecar["reviewed_blob_sha"] == expected
+    assert sidecar["plan_version"] == 3
+    assert sidecar["plan_fingerprint"] == plan_review.plan_fingerprint(
+        document.decode()
+    )

@@ -517,21 +517,21 @@ def _review_dispatch_fields(
         from reckon import _plan_html
 
         path = Path(record["plan_path"])
-        document = path.read_text(encoding="utf-8")
+        document_bytes = path.read_bytes()
+        document = document_bytes.decode("utf-8")
         project, slug, run_id = record["project"], record["plan_slug"], record["run_id"]
         directory = plan_review.review_report_directory(project, slug, run_id)
         directory.mkdir(parents=True, exist_ok=True)
         report = directory / "report.md"
         snapshot = directory / "plan.html"
-        snapshot.write_text(document, encoding="utf-8")
+        snapshot.write_bytes(document_bytes)
         blob = subprocess.run(
             ["git", "hash-object", "--stdin"],
-            input=document,
-            text=True,
+            input=document_bytes,
             capture_output=True,
             check=True,
             cwd=record["repo"],
-        ).stdout.strip()
+        ).stdout.decode("ascii").strip()
         rubric = record.get("rubric", "design")
         prompt = (
             review_module.load_plan_design_review_prompt()
@@ -550,7 +550,7 @@ def _review_dispatch_fields(
             directory,
             project=project,
             plan_slug=slug,
-            plan_version=_plan_html.read_state_file(path).get("version") or 0,
+            plan_version=_plan_html.read_state_file(snapshot).get("version") or 0,
             reviewed_blob_sha=blob,
             plan_fingerprint=plan_review.plan_fingerprint(document),
             rubric=rubric,
