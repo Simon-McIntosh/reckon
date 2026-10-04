@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.9">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 <meta name="plan-informs" content="plan-lifecycle-hygiene">
@@ -219,6 +219,9 @@ Deliverable: an evidence record under docs/evidence/archive is covered by the sa
 </div>
 <div class="r-comment" data-section="s7" data-id="c-20261004-s7-landed" data-who="s22-coord" data-when="2026-10-04T10:27:00Z">
     <div class="r-comment-body"><p><strong>Landed at merge 3f17be891.</strong> <code>_overall_verdict</code> now reads each section's latest implement- or test-role run, ordered by completion then run id. Passed reads pass; a not-run gate or a failure classified <code>pre-existing-failure</code> reads qualified; any other failure reads fail; the record takes the worst section. Sections are addressed through <code>reckon.crew.routing.section_record_id</code>, the reader the attempt count uses. The worker's read-only probe shows the obligations-hook plan's 54 rows now read qualified, where they read fail before: 17 sections pass, and §16's latest run failed as pre-existing. Measured at a stacked merge of main a90a37174: the 8-file evidence population ran 40 passed at base and 43 at head, with no added failure. The negative control at base reads fail on the first fixture and qualified on the third. Review scored 95. Its one follow-on: the implement/test role set is now spelled in four places (<code>evidence.py</code>, <code>mcp_views.py</code> twice, <code>promotion.py</code>) and wants one shared constant. Every ledger row in this project carries a role, so no row loses attribution; 201 rows carry no section and are not counted.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261004T085044698259-review-of-a-fragment-id-collision-is-caught-where-written" data-who="reckon-build" data-when="2026-10-04T08:56:24.228Z">
+    <div class="r-comment-body"><p>review of r-20261004T075656239730-a-fragment-id-collision-is-caught-where-written scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19 (total 97 of 100), zero added failures, no blocking findings — the fragment id-prefix brief rule, the audit_manifest collision check and the three fragment renames all land, and the guard is independently shown to fire at the base revision.</p></div>
 </div>
 </section>
 </main>
