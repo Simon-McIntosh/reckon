@@ -24,7 +24,7 @@
   <title>One Typesafe Model Picker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="146">
+<meta name="plan-version" content="147">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;}">
 </head>
@@ -494,6 +494,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261004T124017169730-reaper-catches-unrecorded-producer" data-who="reckon-build" data-when="2026-10-04T13:27:50.599Z">
     <div class="r-comment-body"><p>The per-test reaper now reaps through reapable_watch_pids, which unions the seat records under its root with the live crew watch producers whose own environ names a RECKON_HOME under that root; the named half is scoped to tests marked arms_watch_producer and the session-end reap keeps include_named_half=False, so the scan and its failure are unchanged. Gate 19 passed / 1 skipped at head vs 2 failed / 17 passed / 1 skipped at base, the base arm failing behaviourally on assert &lt;pid&gt; in []. Both findings answered.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261004T121951276204-shadow-pick-off-critical-path" data-who="reckon-build" data-when="2026-10-04T16:40:56Z">
+    <div class="r-comment-body"><p>Explicit and deterministic dispatches launch before their advisory picker; five alternating slow-client pairs measured a 4.235 s median paired reduction, the repaired dispatch gate passed 186/186, and the updated routing, shadow, and supervisor tests passed 27/27 together serially at the final head.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261003T035044694750-review-of-model-catalogue-in-reckon" data-who="reckon-build" data-when="2026-10-03T03:59:23.147Z">
     <div class="r-comment-body"><p>Independent review of r-20261003T032115043790-model-catalogue-in-reckon stored: 92/100 (goal 16, evidence 19, scope 20, durability 18, fit 19); the catalogue layer, its two rules, the 32-shadow report and the no-value-moves proof all verified by independent re-run.</p></div>
