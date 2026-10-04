@@ -1491,22 +1491,34 @@ def _citation_tokens(entry: str) -> list[str]:
     return tokens
 
 
+# A value of nothing but zeros names the null object id, which resolves to no
+# commit in any store, so it states the count of commits rather than citing
+# one.
+_ZERO_COUNT = re.compile(r"0+")
+
+
 def _cites_a_commit(manifest: dict[str, Any]) -> bool:
     """Whether the ``commits`` field carries at least one revision citation.
 
-    The field is a citation list, and a spelling the list reader keeps is not
-    a citation: ``0`` parses to a non-empty list, so the field's presence
-    cannot answer the question a role that owes a commit asks. An entry cites
-    a commit when it carries an object-id shaped token — the same token reader
-    the citation check asks its stores about, so a value read as a citation
-    here is one a store can be asked about. A value that reaches this reader
-    structured rather than as a list carries no entry a store can be asked
-    about and cites nothing.
+    The field is a citation list, and a count is not a citation: ``0`` parses
+    to a non-empty list, so the field's presence cannot answer the question a
+    role that owes a commit asks. An entry that is nothing but zeros is the
+    count of commits written as a value, and the all-zero object id it spells
+    is the null one, which resolves to no commit in any store. Every other
+    non-empty entry is a citation attempt whatever its width, left to the
+    citation check's token reader and the store that resolves it; a shape rule
+    here would refuse an honest abbreviation, the width trap the citation
+    check records. A value that reaches this reader structured rather than as
+    a list carries no entry and cites nothing.
     """
     commits = manifest.get("commits") or ()
     if not isinstance(commits, (list, tuple)):
         return False
-    return any(_citation_tokens(str(entry).strip()) for entry in commits)
+    for item in commits:
+        entry = str(item).strip()
+        if entry and not _ZERO_COUNT.fullmatch(entry):
+            return True
+    return False
 
 
 def _commit_resolves_in(root: Path, revision: str) -> bool:
