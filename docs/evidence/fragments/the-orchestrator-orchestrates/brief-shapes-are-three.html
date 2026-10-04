@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="the-orchestrator-orchestrates">
+<title>brief-shapes-are-three — landing record</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="brief-shapes-are-three">Landing record — a node names exactly one of three authority shapes</h2>
+<p>The review of commit <code>741817e6e</code> left three follow-on findings. All three concern one fact: a node names its authority in one of three shapes — a plan section alone, a brief alone, or a brief beside a plan section — but only the pair branch and the validators knew the third, so the prose and the accepted set of nodes each described a partly different world.</p>
+<p><strong>Stale docstring.</strong> <code>compose_prompt</code>'s docstring stated the brief-only behaviour (the plan pointer replaced by the brief text, the landing sent to the run directory) as the whole briefed case, which is false for a brief beside a plan. The paragraph now states all three shapes: the plan pointer alone; the brief alone with its pointer replaced and landing on the run record; and the brief beside a plan section with the pointer kept first, the brief following under its own heading, and the landing staying plan-carried. The composed prompt was already correct and is unchanged — only the prose that describes it moved.</p>
+<p><strong>An accepted fourth shape.</strong> <code>validate_node</code> refused a brief with a section but no plan, and a node naming neither, yet accepted a brief with a plan and no section. The pair is scoped to a plan <em>section</em>, so that shape is now refused under <code>fully-specified</code>, naming the missing section, as the mirror of the existing section-with-no-plan refusal. The plan-only path — a plan with or without a section and no brief — is untouched.</p>
+<p><strong>The missing end-to-end clause.</strong> The pair's success was shown only at argv (a planless fixture reaching the committed-section gate and refusing <code>plan-unavailable</code>). A new case commits a fixture plan whose <code>h2 id="delivery" ...</code> exists, mounts it, and drives <code>reckon crew dispatch --dry-run</code> with <code>--plan fixture --section delivery --brief</code> under the shipped report-only plan-review gate: it exits 0, returns <code>ok true</code>, and the payload's node carries the brief's digest and the named plan and section — the resolution the argv-only case never reached.</p>
+<h3>Gate</h3>
+<p>Head arm <code>6cff4c20e</code>: <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q --basetemp=/tmp/bs tests/test_brief_beside_a_plan_section.py tests/test_brief_dispatch.py tests/test_brief_prompt.py tests/test_small_node_prompt.py tests/test_crew_prompts.py</code> → <strong>76 passed</strong> (<code>gate.log</code>). Negative control: replacing the new refusal with a no-op in <code>reckon/crew/node.py</code> reddens exactly the new refusal case — <code>1 failed, 9 passed</code>, <code>EXIT=1</code> (<code>negative_control.log</code>), the failure being <code>test_a_brief_with_a_plan_and_no_section_is_refused_naming_the_section</code> with <code>AssertionError: a brief with a plan and no section must be refused</code> against a head arm that passes it. Lint added no findings: the three staged paths measure 11 against a 14 baseline for their HEAD copies.</p>
+</main>
+</body>
+</html>

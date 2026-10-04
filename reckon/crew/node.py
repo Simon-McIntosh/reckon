@@ -1133,19 +1133,29 @@ def validate_node(
             )
 
     plan = node.plan.strip()
+    section = node.section.strip()
     brief = node.brief.strip()
     # A node names its authority in one of three shapes. A plan section alone
     # is the committed authority. A brief alone stands in for one. A brief
     # beside a plan section is the coordinator's instructions for that section:
     # the plan stays the authority and every gate that joins the node to its
     # committed section still runs, because ``plan_dispatch`` keys those gates
-    # on the plan being named rather than on the brief being absent. Only a
-    # node naming neither is refused.
-    if brief and not plan and node.section.strip():
+    # on the plan being named rather than on the brief being absent. The pair
+    # is scoped to a section, so each half is refused when it stands without
+    # the other: a section with no plan, and a briefed plan with no section.
+    # Only a node naming neither is refused for naming no authority at all.
+    if brief and not plan and section:
         fail(
             "fully-specified",
-            f"the node names section {node.section.strip()!r} and no plan; a "
+            f"the node names section {section!r} and no plan; a "
             "section is a plan's part, so name the plan it belongs to",
+        )
+    elif brief and plan and not section:
+        fail(
+            "fully-specified",
+            f"the node names plan {plan!r} and no section; a brief beside a "
+            "plan is the coordinator's instructions for a section, so name the "
+            "section the brief belongs to",
         )
     elif not plan and not brief:
         fail(

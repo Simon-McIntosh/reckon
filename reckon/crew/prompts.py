@@ -413,12 +413,18 @@ def compose_prompt(
 
     Deliberately short. Anything the live plan already says is omitted, because
     a copied brief drifts between workers and sessions while the plan does not.
-    The worker's first act is to read the plan and section named here, or, when
-    a brief is supplied, the brief carried in its place: a brief dispatch names
-    no committed plan section, so the plan pointer is replaced by the brief text
-    and the landing contract sends the record to the run directory rather than
-    to a plan section. A brief is carried verbatim, so a later reader can diff
-    the brief's own bytes against the prompt that read them.
+    A node names its authority in one of three shapes, and the worker's first
+    act is to read whichever one appears as the task authority. A plan section
+    alone: the task line is the plan pointer naming the project, plan and
+    section. A brief alone: the brief names no committed plan section, so the
+    plan pointer is replaced by the brief text and the landing contract sends
+    the record to the run directory rather than to a plan section. A brief
+    beside a plan section: the plan stays the authority, so the plan pointer is
+    kept first and the brief follows it verbatim under its own heading, and the
+    landing stays plan-carried, because a node naming a plan lands on its
+    section however it was briefed. Each shape carries its authority verbatim,
+    so a later reader can diff the brief's own bytes against the prompt that
+    read them.
 
     ``launch_instant`` is the attempt's own recorded start; the FENCE — TIME
     line states it, the deadline it sets, and the clock that checks them.
