@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="fragment-ids-renamed-batch-c">
+  <meta name="plan-title" content="Colliding fragment element ids carry their node ids">
+  <meta name="plan-summary" content="Element ids repeating across an evidence plan's committed fragments were bare, so the composed record carried equal anchor targets and every later occurrence was unreachable. 83 ids across 36 fragments in nine plan fragment directories now begin with their own fragment's node id, with the same-file href anchors renamed alongside them and no other attribute or text touched. audit_fragment_ids reports 28 duplicate-id findings over those directories at base 07ad28145 and none at head 61803a858; the renamed set is 19 distinct bare ids, and no remaining href anywhere in docs/ targets one.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-tags" content="doccheck,fragment-ids,evidence,element-id">
+  <title>Colliding fragment element ids carry their node ids | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="fragment-ids-renamed-batch-c" data-reckon="landed" data-when="2026-10-04">
+  <h2>Colliding fragment element ids carry their node ids</h2>
+  <p><strong>Landed.</strong> Each element id that repeated across an evidence plan's committed fragments is renamed to begin with its own fragment's node id, so the composed record carries distinct anchor targets again. The rename covers 83 ids across 36 fragments in nine plan fragment directories and changes only <code>id</code> attributes and the same-file <code>href</code> anchors that resolve to them; no prose and no non-colliding id changed. <code>audit_fragment_ids</code> reports 28 duplicate-element-id findings over those directories at base <code>07ad28145</code> and none at head <code>61803a858</code>. No remaining <code>href</code> anywhere in the docs tree targets one of the 19 renamed bare ids. One composed-record collision survives outside this node's scope, pairing an archived record file with a fragment that is not in this node's write scope; it is reported as a follow-on rather than repaired here. This fragment carries no element ids, so it adds none to the composition it is checked by.</p>
+</article>
+</body>
+</html>
