@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project" content="reckon">
   <meta name="reckon-type" content="evidence">
-  <meta name="plan-slug" content="work-is-a-section-not-a-followup">
+  <meta name="plan-slug" content="the-hidden-work-dispositions-are-tabled">
   <meta name="plan-evidence-for" content="work-is-a-section-not-a-followup">
   <title>The hidden-work dispositions are tabled | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -23,7 +23,7 @@
       <h2>The measure</h2>
       <p>Read-only against this tree at <code>e85fb9cd816df6d845dc37a9e86b78a96f841ff7</code>: <code>reckon roadmap --project reckon</code> reports zero <code>followup-hides-work</code> findings (the wiring list carries 40 findings of other codes, so the scan was reading), and the predicate over the same tree classifies all 41 open followups as pointers, none as hiding work. Of the 85 disposed rows: 51 <code>section</code>, 13 <code>move</code>, 6 <code>decision</code>, 15 <code>met</code>.</p>
       <p>An empty finding list is also what an instrument that sees nothing produces, so two positive controls carry the zero: <code>tests/test_a_followup_that_hides_work_is_found.py</code> drives <code>build_roadmap</code> over a temporary docs directory holding three hiding followups and asserts the finding list is exactly those three (<code>11 passed, EXIT=0</code> at this revision), and a direct call to <code>classify_followup</code> on a synthetic own-plan, no-section followup returns <code>hides-work (no-section)</code>. Logs: <code>positive-control-roadmap-finding.log</code>, <code>real-tree-classification.log</code> in the run directory beside this node's manifest.</p>
-      <p><code>reckon audit-doc</code> on this fragment: <code>ok, EXIT=0</code>.</p>
+      <p><code>reckon audit-doc &lt;fragment&gt; --project reckon</code>: <code>ok, EXIT=0</code>.</p>
     </section>
 
     <section id="the-hidden-work-dispositions-are-tabled-table">
