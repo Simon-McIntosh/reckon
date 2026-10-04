@@ -17,13 +17,16 @@ build with no review able to clear it. So the fingerprint normalises out exactly
 the server-managed metadata scalars — the plan's version, modified stamp,
 implementation fraction, status, ROI, effort, owner, sprint, tags and archive
 flag — and digests the authored content: declarations, sections, decisions,
-followups, relationships and comments. The parser derives a little more state
-from those scalars, so :data:`PLAN_DERIVED_SCALARS` removes that too; without
-it, adding the named effort field to a plan that carried only the legacy effort
-letter would move the fingerprint through the derived calibration flag and
-orphan a review on exactly the plans that predate the named field. A metadata-only write
-therefore neither triggers a review nor invalidates one, and an authored edit
-changes the fingerprint so the gate demands a fresh review.
+followups, relationships and comments, except the landing comments a promotion
+writes for a run, which record that work landed rather than an authored change
+and are normalised out beside the metadata scalars. The parser derives a little
+more state from those scalars, so :data:`PLAN_DERIVED_SCALARS` removes that
+too; without it, adding the named effort field to a plan that carried only the
+legacy effort letter would move the fingerprint through the derived calibration
+flag and orphan a review on exactly the plans that predate the named field. A
+metadata-only write therefore neither triggers a review nor invalidates one,
+and an authored edit changes the fingerprint so the gate demands a fresh
+review.
 
 The store reuses the crew review store root, so a plan review is queryable
 across plans and projects beside the code reviews: ``reviews/<project>/
@@ -104,6 +107,15 @@ PLAN_DERIVED_SCALARS: tuple[str, ...] = (
 # plan's authored content, and the section 3 prior-art-and-depth review the
 # first implementation dispatch of a plan additionally requires.
 PLAN_REVIEW_RUBRICS: tuple[str, ...] = ("plan_review", "plan_design_review")
+
+# ── The promotion-comment exclusion ─────────────────────────────────────────
+# A promotion appends one comment per promoted run to the section the run
+# landed against, under an id derived from the run id and beginning with this
+# prefix. The comment is the plan's own record that work landed, written by
+# machinery rather than authored, so it is normalised out of the digest beside
+# the metadata scalars: without that, every promotion moves a reviewed plan's
+# fingerprint and buys the plan another review of content nobody changed.
+RUN_COMMENT_PREFIX = "c-run-"
 
 # The states the surface renders beside the version a review read. ``ready`` is
 # what a freshly stored review carries; ``acted`` and ``declined`` are reached
@@ -233,13 +245,50 @@ def _as_document(plan: Mapping[str, Any] | str | Path) -> str | None:
     )
 
 
+def _without_run_comments(state: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Return parsed state with the promotion comments a run wrote removed.
+
+    ``comments`` maps a section id to the records anchored to it, and a
+    promotion appends one record per promoted run under an id beginning with
+    :data:`RUN_COMMENT_PREFIX`. Nothing authored changes when a landing is
+    recorded, so those records are dropped — and a section left empty is
+    dropped with them, so a plan holding only run comments digests exactly as
+    one holding none. Every record written for another reason stays in and
+    moves the digest.
+
+    A state carrying no ``comments`` key, or one whose value is not the parsed
+    mapping shape, is returned untouched: the normalisation removes records it
+    can recognise and never hides one it cannot classify.
+    """
+    comments = state.get("comments")
+    if "comments" not in state or not isinstance(comments, Mapping):
+        return state
+    kept: dict[str, Any] = {}
+    for section, entries in comments.items():
+        kept_entries = entries
+        if isinstance(entries, (list, tuple)):
+            kept_entries = [
+                entry
+                for entry in entries
+                if not (
+                    isinstance(entry, Mapping)
+                    and str(entry.get("id") or "").startswith(RUN_COMMENT_PREFIX)
+                )
+            ]
+        if kept_entries:
+            kept[str(section)] = kept_entries
+    return {**state, "comments": kept}
+
+
 def plan_fingerprint(plan: Mapping[str, Any] | str | Path) -> str:
     """Return the content fingerprint that joins a review to the plan it read.
 
     Two components are digested. The parsed state has the excluded keys of
     :data:`PLAN_METADATA_SCALARS` and the derived keys of
     :data:`PLAN_DERIVED_SCALARS` removed, and the remainder canonicalised with
-    sorted keys. The document's authored prose — the body text outside every
+    sorted keys; the run comments of :data:`RUN_COMMENT_PREFIX` are removed
+    with them, because a landing record is written by a promotion rather than
+    authored. The document's authored prose — the body text outside every
     ``data-reckon`` block, which the store regenerates from state — is folded in
     beside it, because the parsed state carries no section prose and a
     fingerprint over state alone would not move when a plan's prose is
@@ -255,10 +304,11 @@ def plan_fingerprint(plan: Mapping[str, Any] | str | Path) -> str:
             f"plan_fingerprint expects a mapping, path or html, got {type(plan)!r}"
         )
     excluded = frozenset(PLAN_METADATA_SCALARS) | frozenset(PLAN_DERIVED_SCALARS)
+    digest_state = _without_run_comments(_as_state(plan))
     payload: dict[str, Any] = {
         "state": {
             str(key): value
-            for key, value in _as_state(plan).items()
+            for key, value in digest_state.items()
             if key not in excluded
         }
     }
