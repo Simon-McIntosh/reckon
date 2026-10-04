@@ -1,11 +1,11 @@
 """A raise rule that fails to resolve is visible where a rule that did not move is not.
 
-A dispatch reads its lane from the plan section's own typed record, and the
-read is allowed to fail: no repository, no mount, a rule whose raised class
+A dispatch reads capability from its typed record and attempts from run history.
+The read is allowed to fail: no repository, no mount, a rule whose raised class
 routes to a lane no layer defines. Falling back to role routing in that case is
 deliberate — a broken rule must not stop a node dispatching — but the fallback
-used to be silent, so the dispatch record's ``section_routing`` read exactly as
-it does for a node carrying no raise at all. The two are different facts about
+must carry a failure, or ``section_routing`` reads exactly as it does for a node
+carrying no raise at all. The two are different facts about
 a run, and the second is the one a reader acts on: "this section has not earned
 a raise" is a decision, "the section's rule could not be read" is a defect to
 repair.
@@ -46,7 +46,7 @@ ABSENT_LANE = "absent-lane"
 
 AUTHORED = (
     '<h2 id="s5">§5 — The section under test</h2>\n'
-    "<p>Its record carries the attempts that earn a raise.</p>\n"
+    "<p>Prior executable runs earn its raise.</p>\n"
 )
 
 RULE = {
@@ -132,7 +132,7 @@ def _write_plan(directory: Path) -> Path:
                 "id": "s5",
                 "effort_hours": 1.0,
                 "capability": _capability(),
-                "attempts": 3,
+                "attempts": 0,
                 "status": "implementable",
                 "links": [],
             }
@@ -145,7 +145,7 @@ def _write_plan(directory: Path) -> Path:
 
 @pytest.fixture()
 def tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
-    """A mounted project whose committed plan carries the section under test."""
+    """A mounted project with prior executable runs for its section."""
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
@@ -166,6 +166,21 @@ def tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, Path]:
     (config_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(repo / "docs")}), encoding="utf-8"
     )
+    live = config_home / "crew" / "live"
+    live.mkdir(parents=True)
+    for index in range(3):
+        run_id = f"prior-attempt-{index}"
+        (live / f"{run_id}.json").write_text(
+            json.dumps(
+                {
+                    "run_id": run_id,
+                    "project": PROJECT,
+                    "role": "implement",
+                    "node": {"plan": SLUG, "section": SECTION},
+                }
+            ),
+            encoding="utf-8",
+        )
     return config_home, repo
 
 
