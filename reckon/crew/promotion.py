@@ -5530,14 +5530,11 @@ def complete(
             # rather than accepted as evidence about code the repair has
             # already moved past.
             resolved["promoted_revision"] = _run_promoted_revision(record, gate_commits)
-            review_tree = Path(str(record.get("worktree") or ""))
-            if not review_tree.is_dir():
-                review_tree = Path(str(record.get("repo") or ""))
             reviewed, stale_review_head = _review_for_promotion(
                 landing_project,
                 run_id,
                 promoted_revision=resolved["promoted_revision"],
-                tree=review_tree if review_tree.is_dir() else None,
+                tree=_record_tree(record),
             )
             resolved["reviewed"] = reviewed
             # The tier is computed before the gate reads it, from what the run
@@ -6780,6 +6777,25 @@ def _review_for_promotion(
     return review_module.ledger_block(stored), stale
 
 
+def _record_tree(record: Mapping[str, Any]) -> Path | None:
+    """The run's own checkout as this record names it, or None when it names none.
+
+    A record names its worktree first and its repository second, because a
+    released worktree is still readable through the repository that shares its
+    object store. An empty field is absent: built naively, ``Path("")`` is
+    ``Path(".")``, which is a directory, so a blank worktree field would resolve
+    a promotion's revision and a review's reconstructed head from whatever
+    repository the process happened to start in — a confident wrong answer
+    rather than a missing one. A record that names no existing directory
+    resolves no tree, and its reader reports the absence.
+    """
+    for key in ("worktree", "repo"):
+        value = str(record.get(key) or "").strip()
+        if value and (tree := Path(value)).is_dir():
+            return tree
+    return None
+
+
 def _run_promoted_revision(
     record: Mapping[str, Any], commit_list: Sequence[str]
 ) -> str:
@@ -6792,9 +6808,15 @@ def _run_promoted_revision(
     names the revision symbolically or in abbreviation still matches the full
     sha a review recorded reading, and the tip is selected by descent rather
     than by the position the citation was written in.
+
+    A record that names no readable tree resolves no revision, and the empty
+    string is returned: the revision a promotion asserts is a claim about the
+    run's own work, and the directory this promotion happens to run in cannot
+    make that claim.
     """
-    worktree = Path(str(record.get("worktree") or ""))
-    tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
+    tree = _record_tree(record)
+    if tree is None:
+        return ""
     return _promoted_revision(tree, commit_list)
 
 
