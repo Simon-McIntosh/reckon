@@ -1,1 +1,47 @@
-<article class="landed-report" id="a-scaffolding-failure-keeps-its-retry" data-run-id="r-20261004T101927148349-a-scaffolding-failure-keeps-its-retry"></article>
+<article class="landed-report" id="a-scaffolding-failure-keeps-its-retry" data-run-id="r-20261004T101927148349-a-scaffolding-failure-keeps-its-retry">
+  <h3>Scaffolding failures keep the retry available for the work</h3>
+  <p>
+    At base <code>3fa491432</code>, the worker's stop rule in
+    <code>reckon/crew/prompts.py:663-664</code> counted two failures of the same
+    command without asking whether either reached the code under test.
+    <code>reckon/crew/dispatch.py:7087</code> supplied the threshold. This fence
+    was an instruction in the composed brief, not a code-level counter.
+  </p>
+  <p>
+    Commit <code>9dab41148814765ebbbc2ce5b5879a06d8c7ebc8</code> makes the
+    brief require a <code>retry_failures</code> entry for each command failure
+    and a <code>failure_attribution</code> entry of
+    <code>"scaffolding: cause"</code> before excluding one. The exemption applies
+    only to a failure confined to the worker's own probe, measurement script or
+    helper when the code under test was never reached. A failure in that code,
+    or one with missing or unclear attribution, still consumes a retry.
+    The manifest reader in <code>reckon/crew/reports.py</code> applies the same
+    rule when it derives <code>retry_counted_failures</code>; an absent failure
+    record yields an unknown count rather than a clean zero.
+  </p>
+  <p>
+    <strong>Measure.</strong> In
+    <code>tests/test_scaffolding_failure_keeps_its_retry.py</code>, two marked
+    scaffolding failures count <strong>0</strong> and leave the two-failure fence
+    open; two unmarked failures count <strong>2</strong> and close it; one missing
+    attribution counts <strong>1</strong>. The composed-brief assertion checks
+    that a worker sees the exemption, the required cause and the default count.
+    The focused prompt and reader gate passed <strong>54 tests</strong>
+    (<code>smoke.log</code> in the run directory). The
+    negative control imported base <code>3fa491432</code> from a scratch tree:
+    all six new test cases failed, <code>EXIT=1</code>, because that brief had no
+    exemption and that manifest reader had no retry count
+    (<code>negative-control.log</code> in the same directory).
+  </p>
+  <p>
+    The importing-test population passed at base (1,201 passed, one skipped).
+    Two head runs had one and two failures respectively in dispatch and
+    supervisor tests outside this node's write scope; their ids and logs are
+    retained in the run manifest as follow-ons. The eight fragment element-id
+    collisions reported by <code>check-manifest</code> were also present at base;
+    this fragment introduces no colliding id. The
+    <code>launch_failures</code> hold in <code>reckon/crew/resumption.py</code>
+    blocks automatic lifting after a backend launch exits before a stream
+    record. It is a different fence and was left unchanged.
+  </p>
+</article>
