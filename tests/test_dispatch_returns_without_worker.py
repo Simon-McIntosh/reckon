@@ -39,6 +39,7 @@ import contextlib
 import importlib
 import json
 import os
+import select
 import shutil
 import signal
 import subprocess
@@ -292,6 +293,16 @@ if [ "$charge" = "1" ]; then
   here=$(pwd)
   printf '%s\\t%s\\t%s\\t%s\\n' "$PPID" "$(date +%s.%N)" "$here" "$*" \\
     >> "$RECKON_SHIM_LOG"
+  if [ -n "$RECKON_SHIM_SUPERVISOR_CPU" ]; then
+    parent=$(ps -o args= -p "$PPID")
+    case "$parent" in
+      *"__supervise__"*)
+        taskset -pc "$RECKON_SHIM_SUPERVISOR_CPU" "$PPID" \\
+          >> "$RECKON_SHIM_LOG.affinity" 2>&1
+        renice -n 15 -p "$PPID" >> "$RECKON_SHIM_LOG.affinity" 2>&1
+        ;;
+    esac
+  fi
   # A call run from under the scan root by a process that is not the dispatch
   # process is the boundary scan's: a fenced supervisor scans its own worktree
   # and the main checkout, while dispatch's own pre-return calls are made by the
@@ -1475,11 +1486,11 @@ def test_dispatch_returns_when_its_supervisor_finished_the_launch(
 ) -> None:
     """A supervisor that completed its launch is not read as a refusal.
 
-    No scan gate is armed, so the supervisor's two-tree scan completes at once,
-    spawns the stub worker, collects its exit and writes the completion exit
-    record -- all inside dispatch's survival window. Dispatch must return that
-    run rather than refuse it: a dispatch that launched a worker is never a
-    refusal, whatever the worker then did.
+    No scan gate is armed, so the supervisor can finish the stub worker's
+    launch during dispatch's survival check. Dispatch must return that run
+    rather than refuse it: a dispatch that launched a worker is never a
+    refusal, whatever the worker then did. Under scheduler pressure, the
+    completion record can arrive after dispatch returns.
     """
     marker_dir = tmp_path / "markers"
     marker_dir.mkdir()
@@ -1511,16 +1522,23 @@ def test_dispatch_returns_when_its_supervisor_finished_the_launch(
         assert output.get("pid"), (
             "the dispatch process named no supervisor for a launch that completed"
         )
-        # The supervisor's own receipt: its completion exit record names the
-        # worker it spawned, which is the record dispatch read as a launch. A
-        # launch that outran dispatch's survival window on a loaded host is
-        # still being written when dispatch returns, so the wait is bounded by
-        # a multiple of the launch dispatch itself measured.
-        launch_seconds = float(output.get("dispatch_seconds") or 0.0)
-        exit_record = _wait_for(
-            lambda: _load_json(run.run_directory() / "exit.json"),
-            timeout=max(EXIT_RECORD_BOUND, launch_seconds * DRIVER_EXIT_SLACK),
-        )
+        # The supervisor writes exit.json before it exits. Its pidfd becomes
+        # readable after that write, so wait for completion rather than for
+        # a duration inferred from the dispatch process's unrelated clock.
+        exit_record = _load_json(run.run_directory() / "exit.json")
+        if exit_record is None:
+            try:
+                supervisor_fd = os.pidfd_open(int(output["pid"]))
+            except ProcessLookupError:
+                pass  # The supervisor has already exited; inspect its receipt.
+            else:
+                try:
+                    completion = select.poll()
+                    completion.register(supervisor_fd, select.POLLIN)
+                    completion.poll()
+                finally:
+                    os.close(supervisor_fd)
+            exit_record = _load_json(run.run_directory() / "exit.json")
         outcome["exit_record"] = exit_record
         assert exit_record is not None and exit_record.get("worker_pid") is not None, (
             "the supervisor left no completion exit record naming its worker, so "
