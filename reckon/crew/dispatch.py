@@ -8040,9 +8040,9 @@ def _persisted_worker_environment(
 # there unattended leaves entries nothing owns and nothing removes. Each run is
 # therefore handed a private directory beneath a reckon-owned root, named for
 # its run id, and pointed at it by TMPDIR; promotion and discard remove that
-# directory, so what a run wrote there goes with the run. Only the directory
-# named for the run's own id is ever removed, so a sibling run's scratch is
-# never in reach.
+# directory. Release also removes direct siblings bearing that run's timestamp
+# stem, because worker-created basetemps may sit beside TMPDIR. Other run ids
+# remain outside the release's reach.
 WORKER_SCRATCH_ROOT_ENV = "RECKON_WORKER_SCRATCH_ROOT"
 WORKER_SCRATCH_ROOT_NAME = "reckon-crew-scratch"
 # The node's own tmp, pinned rather than taken from TMPDIR, the way the fleet
@@ -8164,7 +8164,7 @@ def remove_worker_scratch(
     recorded_path: str | os.PathLike[str] | None = None,
     budget_bytes: int | None = None,
 ) -> dict[str, Any]:
-    """Remove one run's scratch directory, printing what it removed.
+    """Remove a run's scratch directories, printing each path and size.
 
     The path removed is ``<scratch root>/<run id>``, or the ``recorded_path`` a
     dispatch recorded when it created the directory — which is accepted only
@@ -8175,11 +8175,10 @@ def remove_worker_scratch(
     removed. An absent directory is reported rather than raised: a run whose
     scratch was already reclaimed has nothing left to remove.
 
-    The directory's size is measured before it is deleted and reported as
-    ``scratch_bytes`` so the run's terminal row can carry it; a size above
-    ``budget_bytes`` adds a ``scratch_warning`` and prints it. The budget never
-    refuses the removal — it names the run that filled the disk, it does not
-    stop it.
+    Direct siblings whose names begin with the run's timestamp stem are also
+    removed. The size of each removed directory is retained in
+    ``scratch_removed_paths``, while ``scratch_bytes`` reports their sum. A
+    total above ``budget_bytes`` adds a warning but never refuses removal.
     """
     name = str(run_id or "").strip()
     attempted = (
@@ -8193,27 +8192,51 @@ def remove_worker_scratch(
         "scratch_path": str(path or attempted) if (path or attempted) else None,
         "scratch_withheld": reason,
         "scratch_bytes": None,
+        "scratch_removed_paths": [],
     }
-    if path is None:
+    if path is None and reason != "scratch directory is no longer present":
         return result
-    size = tree_size_bytes(path)
-    result["scratch_bytes"] = size
-    if budget_bytes is not None and size > budget_bytes:
-        result["scratch_warning"] = (
-            f"run scratch {path} is {size} bytes, above the {budget_bytes} byte budget"
+    targets = [path] if path is not None else []
+    # A worker may create siblings named for the timestamp stem instead of
+    # placing every temporary file below TMPDIR. That stem is unique to the
+    # run; only direct, real directories with the same stem are in its reach.
+    stem = re.match(r"^(r-\d{8}T\d{12})(?:-|$)", name)
+    root = worker_scratch_root()
+    if stem and root.is_dir():
+        targets.extend(
+            child
+            for child in root.iterdir()
+            if child != path
+            and child.name.startswith(stem.group(1))
+            and child.is_dir()
+            and not child.is_symlink()
         )
-        print(
-            f"warning: run scratch {path} is {size} bytes, "
+    if not targets:
+        return result
+    sizes = {target: tree_size_bytes(target) for target in targets}
+    result["scratch_bytes"] = sum(sizes.values())
+    if budget_bytes is not None and result["scratch_bytes"] > budget_bytes:
+        result["scratch_warning"] = (
+            f"run scratch for {name} is {result['scratch_bytes']} bytes, "
             f"above the {budget_bytes} byte budget"
         )
-    print(f"removing worker scratch directory {path} ({size} bytes)")
-    try:
-        shutil.rmtree(path)
-    except OSError as exc:
-        result["scratch_withheld"] = f"could not remove scratch directory — {exc}"
-        return result
-    result["scratch_removed"] = True
-    print(f"removed worker scratch directory {path}")
+        print(
+            f"warning: run scratch for {name} is {result['scratch_bytes']} bytes, "
+            f"above the {budget_bytes} byte budget"
+        )
+    failures = []
+    for target in targets:
+        size = sizes[target]
+        print(f"removing worker scratch directory {target} ({size} bytes)")
+        try:
+            shutil.rmtree(target)
+        except OSError as exc:
+            failures.append(f"{target}: {exc}")
+            continue
+        result["scratch_removed_paths"].append({"path": str(target), "bytes": size})
+        print(f"removed worker scratch directory {target}")
+    result["scratch_removed"] = not failures
+    result["scratch_withheld"] = "; ".join(failures)
     return result
 
 
