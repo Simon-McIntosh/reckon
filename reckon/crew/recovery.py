@@ -8013,9 +8013,23 @@ def classify_pointer(
                 "the worker manifest reports completion and an independent "
                 "parsed review is attached; the run is ready for promotion"
             )
-            action = f"reckon crew complete --run {run_id} --gate <verdict>"
-            for commit in _canonical_commits(_review_tree(record), manifest_commits):
-                action += f" --commit {commit}"
+            commits = _canonical_commits(_review_tree(record), manifest_commits)
+            base = str(record.get("base_sha") or "").strip()
+            if len(commits) == 1 and base and same_revision(commits[0], base):
+                # A run that changed nothing records its dispatch base as its
+                # only commit. Promotion refuses a citation of the base — the
+                # base predates the run — so the offer names the declaration
+                # a commitless run promotes under instead of the citation
+                # that reproduces the refusal.
+                action = (
+                    f"reckon crew complete --run {run_id} --gate not-run "
+                    "--no-commit '<why the run produced no commit>' "
+                    "--outcome '<what the run produced>'"
+                )
+            else:
+                action = f"reckon crew complete --run {run_id} --gate <verdict>"
+                for commit in commits:
+                    action += f" --commit {commit}"
         else:
             classification = "scoring"
             if review_error:
