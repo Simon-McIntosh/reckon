@@ -361,6 +361,7 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   checkpoint: <when you are recording progress and not setting status to waiting — any worker recording progress at any point, not only a resumed worker whose wait is met: one line recording where work stands and what comes next, so you leave a checkpoint rather than a wait block>
   commits: <sha list>
   changed_paths: <explicit list>
+  retry_failures: <failure ids for repeated runs of the same command, including unattributed failures; record each before applying the stop rule>
   landing: <exactly one line recording your landing record; promotion lands it as a comment on your plan section, so do not edit the plan>
   tests: <the gate command that actually ran, and its result — never a template command carrying an unsubstituted placeholder>
   test_logs: <paths on disk>. A gate log's first line names the revision it ran at, the tree, and the command; a gate or base-arm measurement run in a scratch tree also names on its header lines the absolute path of the module under test as imported (`module.__file__`) and the resolved working directory the run resolved from
@@ -370,7 +371,7 @@ MANIFEST (write exactly these keys; after reading the plan, observe path and rev
   negative_control_note: <where an explanation goes: one line of commentary on the red log named above, since that value stands alone; omit when the log is self-explanatory>
   baseline_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable; command is the literal command that ran, with absolute paths and no angle-bracket placeholder>
   after_suite: <armed-only JSON: revision, command, exit_status, log_path or log_digest, completed, failure_count, failure_ids; completed is true only when the suite ran to its summary line; false, null or absent is unreadable; command is the literal command that ran, with absolute paths and no angle-bracket placeholder>
-  failure_attribution: <armed-only, test role JSON {failure_id: candidate_commit} for each newly added failure>
+  failure_attribution: <inline JSON {failure_id: "scaffolding: cause"} only when your own probe, measurement script or helper failed before reaching code under test; armed test-role suite failures still map failure ids to candidate commits>
   artifacts: <paths plus headline metrics; a metric quoted from a gate log is that log's own summary line, so the record reconciles with the log it cites>
   evidence_inputs: <facts the orchestrator needs for writeback>
   follow_ons: <work you found but were fenced out of, or none>
@@ -395,8 +396,12 @@ IF YOU GET STUCK — stop and emit a report whose first line is
   options:       two or three concrete paths you can see
   leaning:       which one, and why
   cost-if-wrong: what must be redone if the wrong path is taken
-Stop on any of: the same command failed 2 times with
-different fixes attempted; a decision the plan does not settle is required;
+Stop on any of: the same command has 2 counted failures with
+different fixes attempted; count each retry_failures id unless its
+failure_attribution entry is "scaffolding: <cause>" and the failure stayed in
+your own probe, measurement script or helper without reaching code under test.
+Record the cause before excluding it. A missing or unclear attribution counts;
+a failure in code under test counts. A decision the plan does not settle is required;
 the necessary change exceeds your write scope; the evidence cannot be produced
 with the tools or data available; the time budget is spent with the measure
 still unmet. Asking costs one turn; thrashing costs the node.
