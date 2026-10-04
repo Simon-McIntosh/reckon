@@ -1,0 +1,54 @@
+<article class="landed-report" data-run-id="r-20261004T075625198055-a-closure-verdict-reads-each-section">
+  <h3>a-closure-verdict-reads-each-section &mdash; the closure verdict reads each section's final implementing run</h3>
+  <p>
+    The synthesized record's <code>plan-verdict</code> was the reading of the whole ledger:
+    <code>fail</code> as soon as any row carried a failed gate, <code>pass</code> only when every row
+    passed, <code>qualified</code> otherwise. Measured on
+    <code>the-obligations-hook-reads-a-snapshot</code>'s synthesized record &mdash; 54 rows, 20
+    passed, 32 not-run and 2 failed, both failures classified <code>pre-existing-failure</code> and
+    both merged &mdash; that reading reports <code>fail</code> for a plan whose every section landed,
+    and because a review records its gate as not-run by design, no reviewed plan could ever read
+    <code>pass</code>.
+  </p>
+  <p>
+    <strong>The repair reads the population a section attempt count uses.</strong>
+    <code>_overall_verdict</code> in <code>reckon/evidence.py</code> now keeps ledger rows of the
+    implement and test roles only, addresses each by
+    <code>reckon.crew.routing.section_record_id</code> &mdash; the same role filter and section
+    identity the section attempt count derives &mdash; lets each section's latest run decide
+    (ordered by completion, then run id, as the record's own run tables are), and reports the worst
+    reading across sections: <code>pass</code>; <code>qualified</code> for a not-run gate or a
+    failure classified <code>pre-existing-failure</code>; <code>fail</code> for a failure with any
+    other cause, a missing classification included. A failure a later pass repaired no longer holds
+    its section, and a section whose latest run produced no gate evidence qualifies rather than
+    fails.
+  </p>
+  <p>
+    <strong>Gate.</strong> The temporary-repository tests in
+    <code>tests/test_closure_verdict.py</code> synthesize a record three times and read its
+    <code>plan-verdict</code> meta: a repaired failure alongside a failure classified
+    <code>pre-existing-failure</code> reads <code>qualified</code>; the same repaired failure with
+    the second failure reclassified reads <code>fail</code>; an all-passing plan carrying a review
+    and an investigation reads <code>pass</code>. Population gate: every test file importing
+    <code>reckon.evidence</code> (7 files at base, the new file added at head). Base
+    <code>657e199ba</code> 40 passed; head <code>9ead97121</code> 43 passed; 0 failed in either arm,
+    so the population adds no failure against base. Both arms ran in the worktree with its own
+    module (<code>module.__file__</code> and the resolved working directory are on each log's
+    header).
+  </p>
+  <p>
+    <strong>Negative control.</strong> Declared: the whole-ledger reading gives <code>fail</code> on
+    the first fixture and <code>qualified</code> on the third, so the new test fails at base.
+    Applied at <code>657e199ba</code>: 2 failed, 1 passed, EXIT=1 &mdash;
+    <code>assert 'fail' == 'qualified'</code> on the repaired-failure fixture and
+    <code>assert 'qualified' == 'pass'</code> on the all-passing one; the two ids, the first and
+    third cases, are neither of them failed at head. Log: <code>negative-control.log</code>.
+  </p>
+  <p>
+    <strong>Landing note.</strong> Carried by <code>reckon/evidence.py</code> at
+    <code>9ead97121de7f302c97bc81ef780cf254f2e3a4a</code> (<code>_VERDICT_ROLES</code>,
+    <code>_run_verdict</code>, the rewritten <code>_overall_verdict</code>) and
+    <code>tests/test_closure_verdict.py</code>. The record's run tables, summary and every other
+    meta are unchanged, so a re-synthesis of a reviewed plan moves only its verdict.
+  </p>
+</article>
