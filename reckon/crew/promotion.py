@@ -4455,25 +4455,23 @@ def _promotion_terminal_observation(
 def _recoverable_session(record: Mapping[str, Any]) -> dict[str, str] | None:
     """The session a resume could still continue, and where it was found.
 
-    Two sources, and the second is the load-bearing one: a pointer carrying no
-    session id is not evidence of an unresumable run, because a resume that
-    finds none on the record re-reads the run's stream for it. Reading only the
-    pointer is what makes a recoverable run look dead.
-
-    An unreadable stream answers nothing rather than raising here: this runs
-    before the irreversible half of a promotion, and an instrument that fails
-    must not become a refusal of its own.
+    The shared resolution consults the pointer, stream and promoted ledger.
+    A pointer carrying no id cannot establish that the run is unresumable.
     """
-    pointer_session = str(record.get("session_id") or "").strip()
-    if pointer_session:
-        return {"session_id": pointer_session, "source": "pointer"}
-    try:
-        stream_session = str(_terminal_stream_data(record).session_id or "").strip()
-    except (CrewError, OSError):
+    from reckon.crew.resumption import resolve_session
+
+    resolution = resolve_session(
+        str(record.get("run_id") or ""),
+        record=record,
+        project=str(record.get("project") or ""),
+        root=record.get("repo"),
+    )
+    if not resolution["resolved"]:
         return None
-    if stream_session:
-        return {"session_id": stream_session, "source": "stream"}
-    return None
+    return {
+        "session_id": str(resolution["session_id"]),
+        "source": str(resolution["source"]),
+    }
 
 
 def _require_resume_waiver(
@@ -7855,7 +7853,14 @@ def _complete_locked(
     manifest = landing["manifest"]
     negative_control = landing["negative_control"]
 
-    session_id = record.get("session_id") or stream.session_id
+    from reckon.crew.resumption import resolve_session
+
+    session_id = resolve_session(
+        run_id,
+        record=record,
+        project=str(record.get("project") or ""),
+        root=record.get("repo"),
+    )["session_id"]
     lane_receipt = _harvest_lane_receipt(
         record,
         session_id=session_id,

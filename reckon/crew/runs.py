@@ -82,9 +82,17 @@ def capture_run_session(record: dict[str, Any]) -> dict[str, Any] | None:
     The caller persists the pointer under its lock. Promotion copies session
     ownership from the run into explicit fields on the committed row.
     """
-    session_id = str(record.get("session_id") or "").strip()
+    from reckon.crew.resumption import resolve_session
+
+    session_id = str(
+        resolve_session(str(record.get("run_id") or ""), record=record).get(
+            "session_id"
+        )
+        or ""
+    ).strip()
     if not session_id:
         return None
+    record["session_id"] = session_id
     agent = record.get("agent") or {}
     harness = str(record.get("dialect") or agent.get("dialect") or "").strip()
     record["session_harness"] = harness or None
