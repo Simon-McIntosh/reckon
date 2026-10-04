@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="330">
+<meta name="plan-version" content="331">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -2300,6 +2300,9 @@
 </div>
 <div class="r-comment" data-section="s57" data-id="c-20261004-s57-landed" data-who="s22-coord" data-when="2026-10-04T16:45:00Z">
     <div class="r-comment-body"><p><strong>Landed at merge 569b07121.</strong> Promotion of a run whose gate passed removes the arms, basetemps and control trees its manifest declares in the structured fields that carry them: <code>test_logs</code>, <code>negative_control_log</code>, the suite records' log and <code>--basetemp</code>, and the declared paths of <code>artifacts</code>. It copies their declared logs into the run directory first, and records removals, kept paths and copies on the release. Removal stays within the node-local temp root and skips any path another live run cites. The coordinator sent the worker back twice for safety. First, the initial head treated any absolute path in the manifest's prose as an owned arm, and it cleared arms on failed and blocked gates too. Second, the corrected head still read <code>artifacts</code> descriptions rather than their declared path keys. Measured at a stacked merge of main 0513a121e over 60 importer files: 530 passed at both arms. That population missed the new test file, which imports <code>reckon.crew</code>, so a focused gate at the merged head covered it: 80 passed, exit 0. Reviews scored 93 and 94. reckon-f7's orphan-scratch sweep and <code>/tmp</code>-headroom refusal (4c86e0ccf) are the backstop.</p></div>
+</div>
+<div class="r-comment" data-section="s58" data-id="c-run-r-20261004T193431195864-the-reap-test-asks-about-its-own-children" data-who="reckon-build" data-when="2026-10-04T19:53:56.645Z">
+    <div class="r-comment-body"><p>Landed on tests/test_resume_reaps_its_child.py at 9d486d3db: _no_defunct_launched_child waits on each pid the case launched instead of os.waitpid(-1), so an exited, unreaped child another case on the same xdist worker left behind is neither reaped nor reported; the new paired case leaves such a corpse of its own in the process and the reap case beside it still passes (gate: 20 of 20 runs green at -n 8, 6 passed each); the defunct-launcher control arm reddens the four reap cases (4 failed, 2 passed); restoring waitpid(-1) in the helper reddens the paired case (1 failed, 5 passed, EXIT=1)</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
