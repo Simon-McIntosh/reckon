@@ -24,6 +24,7 @@ from reckon.crew import lane_document as lane_document_module
 from reckon.crew import rollout as rollout_module
 from reckon.crew import staleness as staleness_module
 from reckon.doccheck import lifecycle_staleness, modified_age_days
+from reckon.evidence import EXECUTABLE_SECTION_ROLES
 from reckon.lifecycle import (
     COMPLETED_STATUSES,
     TERMINAL_STATUSES,
@@ -1602,7 +1603,10 @@ def _group_section_attempts(
     observed: dict[str, tuple[str, str, dict[str, Any]]] = {}
     settled_ids = set(settled_run_ids or ())
     for row in history_rows:
-        if not isinstance(row, Mapping) or row.get("role") not in {"implement", "test"}:
+        if (
+            not isinstance(row, Mapping)
+            or row.get("role") not in EXECUTABLE_SECTION_ROLES
+        ):
             continue
         run_id = str(row.get("run_id") or "")
         plan = str(row.get("plan") or "")
@@ -1640,7 +1644,7 @@ def _group_section_attempts(
         if (
             not isinstance(pointer, Mapping)
             or pointer.get("project") != project
-            or pointer.get("role") not in {"implement", "test"}
+            or pointer.get("role") not in EXECUTABLE_SECTION_ROLES
         ):
             continue
         run_id = str(pointer.get("run_id") or "")
@@ -1714,14 +1718,16 @@ def _section_attempt_count_uncached(
         for row in header_rows
         if isinstance(row, Mapping) and row.get("run_id")
     }
+    roles = tuple(sorted(EXECUTABLE_SECTION_ROLES))
+    role_slots = ", ".join("?" for _ in roles)
     query = (
-        "SELECT payload FROM aggregate_rows "
+        "SELECT payload FROM aggregate_rows "  # noqa: S608 - role values are bound
         "WHERE json_extract(payload, '$.plan') = ? "
-        "AND json_extract(payload, '$.role') IN ('implement', 'test') "
+        f"AND json_extract(payload, '$.role') IN ({role_slots}) "
         "UNION ALL SELECT payload FROM records "
         "WHERE name NOT IN (SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL) "
         "AND json_extract(payload, '$.plan') = ? "
-        "AND json_extract(payload, '$.role') IN ('implement', 'test')"
+        f"AND json_extract(payload, '$.role') IN ({role_slots})"
     )
     if any(isinstance(row, Mapping) and set(row) - {"run_id"} for row in header_rows):
         # An unreadable index makes indexed_headers return authoritative full rows.
@@ -1730,7 +1736,7 @@ def _section_attempt_count_uncached(
             for row in header_rows
             if isinstance(row, Mapping)
             and row.get("plan") == plan
-            and row.get("role") in {"implement", "test"}
+            and row.get("role") in EXECUTABLE_SECTION_ROLES
         ]
     else:
         try:
@@ -1738,7 +1744,9 @@ def _section_attempt_count_uncached(
             with closing(sqlite3.connect(index_uri, uri=True)) as connection:
                 rows = [
                     json.loads(payload)
-                    for (payload,) in connection.execute(query, (plan, plan))
+                    for (payload,) in connection.execute(
+                        query, (plan, *roles, plan, *roles)
+                    )
                 ]
         except (OSError, sqlite3.Error):
             return (
