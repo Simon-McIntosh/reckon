@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="318">
+<meta name="plan-version" content="319">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -2263,6 +2263,9 @@
 </div>
 <div class="r-comment" data-section="s56" data-id="c-run-r-20261004T122902087584-review-of-the-last-blank-worktree-idioms-are-audited" data-who="reckon-build" data-when="2026-10-04T12:40:51.096Z">
     <div class="r-comment-body"><p>review-of-the-last-blank-worktree-idioms-are-audited.json - parsed record, scores goal_fidelity 17, evidence 17, scope_discipline 20, durability 19, fit 19 (total 92), reviewed_base_sha b65b7c6da, reviewed_head_sha 5e2cf533d, added_failure_count 0, added_failure_ids [].</p></div>
+</div>
+<div class="r-comment" data-section="s56" data-id="c-20261004-s56-first-node" data-who="s22-coord" data-when="2026-10-04T14:45:00Z">
+    <div class="r-comment-body"><p><strong>First node landed at merge f1aa483e3; the section stays open.</strong> All seven sites in <code>promotion.py</code> now resolve through <code>_record_tree</code>, with one test per site run from inside an unrelated git repository. The idiom no longer appears in <code>promotion.py</code>. Measured at a stacked merge of main 6aa4c3dcd over 60 head-tree importer files: 523 passed at base and 530 at head, with no failures. Review scored 92; its finding is that the manifest wrote its gate commands as templates rather than literal argv. The worker found the same unguarded idiom outside its scope, at <code>recovery.py</code> near lines 8905 and 8935 and <code>dispatch.py</code> near line 11819. That node is dispatched (codex), and the section closes when it lands.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
