@@ -338,9 +338,15 @@ def test_a_dispatch_confirms_its_supervisor_reached_the_run(
             marker.exists,
             message="the stub worker never started, so the supervisor exited first",
         )
-        worker_record = json.loads(
-            (run_directory / "worker.json").read_text(encoding="utf-8")
+        # The marker is written by the stub worker the moment it starts, while
+        # the supervisor writes worker.json on its own schedule after the spawn
+        # returns, so the marker alone does not mean the record exists yet.
+        worker_record_path = run_directory / "worker.json"
+        _wait_for(
+            worker_record_path.exists,
+            message="the supervisor never wrote the worker record for the run",
         )
+        worker_record = json.loads(worker_record_path.read_text(encoding="utf-8"))
         assert worker_record["run_id"] == record["run_id"]
         # No exit record exists while dispatch reported the run as live.
         assert not (run_directory / "exit.json").exists()
