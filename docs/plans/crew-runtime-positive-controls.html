@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="327">
+<meta name="plan-version" content="328">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -2277,7 +2277,10 @@
     <div class="r-comment-body"><p><strong>Second node landed at merge eca5a833f.</strong> The two <code>recovery.py</code> sites and the one <code>dispatch.py</code> site treat a blank worktree field as absent, each tested from inside an unrelated git repository. The codex worker's own population timed out twice under load near 50, so the coordinator measured 300 head-tree importer files at a stacked merge of main 851bc423d. That run added no failure; the base arm's extra failure was the known load-sensitive discard test. Because main had since gained a peer's <code>/tmp</code>-headroom change in <code>dispatch.py</code>, a focused gate at the merged head covered both nodes' tests: 113 passed. The worker's control log had no readable head arm, so the coordinator ran the new test file against main 56eb74637: all three cases fail there with exit 1. Review scored 92. Two items keep the section open: the instance at <code>promotion.py</code> near line 3114, which needs §57's hold on <code>promotion.py</code> released first, and this node's missing evidence fragment.</p></div>
 </div>
 <div class="r-comment" data-section="s56" data-id="c-run-r-20261004T164302766633-the-last-blank-worktree-idiom-in-promotion" data-who="reckon-build" data-when="2026-10-04T17:51:28.063Z">
-    <div class="r-comment-body"><p>Resolved the last unguarded blank-worktree idiom in reckon/crew/promotion.py: the boundary scan&#x27;s peer-grant loop now reads each live pointer&#x27;s tree through _record_worktree, so a blank worktree field donates no grants to the directory the promotion started in; the new test fails at base (1 failed, EXIT=1) and passes at head, and the 60-file population importing reckon.crew.promotion adds no failure</p></div>
+    <div class="r-comment-body"><p>Resolved the last unguarded blank-worktree idiom in reckon/crew/promotion.py: the boundary scan's peer-grant loop now reads each live pointer's tree through _record_worktree, so a blank worktree field donates no grants to the directory the promotion started in; the new test fails at base (1 failed, EXIT=1) and passes at head, and the 60-file population importing reckon.crew.promotion adds no failure</p></div>
+</div>
+<div class="r-comment" data-section="s56" data-id="c-run-r-20261004T175158819101-review-of-the-last-blank-worktree-idiom-in-promotion" data-who="reckon-build" data-when="2026-10-04T17:56:38.588Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261004T164302766633-the-last-blank-worktree-idiom-in-promotion (plan reckon:crew-runtime-positive-controls §56): parsed record scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 19, fit 19 (total 95), reviewed_base_sha c1c3157f4c97140f2990555646e75b49a6217b60, reviewed_head_sha b61bab3dbb2b710efe01fb0cee4d6af697968267, added_failure_count 0, added_failure_ids [].</p></div>
 </div>
 <div class="r-comment" data-section="s57" data-id="c-run-r-20261004T134433137439-review-of-a-passing-run-clears-every-arm-it-cited" data-who="reckon-build" data-when="2026-10-04T13:51:45.681Z">
     <div class="r-comment-body"><p>independent review attached to run r-20261004T124204915477-a-passing-run-clears-every-arm-it-cited, scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 19, fit 18 (total 93), reviewed base 6a04552fda5ac51df83f38b37a13ca2658236f79 to head 675ef337f6fefaba954d607f39e774a4b5651787, with added_failure_count 1 and three follow-on findings and no blocking finding; records at the two review paths</p></div>
