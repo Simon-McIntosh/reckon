@@ -1112,6 +1112,37 @@ NOISE_PAIRS: dict[tuple[Any, Any], tuple[tuple[str, str], float]] = {
 # the reader the run left, and this side only closes it.
 NOISE_RESOLUTIONS = frozenset(resolution for resolution, _ in NOISE_PAIRS.values())
 
+# ── The arrival hold ─────────────────────────────────────────────────────────
+#
+# A launch opens the pane with an arrival row and then, within the same minute,
+# the run's first transition out of ``dispatched``. The arrival says nothing the
+# dispatch payload did not already carry — every run opens with it — so the pair
+# costs the pane two rows where one suffices. The arrival is held like a noise
+# opener, but its pair collapses to the transitioning row rather than to
+# nothing: the resolving row already reads ``dispatched -> <state>``, so keeping
+# it prints one row where the launch printed two. The window is the same grace
+# the launch flicker gets: an arrival that has not moved by its end prints late,
+# because a run still sitting in ``dispatched`` is a duty the pane must show.
+ARRIVAL_KIND: tuple[Any, Any] = (None, "dispatched")
+# The state an arrival opens from. A resolution is any row whose left side is
+# this and whose destination is anything else; a rewrite that repeats it is not
+# a move out and leaves the hold standing.
+ARRIVAL_STATE = "dispatched"
+ARRIVAL_WINDOW = 90.0
+
+
+def _arrival_resolution(event: Mapping[str, Any]) -> Mapping[str, Any]:
+    """A resolving row rewritten to carry the arrival's own left side.
+
+    When the arrival's hold passes to the run's first transition and a held
+    flicker then resolves, the row that prints is that resolution wearing the
+    arrival's left side, so the launch reads ``dispatched -> <state>`` rather
+    than the flicker's ``abandoned -> <state>``.
+    """
+    resolved = dict(event)
+    resolved["from_state"] = ARRIVAL_STATE
+    return resolved
+
 
 def transition_class(from_state: Any, to_state: Any) -> str:
     """Whether a transition is a coordinator duty, observer context or a counter.
@@ -1139,10 +1170,13 @@ class RowPolicy:
 
     def __init__(self) -> None:
         self._reported: dict[str, str] = {}
-        # run_id -> (deadline, opener event). A run carries one opener at most:
-        # a second hold for the same run is a different kind of noise, and the
-        # first opener is released before the second is considered.
-        self._held: dict[str, tuple[float, Mapping[str, Any]]] = {}
+        # run_id -> (deadline, opener event, carries_arrival). A run carries one
+        # opener at most: a second hold for the same run is a different kind of
+        # noise, and the first opener is released before the second is
+        # considered. ``carries_arrival`` marks a hold the pane's arrival placed
+        # or passed on, so the one row it finally prints names ``dispatched`` on
+        # its left however many hops the hold took.
+        self._held: dict[str, tuple[float, Mapping[str, Any], bool]] = {}
 
     def seed(self, run_id: str, state: str) -> None:
         """Remember a state the pane already shows, before this pane's first row.
@@ -1158,9 +1192,9 @@ class RowPolicy:
     def _release_expired(self, now: float, out: list[Mapping[str, Any]]) -> None:
         """Print every opener whose hold window has passed uncompleted."""
         for run_id in [
-            run_id for run_id, (deadline, _) in self._held.items() if deadline <= now
+            run_id for run_id, (deadline, _, _) in self._held.items() if deadline <= now
         ]:
-            _, opener = self._held.pop(run_id)
+            _, opener, _ = self._held.pop(run_id)
             out.append(opener)
 
     def feed(self, event: Mapping[str, Any], *, now: float) -> list[Mapping[str, Any]]:
@@ -1179,15 +1213,53 @@ class RowPolicy:
         held = self._held.pop(run_id, None) if run_id else None
         if held is not None:
             opener = held[1]
+            carries_arrival = held[2]
             opener_kind = (opener.get("from_state"), opener.get("to_state"))
-            if kind == NOISE_PAIRS.get(opener_kind, ((None, None), 0.0))[0]:
-                # The pair completed inside the window: both sides are noise.
+            resolution = NOISE_PAIRS.get(opener_kind)
+            if resolution is not None and kind == resolution[0]:
+                # The pair completed inside the window: both sides are the noise
+                # the hold exists to drop. An arrival whose hold rode this pair
+                # prints the resolution once, wearing the arrival's left side,
+                # so a launch is one row whatever the flicker did in between.
                 if run_id:
                     self._reported[run_id] = to_state
+                if carries_arrival and run_id:
+                    out.append(_arrival_resolution(event))
                 return out
-            # The pair did not complete, so the opener was a real event after
-            # all; it prints late, and this row is handled on its own account.
-            out.append(opener)
+            if opener_kind == ARRIVAL_KIND:
+                if kind == ARRIVAL_KIND:
+                    # A second arrival — a re-arm re-deriving the baseline — is
+                    # not a move out, so the hold stands and the launch still
+                    # collapses to its first transition rather than printing an
+                    # extra arrival on the way.
+                    self._held[run_id] = held
+                    return out
+                if from_state == ARRIVAL_STATE and to_state != ARRIVAL_STATE:
+                    # A transition out of dispatched resolves the arrival. When
+                    # that transition is itself a held opener, the hold passes
+                    # to it; otherwise it prints, carrying the arrival's own
+                    # left side, and the two rows collapse to this one.
+                    if kind in NOISE_PAIRS:
+                        self._held[run_id] = (now + NOISE_PAIRS[kind][1], event, True)
+                        return out
+                    if run_id:
+                        self._reported[run_id] = to_state
+                    out.append(event)
+                    return out
+                if from_state is not None and from_state == to_state:
+                    # A rewrite that repeats dispatched is not a move out, so
+                    # the arrival keeps its hold and the counter moves alone.
+                    self._held[run_id] = held
+                    if run_id:
+                        self._reported[run_id] = to_state
+                    return out
+                # The run moved without a dispatched left side: the arrival is
+                # stale, so it prints late and this row is handled below.
+                out.append(opener)
+            else:
+                # The pair did not complete, so the opener was a real event
+                # after all; it prints late, handled on this row's own account.
+                out.append(opener)
 
         # A same-state rewrite carries no transition, so it moves the counter
         # block alone and never prints a row.
@@ -1209,9 +1281,15 @@ class RowPolicy:
         ):
             return out
 
+        if run_id and kind == ARRIVAL_KIND:
+            # The run's first sighting in dispatched: held so its own row and
+            # the transition out of dispatched print as one.
+            self._held[run_id] = (now + ARRIVAL_WINDOW, event, True)
+            return out
+
         if run_id and kind in NOISE_PAIRS:
             _, window = NOISE_PAIRS[kind]
-            self._held[run_id] = (now + window, event)
+            self._held[run_id] = (now + window, event, False)
             return out
 
         if kind in NOISE_RESOLUTIONS:
