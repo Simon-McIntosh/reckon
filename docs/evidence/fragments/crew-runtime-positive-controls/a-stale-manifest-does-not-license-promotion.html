@@ -37,7 +37,7 @@
     <p>A third review measured that <code>tests/test_complete_refuses_a_live_run.py::test_a_live_run_with_no_manifest_is_left_to_recovery</code> fails at head: it asserted that a live process with no manifest states no status and is therefore left to recovery, which is the admission the guard no longer grants. The coordinator's decision is that the old contract changes, for the reason the file's own docstring gives: promotion deletes the live pointer, so the worker is orphaned whether or not a manifest exists, and <em>states no status</em> was never a reason promotion is safe.</p>
     <p>The case is rewritten under a name that says what it holds &mdash; <code>test_a_live_run_with_no_manifest_is_refused_unless_the_waiver_is_given</code> &mdash; and asserts both halves: with no waiver the refusal names the recorded pid and the absent manifest and leaves the pointer and the ledger untouched, and with <code>live_run_waiver</code> the run promotes with the waiver's reason, pid and empty status riding the stored row. The module docstring now states the conjunction the guard actually applies: <em>the recorded process is alive and no manifest written for this attempt states a terminal status</em>. The file's other five cases are unchanged; all six pass (<code>logs/live-run-contract-test-at-head.log</code>).</p>
   </section>
-  <section id="measure">
+  <section id="a-stale-manifest-does-not-license-promotion-measure">
     <h2>The measure</h2>
     <p>The gate population is derived from callers, not imports, because a file can reach the guard through the public API without importing the module that holds it. It is every file under <code>tests/</code> that calls <code>complete(</code> through any path (52 at base), unioned with every test module importing <code>reckon.crew.promotion</code> (36) plus <code>tests/test_ledger.py</code> and <code>tests/test_a_live_worker_still_owes_its_review.py</code> &mdash; 69 files, all of which exist at base, so both arms run the same list.</p>
     <ul>
@@ -51,12 +51,12 @@
     </ul>
     <p>Each arm and each control reads the tree it names: every log's header records its revision, tree, literal command and the imported <code>module.__file__</code>, and <code>promotion.py</code> resolved to the scratch tree for the base arm and for both controls, and to this worktree for the head arm. The marker that tells them apart is source-contiguous (<code>manifest is None or status not in TERMINAL_MANIFEST_STATUSES or superseded</code>), read 0 at base and 1 at head.</p>
   </section>
-  <section id="outside-the-delta">
+  <section id="a-stale-manifest-does-not-license-promotion-outside-the-delta">
     <h2>The failures neither arm attributes to this change</h2>
     <p>The base arm fails 15 ids, all of them also failing at head: 11 in <code>tests/test_crew.py</code>, 3 in <code>tests/test_lane_advisory_on_dispatch.py</code>, 1 in <code>tests/test_dispatch_returns_without_worker.py</code>. They are in files the caller-derived population newly includes, they are red before this node's change as well as after it, and none is claimed as a delta. <code>tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs</code> was already recorded as pre-existing in the earlier, smaller population.</p>
     <p>One id appeared in a single earlier head run and not again: <code>tests/test_crew_launch_failure.py::test_a_worker_that_ends_by_signal_records_that_signal_on_its_run</code>, a 15&nbsp;s wait-status poll, passed in three isolated re-runs (<code>logs/head-signalled-worker-recheck-1.log</code> &hellip; <code>-3.log</code>) and is preserved as <code>logs/head-suite-flaky-run.log</code>.</p>
   </section>
-  <section id="landing">
+  <section id="a-stale-manifest-does-not-license-promotion-landing">
     <h2>What landed, and what it waits on</h2>
     <p>Nine commits on top of base <code>cf729cc7d</code>: the guard and its first case, the fragment, the repair the review asked for, the fragment updated with the fallout, the waiver reason the plumbing fixtures now carry, the fragment and figure for the landed measure, the contract change above, and the waiver for the fixture the caller-derived population found. <code>reckon/crew/promotion.py</code> is shared with the concurrent node <em>stream-enumeration-reuses-metering</em>, which touches other regions of it, so the merged head needs its own gate run. The node records <code>complete</code>: the head arm over the 69-file population adds no failing id, and the 15 ids both arms carry are red at base as well.</p>
   </section>

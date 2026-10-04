@@ -19,7 +19,7 @@
   <h1>The fleet supervisor's tests start nothing real &mdash; evidence</h1>
   <p><code>tests/test_fleet_supervisor.py</code> started every service named by <code>&lt;config home&gt;/fleet/services.json</code>, and each case's reader resolved that path in the operator's real config home, so the file's own suite launched the operator's declared services &mdash; as own-session children &mdash; and nothing stopped them. A reader had no stop path at all: the file exercised <code>session</code>, <code>reload</code> and <code>spawn</code> requests, none of which ends the services a reader started. Two changes close both halves: an autouse fixture pins <code>XDG_CONFIG_HOME</code> into each case's temporary directory, and a <code>stop</code> request stops every declared service the reader started. There is no figure here because the measurement is a list of pids and a set of test ids, which a table carries better than a plot; the node's done-when names no artifact.</p>
 
-  <section id="defect">
+  <section id="fleet-supervisor-tests-start-nothing-real-defect">
     <h2>The defect, reproduced before it was repaired</h2>
     <p>The base arm ran <code>tests/test_fleet_supervisor.py</code> with its three companion files over a <code>git archive</code> of the base revision <code>53b5172bc</code>: <strong>59 passed in 12.62s, EXIT=0</strong> &mdash; green, and leaving 24 processes behind. Twelve cases of the file start a reader, and every reader started both services the operator's config declares, so each is one row of the enumeration that follows. A row quoted from <code>logs/base-arm-survivors.txt</code>, read from that process's own <code>/proc/&lt;pid&gt;/environ</code>:</p>
     <pre><code>pid=3398244 RECKON_HOME=.../basetemp-base/popen-gw1/reckon-home0 \
@@ -33,7 +33,7 @@
     <p>Survivors are found by reading each of this user's <code>/proc/&lt;pid&gt;/environ</code> files and matching the <code>RECKON_HOME</code> the case handed the reader &mdash; never by a command-line pattern, which would match the search itself and would miss a service whose argv is whatever the config declared. The base-arm scan was first shown seeing a known-present process (a probe carrying a scratch <code>RECKON_HOME</code>, <code>count=1</code>), then run against the arm's own basetemp, where it found the 24. The head-arm scan repeats that control on its own prefix: the probe appears as <code>pid=3424756 ... cmdline=sleep 25, count=1</code>, then <code>count=0</code> before and after it is reaped.</p>
   </section>
 
-  <section id="arms">
+  <section id="fleet-supervisor-tests-start-nothing-real-arms">
     <h2>The two arms</h2>
     <ul>
       <li><strong>Base</strong> (<code>logs/base-arm.log</code>, revision <code>53b5172bc154af05c3e1a99443f0ce70e8b2037d</code>, module resolved from the extracted tree): 59 passed, 0 failed, <code>EXIT=0</code>; survivors 24, enumerated and reaped as above. No failing id to compare against.</li>
@@ -42,7 +42,7 @@
     <p>Both arms ran the same four files under <code>-n 8 --timeout=300</code>, never serially, each with its own basetemp outside every repository, each log carrying its revision on line one and a bare <code>EXIT=</code> record last. The stop half is visible in the head arm's own evidence: the new case waits until the reader has started the stub, then stops the reader, then requires that nothing carrying the case's <code>RECKON_HOME</code> remains &mdash; and the same scan over the whole head basetemp afterwards reads zero.</p>
   </section>
 
-  <section id="control">
+  <section id="fleet-supervisor-tests-start-nothing-real-control">
     <h2>The negative control</h2>
     <p>The declared mutation is <em>&ldquo;With the services-file isolation removed from the fixture, the stub-service case in tests/test_fleet_supervisor.py finds a surviving process carrying the test's RECKON_HOME and fails.&rdquo;</em> It was applied in two variants, both under <code>HOME</code> pinned to a scratch directory so the operator's real config could not be reached, and both logs are kept at <code>logs/negative-control.log</code>.</p>
     <ul>
@@ -57,7 +57,7 @@
     <p><code>ruff check</code> and <code>ruff format --check</code> over the two changed Python paths report all checks passed and both files formatted, at the base revision and at the head, so the change adds no finding the base did not carry.</p>
   </section>
 
-  <section id="scope">
+  <section id="fleet-supervisor-tests-start-nothing-real-scope">
     <h2>What this measure is not</h2>
     <p>This is the change on its own tree. Nothing here says the merged result holds beside the other nodes of the section, and no case outside this node's files was run for it. The operator's real services file was read by the base arm (that is the defect) and never written by any run recorded here.</p>
   </section>

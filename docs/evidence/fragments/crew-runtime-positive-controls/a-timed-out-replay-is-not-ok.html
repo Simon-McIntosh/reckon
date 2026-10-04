@@ -19,19 +19,19 @@
   <h1>A timed-out replay is not ok &mdash; evidence</h1>
   <p>A <code>reckon crew verify-gate</code> replay that outlives its bound measures nothing, and the report it returned did not say so in the field a caller reads first. <code>rerun_gate_at_integrated_revision</code> in <code>reckon/crew/promotion.py</code> built a report carrying <code>ran: true</code>, <code>timed_out: true</code> and <code>exit_status: null</code>, and the CLI publishes that payload as <code>{"ok": True, **result}</code>, so with no <code>ok</code> key in the result the JSON read <code>"ok": true</code> beside a null status. Its replay log stopped after the three header lines, which reads the same way as a gate that ran and printed nothing.</p>
 
-  <section id="reproduction">
+  <section id="a-timed-out-replay-is-not-ok-reproduction">
     <h2>The reproduction, at the base revision</h2>
     <p>A replay against a scratch checkout with the stored gate replaced by <code>sleep 300</code> under a 1&nbsp;s bound, driven directly at <code>9443e674ade1ae410b7e31da46c1c00058658af2</code>: the report carried no <code>ok</code> key at all, <code>exit_status</code> null, <code>integrated_verdict</code> <code>not-run</code>, and the log on disk held exactly its three header lines and no <code>EXIT=</code> record. The CLI merge then yields <code>ok: true</code> on a replay that was stopped by its bound.</p>
     <p><strong>One recorded detail does not reproduce at this revision, and it is reported rather than assumed.</strong> The section records the measured payload as having <code>finding: null</code> too. At the base revision of this node a timed-out replay already produced a finding naming the bound &mdash; the negative-control log below shows it &mdash; so the null finding was not reproduced here. The two facts this node repairs are the <code>ok</code> field and the silent log, and both reproduce.</p>
   </section>
 
-  <section id="change">
+  <section id="a-timed-out-replay-is-not-ok-change">
     <h2>The change</h2>
     <p><code>reckon/crew/promotion.py</code> changes 78 added and 12 deleted lines, most of them the docstring and comment text stating the rule. <code>rerun_gate_at_integrated_revision</code> now measures the re-run's wall time around the subprocess call and sets <code>ok</code> from what came back: true only when an exit status was produced. A replay stopped by the bound returns <code>ok: false</code>, carries <code>timed_out</code> and <code>replay_elapsed_seconds</code>, and its finding &mdash; already produced because a base-green gate the merged tree does not re-confirm is a divergence &mdash; names the bound, which input set it, and the seconds it ran before it was stopped. Its log gains a <code># cut short:</code> line carrying the same sentence, so the file states that it was stopped rather than ending on header lines. <code>record_gate_rerun_at_integrated_revision</code> passes <code>ok</code> through on its payload, which is what the CLI's <code>{"ok": True, **result}</code> merge was already written to honour; <code>reckon/cli.py</code> is outside this node's write scope and is unchanged.</p>
     <p>A replay that completes is untouched: it keeps its own exit status and verdict, whatever that status is, and reports <code>ok: true</code> because a status was measured. A replay that never ran &mdash; a refused tree, a stored command that describes rather than executes &mdash; also produced no exit status, so it reports <code>ok: false</code> under the same rule; no test in the population asserted the old value there.</p>
   </section>
 
-  <section id="measure">
+  <section id="a-timed-out-replay-is-not-ok-measure">
     <h2>The measure</h2>
     <ul>
       <li><strong>Named gate</strong> (<code>tests/test_a_timed_out_replay_is_not_ok.py</code>, head <code>71347be35db07bfcdfa29d67b4eb8628023e21e9</code>, this worktree): <code>4 passed in 64.13s</code>, <code>EXIT=0</code> (<code>named-gate.log</code>). The timeout case drives <code>verify-gate</code> with <code>--command 'sleep 120' --timeout-seconds 2</code> and asserts <code>ok</code> false, the bound and elapsed seconds in the finding, <code>not-run</code> on the payload and the ledger row, and a log carrying <code># cut short:</code> with no <code>EXIT=</code> line.</li>
@@ -44,7 +44,7 @@
     <p>Every log's first lines name its revision, its tree, the literal command and the module under test as imported, and each ends with a bare <code>EXIT=</code> line. The pytest processes ran with <code>-n 8</code> and a 120&nbsp;s per-test bound; the serial form of the population exceeded a nine-minute cap, which is why the arms are the parallel form.</p>
   </section>
 
-  <section id="scope">
+  <section id="a-timed-out-replay-is-not-ok-scope">
     <h2>Scope</h2>
     <p>The section's own words for the third assertion, &ldquo;records no passing verdict&rdquo;, is met by the report's existing <code>not-run</code> integrated verdict plus <code>ok: false</code> on the payload and on the row the verb commits; no new verdict vocabulary was introduced. Verifying the merged result belongs to a separately dispatched test node.</p>
   </section>

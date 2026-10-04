@@ -19,14 +19,14 @@
   <h1>A dispatch carries the reservation's reach &mdash; evidence</h1>
   <p>One unkeyed record holds the host's placement allocation, and its roster cap is summed over the placed live runs on the host. Three things disagreed with that fact. The dispatch route called <code>ensure_reservation</code> for its side effect and discarded the report, so a session that armed the reservation through a dispatch was never told the cap or which projects' placed runs it counts. The already-held read-back stated the job id and &ldquo;started nothing&rdquo; but named neither the cap nor the reach. And the reach statement counted every backend's placed live runs while the guard that refuses past the cap counted only the calling backend's, so with two placing backends the projects the statement named exceeded the population the refusal was taken over.</p>
 
-  <section id="change">
+  <section id="reservation-reach-reaches-dispatch-change">
     <h2>The change</h2>
     <p>In <code>reckon/crew/placement.py</code> a single seat selection, <code>roster_occupants</code>, now applies the phase filter and the memory-holding test once, and both the reach statement and the dispatch guard call it. The already-held result carries a detail stating the cap and the reach &mdash; the same sentence the arming hold states &mdash; and every hold result carries its <code>roster_reach</code> beside the record.</p>
     <p>In <code>reckon/crew/dispatch.py</code> the backend-placement resolution keeps the ensure's result and writes the hold's job id, reason, detail and reach onto the run's payload under <code>placement_reservation</code>, on both the fresh-dispatch and the resume routes; the resume route carries the key into the pointer it persists. The concurrency ceiling hands the roster guard, and the reservation's cores bound, one host-wide population collected across every backend &mdash; the population the hold's reach counts with &mdash; while the lane bound stays the calling backend's own occupancy, because the lane is the backend's queue and the allocation is the host's. The refusal's &ldquo;Occupying runs&rdquo; list names the seats rather than the population handed in, so a reader is not shown every live run on the machine.</p>
     <p>The direction chosen is to broaden the guard rather than narrow the reach: one host allocation admits every backend's placed workers as steps under <code>--overlap</code>, so a reach that counted one backend would under-count what is resident, and the dangerous direction is oversubscription. The reach statement's landed host-wide wording is unchanged.</p>
   </section>
 
-  <section id="measure">
+  <section id="reservation-reach-reaches-dispatch-measure">
     <h2>The measure</h2>
     <p>Both arms ran with <code>pytest -n 8 --timeout=300</code>, each with its own basetemp under a run-named directory in <code>/tmp</code>, over the seven test files that reach the changed symbols (<code>ensure_reservation</code>, <code>_held_result</code>, <code>_roster_reach</code>, <code>RESERVATION_ROSTER_LIMIT</code>). Each log's first line names its revision and its last line is a bare <code>EXIT=</code>.</p>
     <ul>
@@ -37,7 +37,7 @@
     </ul>
   </section>
 
-  <section id="scope">
+  <section id="reservation-reach-reaches-dispatch-scope">
     <h2>Scope</h2>
     <p>The merged head's own gate belongs to the separate test node, as does any suite wide check; this fragment measures this node's two arms and its control alone. The lane bound and the login-memory bound keep their existing populations; only the reservation's roster and cores bounds moved to the host-wide set, which is the set the allocation actually admits.</p>
   </section>

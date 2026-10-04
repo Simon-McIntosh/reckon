@@ -23,7 +23,7 @@
     <h1>Promotion releases every directory owned by a worker run</h1>
     <p class="lead">The promoted stub's five-byte TMPDIR file and six-byte bare-id sibling both disappear, and the release receipt names both paths with their sizes.</p>
   </header>
-  <section id="measure">
+  <section id="a-release-removes-all-worker-scratch-measure">
     <h2>Reproduction and measure</h2>
     <p>The test launches a subprocess with dispatch's worker environment in a temporary <code>RECKON_HOME</code>. It writes one file beneath <code>TMPDIR</code> and one beneath the scratch root in a directory named by the timestamp stem. Promotion at base <code>f87d778c9c986d6b55705d3589531fdf8212afc1</code> removed the former and left the latter: the focused test failed with <code>EXIT=1</code>. The base four-file population completed with <strong>1 failed, 25 passed</strong>; the new sibling case was its only failure.</p>
     <p>At <code>e2e41121817d1d4af3240457357f552fd3a909f4</code>, release removes real direct children bearing the run's timestamp stem and records each successful removal as a path and byte count. The same four-file population completed with <strong>26 passed, EXIT=0</strong>. The existing recorded-path check still refuses a path outside the current scratch root or one naming a different run. The base and head logs are <code>baseline-suite.log</code> and <code>after-suite-committed.log</code> in the delivering run directory.</p>

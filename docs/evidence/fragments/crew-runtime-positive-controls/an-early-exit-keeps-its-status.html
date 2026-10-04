@@ -7,7 +7,7 @@
 <title>an-early-exit-keeps-its-status</title>
 </head><body>
 
-<h2 id="landing">A worker reaped inside the launch retry's startup window keeps its exit</h2>
+<h2 id="an-early-exit-keeps-its-status-landing">A worker reaped inside the launch retry's startup window keeps its exit</h2>
 
 <p>Landed at <code>fac9f9557</code> (the carry) and <code>c34c0ab97</code>
 (the carry stands beside another child) on
@@ -28,7 +28,7 @@ could end the attempt, and the leftover-child wait is the launcher path,
 entered only when no exit was carried. A worker that outlived the window
 carries nothing and is supervised exactly as before.</p>
 
-<h3 id="reproduction">The recorded defect, reproduced in the base tree</h3>
+<h3 id="an-early-exit-keeps-its-status-reproduction">The recorded defect, reproduced in the base tree</h3>
 
 <p>Probe run against the base revision
 <code>b67d70a288a4b3cf0ac05351e7223c8fb20714c3</code>, before any repair:
@@ -39,7 +39,7 @@ and the resume classification the test reads then saw nothing that ended the
 first attempt (<code>1 failed in 15.69s</code>, <code>EXIT=1</code>, log
 <code>base-named-reproduction.log</code>).</p>
 
-<h3 id="gate">Gate</h3>
+<h3 id="an-early-exit-keeps-its-status-gate">Gate</h3>
 
 <p>Base arm (git archive of the revision above under the run's scratch tree):
 the three pre-existing test files naming
@@ -77,7 +77,7 @@ record, exactly the recorded defect — and the signal case
 leftover child's exit is taken for the attempt's, which the carry makes
 impossible. Log named in the manifest's <code>negative_control_log</code>.</p>
 
-<h3 id="unmet">Unmet within this node's write scope</h3>
+<h3 id="an-early-exit-keeps-its-status-unmet">Unmet within this node's write scope</h3>
 
 <p>None. The carry covers the exit the retry's poll collects; a worker that
 exits later is reaped by the supervisor's own wait, and a poll that never runs

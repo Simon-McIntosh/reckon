@@ -43,12 +43,12 @@
     </table>
   </section>
 
-  <section id="rule">
+  <section id="a-crew-verb-ok-reads-its-outcome-rule">
     <h2>The published rule</h2>
     <p><code>_crew_result_ok</code> in <code>reckon/cli.py</code> reads the result before <code>_emit_crew_result</code> publishes it. An explicit <code>ok</code> wins, including false. A refusal, hold, finding, red exit status, timeout, failed validation or unmeasured attempt is false and exits nonzero. A deliberate skip is different: the result retains its <code>skipped</code> or <code>stopped</code> reason, publishes <code>ok: true</code>, and exits 0, so a cross-project verb can complete even when one project needs no action or must be left untouched. A worker's pending exit status inside an observation is data about the worker; the successful read stays true. The emit helper uses exit 1 for a false result and preserves preflight's established exit 3 for a hold.</p>
   </section>
 
-  <section id="measure">
+  <section id="a-crew-verb-ok-reads-its-outcome-measure">
     <h2>Verification</h2>
     <p>The focused gate passed 41 cases at source commit <code>15a86e7de0abeacc8697b2eac409c4e914f920b7</code>, including the eight changed assertions, the new result-shape tests and the unedited split-runs file. The same 168-file population ran at base and head. Base <code>61a4439acfab64bb85cbacc69d75454e01d89b94</code> recorded 48 failures, four errors, 2,240 passes and seven skips; its 52 failure IDs include the enumeration test naming 32 literal success spreads. The completed head arm at <code>658bfb18c826a51001402667e8dfa87410760ab2</code> recorded 2,292 passes, seven skips, zero failure IDs and exit 0. Both arms' flat records, commands, module paths and full logs are in the run manifest.</p>
     <p>An earlier head arm failed once in <code>test_the_real_configuration_home_gains_no_file</code> when a follow stream delivered an event without a <code>node</code> key. That unchanged file passed 11 of 11 tests alone, and the repeated 168-file arm passed. The first arm's log remains in the run directory so the transient result is visible. The negative control restores one literal preflight spread in a scratch copy and fails the enumeration by naming that site.</p>

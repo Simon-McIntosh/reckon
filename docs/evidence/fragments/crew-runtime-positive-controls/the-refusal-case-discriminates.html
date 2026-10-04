@@ -20,7 +20,7 @@
   <p>A promotion that omits <code>--commit</code> carries its citations as manifest text, and the citation check in <code>reckon/crew/promotion.py</code> is the only guard that resolves them. If that check stops running, an unresolvable citation falls through to the worktree-head guard, whose refusal &mdash; <em>cites no commit, but its worktree is at &hellip; rather than its base &hellip;</em> &mdash; leaves exactly the same four facts behind: a non-zero exit, no traceback, no ledger row, and a surviving pointer.</p>
   <p>That is what the case at <code>tests/test_cited_identifier_resolves.py</code> asserted, and it is why the case held whichever refusal fired. It is the shape the earlier review described: an assertion that holds under the mutation it exists to catch measures nothing.</p>
 
-  <section id="reproduction">
+  <section id="the-refusal-case-discriminates-reproduction">
     <h2>The reproduction, before the change</h2>
     <p>The citation check was short-circuited in memory only &mdash; <code>reckon.crew.promotion._unresolved_citations</code> replaced with a function returning <code>[]</code>, loaded through <code>pytest -p citation_shortcircuit</code>. <code>reckon/crew/promotion.py</code> on disk was never edited; the plugin asserts the substitution took effect and the log records it. The named case alone, at the base revision:</p>
     <ul>
@@ -30,12 +30,12 @@
     <p>So the case could not catch the citation check going silent, and nothing else in the file fails on the mutation for the reason the case exists to test.</p>
   </section>
 
-  <section id="change">
+  <section id="the-refusal-case-discriminates-change">
     <h2>The change</h2>
     <p>The case now asserts the refusal's own words beside the outcome it already asserted, as the sibling refusal cases do: <code>assert _FABRICATED in result.output</code> and <code>assert "does not resolve" in result.output</code>. The existing assertions &mdash; non-zero exit, no traceback, no row, the pointer survives &mdash; are kept. Nine lines added, none deleted; the marker the change introduces (<code>assert _FABRICATED in result.output</code>) reads 2 at head against 1 at base; no source file changed.</p>
   </section>
 
-  <section id="measure">
+  <section id="the-refusal-case-discriminates-measure">
     <h2>The measure</h2>
     <ul>
       <li><strong>Base arm</strong> (<code>8b89df3321f9f3a47eac9a0cedb170c836c6e9bb</code>, this worktree): <code>20 passed in 84.85s</code>, <code>EXIT=0</code> (<code>logs/base-gate.log</code>, <code>arms/base.json</code>).</li>
@@ -46,7 +46,7 @@
     <p>Each pytest process ran with a basetemp private to it under <code>/tmp/r-20260930T233349956479-the-refusal-case-discriminates/</code>, and every log's first line names its revision, its tree and the literal command; each ends with a bare <code>EXIT=</code> line.</p>
   </section>
 
-  <section id="scope">
+  <section id="the-refusal-case-discriminates-scope">
     <h2>Scope</h2>
     <p>The presentation branch &mdash; a promotion that presents at least one commit &mdash; still resolves only the presented list, so an unresolvable value declared beside a presented one is dropped rather than refused. That behaviour is pinned by a test file outside this node's granted paths and is unchanged here.</p>
   </section>

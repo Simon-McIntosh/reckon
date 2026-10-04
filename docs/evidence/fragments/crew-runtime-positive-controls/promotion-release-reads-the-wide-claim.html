@@ -7,7 +7,7 @@
 <title>promotion-release-reads-the-wide-claim</title>
 </head><body>
 
-<h2 id="landing">Promotion's workspace release reads the wide live claim</h2>
+<h2 id="promotion-release-reads-the-wide-claim-landing">Promotion's workspace release reads the wide live claim</h2>
 
 <p>Landed at <code>9c26ee1d8</code> on <code>reckon/crew/promotion.py</code>,
 with <code>tests/test_promotion_release_reads_the_wide_claim.py</code> added
@@ -24,7 +24,7 @@ and integrated and removed it. The release now reads
 <code>_live_pointer_worktrees</code> minus the released run, the wide claim
 the gc and residue-release paths already read.</p>
 
-<h3 id="reproduction">The recorded defect, reproduced against the base tree</h3>
+<h3 id="promotion-release-reads-the-wide-claim-reproduction">The recorded defect, reproduced against the base tree</h3>
 
 <p>The new test file ran against the base product code
 (<code>acff5221202a3e13585c98d23f28ebf171464552</code> extracted with
@@ -36,7 +36,7 @@ resolved cwd): <code>1 failed, 1 passed in 25.89s</code>, <code>EXIT=1</code>
 the parked peer's pointer still names. The unshared case passed, so the file
 discriminates on the shared tree rather than on promotion failing generally.</p>
 
-<h3 id="gate">Gate</h3>
+<h3 id="promotion-release-reads-the-wide-claim-gate">Gate</h3>
 
 <p>Base arm: the four pre-existing test files naming
 <code>_release_run_workspace</code>, <code>_live_worktree_claims</code> or
@@ -59,7 +59,7 @@ phase-gated one, requires a direct driver for each, and calls
 <code>_release_run_workspace</code> against a tree a parked peer's pointer
 names, asserting the tree and its marker survive.</p>
 
-<h3 id="negative-control">Negative control</h3>
+<h3 id="promotion-release-reads-the-wide-claim-negative-control">Negative control</h3>
 
 <p>A scratch copy of head in which <code>_release_run_workspace</code> reads
 <code>_live_worktree_claims</code> again &mdash; the declared mutation:
@@ -68,7 +68,7 @@ names, asserting the tree and its marker survive.</p>
 green head arm does not fail; the tree is removed
 (<code>negative-control.log</code>, named in the manifest).</p>
 
-<h3 id="unmet">Unmet within this node's write scope</h3>
+<h3 id="promotion-release-reads-the-wide-claim-unmet">Unmet within this node's write scope</h3>
 
 <p>None. <code>_live_worktree_claims</code> keeps its report-only callers
 (the worktree audit and the promotion boundary check), which do not remove a
