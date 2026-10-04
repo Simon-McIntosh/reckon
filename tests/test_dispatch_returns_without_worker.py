@@ -40,6 +40,7 @@ import ctypes
 import importlib
 import json
 import os
+import select
 import shutil
 import signal
 import subprocess
@@ -107,6 +108,7 @@ REFERENCE_SAMPLES = 3
 REFERENCE_UNITS = 8.0
 MARKER_BOUND = 60.0
 EXIT_RECORD_BOUND = 10.0
+COMPLETION_RECORD_BOUND = 120.0
 SPAWN_BOUND = 60.0
 DISCARD_BOUND = 60.0
 
@@ -294,8 +296,7 @@ if [ "$charge" = "1" ]; then
   printf '%s\\t%s\\t%s\\t%s\\n' "$PPID" "$(date +%s.%N)" "$here" "$*" \\
     >> "$RECKON_SHIM_LOG"
   if [ -n "$RECKON_SHIM_SUPERVISOR_CPU" ]; then
-    parent=$(ps -o args= -p "$PPID")
-    case "$parent" in
+    case "$(ps -o args= -p "$PPID")" in
       *"__supervise__"*)
         taskset -pc "$RECKON_SHIM_SUPERVISOR_CPU" "$PPID" \\
           >> "$RECKON_SHIM_LOG.affinity" 2>&1
@@ -1486,11 +1487,11 @@ def test_dispatch_returns_when_its_supervisor_finished_the_launch(
 ) -> None:
     """A supervisor that completed its launch is not read as a refusal.
 
-    No scan gate is armed, so the supervisor can finish the stub worker's
-    launch during dispatch's survival check. Dispatch must return that run
-    rather than refuse it: a dispatch that launched a worker is never a
-    refusal, whatever the worker then did. Under scheduler pressure, the
-    completion record can arrive after dispatch returns.
+    No scan gate is armed, so the supervisor scans two trees and then
+    spawns the stub worker, collects its exit and writes the completion exit
+    record -- possibly after dispatch's survival window. Dispatch must return that
+    run rather than refuse it: a dispatch that launched a worker is never a
+    refusal, whatever the worker then did.
     """
     marker_dir = tmp_path / "markers"
     marker_dir.mkdir()
@@ -1531,13 +1532,17 @@ def test_dispatch_returns_when_its_supervisor_finished_the_launch(
             events = libc.inotify_init1(os.O_CLOEXEC)
             assert events >= 0, os.strerror(ctypes.get_errno())
             try:
-                watch = libc.inotify_add_watch(
-                    events,
-                    os.fsencode(record_path.parent),
-                    0x80,  # IN_MOVED_TO
-                )
+                directory = os.fsencode(record_path.parent)
+                watch = libc.inotify_add_watch(events, directory, 0x80)
                 assert watch >= 0, os.strerror(ctypes.get_errno())
+                deadline = time.monotonic() + COMPLETION_RECORD_BOUND
                 while (exit_record := _load_json(record_path)) is None:
+                    remaining = max(0.0, deadline - time.monotonic())
+                    ready, _, _ = select.select([events], [], [], remaining)
+                    assert ready and remaining > 0, (
+                        f"missing exit.json at {record_path} in run directory "
+                        f"{record_path.parent} after {COMPLETION_RECORD_BOUND} s"
+                    )
                     os.read(events, 4096)
             finally:
                 os.close(events)
