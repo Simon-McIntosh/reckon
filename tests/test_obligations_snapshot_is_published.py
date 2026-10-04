@@ -330,6 +330,57 @@ def test_each_freshness_outcome_is_returned_for_its_case() -> None:
     )
 
 
+def _sweep_memory_row(module: Any, key: str) -> str:
+    """The _SWEEPS entry one module instance holds for a key, or its absence."""
+    memory = getattr(module, "_SWEEPS", {}).get(key)
+    if memory is None:
+        return "absent"
+    identity = getattr(memory, "identity", None)
+    return (
+        f"checked_at={getattr(memory, 'checked_at', None)}"
+        f" published_at={getattr(memory, 'published_at', None)}"
+        f" identity_files={len(identity) if isinstance(identity, dict) else identity!r}"
+    )
+
+
+def _divergence_report(*, consulted: str | None = None) -> str:
+    """Name the state a republish assertion failed against.
+
+    Each reading names a way the memory a sweep consults can diverge from the
+    producer's write: the cache key (a moved config home moves it), the entry
+    for it -- absent or stale -- as the caller read it just before a sweep
+    (``consulted``) or at failure, whether sys.modules holds the instance the
+    test patched or a second one, the resolved config home, and the live
+    thread names.
+    """
+    key = str(obligation_snapshot.snapshot_dir(PROJECT))
+    registered = sys.modules.get("reckon.crew.obligation_snapshot")
+    entry = (
+        f"before the call: {consulted}"
+        if consulted is not None
+        else f"at failure: {_sweep_memory_row(obligation_snapshot, key)}"
+    )
+    lines = [f"snapshot key: {key}", f"_SWEEPS entry for the key {entry}"]
+    if registered is obligation_snapshot:
+        lines.append("sys.modules holds the test's imported instance")
+    else:
+        lines.append(
+            "sys.modules holds a different instance:"
+            f" test={getattr(obligation_snapshot, '__file__', '?')}"
+            f" sys.modules={getattr(registered, '__file__', '?')}"
+        )
+        if registered is not None:
+            lines.append(f"  its _SWEEPS entry: {_sweep_memory_row(registered, key)}")
+    lines.append(
+        f"RECKON_HOME: {os.environ.get('RECKON_HOME')!r} resolved to"
+        f" {obligation_snapshot._config_home()}"
+    )
+    lines.append(
+        "live threads: " + ", ".join(sorted(t.name for t in threading.enumerate()))
+    )
+    return "\n".join(lines)
+
+
 def test_a_file_change_and_the_floor_tick_each_republish(fleet: dict[str, Any]) -> None:
     """The other two triggers, and the guard that nothing else republishes."""
     _write_pointer(fleet, "r-working", phase="working", status="working")
@@ -363,9 +414,20 @@ def test_a_file_change_and_the_floor_tick_each_republish(fleet: dict[str, Any]) 
 
     # A plan file's stat identity moved, with no pointer change at all — but
     # the walk is on a cadence, so inside it the change is not looked for yet.
+    # The entry the sweep will consult is read before the call: a republish
+    # here means that entry was absent or stale where the producer's write of
+    # ``first`` left one current.
     plan = fleet["repo"] / "docs" / "plans" / "fixture-plan.html"
     plan.write_text("<html>edited</html>\n", encoding="utf-8")
-    assert sweep_at(_computed_at(first) + timedelta(seconds=5)) == []
+    consulted = _sweep_memory_row(
+        obligation_snapshot, str(obligation_snapshot.snapshot_dir(PROJECT))
+    )
+    republished = sweep_at(_computed_at(first) + timedelta(seconds=5))
+    assert republished == [], (
+        f"the +5 s sweep, inside the {STAT:g} s stat cadence, republished"
+        f" {[str(path) for path in republished]}\n"
+        + _divergence_report(consulted=consulted)
+    )
 
     # Past the cadence the same change republishes the session's snapshot.
     assert sweep_at(_computed_at(first) + timedelta(seconds=STAT + 5))
@@ -545,7 +607,10 @@ def test_a_slow_sweep_does_not_hold_the_next_transition(
             runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat),
         ):
             assert acquired is True
-            assert started.wait(timeout=30.0), "the claim starts the first sweep"
+            assert started.wait(timeout=30.0), (
+                "the claim's first sweep did not reach the patched sweep"
+                " within 30 s\n" + _divergence_report()
+            )
             _write_pointer(fleet, "r-after", phase="working", status="working")
             moment = time.monotonic()
             runs.list_live(project=PROJECT)
