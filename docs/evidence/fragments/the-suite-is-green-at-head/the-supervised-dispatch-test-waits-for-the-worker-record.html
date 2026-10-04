@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s2">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-tags" content="crew,dispatch,supervisor,test-race">
+  <title>The supervised-dispatch test waits for the worker record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-supervised-dispatch-test-waits-for-the-worker-record" data-reckon="landed" data-when="2026-10-04">
+  <h2>The supervised-dispatch test waits for the worker record</h2>
+  <p>The stub worker writes its marker the moment it starts, while the supervisor writes
+  <code>worker.json</code> on its own schedule after the spawn returns
+  (<code>reckon/crew/dispatch.py</code>:10326, after <code>_supervisor_spawn_worker</code>
+  at :10306). The case observed the marker and read <code>worker.json</code> at once, so it
+  raced the record: the id failed with a <code>FileNotFoundError</code> on
+  <code>worker.json</code> in 5 of 10 runs alone at head. The read now follows the same
+  bounded <code>_wait_for</code> the marker uses, with a message naming the record; every
+  existing assertion stands and no product file changed. The whole file passes (5 passed),
+  the id passes 20 of 20 alone, and the declared negative control — the scratch delayed-write
+  driver, patching <code>_supervisor_write</code> to sleep 2&#160;s before writing
+  <code>worker.json</code> — reddens the parent commit's test with the same
+  <code>FileNotFoundError</code> while the head arm stays green.</p>
+</article>
+</body>
+</html>

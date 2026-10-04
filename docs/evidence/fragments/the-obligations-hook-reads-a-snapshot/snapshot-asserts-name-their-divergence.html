@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-title" content="The snapshot publication assertions name their own divergence">
+  <meta name="plan-summary" content="Both republish assertions in tests/test_obligations_snapshot_is_published.py now render the state they failed against: the snapshot cache key, the _SWEEPS entry held for that key or its absence, whether sys.modules holds the module instance the test patched, the resolved config home and the live thread names. The in-cadence case reads the consulted entry before the sweep call, so the message names the memory the call read; a scratch copy that empties the entry before the +5 s sweep fails naming the absent entry and the key, and 30 loops of the file under -n 8 beside a cpu load generator are flat at baseline and at the change.">
+  <meta name="plan-evidence-for" content="reckon:the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-verifies" content="reckon:the-obligations-hook-reads-a-snapshot#s20">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,watch,snapshot,tests">
+  <title>The snapshot publication assertions name their own divergence — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="snapshot-asserts-name-their-divergence" data-reckon="landed" data-when="2026-10-04">
+  <h2>The snapshot publication assertions name their own divergence</h2>
+  <p>Both republish assertions in <code>tests/test_obligations_snapshot_is_published.py</code> failed with a bare assertion, so the whole-suite failure recorded at <code>76ed64992</code> left the divergence behind it to be inferred. A helper the file owns (<code>_divergence_report</code>, with <code>_sweep_memory_row</code> rendering one entry) now writes, into the failure message of each assert: the snapshot cache key (<code>str(snapshot_dir(PROJECT))</code>, the same key <code>sweep</code> guards under), the <code>_SWEEPS</code> entry held for that key — <code>checked_at</code>, <code>published_at</code> and the identity size — or the word <code>absent</code>, whether <code>sys.modules["reckon.crew.obligation_snapshot"]</code> is the instance the test patched and reads or a second one (with both file paths and the second instance's entry), the resolved config home behind <code>RECKON_HOME</code>, and the live thread names. The in-cadence case reads the consulted entry <em>before</em> the +5&nbsp;s sweep call, because the failing call writes a fresh entry on its way out and the entry that decided the republish is the one the call read; the <code>started.wait</code> case reports the state at failure, where a live sweep thread names a sweep that has not reached the patched function yet. Landing commit <code>858e8f561</code>.</p>
+  <p><strong>Negative control (declared).</strong> A scratch copy of the delivered file empties the <code>_SWEEPS</code> entry for the key before the +5&nbsp;s sweep — the divergence the investigation's arithmetic requires (a consulted memory absent or stale relative to the producer's write). It fails exactly <code>test_a_file_change_and_the_floor_tick_each_republish</code>, <code>EXIT=1</code>, and the message names the missing entry and the key: <code>_SWEEPS entry for the key before the call: absent</code> followed by the key path. The same id passes alone at the head bytes, <code>EXIT=0</code>. Logs: <code>logs/negative-control.log</code>, <code>logs/head-single.log</code> in run <code>r-20261004T015001204635</code>.</p>
+  <p><strong>Load gate, flat.</strong> 30 loops of the file under <code>pytest -n 8</code> beside eight cpu spinner processes, each loop with its own <code>RECKON_HOME</code> and <code>--basetemp</code>: baseline (the pre-change file, sha256 <code>d0bc21a2…</code>, worktree HEAD <code>fd25b13b1</code>) 30/30 loops <code>exit=0</code>, 12 passed per loop; after (sha256 <code>632f03d4…</code> at <code>858e8f561</code>) 30/30 loops <code>exit=0</code>, 12 passed per loop. Loop wall time 6–12&nbsp;s; the 8 spinners were reaped by pid at each arm's end. Per-loop logs and headers under <code>logs/loops/base/</code> and <code>logs/loops/after/</code>.</p>
+  <p><strong>What the message now names, and what stays open.</strong> The five readings are the state space the investigation left open — the consulted memory absent or stale, a second module instance from the hook's by-path loader, a divergent config home, and a sweep thread not yet at the module — so the next occurrence in the full-suite context names its own cause rather than reproducing a bare assertion. This node did not attempt the full-suite reproduction and touched no product source: <code>reckon/crew/obligation_snapshot.py</code> was readable as it stands, so no accessor was added. This gate measures only this node's own change.</p>
+</article>
+</body>
+</html>

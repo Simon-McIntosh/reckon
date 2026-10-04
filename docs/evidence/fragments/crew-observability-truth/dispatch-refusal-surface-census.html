@@ -1,0 +1,123 @@
+<section data-reckon="evidence" data-node="cot15-census">
+  <h3>Dispatch refusal and evidence census</h3>
+  <p>Census of each item crew-observability-truth §15 asserts, read against main at 33fb3b6cb by the read-only investigation cot15-census on 2026-10-04 and reviewed at 91. Each row gives a verdict, the evidence (a test id run at main, or a probe with its output), and for a partial or open item the one-node repair it proposes.</p>
+<header>
+
+<p>Live plan: crew-observability-truth §15. Assigned main snapshot: <code>33fb3b6cbdaa357ed3f21bb4eeb0527a931f1ff9</code>. Measured 2026-10-04 UTC.</p>
+<p><strong>Result:</strong> 2 met, 4 partial, 6 open across the section's nine table measures and three distinct assertions in its surrounding text. The most consequential open results are that a blocked run can be widened into a peer's live path, and a dry run accepts an absolute-green demand even when its base test demonstrably fails. No project or operator configuration was touched.</p>
+</header>
+<figure>
+<svg aria-labelledby="flow-title flow-desc" role="img" viewbox="0 0 1200 150">
+<title id="flow-title">What this dry run tells a coordinator</title>
+<desc id="flow-desc">The node contract is validated, live claims are listed while the overall ok flag can remain true, and record-assigned wave fields remain absent.</desc>
+<g fill="none" stroke="#444" stroke-width="2">
+<rect height="96" rx="5" width="330" x="10" y="18"></rect>
+<path d="M342 66h55m-11-8 11 8-11 8"></path>
+<rect height="96" rx="5" width="390" x="400" y="18"></rect>
+<path d="M792 66h55m-11-8 11 8-11 8"></path>
+<rect height="96" rx="5" width="340" x="850" y="18"></rect>
+</g>
+<g fill="#222" font-family="system-ui, sans-serif" font-size="19">
+<text x="28" y="51">Node contract</text><text x="28" y="83">validation.ok = true</text>
+<text x="418" y="51">Live claims</text><text x="418" y="83">owner listed; ok still true</text>
+<text x="868" y="51">Record assignment</text><text x="868" y="83">wave absent from preview</text>
+</g>
+</svg>
+<figcaption>The held-path probe returns <code>ok=True</code> and names <code>r-holder</code> under <code>live_conflicts</code>. The same payload has no wave field. A caller has to read the specific evidence field, not only the top-level status.</figcaption>
+</figure>
+<section>
+<h2>Evidence and commands</h2>
+<p>The assigned worktree was clean at the snapshot above. All probes created a temporary repository and set a temporary <code>RECKON_HOME</code> beneath the run's <code>$TMPDIR</code>. The isolated repository and home were deleted when the probe ended. The source module imported for the probe was <code>/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/cot15-census/reckon/crew/dispatch.py</code>; the resolved working directory was the assigned worktree.</p>
+<ul>
+<li><strong>P:</strong> <code>bash /home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T002037652617-cot15-census/run_probe.sh</code>. Captured output: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T002037652617-cot15-census/census-probes.log</code>, final <code>EXIT=0</code>. The log's first line records its Python probe command, revision and tree.</li>
+<li><strong>T:</strong> <code>bash /home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T002037652617-cot15-census/run_census_tests.sh</code>. Captured output: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T002037652617-cot15-census/census-tests.log</code>, <code>16 passed in 16.19s; EXIT=0</code>. The initial module-header probe in that log used Python attribute syntax that resolved the exported <code>dispatch</code> function; the corrected <code>importlib.import_module</code> module path is recorded above it. The pytest command and result are unaffected.</li>
+<li><strong>W:</strong> <code>bash /home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T002037652617-cot15-census/run_watch_case.sh</code>. Captured output: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T002037652617-cot15-census/watch-case.log</code>, <code>1 passed in 7.00s; EXIT=0</code>.</li>
+</ul>
+</section>
+<section>
+<h2>Assertion-by-assertion result</h2>
+<p>“Met” means the specific asserted distinction was shown at this snapshot. “Partial” means one half works and the named negative or durable half does not. “Open” means the proposed discriminating check still has a counterexample. Each partial or open row gives a write set and a one-node completion test for the coordinator.</p>
+<table>
+<thead><tr><th>Asserted item</th><th>Verdict</th><th>Evidence at main snapshot</th><th>Proposed one-node repair and falsifier</th></tr></thead>
+<tbody>
+<tr>
+<td>A dry run names live claims it did or did not evaluate (table measure).</td>
+<td>Met</td>
+<td>T passes <code>tests/test_crew_dryrun.py::test_dry_run_reports_a_live_conflict_and_keeps_validation_successful</code> and <code>::test_dry_run_reports_no_conflicts_for_a_disjoint_live_claim</code>. P prints <code>live_conflicts=[... 'run_id': 'r-holder']</code> for a held file and <code>live_conflicts=[]</code> with an explicit disregard warning for a stopped, clean claimant. These are different payloads.</td>
+<td>None for this precise distinction. The misleading overall <code>ok</code> remains in the next row.</td>
+</tr>
+<tr>
+<td>The dry-run verdict predicts the dispatch refusal set, rather than reading green while a live claim would refuse (surrounding assertion).</td>
+<td>Partial</td>
+<td>P prints <code>dry-run held-claim: exit=0 ok=True validation_ok=True ... live_conflicts=[... r-holder]</code>. The claim is exposed, but the top-level success still clears a request the real scope validator refuses. T passes <code>tests/test_crew_dryrun.py::test_real_dispatch_still_refuses_before_creating_a_worktree</code>.</td>
+<td><strong>Write paths:</strong> <code>reckon/cli.py<br/>reckon/crew/dispatch.py<br/>tests/test_crew_dryrun.py</code><strong>Done when:</strong> one held-path dry run reports an admission refusal naming its owner; a free path reports admission, with the real dispatch result matching each. <strong>Negative:</strong> a stopped clean claim gives no false refusal.</td>
+</tr>
+<tr>
+<td>The preview says which record-assigned facts it cannot know; the default wave is the concrete witness (surrounding assertion).</td>
+<td>Open</td>
+<td>P prints <code>wave_fields=[]</code> for every dispatch dry run, including held and free paths. The dry-run payload neither predicts the assigned wave nor states that record construction has not yet assigned it.</td>
+<td><strong>Write paths:</strong> <code>reckon/cli.py<br/>reckon/crew/dispatch.py<br/>tests/test_crew_dryrun.py</code><strong>Done when:</strong> a dry run explicitly marks wave assignment as unevaluated, or returns the same prospective wave the real dispatch records. <strong>Negative:</strong> a changed default wave must not be silently absent while the payload claims full readiness.</td>
+</tr>
+<tr>
+<td>A non-completing base delta gate is named before it is demanded, and the recorded watch deadlock is repaired or explained (table measure).</td>
+<td>Partial</td>
+<td>W passes <code>tests/test_crew.py::test_first_dispatch_proceeds_with_a_freshly_armed_project_watch</code> in 7.00s, so that recorded deadlock is no longer reproducible at this revision. P's new temporary <code>test_never_completes</code> exits <code>124</code> under a three-second bound, yet its named dry run gives <code>exit=0 ok=True</code> and no gate warning.</td>
+<td><strong>Write paths:</strong> <code>reckon/crew/dispatch.py<br/>reckon/crew/node.py<br/>tests/test_crew_dryrun.py</code><strong>Done when:</strong> dispatch surfaces an explicitly registered non-completing test and its cause before admitting a done-when that demands it; the repaired watch test stays green. <strong>Negative:</strong> a deselection without a stated cause fails, while a completing test is not labelled hung.</td>
+</tr>
+<tr>
+<td>When a second measure of the same quantity exists, the falsifier requires agreement rather than only a plausibility range (table measure).</td>
+<td>Open</td>
+<td>P prints <code>share=80.13% inside_1_to_99=True</code> beside a synthetic independent reading with <code>relative_disagreement=14.751%</code> and <code>agrees_within_0.01_percent=False</code>. The range-only dry run still gives <code>exit=0 ok=True validation_ok=True</code>.</td>
+<td><strong>Write paths:</strong> <code>reckon/crew/node.py<br/>tests/test_crew_node.py</code><strong>Done when:</strong> a done-when declaring an independent reading names a numerical agreement tolerance and rejects the disagreeing fixture. <strong>Negative:</strong> remove only the agreement clause while keeping the 1–99% band; validation must fail.</td>
+</tr>
+<tr>
+<td>A done-when satisfiable by universal absence is refused or returns corpus coverage (table measure).</td>
+<td>Open</td>
+<td>P's five <code>explicitly-unmeasured</code> cells satisfy the stated measured-or-unmeasured predicate (<code>True</code>); the matching dry run gives <code>exit=0 ok=True validation_ok=True</code>. No measured-cell floor or base corpus count appears in its warning.</td>
+<td><strong>Write paths:</strong> <code>reckon/crew/node.py<br/>tests/test_crew_node.py</code><strong>Done when:</strong> a five-cell availability measure requires a numerical measured-coverage floor and a base count, or dispatch quotes the measured corpus coverage. <strong>Negative:</strong> five explicit absence markers fail even though each cell exists.</td>
+</tr>
+<tr>
+<td>An absolute-green done-when is refused when its named base is red, or quotes the base failures (table measure).</td>
+<td>Open</td>
+<td>P runs a previously failing fixture first: <code>base gate: exit=1</code>, failure <code>tests/test_preexisting.py::test_preexisting_failure</code>. A done-when demanding <code>pytest ... exits 0</code> with a stated base of failures then receives <code>dry-run absolute-green: exit=0 ok=True validation_ok=True</code>; its warning contains no base failure count.</td>
+<td><strong>Write paths:</strong> <code>reckon/crew/node.py<br/>reckon/crew/dispatch.py<br/>tests/test_crew_dryrun.py</code><strong>Done when:</strong> the fixture's red base is refused or echoed as one base failure; a green base remains admissible. <strong>Negative:</strong> turn only the base assertion red and observe the dispatch verdict change.</td>
+</tr>
+<tr>
+<td>A scope extension is a command, refuses another holder, and survives in the promoted record (table measure).</td>
+<td>Partial</td>
+<td>T passes <code>tests/test_fence_widening.py::test_widening_a_blocked_run_adds_the_named_path</code> and <code>::test_the_widening_carries_the_session_and_recorded_commits_through</code>. P then holds <code>package/peer.py</code> under <code>r-holder</code>; <code>crew widen</code> returns <code>exit=0 added=['package/peer.py']</code> to a second run. The collision refusal is absent; this census did not promote the widened scratch run, so ledger persistence remains unproved.</td>
+<td><strong>Write paths:</strong> <code>reckon/cli.py<br/>reckon/crew/dispatch.py<br/>tests/test_fence_widening.py<br/>tests/test_ledger.py</code><strong>Done when:</strong> an unheld path widens and appears on the promoted ledger row; a peer-held path refuses naming its run and leaves the pointer byte-identical. <strong>Negative:</strong> substitute a held path just before the locked write and require refusal.</td>
+</tr>
+<tr>
+<td>An empty conflict result says whether the question was evaluated (table measure).</td>
+<td>Open</td>
+<td>P creates a known claim, then calls the scopes planner with no candidate: <code>candidates=[] conflicts=[] live_conflicts=[] has_evaluated=False</code>. A no-conflict answer is indistinguishable from an unasked question in the returned fields.</td>
+<td><strong>Write paths:</strong> <code>reckon/crew/runs.py<br/>reckon/mcp.py<br/>tests/test_crew.py<br/>tests/test_crew_dryrun.py</code><strong>Done when:</strong> an unasked scopes call returns an explicit unevaluated state, while a supplied disjoint candidate returns evaluated with empty conflicts. <strong>Negative:</strong> removing the candidate must change that state without inventing a conflict.</td>
+</tr>
+<tr>
+<td>A path named as an exclusion is not a fit-estimate input; a declared input still counts (table measure).</td>
+<td>Partial</td>
+<td>T passes <code>tests/test_context_estimate_excludes_granted_paths.py::test_a_named_shared_record_remains_a_chargeable_read</code>. P gives <code>plain-exclusion: tokens=3 named_count=0</code> and <code>positive-input: tokens=57148 named_count=1</code>. The counterexample <code>Exclude package/large.py from declared inputs</code> yields <code>tokens=57148 named_counted=[True]</code>.</td>
+<td><strong>Write paths:</strong> <code>reckon/crew/routing.py<br/>tests/test_context_estimate_excludes_granted_paths.py</code><strong>Done when:</strong> both forms of exclusion charge zero large-file tokens, while the positive declared-input clause still charges 57,148 in the fixture. <strong>Negative:</strong> change only <code>Exclude</code> to <code>Treat as</code> and require the estimate to rise.</td>
+</tr>
+<tr>
+<td>A registry read carries the same binding decision as the enforcer (table measure).</td>
+<td>Open</td>
+<td>P proves a stopped, clean run's <code>enforcer_binding=False</code> and then reads its scopes claim: <code>{"declared_path":"package/target.py",...,"run_id":"r-stopped"} has_binding=False</code> where <code>has_binding</code> means the key is absent. T passes <code>tests/test_crew.py::test_scopes_view_reads_claim_owners_without_mutating_the_pointer</code>, which asserts the present owner-only shape.</td>
+<td><strong>Write paths:</strong> <code>reckon/crew/runs.py<br/>reckon/mcp.py<br/>tests/test_crew.py</code><strong>Done when:</strong> the scopes view marks this stopped clean claim nonbinding and a running claim binding, using the dispatch disposition rule. <strong>Negative:</strong> give the stopped tree an unintegrated commit; the same path must become binding.</td>
+</tr>
+<tr>
+<td>The recovery-offered review dispatch passes the same scope validator that grants its review-store path (surrounding assertion).</td>
+<td>Met</td>
+<td>P composes <code>recovery._review_dispatch_fields</code> from a temporary source run and feeds those exact paths to <code>plan_dispatch</code> with a read-only review role: <code>validation_ok=True scoped_failed=False</code>. T passes <code>tests/test_role_write_scope.py::test_the_review_role_writes_the_store_its_own_dispatch_points_at</code> and the negative <code>::test_a_write_path_under_no_granted_root_is_still_refused</code>.</td>
+<td>No repair for the recorded validator contradiction. See the separate test teardown finding below.</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section>
+<h2>Limits and follow-on</h2>
+<p>A broader reflex test was attempted at the same revision: <code>tests/test_scoring_dispatches_its_review.py::test_a_scoring_run_dispatches_its_own_review_unasked</code>. Its assertion body passed, but the session teardown reported two temporary <code>crew watch</code> producers still alive and the command ended <code>EXIT=1</code>. The exact output is in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T002037652617-cot15-census/recovery-case.log</code>. A subsequent explicit <code>ps -p 223,224 -o pid=,ppid=,etime=,args=</code> printed no processes. This red teardown is a separate out-of-scope test-lifecycle finding; it is not counted as evidence that the recovery scope validator still refuses. The follow-on write set is <code>tests/test_scoring_dispatches_its_review.py</code> and <code>tests/conftest.py</code>, with a one-node gate requiring the review dispatch and teardown to complete without surviving watchers.</p>
+<p>These are probes at the assigned snapshot, not a current-main claim. The repository advanced after the worktree was provisioned. The report and its logs are external artifacts; the assigned repository worktree remained clean and read-only.</p>
+</section>
+</section>

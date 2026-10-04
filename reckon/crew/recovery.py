@@ -4581,12 +4581,9 @@ def _admission_refusal(
     cannot reach this reading. None means the ordinary dead-process arms
     classify the run, so this gate never widens them.
 
-    The scan's result is memoised against the stream's stat identity, because a
-    producer polls every live run every second and the marks remain the same
-    until the stream moves. A stream that has only grown is read again from the
-    start — the marks can sit anywhere in it — but one nothing has appended to
-    answers from the memo without opening the file, and the bytes a scan does
-    consume are counted so a stat-only poll reads nothing here.
+    The scan's result is memoised against the stream's stat identity. Decoded
+    events come from the shared stream cache, so a grown stream parses only its
+    append and an unchanged stream needs no decoding here.
     """
     if record.get("launch") != "cli":
         return None
@@ -4601,36 +4598,31 @@ def _admission_refusal(
     refusal_reason = ""
     terminal_reason = ""
     zero_token_error = False
-    consumed = 0
+    from reckon import _backends
+
     try:
-        with log.open(encoding="utf-8", errors="replace") as handle:
-            for line in handle:
-                consumed += len(line.encode("utf-8", errors="replace"))
-                try:
-                    event = json.loads(line)
-                except (ValueError, TypeError):
-                    continue
-                if not isinstance(event, Mapping):
-                    continue
-                kind = str(event.get("type") or "")
-                if kind == "assistant":
-                    message = event.get("message")
-                    if not isinstance(message, Mapping):
-                        continue
-                    if str(message.get("model") or "") != _SYNTHETIC_MODEL:
-                        continue
-                    if str(event.get("error") or "") != "invalid_request":
-                        continue
-                    text = _assistant_refusal_text(message)
-                    if text:
-                        refusal_reason = text
-                elif kind == "result":
-                    terminal_reason = str(event.get("terminal_reason") or "")
-                    if _result_turned_no_tokens(event):
-                        zero_token_error = True
+        events, _malformed = _backends.cached_stream_events(log)
+        size = log.stat().st_size
     except OSError:
         return None
-    _count_admission_bytes(consumed)
+    for event in events:
+        kind = str(event.get("type") or "")
+        if kind == "assistant":
+            message = event.get("message")
+            if not isinstance(message, Mapping):
+                continue
+            if str(message.get("model") or "") != _SYNTHETIC_MODEL:
+                continue
+            if str(event.get("error") or "") != "invalid_request":
+                continue
+            text = _assistant_refusal_text(message)
+            if text:
+                refusal_reason = text
+        elif kind == "result":
+            terminal_reason = str(event.get("terminal_reason") or "")
+            if _result_turned_no_tokens(event):
+                zero_token_error = True
+    _count_admission_bytes(size)
     refusal: dict[str, Any] | None = None
     if refusal_reason and terminal_reason == "blocking_limit" and zero_token_error:
         refusal = {
@@ -6977,17 +6969,15 @@ CLASSIFICATION_MEMO_VERSION = 1
 # calls that consult this run's stream and withdrawn when they return.
 _CLASSIFICATION_MEMO_IN_FLIGHT: tuple[str, dict[str, Any]] | None = None
 
-# Bytes of stream records the admission check has consumed since the count was
-# last taken. The admission refusal reads raw events rather than the dialect
-# fold, so it has its own cursor-by-identity cache and its own accounting: a
-# poll that finds every stream unchanged reads nothing here, and a reader can
-# tell a stat-only poll from one that rescanned a stream. A one-element cell so
-# the counter is mutated without a module-level global statement.
+# Bytes represented by records the admission check examined since the count
+# was last taken. The parsed cache can supply those records without disk I/O;
+# this counts logical scan work rather than physical reads. A one-element cell
+# keeps the counter mutable without a module-level global statement.
 _ADMISSION_STREAM_BYTES = [0]
 
 
 def take_admission_stream_bytes() -> int:
-    """Bytes of stream records the admission check read since last taken, reset."""
+    """Logical stream bytes the admission check examined since last taken."""
     value = _ADMISSION_STREAM_BYTES[0]
     _ADMISSION_STREAM_BYTES[0] = 0
     return value
@@ -7318,6 +7308,33 @@ def _classification_key(identities: Mapping[str, str]) -> str:
     return hashlib.sha256(rendered.encode("utf-8")).hexdigest()
 
 
+# Tokens a terminal message carries that belong to the run rather than to the
+# cause: the run's own id, a named process id, and any timestamp the message
+# quotes. They are removed before the message is hashed into a lane-cause
+# signature, so two runs one cause stopped correlate, while everything else the
+# message says and the cause kind beside it stay in the hash and keep two
+# different causes apart.
+_LANE_CAUSE_RUN_ID = re.compile(r"\br-\d{8}t\d{6,}[a-z0-9-]*")
+_LANE_CAUSE_PID = re.compile(r"\bpid[=: ]+\d+\b")
+_LANE_CAUSE_TIMESTAMP = re.compile(
+    r"\b\d{4}-\d{2}-\d{2}[t ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:z|[+-]\d{2}:?\d{2})?\b"
+)
+_LANE_CAUSE_CLOCK_TIME = re.compile(r"\b\d{1,2}:\d{2}(?::\d{2})?(?:[ap]\.?m\.?)?\b")
+
+
+def _lane_cause_signature_text(lowered: str) -> str:
+    """A terminal message with the tokens that vary per run removed."""
+    text = lowered
+    for pattern in (
+        _LANE_CAUSE_RUN_ID,
+        _LANE_CAUSE_PID,
+        _LANE_CAUSE_TIMESTAMP,
+        _LANE_CAUSE_CLOCK_TIME,
+    ):
+        text = pattern.sub(" ", text)
+    return " ".join(text.split())
+
+
 def _terminal_lane_signal(
     record: Mapping[str, Any],
 ) -> tuple[dict[str, str] | None, str | None]:
@@ -7370,7 +7387,10 @@ def _terminal_lane_signal(
     ) or str(record.get("model") or "").strip()
     # A generic catalog error cannot identify which model was unserved without
     # the configured model. Keep its per-run cause, but do not correlate it.
-    identity = f"{kind}\0{model if kind == 'backend-catalog-change' else ''}\0{lowered}"
+    identity = (
+        f"{kind}\0{model if kind == 'backend-catalog-change' else ''}\0"
+        f"{_lane_cause_signature_text(lowered)}"
+    )
     signature = (
         hashlib.sha256(identity.encode("utf-8")).hexdigest()
         if kind != "backend-catalog-change" or model

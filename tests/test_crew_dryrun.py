@@ -18,7 +18,7 @@ CONFIG = {
     "backends": {
         "worker": {
             "launch": "cli",
-            "command": "worker",
+            "command": "codex",
             "sandbox": "worktree-full",
             "time_budget": "20m",
         }
@@ -151,17 +151,24 @@ def _worktrees(repo: Path) -> str:
     ).stdout
 
 
-def test_dry_run_reports_a_live_conflict_and_keeps_validation_successful(
-    home: Path, repo: Path
-) -> None:
+def test_dry_run_refuses_a_live_claim_with_its_owner(home: Path, repo: Path) -> None:
     owner = _claim(repo, "package")
     worktrees_before = _worktrees(repo)
 
     result = CliRunner().invoke(cli_module.main, _arguments(repo, "package/target.py"))
 
     payload = json.loads(result.output)
-    assert result.exit_code == 0
-    assert payload["ok"] is True
+    assert result.exit_code == 7
+    assert payload["ok"] is False
+    assert payload["error"] == "scope-conflict"
+    assert payload["conflicting_run_id"] == owner["run_id"]
+    assert payload["admission"]["state"] == "refused"
+    assert payload["admission"]["conflicting_run_id"] == owner["run_id"]
+    assert payload["record_assignment"] == {
+        "state": "unevaluated",
+        "fields": "all",
+        "wave": "unevaluated",
+    }
     assert payload["validation"]["ok"] is True
     assert payload["live_conflicts"] == [
         {
@@ -186,10 +193,24 @@ def test_dry_run_reports_no_conflicts_for_a_disjoint_live_claim(
 
     payload = json.loads(result.output)
     assert result.exit_code == 0
+    assert payload["ok"] is True
     assert payload["validation"]["ok"] is True
+    assert payload["admission"] == {"state": "admitted"}
+    assert payload["record_assignment"]["wave"] == "unevaluated"
     assert payload["live_conflicts"] == []
     assert crew.list_live(project="proj") == [owner]
     assert crew.live_dir().is_relative_to(home)
+
+    record = crew.dispatch(
+        node=_node("package/target.py"),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="dispatch-session",
+        launcher=lambda *args, **kwargs: 4242,
+    )
+    assert record["run_id"]
+    assert record["wave"]
 
 
 def test_dry_run_reports_a_conflict_from_a_declared_derivation(
@@ -224,7 +245,9 @@ def test_dry_run_reports_a_conflict_from_a_declared_derivation(
     )
 
     payload = json.loads(result.output)
-    assert result.exit_code == 0
+    assert result.exit_code == 7
+    assert payload["error"] == "scope-conflict"
+    assert payload["admission"]["conflicting_run_id"] == owner["run_id"]
     assert payload["validation"]["ok"] is True
     assert payload["live_conflicts"] == [
         {
@@ -241,6 +264,60 @@ def test_dry_run_reports_a_conflict_from_a_declared_derivation(
         }
     ]
     assert crew.live_dir().is_relative_to(home)
+
+
+def test_stopped_clean_claim_does_not_refuse_admission(home: Path, repo: Path) -> None:
+    owner = _claim(repo, "package/target.py")
+    owner.update({"phase": "stopped", "pid": 999999999, "worktree": str(repo)})
+    crew._write_json(crew.pointer_path(owner["run_id"]), owner)
+
+    preview = CliRunner().invoke(cli_module.main, _arguments(repo, "package/target.py"))
+
+    payload = json.loads(preview.output)
+    assert preview.exit_code == 0
+    assert payload["ok"] is True
+    assert payload["admission"] == {"state": "admitted"}
+    assert payload["live_conflicts"] == []
+    assert any("disregarded" in warning for warning in payload["warnings"])
+
+    record = crew.dispatch(
+        node=_node("package/target.py"),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="dispatch-session",
+        launcher=lambda *args, **kwargs: 4242,
+    )
+    assert record["run_id"]
+
+
+def test_accepted_directory_claim_admits_its_landing_fragment(
+    home: Path, repo: Path
+) -> None:
+    _claim(repo, "docs/evidence")
+    path = "docs/evidence/topic"
+    preview = CliRunner().invoke(
+        cli_module.main, [*_arguments(repo, path), "--accept-directory-claim"]
+    )
+
+    payload = json.loads(preview.output)
+    assert preview.exit_code == 0
+    assert payload["admission"] == {"state": "admitted"}
+
+    record = crew.dispatch(
+        node=_node(path),
+        project="proj",
+        repo=repo,
+        config=CONFIG,
+        session="dispatch-session",
+        accept_directory_claim=True,
+        launcher=lambda *args, **kwargs: 4242,
+    )
+    assert record["run_id"]
+    assert {row["candidate_path"] for row in record["directory_claim_acceptances"]} >= {
+        path,
+        "docs/evidence/fragments/dispatch-safety/candidate.html",
+    }
 
 
 def test_real_dispatch_still_refuses_before_creating_a_worktree(

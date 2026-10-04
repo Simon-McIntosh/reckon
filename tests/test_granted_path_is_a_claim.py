@@ -192,8 +192,17 @@ def test_a_granted_landing_collision_is_reported(home: Path, repo: Path) -> None
 def test_a_caller_named_collision_is_reported_as_before(home: Path, repo: Path) -> None:
     _live_holder(repo, "r-holder", "node-holder", (EXCLUSIVE,))
 
-    payload = _dry_run(repo, "node-later", (EXCLUSIVE,))
+    result = CliRunner().invoke(
+        cli_module.main, _dispatch_arguments(repo, "node-later", (EXCLUSIVE,))
+    )
+    payload = json.loads(result.output)
 
+    assert result.exit_code == 7
+    assert payload["ok"] is False
+    assert payload["error"] == "scope-conflict"
+    assert payload["conflicting_run_id"] == "r-holder"
+    assert payload["candidate_path"] == EXCLUSIVE
+    assert payload["claimed_path"] == EXCLUSIVE
     assert payload["live_conflicts"] == [
         {
             "candidate": "node-later",
