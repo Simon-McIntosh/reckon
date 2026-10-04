@@ -287,6 +287,8 @@ CONTRACT — LANDING YOUR RECORD
   prose nor a figure unless its done-when names that artifact; naming one
   does not permit the other. Any single data file above 300,000 bytes belongs
   in the run directory, not the repository.
+  Every element id in the fragment begins with the node id, so sibling
+  fragments composed into one record cannot claim the same anchor.
   Use a figure wherever a spatial, plotted or sequential relationship is clearer
   shown than described, under your own docs/figures/<plan>/<node-id>/ with the
   project-absolute src /<project>/figures/<plan>/<node-id>/...; never an image

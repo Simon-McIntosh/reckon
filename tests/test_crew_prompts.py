@@ -273,6 +273,22 @@ def test_landing_clause_forbids_editing_the_meta_lines_with_the_reason():
     assert META_EDIT_REASON in prompt
 
 
+# ── A fragment's element ids are unique by construction ─────────────────────
+
+FRAGMENT_ID_PREFIX_RULE = "Every element id in the fragment begins with the node id"
+FRAGMENT_ID_PREFIX_REASON = "cannot claim the same anchor"
+
+
+def test_a_fragment_writing_node_is_told_every_element_id_carries_the_node_id():
+    prompt = _flat(_prompt(role="implement"))
+
+    # Sibling fragments compose into one record, so two that reuse an id leave
+    # every later anchor unreachable. The brief states the rule that prevents
+    # the collision rather than leaving it to be caught after the writers end.
+    assert FRAGMENT_ID_PREFIX_RULE in prompt
+    assert FRAGMENT_ID_PREFIX_REASON in prompt
+
+
 def test_a_readonly_role_without_a_repository_change_receives_no_landing_clause():
     for role in ("review", "investigate"):
         prompt = _prompt_readonly(role=role)

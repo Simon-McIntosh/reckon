@@ -18,7 +18,7 @@
       <p class="lead">Lands the code half of the entry: the held-worktree fast path no longer selects a per-run file by the node token in its run id. Every per-run file the aggregate does not carry is read once per call and matched by the record's own two namings &mdash; the retained path and the node id &mdash; which is how the merged reader decides, so a record whose node id differs from its tree's directory name resolves to the same run the whole-ledger reader picks.</p>
     </header>
 
-    <section id="landing-what-landed">
+    <section id="held-worktrees-fast-path-names-differ-landing-what-landed">
       <h2>What landed</h2>
       <ul>
         <li><code>reckon/crew/obligations.py</code> &mdash; <code>_holding_record</code> takes the per-run records the aggregate does not carry and matches each against the tree by <code>_names_worktree</code> alone; the <code>_run_id_names_node</code> token test is gone, because a run's node id need not equal the tree's directory name, so a file's name cannot tell whether its record names the tree. <code>_held_worktree_records</code> reads each such file once for the call, in the same order the merged reader appends them, and the run the merged ledger's own order puts last holds the tree. A file whose row the aggregate already holds is still never opened.</li>
@@ -34,7 +34,7 @@ Extra items in the left set:  'r-20261001T090000000000-alpha-holds'
 Extra items in the right set: 'r-20261001T100000000000-beta-holds'</code></pre>
     </section>
 
-    <section id="landing-measure">
+    <section id="held-worktrees-fast-path-names-differ-landing-measure">
       <h2>Measure</h2>
       <p>Gate: 13 test files reaching <code>_held_worktrees</code>, <code>_held_worktrees_by_session</code>, <code>obligations()</code> or the snapshot it feeds, run with <code>pytest -n 8 --timeout=300</code> in each arm.</p>
       <ul>
@@ -46,7 +46,7 @@ Extra items in the right set: 'r-20261001T100000000000-beta-holds'</code></pre>
       </ul>
     </section>
 
-    <section id="landing-commits">
+    <section id="held-worktrees-fast-path-names-differ-landing-commits">
       <h2>Commits and records</h2>
       <p>Code and tests: <code>a5576b7ff37dffc80d8d53ac7d7edf5610eb3586</code>. Logs in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261003T075909628508-held-worktrees-fast-path-names-differ/</code>: <code>gate-base.log</code> (base arm), <code>gate-head-a5576b7.log</code> (head arm), <code>negative-control.log</code> (declared mutation).</p>
     </section>

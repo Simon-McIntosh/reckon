@@ -18,7 +18,7 @@
       <p class="lead">The hook now rechecks each worktree-held row where it is offered, against the run's committed record and the tree on disk, so a promotion that released its tree between the sweep and the read no longer offers housekeeping whose own remedy is refused.</p>
     </header>
 
-    <section id="landing-what-landed">
+    <section id="a-worktree-held-row-is-rechecked-at-read-landing-what-landed">
       <h2>What landed</h2>
       <ul>
         <li><code>reckon/hooks/coordinator_obligations.py</code> &mdash; the prompt and stop paths pass the live payload through <code>recheck_worktree_held_rows</code>, which drops a worktree-held row when the run's per-run record under the project's own state directory shows <code>release.worktree_released</code>, or when the tree that record names is no longer a directory. One stat per row.</li>
@@ -28,7 +28,7 @@
       </ul>
     </section>
 
-    <section id="landing-measure">
+    <section id="a-worktree-held-row-is-rechecked-at-read-landing-measure">
       <h2>Measure</h2>
       <p>Gate: the eight test files that reach the obligations hook, run with <code>pytest -n 8 --timeout=300</code> in each arm.</p>
       <ul>
@@ -40,7 +40,7 @@
       </ul>
     </section>
 
-    <section id="landing-commits">
+    <section id="a-worktree-held-row-is-rechecked-at-read-landing-commits">
       <h2>Commits and records</h2>
       <p>Code and tests: <code>de60d63969e31c11bc431771077849836edc950d</code>, then <code>ab1a7c0cf59319cdbf2ebe16a3881d39d71bf1fb</code> for the per-run-only resolution and its case. Logs in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T071744562101-a-worktree-held-row-is-rechecked-at-read/</code>: <code>baseline-suite.log</code> (base arm, which carries the negative control), <code>after-suite.log</code> (head arm), <code>aggregate-control.log</code> (the re-inserted-fallback control).</p>
     </section>

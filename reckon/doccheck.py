@@ -1455,6 +1455,27 @@ def _duplicate_element_id_findings(
     ]
 
 
+def audit_composed_record_ids(
+    record_path: Path, plan_slug: str, *, project: str | None = None
+) -> list[Finding]:
+    """Report duplicate element ids in a record composed with its fragments.
+
+    A caller that has just seen a fragment written names the plan from the
+    fragment's own directory rather than reading it back from the record's
+    ``plan-evidence-for`` meta: a record whose meta is missing or names another
+    plan would otherwise be composed without the fragments that put it at risk
+    and the check would pass silently. The finding text is the one ``audit-doc``
+    reports for a composed record, so both surfaces describe a collision with one
+    wording. A composition that fails falls back to the record's own bytes, as it
+    does in :func:`audit_file`, and only collisions visible there are reported.
+    """
+
+    text, _ = _composed_record_text(record_path, plan_slug, project)
+    return _duplicate_element_id_findings(
+        text, _composed_record_sources(record_path, plan_slug)
+    )
+
+
 def audit_file(path: Path, *, project: str | None = None) -> list[Finding]:
     from reckon.evidence import evidence_record_plan
 
