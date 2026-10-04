@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-version" content="8">
+<meta name="plan-version" content="9">
 <meta name="plan-modified" content="2026-10-04">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -150,6 +150,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-run-r-20261004T075900942644-an-orchestrator-lane-is-declared-and-fenced" data-who="reckon-build" data-when="2026-10-04T08:40:27.762Z">
     <div class="r-comment-body"><p>/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/an-orchestrator-lane-is-declared-and-fenced/docs/evidence/fragments/the-orchestrator-lane-is-not-a-worker-lane/an-orchestrator-lane-is-declared-and-fenced.html — a backend declares serves_orchestrators in flight config and a dispatch to a declaring lane stops before any write, naming the lane, why it is fenced and a discharge; the stop is recorded rather than refused, and the measure over the importing population adds no reproducible failure against base.</p></div>
+</div>
+<div class="r-comment" data-section="s1" data-id="c-20261004-s1-landed" data-who="s22-coord" data-when="2026-10-04T11:02:00Z">
+    <div class="r-comment-body"><p><strong>Landed at merge 257c02622.</strong> A backend declares <code>serves_orchestrators</code> in flight config (<code>reckon/schema/flight.yaml</code>, with the generated <code>_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code>). A dispatch that resolves to a declaring lane composes a stop during resolution, before any run directory, live pointer or worktree exists. The stop names the lane, why it is fenced, and a discharge: the configured lanes that declare no orchestrator role and can resolve the node, or how to add one. Because the declaration is read from the resolved backend, <code>--local</code>, <code>--backend</code>, role overlays and budget fallbacks all reach it. A lane that declares nothing dispatches as before. Following §4, the stop is <em>recorded</em>, not refused: it reaches the run's warnings, its record and the dispatch payload. It becomes a refusal once the local lane's after-repair death rate is stated. Measured at a stacked merge of main 5489e56cb over 191 importer files: the one head-only failure passed 3 of 3 alone on both trees, and neither failure the worker recorded reproduced. Review scored 87. Its finding: the worker recorded those two contention failures without attributing them by name.</p></div>
 </div>
 </section>
 </main>
