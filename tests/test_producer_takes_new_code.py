@@ -29,6 +29,7 @@ import shutil
 import socket
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from pathlib import Path
@@ -70,6 +71,128 @@ def isolated_home(tmp_path, monkeypatch) -> Path:
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
     return home
+
+
+@pytest.fixture(autouse=True)
+def _a_moved_source_cannot_reload_the_arming(monkeypatch):
+    """Freeze the code stamp so an ambient source change cannot re-execute.
+
+    The follower command replaces its own process image when the content stamp
+    over its source moves while it is attached, and in this suite the tree does
+    move under a running case: a peer's commit landing in the checkout, or the
+    reload cases that append probe bytes to the follower's source. The follower
+    invocations here run in a child this test owns, and the stamp is held still
+    for the case, so an ambient edit cannot replace either the child or the
+    process hosting the suite. The producer under measure is a process of its
+    own and reloads itself on its own stamp, which the cases assert directly.
+    """
+    held = runs.follower_code_stamp()
+    monkeypatch.setattr(runs, "follower_code_stamp", lambda: held)
+
+
+_CHILD_ARMING = """\
+import json
+import pathlib
+import sys
+import traceback
+
+from click.testing import CliRunner
+
+from reckon import cli
+from reckon.crew import runs
+
+payload_path = pathlib.Path(sys.argv[1])
+entry_name, terminal, producer_live_hint = sys.argv[2], sys.argv[3] == "terminal", sys.argv[4] == "producer-live"
+arguments = sys.argv[5:]
+
+# An arming must not re-execute the process it runs in: a source edit landing
+# under it replaces the image, and the arming's own lifetime then ends the
+# replacement.
+held = runs.follower_code_stamp()
+runs.follower_code_stamp = lambda: held
+if producer_live_hint:
+    runs.producer_live = lambda project: True
+if terminal:
+    cli._follow_replay_visible = lambda: True
+
+rows = []
+payload = {"rows": [], "exit_code": None, "output": "", "error": ""}
+try:
+    result = CliRunner().invoke(
+        cli.crew if entry_name == "crew" else cli.main,
+        arguments,
+        catch_exceptions=False,
+    )
+    payload = {
+        "rows": rows,
+        "exit_code": result.exit_code,
+        "output": result.output,
+        "error": "",
+    }
+except BaseException:
+    payload["error"] = traceback.format_exc()
+    payload["rows"] = rows
+payload_path.write_text(json.dumps(payload))
+"""
+
+
+def _follow_in_a_child(
+    args: list[str], *, producer_live: bool = False
+) -> tuple[int, str]:
+    """Run one follower invocation in a child process this test owns.
+
+    The follower command can end the process it runs in: when the content
+    stamp over its source moves while it is attached it re-executes itself in
+    place, and the arming's own lifetime then ends the replacement. A test
+    runner hosting that invocation is the process it ends, which is how a case
+    here crashed an xdist worker and took every case still queued on it. The
+    invocation therefore runs as a child process of this test, with the case's
+    patches applied inside the child, and a child that ends without returning
+    its output is reported as a failure of the case rather than a vanished
+    runner.
+    """
+    workdir = Path(tempfile.mkdtemp(prefix="reckon-arming-"))
+    try:
+        payload_path = workdir / "payload.json"
+        root = str(Path(cli_module.__file__).resolve().parents[1])
+        env = dict(os.environ)
+        env["PYTHONPATH"] = root + os.pathsep + env.get("PYTHONPATH", "")
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                _CHILD_ARMING,
+                str(payload_path),
+                "main",
+                "plain",
+                "producer-live" if producer_live else "plain",
+                *args,
+            ],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+        if not payload_path.exists():
+            raise AssertionError(
+                "the follower ended the process it ran in without returning (it "
+                "re-executed in place or exited); it runs in a child this test "
+                "owns, so the runner survives it. Child stderr: "
+                f"{completed.stderr[-2000:]}"
+            )
+        payload = json.loads(payload_path.read_text())
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+    if payload["error"]:
+        raise AssertionError(f"the follower failed in its child: {payload['error']}")
+    if payload["exit_code"] is None:
+        raise AssertionError(
+            "the follower ended the process it ran in without returning (it "
+            "re-executed in place or exited); it runs in a child this test "
+            "owns, so the runner survives it"
+        )
+    return payload["exit_code"], payload["output"]
 
 
 def _copy_source(tmp_path) -> tuple[Path, Path]:
@@ -524,9 +647,7 @@ def test_the_follower_names_a_producer_running_older_code(
     assert stale_events() == [], "a current seat must say nothing."
 
 
-def test_the_follow_json_surface_carries_the_stale_producer(
-    isolated_home, monkeypatch
-) -> None:
+def test_the_follow_json_surface_carries_the_stale_producer(isolated_home) -> None:
     """JSON mode emits an object for this line, as it does for every other.
 
     The line is composed inside the follower, which does not know the output
@@ -535,7 +656,6 @@ def test_the_follow_json_surface_carries_the_stale_producer(
     routes it, so JSON mode emits one object carrying the stamps and the remedy
     and text mode prints the line.
     """
-    monkeypatch.setattr(runs, "producer_live", lambda project: True)
     pid, pid_start, host = _self_identity()
     _plant_seat_record(
         PROJECT,
@@ -547,8 +667,7 @@ def test_the_follow_json_surface_carries_the_stale_producer(
         reckon_version=runs.__version__,
     )
 
-    result = CliRunner().invoke(
-        cli_module.main,
+    exit_code, output = _follow_in_a_child(
         [
             "crew",
             "follow",
@@ -561,25 +680,24 @@ def test_the_follow_json_surface_carries_the_stale_producer(
             "--width",
             "240",
         ],
+        producer_live=True,
     )
-    assert result.exit_code == 0, result.output
+    assert exit_code == 0, output
     # Every emitted line parses as JSON: a bare text line among objects is the
     # defect this routing removes, so parsing each line is the assertion.
-    payloads = [json.loads(line) for line in result.output.splitlines() if line.strip()]
+    payloads = [json.loads(line) for line in output.splitlines() if line.strip()]
     stale = [
         payload
         for payload in payloads
         if payload.get("event") == cli_module.FOLLOWER_STALE_PRODUCER_EVENT
     ]
-    assert stale, result.output
+    assert stale, output
     assert stale[0]["code_stamp"] == "0" * 64
     assert stale[0]["remedy"] == runs.watch_cycle_line(PROJECT)
     assert "runs older code" in stale[0]["line"]
 
 
-def test_the_follow_text_surface_prints_the_stale_producer_line(
-    isolated_home, monkeypatch
-) -> None:
+def test_the_follow_text_surface_prints_the_stale_producer_line(isolated_home) -> None:
     """Text mode prints the line JSON mode routes as an object.
 
     The stale-producer detection is delivered as an event so a JSON reader
@@ -589,7 +707,6 @@ def test_the_follow_text_surface_prints_the_stale_producer_line(
     operator needs is never shown. The two output modes are asserted against the
     same planted stale seat, so neither can pass by measuring the other's path.
     """
-    monkeypatch.setattr(runs, "producer_live", lambda project: True)
     pid, pid_start, host = _self_identity()
     _plant_seat_record(
         PROJECT,
@@ -601,8 +718,7 @@ def test_the_follow_text_surface_prints_the_stale_producer_line(
         reckon_version=runs.__version__,
     )
 
-    result = CliRunner().invoke(
-        cli_module.main,
+    exit_code, output = _follow_in_a_child(
         [
             "crew",
             "follow",
@@ -614,12 +730,13 @@ def test_the_follow_text_surface_prints_the_stale_producer_line(
             "--width",
             "240",
         ],
+        producer_live=True,
     )
-    assert result.exit_code == 0, result.output
+    assert exit_code == 0, output
     # Text mode emits the composed line, not a JSON object: the marker that
     # only that branch prints is what this asserts.
-    assert "runs older code" in result.output, result.output
-    assert runs.watch_cycle_line(PROJECT) in result.output, result.output
+    assert "runs older code" in output, output
+    assert runs.watch_cycle_line(PROJECT) in output, output
     # The control: this string is carried by the event the JSON branch emits, so
     # it is absent from text mode and the assertion above is not vacuous.
-    assert cli_module.FOLLOWER_STALE_PRODUCER_EVENT not in result.output, result.output
+    assert cli_module.FOLLOWER_STALE_PRODUCER_EVENT not in output, output

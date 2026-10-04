@@ -1,0 +1,88 @@
+<section id="a-rearm-test-never-ends-its-worker">
+  <h2>A re-arm case cannot end the runner that hosts it</h2>
+  <p>
+    A follower replaces its own process image when the content stamp over its
+    source moves while it is attached. The three re-arm cases here run the real
+    follower command, so a stamp moved mid-case &mdash; a peer's commit landing
+    in the checkout, or the reload cases that append probe bytes to the
+    follower's source &mdash; re-executed the xdist worker hosting the case, and
+    the arming's own lifetime then ended that replacement. Measured at the base
+    revision under an oscillating edit of the follower's source beside CPU load:
+    nine workers crashed, and nine follower reload launchers were observed in
+    <code>/proc</code>, one per crash.
+  </p>
+  <p>
+    Each case now runs its follower invocation in a child process the test owns,
+    with the case's capture and patches applied inside the child, and an autouse
+    fixture holds the code stamp still for the duration of the case. No case can
+    reach <code>os.execve</code>, <code>os._exit</code> or a signal path that
+    runs in the runner.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Loaded loop, <code>pytest -n 8</code> beside four CPU load generators</th>
+        <th>Base <code>0f5941a18</code></th>
+        <th>Head <code>97fa44072</code></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Iterations run</td><td>1 (the crash reproduced on it)</td><td>30</td></tr>
+      <tr><td>Crashed xdist workers</td><td>9</td><td>0</td></tr>
+      <tr><td>Follower reload launchers observed naming the tree under test</td><td>9</td><td>0</td></tr>
+      <tr><td>Iterations ending green</td><td>0 (10 failed, 35 passed)</td><td>4 (45 passed)</td></tr>
+      <tr><td>Iterations drawing the stale-producer line</td><td>0</td><td>26</td></tr>
+      <tr><td>Same loop without the source edit</td><td>1 iteration: 45 passed, 0 crashes</td><td>3 iterations: 45 passed, 0 crashes</td></tr>
+    </tbody>
+  </table>
+  <h3>The 26 iterations that were not green</h3>
+  <p>
+    Every iteration that failed carries the follower's stale-producer line
+    (<code>producer &hellip; runs older code than this follower</code>), and the
+    three cases that assert a pane's exact rows fail on the extra line. The line
+    is the follower's correct answer to the loop's own edit: the producer
+    registered its stamp while the source was clean, the arming read the edited
+    stamp, and the line persists for that arming. Neither revision draws it
+    without the source edit, and at base the same trigger ended the process
+    before a line could be drawn: nine of the ten base failures are
+    worker-crash attributions, and the tenth is an in-process stamp assertion
+    raced by the loop's own edit.
+  </p>
+  <p>
+    The loop edits the source every 100&nbsp;ms, which no commit and no probe
+    append does, so it is a harsher trigger than the tree sees in a real run.
+    Crashed workers are the measure the loop exists to take, and that count is
+    zero across 30 iterations at head against nine in the base arm's single
+    iteration.
+  </p>
+  <p>
+    The case children are <code>python -c</code> processes whose launcher names
+    the tree under test, so a child that re-executes still shows as one
+    <code>/proc</code> hit per iteration; none was seen in 30. Producer reloads
+    under measure still exec, inside the children those cases own.
+  </p>
+  <h3>The stacked measure, and the importer it caught</h3>
+  <p>
+    A later measure stacked the main revision <code>11e86b0ff</code> against
+    its merge with this head, over 130 follower files at <code>-n 8</code>. No
+    worker crashed in either arm, so the defect this change removes stayed
+    removed with the change merged. The same measure found one failure the
+    change had added, and it was deterministic: a case importing the arming
+    helper and calling it with no rows list, which the helper had begun to
+    require, failed three times of three at the head and passed three times of
+    three at the base revision.
+  </p>
+  <p>
+    The list is optional again: a case that passes one still has the child's
+    rows appended to it, and a case that passes none has them replayed through
+    the <code>cli._echo_follow_line</code> it installed, which is the capture
+    shape the importing modules were written against. Both importer files run
+    green with the three re-arm files &mdash; 49 tests in 94&nbsp;s without
+    xdist workers, and 49 in 18&nbsp;s at <code>-n 8</code> &mdash; and the two
+    importer files alone passed four tests in each of three consecutive
+    <code>-n 8</code> runs. The same five files were then put through the
+    loaded loop at the delivered revision: three iterations, no crashed worker
+    and no reload launcher naming the tree, with the four failures that did
+    appear being the exact-pane cases drawing the stale-producer line above.
+  </p>
+</section>
