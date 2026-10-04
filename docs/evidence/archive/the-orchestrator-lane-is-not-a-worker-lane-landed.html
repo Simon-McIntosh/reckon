@@ -6,120 +6,502 @@
   <meta name="docs-project" content="reckon">
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="the-orchestrator-lane-is-not-a-worker-lane-landed">
-  <meta name="plan-title" content="The Orchestrator Lane Is Not A Worker Lane — landed evidence">
-  <meta name="plan-summary" content="The local lane's mid-turn death rate at the review reflex's effort is stated from the runs' own streams; the after-rate waits on the repair.">
+  <meta name="plan-title" content="The Orchestrator Lane Is Not A Worker Lane — landed record">
+  <meta name="plan-summary" content="Closure synthesis for The Orchestrator Lane Is Not A Worker Lane: 9 committed run(s), 10 section-anchored comment(s), and 8 landed commit(s).">
   <meta name="plan-evidence-for" content="the-orchestrator-lane-is-not-a-worker-lane">
-  <meta name="plan-verifies" content="the-orchestrator-lane-is-not-a-worker-lane#s4">
-  <meta name="plan-commits" content="41074252,50da2f08,bd735f73,6f94d9a">
-  <meta name="plan-artifacts" content="docs/research/data/local-lane-deaths.json,docs/research/scripts/scan_local_lane_deaths.py,docs/research/scripts/plot_local_lane_deaths.py,tests/test_the_local_lane_death_rate_is_stated.py,docs/research/local-lane-death-rate.html,docs/figures/the-orchestrator-lane-is-not-a-worker-lane/deaths-per-day-by-role.png">
-  <meta name="plan-recorded-at" content="2026-09-28">
-  <meta name="plan-verdict" content="qualified">
-  <meta name="plan-environment" content="reckon project virtual environment, node-local scan of the crew run streams">
-  <meta name="plan-tags" content="reckon-tooling,crew">
-  <title>The Orchestrator Lane Is Not A Worker Lane — landed evidence | reckon</title>
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-recorded-at" content="2026-10-04T20:42:29.876Z">
+  <meta name="plan-commits" content="410742527becd897f77728d52da6f7c8f519f6f9,50da2f084d7d61442556d62bb83ea4eb6f930a95,bd735f73b6c77da4d9134192c0f4051cd7739b56,6f94d9aff243947e91597dcbfea0a6f94d6c1c96,7b98d185d9e43b971cce28c988d5a6cb093c9479,7a09344676704a71b1b466a9558c88946f69117e,d918a461ab82301ed2cee0dbed57d279dd9cee99,557ce8a5316912ec7abc5e53b8f0d5c5152d21d9">
+  <title>The Orchestrator Lane Is Not A Worker Lane — landed record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
 <body>
-  <main class="plan-doc">
-    <header>
-      <p class="eyebrow">Execution evidence</p>
-      <h1>§4 — the lane they were escaping is measured</h1>
-      <p class="lead">Three in ten review attempts on the locally served lane end with no
-      result record, read from the attempts' own streams rather than from any rollup.</p>
-    </header>
+ <main class="plan-doc">
+  <h1>The Orchestrator Lane Is Not A Worker Lane — landed record</h1>
+  <p>Closure synthesis for The Orchestrator Lane Is Not A Worker Lane: 9 committed run(s), 10 section-anchored comment(s), and 8 landed commit(s).</p>
 
-    <section id="s4">
-      <h2>&sect;4 &mdash; The before-rate at the review reflex's effort</h2>
-      <p>Commit <code>41074252</code> lands the measurement and its gate; <code>50da2f08</code>
-      lands the research page and its figure; <code>bd735f73</code> lands this record on the
-      plan. A review of that landing found three defects, all repaired in place: the
-      headline figure now names the population it counts instead of pooling the review role
-      across efforts beside a single-effort cell, the scanner is committed so the
-      measurement can be reproduced rather than only read, and the counts behind the role
-      attribution are stated in the data file. The classification is read from each attempt
-      stream's own terminal shape: the harness writes a top-level <code>result</code> record
-      when a turn ends, so a stream whose last record is anything else, for a run whose
-      process is gone, is an attempt that died mid-turn.</p>
-      <table>
-        <thead><tr><th>Measure</th><th>Result</th></tr></thead>
-        <tr><td>Window</td><td>2026-09-02T13:32Z &rarr; 2026-09-28T08:05Z</td></tr>
-        <tr><td>Local-lane run directories</td><td>2486 of 6290 scanned</td></tr>
-        <tr><td>Attempts on the local lane</td><td>3354</td></tr>
-        <tr><td>Review-role attempts, every effort</td><td>1066</td></tr>
-        <tr><td><strong>Deaths, review at <code>xhigh</code></strong></td><td><strong>299 of 1018 (29.4%)</strong></td></tr>
-        <tr><td>Deaths, review role at every effort</td><td>300 of 1066 (28.1%)</td></tr>
-        <tr><td>Deaths, all roles at all efforts</td><td>488</td></tr>
-        <tr><td>Implement at <code>high</code>, for comparison</td><td>153 of 1814 (8.4%)</td></tr>
-        <tr><td>Trailing seven days</td><td>228 of 715 review attempts (31.9%)</td></tr>
-      </table>
-      <p>The rate is not decaying on its own: the trailing seven days are higher than the
-      whole window, and the heaviest day in the corpus is 2026-09-25 with 80 deaths, 72 of
-      them review.</p>
-      <p><strong>Three figures, three populations, and the headline is the first.</strong>
-      The fence reads <em>review at the lane's declared review effort</em>: 299 of 1018. The
-      review role at every effort is stated beside it (300 of 1066) so a reader can see the
-      effort split rather than having it folded in, and the all-roles total (488) is the
-      corpus, not a comparison. A test asserts the headline equals its own effort cell, so
-      the figure cannot drift from the row that carries it.</p>
-      <p><strong>The measurement is reproduced by a committed script.</strong>
-      <code>docs/research/scripts/scan_local_lane_deaths.py</code> is versioned beside the
-      page it serves, bounded with <code>timeout 1200</code>, and the data file it writes
-      names that path and the scan moment. The figure is drawn from the same data file by
-      <code>docs/research/scripts/plot_local_lane_deaths.py</code>, also committed.</p>
-    </section>
+  <section id="s1">
+    <h2>s1</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261001T000601090947-currency-the-orchestrator-lane-is-not-a-worker-lane">
+      <p><small>reckon-build · 2026-10-01T00:29:35.165Z</small></p>
+      <div class="r-comment-body"><p>Currency audit at main b7134f5f, nothing in the repository changed: report.md states s1 unmet, s2 unmet, s3 unmet (no orchestrator-lane declaration, refusal, override or surface text exists; dry-run dispatch to backend claude resolves ok:true EXIT=0) and s4 partly met (before-rate gate 7 passed; after-rate carried by a-review-dies-where-nobody-is-looking §9 followup f-ardwnil-004), with dispatch order and write paths per item.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261001T002953354488-review-of-currency-the-orchestrator-lane-is-not-a-worker-lane">
+      <p><small>reckon-build · 2026-10-01T00:37:20.049Z</small></p>
+      <div class="r-comment-body"><p>Independent review of r-20261001T000601090947-currency-the-orchestrator-lane-is-not-a-worker-lane stored at both granted paths (legacy and .at-b7134f5fdfeba023bbd6cc74ad5c8350802e5920): parsed, all 5 dimensions scored 0..20 (goal_fidelity 18, evidence 16, scope_discipline 19, durability 5 exempted, fit 17; total 75), added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own green gate log; one follow-on finding on the s4 gate log header naming a non-runnable target path.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T084041291138-review-of-an-orchestrator-lane-is-declared-and-fenced">
+      <p><small>reckon-build · 2026-10-04T08:46:58.985Z</small></p>
+      <div class="r-comment-body"><p>review of run r-20261004T075900942644-an-orchestrator-lane-is-declared-and-fenced stored at both granted paths (legacy and .at-d918a461ab82301ed2cee0dbed57d279dd9cee99); parsed, all 5 dimensions scored 0..20 (goal_fidelity 18, evidence 15, scope_discipline 16, durability 19, fit 19; total 87), reviewed_base_... 657e199ba / reviewed_head_... d918a461a, added_failure_count 2 with the two population failure ids; the reviewed run's declaring-lane stop, its declaration-removal null control and its before-write ordering all verified, with two follow-on findings (two added population failures it did not retire or attribute, and a generated out-of-scope write it disclosed).</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T075900942644-an-orchestrator-lane-is-declared-and-fenced">
+      <p><small>reckon-build · 2026-10-04T08:40:27.762Z</small></p>
+      <div class="r-comment-body"><p>/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/s22-coord/an-orchestrator-lane-is-declared-and-fenced/docs/evidence/fragments/the-orchestrator-lane-is-not-a-worker-lane/an-orchestrator-lane-is-declared-and-fenced.html — a backend declares serves_orchestrators in flight config and a dispatch to a declaring lane stops before any write, naming the lane, why it is fenced and a discharge; the stop is recorded rather than refused, and the measure over the importing population adds no reproducible failure against base.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20261004-s1-landed">
+      <p><small>s22-coord · 2026-10-04T11:02:00Z</small></p>
+      <div class="r-comment-body"><p><strong>Landed at merge 257c02622.</strong> A backend declares <code>serves_orchestrators</code> in flight config (<code>reckon/schema/flight.yaml</code>, with the generated <code>_flight_schema.py</code> and <code>docs/_shared/flight.schema.json</code>). A dispatch that resolves to a declaring lane composes a stop during resolution, before any run directory, live pointer or worktree exists. The stop names the lane, why it is fenced, and a discharge: the configured lanes that declare no orchestrator role and can resolve the node, or how to add one. Because the declaration is read from the resolved backend, <code>--local</code>, <code>--backend</code>, role overlays and budget fallbacks all reach it. A lane that declares nothing dispatches as before. Following §4, the stop is <em>recorded</em>, not refused: it reaches the run's warnings, its record and the dispatch payload. It becomes a refusal once the local lane's after-repair death rate is stated. Measured at a stacked merge of main 5489e56cb over 191 importer files: the one head-only failure passed 3 of 3 alone on both trees, and neither failure the worker recorded reproduced. Review scored 87. Its finding: the worker recorded those two contention failures without attributing them by name.</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261001T000601090947-currency-the-orchestrator-lane-is-not-a-worker-lane</code></td>
+        <td>currency-the-orchestrator-lane-is-not-a-worker-lane</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>21m 28s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261001T002953354488-review-of-currency-the-orchestrator-lane-is-not-a-worker-lane</code></td>
+        <td>review-of-currency-the-orchestrator-lane-is-not-a-worker-lane</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>6m 52s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261004T075900942644-an-orchestrator-lane-is-declared-and-fenced</code></td>
+        <td>an-orchestrator-lane-is-declared-and-fenced</td>
+        <td><code>7a09344676704a71b1b466a9558c88946f69117e</code><br><code>d918a461ab82301ed2cee0dbed57d279dd9cee99</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>40m 50s</td>
+        <td><code>{&quot;added&quot;:487,&quot;files&quot;:6,&quot;removed&quot;:0}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261004T084041291138-review-of-an-orchestrator-lane-is-declared-and-fenced</code></td>
+        <td>review-of-an-orchestrator-lane-is-declared-and-fenced</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>5m 36s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report landed-report-unreadable" data-run-id="r-20261001T000601090947-currency-the-orchestrator-lane-is-not-a-worker-lane">
+      <h3>currency-the-orchestrator-lane-is-not-a-worker-lane &mdash; no record composed</h3>
+      <p>This run landed no commits and no path in its manifest resolves to a readable file (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-the-orchestrator-lane-is-not-a-worker-lane/report.md (headline: 3 unmet, /home/ITER/mcintos/Code/reckon/1 partly met, /home/ITER/mcintos/Code/reckon/1 open followup unmet); logs/s1-repro-dispatch-resolved.log (ok:true EXIT=0); logs/s3-dispatch-help.log; logs/s4-before-rate-gate.log (7 passed, /home/ITER/mcintos/Code/reckon/0 failed); logs/s4-after-window-census.log (clive_backend=73 other_backend=0 no_record=0), /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-the-orchestrator-lane-is-not-a-worker-lane), so no section could be composed from a report. The absence is recorded here rather than left as an anchored section with no content.</p>
+    </article>
+    <article class="landed-report" data-run-id="r-20261001T002953354488-review-of-currency-the-orchestrator-lane-is-not-a-worker-lane" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261001T000601090947-currency-the-orchestrator-lane-is-not-a-worker-lane.json">
+      <h3>review-of-currency-the-orchestrator-lane-is-not-a-worker-lane &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261001T000601090947-currency-the-orchestrator-lane-is-not-a-worker-lane.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;added_failure_count&quot;: 0,
+  &quot;added_failure_ids&quot;: [],
+  &quot;added_failures_note&quot;: &quot;added failures 0: the reviewed manifest carries no baseline_suite and no after_suite (both absent, verified by grep), because the node changed nothing (commits [ b7134f5fdfeba023bbd6cc74ad5c8350802e5920 ], changed_paths [], worktree on its base). Its own green gate log s4-before-rate-gate.log ends EXIT=0 with 7 passed and zero FAILED/ERROR ids, so the delta over its own arms is zero. Measured with reckon.crew.review.added_failures_from_gate_logs(base=&#x27;&#x27;, head=&lt;that log text&gt;) -&gt; (0, []); positive control: the same extractor over the same green text plus one FAILED line returns (1, [&#x27;tests/test_known_present.py::test_red&#x27;]), so the reader is shown to see a failure known present. Log: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261001T002953354488-review-of-currency-the-orchestrator-lane-is-not-a-worker-lane/added-failure-derivation.log.&quot;,
+  &quot;backend&quot;: &quot;clive&quot;,
+  &quot;call_site_count&quot;: 0,
+  &quot;call_sites&quot;: [],
+  &quot;dimension_dispositions&quot;: {
+    &quot;durability&quot;: {
+      &quot;kind&quot;: &quot;exempted&quot;,
+      &quot;reason&quot;: &quot;a currency report is a point-in-time reading that feeds dispatch, not a lasting artifact; each unmet item it names becomes its own node, whose test reproduces the item at base before repairing it&quot;,
+      &quot;recorded_at&quot;: &quot;2026-10-01T00:38:50.600252+00:00&quot;
+    }
+  },
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-the-orchestrator-lane-is-not-a-worker-lane/logs/s4-before-rate-gate.log&quot;,
+      &quot;line&quot;: &quot;6&quot;,
+      &quot;severity&quot;: &quot;follow-on&quot;,
+      &quot;text&quot;: &quot;the gate log&#x27;s own header names the pytest target as `/tests/test_the_local_lane_death_rate_is_stated.py` \u2014 a leading-slash path carrying no worktree prefix \u2014 so the command as recorded is not the command that ran and the s4 check cannot be replayed from the log header alone; the manifest&#x27;s `tests:` field carries the correct absolute target, but a repair node reading only this log would find a path that does not exist.&quot;
+    }
+  ],
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;no production call sites \u2014 the reviewed node changes no runtime code, so nothing can reach it.&quot;,
+    &quot;diff&quot;: &quot;there is no repository diff: the reviewed node is a read-only currency audit at b7134f5f with an empty worktree status, and its deliverable is report.md plus the logs under the report directory, outside any checkout.&quot;,
+    &quot;done_when&quot;: &quot;the audit&#x27;s measure is a verdict per item anchored to the committed blob at the named revision plus an executed check per met item; report.md:1 names b7134f5fdfeba023bbd6cc74ad5c8350802e5920, \u00a74 carries an executed gate (report.md:140-143, 7 passed EXIT=0) and \u00a71 a reproduction (report.md:37-77), while the unmet \u00a72 and \u00a73 rest on the dispatch help surface and schema reads.&quot;,
+    &quot;goal&quot;: &quot;the reviewed node&#x27;s goal is a currency audit at main of the plan&#x27;s open followup f-tolinawl-001 and its implementable sections s1-s4; report.md:1 names b7134f5fdfeba023bbd6cc74ad5c8350802e5920, report.md:16-23 judges f-tolinawl-001 UNMET, :24-79 \u00a71 UNMET, :80-101 \u00a72 UNMET, :102-126 \u00a73 UNMET, :127-167 \u00a74 PARTLY MET, and :168-196 orders the repairs.&quot;,
+    &quot;manifest&quot;: &quot;read; it records status complete, commits [ b7134f5fdfeba023bbd6cc74ad5c8350802e5920 ], changed_paths [], the s4 gate as 7 passed EXIT=0, the census and reproduction logs, and evidence_inputs naming the unchanged-run suite exemption (reckon/crew/promotion.py:4153-4206, verified present in the reviewed tree).&quot;,
+    &quot;write_paths&quot;: &quot;the reviewed node is fenced to the report directory; git -C &lt;reviewed worktree&gt; status --short is empty at b7134f5fdfeba023bbd6cc74ad5c8350802e5920, so report.md and its logs sit under the declared report path and no repository path changed.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;nothing guards the report: crew/reports is not a git repository and no test or source reads /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-the-orchestrator-lane-is-not-a-worker-lane/report.md, so a later edit to a verdict or an anchor fails nothing.&quot;,
+    &quot;evidence&quot;: &quot;the s4 gate log names revision b7134f5fdfeba023bbd6cc74ad5c8350802e5920 and records 7 passed EXIT=0 (s4-before-rate-gate.log:1-8), and the s1 reproduction resolves backend claude ok:true EXIT=0 (s1-repro-dispatch-resolved.log:227); the earlier arms are disclosed (fence OSError s1-repro-dispatch-to-orchestrator-lane.log:40, config refusal s1-repro-dispatch-scratch-home.log:12), but the gate log&#x27;s own header command names a non-runnable target path.&quot;,
+    &quot;fit&quot;: &quot;the report follows the repo&#x27;s triage idiom (a verdict then a per-item anchor and reproduction), cites plan section ids as content, and introduces no banned plan, stage or version name.&quot;,
+    &quot;goal_fidelity&quot;: &quot;report.md:16-167 gives one verdict per open followup and per implementable section, each with its settling anchor and its unmet / partly-met status, which is exactly the currency question the goal names.&quot;,
+    &quot;scope_discipline&quot;: &quot;the reviewed worktree sits clean on b7134f5fdfeba023bbd6cc74ad5c8350802e5920 and the manifest records commits [ b7134f5fdfeba023bbd6cc74ad5c8350802e5920 ] and changed_paths [], so every artifact is at the declared report path or the run directory and no repository path changed.&quot;
+  },
+  &quot;model&quot;: &quot;deepseek-v4.1-flash&quot;,
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: the reviewed node&#x27;s goal is a currency audit at main of the plan&#x27;s open followup f-tolinawl-001 and its implementable sections s1-s4; report.md:1 names b7134f5fdfeba023bbd6cc74ad5c8350802e5920, report.md:16-23 judges f-tolinawl-001 UNMET, :24-79 \u00a71 UNMET, :80-101 \u00a72 UNMET, :102-126 \u00a73 UNMET, :127-167 \u00a74 PARTLY MET, and :168-196 orders the repairs.\nVERDICT done_when: the audit&#x27;s measure is a verdict per item anchored to the committed blob at the named revision plus an executed check per met item; report.md:1 names b7134f5fdfeba023bbd6cc74ad5c8350802e5920, \u00a74 carries an executed gate (report.md:140-143, 7 passed EXIT=0) and \u00a71 a reproduction (report.md:37-77), while the unmet \u00a72 and \u00a73 rest on the dispatch help surface and schema reads.\nVERDICT write_paths: the reviewed node is fenced to the report directory; git -C &lt;reviewed worktree&gt; status --short is empty at b7134f5fdfeba023bbd6cc74ad5c8350802e5920, so report.md and its logs sit under the declared report path and no repository path changed.\nVERDICT manifest: read; it records status complete, commits [ b7134f5fdfeba023bbd6cc74ad5c8350802e5920 ], changed_paths [], the s4 gate as 7 passed EXIT=0, the census and reproduction logs, and evidence_inputs naming the unchanged-run suite exemption (reckon/crew/promotion.py:4153-4206, verified present in the reviewed tree).\nVERDICT diff: there is no repository diff: the reviewed node is a read-only currency audit at b7134f5f with an empty worktree status, and its deliverable is report.md plus the logs under the report directory, outside any checkout.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: report.md:16-167 gives one verdict per open followup and per implementable section, each with its settling anchor and its unmet / partly-met status, which is exactly the currency question the goal names.\nSCORE evidence: 16\nJUSTIFICATION evidence: the s4 gate log names revision b7134f5fdfeba023bbd6cc74ad5c8350802e5920 and records 7 passed EXIT=0 (s4-before-rate-gate.log:1-8), and the s1 reproduction resolves backend claude ok:true EXIT=0 (s1-repro-dispatch-resolved.log:227); the earlier arms are disclosed (fence OSError s1-repro-dispatch-to-orchestrator-lane.log:40, config refusal s1-repro-dispatch-scratch-home.log:12), but the gate log&#x27;s own header command names a non-runnable target path.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the reviewed worktree sits clean on b7134f5fdfeba023bbd6cc74ad5c8350802e5920 and the manifest records commits [ b7134f5fdfeba023bbd6cc74ad5c8350802e5920 ] and changed_paths [], so every artifact is at the declared report path or the run directory and no repository path changed.\nSCORE durability: 5\nJUSTIFICATION durability: nothing guards the report: crew/reports is not a git repository and no test or source reads /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-the-orchestrator-lane-is-not-a-worker-lane/report.md, so a later edit to a verdict or an anchor fails nothing.\nSCORE fit: 17\nJUSTIFICATION fit: the report follows the repo&#x27;s triage idiom (a verdict then a per-item anchor and reproduction), cites plan section ids as content, and introduces no banned plan, stage or version name.\nFINDING /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s22-coord/currency-the-orchestrator-lane-is-not-a-worker-lane/logs/s4-before-rate-gate.log:6 follow-on: the gate log&#x27;s own header names the pytest target as `/tests/test_the_local_lane_death_rate_is_stated.py` \u2014 a leading-slash path carrying no worktree prefix \u2014 so the command as recorded is not the command that ran and the s4 check cannot be replayed from the log header alone; the manifest&#x27;s `tests:` field carries the correct absolute target, but a repair node reading only this log would find a path that does not exist.\n&quot;,
+  &quot;review_run_id&quot;: &quot;r-20261001T002953354488-review-of-currency-the-orchestrator-lane-is-not-a-worker-lane&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;b7134f5fdfeba023bbd6cc74ad5c8350802e5920&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;b7134f5fdfeba023bbd6cc74ad5c8350802e5920&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20261001T000601090947-currency-the-orchestrator-lane-is-not-a-worker-lane&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 5,
+    &quot;evidence&quot;: 16,
+    &quot;fit&quot;: 17,
+    &quot;goal_fidelity&quot;: 18,
+    &quot;scope_discipline&quot;: 19
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-01T00:35:12.490413+00:00&quot;,
+  &quot;total&quot;: 75
+}
+</pre></div>
+    </article>
+    <article class="landed-report" data-run-id="r-20261004T084041291138-review-of-an-orchestrator-lane-is-declared-and-fenced" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T075900942644-an-orchestrator-lane-is-declared-and-fenced.json">
+      <h3>review-of-an-orchestrator-lane-is-declared-and-fenced &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T075900942644-an-orchestrator-lane-is-declared-and-fenced.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;added_failure_count&quot;: 2,
+  &quot;added_failure_ids&quot;: [
+    &quot;tests/test_crew_orphan.py::test_an_orphaned_watcher_is_replaced_rather_than_refused&quot;,
+    &quot;tests/test_dispatch_returns_without_worker.py::test_dispatch_returns_when_its_supervisor_finished_the_launch&quot;
+  ],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;tests/test_crew_orphan.py&quot;,
+      &quot;line&quot;: &quot;190&quot;,
+      &quot;severity&quot;: &quot;follow-on&quot;,
+      &quot;text&quot;: &quot;the population gate recorded this test and tests/test_dispatch_returns_without_worker.py:1326 as added failures the reviewed manifest does not retire by name, so reckon/crew/review.py:1177 caps the review total at 5 on read; a focused head re-run of both passes (focused-head-rerun.log, 2 passed in 10.50s), showing they are contention artifacts of the -n 8 population arm rather than consequences of the change, but the reviewed run recorded neither that re-run nor an attribution for the ids under failure_attribution, so the artifact claim is the reviewer&#x27;s, not the node&#x27;s.&quot;
+    },
+    {
+      &quot;file&quot;: &quot;docs/_shared/flight.schema.json&quot;,
+      &quot;line&quot;: &quot;220&quot;,
+      &quot;severity&quot;: &quot;follow-on&quot;,
+      &quot;text&quot;: &quot;this generated artifact was regenerated outside the node&#x27;s declared write paths; the write is necessary because tests/test_flight.py:146 asserts docs/_shared/flight.schema.json regenerates byte-identically from reckon/schema/flight.yaml and test_flight.py imports reckon._flight_schema, so leaving it stale would red the node&#x27;s own declared gate, and the manifest discloses the breach for the coordinator&#x27;s acceptance.&quot;
+    }
+  ],
+  &quot;justifications&quot;: {
+    &quot;goal_fidelity&quot;: &quot;reckon/crew/dispatch.py:4370-4478 composes the stop in plan_dispatch resolution, reading ORCHESTRATOR_LANE_DECLARATION_KEY from the resolved backend and naming the lane, why it is fenced and a discharge, with dispatch.py:5554 adding the warning line and dispatch.py:7163 recording the stop on the run pointer -- the section&#x27;s declare-then-stop mechanism plus section 4&#x27;s warn-and-record; docked because the goal&#x27;s own done-when population clause is recorded unmet (2 failed at head).&quot;,
+    &quot;evidence&quot;: &quot;the gate and its result are recorded -- after_suite over the importing population 2 failed/1941 passed (gate-population-head.log) and negative-control-base.log 7 failed at EXIT=1 -- but the done-when&#x27;s population clause is unmet by two added failures the reviewed manifest does not retire by name and leaves unattributed, and the base arm was narrowed to three files rather than the full population, so the delta is not a clean whole-population comparison.&quot;,
+    &quot;scope_discipline&quot;: &quot;git diff --name-only 657e199ba..d918a461a is six files; five are declared (reckon/schema/flight.yaml, reckon/_flight_schema.py, reckon/crew/dispatch.py, tests/test_orchestrator_lane_fence.py, the evidence fragment), and docs/_shared/flight.schema.json is a generated artifact written outside the fence, required because tests/test_flight.py:146 round-trips it against the schema and sits in the declared gate population, disclosed in the manifest at evidence_inputs.&quot;,
+    &quot;durability&quot;: &quot;all seven cases in tests/test_orchestrator_lane_fence.py fail against base 657e199ba (negative-control-base.log, 7 failed, EXIT=1), and test_removing_the_declaration_stops_the_fence_firing asserts state not-declared plus an empty warning list on the same node and lane with only the declaration removed -- an independent null control that reddens if the fence fires without reading the declaration.&quot;,
+    &quot;fit&quot;: &quot;the new symbols (ORCHESTRATOR_LANE_DECLARATION_KEY, ORCHESTRATOR_LANE_STOP_SEVERITY, _dispatch_orchestrator_lane_stop) are named by mechanism with no plan label, the flight.yaml slot mirrors its siblings, and the record-reaches-the-pointer wiring at dispatch.py:7163 follows the lane_gate pattern at dispatch.py:7158.&quot;
+  },
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: the node goal is to let a backend declare in flight config that it serves orchestrators and to make a crew dispatch to a declaring lane stop before anything is written, naming the lane, why and the discharge, warning-and-recording per section 4; reckon/crew/dispatch.py:4370 _dispatch_orchestrator_lane_stop composes exactly that in plan_dispatch before the launch claim and worktree.\nVERDICT done_when: the measure names four behavioural cases plus &#x27;the importing population adds no failure against base&#x27;; tests/test_orchestrator_lane_fence.py covers declaring-stops / undeclared-launches / declaration-removed-stops-firing / nothing-written-before-the-stop, but the population clause is unmet -- the after_suite records 2 failed, 1941 passed, EXIT=1.\nVERDICT write_paths: the manifest declares six paths; git diff --name-only 657e199ba..d918a461a lists six files, five inside the fence plus the generated docs/_shared/flight.schema.json written outside it.\nVERDICT manifest: read; it records the gate results (head population 2 failed/1941 passed, narrowed base 9 passed/1 error, new file alone 7 passed, negative control 7 failed) and discloses the out-of-scope generated write under evidence_inputs.\nVERDICT diff: read commit by commit against 657e199ba -- 7a0934467 is the fence (schema slot, generated model and JSON schema, the stop helper plus warning and pointer wiring, seven tests) and d918a461a is the evidence fragment, with no product change beyond the described stop.\nCALL_SITES: reckon/cli.py:2029, reckon/crew/dispatch.py:5963, reckon/crew/dispatch.py:6502, reckon/crew/dispatch.py:6676, reckon/crew/dispatch.py:11880\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:4370-4478 composes the stop in plan_dispatch resolution, reading ORCHESTRATOR_LANE_DECLARATION_KEY from the resolved backend and naming the lane, why it is fenced and a discharge, with dispatch.py:5554 adding the warning line and dispatch.py:7163 recording the stop on the run pointer -- the section&#x27;s declare-then-stop mechanism plus section 4&#x27;s warn-and-record; docked because the goal&#x27;s own done-when population clause is recorded unmet (2 failed at head).\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate and its result are recorded -- after_suite over the importing population 2 failed/1941 passed (gate-population-head.log) and negative-control-base.log 7 failed at EXIT=1 -- but the done-when&#x27;s population clause is unmet by two added failures the reviewed manifest does not retire by name and leaves unattributed, and the base arm was narrowed to three files rather than the full population, so the delta is not a clean whole-population comparison.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: git diff --name-only 657e199ba..d918a461a is six files; five are declared (reckon/schema/flight.yaml, reckon/_flight_schema.py, reckon/crew/dispatch.py, tests/test_orchestrator_lane_fence.py, the evidence fragment), and docs/_shared/flight.schema.json is a generated artifact written outside the fence, required because tests/test_flight.py:146 round-trips it against the schema and sits in the declared gate population, disclosed in the manifest at evidence_inputs.\nSCORE durability: 19\nJUSTIFICATION durability: all seven cases in tests/test_orchestrator_lane_fence.py fail against base 657e199ba (negative-control-base.log, 7 failed, EXIT=1), and test_removing_the_declaration_stops_the_fence_firing asserts state not-declared plus an empty warning list on the same node and lane with only the declaration removed -- an independent null control that reddens if the fence fires without reading the declaration.\nSCORE fit: 19\nJUSTIFICATION fit: the new symbols (ORCHESTRATOR_LANE_DECLARATION_KEY, ORCHESTRATOR_LANE_STOP_SEVERITY, _dispatch_orchestrator_lane_stop) are named by mechanism with no plan label, the flight.yaml slot mirrors its siblings, and the record-reaches-the-pointer wiring at dispatch.py:7163 follows the lane_gate pattern at dispatch.py:7158.\nFINDING tests/test_crew_orphan.py:190 follow-on: the population gate recorded this test and tests/test_dispatch_returns_without_worker.py:1326 as added failures the reviewed manifest does not retire by name, so reckon/crew/review.py:1177 caps the review total at 5 on read; a focused head re-run of both passes (focused-head-rerun.log, 2 passed in 10.50s), showing they are contention artifacts of the -n 8 population arm rather than consequences of the change, but the reviewed run recorded neither that re-run nor an attribution for the ids under failure_attribution, so the artifact claim is the reviewer&#x27;s, not the node&#x27;s.\nFINDING docs/_shared/flight.schema.json:220 follow-on: this generated artifact was regenerated outside the node&#x27;s declared write paths; the write is necessary because tests/test_flight.py:146 asserts docs/_shared/flight.schema.json regenerates byte-identically from reckon/schema/flight.yaml and test_flight.py imports reckon._flight_schema, so leaving it stale would red the node&#x27;s own declared gate, and the manifest discloses the breach for the coordinator&#x27;s acceptance.&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;657e199ba75b7bcdfc67cadfd37592cecc68a19c&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;d918a461ab82301ed2cee0dbed57d279dd9cee99&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20261004T075900942644-an-orchestrator-lane-is-declared-and-fenced&quot;,
+  &quot;reviewer&quot;: {
+    &quot;backend&quot;: &quot;clive&quot;,
+    &quot;effort&quot;: &quot;&quot;,
+    &quot;model&quot;: &quot;deepseek-v4.1-flash&quot;
+  },
+  &quot;reviewer_run_id&quot;: &quot;r-20261004T084041291138-review-of-an-orchestrator-lane-is-declared-and-fenced&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 19,
+    &quot;evidence&quot;: 15,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 18,
+    &quot;scope_discipline&quot;: 16
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-04T08:45:53+00:00&quot;,
+  &quot;total&quot;: 87
+}</pre></div>
+    </article>
+  </section>
 
-    <section id="controls">
-      <h2>Both directions on one run</h2>
-      <p>A census of deaths is only as good as its reader's ability to see the other outcome.
-      The first classifier here read <strong>3335 of 3336</strong> attempts as dead, because
-      the harness writes the <code>result</code> record with <code>duration_api_ms</code>
-      first and the pattern match was anchored on the record's opening bytes. The committed
-      file therefore carries a run that died and a later attempt of the same run that
-      completed, and the gate requires both.</p>
-      <table>
-        <thead><tr><th>Control</th><th>Stream</th><th>Result record</th><th>Classification</th></tr></thead>
-        <tr>
-          <td><code>r-20260928T044354744785-review-of-reflex-keys-on-reviewed-run-and-head</code></td>
-          <td><code>stream.jsonl</code></td><td>absent</td>
-          <td>dead — SIGTERM, ended during <em>working</em></td>
-        </tr>
-        <tr>
-          <td>the same run</td><td><code>resume-1.jsonl</code></td><td>present</td>
-          <td>completed</td>
-        </tr>
-      </table>
-    </section>
+  <section id="s3">
+    <h2>s3</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T203433829014-review-of-the-lane-rule-reaches-its-surfaces">
+      <p><small>reckon-build · 2026-10-04T20:42:29.876Z</small></p>
+      <div class="r-comment-body"><p>Independent review of run r-20261004T193809511334-the-lane-rule-reaches-its-surfaces stored at both granted paths (legacy and .at-557ce8a5316912ec7abc5e53b8f0d5c5152d21d9); parsed, all 5 dimensions scored 0..20 (goal_fidelity 19, evidence 16, scope_discipline 16, durability 19, fit 19; total 89), reviewed_base_sha 701c50686e1ff0763c2a1681e0de53dfdca91809 and reviewed_head_sha 557ce8a5316912ec7abc5e53b8f0d5c5152d21d9, added_failure_count 0 with added_failure_ids [] derived from the reviewed run's own baseline_suite and after_suite gate logs; two follow-on findings (the diff writes reckon/cli.py outside the declared fence which named the nonexistent reckon/crew/cli.py, and the measured 291-file population omits module-scope importers of the named modules such as tests/test_backend_environment.py:13).</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T193809511334-the-lane-rule-reaches-its-surfaces">
+      <p><small>reckon-build · 2026-10-04T20:34:04Z</small></p>
+      <div class="r-comment-body"><p>Six of six named surfaces state the rule and capacity reason; the head check passed, removing one reason clause failed it, and 292 importing test files added zero failure IDs against the 291-file base.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20261004-s3-landed">
+      <p><small>s22-coord · 2026-10-04T21:24:00Z</small></p>
+      <div class="r-comment-body"><p><strong>Landed at merge 55cc0c068.</strong> The rule and its reason now appear in the same words on every surface where a lane is chosen: the <code>crew dispatch</code> help in <code>reckon/cli.py</code>, the orchestrator-lane stop text in <code>reckon/crew/dispatch.py</code>, the MCP <code>crew</code> tool description, the build and sprint skills, and the lane-routing reference. The wording is: this lane runs the orchestrators, background work here costs orchestrator capacity, and saturating it stops every session rather than one node. <code>tests/test_the_lane_rule_reaches_its_surfaces.py</code> reads each surface and fails on any that carries the rule without its reason. Removing the reason from the dispatch help reddened it. Review scored 89 with no added failures. Its findings: the declared fence named a nonexistent <code>reckon/crew/cli.py</code>, the coordinator's scoping error, corrected by a widen; and the worker's own population missed files that import dispatch through <code>importlib</code>, which the coordinator's stacked population of 446 files included, finding nothing reproducible.</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261004T193809511334-the-lane-rule-reaches-its-surfaces</code></td>
+        <td>the-lane-rule-reaches-its-surfaces</td>
+        <td><code>557ce8a5316912ec7abc5e53b8f0d5c5152d21d9</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>55m 21s</td>
+        <td><code>{&quot;added&quot;:72,&quot;files&quot;:7,&quot;removed&quot;:6}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261004T203433829014-review-of-the-lane-rule-reaches-its-surfaces</code></td>
+        <td>review-of-the-lane-rule-reaches-its-surfaces</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>7m 17s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report" data-run-id="r-20261004T203433829014-review-of-the-lane-rule-reaches-its-surfaces" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T193809511334-the-lane-rule-reaches-its-surfaces.json">
+      <h3>review-of-the-lane-rule-reaches-its-surfaces &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T193809511334-the-lane-rule-reaches-its-surfaces.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;added_failure_count&quot;: 0,
+  &quot;added_failure_ids&quot;: [],
+  &quot;added_failures_note&quot;: &quot;count and ids derived by annotate_review_of_run over the two logs the reviewed manifest names under baseline_suite and after_suite; both logs print full tests/&lt;file&gt;::&lt;test&gt; ids and the head failure set is a subset of the base, so 0 added and no ids.&quot;,
+  &quot;backend&quot;: &quot;local&quot;,
+  &quot;base_log_revision&quot;: &quot;701c50686e1ff0763c2a1681e0de53dfdca91809&quot;,
+  &quot;call_site_count&quot;: 3,
+  &quot;call_sites&quot;: [
+    &quot;reckon/crew/dispatch.py:5639&quot;,
+    &quot;reckon/cli.py:1831&quot;,
+    &quot;reckon/mcp.py:5388&quot;
+  ],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;reckon/cli.py&quot;,
+      &quot;line&quot;: &quot;1872&quot;,
+      &quot;severity&quot;: &quot;follow-on&quot;,
+      &quot;text&quot;: &quot;the run&#x27;s declared fence named reckon/crew/cli.py, a path that does not exist, while the landed change writes the real reckon/cli.py; the intended surface is unambiguous but the declared scope and the landed path disagree, so the declaration should be corrected and the worker should have flagged the discrepancy rather than silently writing outside the declared fence.&quot;
+    },
+    {
+      &quot;file&quot;: &quot;tests/test_backend_environment.py&quot;,
+      &quot;line&quot;: &quot;13&quot;,
+      &quot;severity&quot;: &quot;follow-on&quot;,
+      &quot;text&quot;: &quot;the measured 291-file population under-covers the done-when&#x27;s population: this file (and about 86 others, e.g. tests/test_a_release_removes_all_worker_scratch.py:15 and tests/test_crew_dispatch_guard.py:119) imports reckon.crew.dispatch at module scope via importlib, yet is absent from the target list both suite arms ran, so a regression in any excluded importer would not have been counted.&quot;
+    }
+  ],
+  &quot;head_log_revision&quot;: &quot;557ce8a5316912ec7abc5e53b8f0d5c5152d21d9&quot;,
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;diff&quot;: &quot;read 557ce8a53 against base 701c50686 \u2014 seven files, 72 insertions and 6 deletions, all rule/reason text plus one guard test; no runtime logic changed.&quot;,
+    &quot;done_when&quot;: &quot;the done-when (the dispatch&#x27;s evidence fence) names a new test reading every surface and failing on any surface carrying the rule without its reason, plus a population of importers adding no failure against base; tests/test_the_lane_rule_reaches_its_surfaces.py:33-47 asserts all four clauses on every surface and the two reference links, head-surface-check.log records 1 passed EXIT=0, and the two arm logs record 8\u21927 failures with 0 added ids.&quot;,
+    &quot;goal&quot;: &quot;read the node goal and the six surfaces the diff touches \u2014 reckon/cli.py:1872 (crew dispatch help), reckon/crew/dispatch.py:4458 (the orchestrator-lane stop detail), skills/reckon-build/SKILL.md:133, skills/reckon-build/references/lane-routing.md:7, skills/reckon-sprint/SKILL.md:32 and reckon/mcp.py:4201 (_crew tool description) \u2014 and each states the prohibition with its capacity reason in the same terms, so the goal is met.&quot;,
+    &quot;manifest&quot;: &quot;read; status complete; baseline_suite and after_suite are JSON blocks with completed:true, revisions 701c50686 and 557ce8a53, literal commands and named logs; negative_control_log is a bare path.&quot;,
+    &quot;write_paths&quot;: &quot;the run&#x27;s fence declared reckon/crew/cli.py, a path that does not exist; the diff writes the real reckon/cli.py plus the other five declared paths, and the manifest&#x27;s changed_paths lists exactly the seven diff files.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;tests/test_the_lane_rule_reaches_its_surfaces.py:44 fails if any surface drops a clause, and the recorded negative control (negative-control.log) reddens it EXIT=1 while the unmutated head arm passes.&quot;,
+    &quot;evidence&quot;: &quot;the head check and both arm logs are recorded and the added-failure derivation reproduces as 0, but the measured 291-file population omits test files that import the named modules via importlib (tests/test_backend_environment.py:13, tests/test_a_release_removes_all_worker_scratch.py:15), so the done-when&#x27;s population was not fully measured.&quot;,
+    &quot;fit&quot;: &quot;the change is text-only additions reusing one sentence across the surfaces plus one guard test, following the surrounding idiom and extending no capability the repository already owns.&quot;,
+    &quot;goal_fidelity&quot;: &quot;all six surfaces named by the goal carry the rule and its reason \u2014 reckon/cli.py:1872, reckon/crew/dispatch.py:4458, the two skills, lane-routing.md:7 and reckon/mcp.py:4201 \u2014 in identical terms, so the \u00a73 falsifier (rule without reason) does not fire on any.&quot;,
+    &quot;scope_discipline&quot;: &quot;the diff writes reckon/cli.py, outside the fence&#x27;s declared reckon/crew/cli.py (which does not exist on disk), though the manifest&#x27;s changed_paths honestly lists the seven diff files and matches git diff --name-only.&quot;
+  },
+  &quot;model&quot;: &quot;deepseek-v4.1-flash&quot;,
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: read the node goal and the six surfaces the diff touches \u2014 reckon/cli.py:1872 (crew dispatch help), reckon/crew/dispatch.py:4458 (the orchestrator-lane stop detail), skills/reckon-build/SKILL.md:133, skills/reckon-build/references/lane-routing.md:7, skills/reckon-sprint/SKILL.md:32 and reckon/mcp.py:4201 (_crew tool description) \u2014 and each states the prohibition with its capacity reason in the same terms, so the goal is met.\nVERDICT done_when: the done-when (the dispatch&#x27;s evidence fence) names a new test reading every surface and failing on any surface carrying the rule without its reason, plus a population of importers adding no failure against base; tests/test_the_lane_rule_reaches_its_surfaces.py:33-47 asserts all four clauses on every surface and the two reference links, head-surface-check.log records 1 passed EXIT=0, and the two arm logs record 8\u21927 failures with 0 added ids.\nVERDICT write_paths: the run&#x27;s fence declared reckon/crew/cli.py, a path that does not exist; the diff writes the real reckon/cli.py plus the other five declared paths, and the manifest&#x27;s changed_paths lists exactly the seven diff files.\nVERDICT manifest: read; status complete; baseline_suite and after_suite are JSON blocks with completed:true, revisions 701c50686 and 557ce8a53, literal commands and named logs; negative_control_log is a bare path.\nVERDICT diff: read 557ce8a53 against base 701c50686 \u2014 seven files, 72 insertions and 6 deletions, all rule/reason text plus one guard test; no runtime logic changed.\nCALL_SITES: reckon/crew/dispatch.py:5639, reckon/cli.py:1831, reckon/mcp.py:5388\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: all six surfaces named by the goal carry the rule and its reason \u2014 reckon/cli.py:1872, reckon/crew/dispatch.py:4458, the two skills, lane-routing.md:7 and reckon/mcp.py:4201 \u2014 in identical terms, so the \u00a73 falsifier (rule without reason) does not fire on any.\nSCORE evidence: 16\nJUSTIFICATION evidence: the head check and both arm logs are recorded and the added-failure derivation reproduces as 0, but the measured 291-file population omits test files that import the named modules via importlib (tests/test_backend_environment.py:13, tests/test_a_release_removes_all_worker_scratch.py:15), so the done-when&#x27;s population was not fully measured.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: the diff writes reckon/cli.py, outside the fence&#x27;s declared reckon/crew/cli.py (which does not exist on disk), though the manifest&#x27;s changed_paths honestly lists the seven diff files and matches git diff --name-only.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_lane_rule_reaches_its_surfaces.py:44 fails if any surface drops a clause, and the recorded negative control (negative-control.log) reddens it EXIT=1 while the unmutated head arm passes.\nSCORE fit: 19\nJUSTIFICATION fit: the change is text-only additions reusing one sentence across the surfaces plus one guard test, following the surrounding idiom and extending no capability the repository already owns.\nFINDING reckon/cli.py:1872 follow-on: the run&#x27;s declared fence named reckon/crew/cli.py, a path that does not exist, while the landed change writes the real reckon/cli.py; the intended surface is unambiguous but the declared scope and the landed path disagree, so the declaration should be corrected and the worker should have flagged the discrepancy rather than silently writing outside the declared fence.\nFINDING tests/test_backend_environment.py:13 follow-on: the measured 291-file population under-covers the done-when&#x27;s population: this file (and about 86 others, e.g. tests/test_a_release_removes_all_worker_scratch.py:15 and tests/test_crew_dispatch_guard.py:119) imports reckon.crew.dispatch at module scope via importlib, yet is absent from the target list both suite arms ran, so a regression in any excluded importer would not have been counted.\nreviewed_base_sha: 701c50686e1ff0763c2a1681e0de53dfdca91809\nreviewed_head_sha: 557ce8a5316912ec7abc5e53b8f0d5c5152d21d9&quot;,
+  &quot;review_run_id&quot;: &quot;r-20261004T203433829014-review-of-the-lane-rule-reaches-its-surfaces&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;701c50686e1ff0763c2a1681e0de53dfdca91809&quot;,
+  &quot;reviewed_commits&quot;: [
+    &quot;557ce8a5316912ec7abc5e53b8f0d5c5152d21d9&quot;
+  ],
+  &quot;reviewed_head_sha&quot;: &quot;557ce8a5316912ec7abc5e53b8f0d5c5152d21d9&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20261004T193809511334-the-lane-rule-reaches-its-surfaces&quot;,
+  &quot;reviewer_run_id&quot;: &quot;r-20261004T203433829014-review-of-the-lane-rule-reaches-its-surfaces&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 19,
+    &quot;evidence&quot;: 16,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 19,
+    &quot;scope_discipline&quot;: 16
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-04T20:41:18.172269+00:00&quot;,
+  &quot;total&quot;: 89
+}</pre></div>
+    </article>
+  </section>
 
-    <section id="negative-control">
-      <h2>Negative control</h2>
-      <p>The gate was shown to refuse the defect it exists to catch. Removing the positive
-      control's entry from the before block turns it red: <code>pytest</code> exits 1 with
-      two failures, both <code>KeyError: 'positive_control'</code>, from
-      <code>test_the_positive_control_is_present_and_classified_as_a_death</code> and the
-      completion-control assertion that reads the same block. The unchanged file passes 6 of
-      6. The control was re-run against the current revision, and the data file was restored
-      byte-identical afterwards (verified by checksum, not by a diff that could hide a
-      reordering). The red log is <code>negative-control.log</code> in this node's run
-      directory, its first line the declared expectation.</p>
-    </section>
-
-    <section id="verification">
-      <h2>Verification</h2>
-      <p><code>/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest
-      -p no:cacheprovider -q tests/test_the_local_lane_death_rate_is_stated.py</code> exits 0
-      with 6 passed, the last of them added by the repair — it asserts the headline count,
-      the attempt count and the rate each equal the row for the headline's own role and
-      effort, the assertion a pooled headline fails. The test reads only the committed JSON,
-      so it cannot pass against a
-      measurement that is not in the file.</p>
-      <p><strong>Verdict: qualified.</strong> The before block is delivered and gated. The
-      after block is not produced and is not claimed: the repair it would measure lives in
-      <em>a-review-dies-where-nobody-is-looking</em> §9, which is declared
-      <code>implementable</code> and whose driving followup is open, so no post-repair window
-      exists in the corpus. Until it does, the fence this evidence feeds warns and records
-      rather than refusing.</p>
-    </section>
-  </main>
+  <section id="s4">
+    <h2>s4</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20260928T070905311765-review-of-state-the-local-lane-death-rate">
+      <p><small>reckon-build · 2026-09-28T08:21:43.569Z</small></p>
+      <div class="r-comment-body"><p>review stored at bd735f73: scores 17-20; three findings (manifest disagreement count against an empty artefact list, a headline count that disagrees with its effort split, an unversioned scanner) sent back to the worker as a repair</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260928T084312753606-review-of-state-the-local-lane-death-rate">
+      <p><small>reckon-build · 2026-09-28T09:18:04.376Z</small></p>
+      <div class="r-comment-body"><p>re-review stored at 7b98d185: total 92; table and daily-rate arithmetic in the research page, corrected on main at 64754b09 and 4ee1d6bf</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20260928T070905311765-review-of-state-the-local-lane-death-rate</code></td>
+        <td>review-of-state-the-local-lane-death-rate</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>69m 27s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260928T055758782643-state-the-local-lane-death-rate</code></td>
+        <td>state-the-local-lane-death-rate</td>
+        <td><code>410742527becd897f77728d52da6f7c8f519f6f9</code><br><code>50da2f084d7d61442556d62bb83ea4eb6f930a95</code><br><code>bd735f73b6c77da4d9134192c0f4051cd7739b56</code><br><code>6f94d9aff243947e91597dcbfea0a6f94d6c1c96</code><br><code>7b98d185d9e43b971cce28c988d5a6cb093c9479</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>160m 0s</td>
+        <td><code>{&quot;added&quot;:5020,&quot;files&quot;:8,&quot;removed&quot;:0}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260928T084312753606-review-of-state-the-local-lane-death-rate</code></td>
+        <td>review-of-state-the-local-lane-death-rate</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>33m 58s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report" data-run-id="r-20260928T070905311765-review-of-state-the-local-lane-death-rate" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T055758782643-state-the-local-lane-death-rate.json">
+      <h3>review-of-state-the-local-lane-death-rate &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T055758782643-state-the-local-lane-death-rate.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;added_failure_count&quot;: null,
+  &quot;added_failure_ids&quot;: [],
+  &quot;added_failures_note&quot;: &quot;unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken&quot;,
+  &quot;call_site_count&quot;: 0,
+  &quot;call_sites&quot;: [],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;docs/research/local-lane-death-rate.html&quot;,
+      &quot;line&quot;: &quot;128&quot;,
+      &quot;text&quot;: &quot;the \&quot;five further cells\&quot; row counts review/medium among the five small cells it aggregates while review/medium already has its own row at line 121, so the table&#x27;s attempts column sums to 3356 against the 3354 the section states and the data file&#x27;s own thirteen cells hold; the deaths column still sums to 488 only because the double-counted row carries none, and git blame places the row in 6f94d9af, whose subject is the population repair this row undoes at table level.&quot;
+    },
+    {
+      &quot;file&quot;: &quot;docs/research/local-lane-death-rate.html&quot;,
+      &quot;line&quot;: &quot;251&quot;,
+      &quot;text&quot;: &quot;\&quot;roughly 30 review attempts a day\&quot; names attempts but carries the trailing week&#x27;s death count \u2014 the data file&#x27;s trailing_7d holds 228 deaths (32.6 a day) against 715 attempts (102 a day), and the whole window holds 1066 attempts over 25.8 days (41 a day) \u2014 so the sentence that argues the seven-day window is the smallest worth gating on misstates its own rate by more than threefold.&quot;
+    },
+    {
+      &quot;file&quot;: &quot;/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T055758782643-state-the-local-lane-death-rate/manifest.md&quot;,
+      &quot;line&quot;: &quot;14&quot;,
+      &quot;text&quot;: &quot;test_logs cites gate-before.log, whose header names revision 1adc0d18 while neither the test file nor the data file exists at that revision (git cat-file -e fails for both), and gate-headline-equals-cell.log carries no revision, tree or command header at all \u2014 so the suite evidence the promotion reads cannot be placed at the revision it evidences, and gate-before.log&#x27;s five-passed body corresponds to the pre-repair head bd735f73, not the revision its header names.&quot;
+    }
+  ],
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;no production call sites found&quot;,
+    &quot;diff&quot;: &quot;read commit by commit against 1adc0d18 \u2014 41074252 lands the scanner, the data file, the test and the figure; 50da2f08 adds the research page; bd735f73 appends the plan landing record; 6f94d9af rebinds the headline to its effort cell, commits the plot script and regenerates the data, and is also where finding 1&#x27;s table regression lands; 7b98d185 names the repair commit in the evidence record.&quot;,
+    &quot;done_when&quot;: &quot;the measure is the committed file plus the gate that reads it; data file 118002 bytes under the 200 KB fence, tests/test_the_local_lane_death_rate_is_stated.py resolves it from __file__ with only json and pathlib, and the named gate re-run at 7b98d185 exits 0 with 6 passed in 0.37s (log gate-at-reviewed-head.log, carrying its own revision, tree and command).&quot;,
+    &quot;goal&quot;: &quot;the goal is the before-rate that gates the orchestrator-lane fence; the headline is now one named population \u2014 review at xhigh, 299 of 1018 (29.4%) \u2014 with the review role at every effort (300 of 1066) and every role at every effort (488 of 3354) stated beside it, and an after-rate explicitly not produced with its reason and its dependency named.&quot;,
+    &quot;manifest&quot;: &quot;read, and the repairs hold \u2014 evidence_inputs no longer claims ledger disagreements the artefact does not hold, the artefact&#x27;s role_attribution_disagreements is empty and re-running the filter over the current corpus finds 0 \u2014 but test_logs cites two logs whose provenance cannot be resolved (finding 3).&quot;,
+    &quot;write_paths&quot;: &quot;git diff --name-status 1adc0d18..7b98d185 is the eight declared paths plus the two scripts under docs/research/scripts/, which the repair brief instructed; they are declared in changed_paths rather than omitted, and nothing outside them is touched.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;the headline-to-cell binding is now enforced by name (test_the_headline_count_equals_its_declared_effort_cell) and the producing scripts are versioned so the headline, the figure and the data file regenerate, but the table&#x27;s row sum and the daily-attempt figure are bound by nothing \u2014 the tests read only the JSON \u2014 and the cited suite logs cannot be re-checked against a revision.&quot;,
+    &quot;evidence&quot;: &quot;the scanner is committed and my re-run reproduces the committed file within corpus growth (3366 attempts and 489 deaths against 3354 and 488), the figure regenerates byte-identical from the committed script and data (sha256 ea050379eda32bf2), both controls reproduce exactly under my independent parser (15 of 15 sampled deaths), and the disagreement claim now matches the artefact; but the two suite logs the manifest cites cannot be placed at the revision whose gate they evidence (finding 3), and nothing asserts the numbers the table and the daily figure state.&quot;,
+    &quot;fit&quot;: &quot;the record reads standalone \u2014 the test file names its mechanism with no plan label or version suffix, the page embeds its figure with the project-absolute src the convention requires, the method limits section states the mtime fallback and the attempts-versus-terminal convention, and the plan section states the before-rate and names the after-rate as not yet produced rather than implying it.&quot;,
+    &quot;goal_fidelity&quot;: &quot;the headline the fence reads now equals its declared effort cell and a named test asserts the equality, but the table on the same page sums its attempts column to 3356 against the 3354 population the section states (finding 1) and the daily figure in the sufficiency argument names attempts while carrying the death count (finding 2), both deficits in the population-conflation class this run existed to repair.&quot;,
+    &quot;scope_discipline&quot;: &quot;git diff --name-status 1adc0d18..7b98d185 is set-equal to the declared paths and the two scripts under docs/research/scripts/, which the repair brief instructed and the manifest declares; the evidence record is appended cumulatively with zero deleted lines, and the plan edit changes only its own landing section and meta lines.&quot;
+  },
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;# Independent review \u2014 r-20260928T055758782643-state-the-local-lane-death-rate\n\nRead: the node&#x27;s brief and done-when from its own prompt.txt, its manifest, the\nfive-commit diff against 1adc0d18, both suite logs and the negative-control log,\nthe committed data file, the research page, the test file, the figure and its\nproducing script, the plan landing record and the cumulative evidence record.\nRe-ran the named gate at the reviewed head (exit 0, six passed). Re-ran the\ncommitted scanner against the live corpus and compared its output with the\ncommitted file. Regenerated the figure from the committed data with the\ncommitted plot script and compared bytes. Re-classified fifteen sampled deaths\nwith an independent reader and checked the record&#x27;s own controls against it.\nRead every table row and every stated figure against the data file that backs it.\n\nVERDICT goal: the goal is the before-rate that gates the orchestrator-lane fence; the headline is now one named population \u2014 review at xhigh, 299 of 1018 (29.4%) \u2014 with the review role at every effort (300 of 1066) and every role at every effort (488 of 3354) stated beside it, and an after-rate explicitly not produced with its reason and its dependency named.\nVERDICT done_when: the measure is the committed file plus the gate that reads it; data file 118002 bytes under the 200 KB fence, tests/test_the_local_lane_death_rate_is_stated.py resolves it from __file__ with only json and pathlib, and the named gate re-run at 7b98d185 exits 0 with 6 passed in 0.37s (log gate-at-reviewed-head.log, carrying its own revision, tree and command).\nVERDICT write_paths: git diff --name-status 1adc0d18..7b98d185 is the eight declared paths plus the two scripts under docs/research/scripts/, which the repair brief instructed; they are declared in changed_paths rather than omitted, and nothing outside them is touched.\nVERDICT manifest: read, and the repairs hold \u2014 evidence_inputs no longer claims ledger disagreements the artefact does not hold, the artefact&#x27;s role_attribution_disagreements is empty and re-running the filter over the current corpus finds 0 \u2014 but test_logs cites two logs whose provenance cannot be resolved (finding 3).\nVERDICT diff: read commit by commit against 1adc0d18 \u2014 41074252 lands the scanner, the data file, the test and the figure; 50da2f08 adds the research page; bd735f73 appends the plan landing record; 6f94d9af rebinds the headline to its effort cell, commits the plot script and regenerates the data, and is also where finding 1&#x27;s table regression lands; 7b98d185 names the repair commit in the evidence record.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the headline the fence reads now equals its declared effort cell and a named test asserts the equality, but the table on the same page sums its attempts column to 3356 against the 3354 population the section states (finding 1) and the daily figure in the sufficiency argument names attempts while carrying the death count (finding 2), both deficits in the population-conflation class this run existed to repair.\nSCORE evidence: 18\nJUSTIFICATION evidence: the scanner is committed and my re-run reproduces the committed file within corpus growth (3366 attempts and 489 deaths against 3354 and 488), the figure regenerates byte-identical from the committed script and data (sha256 ea050379eda32bf2), both controls reproduce exactly under my independent parser (15 of 15 sampled deaths), and the disagreement claim now matches the artefact; but the two suite logs the manifest cites cannot be placed at the revision whose gate they evidence (finding 3), and nothing asserts the numbers the table and the daily figure state.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 1adc0d18..7b98d185 is set-equal to the declared paths and the two scripts under docs/research/scripts/, which the repair brief instructed and the manifest declares; the evidence record is appended cumulatively with zero deleted lines, and the plan edit changes only its own landing section and meta lines.\nSCORE durability: 17\nJUSTIFICATION durability: the headline-to-cell binding is now enforced by name (test_the_headline_count_equals_its_declared_effort_cell) and the producing scripts are versioned so the headline, the figure and the data file regenerate, but the table&#x27;s row sum and the daily-attempt figure are bound by nothing \u2014 the tests read only the JSON \u2014 and the cited suite logs cannot be re-checked against a revision.\nSCORE fit: 19\nJUSTIFICATION fit: the record reads standalone \u2014 the test file names its mechanism with no plan label or version suffix, the page embeds its figure with the project-absolute src the convention requires, the method limits section states the mtime fallback and the attempts-versus-terminal convention, and the plan section states the before-rate and names the after-rate as not yet produced rather than implying it.\nFINDING docs/research/local-lane-death-rate.html:128 the \&quot;five further cells\&quot; row counts review/medium among the five small cells it aggregates while review/medium already has its own row at line 121, so the table&#x27;s attempts column sums to 3356 against the 3354 the section states and the data file&#x27;s own thirteen cells hold; the deaths column still sums to 488 only because the double-counted row carries none, and git blame places the row in 6f94d9af, whose subject is the population repair this row undoes at table level.\nFINDING docs/research/local-lane-death-rate.html:251 \&quot;roughly 30 review attempts a day\&quot; names attempts but carries the trailing week&#x27;s death count \u2014 the data file&#x27;s trailing_7d holds 228 deaths (32.6 a day) against 715 attempts (102 a day), and the whole window holds 1066 attempts over 25.8 days (41 a day) \u2014 so the sentence that argues the seven-day window is the smallest worth gating on misstates its own rate by more than threefold.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T055758782643-state-the-local-lane-death-rate/manifest.md:14 test_logs cites gate-before.log, whose header names revision 1adc0d18 while neither the test file nor the data file exists at that revision (git cat-file -e fails for both), and gate-headline-equals-cell.log carries no revision, tree or command header at all \u2014 so the suite evidence the promotion reads cannot be placed at the revision it evidences, and gate-before.log&#x27;s five-passed body corresponds to the pre-repair head bd735f73, not the revision its header names.\n&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;1adc0d183b29ef75e6d948d7a518e2a1c5ebb82f&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;7b98d185d9e43b971cce28c988d5a6cb093c9479&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20260928T055758782643-state-the-local-lane-death-rate&quot;,
+  &quot;reviewer&quot;: &quot;review-of-state-the-local-lane-death-rate&quot;,
+  &quot;reviewer_run_id&quot;: &quot;r-20260928T084312753606-review-of-state-the-local-lane-death-rate&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 17,
+    &quot;evidence&quot;: 18,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 18,
+    &quot;scope_discipline&quot;: 20
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-09-28T09:12:44.383380+00:00&quot;,
+  &quot;total&quot;: 92
+}
+</pre></div>
+    </article>
+    <article class="landed-report" data-run-id="r-20260928T084312753606-review-of-state-the-local-lane-death-rate" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T055758782643-state-the-local-lane-death-rate.json">
+      <h3>review-of-state-the-local-lane-death-rate &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260928T055758782643-state-the-local-lane-death-rate.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;added_failure_count&quot;: null,
+  &quot;added_failure_ids&quot;: [],
+  &quot;added_failures_note&quot;: &quot;unmeasured: the reviewed manifest names no base gate log, so the added-failure count was not taken&quot;,
+  &quot;call_site_count&quot;: 0,
+  &quot;call_sites&quot;: [],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;docs/research/local-lane-death-rate.html&quot;,
+      &quot;line&quot;: &quot;128&quot;,
+      &quot;text&quot;: &quot;the \&quot;five further cells\&quot; row counts review/medium among the five small cells it aggregates while review/medium already has its own row at line 121, so the table&#x27;s attempts column sums to 3356 against the 3354 the section states and the data file&#x27;s own thirteen cells hold; the deaths column still sums to 488 only because the double-counted row carries none, and git blame places the row in 6f94d9af, whose subject is the population repair this row undoes at table level.&quot;
+    },
+    {
+      &quot;file&quot;: &quot;docs/research/local-lane-death-rate.html&quot;,
+      &quot;line&quot;: &quot;251&quot;,
+      &quot;text&quot;: &quot;\&quot;roughly 30 review attempts a day\&quot; names attempts but carries the trailing week&#x27;s death count \u2014 the data file&#x27;s trailing_7d holds 228 deaths (32.6 a day) against 715 attempts (102 a day), and the whole window holds 1066 attempts over 25.8 days (41 a day) \u2014 so the sentence that argues the seven-day window is the smallest worth gating on misstates its own rate by more than threefold.&quot;
+    },
+    {
+      &quot;file&quot;: &quot;/home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T055758782643-state-the-local-lane-death-rate/manifest.md&quot;,
+      &quot;line&quot;: &quot;14&quot;,
+      &quot;text&quot;: &quot;test_logs cites gate-before.log, whose header names revision 1adc0d18 while neither the test file nor the data file exists at that revision (git cat-file -e fails for both), and gate-headline-equals-cell.log carries no revision, tree or command header at all \u2014 so the suite evidence the promotion reads cannot be placed at the revision it evidences, and gate-before.log&#x27;s five-passed body corresponds to the pre-repair head bd735f73, not the revision its header names.&quot;
+    }
+  ],
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;no production call sites found&quot;,
+    &quot;diff&quot;: &quot;read commit by commit against 1adc0d18 \u2014 41074252 lands the scanner, the data file, the test and the figure; 50da2f08 adds the research page; bd735f73 appends the plan landing record; 6f94d9af rebinds the headline to its effort cell, commits the plot script and regenerates the data, and is also where finding 1&#x27;s table regression lands; 7b98d185 names the repair commit in the evidence record.&quot;,
+    &quot;done_when&quot;: &quot;the measure is the committed file plus the gate that reads it; data file 118002 bytes under the 200 KB fence, tests/test_the_local_lane_death_rate_is_stated.py resolves it from __file__ with only json and pathlib, and the named gate re-run at 7b98d185 exits 0 with 6 passed in 0.37s (log gate-at-reviewed-head.log, carrying its own revision, tree and command).&quot;,
+    &quot;goal&quot;: &quot;the goal is the before-rate that gates the orchestrator-lane fence; the headline is now one named population \u2014 review at xhigh, 299 of 1018 (29.4%) \u2014 with the review role at every effort (300 of 1066) and every role at every effort (488 of 3354) stated beside it, and an after-rate explicitly not produced with its reason and its dependency named.&quot;,
+    &quot;manifest&quot;: &quot;read, and the repairs hold \u2014 evidence_inputs no longer claims ledger disagreements the artefact does not hold, the artefact&#x27;s role_attribution_disagreements is empty and re-running the filter over the current corpus finds 0 \u2014 but test_logs cites two logs whose provenance cannot be resolved (finding 3).&quot;,
+    &quot;write_paths&quot;: &quot;git diff --name-status 1adc0d18..7b98d185 is the eight declared paths plus the two scripts under docs/research/scripts/, which the repair brief instructed; they are declared in changed_paths rather than omitted, and nothing outside them is touched.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;the headline-to-cell binding is now enforced by name (test_the_headline_count_equals_its_declared_effort_cell) and the producing scripts are versioned so the headline, the figure and the data file regenerate, but the table&#x27;s row sum and the daily-attempt figure are bound by nothing \u2014 the tests read only the JSON \u2014 and the cited suite logs cannot be re-checked against a revision.&quot;,
+    &quot;evidence&quot;: &quot;the scanner is committed and my re-run reproduces the committed file within corpus growth (3366 attempts and 489 deaths against 3354 and 488), the figure regenerates byte-identical from the committed script and data (sha256 ea050379eda32bf2), both controls reproduce exactly under my independent parser (15 of 15 sampled deaths), and the disagreement claim now matches the artefact; but the two suite logs the manifest cites cannot be placed at the revision whose gate they evidence (finding 3), and nothing asserts the numbers the table and the daily figure state.&quot;,
+    &quot;fit&quot;: &quot;the record reads standalone \u2014 the test file names its mechanism with no plan label or version suffix, the page embeds its figure with the project-absolute src the convention requires, the method limits section states the mtime fallback and the attempts-versus-terminal convention, and the plan section states the before-rate and names the after-rate as not yet produced rather than implying it.&quot;,
+    &quot;goal_fidelity&quot;: &quot;the headline the fence reads now equals its declared effort cell and a named test asserts the equality, but the table on the same page sums its attempts column to 3356 against the 3354 population the section states (finding 1) and the daily figure in the sufficiency argument names attempts while carrying the death count (finding 2), both deficits in the population-conflation class this run existed to repair.&quot;,
+    &quot;scope_discipline&quot;: &quot;git diff --name-status 1adc0d18..7b98d185 is set-equal to the declared paths and the two scripts under docs/research/scripts/, which the repair brief instructed and the manifest declares; the evidence record is appended cumulatively with zero deleted lines, and the plan edit changes only its own landing section and meta lines.&quot;
+  },
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;# Independent review \u2014 r-20260928T055758782643-state-the-local-lane-death-rate\n\nRead: the node&#x27;s brief and done-when from its own prompt.txt, its manifest, the\nfive-commit diff against 1adc0d18, both suite logs and the negative-control log,\nthe committed data file, the research page, the test file, the figure and its\nproducing script, the plan landing record and the cumulative evidence record.\nRe-ran the named gate at the reviewed head (exit 0, six passed). Re-ran the\ncommitted scanner against the live corpus and compared its output with the\ncommitted file. Regenerated the figure from the committed data with the\ncommitted plot script and compared bytes. Re-classified fifteen sampled deaths\nwith an independent reader and checked the record&#x27;s own controls against it.\nRead every table row and every stated figure against the data file that backs it.\n\nVERDICT goal: the goal is the before-rate that gates the orchestrator-lane fence; the headline is now one named population \u2014 review at xhigh, 299 of 1018 (29.4%) \u2014 with the review role at every effort (300 of 1066) and every role at every effort (488 of 3354) stated beside it, and an after-rate explicitly not produced with its reason and its dependency named.\nVERDICT done_when: the measure is the committed file plus the gate that reads it; data file 118002 bytes under the 200 KB fence, tests/test_the_local_lane_death_rate_is_stated.py resolves it from __file__ with only json and pathlib, and the named gate re-run at 7b98d185 exits 0 with 6 passed in 0.37s (log gate-at-reviewed-head.log, carrying its own revision, tree and command).\nVERDICT write_paths: git diff --name-status 1adc0d18..7b98d185 is the eight declared paths plus the two scripts under docs/research/scripts/, which the repair brief instructed; they are declared in changed_paths rather than omitted, and nothing outside them is touched.\nVERDICT manifest: read, and the repairs hold \u2014 evidence_inputs no longer claims ledger disagreements the artefact does not hold, the artefact&#x27;s role_attribution_disagreements is empty and re-running the filter over the current corpus finds 0 \u2014 but test_logs cites two logs whose provenance cannot be resolved (finding 3).\nVERDICT diff: read commit by commit against 1adc0d18 \u2014 41074252 lands the scanner, the data file, the test and the figure; 50da2f08 adds the research page; bd735f73 appends the plan landing record; 6f94d9af rebinds the headline to its effort cell, commits the plot script and regenerates the data, and is also where finding 1&#x27;s table regression lands; 7b98d185 names the repair commit in the evidence record.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the headline the fence reads now equals its declared effort cell and a named test asserts the equality, but the table on the same page sums its attempts column to 3356 against the 3354 population the section states (finding 1) and the daily figure in the sufficiency argument names attempts while carrying the death count (finding 2), both deficits in the population-conflation class this run existed to repair.\nSCORE evidence: 18\nJUSTIFICATION evidence: the scanner is committed and my re-run reproduces the committed file within corpus growth (3366 attempts and 489 deaths against 3354 and 488), the figure regenerates byte-identical from the committed script and data (sha256 ea050379eda32bf2), both controls reproduce exactly under my independent parser (15 of 15 sampled deaths), and the disagreement claim now matches the artefact; but the two suite logs the manifest cites cannot be placed at the revision whose gate they evidence (finding 3), and nothing asserts the numbers the table and the daily figure state.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-status 1adc0d18..7b98d185 is set-equal to the declared paths and the two scripts under docs/research/scripts/, which the repair brief instructed and the manifest declares; the evidence record is appended cumulatively with zero deleted lines, and the plan edit changes only its own landing section and meta lines.\nSCORE durability: 17\nJUSTIFICATION durability: the headline-to-cell binding is now enforced by name (test_the_headline_count_equals_its_declared_effort_cell) and the producing scripts are versioned so the headline, the figure and the data file regenerate, but the table&#x27;s row sum and the daily-attempt figure are bound by nothing \u2014 the tests read only the JSON \u2014 and the cited suite logs cannot be re-checked against a revision.\nSCORE fit: 19\nJUSTIFICATION fit: the record reads standalone \u2014 the test file names its mechanism with no plan label or version suffix, the page embeds its figure with the project-absolute src the convention requires, the method limits section states the mtime fallback and the attempts-versus-terminal convention, and the plan section states the before-rate and names the after-rate as not yet produced rather than implying it.\nFINDING docs/research/local-lane-death-rate.html:128 the \&quot;five further cells\&quot; row counts review/medium among the five small cells it aggregates while review/medium already has its own row at line 121, so the table&#x27;s attempts column sums to 3356 against the 3354 the section states and the data file&#x27;s own thirteen cells hold; the deaths column still sums to 488 only because the double-counted row carries none, and git blame places the row in 6f94d9af, whose subject is the population repair this row undoes at table level.\nFINDING docs/research/local-lane-death-rate.html:251 \&quot;roughly 30 review attempts a day\&quot; names attempts but carries the trailing week&#x27;s death count \u2014 the data file&#x27;s trailing_7d holds 228 deaths (32.6 a day) against 715 attempts (102 a day), and the whole window holds 1066 attempts over 25.8 days (41 a day) \u2014 so the sentence that argues the seven-day window is the smallest worth gating on misstates its own rate by more than threefold.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20260928T055758782643-state-the-local-lane-death-rate/manifest.md:14 test_logs cites gate-before.log, whose header names revision 1adc0d18 while neither the test file nor the data file exists at that revision (git cat-file -e fails for both), and gate-headline-equals-cell.log carries no revision, tree or command header at all \u2014 so the suite evidence the promotion reads cannot be placed at the revision it evidences, and gate-before.log&#x27;s five-passed body corresponds to the pre-repair head bd735f73, not the revision its header names.\n&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;1adc0d183b29ef75e6d948d7a518e2a1c5ebb82f&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;7b98d185d9e43b971cce28c988d5a6cb093c9479&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20260928T055758782643-state-the-local-lane-death-rate&quot;,
+  &quot;reviewer&quot;: &quot;review-of-state-the-local-lane-death-rate&quot;,
+  &quot;reviewer_run_id&quot;: &quot;r-20260928T084312753606-review-of-state-the-local-lane-death-rate&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 17,
+    &quot;evidence&quot;: 18,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 18,
+    &quot;scope_discipline&quot;: 20
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-09-28T09:12:44.383380+00:00&quot;,
+  &quot;total&quot;: 92
+}
+</pre></div>
+    </article>
+  </section>
+ </main>
 </body>
 </html>

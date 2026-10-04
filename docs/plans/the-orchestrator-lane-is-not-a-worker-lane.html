@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-04">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -125,10 +125,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-tolinawl-001" data-status="open" data-written-by="reckon-ee" data-written-at="2026-09-22" data-recommends-skill="/reckon-build the-orchestrator-lane-is-not-a-worker-lane §1" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tolinawl-001" data-status="resolved" data-written-by="reckon-ee" data-written-at="2026-09-22" data-recommends-skill="/reckon-build the-orchestrator-lane-is-not-a-worker-lane §1" data-resolved-at="2026-10-04T21:23:31+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Declare the orchestrator role, then refuse on the declaration</h4>
     <div class="r-fu-body"><p>Start at §1 and declare rather than pattern-match: an orchestrator lane is a property of this deployment, so matching the backend name would break when an orchestrator moves and would miss an alias. §3 can land beside it since it is text on surfaces already being edited. §2 follows. <strong>§4 gates whether the fence refuses or merely warns</strong> — do not enable refusal by default until the local-lane death rate after repair is stated, because closing the hatch over a broken lane costs the review loop entirely.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-orchestrator-lane-is-not-a-worker-lane §1</pre>
+    <p class="r-fu-outcome">The order this followup carried now lives in the sections: §1 landed at 257c02622 and §3 at 55cc0c068; §2, the explicit recorded override, and §4, the gate on the local lane's repair, remain implementable as sections of this plan.</p>
     </article>
 </section>
 
@@ -159,6 +160,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261004T193809511334-the-lane-rule-reaches-its-surfaces" data-who="reckon-build" data-when="2026-10-04T20:34:04Z">
     <div class="r-comment-body"><p>Six of six named surfaces state the rule and capacity reason; the head check passed, removing one reason clause failed it, and 292 importing test files added zero failure IDs against the 291-file base.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20261004-s3-landed" data-who="s22-coord" data-when="2026-10-04T21:24:00Z">
+    <div class="r-comment-body"><p><strong>Landed at merge 55cc0c068.</strong> The rule and its reason now appear in the same words on every surface where a lane is chosen: the <code>crew dispatch</code> help in <code>reckon/cli.py</code>, the orchestrator-lane stop text in <code>reckon/crew/dispatch.py</code>, the MCP <code>crew</code> tool description, the build and sprint skills, and the lane-routing reference. The wording is: this lane runs the orchestrators, background work here costs orchestrator capacity, and saturating it stops every session rather than one node. <code>tests/test_the_lane_rule_reaches_its_surfaces.py</code> reads each surface and fails on any that carries the rule without its reason. Removing the reason from the dispatch help reddened it. Review scored 89 with no added failures. Its findings: the declared fence named a nonexistent <code>reckon/crew/cli.py</code>, the coordinator's scoping error, corrected by a widen; and the worker's own population missed files that import dispatch through <code>importlib</code>, which the coordinator's stacked population of 446 files included, finding nothing reproducible.</p></div>
 </div>
 </section>
 </main>
