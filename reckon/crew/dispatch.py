@@ -58,6 +58,7 @@ from reckon.crew.node import (
     placement_query_undeclared,
     placement_requirement_node_local,
     placement_requirement_unmet,
+    member_in_flight_verdict,
     refuse_member_in_flight,
     role_may_write_repository_paths,
     validate_node,
@@ -7807,6 +7808,49 @@ def _launch_failure_record(
     return record
 
 
+def _empty_stream_launch_failure(
+    record: Mapping[str, Any], data: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """The launch-failure entry for a run that died before writing a turn.
+
+    A stream of zero bytes means the worker exited before its first event, so
+    nothing in the stream explains the exit and the reason sits in the run's
+    stderr, where no reader looked. The entry is built only when stderr carries
+    something to quote: a process that exited with nothing in either file is an
+    orphan with no reason to attach, and claiming a launch failure there would
+    name an end that was never recorded. The shape is the one the launcher's
+    reap writes, so a reader of ``launch_failures`` sees one vocabulary however
+    the failure was found.
+    """
+    stream = Path(str(record.get("log_path") or ""))
+    try:
+        if stream.stat().st_size:
+            return None
+    except OSError:
+        # A stream never created is the same fact as an empty one.
+        pass
+    try:
+        raw = Path(str(record.get("stderr_path") or "")).read_bytes()
+    except OSError:
+        return None
+    tail = raw[-_LAUNCH_FAILURE_STDERR_BYTES:].decode("utf-8", "replace").strip()
+    if not tail:
+        return None
+    entry: dict[str, Any] = {
+        "recorded_at": _utc_now(),
+        "kind": LAUNCH_FAILED_PHASE,
+        "backend": str(record.get("backend") or ""),
+        "argv": list(record.get("argv") or ()),
+        "stderr_tail": tail,
+        "stream_path": str(stream),
+    }
+    exit_status = data.get("exit_status")
+    if isinstance(exit_status, int) and not isinstance(exit_status, bool):
+        entry["exit_status"] = exit_status
+        entry.update(_wait_status_record(exit_status))
+    return entry
+
+
 def _record_launch_failure(launched: Mapping[str, Any], *, exit_status: int) -> None:
     """Record how a launched worker's process ended, on its run.
 
@@ -10680,6 +10724,21 @@ def attach(run_id: str, task: str) -> dict[str, Any]:
     return _mutate_pointer(run_id, bind)
 
 
+def _stored_phase_survives(stored_phase: str, observed_phase: str) -> bool:
+    """Whether a fold keeps a phase the run already reached, unopened.
+
+    Two stored phases are final for their pointer and a fold may not reopen
+    them: a terminal phase, which the supervisor wrote once the worker exited,
+    and ``launch-failed``, which records that the worker exited before its
+    first event and stops a further lift until a person acts. An observation
+    that derives a different phase from a stream, a manifest or a dead pid
+    folds over a run whose own evidence already settled it.
+    """
+    return _terminal_phase_survives(stored_phase, observed_phase) or (
+        stored_phase == LAUNCH_FAILED_PHASE and observed_phase != LAUNCH_FAILED_PHASE
+    )
+
+
 def _terminal_phase_survives(stored_phase: str, observed_phase: str) -> bool:
     """Whether a fold keeps a terminal phase the supervisor already stored.
 
@@ -10740,7 +10799,7 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
             record["final_message"] = data["final_message"]
             record["throughput"] = data["throughput"]
             observed_phase = "stopped" if stopped else data["phase"]
-            if _terminal_phase_survives(stored_phase, observed_phase):
+            if _stored_phase_survives(stored_phase, observed_phase):
                 # The run finished under the supervisor's terminal phase; a
                 # stream that reports it as live does not reopen it.
                 observed_phase = stored_phase
@@ -10762,23 +10821,40 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
                 not stopped
                 and data["phase"] in ("starting", "working")
                 and record["process_alive"] is False
-                and not _terminal_phase_survives(stored_phase, "orphaned")
+                and not _stored_phase_survives(stored_phase, "orphaned")
             ):
                 # A dead process with no terminal event is a recoverable orphan,
                 # not a finished run. An empty log counts because argument
                 # failures can exit before the first event is written. A run the
                 # supervisor already finished is neither: its terminal stored
-                # phase stands and a spent pid does not reopen it.
-                record["phase"] = "orphaned"
-                record["detail"] = (
-                    "process exited without a terminal event in its log; "
-                    f"check {record.get('stderr_path')}"
-                )
+                # phase stands and a spent pid does not reopen it. A zero-length
+                # stream whose stderr carries a message is the third case: the
+                # worker exited before its first turn and wrote the reason where
+                # the launcher's reap could quote it but nothing read it, so the
+                # reason is read here and the run is classified as the launch
+                # failure it was instead of as an orphan with no cause.
+                failure = _empty_stream_launch_failure(record, data)
+                if failure is not None:
+                    record["phase"] = LAUNCH_FAILED_PHASE
+                    cause = str(failure["stderr_tail"]).strip().splitlines()[-1]
+                    record["detail"] = (
+                        "the worker exited before writing any stream record; "
+                        f"stderr: {cause}"
+                    )
+                    failures = list(record.get("launch_failures") or ())
+                    failures.append(failure)
+                    record["launch_failures"] = failures
+                else:
+                    record["phase"] = "orphaned"
+                    record["detail"] = (
+                        "process exited without a terminal event in its log; "
+                        f"check {record.get('stderr_path')}"
+                    )
         elif record.get("task") and record["manifest_present"] and not stopped:
             manifest_status = str(
                 parse_manifest(manifest.read_text()).get("status") or ""
             ).strip()
-            if manifest_status and not _terminal_phase_survives(
+            if manifest_status and not _stored_phase_survives(
                 stored_phase, manifest_status
             ):
                 record["phase"] = manifest_status
@@ -11064,6 +11140,42 @@ def _prior_same_task_run(
     return candidates[-1]
 
 
+def _prior_session_still_held(
+    prior: Mapping[str, Any], live_pointers: Iterable[Mapping[str, Any]]
+) -> str | None:
+    """Why the prior run's session cannot be continued, or None when it can.
+
+    A session id is a single-writer resource: the backend's thread store
+    refuses a second writer for a thread another process still holds, and the
+    refused launch exits before its first event. A prior run that is still a
+    live pointer is judged by the member guard's own verdict, so the semantic
+    that refuses a dispatch onto a busy member is the one that withholds its
+    session: the session may be continued only once its worker is proven gone
+    on this host. A committed record is a run that has ended, so it carries no
+    such question and its session stays continueable; a live pointer whose
+    worker is running, or whose liveness cannot be established here, withholds
+    the session — continuity is worth less than the node.
+    """
+    run_id = str(prior.get("run_id") or "")
+    live = next(
+        (
+            pointer
+            for pointer in live_pointers
+            if str(pointer.get("run_id") or "") == run_id
+        ),
+        None,
+    )
+    if live is None:
+        return None
+    verdict = member_in_flight_verdict(live)
+    if not verdict.blocks:
+        return None
+    return (
+        "its worker has not been proven stopped, so continuing its session "
+        f"could collide with a live writer ({verdict.reason})"
+    )
+
+
 def _task_session_resolution(
     node: Any,
     project: str,
@@ -11083,7 +11195,10 @@ def _task_session_resolution(
 
     A prior run whose own stream ended too large to continue is withheld rather
     than composed, and the withholding names it, so a reader sees the refusal
-    rather than a bare absence.
+    rather than a bare absence. A prior run that is still a live pointer whose
+    worker has not been proven stopped is withheld the same way: its session is
+    still held by a writer, and this run starts a fresh conversation instead of
+    colliding with it. The substitution is reported rather than silent.
     """
     records = [*committed_runs, *live_pointers]
     identity = _task_identity(
@@ -11108,11 +11223,15 @@ def _task_session_resolution(
         or (prior.get("agent") or {}).get("dialect")
         or ""
     )
-    disqualifier = (
-        f"its session belongs to harness {owner or 'unknown'!r}, not {harness!r}"
-        if harness and owner != harness
-        else _session_too_large_to_continue(prior)
-    )
+    held = _prior_session_still_held(prior, live_pointers)
+    if held is not None:
+        disqualifier = held
+    elif harness and owner != harness:
+        disqualifier = (
+            f"its session belongs to harness {owner or 'unknown'!r}, not {harness!r}"
+        )
+    else:
+        disqualifier = _session_too_large_to_continue(prior)
     if disqualifier is not None:
         return {
             "session_id": None,

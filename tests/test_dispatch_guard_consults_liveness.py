@@ -94,6 +94,8 @@ def _dispatch_against_holder(
     dispatch_context: tuple[Path, Path],
     monkeypatch: pytest.MonkeyPatch,
     liveness: tuple[bool | None, str],
+    *,
+    phase: str = "working",
 ) -> dict:
     _config_home, repo = dispatch_context
     member = "worker-a"
@@ -102,7 +104,7 @@ def _dispatch_against_holder(
         "run_id": "holder-run",
         "project": "proj",
         "member": member,
-        "phase": "working",
+        "phase": phase,
         "pid": os.getpid(),
         "launcher_host": socket.gethostname(),
     }
@@ -149,16 +151,16 @@ def test_unknown_member_liveness_is_refused_through_dispatch(
         _dispatch_against_holder(dispatch_context, monkeypatch, (None, "cannot tell"))
 
 
-def test_dispatch_wires_the_liveness_refusal(
+def test_a_terminal_phase_holder_with_a_live_worker_is_refused_through_dispatch(
     dispatch_context: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    with pytest.raises(crew.MemberInFlight):
+    # The holder's run has recorded its end while its worker still holds the
+    # session. Dispatch must refuse on the process, not release on the phase,
+    # and the refusal must name the liveness it observed.
+    with pytest.raises(crew.MemberInFlight, match="alive"):
         _dispatch_against_holder(
-            dispatch_context, monkeypatch, (True, "worker is live")
+            dispatch_context,
+            monkeypatch,
+            (True, "worker is live"),
+            phase="complete",
         )
-
-    dispatch_source = Path(crew.__file__).with_name("crew").joinpath("dispatch.py")
-    assert (
-        dispatch_source.read_text(encoding="utf-8").count("refuse_member_in_flight")
-        >= 1
-    )

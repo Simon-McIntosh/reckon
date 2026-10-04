@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>A held member and a silent launch are read | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A held member and a silent launch are read</h1>
+      <p class="lead">A roster member's session is a single-writer resource, and two readings of
+      stored labels hid that. The member guard released a member whose run had recorded a
+      terminal phase without asking the process table, so a run that reached its end while its
+      worker still held the session was launched onto and the launch died against the backend's
+      writer store before its first event. The guard is now judged from process liveness alone:
+      a worker running on this host, or one whose liveness cannot be established here, blocks,
+      and only a worker proven gone releases. A dispatch that would have continued a session its
+      prior worker may still hold starts a fresh conversation instead and records the
+      substitution rather than dropping it silently. Beside it, a launch that dies before its
+      first turn leaves a zero-length stream and its reason in <code>stderr.log</code>, and
+      nothing read that file: <code>observe</code> classified the run as an orphan whose detail
+      named only the path, and, because launch-failed is not a terminal phase, a later
+      observation overwrote a stored launch-failed phase with the same orphan reading.
+      <code>observe</code> now reads stderr when the stream is empty, classifies the run as the
+      launch failure it was with the reason on the record, and leaves a stored launch-failed
+      phase alone.</p>
+    </header>
+
+    <section id="held-member-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/node.py</code>, <code>member_in_flight_verdict</code>: the
+        terminal-phase release is removed. Every pointer is judged by
+        <code>_member_worker_liveness</code>; <code>alive</code> blocks, <code>gone</code>
+        releases, and an answer that cannot be established here &mdash; no recorded pid, or a
+        pointer recorded on another host &mdash; blocks and is reported as
+        <code>unknown</code>. A stored phase is not consulted, because the run reaching an end
+        and the process releasing the session are different facts. A recorded pid that names no
+        process &mdash; zero, negative, or not an integer &mdash; releases the member: a
+        liveness probe for pid 0 asks about the caller's own process group, so it would answer
+        "alive" for a launch that produced no worker at all.</li>
+        <li><code>reckon/crew/dispatch.py</code>, <code>_prior_session_still_held</code> (new):
+        a prior same-task run that is still a live pointer is judged by the member guard's own
+        verdict, so the predicate that refuses a dispatch onto a busy member is the one that
+        withholds its session. A committed record is a run that has ended and its session stays
+        continueable.</li>
+        <li><code>reckon/crew/dispatch.py</code>, <code>_task_session_resolution</code>: the new
+        withholding is the first disqualifier, ahead of the harness-owner and stream-size
+        checks. The dispatch resolves no session, launches on a fresh conversation, and writes
+        the substitution into <code>session_withheld</code> and
+        <code>session_id_absent</code> (point <code>dispatch-same-task-session-withheld</code>)
+        with the prior run named and the reason given.</li>
+        <li><code>reckon/crew/dispatch.py</code>, <code>_empty_stream_launch_failure</code>
+        (new) and the observe fold: when the run's stream is zero-length or absent and a dead
+        process left a non-empty stderr tail, the run is classified
+        <code>launch-failed</code>, the last stderr line is carried into
+        <code>detail</code>, and a launch-failures entry is appended in the reaper's own shape
+        with the bounded stderr tail and the stream path. An empty or absent stderr leaves the
+        reading as the orphan it was, so no cause is invented.</li>
+        <li><code>reckon/crew/dispatch.py</code>, <code>_stored_phase_survives</code> (new):
+        terminal phases and <code>launch-failed</code> are final for their pointer, so a later
+        observation cannot overwrite a recorded launch failure. <code>observe</code> consults
+        it for both its own reading and the manifest fold;
+        <code>_terminal_phase_survives</code> keeps its name and role because the stored-phase
+        writer test patches it by name.</li>
+        <li><code>tests/test_a_held_member_is_read.py</code> (new): a same-task live pointer
+        whose run recorded <code>complete</code> while its worker runs is withheld through a
+        real dispatch and the fresh launch carries no resumed session; the same dispatch
+        against a worker proven gone continues the session; the observe arm reads a
+        zero-length stream through its stderr for both the function and the CLI
+        (<code>reckon crew observe</code>) and a stored launch-failed pointer is not
+        reclassified orphaned; an empty stderr still observes as an orphan; the member guard
+        and the session withholding are asserted to answer from one predicate; and a recorded
+        pid that names no process releases its member while a pointer with no pid at all stays
+        <code>unknown</code>.</li>
+        <li><code>tests/test_ledger.py</code>: the session-capture fixture's launcher stub now
+        returns a pid that names no worker, matching the sibling fixture in
+        <code>tests/test_crew.py</code>. It stood in for the worker with the pytest process
+        itself, so its first run recorded a genuinely live pid and the second, member-bound run
+        was held &mdash; correctly, under the new rule. What the test asserts about session
+        capture is unchanged.</li>
+        <li><code>tests/test_member_guard_counts_live_processes.py</code> and
+        <code>tests/test_dispatch_guard_consults_liveness.py</code>: the terminal-phase release
+        cases are replaced by the liveness judgements they assert &mdash; a terminal phase over
+        a live worker blocks, over a proven-gone worker releases, with no pid is
+        <code>unknown</code> &mdash; and the dispatch-arm case for a terminal-phase holder with
+        a live worker is expressed as the refusal it now is, rather than by counting a string
+        in the source.</li>
+      </ul>
+    </section>
+
+    <section id="held-member-the-gate">
+      <h2>The gate</h2>
+      <p><code>PYTHONPATH=&lt;worktree&gt; .venv/bin/python -m pytest -p no:cacheprovider -q
+      tests/test_a_held_member_is_read.py tests/test_member_guard_counts_live_processes.py
+      tests/test_dispatch_guard_consults_liveness.py</code> on the head tree at
+      <code>4dd94d7c8</code>: <strong>26 passed</strong>, <code>EXIT=0</code>. Log
+      <code>logs/head-focused.log</code>.</p>
+      <p>The declared negative control ran the same three files on a full copy of the tree at
+      the parent revision <code>92ab0ad47</code> in <code>$TMPDIR</code>: <strong>9 failed,
+      16 passed</strong>, <code>EXIT=1</code>. The failures are the two measured defects
+      inverted &mdash; the terminal-phase holder is released and its session
+      (<code>thread-held</code>) is resumed onto the new launch, and the zero-length stream
+      observes as <code>orphaned</code> rather than <code>launch-failed</code>, through the
+      function and through the CLI arm, with a stored launch-failed phase overwritten to
+      orphaned and the terminal-phase verdicts reading <code>terminal</code> with
+      <code>blocks False</code>. Log <code>logs/base-negative-control.log</code>, last line
+      <code>EXIT=1</code>. The pid-shape case was measured red separately at
+      <code>301686f3f</code>, the head before the rule landed, where the same file reports
+      <strong>1 failed</strong> and <code>EXIT=1</code> (<code>logs/pid-zero-case-at-old-head.log</code>).</p>
+      <p>The population of test files importing <code>reckon.crew.node</code> or
+      <code>reckon.crew.dispatch</code> (211 files) ran on both trees under
+      <code>-n 8</code>: the base arm at <code>92ab0ad47</code> reported <code>9 failed, 2495
+      passed, 1 error</code> and the head arm at <code>4dd94d7c8</code> reported
+      <code>2505 passed, 1 error</code> with no failure. The head arm adds no failure against
+      base, and its signal set is a strict subset of the base arm's: the one signal both arms
+      carry is a collection error from <code>tests/conftest.py</code>, a fixture module that
+      the import predicate puts in the file list on every arm. The two failures an earlier
+      head arm added are gone, one because the pid-shape rule releases a member whose launcher
+      stub recorded pid 0, the other because the session-capture fixture no longer stands in
+      for its worker with the pytest process itself; a teardown error seen in that earlier arm
+      did not reappear. Both arms' logs are full-run logs in <code>logs/</code>.</p>
+    </section>
+  </main>
+</body>
+</html>

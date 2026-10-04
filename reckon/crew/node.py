@@ -288,16 +288,17 @@ class CrewError(Exception):
 
 
 # The three answers a process-liveness question can give about a live pointer's
-# worker, plus the one the pointer's own phase settles without asking. Only
-# ``gone`` may release a member; the other three refuse it. ``unknown`` is a
-# distinct answer rather than a synonym for ``gone`` because the crew config home
-# is shared across login nodes, so a pid read on the wrong host, or a pointer
+# worker. Only ``gone`` may release a member; the other two refuse it. ``unknown``
+# is a distinct answer rather than a synonym for ``gone`` because the crew config
+# home is shared across login nodes, so a pid read on the wrong host, or a pointer
 # written before its worker was spawned, fabricates both verdicts — releasing on
-# either double-dispatches a member whose worker may be alive elsewhere.
+# either double-dispatches a member whose worker may be alive elsewhere. A stored
+# phase is not an answer to this question: a run that has recorded a terminal end
+# has not shown that its worker stopped writing, and a launch onto a member whose
+# session still has a live writer dies at launch.
 MEMBER_LIVENESS_ALIVE = "alive"
 MEMBER_LIVENESS_GONE = "gone"
 MEMBER_LIVENESS_UNKNOWN = "unknown"
-MEMBER_LIVENESS_TERMINAL = "terminal"
 
 
 @dataclass(frozen=True)
@@ -333,32 +334,42 @@ def _member_worker_liveness(pointer: Mapping[str, Any]) -> tuple[bool | None, st
     this host, and ``None`` means the question cannot be answered here. Every
     non-``False`` answer blocks, so a foreign launching host and a pointer with
     no recorded pid are both closed rather than assumed dead.
+
+    A pid that can never name a worker is separated out before the probe,
+    because the kernel gives pid 0 and every negative number to no process a
+    launch could have produced: ``os.kill(0, 0)`` tests the caller's own process
+    group and answers about the reader, and a record carrying such a value is a
+    launch that produced no worker at all. That record blocks nothing -- there
+    is no writer to collide with -- and it is not the same shape as a pointer
+    written before its worker spawned, which carries no pid and stays with the
+    probe as unanswerable.
     """
     from reckon.crew.claims import _worker_liveness
 
+    pid = pointer.get("pid")
+    if pid is not None and (
+        isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0
+    ):
+        return False, ""
     return _worker_liveness(pointer)
 
 
 def member_in_flight_verdict(pointer: Mapping[str, Any]) -> MemberInFlightVerdict:
     """Report whether a live pointer still blocks the member that owns it.
 
-    A pointer whose phase is terminal releases its member without asking the
-    process table, which is the answer this guard always gave. Every other phase
-    is judged from process liveness instead: a running worker blocks, a worker
-    proven gone on this host releases, and a liveness that cannot be established
-    here blocks and is reported as ``unknown`` rather than as death. The manifest
-    is deliberately not consulted — a delivered run and an abandoned one are told
-    apart by whether a process is still running, never by what a worker wrote
-    about itself, and a phase field that lags a finished worker is exactly the
-    stale reading this predicate replaces.
+    The answer is taken from process liveness, never from the phase alone: a
+    running worker blocks, a worker proven gone on this host releases, and a
+    liveness that cannot be established here blocks and is reported as
+    ``unknown`` rather than as death. A stored terminal phase is not proof the
+    worker stopped — the run reaching an end and the process releasing the
+    session are different facts — and trusting the phase is how a dispatch
+    launches onto a member whose session still has a live writer, where the
+    backend's single-writer store then kills the launch before its first turn.
+    The manifest is deliberately not consulted either — a delivered run and an
+    abandoned one are told apart by whether a process is still running, never by
+    what a worker wrote about itself, and a phase field that lags a finished
+    worker is exactly the stale reading this predicate replaces.
     """
-    phase = str(pointer.get("phase") or "")
-    if phase in _TERMINAL_RUN_PHASES:
-        return MemberInFlightVerdict(
-            blocks=False,
-            liveness=MEMBER_LIVENESS_TERMINAL,
-            reason=f"its phase {phase!r} is terminal",
-        )
     alive, reason = _member_worker_liveness(pointer)
     if alive is True:
         return MemberInFlightVerdict(

@@ -231,7 +231,7 @@ _PLUMBING_WAIVER = (
 )
 
 
-def _dispatch(repo, *, fixture: str | None = None, **kwargs) -> dict:
+def _dispatch(repo, *, fixture: str | None = None, launcher=None, **kwargs) -> dict:
     node_kwargs = kwargs.pop("node_kwargs", {})
     node_id = str(node_kwargs.get("id") or "node-a")
     record = crew.dispatch(
@@ -240,7 +240,8 @@ def _dispatch(repo, *, fixture: str | None = None, **kwargs) -> dict:
         repo=repo,
         config=CONFIG,
         session=kwargs.pop("session", f"sess-{node_id}"),
-        launcher=lambda plan, *, log_path, stderr_path, prompt_path: os.getpid(),
+        launcher=launcher
+        or (lambda plan, *, log_path, stderr_path, prompt_path: os.getpid()),
         **kwargs,
     )
     if fixture:
@@ -1729,7 +1730,16 @@ def test_a_later_session_is_not_written_over_the_captured_one(home, repo) -> Non
     ledger.register_member(PROJECT, "worker-a", harness="alpha", root=repo)
     roster_path = repo / "docs" / "state" / PROJECT / "crew.json"
     roster_before = roster_path.read_bytes()
-    first = _dispatch(repo, fixture="codex-turn.jsonl", member="worker-a")
+    # The first launch produced no worker — the stub records a pid that names
+    # no process — so its session is free to be continued by the second
+    # dispatch this test is about. A pid the kernel has issued would be a live
+    # worker, and the member guard would hold it rather than hand it on.
+    first = _dispatch(
+        repo,
+        fixture="codex-turn.jsonl",
+        member="worker-a",
+        launcher=lambda *args, **kwargs: 0,
+    )
     crew.observe(first["run_id"])
     first_record = crew.read_pointer(first["run_id"])
 
