@@ -4027,15 +4027,6 @@ def _follow_watch_lines(
                         live_runs, len(gap_rows), str(record.get("recorded_at") or "")
                     ),
                 }
-            if record:
-                # The pane has already been shown these states, so a line the
-                # read loop passes again for one of these runs is not news. An
-                # attach with no place reads the stream from a position that
-                # predates the record — it has no offset to open at — and this
-                # memory is what stops the runs that did not move from being
-                # announced a second time as the loop re-reads them.
-                for run_id, state in (record.get("states") or {}).items():
-                    path.remember(str(run_id), str(state))
             if mode != "baseline" and first_attach:
                 # The event restores the pane's stored history for a terminal,
                 # and carries no remembered states: the replay below draws the
@@ -4075,12 +4066,14 @@ def _follow_watch_lines(
             # A re-arm's replay delivered its gap as news up to the boundary, so
             # the read loop opens there: the gap it already covered is not read
             # again, which is what stops a run that moved from being drawn twice
-            # — as a replay row and then as a transition. A first arming read
+            # — as a replay row and then as a transition. The record's diff
+            # covers the same ground from the pane's own memory, so an attach
+            # that drew it opens at the boundary too. A first arming read
             # nothing to the boundary — it derives the fleet — so it leaves every
             # line already in the stream to the read loop, which opens at the
             # cursor's own offset and delivers them. Opening a first arming at
             # the boundary would drop the lines it never replayed.
-            if mode != "baseline":
+            if record or mode != "baseline":
                 cursor["offset"] = boundary
         # Left behind before the first read rather than after the first line:
         # an arming that starts against a quiet stream and then ends has still
