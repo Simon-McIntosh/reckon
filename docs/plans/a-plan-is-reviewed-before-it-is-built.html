@@ -23,7 +23,7 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 </head>
@@ -256,7 +256,10 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
     <div class="r-comment-body"><p><strong>Landed at merge 2113c8064.</strong> <code>_review_dispatch_fields</code> takes <code>write=False</code> for a preview. It returns the report directory, brief, plan snapshot and sidecar paths a real dispatch would use, plus the composed brief text, and creates none of them. <code>dispatch_review_for_run</code> answers a dry run without taking the dispatch lock, through one shared <code>_standing_plan_review</code> reader. To reach the same verdict a real dispatch reaches, the resolver digests the brief from a temporary scratch copy that is removed after the call. <code>tests/test_review_plan_command.py</code> lists the report root before and after a dry run and finds it unchanged, and asserts that a real dispatch still writes all four files. Restoring the early write reddens the case. The first review scored 87 and blocked on evidence, not code: the base-arm log lacked full test ids, so the review's reader derived 4 added failures where there were none. The worker re-recorded the base arm from a real checkout, and the re-review scored 95. The coordinator's stacked population of 176 recovery importers read 4 failed on both arms with the same ids. Follow-ons from the re-review: the preview reads <code>plan_review._REVIEW_SIDECAR_NAME</code>, a private name, across the module boundary, and the logged negative control first fails at the brief-existence assertion, one line before the listing assertion.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261004T210239048516-a-run-comment-earns-no-plan-review" data-who="reckon-build" data-when="2026-10-04T21:23:01.955Z">
-    <div class="r-comment-body"><p>plan_fingerprint now normalises a promotion&#x27;s c-run- landing comments out of the state it digests, so a run comment leaves the fingerprint equal (e26fa10b…) and composes no review while an authored comment still moves it and composes one; the new cases pass and the plan_review-importing population adds no failure against base (137 passed base, 139 passed head), with the fold-back mutant reddening both assertions (EXIT=1)</p></div>
+    <div class="r-comment-body"><p>plan_fingerprint now normalises a promotion's c-run- landing comments out of the state it digests, so a run comment leaves the fingerprint equal (e26fa10b…) and composes no review while an authored comment still moves it and composes one; the new cases pass and the plan_review-importing population adds no failure against base (137 passed base, 139 passed head), with the fold-back mutant reddening both assertions (EXIT=1)</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261004T212340799879-review-of-a-run-comment-earns-no-plan-review" data-who="reckon-build" data-when="2026-10-04T21:28:43.645Z">
+    <div class="r-comment-body"><p>reckon:a-plan-is-reviewed-before-it-is-built#s8 — independent review of run r-20261004T210239048516-a-run-comment-earns-no-plan-review stored as a parsed record scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 18 (arithmetic total 96), reading base 16f324f71 and head dba6dbb27, with added_failure_count 0 and no added_failure_ids.</p></div>
 </div>
 </section>
 </main>
