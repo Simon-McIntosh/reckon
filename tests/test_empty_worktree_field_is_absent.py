@@ -27,7 +27,10 @@ def _git(*arguments: str, cwd: Path) -> str:
 
 def _seed_repository(root: Path) -> str:
     root.mkdir(parents=True)
-    (root / "file.txt").write_text("seed\n")
+    # The path inside the content keeps two repositories seeded in the same
+    # second from hashing to one commit, which would let the ambient head
+    # stand in for the run's head unnoticed.
+    (root / "file.txt").write_text(f"{root}\n")
     _git("init", "-q", "-b", "main", cwd=root)
     _git("config", "user.email", "worker@example.invalid", cwd=root)
     _git("config", "user.name", "Worker", cwd=root)
