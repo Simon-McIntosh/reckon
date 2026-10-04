@@ -4160,8 +4160,8 @@ def _crew(
 ) -> dict[str, Any]:
     """Read crew state or perform one recovery action through the crew surface.
 
-    Deliberately one tool over eleven read views and three recovery actions
-    rather than twelve top-level tools. Set ``action`` to ``resume``, ``session``
+    Deliberately one tool over read views and recovery actions
+    rather than a tool per operation. Set ``action`` to ``resume``, ``session``
     or ``resume-ready`` to reach the same implementation as the corresponding
     crew CLI operation. Omit ``action`` for the read views below.
     ``directory`` reads every live coordinator across the workstation, or one
@@ -4192,6 +4192,8 @@ def _crew(
     ``budget`` reports, per backend, whether a wave may open — read from what
     earlier runs recorded, so it spends nothing, and holding only where
     exhaustion was actually reported.
+    The plan-review view needs project and plan, and returns the newest stored
+    record, its unanswered finding ids, and delivered reports.
     ``lanes`` reports which configured endpoints will currently serve a dispatch
     and how much of each five-hour and weekly quota window remains. Consult it
     before choosing a lane; it reports availability only and never selects,
@@ -4292,6 +4294,7 @@ def _crew(
         "obligations",
         "velocity",
         "scores",
+        "plan-review",
     ):
         return {
             "ok": False,
@@ -4302,8 +4305,23 @@ def _crew(
                 "quota view, routing is the cross-ledger cost view, runs is the "
                 "compact joined view, scores is the per-dimension review view, "
                 "velocity is the delivery-rate view, and fleet is the "
-                "cross-project view"
+                "cross-project view; plan-review reads a plan review and its unanswered findings"
             ),
+        }
+    if view == "plan-review":
+        from reckon.crew import plan_review
+
+        if not plan:
+            return {
+                "ok": False,
+                "error": "missing_plan",
+                "detail": "plan-review needs project and plan",
+            }
+        record = plan_review.read_plan_review(project, plan)
+        return {
+            "record": record,
+            "unanswered": plan_review.unanswered_findings(record) if record else [],
+            "delivered": plan_review.delivered_reports(project, plan),
         }
     try:
         if view == "obligations":

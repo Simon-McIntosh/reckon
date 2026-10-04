@@ -316,6 +316,11 @@ def _schema_view(data: Mapping[str, Any]) -> dict[str, Any]:
     cleaned.pop(HARNESS_HOME_FILES, None)
     cleaned.pop(HARNESS_HOME_ADJACENT_FILES, None)
     cleaned.pop(SPRINT_RECENT_DAYS_KEY, None)
+    review = cleaned.get(REVIEW_KEY)
+    if isinstance(review, Mapping):
+        cleaned[REVIEW_KEY] = {
+            key: value for key, value in review.items() if key != "plan_settle_seconds"
+        }
     backends = cleaned.get("backends")
     if isinstance(backends, Mapping):
         cleaned["backends"] = {
@@ -676,6 +681,19 @@ def plan_review_gate_enforces(config: Mapping[str, Any] | None) -> bool:
     return str(mode) == "enforce"
 
 
+def plan_review_settle_seconds(config: Mapping[str, Any] | None) -> int:
+    """The quiet interval before a changed plan earns a review."""
+    review = (config or {}).get(REVIEW_KEY)
+    value = (
+        review.get("plan_settle_seconds", 600) if isinstance(review, Mapping) else 600
+    )
+    return (
+        value
+        if isinstance(value, int) and not isinstance(value, bool) and value >= 0
+        else 600
+    )
+
+
 def review_tier_thresholds(
     config: Mapping[str, Any] | None,
 ) -> tuple[int, str]:
@@ -841,6 +859,14 @@ def validate_layer(data: Mapping[str, Any], source: str | Path) -> None:
 
     _validate_harness_home_files(data, source)
     _validate_plan_review_gate(data, source)
+    review = data.get(REVIEW_KEY)
+    if isinstance(review, Mapping) and "plan_settle_seconds" in review:
+        value = review["plan_settle_seconds"]
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise FlightConfigError(
+                source, "review.plan_settle_seconds", "must be a non-negative integer"
+            )
+
     _validate_sprint_recent_days(data, source)
 
     for backend_name, backend in (data.get("backends") or {}).items():
