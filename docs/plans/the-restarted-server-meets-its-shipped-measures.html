@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
-<meta name="plan-version" content="13">
+<meta name="plan-version" content="14">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -122,7 +122,7 @@
     <div class="r-comment-body"><p>review record for r-20261003T145631922192-a-launched-run-reads-launched stored (parsed) scoring goal_fidelity 18, evidence 13, scope_discipline 20, durability 18, fit 16 — total 85 — reviewed_base_sha 75055cfb9022cd68de67f9e95e8c8db246f8a89a, reviewed_head_sha 07b01365f2dedfa2778b05ab2d91383217ac8d57, added_failure_count 1.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261004T193901085229-review-of-a-launched-run-reads-launching-on-crew" data-who="reckon-build" data-when="2026-10-04T19:48:42.218Z">
-    <div class="r-comment-body"><p>review of r-20261004T191242154747-a-launched-run-reads-launching-on-crew stored as a parsed record scoring goal_fidelity 16, evidence 15, scope_discipline 20, durability 14, fit 16 — total 81 — reviewed_base_sha f31a38d86c60218d71c838c63ceb956d35ccd00b, reviewed_head_sha 2926da4edd859527b69e7de3bddd9ca5c1ec84e1, added_failure_count 0 with no added failure ids; the phase fast path is semantics-preserving and meets §3&#x27;s done-when as written, but the 40-pointer perf test also passes at the base revision (0.180 s) so it does not discriminate the optimisation and the live read remains 1.8-2.2 s.</p></div>
+    <div class="r-comment-body"><p>review of r-20261004T191242154747-a-launched-run-reads-launching-on-crew stored as a parsed record scoring goal_fidelity 16, evidence 15, scope_discipline 20, durability 14, fit 16 — total 81 — reviewed_base_sha f31a38d86c60218d71c838c63ceb956d35ccd00b, reviewed_head_sha 2926da4edd859527b69e7de3bddd9ca5c1ec84e1, added_failure_count 0 with no added failure ids; the phase fast path is semantics-preserving and meets §3's done-when as written, but the 40-pointer perf test also passes at the base revision (0.180 s) so it does not discriminate the optimisation and the live read remains 1.8-2.2 s.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261003T162906962061-a-sprint-that-exists-renders" data-who="reckon-build" data-when="2026-10-03T16:54:29.314Z">
     <div class="r-comment-body"><p>Pinned the sprint route at main with tests/test_a_sprint_that_exists_renders.py: a distributed fixture project whose sprint file exists serves a /_discover payload carrying the sprint row (head arm 1 passed; population 55 files, zero added failures), and the §1 "No sprint." is not reproducible from the reader at main — the sprint composition path is unchanged between the served process's start revision (0963c7b11) and main, so the served process/state was the difference.</p></div>
@@ -135,6 +135,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-20261004-s4-landed" data-who="s22-coord" data-when="2026-10-04T19:48:00Z">
     <div class="r-comment-body"><p><strong>The cause is established at main, merged at 971853f62.</strong> <code>tests/test_a_sprint_file_renders_as_its_sprint.py</code> serves a fixture project whose <code>docs/sprints</code> file exists. It executes the authored sprint view against the discovery payload the real handler returns, and the view renders the fixture's sprint id and theme, not “No sprint.”. It passes at main, so the live server's “No sprint.” for S25 came from the server running code 12 files behind the checkout, not from a reader defect. Removing the fixture's sprint file reddens the assertion with the placeholder. Review scored 96 with no added failures. Its follow-on: the gate does not execute <code>docs/ui/state-loader.js</code> or the client mount, and no headless browser is installed on the compute node, so a literal in-browser render is still owed.</p><p><strong>What remains of this section</strong> is the re-measure on a server restarted onto main. The live server is the login node's <code>reckon.service</code>, which every session reads, so restarting it is the lead's call.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261004T193950439393-review-of-a-sprint-file-renders-as-its-sprint" data-who="reckon-build" data-when="2026-10-04T19:47:41.394Z">
+    <div class="r-comment-body"><p>review of r-20261004T191212090668-a-sprint-file-renders-as-its-sprint stored: parsed record scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 19 (total 96) against reviewed_base_sha f31a38d86c60218d71c838c63ceb956d35ccd00b and reviewed_head_sha b60d8acfedff686658e285e0ec78982d49d288ef, with added_failure_count 0 / added_failure_ids [] derived from the run&#x27;s own baseline_suite and after_suite arms</p></div>
 </div>
 </section>
 </main>
