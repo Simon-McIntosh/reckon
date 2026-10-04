@@ -19,7 +19,7 @@
       <p class="lead">The promotion profile attributed 35&nbsp;% of an 81.9&nbsp;s promotion to <code>_plan_html.read_state</code> reached through <code>metadata_index._plan_record</code> over every plan and doc HTML. The persisted index already reused a row when a file's stat identity was unchanged; it now keys reuse on a sha256 of the file's bytes, so a rewrite that restores the same bytes reuses the parsed row and only a byte change re-parses.</p>
     </header>
 
-    <section id="what-changed">
+    <section id="the-metadata-index-reuses-unchanged-plans-what-changed">
       <h2>What changed</h2>
       <ul>
         <li><code>reckon/metadata_index.py</code>: the reuse gate is the entry's stored <code>digest</code> compared against <code>_content_digest(path)</code>, a sha256 of the file's bytes, replacing the stat-identity comparison. The persisted entry drops its <code>stat</code> field; the index schema version steps to 3 so an index of the previous shape is discarded once rather than reused without a digest.</li>
@@ -28,7 +28,7 @@
       </ul>
     </section>
 
-    <section id="the-gate">
+    <section id="the-metadata-index-reuses-unchanged-plans-the-gate">
       <h2>The gate</h2>
       <p><code>tests/test_the_metadata_index_reuses_unchanged_plans.py</code> builds the index twice over a synthetic docs tree of 12 plans and 4 evidence notes, changes one file, and asserts only the changed file is re-parsed and the warm rows equal a cold build. A second case moves a plan's mtime with its bytes unchanged and asserts the row is reused.</p>
       <table>
@@ -42,12 +42,12 @@
       <p>Logs live under the run directory <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261002T083645178761-the-metadata-index-reuses-unchanged-plans/</code>. Each gate log's first line names the revision, the tree and the command.</p>
     </section>
 
-    <section id="measure">
+    <section id="the-metadata-index-reuses-unchanged-plans-measure">
       <h2>The measure this node owns</h2>
       <p>With the digest key, a rebuild over an unchanged tree re-parses zero rows, a rebuild after one plan changes re-parses exactly that plan, and a build whose only change is a moved mtime re-parses none. The warm rows equal a cold build over the same tree. The full wall-time profile at the merged head belongs to a separately dispatched node; this node measures only its own change.</p>
     </section>
 
-    <section id="negative-control">
+    <section id="the-metadata-index-reuses-unchanged-plans-negative-control">
       <h2>Declared negative control</h2>
       <p>Declared mutation: <em>drop the digest key so every file is re-parsed; the one-changed-file case re-reads unchanged files and fails</em>. Applied by the env-armed <code>RECKON_TEST_DROP_INDEX_DIGEST=1</code> fixture, which strips the <code>digest</code> field from every persisted entry so no row can match; both cases then re-parse all sixteen covered files and fail on their own assertion. The log first line repeats the declaration. The tree was left clean at <code>89463012f</code>.</p>
     </section>
