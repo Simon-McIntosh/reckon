@@ -1043,9 +1043,10 @@ def pytest_collection_modifyitems(
 
 @pytest.fixture(autouse=True)
 def isolated_reckon_home(request, tmp_path_factory, monkeypatch):
-    """Point the configuration home at a temporary tree and suppress arming."""
+    """Isolate app and user-unit configuration for each test; suppress arming."""
     home = tmp_path_factory.mktemp("reckon-home")
     monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(home / "xdg"))
     monkeypatch.setenv(
         WATCH_ARMING_ENV,
         "on" if request.node.get_closest_marker(ARMING_MARKER) else "off",
