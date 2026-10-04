@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="reckon-type" content="evidence">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="landed-record-at-closure">
+  <meta name="plan-evidence-for" content="landed-record-at-closure">
+  <title>Landing: a fragment id collision is caught where it is written | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; landing record</p>
+      <h1>Landing: a fragment id collision is caught where it is written</h1>
+      <p class="lead">The brief now tells a fragment-writing node that every element id carries its node id, <code>check-manifest</code> audits a plan's composition whenever a run declares a change to one of that plan's fragments &mdash; through the plan's landing record when one exists, and over the fragments together when it does not, because the record is synthesised once, at closure &mdash; and the three fragments of <code>the-obligations-hook-reads-a-snapshot</code> that had already claimed each other's anchors are renamed under their node ids.</p>
+    </header>
+
+    <section id="a-fragment-id-collision-is-caught-where-written-landing-what-landed">
+      <h2>What landed</h2>
+      <ul>
+        <li><code>reckon/crew/prompts.py</code> &mdash; the landing brief states that every element id in the fragment begins with the node id, so sibling fragments composed into one record cannot claim the same anchor. The sentence sits after the small-node rule, whose adjacency an existing test pins, and before the figure sentence.</li>
+        <li><code>reckon/doccheck.py</code> &mdash; <code>audit_composed_record_ids(record_path, plan_slug, project=None)</code> returns the <code>duplicate-element-id</code> findings for a record composed with its plan's fragments, through the same composition and the same finding text <code>audit-doc</code> uses, so the two surfaces describe a collision in one wording. The caller names the plan from the fragment's own directory rather than reading it back from the record's <code>plan-evidence-for</code> meta: a record whose meta is missing or names another plan would otherwise be composed without the fragments that put it at risk and the check would pass silently. A second entry point, <code>audit_fragment_ids(fragment_dir)</code>, composes a plan's fragments alone &mdash; each read as its body, the way composition appends it &mdash; for a plan whose record does not exist yet, and reports a duplicate in the same wording.</li>
+        <li><code>reckon/crew/reports.py</code> &mdash; <code>check-manifest</code> collects the plans named by the run's declared changed paths under <code>docs/evidence/fragments/&lt;plan&gt;/&lt;node&gt;.html</code>, audits each such plan's composition in the run's worktree, and reports every duplicate as <code>[duplicate-element-id]</code> naming the id and the fragments that carry it. A run that changes no fragment is not audited. A plan whose landing record does not exist yet is audited over its fragments together: the record is synthesised once, at closure, so until then the fragments are the composition a reader will meet, and two of them that reuse an id collide with each other. A path that is not a fragment file is not read as one.</li>
+        <li><code>tests/test_fragment_ids_are_checked.py</code> (new) &mdash; five cases driving <code>check-manifest</code> against a temporary repository: a new fragment repeating a committed fragment's id is refused by name, the run passes once that id is prefixed, a run changing no fragment is not audited, a lone fragment of a recordless plan has nothing to collide with, and a recordless plan whose second fragment repeats the first's id is refused naming the id and both fragments.</li>
+        <li>Three fragments of <code>the-obligations-hook-reads-a-snapshot</code> repaired &mdash; <code>landing-what-landed</code>, <code>landing-measure</code> and <code>landing-commits</code> in <code>worktree-held-names-an-existing-tree.html</code>, <code>held-worktrees-fast-path-names-differ.html</code> and <code>a-worktree-held-row-is-rechecked-at-read.html</code> are renamed with the writing node's id, nine renames in all. No same-fragment <code>href</code> pointed at them, and <code>landing-reproduction</code> in the middle fragment was never colliding, so it is unchanged.</li>
+        <li>Two tests pinning the brief text updated with it: <code>tests/test_crew_prompts.py</code> asserts the rule reaches a fragment-writing node's prompt, and <code>tests/test_brief_prompt.py</code>'s snapshot carries the sentence.</li>
+      </ul>
+    </section>
+
+    <section id="a-fragment-id-collision-is-caught-where-written-landing-measure">
+      <h2>Measure</h2>
+      <ul>
+        <li>Reproduction of the recorded defect: <code>audit-doc</code> on <code>the-obligations-hook-reads-a-snapshot</code>'s landed record as it stood at <code>657e199ba75b7bcdfc67cadfd37592cecc68a19c</code> reports <code>3 error</code> findings, one per id (<code>landing-what-landed</code>, <code>landing-measure</code>, <code>landing-commits</code>), each naming all three fragments and the fact that a link to the id resolves to its first occurrence. At the head the same command is <code>0 error</code> with no <code>duplicate-element-id</code> finding, <code>EXIT=0</code>.</li>
+        <li>Reproduction of the skipped plan: the case over a plan with a committed fragment, no landing record, and a run adding a second fragment that repeats the id answered <code>{"findings": [], "ok": true}</code> at <code>62f3f7344ccdf969afae079044e690d0a3d10d90</code> &mdash; <code>1 failed, 4 passed</code>, <code>EXIT=1</code> (<code>recordless-collision-repro.log</code>) &mdash; because the plan was skipped for having no record. At the head the same run is refused, naming the id and both fragments, and the file is <code>5 passed</code>, <code>EXIT=0</code>.</li>
+        <li>Gate: the 44 test files importing <code>reckon.crew.reports</code> or <code>reckon.crew.prompts</code>, run with <code>pytest -n 8 --timeout=300</code> in each arm. Base arm, extracted from <code>657e199ba75b7bcdfc67cadfd37592cecc68a19c</code> into a scratch tree: <code>640 passed</code>, <code>EXIT=0</code>. Head arm at <code>4c905d793</code> (the recordless-fragment fix committed): <code>640 passed</code>, <code>EXIT=0</code>. No failure id added.</li>
+        <li>Both arms ran from the worktree's working directory, because ten cases in <code>tests/test_gate_evidence.py</code> resolve the promoted revision from the <em>ambient</em> repository: their pointer record carries an empty <code>worktree</code> field, and the empty string is read as <code>.</code>, so the revision and the review's reconstructed head both come from the process's own cwd repository. Run from a cwd that is not a git repository those ten fail for that reason alone, at either revision; the diagnostic is <code>cwd-fallback-diagnostic.log</code>, which shows the same code answering <code>promoted from []: ''</code> with the scratch cwd and <code>58512a1e9&hellip;</code> with the worktree cwd. Holding the ambient repo identical is what makes the two arms a code comparison; the fallback itself is outside this node's write scope and is recorded as a follow-on.</li>
+        <li>Negative control, the declared mutation: the new test file overlaid on the base tree gives <code>1 failed, 3 passed</code>, <code>EXIT=1</code> &mdash; <code>test_a_new_fragment_repeating_a_committed_id_is_refused_by_name</code>, whose output shows the colliding run answered <code>"ok": true, "findings": []</code>, which is the absent audit. At the head it passes; the other three cases are the controls that must pass in both arms.</li>
+        <li><code>ruff check</code> and <code>ruff format --check</code> over the changed Python paths: no finding added and nothing left unformatted. Counting each revision's own bytes, the committed base carries 16 findings over the same three paths and the head 15; the delta is zero added.</li>
+      </ul>
+    </section>
+
+    <section id="a-fragment-id-collision-is-caught-where-written-landing-commits">
+      <h2>Commits and records</h2>
+      <p>Product, tests and the fragment repairs: <code>58512a1e9afeffe72b8cd370b100f403927d28f3</code>. The recordless-fragment audit: <code>4c905d793</code>. The landing record lands with this fragment.</p>
+      <p>Logs in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T075656239730-a-fragment-id-collision-is-caught-where-written/</code>: <code>gate-base.log</code> (base arm), <code>gate-after-4c905d793.log</code> (head arm), <code>negative-control.log</code> (declared mutation), <code>recordless-collision-repro.log</code> (the skipped plan reproduced at <code>62f3f7344</code>), <code>focused-tests.log</code>, <code>audit-doc-obligations-hook-before-repair.log</code>, <code>audit-doc-obligations-hook-after-repair.log</code>, and <code>cwd-fallback-diagnostic.log</code>.</p>
+    </section>
+  </main>
+</body>
+</html>

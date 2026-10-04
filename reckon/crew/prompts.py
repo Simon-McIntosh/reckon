@@ -161,6 +161,8 @@ PLAN_LANDING_CONTRACT = (
     "  line in your manifest in place of a plan edit. The fragment goes into your\n"
     "  final commit; promotion lands the `landing:` line on your plan section.\n"
     + SMALL_NODE_RULE
+    + "  Every element id in the fragment begins with the node id, so sibling\n"
+    "  fragments composed into one record cannot claim the same anchor.\n"
     + "  Use a figure wherever a spatial, plotted or sequential relationship is clearer\n"
     "  shown than described, under your own docs/figures/<plan>/<node-id>/ with the\n"
     "  project-absolute src /<project>/figures/<plan>/<node-id>/...; never an image\n"

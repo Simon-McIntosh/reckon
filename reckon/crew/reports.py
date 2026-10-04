@@ -55,7 +55,7 @@ from typing import Any, TypedDict
 
 import yaml
 
-from reckon import ledger
+from reckon import doccheck, ledger
 from reckon.crew import review as review_module
 from reckon.crew.node import (
     NEEDS_HELP_FIELDS,
@@ -1724,6 +1724,101 @@ def _time_fence_claim_findings(
     ]
 
 
+# The subtree a plan's landing fragments live under. A fragment is one HTML
+# document directly beneath it, and the composed record audits are keyed on the
+# plan the fragment's own directory names.
+_FRAGMENT_SUBTREE_PARTS = ("docs", "evidence", "fragments")
+
+
+def _fragment_plan_of(changed: Any) -> str | None:
+    """Return the plan whose fragment directory a changed path writes into.
+
+    The match is on the path's own segments rather than a string prefix, so an
+    absolute declaration and a repository-relative spelling of the same
+    fragment both resolve. A path under ``docs/evidence/fragments`` that is not
+    a fragment document answers ``None`` — a deeper path is not one of the
+    documents the composition reads.
+    """
+
+    parts = _normalized_scope_path(changed).parts
+    for index in range(len(parts) - 4):
+        if tuple(parts[index : index + 3]) != _FRAGMENT_SUBTREE_PARTS:
+            continue
+        if len(parts) - index == 5 and parts[index + 4].endswith(".html"):
+            return parts[index + 3]
+        return None
+    return None
+
+
+def _landing_record_beside(root: Path, plan: str) -> Path | None:
+    """The landing record a plan's fragments compose into, when one exists.
+
+    The archived spelling is canonical and the live one is accepted because
+    fragments live beside either. ``None`` means the plan has no landed record
+    yet, which is the state of nearly every plan: the record is synthesised
+    once, at closure, and the caller audits the fragments on their own until
+    then.
+    """
+
+    evidence = root / "docs" / "evidence"
+    for candidate in (
+        evidence / "archive" / f"{plan}-landed.html",
+        evidence / f"{plan}-landed.html",
+    ):
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _composed_record_id_findings(
+    changed_paths: Iterable[Any],
+    *,
+    worktree: Path | None,
+    repository: Path | None,
+) -> list[str]:
+    """Report duplicate element ids the run's own changed fragments form.
+
+    A collision is caught where it is written: composing a plan's record
+    concatenates its fragments into one document, so two fragments that reuse
+    an ``id`` leave every later anchor unreachable, and nothing else on the
+    crew path reads that composition. The record is composed from the run's own
+    worktree, where the changed fragment and its siblings both sit, and each
+    duplicate is reported in the wording ``audit-doc`` gives, naming the
+    fragments that carry it.
+
+    A run that changes no fragment is not audited: a composed record the run
+    did not touch is not its defect, and refusing it would make a collision
+    already merged into every later run's way. A plan whose landing record does
+    not exist yet is audited over its fragments instead, because the record is
+    synthesised once, at closure: until then the fragments are the composition,
+    and two of them that reuse an id collide with each other.
+    """
+
+    plans = sorted(
+        {plan for path in changed_paths if (plan := _fragment_plan_of(path))}
+    )
+    if not plans:
+        return []
+    root = worktree if worktree is not None else repository
+    if root is None:
+        return []
+    findings: list[str] = []
+    tree = Path(root)
+    for plan in plans:
+        record = _landing_record_beside(tree, plan)
+        plan_findings = (
+            doccheck.audit_composed_record_ids(record, plan)
+            if record is not None
+            else doccheck.audit_fragment_ids(
+                tree.joinpath(*_FRAGMENT_SUBTREE_PARTS, plan)
+            )
+        )
+        findings.extend(
+            f"[{finding.code}] {finding.message}" for finding in plan_findings
+        )
+    return findings
+
+
 def audit_manifest(
     text: str,
     node: TaskNode | None = None,
@@ -1857,6 +1952,13 @@ def audit_manifest(
             findings.append(
                 "changed paths outside the write scope: " + ", ".join(stray)
             )
+    findings.extend(
+        _composed_record_id_findings(
+            manifest["changed_paths"] or (),
+            worktree=worktree,
+            repository=repository,
+        )
+    )
     return {"manifest": manifest, "findings": findings, "ok": not findings}
 
 

@@ -1455,6 +1455,58 @@ def _duplicate_element_id_findings(
     ]
 
 
+def audit_composed_record_ids(
+    record_path: Path, plan_slug: str, *, project: str | None = None
+) -> list[Finding]:
+    """Report duplicate element ids in a record composed with its fragments.
+
+    A caller that has just seen a fragment written names the plan from the
+    fragment's own directory rather than reading it back from the record's
+    ``plan-evidence-for`` meta: a record whose meta is missing or names another
+    plan would otherwise be composed without the fragments that put it at risk
+    and the check would pass silently. The finding text is the one ``audit-doc``
+    reports for a composed record, so both surfaces describe a collision with one
+    wording. A composition that fails falls back to the record's own bytes, as it
+    does in :func:`audit_file`, and only collisions visible there are reported.
+    """
+
+    text, _ = _composed_record_text(record_path, plan_slug, project)
+    return _duplicate_element_id_findings(
+        text, _composed_record_sources(record_path, plan_slug)
+    )
+
+
+def audit_fragment_ids(fragment_dir: Path) -> list[Finding]:
+    """Report duplicate element ids among a plan's fragments composed together.
+
+    A plan's landing record is synthesised once, at closure, so until then the
+    fragments are the whole of what the composed record will carry: two that
+    reuse an ``id`` collide with each other exactly as they will collide in the
+    record built from them, and no record file has to exist for that to be
+    checkable. Each fragment is read as its body alone, the way composition
+    appends it, so the count sees the anchors a reader meets and not the ones a
+    fragment's own ``head`` holds. The finding text is the one a composed
+    record reports, so a collision reads the same wherever it is caught.
+    """
+
+    from reckon.evidence import _fragment_body_bytes
+
+    directory = Path(fragment_dir)
+    if not directory.is_dir():
+        return []
+    fragments = sorted(directory.glob("*.html"))
+    if not fragments:
+        return []
+    composed = b"".join(_fragment_body_bytes(fragment) for fragment in fragments)
+    return _duplicate_element_id_findings(
+        composed.decode("utf-8", errors="replace"),
+        [
+            (f"fragment {fragment.name}", _plan_html._read_plan_text(fragment))
+            for fragment in fragments
+        ],
+    )
+
+
 def audit_file(path: Path, *, project: str | None = None) -> list[Finding]:
     from reckon.evidence import evidence_record_plan
 
