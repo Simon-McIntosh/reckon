@@ -112,10 +112,6 @@ def _fixture_html(records=None):
     )
 
 
-def _without_attempt_metadata(text: str) -> str:
-    return re.sub(r' data-attempts="[^"]*"', "", text)
-
-
 def _zero_attempt_records(records: list[dict]) -> list[dict]:
     result = deepcopy(records)
     for record in result:
@@ -137,16 +133,14 @@ def test_three_sections_parse_all_six_fields(tmp_path):
     assert from_html(path.read_text()).canonical_dump()["sections"] == RECORDS
 
 
-def test_section_record_round_trip_drops_legacy_attempts_once(tmp_path):
+def test_section_record_round_trip_preserves_legacy_attempts(tmp_path):
     original = _fixture_html()
     state = read_state(original)
     assert state["sections"] == RECORDS
     rendered = write_state(original, state)
-    assert rendered == _without_attempt_metadata(original)
+    assert rendered == original
     assert write_state(rendered, from_html(rendered).canonical_dump()) == rendered
-    expected_state = deepcopy(state)
-    expected_state["sections"] = _zero_attempt_records(RECORDS)
-    assert read_state(rendered) == expected_state
+    assert read_state(rendered) == state
 
     # Reconstruct the records from parsed state so leaving stale markup untouched
     # cannot pass as regeneration.
@@ -154,7 +148,7 @@ def test_section_record_round_trip_drops_legacy_attempts_once(tmp_path):
         r'<section data-reckon="section"[^>]*></section>\n', "", original
     )
     reconstructed = write_state(without_records, state)
-    assert reconstructed == rendered
+    assert reconstructed == re.sub(r' data-attempts="[^"]*"', "", rendered)
     path = tmp_path / "section-example.html"
     path.write_text(reconstructed)
     assert parse_plan(path)["sections"] == _zero_attempt_records(RECORDS)
@@ -218,8 +212,11 @@ def test_write_updates_record_fields_and_preserves_authored_prose():
     state["sections"][1]["effort_hours"] = 3.75
     state["sections"][1]["links"] = ["other:inputs#ready"]
     rendered = write_state(original, state)
-    assert read_state(rendered)["sections"] == _zero_attempt_records(state["sections"])
-    assert "data-attempts" not in rendered
+    expected = deepcopy(state["sections"])
+    expected[1]["attempts"] = RECORDS[1]["attempts"]
+    assert read_state(rendered)["sections"] == expected
+    assert 'data-attempts="2"' in rendered
+    assert 'data-attempts="3"' not in rendered
     assert (
         rendered.count(
             '<p class="authored">Keep &amp; preserve <strong>these bytes</strong>.</p>'
@@ -287,7 +284,7 @@ def test_heading_carried_record_round_trips_and_preserves_authored_attributes():
     )
     state = read_state(original)
     assert state["sections"] == RECORDS
-    assert write_state(original, state) == _without_attempt_metadata(original)
+    assert write_state(original, state) == original
     state["sections"][0]["attempts"] = 1
     rendered = write_state(original, state)
     assert read_state(rendered)["sections"][0]["attempts"] == 0
@@ -341,7 +338,7 @@ def test_optional_capability_floors_survive_regeneration():
     )
     state = read_state(original)
     assert state["sections"][0]["capability"]["requirements"]["context"] == "extended"
-    assert write_state(original, state) == _without_attempt_metadata(original)
+    assert write_state(original, state) == original
 
 
 def test_boolean_attempts_cannot_enter_typed_state():
