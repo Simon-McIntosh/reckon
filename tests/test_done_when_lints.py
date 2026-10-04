@@ -190,6 +190,20 @@ def test_absolute_green_accounts_for_red_named_base(repository: Path) -> None:
     admitted_delta, payload = _verdict(repository, check + "; adds no failure to base")
     assert admitted_delta == 0, payload
 
+    flagged_check = "pytest -q tests/test_preexisting.py exits 0"
+    flagged_refused, payload = _verdict(repository, flagged_check)
+    assert flagged_refused != 0
+    flagged_delta, payload = _verdict(
+        repository, flagged_check + "; adds no failure to base"
+    )
+    assert flagged_delta == 0, payload
+    existing_tests_delta, payload = _verdict(
+        repository,
+        flagged_check
+        + "; existing checks show no added failures by id against the base",
+    )
+    assert existing_tests_delta == 0, payload
+
     (repository / "tests" / "test_preexisting.py").write_text(
         "def test_preexisting_failure():\n    assert 1 == 1\n", encoding="utf-8"
     )

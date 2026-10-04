@@ -139,7 +139,8 @@ _BASE_COUNT = re.compile(
     re.IGNORECASE,
 )
 _ABSOLUTE_GREEN_GATE = re.compile(
-    r"\bpytest\s+(tests/[\w./-]+\.py(?:\:\:[\w-]+)?)\s+exits?\s+0\b",
+    r"\bpytest\b[^.;\n]{0,160}?\btests/[\w./-]+\.py(?:\:\:[\w-]+)?\b"
+    r"[^.;\n]{0,80}?\b(?:exits?|returns?)\s+0\b",
     re.IGNORECASE,
 )
 _GREEN_BASE_REVISION = re.compile(
@@ -147,7 +148,9 @@ _GREEN_BASE_REVISION = re.compile(
 )
 _DELTA_AGAINST_BASE = re.compile(
     r"\b(?:adds?\s+no\s+(?:new\s+)?failures?\s+(?:to|over|against)"
-    r"|zero\s+added\s+failures?\s+against)\s+(?:the\s+)?base\b",
+    r"|zero\s+added\s+failures?\s+against"
+    r"|no\s+added\s+failures?(?:\s+by\s+id)?\s+against)"
+    r"\s+(?:the\s+)?base\b",
     re.IGNORECASE,
 )
 
