@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-held-blocker-clears-on-its-probe">
+  <meta name="plan-evidence-for" content="reckon:a-held-blocker-clears-on-its-probe">
+  <meta name="plan-verifies" content="reckon:a-held-blocker-clears-on-its-probe#s3">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-verdict" content="passed">
+  <title>A cleared blocker reports its clear | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-cleared-blocker-reports-its-clear-landing" data-node="a-cleared-blocker-reports-its-clear" data-reckon="landed" data-when="2026-10-04">
+  <h2>A cleared held blocker reports its recorded clear after its probe leaves the registry</h2>
+  <p><code>evaluate_held_blocker</code> returns a cleared blocker's recorded reason before resolving its probe id, so a blocker cleared while its probe was registered still reports that clear once the probe is withdrawn; an uncleared blocker with an unknown probe id is still refused. The new test in <code>tests/test_held_blocker_probe.py</code> is red at <code>39ed4f2d8</code> and green at <code>c53775fdc</code>; the 20 test files importing <code>reckon.project_state</code> read 308 passed at base and 309 at head, zero added failures.</p>
+</article>
+</body>
+</html>
