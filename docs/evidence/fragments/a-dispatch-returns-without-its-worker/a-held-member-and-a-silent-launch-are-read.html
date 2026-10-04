@@ -43,7 +43,10 @@
         releases, and an answer that cannot be established here &mdash; no recorded pid, or a
         pointer recorded on another host &mdash; blocks and is reported as
         <code>unknown</code>. A stored phase is not consulted, because the run reaching an end
-        and the process releasing the session are different facts.</li>
+        and the process releasing the session are different facts. A recorded pid that names no
+        process &mdash; zero, negative, or not an integer &mdash; releases the member: a
+        liveness probe for pid 0 asks about the caller's own process group, so it would answer
+        "alive" for a launch that produced no worker at all.</li>
         <li><code>reckon/crew/dispatch.py</code>, <code>_prior_session_still_held</code> (new):
         a prior same-task run that is still a live pointer is judged by the member guard's own
         verdict, so the predicate that refuses a dispatch onto a busy member is the one that
@@ -74,8 +77,16 @@
         against a worker proven gone continues the session; the observe arm reads a
         zero-length stream through its stderr for both the function and the CLI
         (<code>reckon crew observe</code>) and a stored launch-failed pointer is not
-        reclassified orphaned; an empty stderr still observes as an orphan; and the member
-        guard and the session withholding are asserted to answer from one predicate.</li>
+        reclassified orphaned; an empty stderr still observes as an orphan; the member guard
+        and the session withholding are asserted to answer from one predicate; and a recorded
+        pid that names no process releases its member while a pointer with no pid at all stays
+        <code>unknown</code>.</li>
+        <li><code>tests/test_ledger.py</code>: the session-capture fixture's launcher stub now
+        returns a pid that names no worker, matching the sibling fixture in
+        <code>tests/test_crew.py</code>. It stood in for the worker with the pytest process
+        itself, so its first run recorded a genuinely live pid and the second, member-bound run
+        was held &mdash; correctly, under the new rule. What the test asserts about session
+        capture is unchanged.</li>
         <li><code>tests/test_member_guard_counts_live_processes.py</code> and
         <code>tests/test_dispatch_guard_consults_liveness.py</code>: the terminal-phase release
         cases are replaced by the liveness judgements they assert &mdash; a terminal phase over
@@ -90,8 +101,8 @@
       <h2>The gate</h2>
       <p><code>PYTHONPATH=&lt;worktree&gt; .venv/bin/python -m pytest -p no:cacheprovider -q
       tests/test_a_held_member_is_read.py tests/test_member_guard_counts_live_processes.py
-      tests/test_dispatch_guard_consults_liveness.py</code> on the head tree:
-      <strong>25 passed</strong>, <code>EXIT=0</code>. Log
+      tests/test_dispatch_guard_consults_liveness.py</code> on the head tree at
+      <code>4dd94d7c8</code>: <strong>26 passed</strong>, <code>EXIT=0</code>. Log
       <code>logs/head-focused.log</code>.</p>
       <p>The declared negative control ran the same three files on a full copy of the tree at
       the parent revision <code>92ab0ad47</code> in <code>$TMPDIR</code>: <strong>9 failed,
@@ -102,22 +113,21 @@
       function and through the CLI arm, with a stored launch-failed phase overwritten to
       orphaned and the terminal-phase verdicts reading <code>terminal</code> with
       <code>blocks False</code>. Log <code>logs/base-negative-control.log</code>, last line
-      <code>EXIT=1</code>.</p>
+      <code>EXIT=1</code>. The pid-shape case was measured red separately at
+      <code>301686f3f</code>, the head before the rule landed, where the same file reports
+      <strong>1 failed</strong> and <code>EXIT=1</code> (<code>logs/pid-zero-case-at-old-head.log</code>).</p>
       <p>The population of test files importing <code>reckon.crew.node</code> or
       <code>reckon.crew.dispatch</code> (211 files) ran on both trees under
       <code>-n 8</code>: the base arm at <code>92ab0ad47</code> reported <code>9 failed, 2495
-      passed, 1 error</code> and the head arm <code>2 failed, 2502 passed, 2 errors</code>,
-      both as full-run logs in <code>logs/</code>. The head arm adds two failures, and both
-      are fixtures outside this change's write paths that the new rule meets:
-      <code>tests/test_crew.py::test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first</code>
-      and
-      <code>tests/test_ledger.py::test_a_later_session_is_not_written_over_the_captured_one</code>
-      dispatch a second member-bound run while the first run is still a live pointer whose
-      launcher stub returned pid 0; the member guard now holds that member, which is the
-      behaviour this change exists to produce, and each fixture needs the first run ended
-      before the second begins. The second added signal is an error at teardown of
-      <code>tests/test_member_friction.py</code>, which does not reproduce when that test is
-      run alone.</p>
+      passed, 1 error</code> and the head arm at <code>4dd94d7c8</code> reported
+      <code>2505 passed, 1 error</code> with no failure. The head arm adds no failure against
+      base, and its signal set is a strict subset of the base arm's: the one signal both arms
+      carry is a collection error from <code>tests/conftest.py</code>, a fixture module that
+      the import predicate puts in the file list on every arm. The two failures an earlier
+      head arm added are gone, one because the pid-shape rule releases a member whose launcher
+      stub recorded pid 0, the other because the session-capture fixture no longer stands in
+      for its worker with the pytest process itself; a teardown error seen in that earlier arm
+      did not reappear. Both arms' logs are full-run logs in <code>logs/</code>.</p>
     </section>
   </main>
 </body>
