@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-held-blocker-clears-on-its-probe-landed">
+  <meta name="plan-title" content="A Held Blocker Clears On Its Probe — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A Held Blocker Clears On Its Probe: 8 committed run(s), 11 section-anchored comment(s), and 7 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-held-blocker-clears-on-its-probe">
+  <meta name="plan-verdict" content="pass">
+  <meta name="plan-recorded-at" content="2026-10-04T11:40:52.107Z">
+  <meta name="plan-commits" content="c8ab8bda848dbac97cc7a5b6f290fe52113553fe,c53775fdcd4058e52805b2ad5661d6fdd5efa905,b2887726b61c44eac800204f3627d791947b9ba6,5ed4492d323371d9fe118277b3ad75026db47131,858d0ffe915408145dfc6879979b4f94d0bfd3f3,37cd98d5e45bbcdb0044e87578a162332c0052d3,2a9ca5fa3b9111b686571c6d83aa60e2314a7d80">
+  <title>A Held Blocker Clears On Its Probe — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Held Blocker Clears On Its Probe — landed record</h1>
+  <p>Closure synthesis for A Held Blocker Clears On Its Probe: 8 committed run(s), 11 section-anchored comment(s), and 7 landed commit(s).</p>
+
+  <section id="s1">
+    <h2>§1 — A held blocker names a probe, and the probe clears it</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T090541678792-a-held-blocker-names-its-probe">
+      <p><small>reckon-build · 2026-10-04T09:34:02Z</small></p>
+      <div class="r-comment-body"><p>Registered path-exists resolves to a Python callable; arrival records probe path-exists and its finding as the clear reason while absence stays held and an unknown id refuses; 537 passed at head versus 535 passed at base, 0 added failures, with both new tests red at base.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T093438858304-review-of-a-held-blocker-names-its-probe">
+      <p><small>reckon-build · 2026-10-04T09:40:05.075Z</small></p>
+      <div class="r-comment-body"><p>review of r-20261004T090541678792-a-held-blocker-names-its-probe scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 19 (total 96 of 100), zero added failures, no blocking findings — the held-probe registry, the evaluate_held_blocker clear-with-reason path and the composed-state filter all land, and both new tests are independently shown red at the base revision.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20261004-s1-landed">
+      <p><small>s22-coord · 2026-10-04T11:42:00Z</small></p>
+      <div class="r-comment-body"><p><strong>Landed at merge 40291660e.</strong> <code>reckon/held_probes.py</code> registers reviewed probes by id. The first is <code>path-exists</code>, which checks a path relative to the docs root and refuses absolute paths, <code>..</code> and anything that escapes the root. A held blocker may carry a <code>probe</code> and a <code>subject</code>, and the state validator refuses either when empty. It also refuses a <code>cleared</code> status with no recorded reason. <code>evaluate_held_blocker</code>, exposed as <code>reckon probe-held-blocker</code>, runs the probe on the subject. On arrival it writes the blocker cleared, with <code>probe &lt;id&gt;: &lt;finding&gt;</code> as its reason and a timestamp. On absence the blocker stays held, and an unknown id is refused rather than read as clear. A cleared blocker no longer holds a sprint item and no longer counts at sprint close. Measured at a stacked merge of main 7c5b2bc7f over 47 importer files: 535 passed at base and 537 at head, with no failures; both new tests are red at base. Review scored 96.</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261004T090541678792-a-held-blocker-names-its-probe</code></td>
+        <td>a-held-blocker-names-its-probe</td>
+        <td><code>c8ab8bda848dbac97cc7a5b6f290fe52113553fe</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>27m 52s</td>
+        <td><code>{&quot;added&quot;:315,&quot;files&quot;:4,&quot;removed&quot;:0}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261004T093438858304-review-of-a-held-blocker-names-its-probe</code></td>
+        <td>review-of-a-held-blocker-names-its-probe</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>4m 49s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report" data-run-id="r-20261004T093438858304-review-of-a-held-blocker-names-its-probe" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T090541678792-a-held-blocker-names-its-probe.json">
+      <h3>review-of-a-held-blocker-names-its-probe &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T090541678792-a-held-blocker-names-its-probe.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;added_failure_count&quot;: 0,
+  &quot;added_failure_ids&quot;: [],
+  &quot;call_site_count&quot;: 2,
+  &quot;call_sites&quot;: [
+    &quot;reckon/cli.py:800&quot;,
+    &quot;reckon/project_state.py:1568&quot;
+  ],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;reckon/project_state.py&quot;,
+      &quot;line&quot;: &quot;1350&quot;,
+      &quot;severity&quot;: &quot;follow-on&quot;,
+      &quot;text&quot;: &quot;follow-on: the already-cleared early return sits after the probe-registry lookup at :1348, so a cleared blocker whose probe id left the registry raises \&quot;unknown probe id\&quot; instead of reporting its recorded clear; the branch is never exercised by the tests.&quot;
+    }
+  ],
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;verified 2 production call site(s)&quot;,
+    &quot;diff&quot;: &quot;read the single commit c8ab8bda8 against base 060d94f50 commit by commit; four files changed, +315/-0, adding the probe registry, the evaluation command and the composed-state cleared filter.&quot;,
+    &quot;done_when&quot;: &quot;the done_when asks a temporary-repository test to show arrival clears, absence holds and an unknown id is reported; tests/test_held_blocker_probe.py:26 exercises all three against a tmp_path docs tree.&quot;,
+    &quot;goal&quot;: &quot;the selected node goal is to let a held blocker name a probe id resolving to a registered Python callable and clear it with the probe id and finding as the reason; reckon/held_probes.py:38 registers path-exists in PROBES and reckon/project_state.py:1338 resolves it and writes the cleared_reason at :1374.&quot;,
+    &quot;manifest&quot;: &quot;read; it records base 535 passed and head 537 passed with 0 added failures, a negative control reddening both new tests at base, and a focused 2-passed run.&quot;,
+    &quot;write_paths&quot;: &quot;the reviewed manifest declares reckon/project_state.py, reckon/held_probes.py, reckon/cli.py and tests/test_held_blocker_probe.py; every path in the c8ab8bda8 diff lies inside them.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;tests/test_held_blocker_probe.py:26 reddens at base with evaluate_held_blocker absent and asserts stored version 1-&gt;2 and cleared_reason against the resource the code had to write; the already-cleared early return at reckon/project_state.py:1350 is left untested.&quot;,
+    &quot;evidence&quot;: &quot;tests/test_held_blocker_probe.py:26 asserts the three done_when cases and both gate arms are recorded at EXIT=0 in baseline-suite.log and after-suite.log.&quot;,
+    &quot;fit&quot;: &quot;reckon/held_probes.py:38 uses a module-level registry and reckon/project_state.py:1377 stamps cleared_at with datetime.now(UTC), matching the surrounding idiom.&quot;,
+    &quot;goal_fidelity&quot;: &quot;reckon/project_state.py:1350-1374 clears the blocker and records reason \&quot;probe path-exists: &lt;finding&gt;\&quot;, naming the probe id and its finding as the goal states.&quot;,
+    &quot;scope_discipline&quot;: &quot;every file in the c8ab8bda8 diff is a declared write path and the change carries nothing the goal does not imply.&quot;
+  },
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: the selected node goal is to let a held blocker name a probe id resolving to a registered Python callable and clear it with the probe id and finding as the reason; reckon/held_probes.py:38 registers path-exists in PROBES and reckon/project_state.py:1338 resolves it and writes the cleared_reason at :1374.\nVERDICT done_when: the done_when asks a temporary-repository test to show arrival clears, absence holds and an unknown id is reported; tests/test_held_blocker_probe.py:26 exercises all three against a tmp_path docs tree.\nVERDICT write_paths: the reviewed manifest declares reckon/project_state.py, reckon/held_probes.py, reckon/cli.py and tests/test_held_blocker_probe.py; every path in the c8ab8bda8 diff lies inside them.\nVERDICT manifest: read; it records base 535 passed and head 537 passed with 0 added failures, a negative control reddening both new tests at base, and a focused 2-passed run.\nVERDICT diff: read the single commit c8ab8bda8 against base 060d94f50 commit by commit; four files changed, +315/-0, adding the probe registry, the evaluation command and the composed-state cleared filter.\nCALL_SITES: reckon/cli.py:800, reckon/project_state.py:1568\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/project_state.py:1350-1374 clears the blocker and records reason \&quot;probe path-exists: &lt;finding&gt;\&quot;, naming the probe id and its finding as the goal states.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_held_blocker_probe.py:26 asserts the three done_when cases and both gate arms are recorded at EXIT=0 in baseline-suite.log and after-suite.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every file in the c8ab8bda8 diff is a declared write path and the change carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_held_blocker_probe.py:26 reddens at base with evaluate_held_blocker absent and asserts stored version 1-&gt;2 and cleared_reason against the resource the code had to write; the already-cleared early return at reckon/project_state.py:1350 is left untested.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/held_probes.py:38 uses a module-level registry and reckon/project_state.py:1377 stamps cleared_at with datetime.now(UTC), matching the surrounding idiom.\nFINDING reckon/project_state.py:1350 follow-on: the already-cleared early return sits after the probe-registry lookup at :1348, so a cleared blocker whose probe id left the registry raises \&quot;unknown probe id\&quot; instead of reporting its recorded clear; the branch is never exercised by the tests.\n&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;060d94f50eb15f12d1922401450b8685723321e9&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;c8ab8bda848dbac97cc7a5b6f290fe52113553fe&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20261004T090541678792-a-held-blocker-names-its-probe&quot;,
+  &quot;reviewer&quot;: {
+    &quot;backend&quot;: &quot;clive&quot;,
+    &quot;model&quot;: &quot;deepseek-v4.1-flash&quot;
+  },
+  &quot;reviewer_run_id&quot;: &quot;r-20261004T093438858304-review-of-a-held-blocker-names-its-probe&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 19,
+    &quot;evidence&quot;: 19,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 19,
+    &quot;scope_discipline&quot;: 20
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-04T09:44:00+00:00&quot;,
+  &quot;total&quot;: 96
+}
+</pre></div>
+    </article>
+  </section>
+
+  <section id="s2">
+    <h2>§2 — A cleared held blocker releases a plan stored as blocked</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T102147828761-review-of-a-cleared-hold-releases-a-blocked-plan">
+      <p><small>reckon-build · 2026-10-04T10:27:06.792Z</small></p>
+      <div class="r-comment-body"><p>review of run r-20261004T094153078389-a-cleared-hold-releases-a-blocked-plan (base 39ed4f2d8, head 858d0ffe9) scored goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19, total 97 with added_failure_count 0; both clauses of §2 verified and the defect reproduced red at base.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T094153078389-a-cleared-hold-releases-a-blocked-plan">
+      <p><small>reckon-build · 2026-10-04T10:21:17.703Z</small></p>
+      <div class="r-comment-body"><p>Roadmap readiness now reads a cleared held blocker as a release of the plan it gated: a plan persisted blocked whose only blocker was a probe-cleared held blocker reads ready, while a persisted blocked status with no blocker resource keeps reading blocked (new test 1 failed/1 passed at base 39ed4f2d8 and 2 passed at head; 44-file importer population 402 passed at both arms, zero added failures).</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20261004-s2-landed">
+      <p><small>s22-coord · 2026-10-04T13:02:00Z</small></p>
+      <div class="r-comment-body"><p><strong>Landed at merge 306903ad0.</strong> Composition drops a cleared blocker from the sprint item that named it, so a released plan read exactly like one that never carried a hold. The roadmap then synthesized an unrecorded blocker for the legacy <code>blocked</code> status. <code>_plans_released_by_cleared_blockers</code> in <code>reckon/roadmap.py</code> reads the raw sprint record. A plan whose every recorded blocker is a cleared resource with a reason reads ready; a blocked status with no blocker resource still reads blocked. Measured at a stacked merge of main 488bb4992 over 48 head-tree importer files: 538 passed at base and 540 at head. Review scored 97. Its follow-on that matters is §4.</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261004T094153078389-a-cleared-hold-releases-a-blocked-plan</code></td>
+        <td>a-cleared-hold-releases-a-blocked-plan</td>
+        <td><code>5ed4492d323371d9fe118277b3ad75026db47131</code><br><code>858d0ffe915408145dfc6879979b4f94d0bfd3f3</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>38m 43s</td>
+        <td><code>{&quot;added&quot;:254,&quot;files&quot;:3,&quot;removed&quot;:4}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261004T102147828761-review-of-a-cleared-hold-releases-a-blocked-plan</code></td>
+        <td>review-of-a-cleared-hold-releases-a-blocked-plan</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>4m 42s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report" data-run-id="r-20261004T102147828761-review-of-a-cleared-hold-releases-a-blocked-plan" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T094153078389-a-cleared-hold-releases-a-blocked-plan.json">
+      <h3>review-of-a-cleared-hold-releases-a-blocked-plan &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T094153078389-a-cleared-hold-releases-a-blocked-plan.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;added_failure_count&quot;: 0,
+  &quot;added_failure_ids&quot;: [],
+  &quot;call_site_count&quot;: 3,
+  &quot;call_sites&quot;: [
+    &quot;reckon/roadmap.py:2253&quot;,
+    &quot;reckon/roadmap.py:2369&quot;,
+    &quot;reckon/roadmap.py:2871&quot;
+  ],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;reckon/roadmap.py&quot;,
+      &quot;line&quot;: &quot;1893&quot;,
+      &quot;severity&quot;: &quot;follow-on&quot;,
+      &quot;text&quot;: &quot;follow-on: resolve_graph_target builds a second readiness list whose membership still requires _status(plan) in _AUTHORISED_STATUSES, so a plan released by this change (persisted blocked, held blocker cleared) is absent from a graph target&#x27;s ready set even though the roadmap-served ready_set lists it ready_now. The worker discloses this in evidence_inputs and it lies outside §2&#x27;s done-when (\&quot;reads ready on the roadmap\&quot;), but it means the same readiness fact now has two computations and only one was updated; a parity check between the roadmap ready set and the graph ready list would have caught it.&quot;
+    },
+    {
+      &quot;file&quot;: &quot;reckon/roadmap.py&quot;,
+      &quot;line&quot;: &quot;2148&quot;,
+      &quot;severity&quot;: &quot;follow-on&quot;,
+      &quot;text&quot;: &quot;follow-on: _plans_released_by_cleared_blockers releases only when every recorded blocker is status &#x27;cleared&#x27; with a non-empty cleared_reason; the multi-blocker partial-clear case (one blocker cleared, one still holding) and the cleared-with-empty-reason case are handled by the break/for-else but are not driven by a test, so a future change to the break ordering would not be caught.&quot;
+    },
+    {
+      &quot;file&quot;: &quot;manifest.md&quot;,
+      &quot;line&quot;: &quot;1&quot;,
+      &quot;severity&quot;: &quot;follow-on&quot;,
+      &quot;text&quot;: &quot;follow-on: the reviewed run&#x27;s manifest baseline_suite.command and after_suite.command carry an angle-bracket placeholder (&#x27;&lt;44 absolute test paths under the worktree&gt;/tests&#x27;) rather than the literal command; the literal command is only in the log headers (logs/base-population.log, logs/head-population.log). The counters derived here are read from those log headers and summaries, not from the manifest&#x27;s command strings.&quot;
+    }
+  ],
+  &quot;item_aggregate&quot;: 7,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;verified 3 production call sites of released_by_clear in _build_roadmap: the orphaned-blocked-status guard at :2369, the persisted-blocker synthesis guard at :2858, and the authorised override at :2871.&quot;,
+    &quot;diff&quot;: &quot;read 5ed4492d3 and 858d0ffe9 against base 39ed4f2d8c3f4a1414f05e00ee143ea81b7d7271; two commits, three files, +254/-4. Production change is reckon/roadmap.py only (+84/-4, one new helper and three guard sites); 858d0ffe9 is docs/evidence only, so the code under review is the 5ed4492d3 diff and the head 858d0ffe9 shares that code.&quot;,
+    &quot;done_when&quot;: &quot;the done-when asks for the release case to read ready and the orphan case to stay blocked, each covered by a test; the new test file&#x27;s two cases assert exactly this and I reproduced both arms myself — head 2 passed EXIT=0, base 1 failed/1 passed EXIT=1.&quot;,
+    &quot;goal&quot;: &quot;the change reads the plan-to-blocker attachment from the raw sprint records because composition drops a cleared blocker, exposes the released set as _plans_released_by_cleared_blockers, and consumes it at the orphan finding, the persisted-blocker synthesis and the authorisation check so a plan whose only blocker is a probe-cleared held blocker reads ready_now.&quot;,
+    &quot;manifest&quot;: &quot;read; status complete, base 39ed4f2d8 to head 858d0ffe9, two commits, focused head gate 2 passed EXIT=0, base negative control 1 failed/1 passed EXIT=1, population arms 402 passed/0 failed at both revisions, negative_control_log present and red.&quot;,
+    &quot;write_paths&quot;: &quot;all three changed files (reckon/roadmap.py, tests/test_cleared_hold_releases_a_blocked_plan.py, docs/evidence/fragments/a-held-blocker-clears-on-its-probe/a-cleared-hold-releases-a-blocked-plan.html) lie inside the node&#x27;s declared write paths; no out-of-scope write.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;tests/test_cleared_hold_releases_a_blocked_plan.py:88 reddens at base against the exact readiness resource the fix must produce (assert released[&#x27;bucket&#x27;] == &#x27;ready_now&#x27; fails with &#x27;blocked&#x27; at 39ed4f2d8) and passes at head, while :112 pins the orphan case so the release cannot be a blanket unblock of every persisted blocked status; the partial-clear and empty-reason branches of the release helper are left undriven.&quot;,
+    &quot;evidence&quot;: &quot;the reviewed manifest records both gate arms at revisions matching the reviewed base and head: baseline_suite revision 39ed4f2d8c3f4a1414f05e00ee143ea81b7d7271 with log logs/base-population.log (402 passed, EXIT=0) and after_suite revision 858d0ffe9 with log logs/head-population.log (402 passed, EXIT=0), on the identical 44-file importer list, so added_failure_count is 0; the focused arms logs/base-new-test.log (1 failed/1 passed, EXIT=1) and logs/head-new-test.log (2 passed, EXIT=0) are the negative control, and I reproduced both arms myself (logs/reviewer-two-arm-reproduction.log, HEAD_EXIT=0, BASE_EXIT=1) after confirming the scratch base tree&#x27;s roadmap.py is byte-identical to git&#x27;s 39ed4f2d8 copy; the manifest&#x27;s command strings carry angle-bracket placeholders but the log headers carry the literal commands.&quot;,
+    &quot;fit&quot;: &quot;the helper reuses read_resource and the existing (OSError, ProjectStateError, ValueError) tolerance idiom, is named by what it does, and its docstring states why the raw sprint record rather than the composed state is the source; the three consumers read as guard clauses in the surrounding code, and the comment on the persisted-blocker synthesis explains both the existing decision-scoped case and the new released case; the change adds one disk read per sprint and per blocker on every roadmap build, which is small at this project&#x27;s scale but is a cost the previous code paid only through composition.&quot;,
+    &quot;goal_fidelity&quot;: &quot;both clauses of §2 land: _plans_released_by_cleared_blockers (roadmap.py:2128) returns plan slugs whose every recorded blocker resource is status &#x27;cleared&#x27; with a reason, and _build_roadmap consumes the set at :2369 (no orphaned-blocked-status finding for a released plan), :2858 (no re-synthesis of the persisted blocker) and :2871 (authorised like other open work), so the release case reads ready_now while the orphan case with no blocker resource stays blocked; both are asserted by the new test and I reproduced head-pass/base-fail.&quot;,
+    &quot;scope_discipline&quot;: &quot;three files changed, all declared write paths; the production edit is confined to reckon/roadmap.py and carries nothing §2 does not imply; no shared plan, sprint or index state was touched.&quot;
+  },
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: the change reads the plan-to-blocker attachment from the raw sprint records because composition drops a cleared blocker, exposes the released set as _plans_released_by_cleared_blockers, and consumes it at the orphan finding, the persisted-blocker synthesis and the authorisation check so a plan whose only blocker is a probe-cleared held blocker reads ready_now.\nVERDICT done_when: the done-when asks for the release case to read ready and the orphan case to stay blocked, each covered by a test; the new test file&#x27;s two cases assert exactly this and I reproduced both arms myself — head 2 passed EXIT=0, base 1 failed/1 passed EXIT=1.\nVERDICT write_paths: all three changed files lie inside the node&#x27;s declared write paths; no out-of-scope write.\nVERDICT manifest: read; status complete, base 39ed4f2d8 to head 858d0ffe9, two commits, focused head gate 2 passed EXIT=0, base negative control 1 failed/1 passed EXIT=1, population arms 402 passed/0 failed at both revisions, negative_control_log present and red.\nVERDICT diff: read 5ed4492d3 and 858d0ffe9 against base 39ed4f2d8c3f4a1414f05e00ee143ea81b7d7271; two commits, three files, +254/-4, production change reckon/roadmap.py only.\nCALL_SITES: reckon/roadmap.py:2253, reckon/roadmap.py:2369, reckon/roadmap.py:2871\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: both clauses of §2 land: _plans_released_by_cleared_blockers (roadmap.py:2128) returns plan slugs whose every recorded blocker resource is status &#x27;cleared&#x27; with a reason, and _build_roadmap consumes the set at :2369, :2858 and :2871, so the release case reads ready_now while the orphan case with no blocker resource stays blocked; both are asserted by the new test and I reproduced head-pass/base-fail.\nSCORE evidence: 19\nJUSTIFICATION evidence: the reviewed manifest records both gate arms at revisions matching the reviewed base and head: baseline_suite revision 39ed4f2d8c3f4a1414f05e00ee143ea81b7d7271 (logs/base-population.log, 402 passed EXIT=0) and after_suite revision 858d0ffe9 (logs/head-population.log, 402 passed EXIT=0) on the identical 44-file importer list, so added_failure_count is 0; the focused arms logs/base-new-test.log (1 failed/1 passed EXIT=1) and logs/head-new-test.log (2 passed EXIT=0) are the negative control, and I reproduced both arms myself; the manifest&#x27;s command strings carry angle-bracket placeholders while the log headers carry the literal commands.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: three files changed, all declared write paths; the production edit is confined to reckon/roadmap.py and carries nothing §2 does not imply; no shared plan, sprint or index state was touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_cleared_hold_releases_a_blocked_plan.py:88 reddens at base against the exact readiness resource the fix must produce (assert released[&#x27;bucket&#x27;] == &#x27;ready_now&#x27; fails with &#x27;blocked&#x27; at 39ed4f2d8) and passes at head, while :112 pins the orphan case so the release cannot be a blanket unblock; the partial-clear and empty-reason branches of the release helper are left undriven.\nSCORE fit: 19\nJUSTIFICATION fit: the helper reuses read_resource and the existing (OSError, ProjectStateError, ValueError) tolerance idiom, is named by what it does, and its docstring states why the raw sprint record rather than the composed state is the source; the three consumers read as guard clauses in the surrounding code, and the change adds one disk read per sprint and per blocker on every roadmap build.\nFINDING reckon/roadmap.py:1893 follow-on: resolve_graph_target builds a second readiness list whose membership still requires _status(plan) in _AUTHORISED_STATUSES, so a plan released by this change is absent from a graph target&#x27;s ready set even though the roadmap-served ready_set lists it ready_now; disclosed in evidence_inputs and outside §2&#x27;s done-when, but the same readiness fact now has two computations and only one was updated.\nFINDING reckon/roadmap.py:2148 follow-on: _plans_released_by_cleared_blockers releases only when every recorded blocker is &#x27;cleared&#x27; with a non-empty cleared_reason; the multi-blocker partial-clear case and the cleared-with-empty-reason case are handled by the break/for-else but are not driven by a test.\nFINDING manifest.md:1 follow-on: the reviewed run&#x27;s manifest baseline_suite.command and after_suite.command carry an angle-bracket placeholder rather than the literal command; the literal command is in the log headers, which is where the counters were read from.\n&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;39ed4f2d8c3f4a1414f05e00ee143ea81b7d7271&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;858d0ffe915408145dfc6879979b4f94d0bfd3f3&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20261004T094153078389-a-cleared-hold-releases-a-blocked-plan&quot;,
+  &quot;reviewer&quot;: {
+    &quot;backend&quot;: &quot;clive&quot;,
+    &quot;model&quot;: &quot;deepseek-v4.1-flash&quot;
+  },
+  &quot;reviewer_run_id&quot;: &quot;r-20261004T102147828761-review-of-a-cleared-hold-releases-a-blocked-plan&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 19,
+    &quot;evidence&quot;: 19,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 20,
+    &quot;scope_discipline&quot;: 20
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-04T10:32:00+00:00&quot;,
+  &quot;total&quot;: 97
+}</pre></div>
+    </article>
+  </section>
+
+  <section id="s3">
+    <h2>§3 — A cleared blocker reports its clear even after its probe is withdrawn</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T094224172449-a-cleared-blocker-reports-its-clear">
+      <p><small>reckon-build · 2026-10-04T09:55:54.661Z</small></p>
+      <div class="r-comment-body"><p>evaluate_held_blocker in reckon/project_state.py now returns a cleared blocker's recorded reason before resolving its probe id, so a blocker cleared while its probe was registered still reports that clear after the probe leaves the registry, while an uncleared blocker with an unknown probe id is still refused; the new test in tests/test_held_blocker_probe.py is red at 39ed4f2d8 (unknown held blocker probe id: 'path-exists') and green at c53775fdc, and the 20 test files importing reckon.project_state read 308 passed at base 39ed4f2d8 versus 309 passed at head c53775fdc with zero added failures (EXIT=0 both arms).</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T095607714902-review-of-a-cleared-blocker-reports-its-clear">
+      <p><small>reckon-build · 2026-10-04T10:00:06.983Z</small></p>
+      <div class="r-comment-body"><p>review of r-20261004T094224172449-a-cleared-blocker-reports-its-clear scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 20 (total 97 of 100), zero added failures, no blocking findings — the cleared-status return is moved ahead of the probe-id lookup so a cleared blocker reports its recorded clear after its probe leaves the registry, the unknown-probe refusal is preserved, and the new test is independently shown red at the base revision.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20261004-s3-landed">
+      <p><small>s22-coord · 2026-10-04T13:02:00Z</small></p>
+      <div class="r-comment-body"><p><strong>Landed at merge fc6e8a9e1.</strong> <code>evaluate_held_blocker</code> returns a cleared blocker's recorded clear before looking its probe up in the registry. An uncleared blocker with an unknown probe id is still refused. A focused gate at the merged head passed 67 tests. Review scored 97.</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261004T094224172449-a-cleared-blocker-reports-its-clear</code></td>
+        <td>a-cleared-blocker-reports-its-clear</td>
+        <td><code>c53775fdcd4058e52805b2ad5661d6fdd5efa905</code><br><code>b2887726b61c44eac800204f3627d791947b9ba6</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>12m 50s</td>
+        <td><code>{&quot;added&quot;:91,&quot;files&quot;:3,&quot;removed&quot;:4}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261004T095607714902-review-of-a-cleared-blocker-reports-its-clear</code></td>
+        <td>review-of-a-cleared-blocker-reports-its-clear</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>3m 23s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report" data-run-id="r-20261004T095607714902-review-of-a-cleared-blocker-reports-its-clear" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T094224172449-a-cleared-blocker-reports-its-clear.json">
+      <h3>review-of-a-cleared-blocker-reports-its-clear &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T094224172449-a-cleared-blocker-reports-its-clear.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;added_failure_count&quot;: 0,
+  &quot;added_failure_ids&quot;: [],
+  &quot;call_site_count&quot;: 1,
+  &quot;call_sites&quot;: [
+    &quot;reckon/cli.py:806&quot;
+  ],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;tests/test_held_blocker_probe.py&quot;,
+      &quot;line&quot;: &quot;208&quot;,
+      &quot;severity&quot;: &quot;follow-on&quot;,
+      &quot;text&quot;: &quot;follow-on: the assertion that the refused blocker&#x27;s stored status != \&quot;cleared\&quot; passes for any status the code might write other than cleared; comparing against \&quot;held\&quot; would name the state the refusal must preserve.&quot;
+    }
+  ],
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;verified 1 production call site(s)&quot;,
+    &quot;diff&quot;: &quot;read both commits against base 39ed4f2d8; the fix moves the cleared-status return above the probe lookup in reckon/project_state.py and tests/test_held_blocker_probe.py adds the withdrawn-probe and unknown-probe cases (3 files, +91/-4).&quot;,
+    &quot;done_when&quot;: &quot;the done_when asks for a cleared blocker reporting its clear and an unknown-probe refusal, both covered by a test; tests/test_held_blocker_probe.py:148 exercises the first after monkeypatch.delitem at :181 and the second at :202 against a tmp_path docs tree.&quot;,
+    &quot;goal&quot;: &quot;the node goal is that a cleared blocker reports its recorded clear whatever the registry now holds; reckon/project_state.py:1347 returns the recorded reason before the probe-id lookup at :1352, so a withdrawn probe no longer raises.&quot;,
+    &quot;manifest&quot;: &quot;read; it records the new test red at base and green at head, the 20-file population at 308 base versus 309 head both EXIT=0 with zero added failures, and a negative control reddening the new test.&quot;,
+    &quot;write_paths&quot;: &quot;the reviewed manifest declares reckon/project_state.py, tests/test_held_blocker_probe.py and docs/evidence/fragments/a-held-blocker-clears-on-its-probe/a-cleared-blocker-reports-its-clear.html; every path in the 39ed4f2d8..b2887726b diff lies inside them.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;tests/test_held_blocker_probe.py:182 reddens on the reverted order, because monkeypatch.delitem removes path-exists and the base lookup then raises unknown held blocker probe id.&quot;,
+    &quot;evidence&quot;: &quot;the gate names tests/test_held_blocker_probe.py and its result is recorded at EXIT=0 in gate-head-new-test.log, with the red-at-base shown in negative-control-base.log and both populations in gate-base-population.log and gate-head-population.log.&quot;,
+    &quot;fit&quot;: &quot;the moved lines keep the surrounding early-return idiom of reckon/project_state.py:1345 and introduce no new name.&quot;,
+    &quot;goal_fidelity&quot;: &quot;reckon/project_state.py:1347-1351 returns the stored cleared reason before the probe-id membership check at :1352, which is what the section goal names.&quot;,
+    &quot;scope_discipline&quot;: &quot;every path in the b2887726b diff is a declared write path and the change carries nothing the goal does not imply.&quot;
+  },
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: the node goal is that a cleared blocker reports its recorded clear whatever the registry now holds; reckon/project_state.py:1347 returns the recorded reason before the probe-id lookup at :1352, so a withdrawn probe no longer raises.\nVERDICT done_when: the done_when asks for a cleared blocker reporting its clear and an unknown-probe refusal, both covered by a test; tests/test_held_blocker_probe.py:148 exercises the first after monkeypatch.delitem at :181 and the second at :202 against a tmp_path docs tree.\nVERDICT write_paths: the reviewed manifest declares reckon/project_state.py, tests/test_held_blocker_probe.py and docs/evidence/fragments/a-held-blocker-clears-on-its-probe/a-cleared-blocker-reports-its-clear.html; every path in the 39ed4f2d8..b2887726b diff lies inside them.\nVERDICT manifest: read; it records the new test red at base and green at head, the 20-file population at 308 base versus 309 head both EXIT=0 with zero added failures, and a negative control reddening the new test.\nVERDICT diff: read both commits against base 39ed4f2d8; the fix moves the cleared-status return above the probe lookup in reckon/project_state.py and tests/test_held_blocker_probe.py adds the withdrawn-probe and unknown-probe cases (3 files, +91/-4).\nCALL_SITES: reckon/cli.py:806\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/project_state.py:1347-1351 returns the stored cleared reason before the probe-id membership check at :1352, which is what the section goal names.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate names tests/test_held_blocker_probe.py and its result is recorded at EXIT=0 in gate-head-new-test.log, with the red-at-base shown in negative-control-base.log and both populations in gate-base-population.log and gate-head-population.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the b2887726b diff is a declared write path and the change carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_held_blocker_probe.py:182 reddens on the reverted order, because monkeypatch.delitem removes path-exists and the base lookup then raises unknown held blocker probe id.\nSCORE fit: 20\nJUSTIFICATION fit: the moved lines keep the surrounding early-return idiom of reckon/project_state.py:1345 and introduce no new name.\nFINDING tests/test_held_blocker_probe.py:208 follow-on: the assertion that the refused blocker&#x27;s stored status != \&quot;cleared\&quot; passes for any status the code might write other than cleared; comparing against \&quot;held\&quot; would name the state the refusal must preserve.\n&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;39ed4f2d8c3f4a1414f05e00ee143ea81b7d7271&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;b2887726b61c44eac800204f3627d791947b9ba6&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20261004T094224172449-a-cleared-blocker-reports-its-clear&quot;,
+  &quot;reviewer&quot;: {
+    &quot;backend&quot;: &quot;clive&quot;,
+    &quot;model&quot;: &quot;deepseek-v4.1-flash&quot;
+  },
+  &quot;reviewer_run_id&quot;: &quot;r-20261004T095607714902-review-of-a-cleared-blocker-reports-its-clear&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 19,
+    &quot;evidence&quot;: 19,
+    &quot;fit&quot;: 20,
+    &quot;goal_fidelity&quot;: 19,
+    &quot;scope_discipline&quot;: 20
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-04T09:59:07.007666+00:00&quot;,
+  &quot;total&quot;: 97
+}
+</pre></div>
+    </article>
+  </section>
+
+  <section id="s4">
+    <h2>§4 — A graph target reads readiness from the one computation</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T110102591352-a-graph-target-reads-one-readiness">
+      <p><small>reckon-build · 2026-10-04T11:29:32.466Z</small></p>
+      <div class="r-comment-body"><p>resolve_graph_target now reads each member's readiness from the roadmap row's own verdict for that plan, built from the same project state, with the graph's cross-project closure dependency check kept beside it, so a plan released by a cleared hold reads ready in both the roadmap and the graph target; the new test is red at base 0fdfb5570 (1 failed, 347 passed) and green at head 37cd98d5e (348 passed), and the 30 pre-existing importer test files pass 346 at both arms with zero added failures.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T112947018228-review-of-a-graph-target-reads-one-readiness">
+      <p><small>reckon-build · 2026-10-04T11:40:52.107Z</small></p>
+      <div class="r-comment-body"><p>review of run r-20261004T110102591352-a-graph-target-reads-one-readiness (base 0fdfb5570, head 2a9ca5fa) scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19 (total 97), zero added failures, no findings — resolve_graph_target now reads each member's readiness from the roadmap row's own verdict (reckon/roadmap.py:1891) so a plan released by a cleared hold appears in both views, and both done-when cases are covered and independently reproduced red at base.</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261004T110102591352-a-graph-target-reads-one-readiness</code></td>
+        <td>a-graph-target-reads-one-readiness</td>
+        <td><code>37cd98d5e45bbcdb0044e87578a162332c0052d3</code><br><code>2a9ca5fa3b9111b686571c6d83aa60e2314a7d80</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>27m 53s</td>
+        <td><code>{&quot;added&quot;:215,&quot;files&quot;:3,&quot;removed&quot;:18}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261004T112947018228-review-of-a-graph-target-reads-one-readiness</code></td>
+        <td>review-of-a-graph-target-reads-one-readiness</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>10m 29s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report" data-run-id="r-20261004T112947018228-review-of-a-graph-target-reads-one-readiness" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T110102591352-a-graph-target-reads-one-readiness.json">
+      <h3>review-of-a-graph-target-reads-one-readiness &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T110102591352-a-graph-target-reads-one-readiness.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;added_failure_count&quot;: 0,
+  &quot;added_failure_ids&quot;: [],
+  &quot;added_failures_note&quot;: &quot;derived from the reviewed run&#x27;s own baseline_suite and after_suite gate logs: baseline_suite (revision 0fdfb55702088e3615ce28ce8422cea9b0306153) failure_count 1 with the sole failure tests/test_graph_target_reads_one_readiness.py::test_graph_member_released_by_a_cleared_hold_is_ready_in_both_views, after_suite (revision 37cd98d5e45bbcdb0044e87578a162332c0052d3) failure_count 0 with no failure ids, so the head adds no failing test id over the base; independently reproduced in the reviewer&#x27;s own scratch trees under $TMPDIR (base plus the new test 1 failed/353 passed EXIT=1, head 354 passed EXIT=0).&quot;,
+  &quot;call_site_count&quot;: 3,
+  &quot;call_sites&quot;: [
+    &quot;reckon/roadmap.py:1727&quot;,
+    &quot;reckon/roadmap.py:1732&quot;,
+    &quot;reckon/mcp.py:3977&quot;
+  ],
+  &quot;findings&quot;: [],
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;verified 3 production call site(s)&quot;,
+    &quot;diff&quot;: &quot;read against base 0fdfb5570; commit 37cd98d5e replaces the inline ready-atom condition in resolve_graph_target with member_row = schedule_rows.get(key) tested as member_row.get(\&quot;ready\&quot;) and dependencies_complete (reckon/roadmap.py:1891), and commit 2a9ca5fa adds the evidence fragment; git diff --stat gives +215/-18 across three files, reckon/roadmap.py (28 lines), tests/test_graph_target_reads_one_readiness.py (168 new) and one fragment.&quot;,
+    &quot;done_when&quot;: &quot;the plan&#x27;s §4 done_when asks for a graph target&#x27;s released member to be ready in both views and for a partial clear to stay blocked in both; tests/test_graph_target_reads_one_readiness.py:137 asserts the released member is ready_now on the roadmap and \&quot;sample:probed\&quot; in the graph ready set while its member status stays \&quot;blocked\&quot;, and :157 asserts the partial clear keeps the plan blocked in both with \&quot;later\&quot; named as the remaining held blocker.&quot;,
+    &quot;goal&quot;: &quot;the plan&#x27;s §4 goal is one readiness computation for both surfaces; resolve_graph_target (reckon/roadmap.py:1736) now sets each member&#x27;s readiness from the roadmap row&#x27;s own verdict schedule_rows[key][\&quot;ready\&quot;], whose build_roadmap is_ready already carries the cleared-hold release (authorised = status in _AUTHORISED_STATUSES or slug in released_by_clear at reckon/roadmap.py:2863), ANDed with the graph&#x27;s own cross-project plan_blocking_graph dependency check, so a plan released by a cleared hold appears in both the roadmap ready set and the graph ready set.&quot;,
+    &quot;manifest&quot;: &quot;read; it records the head gate 348 passed EXIT=0 at 37cd98d5e, the base negative control 1 failed/347 passed EXIT=1 at 0fdfb5570 with the sole failure being the released-in-both-views test and the message \&quot;assert [] == [&#x27;sample:probed&#x27;]\&quot;, and the importer population 346 passed at both arms EXIT=0; baseline_suite and after_suite are structured with failure_ids [\&quot;tests/test_graph_target_reads_one_readiness.py::test_graph_member_released_by_a_cleared_hold_is_ready_in_both_views\&quot;] (base) and [] (head).&quot;,
+    &quot;write_paths&quot;: &quot;the reviewed manifest declares reckon/roadmap.py, tests/test_graph_target_reads_one_readiness.py and docs/evidence/fragments/a-held-blocker-clears-on-its-probe/a-graph-target-reads-one-readiness.html; the 0fdfb5570..2a9ca5fa diff lies entirely inside those three paths.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;the new test is red at base (verified independently: tests/test_graph_target_reads_one_readiness.py:152 fails with assert [] == [&#x27;sample:probed&#x27;] when resolve_graph_target builds its own ready list), so reverting the change to read the roadmap row&#x27;s verdict reddens the test; tests/test_graph_target.py and the other 33 roadmap importer files stay green at head, so the guard is durable and adds no regression.&quot;,
+    &quot;evidence&quot;: &quot;both done-when cases are tested and the arms are recorded in the reviewed run&#x27;s own baseline_suite and after_suite gate logs (base 1 failure, head 0), and the reviewer reproduced the arms independently in scratch trees under $TMPDIR (base 0fdfb5570 plus the new test: 1 failed/353 passed EXIT=1, the failure being assert [] == [&#x27;sample:probed&#x27;]; head 37cd98d5e: 354 passed EXIT=0), yielding zero added failures.&quot;,
+    &quot;fit&quot;: &quot;the change reuses schedule_rows, already built in the same function for deferred_members, and delegates to the single readiness computation in build_roadmap instead of duplicating the ready atom inline; the new test file is ruff-clean and the changed roadmap.py introduces no new findings over the base blob (the same 3 pre-existing findings at both arms), and the evidence fragment is a complete HTML document.&quot;,
+    &quot;goal_fidelity&quot;: &quot;the graph ready set is now member_row.get(\&quot;ready\&quot;) and dependencies_complete (reckon/roadmap.py:1891), where member_row[\&quot;ready\&quot;] is build_roadmap&#x27;s is_ready which already folds in the cleared-hold release (reckon/roadmap.py:2863-2871), so a plan released by a cleared hold appears in both views exactly as the §4 goal requires, with the cross-project closure dependency check kept as the only graph-specific term.&quot;,
+    &quot;scope_discipline&quot;: &quot;git diff --stat 0fdfb5570..2a9ca5fa touches only reckon/roadmap.py, tests/test_graph_target_reads_one_readiness.py and the one evidence fragment, all declared in the reviewed manifest; the change carries nothing the goal does not imply.&quot;
+  },
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: the plan&#x27;s §4 goal is one readiness computation for both surfaces; resolve_graph_target (reckon/roadmap.py:1736) now sets each member&#x27;s readiness from the roadmap row&#x27;s own verdict schedule_rows[key][\&quot;ready\&quot;], whose build_roadmap is_ready already carries the cleared-hold release (authorised = status in _AUTHORISED_STATUSES or slug in released_by_clear at reckon/roadmap.py:2863), ANDed with the graph&#x27;s own cross-project plan_blocking_graph dependency check, so a plan released by a cleared hold appears in both the roadmap ready set and the graph ready set.\nVERDICT done_when: the plan&#x27;s §4 done_when asks for a graph target&#x27;s released member to be ready in both views and for a partial clear to stay blocked in both; tests/test_graph_target_reads_one_readiness.py:137 asserts the released member is ready_now on the roadmap and \&quot;sample:probed\&quot; in the graph ready set while its member status stays \&quot;blocked\&quot;, and :157 asserts the partial clear keeps the plan blocked in both with \&quot;later\&quot; named as the remaining held blocker.\nVERDICT write_paths: the reviewed manifest declares reckon/roadmap.py, tests/test_graph_target_reads_one_readiness.py and docs/evidence/fragments/a-held-blocker-clears-on-its-probe/a-graph-target-reads-one-readiness.html; the 0fdfb5570..2a9ca5fa diff lies entirely inside those three paths.\nVERDICT manifest: read; it records the head gate 348 passed EXIT=0 at 37cd98d5e, the base negative control 1 failed/347 passed EXIT=1 at 0fdfb5570 with the sole failure being the released-in-both-views test, and the importer population 346 passed at both arms EXIT=0; baseline_suite and after_suite are structured with failure_ids [\&quot;tests/test_graph_target_reads_one_readiness.py::test_graph_member_released_by_a_cleared_hold_is_ready_in_both_views\&quot;] (base) and [] (head).\nVERDICT diff: read against base 0fdfb5570; commit 37cd98d5e replaces the inline ready-atom condition in resolve_graph_target with member_row = schedule_rows.get(key) tested as member_row.get(\&quot;ready\&quot;) and dependencies_complete (reckon/roadmap.py:1891), and commit 2a9ca5fa adds the evidence fragment; +215/-18 across three files.\nCALL_SITES: reckon/roadmap.py:1727, reckon/roadmap.py:1732, reckon/mcp.py:3977\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the graph ready set is now member_row.get(\&quot;ready\&quot;) and dependencies_complete (reckon/roadmap.py:1891), where member_row[\&quot;ready\&quot;] is build_roadmap&#x27;s is_ready which already folds in the cleared-hold release (reckon/roadmap.py:2863-2871), so a plan released by a cleared hold appears in both views exactly as the §4 goal requires, with the cross-project closure dependency check kept as the only graph-specific term.\nSCORE evidence: 19\nJUSTIFICATION evidence: both done-when cases are tested and the arms are recorded in the reviewed run&#x27;s own baseline_suite and after_suite gate logs (base 1 failure, head 0), and the reviewer reproduced the arms independently in scratch trees under $TMPDIR (base 0fdfb5570 plus the new test: 1 failed/353 passed EXIT=1, the failure being assert [] == [&#x27;sample:probed&#x27;]; head 37cd98d5e: 354 passed EXIT=0), yielding zero added failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 0fdfb5570..2a9ca5fa touches only reckon/roadmap.py, tests/test_graph_target_reads_one_readiness.py and the one evidence fragment, all declared in the reviewed manifest; the change carries nothing the goal does not imply.\nSCORE durability: 19\nJUSTIFICATION durability: the new test is red at base (verified independently: tests/test_graph_target_reads_one_readiness.py:152 fails with assert [] == [&#x27;sample:probed&#x27;] when resolve_graph_target builds its own ready list), so reverting the change to read the roadmap row&#x27;s verdict reddens the test; tests/test_graph_target.py and the other 33 roadmap importer files stay green at head, so the guard is durable and adds no regression.\nSCORE fit: 19\nJUSTIFICATION fit: the change reuses schedule_rows, already built in the same function for deferred_members, and delegates to the single readiness computation in build_roadmap instead of duplicating the ready atom inline; the new test file is ruff-clean and the changed roadmap.py introduces no new findings over the base blob (the same 3 pre-existing findings at both arms), and the evidence fragment is a complete HTML document.\n&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;0fdfb55702088e3615ce28ce8422cea9b0306153&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;2a9ca5fa3b9111b686571c6d83aa60e2314a7d80&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20261004T110102591352-a-graph-target-reads-one-readiness&quot;,
+  &quot;reviewer&quot;: {
+    &quot;backend&quot;: &quot;clive&quot;,
+    &quot;model&quot;: &quot;deepseek-v4.1-flash&quot;
+  },
+  &quot;reviewer_run_id&quot;: &quot;r-20261004T112947018228-review-of-a-graph-target-reads-one-readiness&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 19,
+    &quot;evidence&quot;: 19,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 20,
+    &quot;scope_discipline&quot;: 20
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-04T11:39:56.687817+00:00&quot;,
+  &quot;total&quot;: 97
+}</pre></div>
+    </article>
+  </section>
+ </main>
+</body>
+</html>

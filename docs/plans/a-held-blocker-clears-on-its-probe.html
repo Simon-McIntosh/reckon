@@ -11,12 +11,12 @@
 <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-title" content="A Held Blocker Clears On Its Probe">
 <meta name="plan-summary" content="A held blocker is cleared by hand. A named probe in this repository should check its subject and clear it, with a recorded reason, once the subject arrives.">
-<meta name="plan-status" content="active">
+<meta name="plan-status" content="shipped">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-informs" content="a-sprint-closes-on-completable-work">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-04">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;}">
 </head>
 <body>
 <main class="plan-doc">
@@ -34,15 +34,16 @@
 <p>From the §1 review (score 96). In <code>evaluate_held_blocker</code> the already-cleared early return sits after the registry lookup. A blocker cleared while its probe was registered therefore raises "unknown held blocker probe id" once that probe leaves the registry, instead of reporting the clear it already recorded, and no test exercises that path.</p><p><strong>Done when</strong> a cleared blocker reports its recorded clear whatever the registry now holds. An uncleared blocker with an unknown probe id is still refused. A test covers both, and the negative control is main, where the first case raises.</p>
 
 <h2 id="s4">§4 — A graph target reads readiness from the one computation</h2>
-<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="done" data-links=""></section>
 <p>From the §2 review (score 97). <code>resolve_graph_target</code> in <code>reckon/roadmap.py</code> (about line 1893) builds its own readiness list, whose membership still requires <code>_status(plan)</code> in <code>_AUTHORISED_STATUSES</code>. A plan released by §2 therefore appears in the roadmap's <code>ready_now</code> but is absent from a graph target's ready set. One readiness fact now has two computations, and only one was updated.</p><p><strong>Done when</strong> a graph target's ready set is derived from the same readiness the roadmap's ready set uses, so a plan released by a cleared hold appears in both. A test builds a graph whose member is such a plan and asserts it is ready in both views. A second test covers §2's untested partial-clear case, one blocker cleared and one still holding, and asserts the plan stays blocked in both. The negative control is main, where the graph view omits the released plan.</p>
 
 <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-ahbcoip-001" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-04T10:45:00Z" data-recommends-skill="/reckon-build a-held-blocker-clears-on-its-probe" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-ahbcoip-001" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-04T10:45:00Z" data-recommends-skill="/reckon-build a-held-blocker-clears-on-its-probe" data-resolved-at="2026-10-04T11:44:46+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build the named probe</h4>
     <div class="r-fu-body"><p>One section; the two decisions that constrain it are locked on a-sprint-closes-on-completable-work.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-held-blocker-clears-on-its-probe §1</pre>
+    <p class="r-fu-outcome">done — no followup. All four sections landed and the closure record is synthesized.</p>
     </article>
 </section>
 <section data-reckon="comments" id="comments" class="r-comments">
@@ -77,7 +78,13 @@
     <div class="r-comment-body"><p>resolve_graph_target now reads each member's readiness from the roadmap row's own verdict for that plan, built from the same project state, with the graph's cross-project closure dependency check kept beside it, so a plan released by a cleared hold reads ready in both the roadmap and the graph target; the new test is red at base 0fdfb5570 (1 failed, 347 passed) and green at head 37cd98d5e (348 passed), and the 30 pre-existing importer test files pass 346 at both arms with zero added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261004T112947018228-review-of-a-graph-target-reads-one-readiness" data-who="reckon-build" data-when="2026-10-04T11:40:52.107Z">
-    <div class="r-comment-body"><p>review of run r-20261004T110102591352-a-graph-target-reads-one-readiness (base 0fdfb5570, head 2a9ca5fa) scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19 (total 97), zero added failures, no findings — resolve_graph_target now reads each member&#x27;s readiness from the roadmap row&#x27;s own verdict (reckon/roadmap.py:1891) so a plan released by a cleared hold appears in both views, and both done-when cases are covered and independently reproduced red at base.</p></div>
+    <div class="r-comment-body"><p>review of run r-20261004T110102591352-a-graph-target-reads-one-readiness (base 0fdfb5570, head 2a9ca5fa) scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19 (total 97), zero added failures, no findings — resolve_graph_target now reads each member's readiness from the roadmap row's own verdict (reckon/roadmap.py:1891) so a plan released by a cleared hold appears in both views, and both done-when cases are covered and independently reproduced red at base.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20261004-s4-landed" data-who="s22-coord" data-when="2026-10-04T13:46:00Z">
+    <div class="r-comment-body"><p><strong>Landed at merge edd4a68e6.</strong> <code>resolve_graph_target</code> no longer recomputes readiness. Each member's readiness is the roadmap row's own verdict for that plan, with the graph's cross-project dependency check kept beside it, so a plan released by a cleared hold is ready in both views. A test also drives the partial-clear case §2 left untested, one blocker cleared and one still holding, and the plan stays blocked in both. The worker's 30-file importer population passed 346 tests at both arms. A focused gate at the merged head passed 54 tests. Review scored 97.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20261004-shipped" data-who="s22-coord" data-when="2026-10-04T13:46:00Z">
+    <div class="r-comment-body"><p><strong>Shipped 2026-10-04, the day it was created.</strong> The plan was opened that morning from a-sprint-closes-on-completable-work's open followup. §1 lands the probe registry and the clear-with-reason. §2 lets a cleared hold release a plan stored as blocked, §3 reports a clear after its probe is withdrawn, and §4 gives a graph target one readiness computation. The closure record synthesizes 8 runs and 7 commits, reads <code>plan-verdict</code> pass, and audits with no error.</p></div>
 </div>
 </section>
 </main>
