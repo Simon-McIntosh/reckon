@@ -23,7 +23,7 @@
   <title>The Obligations Hook Reads A Snapshot | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="97">
+<meta name="plan-version" content="98">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;}">
 </head>
@@ -457,6 +457,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20261004T023410960685" data-who="" data-when="">
     <div class="r-comment-body"><p>On 2026-10-04 the self-diagnosing asserts landed at e2958eaa9. Both snapshot assertions now name, on failure, the key, its <code>_SWEEPS</code> entry or its absence, RECKON_HOME, the live threads and any second module instance. The review scored 96. One of the two diagnostics, on the 30 s started.wait, is not yet shown to fire.</p><p>A context reproduction followed. Both ids failed together once, in a coordinator head arm of 130 follower and re-arm files at <code>-n 8</code>: main e41b7eecc merged with a-re-attach-replays-the-gap, before the diagnostics landed. Neither failed in the matching base arm, and both pass 3 of 3 alone on both trees. That fits the investigation's conclusion that the trigger needs other tests sharing the worker, and follower tests are a candidate. The fix waits on the next occurrence naming its divergence.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20261004T025959910595" data-who="" data-when="">
+    <div class="r-comment-body"><p>A further reproduction, 2026-10-04: both snapshot ids failed together again in a coordinator base arm. That arm was the 130 follower files at <code>-n 8</code> on main e41b7eecc, with no follower change applied. So the pair is a property of main under that worker mix, not of any change being measured.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261002T125957426768-hook-reads-the-snapshot" data-who="reckon-build" data-when="2026-10-02T14:46:08.574Z">
     <div class="r-comment-body"><p>the prompt path reads the session's published snapshot (reader loaded by file path, no crew facade, none of the three derivation modules in a fresh process; session resolved from the follower registrations; freshness() and live_payload() consumed; local-lane rewrite, formatting and digest unchanged; a not-fresh snapshot answered by one line naming the reason and the remedy; snapshot never written; exit 0 in every case) and the gate's two arms add no failure id — head 97 passed against base 92 passed, the same two pre-existing skill-contract ids — with the second-slowest of 20 fresh-process prompt-hook invocations at 112.7 ms against the 250 ms target</p></div>
