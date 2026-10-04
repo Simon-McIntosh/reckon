@@ -22,9 +22,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;}">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="149">
+<meta name="plan-version" content="150">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -1004,7 +1004,7 @@
 <p>Under heavy load, <code>test_a_discarded_run_is_not_recreated</code> fails at its assertion that the supervisor wrote a pointer for a run that was discarded (<code>tests/test_dispatch_returns_without_worker.py</code>, about line 1199): 6 of 10 at load around 75, and 1 of 6 at about 50. The supervisor's locked phase publish can write back a pointer that a discard has just removed. That is a lost update in the product, not in the test.</p><p><strong>Done when</strong> the node names, with file and line, the write that recreates a discarded run's pointer. A discard then wins against a concurrent supervisor publish, for example by the publish checking under its lock that the pointer still exists and the run is not discarded. The test passes 20 of 20 at -n 8 beside a CPU-bound load. The negative control is main, where it fails at least once under the same load.</p>
 
     <h2 id="s14">§14 — The dispatch-exit bound reads the machine it runs on</h2>
-<section data-reckon="section" data-id="s14" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s14" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><code>test_dispatch_returns_once_its_supervisor_runs</code> asserts that the dispatch process exits within a fixed 8.0 s plus its import time plus 1.5 s of slack (<code>tests/test_dispatch_returns_without_worker.py</code>, about line 832). At load near 50 it measured about 10.9 s and failed 3 of 3 on both base and head, so the bound tests the machine's load, not whether dispatch waits on the supervisor.</p><p><strong>Done when</strong> the bound is derived from a measured reference on the same host at the same moment, for example a baseline subprocess round trip, and not from a fixed constant. It still fails when dispatch genuinely waits on its supervisor: a mutation that joins the supervisor makes it fail at any load. It passes 20 of 20 beside a CPU-bound load. The negative control is that mutation.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -1367,6 +1367,9 @@
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261004T175036779580-review-of-the-dispatch-exit-bound-reads-its-machine" data-who="reckon-build" data-when="2026-10-04T17:59:56.191Z">
     <div class="r-comment-body"><p>Stored a parsed 5-dimension review of r-20261004T163020727842-the-dispatch-exit-bound-reads-its-machine, read at base 0513a121e210a6a603eece16e7c0f803b758dfa7 to head 3bf809e04cfdb2c254565fd02e57e5446bba1717 — scores goal_fidelity 19, evidence 18, scope_discipline 20, durability 17, fit 19, total 93; added_failure_count 0, added_failure_ids [] — in the review store at both the bare path and the head-keyed .at-3bf809e04 path.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-20261004-s14-landed" data-who="s22-coord" data-when="2026-10-04T18:05:00Z">
+    <div class="r-comment-body"><p><strong>Landed at merge 24c8a6546.</strong> <code>test_dispatch_returns_once_its_supervisor_runs</code> derives its exit bound from a reference measured on the dispatch's own host at the moment of the dispatch: the slower of the driver's startup and three fresh-interpreter imports of the dispatch module. Twenty runs beside eight CPU-bound spinners passed 20 of 20. A mutation that joins the supervisor still fails the case. Review scored 93. Its finding is that this mutation fails at the 60 s driver-wait timeout rather than at the bound assertions, so the control shows that dispatch must not wait on its supervisor, but not how tight the bound is. The fragment also quotes the mutation arm's load average for the 20-run arm. The file passed 7 of 7 at the merged head under low load. §13, the discard lost-update race, is dispatched (codex).</p></div>
 </div>
 </section>
 </main>
