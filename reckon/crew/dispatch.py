@@ -108,6 +108,7 @@ from reckon.crew.runs import (
     _manifest_mtime_ns,
     _merge_peer_scopes,
     _mutate_pointer,
+    _pointer_lock,
     _process_start_time,
     _project_derivations,
     _repository_relative_scope,
@@ -5026,6 +5027,133 @@ def dispatch_picker_selection(
     )
 
 
+def _write_existing_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
+    """Write only a live run's pointer, clearing a discard that races the write.
+
+    Discard removes the pointer before the run directory and does not take the
+    pointer lock. Check both sides of the atomic replacement: the first check
+    avoids a write after discard, and the second removes a pointer written
+    while the run directory was being removed. The caller holds the lock.
+    """
+    path = pointer_path(run_id)
+    directory = run_dir(run_id)
+    if not path.exists() or not directory.is_dir():
+        return False
+    _write_json(path, record)
+    if not directory.is_dir():
+        path.unlink(missing_ok=True)
+        return False
+    return True
+
+
+def _attach_shadow_picker_selection(run_id: str, selection: Mapping[str, Any]) -> None:
+    """Update a live pointer without recreating a discarded run."""
+    with _pointer_lock(run_id):
+        if pointer_path(run_id).exists():
+            pointer = read_pointer(run_id)
+            pointer["picker_selection"] = dict(selection)
+            _write_existing_pointer(run_id, pointer)
+
+
+def _record_shadow_picker_selection(spec_path: Path) -> None:
+    """Finish an advisory pick after launch and attach it to the live run."""
+    spec = json.loads(spec_path.read_text(encoding="utf-8"))
+    node = TaskNode(**spec["node"])
+    repo = Path(spec["repo"])
+    result: dict[str, Any] = {}
+    finished = threading.Event()
+    started = time.monotonic()
+
+    def pick_shadow() -> None:
+        try:
+            records, inputs, budget, errors = build_picker_inputs(
+                spec["project"],
+                spec["config"],
+                repo,
+                ledger_root=Path(spec["ledger_root"]),
+            )
+            result["selection"] = dispatch_picker_selection(
+                node=node,
+                config=spec["config"],
+                project=spec["project"],
+                repo=repo,
+                session=spec["session"],
+                comment=spec["comment"],
+                records=records,
+                verdict_inputs=inputs,
+                budget_snapshot=budget,
+                input_errors=errors,
+            )
+        except Exception as exc:  # noqa: BLE001 - an advisory cannot stop a run
+            result["selection"] = _picker_fallback(
+                f"{type(exc).__name__}: {exc}", spec["comment"]
+            )
+        finally:
+            finished.set()
+
+    threading.Thread(target=pick_shadow, name="shadow-picker", daemon=True).start()
+    if not finished.wait(PICKER_DISPATCH_TIMEOUT_SECONDS):
+        result["selection"] = _picker_fallback(
+            "timeout",
+            spec["comment"],
+            latency_ms=round((time.monotonic() - started) * 1000, 3),
+        )
+    selection = result["selection"]
+    _attach_shadow_picker_selection(spec["run_id"], selection)
+
+
+def _start_shadow_picker_selection(
+    *,
+    run_id: str,
+    node: TaskNode,
+    config: Mapping[str, Any],
+    project: str,
+    repo: Path,
+    ledger_root: Path,
+    session: str,
+    comment: str,
+) -> None:
+    """Start a bounded detached reader without extending dispatch's lifetime."""
+    directory = run_dir(run_id)
+    spec_path = directory / "shadow-picker.json"
+    _write_json(
+        spec_path,
+        {
+            "run_id": run_id,
+            "node": node.as_dict(),
+            "config": dict(config),
+            "project": project,
+            "repo": str(repo),
+            "ledger_root": str(ledger_root),
+            "session": session,
+            "comment": comment,
+        },
+    )
+    log = (directory / "shadow-picker.log").open("a", encoding="utf-8")
+    try:
+        subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                "from pathlib import Path; from reckon.crew.dispatch import _record_shadow_picker_selection; import sys; _record_shadow_picker_selection(Path(sys.argv[1]))",
+                str(spec_path),
+            ],
+            cwd=repo,
+            stdin=subprocess.DEVNULL,
+            stdout=log,
+            stderr=log,
+            start_new_session=True,
+            env={
+                **os.environ,
+                "PYTHONPATH": str(Path(__file__).parents[2])
+                + os.pathsep
+                + os.environ.get("PYTHONPATH", ""),
+            },
+        )
+    finally:
+        log.close()
+
+
 def _picker_refusal_reasons(selection: Mapping[str, Any]) -> str:
     reasons = [
         str(selection[key])
@@ -6480,13 +6608,23 @@ def dispatch(
     # ledger, a conflicting mount or a raising budget view is recorded against
     # the input that failed and the picker is left to fall back, so a picker
     # meant only to inform the dispatch can never abort the dispatch itself.
+    resolved_route = resolve_dispatch_route(config, route)
+    deferred_shadow_selection = (
+        picker_selection is None
+        and resolved_route != "picker"
+        and (
+            resolved_route == "deterministic"
+            or local
+            or bool(backend_override or default_backend_override)
+        )
+    )
     if picker_selection is not None:
         # The caller already asked the picker and ran the availability check on
         # its answer, so asking again would both double the pick's latency and
         # let the second pick choose a backend the check never saw. Reuse the
         # caller's answer so the checked backend is the dispatched backend.
         picker_selection = dict(picker_selection)
-    else:
+    elif not deferred_shadow_selection:
         (
             picker_records,
             picker_inputs,
@@ -7571,7 +7709,19 @@ def dispatch(
             spawned_start_time = _process_start_time(spawned_pid)
             record["pid"] = spawned_pid
             record["pid_start_time"] = spawned_start_time
-            _write_json(pointer_path(run_id), record)
+            # The supervisor may already have advanced this pointer's phase.
+            # Merge the launch identity under the same lock as that advance so
+            # neither writer replaces the other's newer fields with its copy.
+            def attach_launch_identity(pointer: dict[str, Any]) -> dict[str, Any]:
+                pointer["pid"] = spawned_pid
+                pointer["pid_start_time"] = spawned_start_time
+                if "repository_tree_snapshot" in record:
+                    pointer["repository_tree_snapshot"] = record[
+                        "repository_tree_snapshot"
+                    ]
+                return pointer
+
+            record = _mutate_pointer(run_id, attach_launch_identity)
         else:
             # A delegated launch spawns no process, so there is no supervisor to
             # take the boundary baseline after dispatch's writes. Dispatch takes
@@ -7648,6 +7798,24 @@ def dispatch(
             node_claim.release()
     if node_claim is not None and node_claim.reclaimed:
         record["reclaimed_node_claim"] = node_claim.reclaimed
+    if deferred_shadow_selection:
+        try:
+            _start_shadow_picker_selection(
+                run_id=run_id,
+                node=node,
+                config=config,
+                project=project,
+                repo=repo_root,
+                ledger_root=ledger_root,
+                session=session,
+                comment=comment,
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            selection = _picker_fallback(
+                f"shadow launch failed: {type(exc).__name__}: {exc}", comment
+            )
+            record["picker_selection"] = selection
+            _attach_shadow_picker_selection(run_id, selection)
     return record
 
 
@@ -10096,20 +10264,19 @@ def _publish_stored_phase(
     if not run_id:
         return
 
-    def mutate(record: dict[str, Any]) -> dict[str, Any]:
+    with _pointer_lock(run_id):
+        try:
+            record = read_pointer(run_id)
+        except CrewError:
+            return
         if not _record_is_this_attempt(record, spec):
-            return record
+            return
         phase = (
             _delivered_phase(record, exit_record) if ended else _started_phase(record)
         )
         if phase:
             record["phase"] = phase
-        return record
-
-    try:
-        _mutate_pointer(run_id, mutate)
-    except CrewError:
-        return
+        _write_existing_pointer(run_id, record)
 
 
 # A worker whose manifest reaches one of these has delivered its verdict and
