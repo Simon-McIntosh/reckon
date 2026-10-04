@@ -528,6 +528,7 @@ def gather_sources(
     """
     from reckon import budget, crew, ledger
     from reckon.crew import rollout as rollout_module
+    from reckon.crew import runs as crew_runs
 
     now = moment or datetime.now(tz=UTC)
     if records is not None:
@@ -540,7 +541,7 @@ def gather_sources(
         live = [
             record
             for record in crew.list_live()
-            if str(record.get("project") or "") == project
+            if project is None or str(record.get("project") or "") == project
         ]
     else:
         live = list(pointers)
@@ -612,11 +613,19 @@ def gather_sources(
         if isinstance(row, Mapping) and row.get("session_id")
     }
     if rollouts is None:
+        isolated_home = os.environ.get(RECKON_HOME_ENV)
+        sessions_root = (
+            Path(isolated_home) / "codex-home" / "sessions"
+            if isolated_home
+            else rollout_module.CLIENT_SESSIONS_DIR
+        )
         rollout_candidates = _codex_rollout_candidates(
             wanted,
-            root=rollout_root or rollout_module.CLIENT_SESSIONS_DIR,
+            root=rollout_root or sessions_root,
+            runs_root=crew_runs.runs_dir(),
             moment=now,
             session_backends=session_backends,
+            live_run_ids={str(row.get("run_id")) for row in live if row.get("run_id")},
         )
         for account, candidate in rollout_candidates.items():
             by_account.setdefault(account, []).append(candidate)
@@ -624,28 +633,48 @@ def gather_sources(
 
 
 ROLLOUT_TAIL_BYTES = 1_048_576
+ROLLOUT_MAX_AGE_SECONDS = 24 * 3600
 
 
 def _codex_rollout_candidates(
     accounts: set[str],
     *,
     root: str | Path,
+    runs_root: str | Path,
     moment: datetime,
     session_backends: Mapping[str, str],
+    live_run_ids: set[str],
 ) -> dict[str, Candidate]:
-    """Read the newest in-window Codex rollout reading for each account."""
+    """Read recent Codex rollouts from the main home and per-run harness homes."""
     from reckon import budget
 
     newest: dict[str, tuple[datetime, Candidate]] = {}
     base = Path(root).expanduser()
-    if not base.is_dir():
-        return {}
-    for path in base.glob("*/*/*/rollout-*.jsonl"):
+    run_base = Path(runs_root).expanduser()
+    paths = list(base.glob("*/*/*/rollout-*.jsonl")) if base.is_dir() else []
+    if run_base.is_dir():
+        cutoff = (moment - timedelta(seconds=ROLLOUT_MAX_AGE_SECONDS)).strftime(
+            "%Y%m%d"
+        )
+        for run in run_base.iterdir():
+            if not run.is_dir():
+                continue
+            run_date = run.name[2:10] if run.name.startswith("r-") else ""
+            if (
+                run_date.isdigit()
+                and run_date < cutoff
+                and run.name not in live_run_ids
+            ):
+                continue
+            paths.extend(
+                (run / "codex-home" / "sessions").glob("*/*/*/rollout-*.jsonl")
+            )
+    for path in paths:
         try:
             age = (
                 moment - datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
             ).total_seconds()
-            if age > 7 * 24 * 3600:
+            if age > ROLLOUT_MAX_AGE_SECONDS:
                 continue
         except OSError:
             continue
@@ -689,14 +718,22 @@ def _codex_rollout_candidates(
         observed, limits = latest
         account = str(limits.get("limit_id") or "").strip()
         profile = session_backends.get(session_id, "")
-        # Profiles share a provider account in the raw object.  When a run
-        # explicitly names a configured Codex profile, retain that account key
-        # so the document reflects the backend the run actually used.
+        # Configured Codex profiles share the provider's account window.
+        # Publish the same measured position for every profile in that wallet.
+        matching = (
+            {name for name in accounts if name.startswith("codex")}
+            if account == "codex"
+            else {account}
+        )
         if profile.startswith("codex") and profile in accounts:
-            account = profile
-        if account not in accounts:
+            matching.add(profile)
+        matching &= accounts
+        if not matching:
             continue
-        if (moment - observed).total_seconds() > 7 * 24 * 3600:
+        if (
+            observed > moment
+            or (moment - observed).total_seconds() > ROLLOUT_MAX_AGE_SECONDS
+        ):
             continue
         reading = budget._rate_limits_reading(
             limits, observed_at=observed, moment=moment
@@ -704,8 +741,9 @@ def _codex_rollout_candidates(
         if not reading.known:
             continue
         candidate = Candidate(source="rollout", reading=reading)
-        if account not in newest or observed > newest[account][0]:
-            newest[account] = (observed, candidate)
+        for name in matching:
+            if name not in newest or observed > newest[name][0]:
+                newest[name] = (observed, candidate)
     return {account: candidate for account, (_stamp, candidate) in newest.items()}
 
 
@@ -889,7 +927,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     moment = datetime.now(tz=UTC)
     sources = (
         gather_sources(accounts, project=project, root=root, moment=moment)
-        if accounts and project
+        if accounts
         else {}
     )
     document = compose_document(

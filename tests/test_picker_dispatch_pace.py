@@ -8,7 +8,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from reckon.crew import picker
+from reckon.crew import paid_lanes, picker, window_reading
 from reckon.crew.node import TaskNode
 from reckon.crew.picker import PickRequest, lane_context, snapshot
 
@@ -213,3 +213,75 @@ def test_old_recorded_window_is_marked_stale(monkeypatch, tmp_path):
         assert candidate["pace_allowance"] is None
         assert "stale" in candidate["budget_reason"]
         assert candidate["reasons"] == []
+
+
+def test_dispatch_uses_published_window_as_direct_pick_does(monkeypatch, tmp_path):
+    now = datetime.now(UTC)
+    reset = now + timedelta(days=7) - timedelta(hours=2)
+    reading = window_reading.WindowReading(
+        figures=(
+            window_reading.WindowFigure(
+                period="seven_day",
+                utilisation=0.02,
+                observed_at=now,
+                age_seconds=0.0,
+                resets_at=reset.isoformat(),
+            ),
+        ),
+        observed_at=now,
+        age_seconds=0.0,
+    )
+    config = _config()
+    monkeypatch.setattr(snapshot.budget.crew, "list_live", list)
+    monkeypatch.setattr(snapshot.budget._backends, "probe_budget", lambda **_k: {})
+    direct = snapshot.budget_view(
+        "demo", config, tmp_path, [_receipt_record(now, reset)]
+    )
+    expected = _candidates(monkeypatch, tmp_path, config, [], direct)
+    document = paid_lanes.compose_document(
+        ["codex"],
+        sources={"codex": [paid_lanes.Candidate("rollout", reading)]},
+        moment=now,
+    )
+    paid_lanes.write_document_atomically(document)
+    dispatched = dispatch._picker_budget_snapshot("demo", config, tmp_path, [])
+    actual = _candidates(monkeypatch, tmp_path, config, [], dispatched)
+    for name in ("codex", "codex-astra"):
+        for field in ("burn_multiple", "pace_allowance", "utilisation_pct"):
+            assert actual[name][field] is not None
+            assert actual[name][field] == pytest.approx(expected[name][field], rel=0.01)
+        assert actual[name]["budget_reason"] is None
+        assert dispatched["backends"][0]["state"]["observed_at"] == now.isoformat()
+
+
+def test_dispatch_marks_old_published_window_stale(monkeypatch, tmp_path):
+    now = datetime.now(UTC)
+    observed = now - timedelta(hours=2)
+    reading = window_reading.WindowReading(
+        figures=(
+            window_reading.WindowFigure(
+                period="seven_day",
+                utilisation=0.42,
+                observed_at=observed,
+                age_seconds=7200.0,
+                resets_at=(now + timedelta(days=3)).isoformat(),
+            ),
+        ),
+        observed_at=observed,
+        age_seconds=7200.0,
+    )
+    paid_lanes.write_document_atomically(
+        paid_lanes.compose_document(
+            ["codex"],
+            sources={"codex": [paid_lanes.Candidate("rollout", reading)]},
+            moment=now,
+        )
+    )
+    config = _config()
+    monkeypatch.setattr(snapshot.budget.crew, "list_live", list)
+    view = dispatch._picker_budget_snapshot("demo", config, tmp_path, [])
+    candidates = _candidates(monkeypatch, tmp_path, config, [], view)
+    for candidate in candidates.values():
+        assert candidate["burn_multiple"] is None
+        assert candidate["pace_allowance"] is None
+        assert "stale" in candidate["budget_reason"]
