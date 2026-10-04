@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="work-scheduling-surface">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
   <title>Section contract and computed impl | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.91">
-<meta name="plan-version" content="89">
+<meta name="plan-version" content="90">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -489,6 +489,10 @@
     <h2 id="s13">§13 — The derived attempt count costs a read only when runs change</h2>
 <section data-reckon="section" data-id="s13" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p>Follow-on from §4's landing (64d48f52f). The derived attempt count is recomputed on every delivered read. It aggregates the run ledger and the live pointers, and its review measured the roadmap build at 29.9 s before and 38.0 s after, and the section view at 6.2 s before and 9.3 s after, on a 3,604-row ledger. The count moves only when a run launches, is promoted or is discarded, so recomputing it on every read pays for nothing.</p><p><strong>Done when</strong> the aggregation is cached against an identity that changes whenever its inputs do: the ledger's index version or newest run file, plus the live-pointer set's names and modification times. A read with unchanged inputs reuses the cached result. A run launched, promoted or discarded between two reads changes the next read's count. A test asserts both, with a counter on the aggregation. The roadmap build and section view timings at base and head are stated as numbers over this repository's real ledger, as a read-only measurement script. The negative control is the cache disabled, where the counter rises on every read.</p>
+
+    <h2 id="s14">§14 — The executable-role set is one constant</h2>
+<section data-reckon="section" data-id="s14" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>From the review of landed-record-at-closure §7 (score 95). The set of roles whose runs count as attempts on a section, implement and test, is now spelled in four places: <code>reckon/evidence.py</code> <code>_VERDICT_ROLES</code>, <code>reckon/mcp_views.py</code> twice (about lines 1605 and 1643), and <code>reckon/crew/promotion.py</code> (about 6910). A change to the vocabulary must be chased through all four. A reader that misses one counts a different population from the others: the closure verdict and the attempt count would then disagree about the same section.</p><p><strong>Done when</strong> one named constant holds the set, and the attempt count, the closure verdict and promotion all import it. A test asserts that the three readers count the same population for one fixture holding an implement run, a test run, a review and an investigation. The negative control adds a role to one reader's local copy at base, and the test must fail.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>

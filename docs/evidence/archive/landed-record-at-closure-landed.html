@@ -7,11 +7,11 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="landed-record-at-closure-landed">
   <meta name="plan-title" content="A Landed Record Should Mean Landed — landed record">
-  <meta name="plan-summary" content="Closure synthesis for A Landed Record Should Mean Landed: 4 committed run(s), 5 section-anchored comment(s), and 3 landed commit(s).">
+  <meta name="plan-summary" content="Closure synthesis for A Landed Record Should Mean Landed: 10 committed run(s), 16 section-anchored comment(s), and 12 landed commit(s).">
   <meta name="plan-evidence-for" content="landed-record-at-closure">
   <meta name="plan-verdict" content="pass">
-  <meta name="plan-recorded-at" content="2026-08-24T20:48:47Z">
-  <meta name="plan-commits" content="a9f32b94afb6f2a397aa148d37e46e45536dda09,99984da8534c378ca30aed085d643d7ce8bdc283,09ffc1fde79a4af7dd7d3bef83ccad7652053497,3897203c65f1868f011d6a21529924b1ae23343b">
+  <meta name="plan-recorded-at" content="2026-10-04T08:56:24.228Z">
+  <meta name="plan-commits" content="a9f32b94afb6f2a397aa148d37e46e45536dda09,99984da8534c378ca30aed085d643d7ce8bdc283,09ffc1fde79a4af7dd7d3bef83ccad7652053497,78d1989fa15eaa0bad2477f237962f1cbfff0436,3897203c65f1868f011d6a21529924b1ae23343b,5ad4d5f5584d662f8f3253dc9e8ba787f329e2c3,9ead97121de7f302c97bc81ef780cf254f2e3a4a,d1b8a547c7b51badbb99921145005708a468f4f8,58512a1e9afeffe72b8cd370b100f403927d28f3,62f3f7344ccdf969afae079044e690d0a3d10d90,4c905d793f7875613f415dd9d79ddf815f14ac93,aad3ce4194eb2d688b5f8fe82a5b6e9307cc8902">
   <title>A Landed Record Should Mean Landed — landed record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -19,7 +19,7 @@
 <body>
  <main class="plan-doc">
   <h1>A Landed Record Should Mean Landed — landed record</h1>
-  <p>Closure synthesis for A Landed Record Should Mean Landed: 4 committed run(s), 5 section-anchored comment(s), and 3 landed commit(s).</p>
+  <p>Closure synthesis for A Landed Record Should Mean Landed: 10 committed run(s), 16 section-anchored comment(s), and 12 landed commit(s).</p>
 
   <section id="s2">
     <h2>§2 — Both replacements already exist</h2>
@@ -54,6 +54,144 @@
       </tr>
       </tbody>
     </table>
+    <article class="landed-report" data-run-id="r-20260824T145524248192-landed-record-scout" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reports/landed-record-scout.md">
+      <h3>landed-record-scout &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reports/landed-record-scout.md</code>.</p>
+      <div class="landed-report-body"><pre>node: landed-record-scout
+status: complete
+commits: none
+changed_paths: /home/ITER/mcintos/.config/reckon/crew/reports/landed-record-scout.md
+tests: PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=&quot;$PWD&quot; /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_edit_plan.py::test_append_comment_section_and_autogen_id tests/test_provenance.py::test_evidence_round_trip_preserves_qualified_provenance tests/test_ledger.py::test_completion_promotes_the_pointer_into_the_repositorys_ledger tests/test_continuation.py::test_a_landing_with_no_continuation_is_refused tests/test_continuation.py::test_the_http_patch_path_enforces_the_same_rule — 5 passed in 3.18s
+test_logs: none; five targeted tests were run directly under the repository rule for no more than five tests
+artifacts: /home/ITER/mcintos/.config/reckon/crew/reports/landed-record-scout.md — capability reuse map at source 71b41586988ac8c5579f94e08708a81fda7d3054; 39 archive-path records carry plan-evidence-for, 15 currently point to a non-terminal plan; 5/5 focused reuse-contract tests passed
+evidence_inputs: |
+  Authority read
+  - Live plan `reckon:landed-record-at-closure`, complete HTML and structured state, read before repository inspection. Locked choices are `plan-comments-and-ledger` and `refuse-at-write-boundary`.
+  - Source inspected at detached commit `71b41586988ac8c5579f94e08708a81fda7d3054`; worktree was clean and remained unmodified.
+
+  Capability verdicts
+  1. Per-node narrative in section-anchored plan comments — EXISTING MACHINERY SUFFICES.
+     Fitness: the plan already has a version-paired, section-keyed authored-HTML record, and `edit_plan` can append it in the same atomic state write as commit, artifacts and implementation fraction.
+  2. Per-run measurements in committed `crew.json` — EXISTING MACHINERY SUFFICES.
+     Fitness: promotion already captures plan, section, node, commit, gate, outcome, tests added, worker time, changed lines, scope change, session and budget, then exposes filtered records by plan; no schema or new store is needed.
+  3. Stop the third per-node cumulative evidence write — NEEDS EXTENSION TO THE SHIPPING CONTRACT ONLY.
+     Fitness: code already writes both replacement records; the skill and orchestration reference explicitly require the duplicate archive write after every node and must be rewritten to require one comment write per node and one synthesis at closure.
+  4. Find a closure record matching one plan — NEEDS A SMALL SHARED QUERY; CURRENTLY ABSENT AS A CAPABILITY.
+     Fitness: typed-resource discovery, provenance parsing and lifecycle status sets are reusable, but no symbol currently answers whether any archive evidence record has `evidence_for` naming a given local plan.
+  5. Refuse a newly terminal plan write without matching evidence — NEEDS EXTENSION.
+     Fitness: the continuation refusal supplies the state-transition semantics and no-write behavior, but evidence existence is filesystem context unavailable to the pure `apply_ops` validator, and the HTTP error path currently hard-codes `no_continuation` for every `OpError` from its landing validator.
+  6. Report archive evidence attached to non-terminal plans — NEEDS EXTENSION.
+     Fitness: MCP audit already owns corpus findings and raw resource-path failures, while doccheck already owns archive-aware link resolution; neither compares archive `evidence_for` refs with live plan lifecycle, and normal audit intentionally skips archived resources.
+  7. Existing archive reconciliation — ABSENT AS AN AUTOMATED MOVE CAPABILITY, but no new content transformation is needed.
+     Fitness: the 15 offending records are content-bearing records with valid local refs; migration is placement-only. Canonical typed resource helpers model archive identity, but the existing typed-layout migration moves toward canonical typed/archive locations and is not a de-archive operation.
+
+  Candidate modules and symbols
+  A. One per-node plan comment
+  - `reckon/_schema.py:421` `Comment`; `reckon/_schema.py:581` `PlanState.comments`. SUFFICES — typed section-keyed storage already exists.
+  - `reckon/_plan_html.py:417-430` `read_state` comment parser and `reckon/_plan_html.py:598-626` `_render_comments` plus `_RENDERERS`. SUFFICES — preserves authored HTML bodies and section anchors in semantic plan HTML.
+  - `reckon/_store.py:1066-1075` `_comment_entries` and `reckon/_store.py:1347-1357` `_apply_append` comments branch. SUFFICES — document-wide id uniqueness, generated ids and section-addressed append already work in the same op batch as scalar plan fields.
+  - `reckon/mcp.py:1311-1349` `_append_comment`. SUFFICES but is a legacy convenience surface; the canonical shipping path should continue using the single `edit_plan` op batch, not a second comment-only write.
+  - `reckon/mcp.py:2014-2037,2293-2329` `_edit_plan`. SUFFICES — deep-copies, applies ordered ops, validates, then version-pairs one atomic write.
+
+  B. One committed measurement record per run
+  - `reckon/ledger.py:67-99` `RECORD_FIELDS`. SUFFICES — explicitly covers every measurement named by the plan and more.
+  - `reckon/ledger.py:303-382` `build_record`. SUFFICES — canonicalizes the run record and refuses unknown gate verdicts.
+  - `reckon/ledger.py:431-502` `append_run` and `runs`; `reckon/ledger.py:505-515` `read_records`. SUFFICES — concurrent-safe append, duplicate-run refusal and plan-filtered reads are already present.
+  - `reckon/crew.py:2849-2885` `complete` and `reckon/crew.py:2888-3048` `_complete_locked`. SUFFICES — promotion computes and persists commit/diff/test/gate/time/scope/budget/session fields before deleting the transient pointer.
+  - `reckon/mcp.py:2597-2621,2673-2695` `_crew` ledger/records views. SUFFICES — closure synthesis can read the durable ledger through the existing typed read surface, including `checkout_path` and `plan` filtering.
+
+  C. Shipping contract that currently creates the duplicate
+  - `skills/reckon-ship/SKILL.md:189-205` hard rules 8-10. EXTEND — replace “updates cumulative evidence after EACH complete” and the per-node archive default with plan-comment plus ledger language; retain a single closure synthesis requirement.
+  - `skills/reckon-ship/SKILL.md:764-790` outcome recording. EXTEND — this block currently defines the archive file as a living per-node record; make it closure-only and state its inputs as plan comments plus `crew(project, view=&quot;records&quot;, plan=slug)`.
+  - `skills/reckon-ship/SKILL.md:792-811` collapse-on-landing. EXTEND — before closure, landed summaries cannot link to a not-yet-created archive synthesis. Either link only once closure creates it or link to the section comment/rendered plan until then; no plan decision is needed because the locked choice makes the plan comment the in-progress narrative home.
+  - `skills/reckon-ship/SKILL.md:813-848` same-beat `edit_plan` example. MOSTLY SUFFICES — keep the comment/commit/artifact/impl batch and delete only the last sentence requiring a fuller cumulative record in the same beat.
+  - `skills/reckon-ship/SKILL.md:982-1008` drain ledger placement. EXTEND — remove the “or cumulative evidence record” in-progress alternative; comments are the one committed home until closure.
+  - `skills/reckon-ship/references/sprint-orchestration.md:428-460` plan/evidence/sprint writeback. EXTEND — step 1 is the duplicate writer; retain steps 2-7, then add one closure synthesis step after executable/drain completion.
+
+  D. Shared matching-record lookup
+  - `reckon/_schema.py:193-227,230-270` `PlanRef`, `parse_plan_ref`, `split_refs`. SUFFICES — use this grammar for bare, same-project-qualified and section-qualified `evidence_for`; do not invent string splitting.
+  - `reckon/_plan_html.py:63-73,875-890,898-915` list-meta parsing through `parse_meta`/`parse_plan`. SUFFICES — `evidence_for` already round-trips as a list and is available without a new schema.
+  - `reckon/resources.py:191-235` `identify_resource`; `reckon/resources.py:346-404` `iter_resources`/`resource_map`. NEEDS CAREFUL EXTENSION — ideal for canonical archive evidence, but `ignore_invalid=True` drops the currently relevant misplaced `plans/archive/...` evidence-bearing record. A closure-existence lookup can use canonical evidence resources; the corpus audit must additionally scan raw archive paths so invalid placement cannot hide a violation.
+  - `reckon/serve.py:628-738` `discover_plans`. PARTIALLY SUFFICES — already includes archived provenance in inventory, but discovery deliberately ignores invalid resources and is broader/cached machinery than the write gate needs.
+  - No existing symbol returns “matching archived evidence exists for this plan”. ABSENT — add one shared, read-only helper at the resource/provenance boundary and reuse it from both state-write surfaces and audit. It should require a real `reckon-type=evidence` record for closure, carry the local project, and match `parse_plan_ref(ref).slug == plan_slug` with `not ref.is_external(project)`.
+
+  E. Terminal write refusal
+  - `reckon/lifecycle.py:7-18` `COMPLETED_STATUSES` and `TERMINAL_STATUSES`. SUFFICES — canonical lifecycle vocabulary; the plan says terminal, so do not introduce another status set. Implementation should explicitly confirm whether closure evidence is required for every `TERMINAL_STATUSES` member or only completion states; the plan prose says every terminal status, while the synthesis semantics naturally describe completed work. This is the only semantic edge an implementer must preserve visibly rather than silently narrowing.
+  - `reckon/_store.py:1545-1646` `_LANDED_STATUSES`, `continuation_present`, `validate_landing_patch`, `_validate_continuation`, `CONTINUATION_REQUIRED`. EXTEND — strongest behavioral precedent: trigger on the landing write, preserve historical terminal records on unrelated edits, and fail before persistence. It lacks project/docs context, so do not force archive I/O into pure `apply_ops`.
+  - `reckon/_store.py:1649-1670` `apply_ops`. SUFFICES for transition detection in op mode, NOT for evidence lookup — it is intentionally pure and should remain so.
+  - `reckon/_store.py:402-525` `_write_state`; `reckon/_store.py:571-622` `write_plan`. BEST FILESYSTEM-AWARE MCP/store gate — old and proposed states plus `docs_dir`, project and slug are all present before the temp-file replacement, and this covers `edit_plan` plus legacy direct helpers. Add the archive-evidence check here or immediately before it, preserving no-write/version behavior.
+  - `reckon/mcp.py:2014-2037,2293-2329` `_edit_plan`. EXTEND only for structured error mapping if the lower store raises a typed missing-evidence exception; otherwise every canonical MCP state edit already converges on `write_plan`.
+  - `reckon/serve.py:1614-1680` `Handler` plan POST path. EXTEND — it patches in memory and writes directly with `_plan_html.write_state`, bypassing `_store._write_state`; call the same shared terminal-evidence validator before schema validation/persistence. Return a distinct error such as `missing_evidence_record`, not the current hard-coded `no_continuation`, and name the required `docs/evidence/archive/&lt;slug&gt;-landed.html`/`plan-evidence-for` relationship in detail.
+  - `reckon/_schema.py:664-774` `PlanState.validate_for_write`. DOES NOT FIT — strict schema validation has no repository context and would retroactively lock historical terminal plans on every edit. Keep closure enforcement transition-scoped at the storage/write boundary.
+
+  F. Corpus audit and migration count
+  - `reckon/doccheck.py:310-354` `audit_html`. SUFFICES only for presence of `plan-evidence-for`; it cannot know target plan status from one file.
+  - `reckon/doccheck.py:546-557` `_local_ref_slug` and `reckon/doccheck.py:560-603` `_collect_corpus`. PARTIALLY SUFFICES — archive-aware corpus/link machinery exists, but use canonical `parse_plan_ref` for new lifecycle matching rather than duplicating this private parser.
+  - `reckon/doccheck.py:673-755` `audit_links`. NEEDS EXTENSION OR A SIBLING CORPUS AUDITOR — it proves refs resolve but not that archive placement agrees with target lifecycle.
+  - `reckon/doccheck.py:204-307` `_iter_doc_files`, `_read_lifecycle_state`, `audit_lifecycle`. DOES NOT CURRENTLY FIT without extension — live-only resource iteration deliberately excludes archives and evidence is explicitly skipped at lines 280-281.
+  - `reckon/mcp.py:2745-2787,2800-2815,2881-2991` `_audit`. BEST INTEGRATION POINT — it already emits categorized provenance/lifecycle/resource findings, but it currently excludes archived resources at line 2813. Add a separate archive-placement pass rather than making archived documents participate in all live schema/staleness checks.
+  - `reckon/mcp_views.py:1058-1131` `audit_view`. SUFFICES — new findings flow through existing summary/detail/raw pagination and counts with no response-shape change.
+  - `reckon/resources.py:125-140` `canonical_relative_path` and `reckon/resources.py:747-790` `build_migration_manifest`. PARTIAL/NOT A DIRECT FIT — canonical paths model live versus archive, but the existing migration is typed-layout normalization, not the placement-only de-archive required here.
+
+  Candidate tests
+  - `tests/test_edit_plan.py:606-625` `test_append_comment_section_and_autogen_id`. SUFFICES for the canonical op-batch comment primitive.
+  - `tests/test_mcp_tools.py:646-664` `test_append_comment_unique_ids`. SUFFICES for the legacy comment helper and semantic readback.
+  - `tests/test_schema.py:128-132,232-254` `FULL_PLAN` comment fixture plus `test_state_round_trip`. SUFFICES for parser/renderer preservation.
+  - `tests/test_ledger.py:214-237` `test_completion_promotes_the_pointer_into_the_repositorys_ledger`. SUFFICES for durable promotion and “ledger is the only state file” evidence.
+  - `tests/test_ledger.py:1376-1416` `test_the_crew_tool_reads_the_ledger_and_the_live_pointers` and `test_the_crew_tool_reads_the_worktrees_ledger_not_the_main_one`. SUFFICES for synthesis reads and checkout routing.
+  - `tests/test_crew.py:2509-2515` `test_promotion_without_a_commit_records_absent_changed_lines`, `tests/test_crew.py:2526-2533` `test_non_passing_promotion_requires_a_diagnostic_outcome`, and `tests/test_crew.py:2601-2615` `test_unresolvable_commit_records_a_typed_diff_absence`. SUFFICE for qualified/negative ledger measurements.
+  - `tests/test_crew.py:2811-2822` `test_a_completion_summary_must_carry_the_gate_evidence`. SUFFICES as a guard against vague synthesis inputs.
+  - `tests/test_skill_contracts.py:327-339` `test_ship_writes_plan_state_in_the_same_beat_as_run_promotion`. EXTEND expected wording from cumulative evidence plus plan to comment plus ledger.
+  - `tests/test_skill_contracts.py:407-429` `test_ship_advances_implementation_for_every_node_landing` and `test_ship_landing_state_carries_commit_and_gate_measure_with_impl`. MOSTLY SUFFICE; retain them and add assertions that no per-node archive write remains and one closure synthesis is mandatory.
+  - `tests/test_skill_contracts.py:432-443` `test_ship_keeps_the_orchestrator_as_the_only_plan_state_writer`. SUFFICES unchanged.
+  - `tests/test_continuation.py:93-121` `test_a_landing_with_no_continuation_is_refused`, `tests/test_continuation.py:257-289` HTTP parity plus historical-edit compatibility, and `tests/test_continuation.py:381-405` terminal-status parametrization plus historical writability. EXTEND in the same file with matching evidence present/absent cases for op/MCP and HTTP, non-terminal writes, historical terminal edits, and an error naming the missing record.
+  - `tests/test_provenance.py:78-98` `test_evidence_round_trip_preserves_qualified_provenance`. SUFFICES for matching-ref grammar.
+  - `tests/test_provenance.py:230-245` `test_audit_warns_for_unlinked_artifacts_and_excludes_archive`. EXTEND/qualify: archived resources stay excluded from live artifact conformance, but archive-placement violations must now be reported.
+  - `tests/test_provenance.py:272-285` `test_link_audit_understands_qualified_and_stage_refs`. SUFFICES for local/same-project/external/stage parsing baseline.
+  - `tests/test_doccheck.py:219-236` `test_typed_archived_link_resolves_anchor`. SUFFICES for canonical archive corpus setup; add sibling tests for active versus shipped target plan and a misplaced archive record.
+  - `tests/test_mcp_audit.py:286-306` `test_audit_excludes_archived_resources_from_live_findings`. EXTEND rather than delete: retain zero live checked resources, while permitting a dedicated archive-lifecycle finding when the archived record carries `evidence_for` to an active plan.
+  - `tests/test_typed_resources.py:450-472` `test_audit_reports_invalid_resource_path_without_hiding_valid_plans`. EXTEND with an invalid/misplaced archive evidence record so the lifecycle violation is not lost behind `ResourceCollision`.
+
+  Candidate fixtures/helpers
+  - `tests/test_continuation.py:28-46` `setup`, `tests/test_continuation.py:49-66` `_followup`, `tests/test_continuation.py:69-87` `_plan_html`. BEST closure-refusal fixture family; extend `_plan_html` or add an evidence helper that writes `docs/evidence/archive/&lt;slug&gt;-landed.html` with qualified/unqualified `evidence_for`.
+  - `tests/test_mcp_audit.py:24-46` `setup`, `tests/test_mcp_audit.py:49-69` `_make_plan_html`/`_valid_state`. BEST MCP audit fixture; helper currently writes flat paths, so accept an explicit relative path/type for archive cases.
+  - `tests/test_provenance.py:28-42` `_write_artifact`, `tests/test_provenance.py:45-64` `mounted`. SUFFICES for typed provenance and discovery tests; its helper can write beneath a supplied archive directory.
+  - `tests/test_doccheck.py:120-143` `_write_plan`. SUFFICES for canonical typed archive fixtures and direct target-status construction.
+  - `tests/test_ledger.py:48-87` `home`/`repo`, plus `tests/test_ledger.py:104-125` `_dispatch`/`_deliver`. SUFFICES; no new ledger fixture is required.
+  - `tests/test_crew.py:50-93` `home`/`repo` and `tests/test_crew.py:96-109` `_node`. SUFFICES; no new run-record schema fixture is required.
+
+  Live corpus measurement
+  - Scope: every `docs/**/*.html` path containing an `archive` path component and a parsed non-empty `plan-evidence-for`; local refs resolved with the canonical plan-ref grammar; plan status compared with `reckon.lifecycle.TERMINAL_STATUSES`.
+  - Total archive-path records carrying `plan-evidence-for`: 39.
+  - Records whose referenced local plan is non-terminal: 15.
+  - Canonical `docs/evidence/archive` violations: 14. Misplaced `docs/plans/archive` violation: 1. Unresolved local refs: 0.
+  - `docs/evidence/archive/concurrency-and-schedule-visibility-landed.html` -&gt; `concurrency-and-schedule-visibility` (`active`).
+  - `docs/evidence/archive/crew-effort-routing-landed.html` -&gt; `crew-effort-routing` (`active`).
+  - `docs/evidence/archive/derived-gate-state-landed.html` -&gt; `derived-gate-state` (`active`).
+  - `docs/evidence/archive/execution-orchestration-hardening-roadmap-analysis-landed.html` -&gt; `execution-orchestration-hardening` (`active`).
+  - `docs/evidence/archive/execution-orchestration-hardening-sprint-delivery-landed.html` -&gt; `execution-orchestration-hardening` (`active`).
+  - `docs/evidence/archive/execution-orchestration-hardening-unified-edit-landed.html` -&gt; `execution-orchestration-hardening` (`active`).
+  - `docs/evidence/archive/inflight-visibility-landed.html` -&gt; `inflight-visibility` (`active`).
+  - `docs/evidence/archive/north-star-orientation-landed.html` -&gt; `north-star-orientation` (`active`).
+  - `docs/evidence/archive/registered-repo-migration-canary.html` -&gt; `registered-repo-state-migration` (`active`).
+  - `docs/evidence/archive/registered-repo-migration-fleet-ledger.html` -&gt; `registered-repo-state-migration` (`active`).
+  - `docs/evidence/archive/registered-repo-migration-normalization-preflight.html` -&gt; `registered-repo-state-migration` (`active`).
+  - `docs/evidence/archive/registered-repo-migration-tooling.html` -&gt; `registered-repo-state-migration` (`active`).
+  - `docs/evidence/archive/resource-tagging-system-landed.html` -&gt; `resource-tagging-system` (`active`).
+  - `docs/evidence/archive/surface-latency-and-legibility-landed.html` -&gt; `surface-latency-and-legibility` (`active`).
+  - `docs/plans/archive/registered-repo-state-migration-tooling-landed.html` -&gt; `registered-repo-state-migration` (`active`); this is also an invalid typed placement and proves the corpus invariant must not rely only on `resource_map(..., ignore_invalid=True)`.
+
+  Minimal implementation shape for the orchestrator
+  - Keep `crew.complete` and plan-comment state write unchanged; remove the same-beat archive-file write from skill prose and contract tests.
+  - Add one archive-aware “matching closure evidence” query using `parse_plan_ref`; reuse it in the filesystem-aware plan write and the HTTP patch path.
+  - Preserve transition-scoped compatibility: an unrelated edit to an already-terminal historical plan remains writable, exactly as continuation tests require.
+  - Add a distinct missing-evidence error that names the missing record/back-link; do not return `no_continuation` for it.
+  - Add a separate MCP audit pass over raw archive paths so archived records remain excluded from normal live conformance while their placement invariant is still checked.
+  - Write the synthesis before the terminal-status write. It reads the plan comments for section narrative and `crew(..., view=&quot;records&quot;, plan=slug)` for machine measurements, then terminal write validation observes the committed/working-tree evidence file.
+follow_ons: implementation is fenced out; the implementation nodes should use the minimal shape and candidate paths above, and the migration node should move the 15 listed records out of archive until their plans become terminal without rewriting their content
+blockers: none
+</pre></div>
+    </article>
   </section>
 
   <section id="s3">
@@ -61,6 +199,10 @@
     <article class="landed-comment" data-comment-id="c-run-r-20260824T203835009265-evidence-synthesis-at-closure">
       <p><small>codex-m · 2026-08-24T20:48:47Z</small></p>
       <div class="r-comment-body"><p>The landed record is composed once at closure from plan comments and the run ledger, reproducibly, rather than accreted per node.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260915T054011904329-the-landed-record-is-composed-at-closure">
+      <p><small>doc-deploy-matrix · 2026-09-15T07:16:51.845Z</small></p>
+      <div class="r-comment-body"><p>Closure record composed once at docs/evidence/archive/landed-record-at-closure-landed.html via the plan's own reckon evidence synthesize machinery rather than by hand: reckon-type=evidence, plan-evidence-for=landed-record-at-closure, synthesising 4 committed run records, 5 section-anchored comments and 3 landed commits, one anchored section per material result. audit-doc zero errors on the committed file; byte-identity schema test passed in 6.35s.</p></div>
     </article>
     <table>
       <thead>
@@ -77,6 +219,16 @@
         <td><code>{&quot;added&quot;:552,&quot;files&quot;:3,&quot;removed&quot;:0}</code></td>
         <td>unchanged</td>
       </tr>
+      <tr>
+        <td><code>r-20260915T054011904329-the-landed-record-is-composed-at-closure</code></td>
+        <td>the-landed-record-is-composed-at-closure</td>
+        <td><code>78d1989fa15eaa0bad2477f237962f1cbfff0436</code></td>
+        <td><strong>passed</strong></td>
+        <td>0</td>
+        <td>96m 6s</td>
+        <td><code>{&quot;added&quot;:131,&quot;files&quot;:2,&quot;removed&quot;:0}</code></td>
+        <td>unchanged</td>
+      </tr>
       </tbody>
     </table>
   </section>
@@ -86,6 +238,18 @@
     <article class="landed-comment" data-comment-id="c-20260824T2005">
       <p><small>reckon-ship · 2026-08-24T20:05:00+00:00</small></p>
       <div class="r-comment-body">evidence-path-repair landed — commit a9f32b9, merged; gate passed; measure fifteen records moved with the diff showing one insertion and one deletion across fifteen files, fourteen byte-identical and the fifteenth changed only in its type line, fifteen of fifteen back-links resolving, zero intra-document anchor failures, zero records belonging to a terminal plan moved, and the twenty-four records left under the archive path all verified terminal; audit-doc reported zero errors across every destination and the suite held at 2152 with no new failures; 1119 worker-seconds, run recorded --scope-changed. The worker blocked twice rather than move fourteen of fifteen and call it done, and its second refusal corrected the coordinator: a document named -landed carrying reckon-type=plan is evidence wearing a plan type, so moving it into the live plan root would have been worse than leaving it. The byte-identity rule was lifted for that one file and replaced with a narrower one, its type and back-link only, reported separately so the exception stays visible rather than folded into a count. This comment is written by hand because the promotion predates the invariant that now writes these automatically — which is itself the evidence that the invariant was the right shape.</div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260915T073000">
+      <p><small>reckon-ship · 2026-09-15T07:30:00Z</small></p>
+      <div class="r-comment-body">This section is reclassified from done back to implementable, because one clause of its own measure is unmet and I had declared it satisfied by reading the prose rather than by checking. The clause is verified by a test over the live corpus rather than by inspection. MEASURED at HEAD: no such test exists. tests/test_schema.py:611 declares _INFRA_DIRS = {_shared, ui, state, assets, images, archive} and line 645 skips any file whose path carries one of those components, so the conformance scan - the natural home for this check - excludes the archive tree wholesale. There are 59 evidence records under docs/evidence/archive today, none of them scanned; a worker reported 43 and the count has since grown, which is itself the argument for a test rather than an inspection. Greping the suite for plan-evidence-for finds tests/test_crew_promotion.py, tests/test_provenance.py and tests/test_evidence_synthesis.py, and none of them asserts that an archived record belongs to a plan in a terminal state. So the placement work landed and was verified once by hand at commit a9f32b9; what was never built is the standing check that keeps it true. REMAINING DELIVERABLE, unchanged from what this section already asks: cover archived evidence records under the same conformance scan so a malformed record or an unresolvable sha fails a test rather than sitting unread, and narrow the exemption so it names the directories it means instead of matching a path component wherever it appears - the current form would skip a plan directory that happened to be called archive at any depth. Both halves are owed, as the section says: a well-formed record whose shas resolve must stay quiet, or the scan becomes noise across 59 files at once. impl moves to 0.8 rather than 1.0 and the plan stays active, because closing it now would drop it out of pending work and hide this.</div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260915T1005">
+      <p><small>reckon-ship · 2026-09-15T10:05:00Z</small></p>
+      <div class="r-comment-body">Archived evidence records now fall inside the cross-project conformance scan. The exemption in tests/test_schema.py previously matched a path component at any depth, so any directory named archive silenced its whole subtree; it now names only the exact top-level directories it means (_shared, ui, state, assets, images, archive), so a directory called archive deeper down no longer hides its records. Measured against the scan's own mount resolution on this workstation, 116 evidence records under docs/evidence/archive are now scanned where zero were before, and the count is asserted to stay positive rather than pinned to a number that moves. Each scanned evidence record is audited for structured landing citations - plan-commits meta values and 40-hex code cells inside table rows - which must resolve as git objects of any type in one of the mounted repositories, so a record that cites a sha that never existed fails the conformance test instead of sitting unread. A code mention in prose is narrative and never counted, so a record quoting a sha it exists to document stays quiet. The quiet half is asserted explicitly: a well-formed record citing the repository's tip commit, and its tip tree, resolves with no finding, which is why resolution is object existence rather than commit reachability. On the live corpus all 26 structured citations among the scanned evidence records resolve, and a planted unresolvable sha was confirmed to fail the audit. Both halves the section asks for are now standing checks.</div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20261004-s5-verified">
+      <p><small>s22-coord · 2026-10-04T10:05:00Z</small></p>
+      <div class="r-comment-body"><p>Declared done after checking the deliverable at main a06ddb730 rather than reading the comments. <code>tests/test_schema.py:822</code> tests the exemption against <code>rel.parts[0]</code>, and <code>test_archived_evidence_records_enter_the_scan</code> (line 959) holds the archive records under the scan. Both halves the 2026-09-15 comments describe are present.</p></div>
     </article>
     <table>
       <thead>
@@ -102,28 +266,208 @@
         <td><code>{&quot;added&quot;:60,&quot;files&quot;:15,&quot;removed&quot;:0}</code></td>
         <td>changed</td>
       </tr>
-      </tbody>
-    </table>
-    <article class="landed-comment" data-comment-id="c-20260915T1005">
-      <p><small>reckon-ship · 2026-09-15T10:05:00Z</small></p>
-      <div class="r-comment-body"><p>Archived evidence records now enter the same conformance scan as plans. tests/test_schema.py narrows the exemption from any-depth path components to the exact top-level directories it means, so records under docs/evidence/archive are scanned: 116 archived evidence records on the scan's own mount set, previously zero, with the count asserted to stay positive rather than pinned to a number that moves. Every scanned evidence record is audited for structured landing citations (plan-commits meta values, 40-hex code cells inside table rows), each resolved as a git object of any type in one of the mounted repositories, so a record citing a sha that never existed fails the test; prose code mentions stay narrative and never count, so a record quoting a sha it documents stays quiet. The quiet half is an explicit test citing the repository's tip commit and tip tree, resolving by object existence rather than commit reachability. On the live corpus all 26 structured citations among the scanned evidence records resolve, and a planted unresolvable sha was confirmed to fail the audit.</p></div>
-    </article>
-    <table>
-      <thead>
-        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Changed lines</th><th>Scope</th></tr>
-      </thead>
-      <tbody>
       <tr>
         <td><code>r-20260915T100528833708-archived-evidence-enters-the-conformance-scan</code></td>
         <td>archived-evidence-enters-the-conformance-scan</td>
-        <td><code>3897203c65f1868f011d6a21529924b1ae23343b</code></td>
+        <td><code>3897203c65f1868f011d6a21529924b1ae23343b</code><br><code>5ad4d5f5584d662f8f3253dc9e8ba787f329e2c3</code></td>
         <td><strong>passed</strong></td>
-        <td>2 + citations audit inside the conformance case</td>
-        <td><code>{&quot;added&quot;:171,&quot;files&quot;:2,&quot;removed&quot;:4}</code></td>
-        <td>changed</td>
+        <td>—</td>
+        <td>325m 29s</td>
+        <td><code>{&quot;added&quot;:192,&quot;files&quot;:3,&quot;removed&quot;:5}</code></td>
+        <td>unchanged</td>
       </tr>
       </tbody>
     </table>
+  </section>
+
+  <section id="s6">
+    <h2>§6 — Write the closure synthesis and close the plan</h2>
+    <article class="landed-comment" data-comment-id="c-20261004-s6-after-s7-s8">
+      <p><small>s22-coord · 2026-10-04T10:05:00Z</small></p>
+      <div class="r-comment-body"><p>§6 stays implementable and now runs after §7 and §8, because both change what a synthesized record says: the verdict, and whether the composed record audits clean. This plan's own record was synthesized on 2026-09-15 and is rewritten once both have landed.</p></div>
+    </article>
+  </section>
+
+  <section id="s7">
+    <h2>§7 — A closure verdict reads what each section&#x27;s final run earned</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T075625198055-a-closure-verdict-reads-each-section">
+      <p><small>reckon-build · 2026-10-04T08:15:13.475Z</small></p>
+      <div class="r-comment-body"><p>closure verdict now reads each section's latest implement- or test-role run — _overall_verdict keeps only implement/test rows addressed by section_record_id, maps the latest run's gate and failure classification (pass / qualified for not-run or pre-existing-failure / fail otherwise) and reports the worst section — carried by commit 9ead97121de7f302c97bc81ef780cf254f2e3a4a with tests/test_closure_verdict.py, which synthesizes a temporary repository three times reading plan-verdict qualified (repaired failure plus pre-existing failure), fail (failure reclassified) and pass (all-passing plan with a review and an investigation); the evidence-importing test population is 40 passed at base 657e199ba and 43 passed at head 9ead97121 with no added failure, and the negative control at base reads fail on the first fixture and qualified on the third (2 failed, 1 passed, EXIT=1).</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T081612219068-review-of-a-closure-verdict-reads-each-section">
+      <p><small>reckon-build · 2026-10-04T08:24:37.935Z</small></p>
+      <div class="r-comment-body"><p>attached an independent review to r-20261004T075625198055-a-closure-verdict-reads-each-section — a parsed record scoring all five dimensions (goal_fidelity 19, evidence 19, scope_discipline 20, durability 19, fit 18, total 95) read at reviewed_base_sha 657e199ba and reviewed_head_sha d1b8a547c, stored at both declared review paths, with added_failure_count 0 and added_failure_ids [] taken from the reviewed run's own baseline_suite and after_suite gate logs</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20261004-s7-landed">
+      <p><small>s22-coord · 2026-10-04T10:27:00Z</small></p>
+      <div class="r-comment-body"><p><strong>Landed at merge 3f17be891.</strong> <code>_overall_verdict</code> now reads each section's latest implement- or test-role run, ordered by completion then run id. Passed reads pass; a not-run gate or a failure classified <code>pre-existing-failure</code> reads qualified; any other failure reads fail; the record takes the worst section. Sections are addressed through <code>reckon.crew.routing.section_record_id</code>, the reader the attempt count uses. The worker's read-only probe shows the obligations-hook plan's 54 rows now read qualified, where they read fail before: 17 sections pass, and §16's latest run failed as pre-existing. Measured at a stacked merge of main a90a37174: the 8-file evidence population ran 40 passed at base and 43 at head, with no added failure. The negative control at base reads fail on the first fixture and qualified on the third. Review scored 95. Its one follow-on: the implement/test role set is now spelled in four places (<code>evidence.py</code>, <code>mcp_views.py</code> twice, <code>promotion.py</code>) and wants one shared constant. Every ledger row in this project carries a role, so no row loses attribution; 201 rows carry no section and are not counted.</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261004T075625198055-a-closure-verdict-reads-each-section</code></td>
+        <td>a-closure-verdict-reads-each-section</td>
+        <td><code>9ead97121de7f302c97bc81ef780cf254f2e3a4a</code><br><code>d1b8a547c7b51badbb99921145005708a468f4f8</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>18m 14s</td>
+        <td><code>{&quot;added&quot;:291,&quot;files&quot;:3,&quot;removed&quot;:4}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261004T081612219068-review-of-a-closure-verdict-reads-each-section</code></td>
+        <td>review-of-a-closure-verdict-reads-each-section</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>7m 48s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report" data-run-id="r-20261004T081612219068-review-of-a-closure-verdict-reads-each-section" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T075625198055-a-closure-verdict-reads-each-section.json">
+      <h3>review-of-a-closure-verdict-reads-each-section &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T075625198055-a-closure-verdict-reads-each-section.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;added_failure_count&quot;: 0,
+  &quot;added_failure_ids&quot;: [],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;reckon/evidence.py&quot;,
+      &quot;line&quot;: &quot;275&quot;,
+      &quot;severity&quot;: &quot;follow-on&quot;,
+      &quot;text&quot;: &quot;_VERDICT_ROLES re-declares the implement/test role set that reckon/mcp_views.py:1605, :1643 and reckon/crew/promotion.py:6910 also spell inline, so a change to the executable-role vocabulary must be chased in several places; the plan asked the role reading be reused from the section attempt count and no shared constant exists to import, so the copy is understandable but worth centralising.&quot;
+    }
+  ],
+  &quot;justifications&quot;: {
+    &quot;goal_fidelity&quot;: &quot;reckon/evidence.py:298-323 reads each implement/test section&#x27;s latest run and maps passed to pass, a pre-existing-failure to qualified and any other failure to fail, reporting the worst across sections, which is the plan&#x27;s ruling exactly.&quot;,
+    &quot;evidence&quot;: &quot;the gate in tests/test_closure_verdict.py:154-183 asserts the record&#x27;s plan-verdict meta against the fixture&#x27;s expected string, I reproduced 43 passed at head and the base negative control&#x27;s fail-then-qualified reading myself in a scratch tree, and all eight evidence-importing test files are in both arms.&quot;,
+    &quot;scope_discipline&quot;: &quot;git diff --name-only 657e199ba..9ead97121 is exactly reckon/evidence.py and tests/test_closure_verdict.py, HEAD adds only the one per-run fragment, and nothing outside the declared fence is touched.&quot;,
+    &quot;durability&quot;: &quot;the assertion compares the rendered meta against an expected that is independent of the code, the base negative control reddens two of three fixtures, and fixture A&#x27;s superseded work-rejected failure before a pass plus the review and investigate rows guard both the latest-run and the population clauses.&quot;,
+    &quot;fit&quot;: &quot;the constants (_VERDICT_SEVERITY, _VERDICT_ROLES, _run_verdict) are named by mechanism with no plan label and the change reuses section_record_id, but the implement/test vocabulary is now a fourth copy of a set reckon/mcp_views.py:1605 and reckon/crew/promotion.py:6910 each spell inline.&quot;
+  },
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: the node goal is a synthesized record whose plan-verdict reads each section&#x27;s final implementing run; reckon/evidence.py:298 _overall_verdict now filters to implement/test rows, addresses each section through reckon.crew.routing.section_record_id, keeps the latest run by (completed_at, run_id) and reports the worst section verdict, which is the goal exactly.\nVERDICT done_when: the measure names a temporary-repository test building two sections — A with a failed implement, a passed implement and a review, B with one implement failed as pre-existing-failure — reading qualified, then fail on reclassification and pass when B passes, with the base _overall_verdict as negative control; tests/test_closure_verdict.py builds exactly those three fixtures and I reproduced the base reading of fail on the first and qualified on the third in a scratch tree.\nVERDICT write_paths: the manifest declares four paths; git diff --name-only 657e199ba..9ead97121 lists exactly reckon/evidence.py and tests/test_closure_verdict.py, and HEAD adds only the one per-run fragment, all inside the fence.\nVERDICT manifest: read; it records base 40 passed and head 43 passed with zero added failures, the negative control&#x27;s 2 failed/1 passed at base, and a read-only probe of the-obligations-hook-reads-a-snapshot reading qualified under the new rule against fail under the old — each reproduced where I re-ran it.\nVERDICT diff: read commit by commit against 657e199ba — 9ead97121 is the verdict change and its test, d1b8a547c the 54-line per-run fragment — and the ordering key at reckon/evidence.py:664 is (completed_at, run_id), matching the latest-run order _overall_verdict uses.\nCALL_SITES: reckon/cli.py:7910\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/evidence.py:298-323 reads each implement/test section&#x27;s latest run and maps passed to pass, a pre-existing-failure to qualified and any other failure to fail, reporting the worst across sections, which is the plan&#x27;s ruling exactly.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate in tests/test_closure_verdict.py:154-183 asserts the record&#x27;s plan-verdict meta against the fixture&#x27;s expected string, I reproduced 43 passed at head and the base negative control&#x27;s fail-then-qualified reading myself in a scratch tree, and all eight evidence-importing test files are in both arms.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 657e199ba..9ead97121 is exactly reckon/evidence.py and tests/test_closure_verdict.py, HEAD adds only the one per-run fragment, and nothing outside the declared fence is touched.\nSCORE durability: 19\nJUSTIFICATION durability: the assertion compares the rendered meta against an expected that is independent of the code, the base negative control reddens two of three fixtures, and fixture A&#x27;s superseded work-rejected failure before a pass plus the review and investigate rows guard both the latest-run and the population clauses.\nSCORE fit: 18\nJUSTIFICATION fit: the constants (_VERDICT_SEVERITY, _VERDICT_ROLES, _run_verdict) are named by mechanism with no plan label and the change reuses section_record_id, but the implement/test vocabulary is now a fourth copy of a set reckon/mcp_views.py:1605 and reckon/crew/promotion.py:6910 each spell inline.\nFINDING reckon/evidence.py:275 follow-on: _VERDICT_ROLES re-declares the implement/test role set that reckon/mcp_views.py:1605, :1643 and reckon/crew/promotion.py:6910 also spell inline, so a change to the executable-role vocabulary must be chased in several places; the plan asked the role reading be reused from the section attempt count and no shared constant exists to import, so the copy is understandable but worth centralising.&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;657e199ba75b7bcdfc67cadfd37592cecc68a19c&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;d1b8a547c7b51badbb99921145005708a468f4f8&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20261004T075625198055-a-closure-verdict-reads-each-section&quot;,
+  &quot;reviewer&quot;: {
+    &quot;backend&quot;: &quot;clive&quot;,
+    &quot;effort&quot;: &quot;&quot;,
+    &quot;model&quot;: &quot;deepseek-v4.1-flash&quot;
+  },
+  &quot;reviewer_run_id&quot;: &quot;r-20261004T081612219068-review-of-a-closure-verdict-reads-each-section&quot;,
+  &quot;scores&quot;: {
+    &quot;goal_fidelity&quot;: 19,
+    &quot;evidence&quot;: 19,
+    &quot;scope_discipline&quot;: 20,
+    &quot;durability&quot;: 19,
+    &quot;fit&quot;: 18
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-04T08:23:52.494184+00:00&quot;,
+  &quot;total&quot;: 95
+}
+</pre></div>
+    </article>
+  </section>
+
+  <section id="s8">
+    <h2>§8 — A fragment&#x27;s element ids are checked by the worker that writes them</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T085044698259-review-of-a-fragment-id-collision-is-caught-where-written">
+      <p><small>reckon-build · 2026-10-04T08:56:24.228Z</small></p>
+      <div class="r-comment-body"><p>review of r-20261004T075656239730-a-fragment-id-collision-is-caught-where-written scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19 (total 97 of 100), zero added failures, no blocking findings — the fragment id-prefix brief rule, the audit_manifest collision check and the three fragment renames all land, and the guard is independently shown to fire at the base revision.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T075656239730-a-fragment-id-collision-is-caught-where-written">
+      <p><small>reckon-build · 2026-10-04T08:50:31.151Z</small></p>
+      <div class="r-comment-body"><p>docs/evidence/fragments/landed-record-at-closure/a-fragment-id-collision-is-caught-where-written.html — the fragment-writing brief states every element id begins with the node id, check-manifest audits a plan's composition whenever a run declares a change under that plan's fragments (through the plan's landing record when it exists, and over the fragments together when it does not, because the record is synthesised once at closure) and reports each duplicate id with its fragments, and the three fragments whose ids collided are renamed under their node ids; recorded in that fragment.</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261004T075656239730-a-fragment-id-collision-is-caught-where-written</code></td>
+        <td>a-fragment-id-collision-is-caught-where-written</td>
+        <td><code>58512a1e9afeffe72b8cd370b100f403927d28f3</code><br><code>62f3f7344ccdf969afae079044e690d0a3d10d90</code><br><code>4c905d793f7875613f415dd9d79ddf815f14ac93</code><br><code>aad3ce4194eb2d688b5f8fe82a5b6e9307cc8902</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>52m 50s</td>
+        <td><code>{&quot;added&quot;:541,&quot;files&quot;:10,&quot;removed&quot;:10}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261004T085044698259-review-of-a-fragment-id-collision-is-caught-where-written</code></td>
+        <td>review-of-a-fragment-id-collision-is-caught-where-written</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>5m 4s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report" data-run-id="r-20261004T085044698259-review-of-a-fragment-id-collision-is-caught-where-written" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T075656239730-a-fragment-id-collision-is-caught-where-written.at-aad3ce4194eb2d688b5f8fe82a5b6e9307cc8902.json">
+      <h3>review-of-a-fragment-id-collision-is-caught-where-written &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T075656239730-a-fragment-id-collision-is-caught-where-written.at-aad3ce4194eb2d688b5f8fe82a5b6e9307cc8902.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;added_failure_count&quot;: 0,
+  &quot;added_failure_ids&quot;: [],
+  &quot;call_site_count&quot;: 3,
+  &quot;call_sites&quot;: [
+    &quot;reckon/cli.py:5512&quot;,
+    &quot;reckon/crew/reports.py:audit_manifest&quot;,
+    &quot;reckon/crew/reports.py:_composed_record_id_findings&quot;
+  ],
+  &quot;findings&quot;: [],
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;verified 3 production call site(s)&quot;,
+    &quot;diff&quot;: &quot;read commit by commit; 58512a1e9 adds the check and the brief rule, 4c905d793 adds the recordless fallback, and the two docs commits repair the three colliding fragments by renaming each id under its node id and refresh the landing record.&quot;,
+    &quot;done_when&quot;: &quot;the done_when names a temporary-repository check-manifest case; tests/test_fragment_ids_are_checked.py:242 holds a plan, its record and a committed fragment, adds a second fragment with the same id and asserts refusal naming the id and both fragments, and the recordless case at :291 asserts the same over fragments when no record exists.&quot;,
+    &quot;goal&quot;: &quot;the node goal is to catch a fragment element-id collision where the fragment is written; reckon/crew/reports.py:1955 wires _composed_record_id_findings into audit_manifest and reckon/crew/prompts.py:165 states the id-prefix rule in the landing brief.&quot;,
+    &quot;manifest&quot;: &quot;read; it records base/head arms of 640 passed at 657e199ba and 4c905d793, the focused 140-passed run and the declared negative control, and its test_logs are on disk under the run directory.&quot;,
+    &quot;write_paths&quot;: &quot;the manifest declares the three Python modules, the three test files, the four fragments and a figures dir; every path in the diff 657e199ba..aad3ce4194 sits inside that scope and the figures dir carries no file.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;the guard is independent of the value under test \u2014 reinstating the absent audit at base turns tests/test_fragment_ids_are_checked.py:242 and :291 red (2 failed, 3 passed, reproduced), so reverting reckon/crew/reports.py:1955 reddens the suite.&quot;,
+    &quot;evidence&quot;: &quot;the gate measures the done_when directly through the production CLI at tests/test_fragment_ids_are_checked.py:242 and :291, the base and head arms are recorded at 640 passed with EXIT=0, and an independent re-run of that file at aad3ce4194 gives 5 passed while the same file at 657e199ba gives 2 failed; the declared negative-control log was captured against the earlier four-case file, so it does not exercise the recordless case.&quot;,
+    &quot;fit&quot;: &quot;reckon/doccheck.py:1458 places audit_composed_record_ids beside _duplicate_element_id_findings and reuses _composed_record_text and _composed_record_sources, the lazy evidence import at reckon/doccheck.py:1492 mirrors audit_file at :1510, and no symbol or comment carries a plan or ticket label.&quot;,
+    &quot;goal_fidelity&quot;: &quot;all three parts of the ruling land \u2014 the brief at reckon/crew/prompts.py:165, the audit at reckon/crew/reports.py:1955, and the three fragment renames at docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/*.html \u2014 and the composed record of that plan now audits with 0 duplicate-element-id.&quot;,
+    &quot;scope_discipline&quot;: &quot;git diff --stat 657e199ba aad3ce4194 touches exactly the ten declared paths with no figure added and no deletion outside the renamed ids.&quot;
+  },
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: the node goal is to catch a fragment element-id collision where the fragment is written; reckon/crew/reports.py:1955 wires _composed_record_id_findings into audit_manifest and reckon/crew/prompts.py:165 states the id-prefix rule in the landing brief.\nVERDICT done_when: the done_when names a temporary-repository check-manifest case; tests/test_fragment_ids_are_checked.py:242 holds a plan, its record and a committed fragment, adds a second fragment with the same id and asserts refusal naming the id and both fragments, and the recordless case at :291 asserts the same over fragments when no record exists.\nVERDICT write_paths: the manifest declares the three Python modules, the three test files, the four fragments and a figures dir; every path in the diff 657e199ba..aad3ce4194 sits inside that scope and the figures dir carries no file.\nVERDICT manifest: read; it records base/head arms of 640 passed at 657e199ba and 4c905d793, the focused 140-passed run and the declared negative control, and its test_logs are on disk under the run directory.\nVERDICT diff: read commit by commit; 58512a1e9 adds the check and the brief rule, 4c905d793 adds the recordless fallback, and the two docs commits repair the three colliding fragments by renaming each id under its node id and refresh the landing record.\nCALL_SITES: reckon/cli.py:5512, reckon/crew/reports.py:audit_manifest, reckon/crew/reports.py:_composed_record_id_findings\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: all three parts of the ruling land \u2014 the brief at reckon/crew/prompts.py:165, the audit at reckon/crew/reports.py:1955, and the three fragment renames at docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/*.html \u2014 and the composed record of that plan now audits with 0 duplicate-element-id.\nSCORE evidence: 19\nJUSTIFICATION evidence: the gate measures the done_when directly through the production CLI at tests/test_fragment_ids_are_checked.py:242 and :291, the base and head arms are recorded at 640 passed with EXIT=0, and an independent re-run of that file at aad3ce4194 gives 5 passed while the same file at 657e199ba gives 2 failed; the declared negative-control log was captured against the earlier four-case file, so it does not exercise the recordless case.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 657e199ba aad3ce4194 touches exactly the ten declared paths with no figure added and no deletion outside the renamed ids.\nSCORE durability: 19\nJUSTIFICATION durability: the guard is independent of the value under test \u2014 reinstating the absent audit at base turns tests/test_fragment_ids_are_checked.py:242 and :291 red (2 failed, 3 passed, reproduced), so reverting reckon/crew/reports.py:1955 reddens the suite.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/doccheck.py:1458 places audit_composed_record_ids beside _duplicate_element_id_findings and reuses _composed_record_text and _composed_record_sources, the lazy evidence import at reckon/doccheck.py:1492 mirrors audit_file at :1510, and no symbol or comment carries a plan or ticket label.\n&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;657e199ba75b7bcdfc67cadfd37592cecc68a19c&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;aad3ce4194eb2d688b5f8fe82a5b6e9307cc8902&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20261004T075656239730-a-fragment-id-collision-is-caught-where-written&quot;,
+  &quot;reviewer&quot;: {
+    &quot;backend&quot;: &quot;clive&quot;,
+    &quot;model&quot;: &quot;deepseek-v4.1-flash&quot;
+  },
+  &quot;reviewer_run_id&quot;: &quot;r-20261004T085044698259-review-of-a-fragment-id-collision-is-caught-where-written&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 19,
+    &quot;evidence&quot;: 19,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 20,
+    &quot;scope_discipline&quot;: 20
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-04T08:54:26.182794+00:00&quot;,
+  &quot;total&quot;: 97
+}
+</pre></div>
+    </article>
   </section>
 
   <section id="top">
@@ -141,6 +485,10 @@ The reviewer scored durability 6 of 20 for exactly this and was right. The recor
 The exemption is coarser than the archive alone. "archive" matches any directory of that name anywhere under docs, so the same silence covers archived plans, not only archived evidence.
 
 Deliverable: an evidence record under docs/evidence/archive is covered by the same conformance scan as a plan, so a malformed record or an unresolvable sha fails a test rather than sitting unread; and the exemption, if any survives, names the directories it means rather than matching a path component wherever it appears. The negative half matters as much - a record that is well-formed and whose shas resolve must stay quiet, or the scan becomes noise on 43 files at once.</div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260915T153551315629">
+      <p><small>reckon-ship · undated</small></p>
+      <div class="r-comment-body"><p><strong>The scan was not looking at archived evidence at all, and nothing reported that.</strong> The conformance scan's directory exemption matched a path component at <em>any</em> depth, so every record under <code>docs/evidence/archive</code> was silenced wholesale. Measured on the scan's own mount resolution across five projects: <strong>116 archive evidence records now scanned where zero were before</strong> — reckon 70, ambix 27, efit 19, against 1,348 plan files and 136 evidence files. The exemption now names the exact top-level directories it means and checks them against <code>rel.parts[0]</code>, so a same-named directory deeper in the tree no longer suppresses its records. Commits <code>3897203c</code> and <code>5ad4d5f5</code>, merged; gate 1,410 passed at the merged head, exit 0.</p><p><strong>A citation audit lands with it, and its semantics are the careful part.</strong> Full 40-hex tokens are resolved <em>by git object existence rather than commit reachability</em>, because a landing record may legitimately cite a <strong>tree</strong> identity — a reachability check would reject it as unresolvable. Only tokens in <code>plan-commits</code> meta values and in <code>&lt;code&gt;</code> cells inside <code>&lt;td&gt;</code> count as landing claims; a sha mentioned in prose stays narrative. 26 of 26 structured citations on the live corpus resolve. The falsifier is known to fire rather than assumed to: a planted unresolvable 40-hex token fails the audit.</p><p><strong>Two choices in the test worth keeping.</strong> The record count is asserted <code>&gt; 0</code> rather than pinned to a literal, so it cannot rot into a fuse the way a snapshot of a moving number does. And the exemption fix is verified by a marker the change <em>introduced</em> together with the absence of the one it removed, rather than by the suite merely staying green.</p><p><strong>This section is the plan's own thesis turned on the plan's own machinery.</strong> The document asks what it means for a landed record to mean landed; the answer here is that for 116 records it meant nothing, because the check that would have spoken for them never ran. A guard reporting a safety it does not provide is invisible precisely because an empty finding list and a working scan look identical.</p><p>Two consequences are recorded as follow-ons and are out of this node's scope: the scan reads the docs-server five-project mount set in preference to the thirteen-project config set, so widening would take the corpus to 208 archive records; and a wider corpus contains prose-mentioned unresolvable shas — including one this repository quotes deliberately as a counter-example — which a future widening must not promote into cited claims.</p></div>
     </article>
   </section>
  </main>

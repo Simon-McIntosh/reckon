@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-obligations-hook-reads-a-snapshot">
   <meta name="plan-title" content="The Obligations Hook Reads A Snapshot">
   <meta name="plan-summary" content="The per-turn obligations hook reads a snapshot the always-on producer publishes, so it answers in milliseconds instead of re-deriving the fleet.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="12.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,7 +23,7 @@
   <title>The Obligations Hook Reads A Snapshot | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="112">
+<meta name="plan-version" content="113">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;}">
 </head>
@@ -380,10 +380,11 @@
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot §21</pre>
     <p class="r-fu-outcome">§21 landed at ee407e9d8: the stop hook rechecks each worktree-held row against the run's per-run record and the tree on disk as it reads it, and drops a row whose tree was released after the sweep. The 81 MB aggregate ledger is never opened on the hook path, and each row costs one small per-run file parse plus one stat. The 18-file obligations and hook population measured clean. Every section of this plan is now done.</p>
     </article>
-<article class="r-fu" data-id="f-tohras-013" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-04T07:48:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tohras-013" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-04T07:48:00Z" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-04T09:11:34+00:00" data-resolved-by="">
     <h4 class="r-fu-title">compose the landed record and ship</h4>
     <div class="r-fu-body"><p>Every section is done. Compose <code>docs/evidence/archive/the-obligations-hook-reads-a-snapshot-landed.html</code> (<code>plan-evidence-for</code> this plan) from the section fragments under <code>docs/evidence/fragments/the-obligations-hook-reads-a-snapshot/</code>, then set the plan's status to shipped.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-obligations-hook-reads-a-snapshot</pre>
+    <p class="r-fu-outcome">done — no followup. The landed record docs/evidence/archive/the-obligations-hook-reads-a-snapshot-landed.html is synthesized from 54 committed runs, 74 section comments and 78 commits, composed with the plan's fragments. It audits with no error and reads plan-verdict qualified: §16's latest implementing run failed on a pre-existing red base, and every other section's latest run passed. Composing it first exposed two closure defects, fixed as landed-record-at-closure §7 (the verdict) and §8 (fragment ids checked where written).</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -491,6 +492,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20261004T074818494622" data-who="" data-when="">
     <div class="r-comment-body"><p>§21 landed on 2026-10-04, merged at ee407e9d8. A worktree-held row is rechecked at read time, and dropped when the run's per-run record shows its worktree released or the tree is no longer a directory. The first head fell back to parsing the 81 MB aggregate <code>crew.json</code> (0.8 s) when a per-run file was missing; that fallback was removed before review, so a missing record is no evidence and the tree stat decides. Measured on 18 obligations and hook files at main e1e9c9c35: 170 passed at base and head. Review scored 96.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20261004-shipped" data-who="s22-coord" data-when="2026-10-04T11:14:00Z">
+    <div class="r-comment-body"><p><strong>Shipped 2026-10-04.</strong> Every section is done, and the closure record exists and audits clean. The first synthesis, at 10:00, read <code>plan-verdict</code> fail and failed audit on three element ids shared across fragments. Neither was a defect in this plan's work; both were defects in how closure evidence is composed. landed-record-at-closure §7 and §8 repaired them, and the record was then re-synthesized.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261002T125957426768-hook-reads-the-snapshot" data-who="reckon-build" data-when="2026-10-02T14:46:08.574Z">
     <div class="r-comment-body"><p>the prompt path reads the session's published snapshot (reader loaded by file path, no crew facade, none of the three derivation modules in a fresh process; session resolved from the follower registrations; freshness() and live_payload() consumed; local-lane rewrite, formatting and digest unchanged; a not-fresh snapshot answered by one line naming the reason and the remedy; snapshot never written; exit 0 in every case) and the gate's two arms add no failure id — head 97 passed against base 92 passed, the same two pre-existing skill-contract ids — with the second-slowest of 20 fresh-process prompt-hook invocations at 112.7 ms against the 250 ms target</p></div>
