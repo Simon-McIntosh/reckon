@@ -51,6 +51,7 @@ from reckon.crew.node import (
     _SAFE_ID,
     _TERMINAL_RUN_PHASES,
     normalize_section,
+    done_when_warnings,
     negative_control_finding,
     gate_population_finding,
     parse_duration,
@@ -3329,6 +3330,7 @@ class DispatchPlan:
     token_budget: int | None = None
     local: bool = False
     warnings: list[str] = field(default_factory=list)
+    done_when_warnings: list[dict[str, str]] = field(default_factory=list)
     competence: dict[str, Any] | None = None
     authority: dict[str, Any] | None = None
     live_conflicts: list[dict[str, Any]] | None = None
@@ -3400,6 +3402,7 @@ class DispatchPlan:
             "validation": self.validation.as_dict(),
             "write_paths": list(self.node.write_paths),
             "warnings": list(self.warnings),
+            "done_when_warnings": [dict(item) for item in self.done_when_warnings],
         }
         if self.competence is not None:
             payload["competence"] = dict(self.competence)
@@ -5349,6 +5352,7 @@ def plan_dispatch(
         execution_fit=execution_fit,
         local=local_resolved,
         warnings=warnings,
+        done_when_warnings=done_when_warnings(node.done_when),
         authority=resolved_authority,
         requested_backend=requested_backend or None,
         default_backend=str(config.get("default_backend") or "") or None,
@@ -7111,6 +7115,9 @@ def dispatch(
                     ]
                 ),
                 *([released_follower_warning] if released_follower_warning else []),
+            ],
+            "done_when_warnings": [
+                dict(item) for item in resolution.done_when_warnings
             ],
             "directory_claim_acceptances": list(accepted_directory_claims),
             "lineage": lineage,

@@ -143,16 +143,47 @@ _ABSOLUTE_GREEN_GATE = re.compile(
     r"[^.;\n]{0,80}?\b(?:exits?|returns?)\s+0\b",
     re.IGNORECASE,
 )
-_GREEN_BASE_REVISION = re.compile(
-    r"\bgreen\s+at\s+base\s+[0-9a-f]{7,40}\b", re.IGNORECASE
+_BASE_REVISION_CITATION = re.compile(
+    r"\b(?:green\s+at|against)\s+base\s+[0-9a-f]{7,40}\b",
+    re.IGNORECASE,
 )
 _DELTA_AGAINST_BASE = re.compile(
     r"\b(?:adds?\s+no\s+(?:new\s+)?failures?\s+(?:to|over|against)"
     r"|zero\s+added\s+failures?\s+against"
     r"|no\s+added\s+failures?(?:\s+by\s+id)?\s+against)"
-    r"\s+(?:the\s+)?base\b",
+    r"\s+(?:the\s+)?base\b"
+    r"|\badds?\s+no\s+(?:new\s+)?failures?\b"
+    r"|\bno\s+regressions?\s+(?:versus|against|relative\s+to)\s+(?:the\s+)?base\b"
+    r"|\bsame\s+failures?\s+as\s+(?:the\s+)?base\b",
     re.IGNORECASE,
 )
+_NAMED_PYTEST_CHECK = re.compile(
+    r"\btests/[\w./-]+\.py(?:\:\:[\w-]+)?\b", re.IGNORECASE
+)
+
+
+def done_when_warnings(done_when: str) -> list[dict[str, str]]:
+    """Report named absolute-green checks whose base state the text leaves unknown."""
+    if _BASE_REVISION_CITATION.search(done_when) or _DELTA_AGAINST_BASE.search(
+        done_when
+    ):
+        return []
+    checks: dict[str, None] = {}
+    for match in _ABSOLUTE_GREEN_GATE.finditer(done_when):
+        target = _NAMED_PYTEST_CHECK.search(match.group(0))
+        if target:
+            checks.setdefault(target.group(0), None)
+    return [
+        {
+            "check": check,
+            "detail": (
+                f"base state for named check {check} is unstated or uncited; "
+                "cite a green base revision or state the delta against base"
+            ),
+        }
+        for check in checks
+    ]
+
 
 # An unresolved template placeholder names nothing the worker can act on, so a
 # goal or a done-when may not carry one that survives into the brief. A quoted
@@ -1183,16 +1214,6 @@ def validate_node(
                     "measured-or-unmeasured evidence can pass with universal absence; "
                     "name a positive numerical measured-coverage floor and a base count",
                 )
-        if _ABSOLUTE_GREEN_GATE.search(done_when) and not (
-            _GREEN_BASE_REVISION.search(done_when)
-            or _DELTA_AGAINST_BASE.search(done_when)
-        ):
-            fail(
-                "demonstrable",
-                "a named check demanded to exit 0 must state the revision where it "
-                "is green (for example, 'green at base <sha>') or use a delta "
-                "measure (for example, 'adds no failure to base')",
-            )
 
     unlocked = [key for key in node.requires_decisions if key not in locked]
     if unlocked:

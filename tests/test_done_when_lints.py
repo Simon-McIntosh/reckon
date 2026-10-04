@@ -9,7 +9,21 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import cli
+from reckon import cli, crew
+
+CONFIG = {
+    "default_backend": "worker",
+    "backends": {
+        "worker": {
+            "launch": "cli",
+            "command": "codex",
+            "sandbox": "worktree-full",
+            "time_budget": "20m",
+        }
+    },
+    "roles": {"implement": {}},
+    "fences": {"time_budget": "20m"},
+}
 
 
 @pytest.fixture()
@@ -50,23 +64,7 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         json.dumps({"sample": str(root / "docs")}), encoding="utf-8"
     )
     monkeypatch.setenv("RECKON_HOME", str(home))
-    monkeypatch.setattr(
-        cli,
-        "_resolved_flight",
-        lambda *_args, **_kwargs: {
-            "default_backend": "worker",
-            "backends": {
-                "worker": {
-                    "launch": "cli",
-                    "command": "codex",
-                    "sandbox": "worktree-full",
-                    "time_budget": "20m",
-                }
-            },
-            "roles": {"implement": {}},
-            "fences": {"time_budget": "20m"},
-        },
-    )
+    monkeypatch.setattr(cli, "_resolved_flight", lambda *_args, **_kwargs: CONFIG)
     return root
 
 
@@ -182,27 +180,28 @@ def test_absence_markers_need_coverage_floor_and_base_count(repository: Path) ->
 
 def test_absolute_green_accounts_for_red_named_base(repository: Path) -> None:
     check = "pytest tests/test_preexisting.py exits 0, before value of 14 failing tests"
-    refused, payload = _verdict(repository, check)
-    assert refused != 0
-    assert "green at base" in json.dumps(payload)
-    assert "adds no failure to base" in json.dumps(payload)
+    admitted, payload = _verdict(repository, check)
+    assert admitted == 0, payload
+    assert payload["validation"]["ok"]
+    assert len(payload["done_when_warnings"]) == 1
+    assert payload["done_when_warnings"][0]["check"] == "tests/test_preexisting.py"
+    assert "unstated or uncited" in payload["done_when_warnings"][0]["detail"]
 
-    admitted_delta, payload = _verdict(repository, check + "; adds no failure to base")
-    assert admitted_delta == 0, payload
+    for delta in (
+        "adds no failure to base",
+        "adds no failure",
+        "no regressions versus base",
+        "same failures as base",
+        "no added failures by id against the base",
+    ):
+        admitted_delta, payload = _verdict(repository, check + "; " + delta)
+        assert admitted_delta == 0, payload
+        assert payload["done_when_warnings"] == []
 
     flagged_check = "pytest -q tests/test_preexisting.py exits 0"
-    flagged_refused, payload = _verdict(repository, flagged_check)
-    assert flagged_refused != 0
-    flagged_delta, payload = _verdict(
-        repository, flagged_check + "; adds no failure to base"
-    )
-    assert flagged_delta == 0, payload
-    existing_tests_delta, payload = _verdict(
-        repository,
-        flagged_check
-        + "; existing checks show no added failures by id against the base",
-    )
-    assert existing_tests_delta == 0, payload
+    flagged_admitted, payload = _verdict(repository, flagged_check)
+    assert flagged_admitted == 0, payload
+    assert payload["done_when_warnings"][0]["check"] == "tests/test_preexisting.py"
 
     (repository / "tests" / "test_preexisting.py").write_text(
         "def test_preexisting_failure():\n    assert 1 == 1\n", encoding="utf-8"
@@ -217,13 +216,18 @@ def test_absolute_green_accounts_for_red_named_base(repository: Path) -> None:
     ).stdout.strip()
     accepted, payload = _verdict(repository, check + f"; green at base {revision}")
     assert accepted == 0, payload
+    assert payload["done_when_warnings"] == []
+    cited, payload = _verdict(repository, check + f"; against base {revision}")
+    assert cited == 0, payload
+    assert payload["done_when_warnings"] == []
 
     (repository / "tests" / "test_preexisting.py").write_text(
         "def test_preexisting_failure():\n    assert 1 == 2\n", encoding="utf-8"
     )
     _commit_assertion(repository)
-    refused_again, payload = _verdict(repository, check)
-    assert refused_again != 0
+    admitted_again, payload = _verdict(repository, check)
+    assert admitted_again == 0, payload
+    assert payload["done_when_warnings"][0]["check"] == "tests/test_preexisting.py"
 
     marker = repository / "test-was-executed"
     (repository / "tests" / "test_side_effect.py").write_text(
@@ -232,8 +236,29 @@ def test_absolute_green_accounts_for_red_named_base(repository: Path) -> None:
         f"    Path({str(marker)!r}).write_text('executed')\n",
         encoding="utf-8",
     )
-    side_effect_refused, _ = _verdict(
+    side_effect_admitted, payload = _verdict(
         repository, "pytest tests/test_side_effect.py exits 0, before value of 0"
     )
-    assert side_effect_refused != 0
+    assert side_effect_admitted == 0, payload
+    assert payload["done_when_warnings"][0]["check"] == "tests/test_side_effect.py"
+    assert not marker.exists()
+
+    record = crew.dispatch(
+        node=crew.TaskNode(
+            id="actual-dispatch",
+            goal="record one measured result",
+            plan="sample-plan",
+            section="sample",
+            spec_level="exact",
+            done_when=check,
+            write_paths=["package/target.py"],
+            time_budget="20m",
+        ),
+        project="sample",
+        repo=repository,
+        config=CONFIG,
+        session="fixture-session",
+        launcher=lambda *_args, **_kwargs: 4242,
+    )
+    assert record["done_when_warnings"][0]["check"] == "tests/test_preexisting.py"
     assert not marker.exists()
