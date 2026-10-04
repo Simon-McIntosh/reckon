@@ -31,7 +31,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import crew
+from reckon import crew, ledger
 from reckon._plan_html import write_state
 from reckon.crew import runs
 from reckon.crew.node import CrewError
@@ -282,6 +282,31 @@ def test_a_valid_rule_carries_its_resolved_raise(tree: tuple[Path, Path]) -> Non
         {"field": "verification", "from": "standard", "to": "strict"},
     ]
     assert resolution.backend == RAISED_LANE
+
+
+def test_unreadable_run_history_records_failure_and_uses_role_routing(
+    tree: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config_home, repo = tree
+
+    def unreadable_history(*_args, **_kwargs):
+        raise ledger.LedgerError("conflicting run history")
+
+    monkeypatch.setattr(ledger, "indexed_headers", unreadable_history)
+    plan_path = repo / "docs" / "plans" / f"{SLUG}.html"
+    with pytest.raises(ledger.LedgerError, match="conflicting run history"):
+        resolve_section_routing(
+            VALID, node=_node(repo, config_home), plan_path=plan_path
+        )
+
+    resolution = _resolve(repo, config_home, VALID)
+    assert resolution.validation.ok is True, resolution.validation.findings
+    assert resolution.backend == LANE
+    assert _failure(resolution.as_dict()) == {
+        "section": SECTION,
+        "exception": "LedgerError",
+        "detail": "conflicting run history",
+    }
 
 
 def test_the_pointer_carries_the_failure_too(
