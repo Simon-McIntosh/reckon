@@ -26,7 +26,9 @@ def crew_server(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     (plans / "visible-work.html").write_text(
         '<meta name="reckon-type" content="plan">'
         '<meta name="plan-slug" content="visible-work">'
-        '<meta name="plan-status" content="active">',
+        '<meta name="plan-status" content="active">'
+        '<meta name="plan-sprint" content="current">'
+        '<meta name="plan-effort-hours" content="2.0">',
         encoding="utf-8",
     )
     mounts = home / "mounts.json"
@@ -39,7 +41,11 @@ def crew_server(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        yield {"home": home, "port": server.server_port}
+        yield {
+            "home": home,
+            "port": server.server_port,
+            "plan_path": plans / "visible-work.html",
+        }
     finally:
         server.shutdown()
         server.server_close()
@@ -125,3 +131,35 @@ def test_crew_responds_within_one_second_over_forty_live_pointers(
     assert sum(row["last_activity"] is not None for row in payload["runs"]) == 39
     print(f"GET /crew over 40 live pointers: {elapsed:.3f} s", flush=True)
     assert elapsed < 1.0
+
+
+def test_plan_navigation_refreshes_after_its_file_changes(
+    crew_server, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    home = crew_server["home"]
+    _write_pointer(
+        home,
+        "run-plan",
+        home / "crew" / "runs" / "run-plan" / "stream.jsonl",
+        phase="working",
+    )
+    calls = 0
+    original = serve._plan_html.read_state
+
+    def observe_head(text: str) -> dict:
+        nonlocal calls
+        calls += 1
+        return original(text)
+
+    monkeypatch.setattr(serve._plan_html, "read_state", observe_head)
+    _, first = _crew_response(crew_server["port"])
+    _, repeated = _crew_response(crew_server["port"])
+    assert calls == 1
+    assert first["runs"][0]["sprint_href"] == "/sample/#sprint/current"
+    assert repeated["runs"][0]["sprint_href"] == "/sample/#sprint/current"
+
+    plan = crew_server["plan_path"]
+    plan.write_text(plan.read_text().replace('content="current"', 'content="next"'))
+    _, changed = _crew_response(crew_server["port"])
+    assert calls == 2
+    assert changed["runs"][0]["sprint_href"] == "/sample/#sprint/next"
