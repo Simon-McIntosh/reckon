@@ -788,6 +788,27 @@ def capabilities_command(rebuild, pretty, project):
     _emit({"rebuilt": bool(rebuild), **payload}, pretty)
 
 
+@main.command(name="probe-held-blocker")
+@click.option("--project", required=True, help="Project owning the blocker.")
+@click.option(
+    "--checkout-path",
+    default=None,
+    type=click.Path(path_type=Path),
+    help="Optional repository checkout root; defaults to the mounted project.",
+)
+@click.argument("blocker_id")
+def probe_held_blocker(project, checkout_path, blocker_id):
+    """Evaluate a held blocker's registered probe and report its finding."""
+    from reckon.project_state import ProjectStateError, evaluate_held_blocker
+
+    docs_dir = _project_docs_root(project, checkout_path)
+    try:
+        report = evaluate_held_blocker(docs_dir, project, blocker_id)
+    except (ProjectStateError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    _emit(report, pretty=False)
+
+
 @main.group(name="tag")
 def tag():
     """Commands for resource tag operations."""

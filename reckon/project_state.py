@@ -778,6 +778,20 @@ def _validate_resource(resource_type: str, data: dict[str, Any]) -> dict[str, An
         )
         cleaned.pop("n", None)
         cleaned["version"] = int(data.get("version", 0) or 0)
+        if "probe" in cleaned and (
+            not isinstance(cleaned["probe"], str) or not cleaned["probe"].strip()
+        ):
+            raise ValueError("blocker probe must be a non-empty registered id")
+        if "probe" in cleaned and (
+            not isinstance(cleaned.get("subject"), str)
+            or not cleaned["subject"].strip()
+        ):
+            raise ValueError("blocker subject must be non-empty text")
+        if cleaned.get("status") == "cleared" and (
+            not isinstance(cleaned.get("cleared_reason"), str)
+            or not cleaned["cleared_reason"].strip()
+        ):
+            raise ValueError("cleared blocker requires a recorded reason")
     elif resource_type == "timeline":
         events = cleaned.get("events", [])
         if not isinstance(events, list):
@@ -1321,6 +1335,59 @@ def _derive_blocker_counts(
     ]
 
 
+def evaluate_held_blocker(
+    docs_dir: Path, project: str, blocker_id: str
+) -> dict[str, Any]:
+    """Run one named probe and record its finding when a held subject arrives."""
+    from reckon.held_probes import PROBES, ProbeFinding
+
+    blocker, version = read_resource(docs_dir, project, "blocker", blocker_id)
+    if blocker.get("kind") != "held":
+        raise ProjectStateError(f"blocker {blocker_id!r} is not held")
+    probe_id = blocker.get("probe")
+    if not isinstance(probe_id, str) or probe_id not in PROBES:
+        raise ProjectStateError(f"unknown held blocker probe id: {probe_id!r}")
+    if blocker.get("status") == "cleared":
+        reason = blocker.get("cleared_reason")
+        if not isinstance(reason, str) or not reason.strip():
+            raise ProjectStateError(f"cleared blocker {blocker_id!r} has no reason")
+        return {"id": blocker_id, "status": "cleared", "reason": reason}
+    subject = blocker.get("subject")
+    if not isinstance(subject, str) or not subject.strip():
+        raise ProjectStateError(f"held blocker {blocker_id!r} has no subject")
+    finding = PROBES[probe_id](docs_dir, project, subject)
+    if (
+        not isinstance(finding, ProbeFinding)
+        or not isinstance(finding.arrived, bool)
+        or not isinstance(finding.finding, str)
+        or not finding.finding.strip()
+    ):
+        raise ProjectStateError(f"probe {probe_id!r} returned an invalid finding")
+    report = {
+        "id": blocker_id,
+        "probe": probe_id,
+        "subject": subject,
+        "finding": finding.finding,
+    }
+    if not finding.arrived:
+        return {**report, "status": "held"}
+    reason = f"probe {probe_id}: {finding.finding}"
+    write_resource(
+        docs_dir,
+        project,
+        "blocker",
+        blocker_id,
+        {
+            **blocker,
+            "status": "cleared",
+            "cleared_reason": reason,
+            "cleared_at": datetime.now(UTC).isoformat(timespec="seconds"),
+        },
+        version,
+    )
+    return {**report, "status": "cleared", "reason": reason}
+
+
 def _hydrate_items(
     docs_dir: Path, project: str, sprints: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
@@ -1495,7 +1562,20 @@ def compose_project_state(docs_dir: Path, project: str) -> dict[str, Any]:
         for sprint in sprints
         for warning in sprint.get("compatibility_warnings", [])
     ]
+    cleared = {
+        str(blocker.get("id"))
+        for blocker in blockers
+        if blocker.get("status") == "cleared" and blocker.get("cleared_reason")
+    }
     hydrated_sprints = _hydrate_items(docs_dir, project, sprints)
+    for sprint in hydrated_sprints:
+        for item in sprint.get("items", []):
+            if isinstance(item, dict) and "blocked_by" in item:
+                item["blocked_by"] = [
+                    blocker_id
+                    for blocker_id in item["blocked_by"]
+                    if blocker_id not in cleared
+                ]
     liveness = sprint_liveness(project, docs_dir)
     focus_id = focus_sprint_id(hydrated_sprints, liveness)
     composed = {
@@ -2140,6 +2220,7 @@ def _close_sprint_with_carry_forward(
     blocker_kind = {
         str(blocker.get("id")): str(blocker.get("kind") or "").strip() or "explicit"
         for blocker in composed.get("blockers", [])
+        if blocker.get("status") != "cleared" or not blocker.get("cleared_reason")
     }
 
     incomplete: list[dict[str, Any]] = []
