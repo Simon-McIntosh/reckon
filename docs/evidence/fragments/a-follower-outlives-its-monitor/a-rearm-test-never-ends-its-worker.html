@@ -61,4 +61,28 @@
     <code>/proc</code> hit per iteration; none was seen in 30. Producer reloads
     under measure still exec, inside the children those cases own.
   </p>
+  <h3>The stacked measure, and the importer it caught</h3>
+  <p>
+    A later measure stacked the main revision <code>11e86b0ff</code> against
+    its merge with this head, over 130 follower files at <code>-n 8</code>. No
+    worker crashed in either arm, so the defect this change removes stayed
+    removed with the change merged. The same measure found one failure the
+    change had added, and it was deterministic: a case importing the arming
+    helper and calling it with no rows list, which the helper had begun to
+    require, failed three times of three at the head and passed three times of
+    three at the base revision.
+  </p>
+  <p>
+    The list is optional again: a case that passes one still has the child's
+    rows appended to it, and a case that passes none has them replayed through
+    the <code>cli._echo_follow_line</code> it installed, which is the capture
+    shape the importing modules were written against. Both importer files run
+    green with the three re-arm files &mdash; 49 tests in 94&nbsp;s without
+    xdist workers, and 49 in 18&nbsp;s at <code>-n 8</code> &mdash; and the two
+    importer files alone passed four tests in each of three consecutive
+    <code>-n 8</code> runs. The same five files were then put through the
+    loaded loop at the delivered revision: three iterations, no crashed worker
+    and no reload launcher naming the tree, with the four failures that did
+    appear being the exact-pane cases drawing the stale-producer line above.
+  </p>
 </section>
