@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="263">
+<meta name="plan-version" content="264">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1856,6 +1856,9 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261004T000119388166-the-two-thread-leaks-hold-at-the-merged-head" data-who="reckon-build" data-when="2026-10-04T00:10:02.995Z">
     <div class="r-comment-body"><p>Five -n 8 repetitions of the six thread-leak files at fdd9dd7d3 all hold: 138 passed each, EXIT=0, zero FAILED/ERROR/thread-exception lines (load_before 6.00-11.09, covering the 8.84 band of the last pre-repair red); both pre-existing load-only reds (test_a_report_keeps_a_discovery_newer_than_the_report, test_byte_scan_miss_never_parses_aggregate_or_opens_other_run) are green, zero new failures, so the verdict is held and section 2's close condition is met.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261004T001205658772-the-integrated-suite-at-76ed64992-half-1" data-who="reckon-build" data-when="2026-10-04T01:15:30.234Z">
+    <div class="r-comment-body"><p>Half-1 (446 odd-position files) at 76ed64992 measured twice. Worktree (real checkout, Section 2&#x27;s measure): 2 failed / 6756 passed / 28 skipped / 0 errors in 1188.80 s, EXIT=1; both reds in tests/test_obligations_snapshot_is_published.py pass solo (3.00 s / 2.54 s) -&gt; load-only; vs the stated base: 2 fixed (the append_run error in-arm; page_paints solo-verified at the pin), 0 remaining, 2 new load-only reds. Extraction tree (brief&#x27;s recipe): 19 failed / 6738 passed / 28 skipped in 946.14 s, EXIT=1; all 19 deterministic and all artifacts of the unborn-HEAD/history-less tree (worktree control + empty-HEAD probe), 0 product regressions.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
