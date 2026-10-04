@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -1002,6 +1003,17 @@ def _red_base_gate_finding(node: TaskNode, repository: Path) -> dict[str, str] |
             cwd=repository,
             capture_output=True,
             text=True,
+            env={
+                **os.environ,
+                "PYTHONPATH": os.pathsep.join(
+                    part
+                    for part in (
+                        str(repository.resolve()),
+                        os.environ.get("PYTHONPATH", ""),
+                    )
+                    if part
+                ),
+            },
             timeout=10,
             check=False,
         )
