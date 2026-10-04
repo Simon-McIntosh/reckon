@@ -378,8 +378,10 @@ def _named_config_home(pid: int) -> Path | None:
     return None
 
 
-def reapable_watch_pids(root: Path) -> list[int]:
-    """Pids this run may terminate, from the records under ``root``.
+def reapable_watch_pids(root: Path, *, include_named_half: bool = True) -> list[int]:
+    """Pids this run may terminate, from the records under ``root`` and, when
+    ``include_named_half``, from live producers whose environment names a home
+    under ``root``.
 
     A record names the pid that registered it at the time it registered, which
     is a claim about the past: the number may since have been reused by an
@@ -389,6 +391,28 @@ def reapable_watch_pids(root: Path) -> list[int]:
     session teardown into a signal aimed at somebody else's watcher. A pid whose
     environment cannot be read is refused too — an unreadable environment is not
     evidence that the process is ours.
+
+    The second half reaches a producer that has not written its record yet: a
+    test that arms one and ends before the record landed leaves nothing for the
+    record path to find. That half is a scan of every live process, so a caller
+    that does not need it — the session-end reap, which reaps records and reads
+    liveness for the rest — passes ``include_named_half=False`` and pays nothing
+    for it.
+    """
+    recorded = set(_recorded_watch_pids(root))
+    if include_named_half:
+        recorded.update(unrecorded_watch_producers_naming(root))
+    return sorted(recorded)
+
+
+def _recorded_watch_pids(root: Path) -> list[int]:
+    """Pids this run may terminate, from the records under ``root`` alone.
+
+    The record names a pid, but the number may since have been reused by an
+    unrelated process; the process's own environment names the home it reports
+    into, and only a pid whose environment names the record's home is ours. A
+    pid whose environment cannot be read is refused — an unreadable environment
+    is not evidence that the process is ours.
     """
     pids: list[int] = []
     for pid, home in watcher_record_pids(root):
@@ -397,6 +421,44 @@ def reapable_watch_pids(root: Path) -> list[int]:
             continue
         pids.append(pid)
     return pids
+
+
+def unrecorded_watch_producers_naming(root: Path) -> list[int]:
+    """Live watch producers naming a configuration home under ``root``.
+
+    The record-based reap reaches only a producer that reached its seat. A
+    producer armed but not yet registered when its test ends has no record to be
+    found by, and would survive the per-test reap to fail the session-end scan.
+    Its own environment still names the home it reports into, so a live producer
+    naming a home under this test's tree is this test's to end whatever it has
+    written. The standard is the record reap's: a process whose environment
+    cannot be read, or that names any other home, is left alone — an unreadable
+    environment is not evidence the process is ours, and another home is
+    somebody else's producer.
+    """
+    try:
+        wanted = root.resolve()
+    except OSError:
+        wanted = root
+    found: list[int] = []
+    for pid, named in _live_watch_producers():
+        resolved = _resolve(named)
+        if resolved == wanted or wanted in resolved.parents:
+            found.append(pid)
+    return found
+
+
+def per_test_reap_pids(root: Path, *, armed: bool) -> list[int]:
+    """The pids a per-test reaper signals, for a test that did or did not arm.
+
+    A test marked ``arms_watch_producer`` may have armed a producer that never
+    wrote its record, so its reap reads both the records under ``root`` and the
+    live producers whose environment names a home under it. An unmarked test
+    arms nothing — the shared fixture suppresses arming for it — so its reap is
+    the record path alone, and the whole-host process scan the named half costs
+    is not paid after every ordinary test.
+    """
+    return reapable_watch_pids(root, include_named_half=armed)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -418,7 +480,7 @@ def reaped_watch_producers(tmp_path_factory):
     """
     root = tmp_path_factory.getbasetemp()
     yield
-    reaped = reapable_watch_pids(root)
+    reaped = reapable_watch_pids(root, include_named_half=False)
     for pid in reaped:
         signal_worker(pid, signal.SIGTERM)
     await_exit(reaped)
@@ -448,22 +510,33 @@ def await_exit(pids: list[int], grace: float = _REAP_GRACE_SECONDS) -> None:
 
 
 @pytest.fixture(autouse=True)
-def reap_watch_producers_armed_by_this_test(tmp_path, tmp_path_factory):
+def reap_watch_producers_armed_by_this_test(request, tmp_path, tmp_path_factory):
     """Reap, before the test's temporary homes are pruned, what it armed.
 
     A detached watch producer is found through the seat record under its
     configuration home. When temporary directories are kept only for failures,
     that home is removed at the test's own end — before the session-scoped
-    reaper runs — so the record the reap depends on is already gone and the
-    surviving producer is left to fail the session's liveness scan. Signalling
-    here, at this test's teardown, keeps the record in place long enough to
-    attribute the producer; requesting ``tmp_path`` makes this fixture finalize
-    before ``tmp_path`` does. A producer that never wrote a record is not listed
-    here and is still caught by the session-end scan.
+    reaper runs — so the session-end scan is left answering for a producer whose
+    record is already gone. Signalling here, at this test's teardown, keeps the
+    record in place long enough to attribute the producer; requesting
+    ``tmp_path`` makes this fixture finalize before ``tmp_path`` does.
+
+    The record is not the only way to reach a producer. A producer that has been
+    armed but has not yet written its record when the test ends is invisible to
+    the record-based reap, and would survive this fixture to fail the session-end
+    scan. So a test that armed a producer also reaps the live producers whose own
+    environment names a home under the base temp tree (``per_test_reap_pids``).
+    That named half is a scan of every live process, so it runs only for a test
+    marked ``arms_watch_producer``: every other test has arming suppressed and
+    nothing of its own to find, and paying the scan after each of them would tax
+    the whole suite for a case none of them produce. A producer that escapes
+    both halves — one naming a home this test did not create — is still caught
+    by the session-end scan.
     """
     yield
     root = tmp_path_factory.getbasetemp()
-    reaped = sorted(set(reapable_watch_pids(root)))
+    armed = request.node.get_closest_marker(ARMING_MARKER) is not None
+    reaped = per_test_reap_pids(root, armed=armed)
     for pid in reaped:
         signal_worker(pid, signal.SIGTERM)
     await_exit(reaped)
