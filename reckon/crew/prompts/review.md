@@ -38,6 +38,12 @@ this node at all. So, explicitly:
   are out of scope for this verdict; name them only if the landed change makes
   them reachable.
 
+One read outside the diff is always allowed, because the reuse judgement
+depends on it. For each function, class or module the diff adds, search the
+repository for an existing mechanism with the same capability — search by
+capability, not by name — and open the owner you name; this is the one read
+outside the diff the bound allows, and the bound otherwise stands.
+
 ## The assertions the run added
 
 Durability asks whether a test exists that fails if the change regresses, and a
@@ -79,7 +85,11 @@ one another; never rank, weigh or compare them.
   and green assertion is not that test on its own; judge it by the rule under
   *The assertions the run added* above.
 - **fit** — the change matches the idiom of the code around it and introduces
-  no name the repository naming rules forbid.
+  no name the repository naming rules forbid. A change that adds a function,
+  class or module whose capability the repository already owns, without
+  extending that owner, scores fit below 10, and the review emits a FINDING
+  naming the owning file and whether the addition extends, wraps or duplicates
+  it.
 
 ## The revision you record
 
