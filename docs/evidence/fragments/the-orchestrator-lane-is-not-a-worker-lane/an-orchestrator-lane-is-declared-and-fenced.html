@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="reckon-type" content="evidence">
+  <meta name="docs-project" content="reckon">
+  <meta name="plan-slug" content="the-orchestrator-lane-is-not-a-worker-lane">
+  <meta name="plan-evidence-for" content="the-orchestrator-lane-is-not-a-worker-lane">
+  <title>Landing: a lane declares the orchestrator role, and dispatch reads it | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; landing record</p>
+      <h1>Landing: a lane declares the orchestrator role, and dispatch reads it</h1>
+      <p class="lead">A backend declares <code>serves_orchestrators</code> in flight config, and a dispatch whose resolved lane declares it stops before anything is written, naming the lane, why it is fenced and a discharge. The stop records rather than refuses, per &sect;4: the locally served lane's after-repair death rate is not stated, so refusing would move a review onto a lane that does not finish it.</p>
+    </header>
+
+    <section id="landing-what-landed">
+      <h2>What landed</h2>
+      <ul>
+        <li><code>reckon/schema/flight.yaml</code> &mdash; <code>serves_orchestrators</code> added to <code>BackendConfig</code>, declared and never inferred from a backend's name; absent means the lane serves no orchestrator.</li>
+        <li><code>reckon/_flight_schema.py</code>, <code>docs/_shared/flight.schema.json</code> &mdash; both regenerated from the LinkML source.</li>
+        <li><code>reckon/crew/dispatch.py</code> &mdash; <code>_dispatch_orchestrator_lane_stop</code> reads the resolved backend's declaration and returns the stop; it is composed in <code>plan_dispatch</code> beside the lane gate, carried as <code>DispatchPlan.orchestrator_lane_stop</code> into the payload, appended to the plan's warnings and written to the run record. <code>_orchestrator_lane_discharge_candidates</code> names the configured lanes that serve no orchestrator and can resolve the node.</li>
+        <li><code>tests/test_orchestrator_lane_fence.py</code> &mdash; seven cases: the declaring lane's stop and its discharge, the schema default, the declaration removed on the same node and lane, a non-declaring lane launching, the stop on the launched run's record, and the ordering probe that no pointer exists when the declaration is read.</li>
+      </ul>
+    </section>
+
+    <section id="landing-reproduction">
+      <h2>Reproduction at the base</h2>
+      <p>The declared mutation is the base revision itself, with this node's test file overlaid: at <code>657e199ba75b7bcdfc67cadfd37592cecc68a19c</code> no backend can declare the orchestrator role, so every case fails there.</p>
+      <pre><code>7 failed in 18.57s
+EXIT=1</code></pre>
+      <p>Log: <code>negative-control-base.log</code> in the run directory, whose header names the scratch tree and the module the run resolved (<code>&hellip;/base-657e199ba/reckon/crew/dispatch.py</code>).</p>
+    </section>
+
+    <section id="landing-measure">
+      <h2>Measure</h2>
+      <p>Gate: the test files importing <code>reckon.crew.dispatch</code> or <code>reckon._flight_schema</code> &mdash; 170 files at head, 169 at base &mdash; each arm in its own tree.</p>
+      <ul>
+        <li>Head arm at <code>7a09344676704a71b1b466a9558c88946f69117e</code>, whole population, eight workers: <code>2 failed, 1941 passed, 5 skipped, 1 error</code>, <code>EXIT=1</code>.</li>
+        <li>Base arm at <code>657e199ba75b7bcdfc67cadfd37592cecc68a19c</code>: the whole-population arm reached 7% in about five minutes alongside a peer session's own population gate on this host, and was stopped unfinished rather than run past the node's deadline. The base arm kept is the head arm's own bad outcomes re-run at base &mdash; the two failing ids and <code>tests/conftest.py</code>, three workers: <code>9 passed, 1 error</code>, <code>EXIT=1</code>. That is what the delta needs: the head arm over the whole population returned those three outcomes and no others, so a base that carries each of them leaves nothing added.</li>
+        <li>Delta: the <code>ERROR</code> is <code>tests/conftest.py::test_temp_config_home</code>, which is raised identically in both arms (the file is collected as a test module and <code>fixture 'prefix' not found</code>), so it is carried, not added. The two <code>FAILED</code> ids do not reproduce at base, so they were re-run at both revisions: four interleaved rounds over the two files, three workers each, head and base alternating so drifting host load lands on both alike &mdash; <code>9 passed</code> in all eight arms, head included. Both are process-spawn cases whose assertions race a child process (an empty file read mid-write; a pointer read before its supervisor recorded a pid), and the population arms ran eight workers while a peer session's population gate held the host at load 11&ndash;15. They are load flakes at population scale, and neither is reachable from this revision. Caveat: a full-population base arm at equal concurrency was not obtainable inside the time fence, so the delta is the bad-outcome set compared across the two revisions rather than a same-scale rerun.</li>
+        <li>Negative control: <code>7 failed</code>, <code>EXIT=1</code> &mdash; every case in the new file, which the head arm passes.</li>
+      </ul>
+    </section>
+
+    <section id="landing-logs">
+      <h2>Logs</h2>
+      <ul>
+        <li><code>gate-population-head.log</code> &mdash; the head arm over the whole population.</li>
+        <li><code>gate-population-base.log</code> &mdash; the base arm, narrowed to the head arm's bad outcomes; its header carries the narrowing and the reason for it.</li>
+        <li><code>gate-population-head-narrowed.log</code> &mdash; the head arm at that same narrowed invocation, so the two narrowed arms differ only in revision.</li>
+        <li><code>failure-attribution-arms.log</code> &mdash; the four interleaved head and base rounds.</li>
+        <li><code>negative-control-base.log</code> &mdash; the declared mutation.</li>
+      </ul>
+      <p>All of them are under the run directory, <code>~/.config/reckon/crew/runs/r-20261004T075900942644-an-orchestrator-lane-is-declared-and-fenced/</code>, and each gate log's header names the revision, the tree, the module it resolved as imported and the working directory it ran from.</p>
+    </section>
+  </main>
+</body>
+</html>
