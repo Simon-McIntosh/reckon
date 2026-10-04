@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="268">
+<meta name="plan-version" content="269">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -749,9 +749,15 @@
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §2</pre>
     <p class="r-fu-outcome">Measured at 76ed64992 in two halves in real worktrees: 10,929 passed, 6 failed, 0 errors. The first attempt at half 1 ran in a git-archive tree; its 19 extra reds read git history and pass in the worktree. Five of the six reds pass alone. The sixth was a race in the test, repaired and merged as e7521753e. §2 is collapsed. Evidence anchor s2-pinned-full-suite-at-76ed64992.</p>
     </article>
-<article class="r-fu" data-id="f-tsigah-load-only-ids-from-the-pinned-measure" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-04T02:20:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tsigah-load-only-ids-from-the-pinned-measure" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-04T02:20:00Z" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-04T03:54:50+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Five load-only ids from the pinned measure join §3&#x27;s list</h4>
     <div class="r-fu-body">The full-suite run at 76ed64992 found five ids that fail under -n 8 and pass alone. Two are in test_obligations_snapshot_is_published.py: test_a_slow_sweep_does_not_hold_the_next_transition, which waited 30 s for a sweep that never started, and test_a_file_change_and_the_floor_tick_each_republish. s22-coord is investigating both against its sweep-joining fixture. The other three are test_every_attempt_is_supervised.py::test_a_killed_resumed_worker_leaves_its_attempt_exit_record (a 3 s wait), test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs (10.4 s against the 8.0 s bound at load 11 to 24, after s25-picker's dispatch fix brought the median to 5 s alone), and test_spa_browser_harness.py::test_timeout_reap_takes_the_spawned_child_with_the_driver. §3's measure 'Load-sensitive ids robust' covers them.</div>
+    <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §3</pre>
+    <p class="r-fu-outcome">Corrected and replaced. The two test_obligations_snapshot_is_published.py ids are not load-only. s22-coord measured an order-dependent module split: two by-path loaders, snapshot_module() in reckon/hooks/coordinator_obligations.py and the loader near reckon/cli.py:3012, assign sys.modules['reckon.crew.obligation_snapshot'] unconditionally. A hook test earlier in the same xdist worker therefore leaves the producer's _SWEEPS in a second module instance. s22-coord's the-snapshot-loader-keeps-one-instance owns the fix. The three remaining ids carry over to the followup below.</p>
+    </article>
+<article class="r-fu" data-id="f-tsigah-three-load-only-ids-for-section-three" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-04T03:00:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Three load-only ids from the pinned measure join §3&#x27;s list</h4>
+    <div class="r-fu-body">The full-suite run at 76ed64992 found three ids that fail under -n 8 and pass when run alone. The first is test_every_attempt_is_supervised.py::test_a_killed_resumed_worker_leaves_its_attempt_exit_record, which waits 3 s for an exit record. The second is test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs, which took 10.4 s against its 8.0 s bound at load 11 to 24, after s25-picker's dispatch fix had brought the median to 5 s when run alone. The third is test_spa_browser_harness.py::test_timeout_reap_takes_the_spawned_child_with_the_driver. §3's measure 'Load-sensitive ids robust' covers them. The two obligations-snapshot ids from the same run are not load-only. They are a module split owned by s22-coord (the-snapshot-loader-keeps-one-instance).</div>
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §3</pre>
     </article>
 </section>
