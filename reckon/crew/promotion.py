@@ -34,6 +34,8 @@ from reckon.crew.dispatch import (
     project_mount_repository,
     remove_worker_scratch,
     resolve_project_repository,
+    tree_size_bytes,
+    worker_scratch_root,
 )
 from reckon.crew.node import (
     NEGATIVE_CONTROL_FIELD,
@@ -6187,6 +6189,204 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+# ── Cited arm directories ───────────────────────────────────────────────────
+#
+# A worker's arms do not always land under its own scratch directory: a
+# basetemp, a control tree or an extraction goes to whatever path its brief
+# named, and the only record that knows the run owns it is the manifest that
+# cites it. The release reads those citations, bounded to the node-local temp
+# root the scratch root sits beneath, so a cited directory outside that root —
+# or one another live run's pointer or manifest also cites — is reported and
+# left in place rather than reached for.
+
+_CITED_ABSOLUTE_PATH = re.compile(r"/(?:[^\s\"'`()\[\]{}<>,;]+)")
+_CITED_PATH_EDGE_PUNCTUATION = ".,:;)]}\"'"
+
+
+def _string_leaves(value: Any) -> Iterable[str]:
+    """Every string anywhere inside one manifest-shaped value."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, Mapping):
+        for item in value.values():
+            yield from _string_leaves(item)
+    elif isinstance(value, (list, tuple, set, frozenset)):
+        for item in value:
+            yield from _string_leaves(item)
+
+
+def _cited_absolute_paths(value: Any) -> list[Path]:
+    """Every absolute path spelled anywhere in a manifest's fields or text.
+
+    The manifest's written form is the source, so a citation is found in
+    whatever field the manifest put it in rather than in a vocabulary this
+    reader fixed: a worker names its arms in the keys it chooses. Trailing
+    sentence punctuation is stripped — a path cited inside a sentence ends at
+    the path, not at the full stop after it — and a token that strips to the
+    root is dropped, because removing / is never a reading of a citation.
+    """
+    found: list[Path] = []
+    for text in _string_leaves(value):
+        for match in _CITED_ABSOLUTE_PATH.findall(text):
+            token = match.rstrip(_CITED_PATH_EDGE_PUNCTUATION)
+            if len(token) > 1:
+                found.append(Path(token))
+    return found
+
+
+def _other_live_run_citations(run_id: str) -> dict[Path, str]:
+    """The paths every other live run cites, with the run that cites each.
+
+    Both halves of a live run's own record are read, because either may cite a
+    tree: the pointer carries the scratch directory the launch was given, while
+    the arms live in the manifest the pointer names.
+    """
+    citations: dict[Path, str] = {}
+    for other in list_live():
+        other_id = str(other.get("run_id") or "")
+        if not other_id or other_id == run_id:
+            continue
+        for path in _cited_absolute_paths([other, _manifest_text(other)]):
+            citations.setdefault(path.resolve(), other_id)
+    return citations
+
+
+def remove_cited_arms(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Remove the directories a run's manifest cites as arms, keeping the rest.
+
+    The reach is bounded: a directory is removed only when it resolves under
+    the node-local temp root, which is the parent of the run's scratch root,
+    and never when it is, contains, or lies inside the repository, the run
+    directory or the scratch root — nor when any other live run's pointer or
+    manifest cites it. A cited log inside a directory that is about to go is
+    copied into ``<run directory>/cleared-arms`` first, so the evidence outlives
+    the tree that held it; a log that cannot be copied holds its directory in
+    place, because a removal that destroys evidence is worse than a tree left
+    for a later sweep. Every removal and every keep is enumerated on the
+    result; nothing is selected by a name pattern.
+    """
+    result: dict[str, Any] = {
+        "arms_removed_paths": [],
+        "arms_kept": [],
+        "arms_logs_copied": [],
+    }
+    manifest_text = _manifest_text(record)
+    if not manifest_text:
+        return result
+    scratch_root = worker_scratch_root().resolve()
+    temp_root = scratch_root.parent
+    run_dir_path = run_directory_of(record)
+    protections: list[tuple[Path, str]] = []
+    for label, value in (
+        ("the run's repository", record.get("repo")),
+        ("the run's worktree", record.get("worktree")),
+    ):
+        text = str(value or "").strip()
+        if text:
+            protections.append((Path(text).resolve(), label))
+    if run_dir_path is not None:
+        protections.append((Path(run_dir_path).resolve(), "the run directory"))
+
+    citations = _cited_absolute_paths(manifest_text)
+    cited_logs = [
+        path for path in citations if not path.is_symlink() and path.is_file()
+    ]
+    live_citations = _other_live_run_citations(str(record.get("run_id") or ""))
+    targets: list[tuple[Path, Path]] = []
+    seen: set[Path] = set()
+    for path in citations:
+        if path.is_symlink() or not path.is_dir():
+            continue
+        resolved = path.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        if resolved == temp_root or not resolved.is_relative_to(temp_root):
+            result["arms_kept"].append(
+                {
+                    "path": str(resolved),
+                    "reason": f"outside the node-local temp root {temp_root}",
+                }
+            )
+            continue
+        if resolved.is_relative_to(scratch_root):
+            # The run's own scratch subtree is cleared and recorded by the
+            # release step that owns it, so its accounting stays in one place.
+            continue
+        protected_by = next(
+            (
+                label
+                for root, label in protections
+                if resolved == root or resolved.is_relative_to(root)
+            ),
+            "",
+        )
+        if protected_by:
+            result["arms_kept"].append(
+                {"path": str(resolved), "reason": f"inside {protected_by}"}
+            )
+            continue
+        contains = next(
+            (label for root, label in protections if root.is_relative_to(resolved)),
+            "",
+        )
+        holder = next(
+            (
+                other_id
+                for cited, other_id in live_citations.items()
+                if resolved == cited or cited.is_relative_to(resolved)
+            ),
+            "",
+        )
+        if contains or holder:
+            reason = f"cited by live run {holder}" if holder else f"contains {contains}"
+            result["arms_kept"].append({"path": str(resolved), "reason": reason})
+            continue
+        targets.append((path, resolved))
+
+    # Deepest first, so a cited arm nested inside another is copied and removed
+    # on its own account before its parent's removal can take it silently.
+    targets.sort(key=lambda item: len(item[1].parts), reverse=True)
+    for path, resolved in targets:
+        size = tree_size_bytes(path)
+        copied: list[dict[str, str]] = []
+        copy_failure = ""
+        for cited in cited_logs:
+            try:
+                relative = cited.resolve().relative_to(resolved)
+            except (OSError, ValueError):
+                continue
+            if run_dir_path is None:
+                copy_failure = f"cited log {cited} has no run directory to survive in"
+                break
+            destination = run_dir_path / "cleared-arms" / resolved.name / relative
+            try:
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(cited, destination)
+            except OSError as exc:
+                copy_failure = (
+                    f"cited log {cited} could not be copied into the run "
+                    f"directory: {exc}"
+                )
+                break
+            copied.append({"log": str(cited), "path": str(destination)})
+        if copy_failure:
+            result["arms_kept"].append({"path": str(resolved), "reason": copy_failure})
+            continue
+        print(f"removing cited arm directory {path} ({size} bytes)")
+        try:
+            shutil.rmtree(path)
+        except OSError as exc:
+            result["arms_kept"].append(
+                {"path": str(resolved), "reason": f"removal failed: {exc}"}
+            )
+            continue
+        result["arms_removed_paths"].append({"path": str(resolved), "bytes": size})
+        result["arms_logs_copied"].extend(copied)
+        print(f"removed cited arm directory {path}")
+    return result
+
+
 def _release_run_workspace(
     record: Mapping[str, Any],
     retention: Mapping[str, str] | None = None,
@@ -6320,6 +6520,10 @@ def _release_run_workspace(
             budget_bytes=WORKER_SCRATCH_BUDGET_BYTES,
         )
     )
+    # Cited arms outside the scratch directory are cleared after that step, so
+    # what the scratch removal already took — and recorded — is not reported a
+    # second time as a cited arm that is no longer present.
+    result.update(remove_cited_arms(record))
     return result
 
 
@@ -8463,6 +8667,9 @@ def _remove_discarded_worktree(record: Mapping[str, Any]) -> dict[str, Any]:
             "scratch_bytes",
             "scratch_removed_paths",
             "scratch_warning",
+            "arms_removed_paths",
+            "arms_kept",
+            "arms_logs_copied",
         )
         if key in release
     }
