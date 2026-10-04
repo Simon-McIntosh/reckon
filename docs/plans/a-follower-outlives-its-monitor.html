@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-follower-outlives-its-monitor">
   <meta name="plan-title" content="A Follower Outlives Its Monitor">
   <meta name="plan-summary" content="The host kills every follower at thirty minutes, and the re-arm then hides exactly the runs that changed during the gap and need the coordinator.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="6.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-impl" content="0.86">
-<meta name="plan-version" content="75">
+<meta name="plan-version" content="76">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -559,6 +559,12 @@
     <pre class="r-fu-prompt">/reckon-build a-follower-outlives-its-monitor</pre>
     <p class="r-fu-outcome">All four items landed (merged cd6c7f31a; commits ad8cbac53, 5b7312b31, 9ac0530d7, beb198512, 4536c411c and 226c51e39; reviews 82, then 97 after a repair round). (1) The sweep runs on its own thread and is abandoned at the deadline; a poll stubbed to block past the lifetime ends within one second of it. (2) The deadline is converted to the watch loop's clock once, at arming, so a reload spends the original grant plus one poll interval. The reload case uses an injected clock and fails at base. (3) The reader checkpoint travels only in the re-exec mapping and the arming variable is dropped at start, so no child carries RECKON_FOLLOWER_CHECKPOINT or RECKON_WATCH_ARMING. (4) A dispatch refused on follower conditions names every unmet condition in one refusal, beside the one follower command. The first round dropped the refusal of a non-cli launch with watch_required and no live producer. The review caught it and the repair round restored it for every launch kind, with its own control. Gate: base 6 failed, all new cases; head passes. Follow-ons: the watcher remedy sentence duplicates node.py's single copy, and the two load-dependent cases in tests/test_follow_lifetime_survives_reload.py sit outside this node's scope. Re-applied after peer merge 8fbcdadf6 dropped the first write (89df8bcd7).</p>
     </article>
+<article class="r-fu" data-id="f-afoim-closure" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-04T11:20:00Z" data-recommends-skill="/reckon-build a-follower-outlives-its-monitor" data-resolved-at="2026-10-04T09:13:31+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Closure</h4>
+    <div class="r-fu-body"><p>Every non-deferred section is done and the closure record exists.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-follower-outlives-its-monitor</pre>
+    <p class="r-fu-outcome">done — no followup</p>
+    </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s5" data-id="c-20260923T0100-s5-measured" data-who="reckon-ship" data-when="2026-09-23T01:00:00+00:00">
@@ -599,6 +605,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20261004T071548944363" data-who="" data-when="">
     <div class="r-comment-body"><p>§12 landed on 2026-10-04, merged at 33ba375ed.</p><p><strong>Mechanism.</strong> A follower re-executes in place when the content stamp over its source moves. Three re-arm test files ran the real follower inside the xdist worker, and their reload cases append probe bytes to the follower's source. A parallel case therefore saw the stamp move and replaced the worker process. At base, under a loaded loop with an oscillating source edit, 9 workers crashed, each matched to a follower reload launcher observed in <code>/proc</code>.</p><p><strong>Fix.</strong> Each case now runs its follower in a child process it owns, with the code stamp held still.</p><p><strong>Measure.</strong> The loaded loop runs 30 iterations at head with no crashed worker. The coordinator's 130-file follower population at <code>-n 8</code> against main 11e86b0ff had 1 failure at base and 1576 passed at head, with no crashed worker. Earlier tonight the same population showed 3 to 5 flaky failures per sample plus crashes.</p><p>A first head broke <code>test_follower_keeps_memory.py</code>, which imports the changed helper. The helper now keeps its old signature. Reviews scored 97 and then 96.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20261004-shipped" data-who="s22-coord" data-when="2026-10-04T11:20:00Z">
+    <div class="r-comment-body"><p><strong>Shipped 2026-10-04.</strong> Every section except the deferred §1 is done. §11, the measure that a follower survives its host's expiry, was confirmed met by an independent check. The closure record synthesizes 43 committed runs, 59 comments and 47 commits. It audits with no error and reads <code>plan-verdict</code> qualified, because at least one section's latest implementing run did not end on a passed gate. §1 stays deferred and is not carried as open work.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T044801073919-review-of-a-follower-outlives-its-monitor" data-who="reckon-ship" data-when="2026-09-23T06:20:18.145Z">
     <div class="r-comment-body"><p>read-back of a-follower-outlives-its-monitor: 41 multi-reading sentences, 9 material; §4 and §7 revised at c08c55da, §3 items carried to its review</p></div>

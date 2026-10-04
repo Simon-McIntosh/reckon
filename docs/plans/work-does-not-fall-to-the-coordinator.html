@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="work-does-not-fall-to-the-coordinator">
   <meta name="plan-title" content="Work Does Not Fall To The Coordinator">
   <meta name="plan-summary" content="Seven hand-compensations across 27 landings. The remedy is a toolset that closes its own gaps, not a coordinator told to do less.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="7.0">
   <meta name="plan-capability-version" content="1.0">
@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-modified" content="2026-10-04">
-<meta name="plan-version" content="122">
+<meta name="plan-version" content="123">
 <meta name="plan-impl" content="1.0">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;deferred&quot;,&quot;s8&quot;:&quot;deferred&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
@@ -1003,6 +1003,12 @@
     <pre class="r-fu-prompt">/reckon-build work-does-not-fall-to-the-coordinator §12</pre>
     <p class="r-fu-outcome">done — no followup. The pointer named §12, which is declared done, and every section of the plan is done; what remains is the plan's closure record, which the coordinator synthesizes when it ships the plan.</p>
     </article>
+<article class="r-fu" data-id="f-wdnftc-closure" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-10-04T11:20:00Z" data-recommends-skill="/reckon-build work-does-not-fall-to-the-coordinator" data-resolved-at="2026-10-04T09:13:33+00:00" data-resolved-by="">
+    <h4 class="r-fu-title">Closure</h4>
+    <div class="r-fu-body"><p>Every section is done and the closure record exists.</p></div>
+    <pre class="r-fu-prompt">/reckon-build work-does-not-fall-to-the-coordinator</pre>
+    <p class="r-fu-outcome">done — no followup</p>
+    </article>
 </section>
 
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -1205,6 +1211,9 @@ promotion.py:2858   ledger.build_record(…)       &lt;- raises "a passing gate 
 </div>
 <div class="r-comment" data-section="_top" data-id="c-wdnftc-s12-already-landed" data-who="" data-when="">
     <div class="r-comment-body"><p>All three clauses of §12 have landed, each with a commit on main and a test that pins it. <code>bd575117b</code> counts the failures a reviewed run added, by id (<code>tests/test_review_counts_added_failures.py</code>). <code>4cfc76a42</code> keys session reuse to the task (<code>tests/test_session_resumes_only_its_own_task.py</code>). <code>bef172dd5</code> gates the landing contract on the role that may land paths (<code>tests/test_landing_contract_and_gate_agree.py</code>). Found by the read-only audit moved-sections-already-landed (run r-20261003T055306768573, reviewed at 95). s22-coord confirmed that each commit is an ancestor of main and that each test file exists.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20261004-shipped" data-who="s22-coord" data-when="2026-10-04T11:20:00Z">
+    <div class="r-comment-body"><p><strong>Shipped 2026-10-04.</strong> Every section is done. The closure record synthesizes 73 committed runs, 123 comments and 78 commits. It audits with no error and reads <code>plan-verdict</code> pass.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20260921T124048265335-where-a-manifest-is-written-and-what-could-check-it" data-who="reckon-ship" data-when="2026-09-21T13:39:09.055Z">
     <div class="r-comment-body"><p>reuse map for the write-time manifest check: audit_manifest (reports.py:941) is the reusable entry point and has no production caller, negative_control_log is absent from _MANIFEST_SCHEMA so the guard at promotion.py:3047 is its only implementation, and both recorded refusal shapes reproduce at 31c976a4</p></div>
