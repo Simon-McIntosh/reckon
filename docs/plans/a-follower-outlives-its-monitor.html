@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-impl" content="0.86">
-<meta name="plan-version" content="74">
+<meta name="plan-version" content="75">
 <meta name="plan-modified" content="2026-10-04">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -538,7 +538,7 @@
     </div>
 
     <h2 id="s11">§11 — Keep the follower attached across the host&#x27;s expiry</h2>
-<section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s11" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p>§2, §3 and §6 are independent. §4 shares <code>reckon/cli.py</code> with §3 and runs after it. §5 waits on the measurement plan's staleness census.</p><p><strong>Done when</strong> a follower survives its host's expiry (§2, §3, §6 independent; §4 after §3).</p><p>Moved from followup f-afoim-001 on a-follower-outlives-its-monitor by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.86; §2/§3/§4/§6 named in body</p>
 
     <h2 id="s12">§12 — A follower re-arm test never takes down its xdist worker</h2>
@@ -734,6 +734,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261004T080035273625-check-a-follower-survives-host-expiry" data-who="reckon-build" data-when="2026-10-04T08:24:01.995Z">
     <div class="r-comment-body"><p>§11 closure check at main 657e199ba: measure MET — clauses land as C1 §2 (35aef068/e5e8f9b4), C2 §3 (a7302ba5), C3 §8 (701bb535/f4d06be2; a3dadfa0/b32af75e), C5 §4 (cad415bb9), C6 §6 (68359e28/eec6b824), C7 §7 (adccdba3/208fa22b), C8 §5+census (dbaff2b09); all clause tests green at 657e199ba (42 passed, 2 skipped, EXIT=0 across three gates) and both mutation arms reproduce red; one part is delivered by no section 2–10/12 — the poll-bounded arming (C4), landed under f-afoim-handoff-01 (cd6c7f31a) — and nothing in the measure is undelivered at main.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-20261004-s11-met" data-who="s22-coord" data-when="2026-10-04T10:28:00Z">
+    <div class="r-comment-body"><p><strong>Declared done on an independent check at main 657e199ba</strong> (investigation run r-20261004T080035273625). Each clause of the measure maps to a landed section, its commit and its test: §2 (35aef068, e5e8f9b4), §3 (a7302ba5), §8 (701bb535, f4d06be2, a3dadfa0, b32af75e), §4 (cad415bb9), §6 (68359e28, eec6b824), §7 (adccdba3, 208fa22b), and §5 with its census (dbaff2b09). The clause tests passed at that revision: 42 passed and 2 skipped across three gates, exit 0. Both mutation arms reproduced red. One clause, the poll-bounded arming, was delivered by no numbered section; it landed under followup f-afoim-handoff-01 (cd6c7f31a). No part of the measure is undelivered at main. With §1 deferred and every other section done, the plan's remaining step is its closure record, which waits on landed-record-at-closure §8 so the composed record audits clean.</p></div>
 </div>
 </section>
 </main>
