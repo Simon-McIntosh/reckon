@@ -55,6 +55,40 @@ ASSERTION_INDEPENDENCE_PHRASES = (
     ),
 )
 
+# The two sentences the prompt must carry so the review judges reuse. The first
+# is the fit clause: a new definition whose capability an existing owner already
+# provides, and which does not extend that owner, is a fit defect that scores
+# below the tier floor and emits a FINDING naming the owner. The second is the
+# reading instruction that lets the reviewer find that owner: one read outside
+# the diff, by capability rather than by name. Both are held below the same
+# falsifier, and the control asserts the falsifier is sensitive to their
+# deletion rather than merely present.
+REUSE_FIT_CLAUSE = (
+    "A change that adds a function, class or module whose capability the "
+    "repository already owns, without extending that owner, scores fit below "
+    "10, and the review emits a FINDING naming the owning file and whether the "
+    "addition extends, wraps or duplicates it"
+)
+REUSE_SEARCH_CLAUSE = (
+    "For each function, class or module the diff adds, search the repository "
+    "for an existing mechanism with the same capability — search by capability, "
+    "not by name — and open the owner you name"
+)
+REUSE_CLAUSE_SENTENCE_NOTE = (
+    "the prompt no longer states the reuse judgement the review must make"
+)
+
+
+def _states_the_reuse_judgement(prompt: str) -> bool:
+    collapsed = " ".join(prompt.split())
+    return REUSE_FIT_CLAUSE in collapsed and REUSE_SEARCH_CLAUSE in collapsed
+
+
+def _without_the_reuse_clause(prompt: str) -> str:
+    collapsed = " ".join(prompt.split())
+    return collapsed.replace(REUSE_FIT_CLAUSE, "").replace(REUSE_SEARCH_CLAUSE, "")
+
+
 DIMENSION_ONLY_REVIEW = "\n".join(
     f"SCORE {dimension}: 12" for dimension in review_module.REVIEW_DIMENSIONS
 )
@@ -77,6 +111,16 @@ def test_prompt_requires_an_added_assertion_to_be_able_to_fail() -> None:
             "the prompt no longer asks the reviewer to check that an added "
             f"assertion can fail: {phrase!r} is missing"
         )
+
+
+def test_prompt_requires_the_review_to_judge_reuse() -> None:
+    prompt = review_module.load_review_prompt()
+    assert _states_the_reuse_judgement(prompt), REUSE_CLAUSE_SENTENCE_NOTE
+    stripped = _without_the_reuse_clause(prompt)
+    assert not _states_the_reuse_judgement(stripped), (
+        "the reuse check passes on the prompt with the clause deleted, so it "
+        "does not hold the reuse text it claims to"
+    )
 
 
 def test_review_module_no_longer_claims_it_is_unwired() -> None:
