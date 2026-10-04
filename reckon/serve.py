@@ -733,12 +733,7 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
     for name in referenced_projects:
         docs = mounts[name]
         try:
-            try:
-                roster, _version = ledger.load(name, docs.parent, headers_only=True)
-            except TypeError as exc:
-                if "unexpected keyword argument 'headers_only'" not in str(exc):
-                    raise
-                roster, _version = ledger.load(name, docs.parent)
+            roster, _version = ledger.load(name, docs.parent, headers_only=True)
         except (OSError, ledger.LedgerError):
             roster = {"members": []}
         roster_by_project[name] = {
