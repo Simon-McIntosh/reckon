@@ -32,23 +32,22 @@
         on the review run reports it while the reviewer still holds its turn.
         Both refusals name the stored sha and the head the reviewed worktree
         actually carries. A record about a run with no readable pointer or
-        tree is not judged, so no correct record is refused on a guess.</p>
+        tree is not judged, so no correct record is refused on a guess. Each
+        carried value is resolved through
+        <code>reckon.crew.recovery._resolve_commit</code>, the function that
+        already answered whether a revision names a commit in a tree; the
+        <code>--verify</code>, <code>--end-of-options</code> and timeout
+        hardening lives there, so one resolver serves both callers.</p>
       <p>Gate: <code>tests/test_a_review_records_shas_resolve.py</code> — 7
-        passed, 0 failed at <code>f0f47e6d4</code>. Population of test files
-        importing <code>reckon.crew.review</code> or
-        <code>reckon.crew.reports</code> (89 files at <code>-n 8</code>):
-        baseline <code>8a04f102f</code> 1184 passed, 0 failed; head
-        <code>f0f47e6d4</code> 1176 passed, 8 failed. All eight share one
-        cause, and it is the guard doing its stated job: three fixtures outside
-        this node's write scope store <code>BASE = "1" * 40</code> as a record's
-        <code>reviewed_base_sha</code>, a value that names no commit, so
-        <code>store_review</code> now refuses the record their setup stores.
-        The affected files, ids and the one-line repair are named in the
-        manifest's <code>failure_attribution</code> and
-        <code>follow_ons</code>. Negative control — both resolution checks
-        removed in a copy of the head tree — 4 failed, 3 passed,
-        <code>EXIT=1</code>: the 38-character head case passes both refusals,
-        and only the four refusal cases fail.</p>
+        passed, 0 failed at <code>3ba5eb79a</code>, and the three review
+        fixture files whose records the guard judges pass with it (20 passed
+        over the four files). Population of test files importing
+        <code>reckon.crew.review</code> or <code>reckon.crew.reports</code>
+        (89 files at <code>-n 8</code>): baseline <code>8a04f102f</code> 1184
+        passed, 0 failed; head <code>3ba5eb79a</code> 1184 passed, 0 failed.
+        Negative control — both resolution checks removed in a copy of the
+        head tree — 4 failed, 3 passed, <code>EXIT=1</code>: the 38-character
+        head case passes both refusals, and only the four refusal cases fail.</p>
     </section>
   </main>
 </body>
