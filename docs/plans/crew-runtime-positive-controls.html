@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="308">
+<meta name="plan-version" content="309">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -2224,6 +2224,9 @@
 </div>
 <div class="r-comment" data-section="s53" data-id="c-20261004-s53-landed" data-who="s22-coord" data-when="2026-10-04T11:56:00Z">
     <div class="r-comment-body"><p><strong>Landed at merge b7761e3a7.</strong> Both readers this section names now resolve their tree through <code>_record_tree</code> in <code>reckon/crew/promotion.py</code>. It returns the record's worktree, else its repo, and otherwise no tree. A blank field therefore never becomes <code>Path('.')</code>. <code>_run_promoted_revision</code> returns an empty revision rather than the ambient head, and the review gate passes no tree. The gate-evidence fixture names a real worktree, so <code>tests/test_gate_evidence.py</code> passes from a directory outside any repository. Measured at a stacked merge of main 39ed4f2d8 over 57 importer files: 505 passed at base, with one flake that did not recur, and 511 passed at head. Review scored 95. Its findings were that the manifest omitted the run's last commit, which promotion named, and that the run wrote its suites as prose rather than structured fields. Four more readers in <code>promotion.py</code> keep the same fallback, recorded in §54.</p></div>
+</div>
+<div class="r-comment" data-section="s53" data-id="c-run-r-20261004T094353514674-review-of-an-empty-worktree-field-is-absent" data-who="reckon-build" data-when="2026-10-04T09:55:24.428Z">
+    <div class="r-comment-body"><p>independent review of run r-20261004T090324518502 stored at base 060d94f50eb15f12d1922401450b8685723321e9 / head b51a693edef8e3f4f2dc318a2cb2863de9ba6c0f; five dimensions scored (goal_fidelity 20, evidence 19, scope_discipline 18, durability 19, fit 19; total 95), added_failure_count 0 with ids [] derived from the reviewed run&#x27;s population-base.log vs population-head.log, two follow-on findings (manifest omits head commit b51a693e; suite evidence recorded as prose rather than baseline_suite/after_suite fields).</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
