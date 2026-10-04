@@ -5378,15 +5378,20 @@ def plan_dispatch(
             )
         _require_write_paths_in_authority(node, resolved_authority)
         if node.brief.strip():
-            # A brief names no committed plan section, so the gates that join a
-            # node to a base blob and a stored review have nothing to read and
-            # are skipped around their call sites rather than inside the shared
-            # gate. The digest is taken from the run's own stored copy whenever
-            # dispatch has made one — a later read (a lane change, a resume)
-            # rebuilds the node from the pointer, and the source path a
-            # coordinator handed in may be a scratch file no longer on disk.
-            # At first dispatch no copy exists yet, so the source is read.
+            # A brief is authority text whether it stands alone or beside a
+            # plan section, so its digest is taken either way. It is taken
+            # from the run's own stored copy whenever dispatch has made one —
+            # a later read (a lane change, a resume) rebuilds the node from the
+            # pointer, and the source path a coordinator handed in may be a
+            # scratch file no longer on disk. At first dispatch no copy exists
+            # yet, so the source is read.
             node.brief_sha256 = _brief_digest(node.brief_path or node.brief)
+        if not node.plan.strip():
+            # A brief alone names no committed plan section, so the gates that
+            # join a node to a base blob and a stored review have nothing to
+            # read and are skipped around their call sites rather than inside
+            # the shared gate. A brief beside a plan section takes the plan
+            # branch below: the plan is still the authority the gates read.
             resolved_authority["plan"] = {
                 **resolved_authority["plan"],
                 "base_sha": "",

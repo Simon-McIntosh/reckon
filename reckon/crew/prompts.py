@@ -456,12 +456,28 @@ def compose_prompt(
     scope_lines = "\n".join(f"  {path}" for path in node.write_paths) or "  none"
     section = f" {node.section}" if node.section else ""
     # The plan pointer is the plan-section read instruction, and the plan name
-    # and section it names are the whole of it. A brief replaces that block in
-    # place and verbatim, so the brief prompt carries no plan pointer; every
-    # other part of the contract is composed for both carriers.
-    task_authority = (
-        f"BRIEF\n{brief}" if brief else f"PLAN     {project}:{node.plan}{section}"
-    )
+    # and section it names are the whole of it. A brief alone replaces that
+    # block in place and verbatim, so a brief-only prompt carries no plan
+    # pointer. A brief beside a plan is the coordinator's instructions for
+    # that section: the pointer stays first, because the plan is the
+    # authority, and the brief follows it verbatim under its own heading.
+    # Every other part of the contract is composed for all three shapes.
+    plan_pointer = f"PLAN     {project}:{node.plan}{section}"
+    if brief and node.plan:
+        task_authority = (
+            f"{plan_pointer}\n"
+            "BRIEF    (the coordinator's instructions for this section; the plan "
+            "above stays the authority)\n"
+            f"{brief}"
+        )
+    elif brief:
+        task_authority = f"BRIEF\n{brief}"
+    else:
+        task_authority = plan_pointer
+    # The landing carrier follows the plan, not the brief: a node naming a plan
+    # lands on its section however it was briefed, and only a brief with no
+    # plan behind it lands on the run's own record.
+    brief_only = bool(brief) and not node.plan
     specification_guidance = {
         "exact": (
             "SPEC     exact — implement as written and run the named check; "
@@ -511,7 +527,7 @@ RUNTIME FILESYSTEM
         # carrier a brief already reads. A caller that resolves no plan
         # authority leaves the fact unset and keeps the plan carrier for a
         # writable node, the shape every direct composer has used.
-        run_record_carrier = bool(brief) or writes_landing_fragment is False
+        run_record_carrier = brief_only or writes_landing_fragment is False
         # The small-node rule ends on a conditional the worker cannot resolve
         # from inside its own node, so the clause stating which side of it this
         # node is on is composed per node from the node's own done-when. It is
@@ -543,7 +559,7 @@ RUNTIME FILESYSTEM
     landing_key = (
         "  landing: <exactly one line recording your landing record; this run names "
         "no plan section, so it stays on the run's own record>\n"
-        if brief
+        if brief_only
         else (
             "  landing: <exactly one line recording your landing record; promotion "
             "lands it as a comment on your plan section, so do not edit the plan>\n"

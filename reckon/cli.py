@@ -1646,8 +1646,10 @@ def crew_preflight(
     "brief_path",
     default="",
     help=(
-        "Path to a stored brief serving as the node's authority in place of a "
-        "committed plan section; mutually exclusive with --plan."
+        "Path to a stored brief. Alone, it is the node's authority in place of "
+        "a committed plan section. Beside --plan and --section it is the "
+        "coordinator's instructions for that section, carried verbatim while "
+        "the plan stays the authority and every plan gate still runs."
     ),
 )
 @click.option("--section", default="", help="Plan section the node implements.")
@@ -1875,15 +1877,6 @@ def crew_dispatch(
     from reckon.crew.dispatch import LanePaused, resolve_dispatch_route
     from reckon.crew.node import PlanReviewMissingError
 
-    if brief_path and plan_slug:
-        raise click.UsageError(
-            "--brief and --plan are mutually exclusive; pass exactly one authority"
-        )
-    if brief_path and section:
-        raise click.UsageError(
-            "--brief and --section are mutually exclusive; a brief names no "
-            "committed plan section"
-        )
     base_config = None
     try:
         if overrides:

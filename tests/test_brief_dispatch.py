@@ -5,8 +5,10 @@ both join the node to a plan blob and a stored review, must be skipped for it
 without loosening them for a plan dispatch. The brief is durable authority: the
 run keeps its own copy, and the pointer names the digest and the stored path so
 a later reader can open the exact bytes the worker read. The refusals a plan
-dispatch carries — a missing done-when, a stated second authority — apply to a
-brief dispatch unchanged.
+dispatch carries — a missing done-when, a section with no plan — apply to a
+brief dispatch unchanged. A brief beside a plan section is a third shape,
+briefed plan work, and takes the plan gates; it is covered in
+tests/test_brief_beside_a_plan_section.py.
 """
 
 from __future__ import annotations
@@ -242,9 +244,15 @@ def test_a_brief_dispatch_without_a_done_when_is_refused_as_not_dispatchable(
     assert _payload(result)["error"] == "not-dispatchable"
 
 
-def test_a_brief_and_a_plan_together_are_refused(
+def test_a_brief_beside_a_plan_reaches_the_plan_gate(
     brief_repo: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """The pair is accepted at argv and the plan it names is then checked.
+
+    The fixture commits no plan, so the refusal that lands is the committed
+    section gate's own — which is the proof that the brief did not route the
+    node around it.
+    """
     _config_home, repo, brief = brief_repo
     result = _invoke(
         repo,
@@ -255,12 +263,13 @@ def test_a_brief_and_a_plan_together_are_refused(
             node_id="brief-and-plan",
             done_when=DONE_WHEN,
             plan="some-plan",
+            section="s1",
             dry_run=True,
         ),
     )
 
-    assert result.exit_code != 0
-    assert "--brief and --plan are mutually exclusive" in result.output
+    assert result.exit_code == 4, result.output
+    assert _payload(result)["error"] == "plan-unavailable"
 
 
 def test_a_brief_and_a_section_together_are_refused(
@@ -281,8 +290,8 @@ def test_a_brief_and_a_section_together_are_refused(
         ),
     )
 
-    assert result.exit_code != 0
-    assert "--brief and --section are mutually exclusive" in result.output
+    assert result.exit_code == 2, result.output
+    assert "no plan" in json.dumps(_payload(result))
 
 
 def test_a_brief_dispatch_prompt_carries_the_brief_and_no_plan_pointer(

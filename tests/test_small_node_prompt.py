@@ -19,6 +19,8 @@ somewhere else in the prompt, and that it is a pure insertion.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from reckon.crew.node import TaskNode
 from reckon.crew.prompts import (
     ARTIFACT_NAMED_CLAUSE,
@@ -94,8 +96,9 @@ def _prompt(*, done_when: str = "") -> str:
 
 
 def _brief_prompt(*, done_when: str = "") -> str:
+    # A brief alone names no plan; a brief beside a plan keeps the plan carrier.
     return compose_prompt(
-        node=_node(done_when=done_when),
+        node=replace(_node(done_when=done_when), plan="", section=""),
         project="proj",
         worktree="/repo/worktrees/small-node-run",
         working_directory="/repo/worktrees/small-node-run",

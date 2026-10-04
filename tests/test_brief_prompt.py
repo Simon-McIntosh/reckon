@@ -13,6 +13,7 @@ the brief carrier existed.
 from __future__ import annotations
 
 import sys
+from dataclasses import replace
 
 import reckon.crew.prompts as prompts_mod
 from reckon.crew.node import NEEDS_HELP_MARKER, TaskNode
@@ -33,9 +34,10 @@ BRIEF_TEXT = (
     "shape of what you found for the next reader."
 )
 
-# The plan carrier keeps a plan and a section even when a brief carrier is
-# composed from the same node, so the brief assertions prove the plan pointer is
-# replaced rather than merely absent from the node.
+# The plan carrier names a plan and a section; the brief carrier is the same
+# node with neither, because a brief beside a plan section is briefed plan
+# work and keeps the plan pointer, while a brief alone replaces it. The brief
+# assertions below are about the brief-only shape.
 NODE = TaskNode(
     id="carrier-node",
     goal="compose the prompt for whichever authority carries this node",
@@ -59,9 +61,12 @@ MANIFEST_CHECK_HEADER = "CONTRACT — CHECK YOUR OWN RECORD BEFORE YOU CLOSE IT"
 SNAPSHOT_INTERPRETER = "/usr/bin/python3"
 
 
+BRIEF_NODE = replace(NODE, plan="", section="")
+
+
 def _compose(*, brief: str = "") -> str:
     return compose_prompt(
-        node=NODE,
+        node=BRIEF_NODE if brief else NODE,
         project="proj",
         worktree="/repo/worktree",
         working_directory="/repo/worktree",

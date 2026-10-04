@@ -7021,6 +7021,10 @@ def _require_brief_owner(
     node = record.get("node") or {}
     if not str(node.get("brief") or "").strip():
         return None
+    if str(node.get("plan") or "").strip():
+        # A brief beside a plan section is briefed plan work: the plan it
+        # names is its owner, so no discharge is needed.
+        return None
     role = str(record.get("role") or "")
     if role not in _IMPL_MOVE_ENFORCED_ROLES:
         return None
@@ -7068,11 +7072,12 @@ def _require_impl_moved(
         "at_dispatch": recorded_value,
         "at_complete": None,
     }
-    # A brief run names no plan section, so there is no plan impl to move and
-    # nothing for this guard to read. The skip is named here rather than left to
-    # the empty-plan branch so a reader of the row sees the run's carrier as the
-    # reason, not an absent plan that might read as a defect.
-    if str(node.get("brief") or "").strip():
+    # A brief-only run names no plan section, so there is no plan impl to move
+    # and nothing for this guard to read. The skip is named here rather than
+    # left to the empty-plan branch so a reader of the row sees the run's
+    # carrier as the reason, not an absent plan that might read as a defect. A
+    # brief beside a plan section is plan work and its impl is expected to move.
+    if str(node.get("brief") or "").strip() and not plan:
         check["verdict"] = "exempt"
         check["reason"] = "brief-names-no-plan"
         return check

@@ -1134,25 +1134,18 @@ def validate_node(
 
     plan = node.plan.strip()
     brief = node.brief.strip()
-    # The two carriers are mutually exclusive, and the reason is structural
-    # rather than stylistic: the brief branch of ``plan_dispatch`` takes the
-    # digest and skips the committed-section and plan-review gates around their
-    # call sites, so a node naming both is read as a brief and its plan section
-    # is silently never checked. The CLI refuses the pair at argv; this refuses
-    # it on the node, so a programmatic caller that builds a TaskNode directly
-    # cannot reach that skip with a plan section named.
-    if brief and (plan or node.section.strip()):
-        carriers = []
-        if plan:
-            carriers.append(f"plan {plan!r}")
-        if node.section.strip():
-            carriers.append(f"section {node.section.strip()!r}")
+    # A node names its authority in one of three shapes. A plan section alone
+    # is the committed authority. A brief alone stands in for one. A brief
+    # beside a plan section is the coordinator's instructions for that section:
+    # the plan stays the authority and every gate that joins the node to its
+    # committed section still runs, because ``plan_dispatch`` keys those gates
+    # on the plan being named rather than on the brief being absent. Only a
+    # node naming neither is refused.
+    if brief and not plan and node.section.strip():
         fail(
             "fully-specified",
-            f"the node carries a brief and also names {' and '.join(carriers)}; "
-            "a brief and a plan section are mutually exclusive — pass exactly one "
-            "authority, because the brief branch would otherwise skip the "
-            "committed-section and plan-review gates for the named section",
+            f"the node names section {node.section.strip()!r} and no plan; a "
+            "section is a plan's part, so name the plan it belongs to",
         )
     elif not plan and not brief:
         fail(
