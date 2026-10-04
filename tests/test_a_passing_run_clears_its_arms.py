@@ -170,9 +170,9 @@ def test_promotion_removes_declared_arms_and_keeps_the_rest(
         )
         + "\n"
         "artifacts:\n"
-        f"  - path: {outside}\n"
-        f"  - path: {base_arm}\n"
-        f"  - path: {shared}\n"
+        f"  - {outside}\n"
+        f"  - {base_arm}\n"
+        f"  - {shared}\n"
         f"checkpoint: checked the sibling at {shared} before promoting\n",
         encoding="utf-8",
     )
@@ -265,6 +265,52 @@ def test_a_directory_named_only_in_prose_is_not_removed(
     assert {row["path"] for row in release["arms_removed_paths"]} == {
         str(base_arm.resolve())
     }
+
+
+def test_an_artifact_description_is_not_a_declaration(
+    tmp_path: Path, monkeypatch
+) -> None:
+    world = _world(tmp_path, monkeypatch)
+    temp_root = world["temp_root"]
+    run_id = str(world["run_id"])
+    repository = world["repository"]
+    worktree = world["worktree"]
+
+    declared_arm = temp_root / "declared-artifact"
+    described = temp_root / "peer-session-tree"
+    for directory in (declared_arm, described):
+        directory.mkdir(parents=True)
+    (declared_arm / "payload.bin").write_bytes(b"arm")
+    (described / "peer.bin").write_bytes(b"peer")
+
+    manifest = tmp_path / "manifest.md"
+    manifest.write_text(
+        "node: sample\n"
+        "status: complete\n"
+        "artifacts:\n"
+        f"  {declared_arm}: the hand-off extraction this run produced; the peer "
+        f"tree at {described} is not this run's\n",
+        encoding="utf-8",
+    )
+    _pointer(repository, worktree, run_id, manifest)
+
+    promoted = crew.complete(
+        run_id,
+        gate="passed",
+        outcome="the artifact key is a declaration, its description is prose",
+        completed_at="2026-10-04T14:05:00Z",
+        root=repository,
+        review_waiver=REVIEW_WAIVER,
+    )
+
+    release = promoted["release"]
+    assert not declared_arm.exists()
+    assert described.is_dir()
+    assert (described / "peer.bin").is_file()
+    assert {row["path"] for row in release["arms_removed_paths"]} == {
+        str(declared_arm.resolve())
+    }
+    assert str(described.resolve()) not in {row["path"] for row in release["arms_kept"]}
 
 
 def test_a_failed_gate_keeps_both_arms(tmp_path: Path, monkeypatch) -> None:

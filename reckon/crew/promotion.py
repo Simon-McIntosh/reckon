@@ -6199,8 +6199,6 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
 # or one another live run's pointer or manifest also cites — is reported and
 # left in place rather than reached for.
 
-_CITED_ABSOLUTE_NOTE = ""
-
 _CITED_ABSOLUTE_PATH = re.compile(r"/(?:[^\s\"'`()\[\]{}<>,;]+)")
 _CITED_PATH_EDGE_PUNCTUATION = ".,:;)]}\"'"
 # The suite fields carry exactly one path each that the run owns: the log the
@@ -6256,6 +6254,25 @@ def _suite_record(value: Any) -> Mapping[str, Any]:
     return {}
 
 
+def _artifact_candidates(artifacts: Any) -> list[Path]:
+    """The paths an artifacts field declares, never the prose beside them.
+
+    A manifest maps each artifact path to a free-text description of what the
+    run did with it, and that description is prose: it can name another tree,
+    another run's directory, or where a file was copied to. So a mapping
+    contributes its keys — the declared paths — and never its values, and a
+    list contributes its items, which are paths rather than descriptions.
+    """
+    found: list[Path] = []
+    if isinstance(artifacts, Mapping):
+        for key in artifacts:
+            found.extend(_absolute_paths_in(str(key)))
+        return found
+    for text in _string_leaves(artifacts):
+        found.extend(_absolute_paths_in(text.split(":", 1)[0]))
+    return found
+
+
 def _declared_arm_paths(declared: Mapping[str, Any]) -> list[Path]:
     """The paths a manifest declares as its own arms, basetemps and controls.
 
@@ -6271,8 +6288,7 @@ def _declared_arm_paths(declared: Mapping[str, Any]) -> list[Path]:
     for field_name in _ARM_LOG_FIELDS:
         for text in _string_leaves(declared.get(field_name)):
             found.extend(_absolute_paths_in(text))
-    for text in _string_leaves(declared.get(_ARM_ARTIFACT_FIELD)):
-        found.extend(_absolute_paths_in(text))
+    found.extend(_artifact_candidates(declared.get(_ARM_ARTIFACT_FIELD)))
     for field_name in _ARM_SUITE_FIELDS:
         value = declared.get(field_name)
         for text in _string_leaves(_suite_record(value).get("log_path")):
