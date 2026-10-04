@@ -3401,75 +3401,17 @@ def render_watch_unit(
     executable: str | None = None,
 ) -> str:
     """Render the systemd user unit that runs one project's watcher."""
-    command = executable or _reckon_console_script()
-    argv = [command, "crew", "watch", "--project", project]
-    log_file = watch_log_path(project)
-    override = "".join(
-        f'Environment="{name}={value}"\n'
-        for name, value in environment.items()
-        if name != "PATH"
-    )
-    return WATCH_UNIT_TEMPLATE.format(
+    from reckon import service
+
+    return service.render_watch_unit(
         project=project,
-        working_directory=Path.home(),
-        path=environment.get("PATH") or os.defpath,
+        template=WATCH_UNIT_TEMPLATE,
+        unit_name=watch_unit_name(project),
         unit_variable=WATCH_UNIT_ENV,
-        unit=watch_unit_name(project),
-        environment=override,
-        exec_start=" ".join(shlex.quote(part) for part in argv),
-        log_file=log_file,
+        log_file=watch_log_path(project),
+        environment=environment,
+        executable=executable or _reckon_console_script(),
     )
-
-
-class SystemdUserWatchService:
-    """The host's systemd user manager, as a watcher service needs it.
-
-    Narrow on purpose: the ensure path asks four questions (what is written,
-    is it active, write it, start it), so a caller can answer them from a fake
-    without a systemd manager on the host — and so no unit is written to the
-    real account home by a test.
-    """
-
-    def unit_path(self, project: str) -> Path:
-        return Path.home() / ".config" / "systemd" / "user" / watch_unit_name(project)
-
-    def installed(self, project: str) -> bool:
-        return self.unit_path(project).is_file()
-
-    def active(self, project: str) -> bool:
-        from reckon import service
-
-        completed = service.systemctl(
-            "is-active", watch_unit_name(project), check=False
-        )
-        return completed.returncode == 0
-
-    def lingering(self) -> bool:
-        from reckon import service
-
-        return service.linger_enabled()
-
-    def enable_linger(self) -> None:
-        from reckon import service
-
-        service.enable_linger()
-
-    def write_unit(self, project: str, content: str) -> tuple[Path, bool]:
-        target = self.unit_path(project)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        # systemd opens the log file but will not create its parent directory.
-        (_config_home() / "logs").mkdir(parents=True, exist_ok=True)
-        unchanged = target.is_file() and target.read_text() == content
-        if not unchanged:
-            target.write_text(content)
-        return target, not unchanged
-
-    def start(self, project: str, *, restart: bool) -> None:
-        from reckon import service
-
-        unit = watch_unit_name(project)
-        service.systemctl("daemon-reload")
-        service.systemctl("restart" if restart else "start", unit)
 
 
 def _register_watch_unit(project: str, unit: str) -> dict[str, Any]:
@@ -3579,9 +3521,13 @@ def ensure_watcher_service(
     merits still raises — and ``producer`` is the seam that lets a caller supply
     a process arming, so a test exercises this path without starting a watcher.
     """
-    from reckon import flight
+    from reckon import flight, service
 
-    service_manager = manager if manager is not None else SystemdUserWatchService()
+    service_manager = (
+        manager
+        if manager is not None
+        else service.SystemdUserUnitManager(watch_unit_name, watch_log_path)
+    )
     if manager is None:
         # A real unit is written to the account's systemd directory, which a
         # throwaway configuration home must never cause. Imported lazily so the
