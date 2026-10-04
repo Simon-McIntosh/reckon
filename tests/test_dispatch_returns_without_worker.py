@@ -36,10 +36,10 @@ as it found it.
 from __future__ import annotations
 
 import contextlib
+import ctypes
 import importlib
 import json
 import os
-import select
 import shutil
 import signal
 import subprocess
@@ -1522,23 +1522,25 @@ def test_dispatch_returns_when_its_supervisor_finished_the_launch(
         assert output.get("pid"), (
             "the dispatch process named no supervisor for a launch that completed"
         )
-        # The supervisor writes exit.json before it exits. Its pidfd becomes
-        # readable after that write, so wait for completion rather than for
-        # a duration inferred from the dispatch process's unrelated clock.
-        exit_record = _load_json(run.run_directory() / "exit.json")
+        # The supervisor publishes exit.json by atomic rename. Watch that
+        # directory before reading the receipt, then wait for the rename event.
+        record_path = run.run_directory() / "exit.json"
+        exit_record = _load_json(record_path)
         if exit_record is None:
+            libc = ctypes.CDLL(None, use_errno=True)
+            events = libc.inotify_init1(os.O_CLOEXEC)
+            assert events >= 0, os.strerror(ctypes.get_errno())
             try:
-                supervisor_fd = os.pidfd_open(int(output["pid"]))
-            except ProcessLookupError:
-                pass  # The supervisor has already exited; inspect its receipt.
-            else:
-                try:
-                    completion = select.poll()
-                    completion.register(supervisor_fd, select.POLLIN)
-                    completion.poll()
-                finally:
-                    os.close(supervisor_fd)
-            exit_record = _load_json(run.run_directory() / "exit.json")
+                watch = libc.inotify_add_watch(
+                    events,
+                    os.fsencode(record_path.parent),
+                    0x80,  # IN_MOVED_TO
+                )
+                assert watch >= 0, os.strerror(ctypes.get_errno())
+                while (exit_record := _load_json(record_path)) is None:
+                    os.read(events, 4096)
+            finally:
+                os.close(events)
         outcome["exit_record"] = exit_record
         assert exit_record is not None and exit_record.get("worker_pid") is not None, (
             "the supervisor left no completion exit record naming its worker, so "
