@@ -3378,6 +3378,7 @@ class DispatchPlan:
     lane_reading: dict[str, Any] | None = None
     lane_gate: dict[str, Any] | None = None
     lane_allowance: dict[str, Any] | None = None
+    orchestrator_lane_stop: dict[str, Any] | None = None
     lane_advisory: dict[str, Any] | None = None
     open_endedness: float | None = None
     picker_selection: dict[str, Any] | None = None
@@ -3418,6 +3419,11 @@ class DispatchPlan:
             ),
             "node": self.node.as_dict(),
             "brief": _brief_record(self.node),
+            "orchestrator_lane_stop": (
+                None
+                if self.orchestrator_lane_stop is None
+                else dict(self.orchestrator_lane_stop)
+            ),
             "requested_backend": self.requested_backend,
             "run_id": self.run_id,
             "section_routing": (
@@ -4340,6 +4346,126 @@ def _gate_rows_from_payload(payload: object, path: Path) -> dict[str, Any]:
     if paused is True:
         return {"state": "paused", "paused": True, "reason": reason_text, "detail": ""}
     return {"state": "open", "paused": False, "reason": reason_text, "detail": ""}
+
+
+# The flight-config key a backend sets to declare that its lane carries this
+# deployment's orchestrators. Declared, never inferred from the backend's name:
+# the orchestrator role is a property of the deployment, so a rule matching on
+# a name breaks the moment an orchestrator runs elsewhere and misses an alias
+# that points at one. A lane that declares nothing serves no orchestrator and
+# is dispatchable as before.
+ORCHESTRATOR_LANE_DECLARATION_KEY = "serves_orchestrators"
+
+# What the stop does to a dispatch that resolves to a declaring lane: it
+# records rather than refuses. A refusal does not remove the work, it moves it
+# onto whatever lane remains, and that is only safe while the receiving lane
+# serves it reliably: the locally served lane's mid-turn death rate is stated
+# for the window before its repair and has not been re-measured after it, so a
+# refusal landing there loses the dispatch rather than relocating it. The
+# record still removes the silent case — the lane, why it is fenced and the
+# discharge all reach the run's record and the payload.
+ORCHESTRATOR_LANE_STOP_SEVERITY = "recorded"
+
+
+def _orchestrator_lane_discharge_candidates(
+    config: Mapping[str, Any], *, role: str, spec_level: str
+) -> list[str]:
+    """Name configured lanes that serve no orchestrator and can resolve the node."""
+    candidates: list[str] = []
+    backends = config.get("backends") or {}
+    for candidate in sorted(backends, key=str):
+        candidate_name = str(candidate)
+        settings = backends.get(candidate_name)
+        if not isinstance(settings, Mapping):
+            continue
+        if settings.get(ORCHESTRATOR_LANE_DECLARATION_KEY):
+            continue
+        try:
+            _resolved, effective = resolve_role_override(
+                config, role, spec_level, candidate_name
+            )
+        except CrewError:
+            continue
+        if effective.get("launch") in ("cli", "in-harness"):
+            candidates.append(candidate_name)
+    return candidates
+
+
+def _dispatch_orchestrator_lane_stop(
+    *,
+    backend_name: str,
+    backend: Mapping[str, Any],
+    config: Mapping[str, Any],
+    role: str,
+    spec_level: str,
+) -> dict[str, Any]:
+    """Report a resolved lane that declares it serves this deployment's orchestrators.
+
+    One subscription runs every orchestrator here, so background work placed on
+    the same lane spends the capacity the sessions that dispatch, merge, promote
+    and record need. The end state is not a slow node: a lane saturated there
+    stops every session at once, including the ones that would have noticed, and
+    work already in flight is then unreachable by the only processes that could
+    reconcile it.
+
+    The declaration is read from the resolved backend, so ``--local``, an
+    explicit ``--backend``, a role overlay and a budget fallback all reach it,
+    and a lane that declares nothing is dispatchable exactly as before. The
+    stop is composed in resolution, before a run directory, a live pointer or a
+    worktree exists, so it cannot be lost to a failure part way through the
+    writes that follow.
+
+    ``severity`` states what the stop does with the launch. It is ``recorded``
+    rather than ``refused`` because the lane a refusal would push this node
+    onto is not measurably reliable at the effort such work needs, so refusing
+    would trade a lane that is too busy for a lane that does not finish. The
+    record names the lane, why it is fenced and the discharge, and it reaches
+    the run's own record and the dispatch payload either way.
+    """
+    if not backend.get(ORCHESTRATOR_LANE_DECLARATION_KEY):
+        return {
+            "state": "not-declared",
+            "severity": None,
+            "lane": backend_name,
+            "detail": (
+                f"resolved lane {backend_name!r} declares no orchestrator role, "
+                "so it is dispatchable as before"
+            ),
+            "discharge": "",
+        }
+    candidates = _orchestrator_lane_discharge_candidates(
+        config, role=role, spec_level=spec_level
+    )
+    if candidates:
+        discharge = (
+            "route this node to a lane that serves no orchestrator, declared "
+            "with --backend: " + ", ".join(repr(name) for name in candidates)
+        )
+    else:
+        discharge = (
+            "no configured lane that serves no orchestrator can resolve this "
+            "node; add a backend that declares no orchestrator role and route "
+            "the node to it"
+        )
+    return {
+        "state": "declared",
+        "severity": ORCHESTRATOR_LANE_STOP_SEVERITY,
+        "lane": backend_name,
+        "detail": (
+            f"resolved lane {backend_name!r} declares "
+            f"{ORCHESTRATOR_LANE_DECLARATION_KEY}: it carries this "
+            "workstation's orchestrators, so background work placed here spends "
+            "the capacity the sessions that dispatch, merge, promote and record "
+            "need, and a lane saturated there stops every session rather than "
+            "one node"
+        ),
+        "discharge": discharge,
+    }
+
+
+def _orchestrator_lane_stop_line(stop: Mapping[str, Any]) -> str:
+    """Render the stop as the one line a run's warnings carry."""
+    return f"{stop['detail']}; {stop['discharge']}"
 
 
 def _path_is_tmpfs(path: str | Path) -> bool:
@@ -5374,6 +5500,13 @@ def plan_dispatch(
     lane_reading = _dispatch_lane_reading(backend)
     lane_gate = _dispatch_lane_gate(backend)
     lane_allowance = _dispatch_lane_allowance(backend, session=session)
+    orchestrator_lane_stop = _dispatch_orchestrator_lane_stop(
+        backend_name=backend_name,
+        backend=backend,
+        config=config,
+        role=node.role,
+        spec_level=node.spec_level,
+    )
     resolution = DispatchPlan(
         run_id=resolved_run_id,
         backend=backend_name,
@@ -5399,6 +5532,7 @@ def plan_dispatch(
         lane_reading=lane_reading,
         lane_gate=lane_gate,
         lane_allowance=lane_allowance,
+        orchestrator_lane_stop=orchestrator_lane_stop,
         lane_advisory=lane_advisory,
         open_endedness=open_endedness,
         # A resolved plan records the picker answer only when the route used it.
@@ -5414,6 +5548,11 @@ def plan_dispatch(
         route=route,
         route_override=route_override,
     )
+    if orchestrator_lane_stop["state"] == "declared":
+        # The stop reaches the warnings a caller reads and the record a later
+        # reader opens, so a run that spent an orchestrator lane carries the
+        # fact whether or not anyone read the dispatch payload at the time.
+        resolution.warnings.append(_orchestrator_lane_stop_line(orchestrator_lane_stop))
     if verdict.ok and repo is not None:
         resolution.competence = _competence_verdict(
             resolution=resolution, project=project, repo=Path(repo).resolve()
@@ -7019,6 +7158,12 @@ def dispatch(
                 else dict(resolution.section_routing)
             ),
             "lane_gate": resolution.lane_gate,
+            # The orchestrator-lane stop the dispatch resolved, recorded even
+            # when the fence did not fire: the pointer is the record a reader
+            # reaches without the dispatching process, so "the lane declared
+            # nothing" has to be distinguishable from a record written before
+            # the declaration existed.
+            "orchestrator_lane_stop": resolution.orchestrator_lane_stop,
             "local": resolution.local,
             "execution_fit": resolution.execution_fit.as_dict(),
             "launch": launch_kind,

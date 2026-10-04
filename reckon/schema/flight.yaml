@@ -492,6 +492,19 @@ slots:
     description: Whether a finished worker session can be resumed rather than respawned.
     range: boolean
 
+  serves_orchestrators:
+    description: >-
+      Whether this backend's lane carries this deployment's orchestrators.
+      Declared, never inferred from the backend's name: the orchestrator role
+      is a property of the deployment, so an alias or a backend that renames
+      must both reach a fence that reads this key, and a rule matching on a
+      name breaks the moment an orchestrator runs somewhere else. Absent means
+      the lane declares nothing and is dispatchable as before. A lane
+      declaring true is one whose capacity background work spends against the
+      sessions that dispatch, merge, promote and record, so a lane saturated
+      there stops every session rather than one node.
+    range: boolean
+
   metered:
     description: >-
       Whether using this backend consumes a metered provider allowance.
@@ -970,6 +983,7 @@ classes:
       - effort_spelling
       - sandbox
       - session_reuse
+      - serves_orchestrators
       - metered
       - budget_check
       - usable_input_window
