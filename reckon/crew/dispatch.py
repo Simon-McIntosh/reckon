@@ -108,6 +108,7 @@ from reckon.crew.runs import (
     _manifest_mtime_ns,
     _merge_peer_scopes,
     _mutate_pointer,
+    _pointer_lock,
     _process_start_time,
     _project_derivations,
     _repository_relative_scope,
@@ -5026,6 +5027,115 @@ def dispatch_picker_selection(
     )
 
 
+def _attach_shadow_picker_selection(run_id: str, selection: Mapping[str, Any]) -> None:
+    """Update a live pointer without recreating a discarded run."""
+    with _pointer_lock(run_id):
+        path = pointer_path(run_id)
+        if path.exists():
+            pointer = read_pointer(run_id)
+            pointer["picker_selection"] = dict(selection)
+            _write_json(path, pointer)
+
+
+def _record_shadow_picker_selection(spec_path: Path) -> None:
+    """Finish an advisory pick after launch and attach it to the live run."""
+    spec = json.loads(spec_path.read_text(encoding="utf-8"))
+    node = TaskNode(**spec["node"])
+    repo = Path(spec["repo"])
+    result: dict[str, Any] = {}
+    finished = threading.Event()
+    started = time.monotonic()
+
+    def pick_shadow() -> None:
+        try:
+            records, inputs, budget, errors = build_picker_inputs(
+                spec["project"],
+                spec["config"],
+                repo,
+                ledger_root=Path(spec["ledger_root"]),
+            )
+            result["selection"] = dispatch_picker_selection(
+                node=node,
+                config=spec["config"],
+                project=spec["project"],
+                repo=repo,
+                session=spec["session"],
+                comment=spec["comment"],
+                records=records,
+                verdict_inputs=inputs,
+                budget_snapshot=budget,
+                input_errors=errors,
+            )
+        except Exception as exc:  # noqa: BLE001 - an advisory cannot stop a run
+            result["selection"] = _picker_fallback(
+                f"{type(exc).__name__}: {exc}", spec["comment"]
+            )
+        finally:
+            finished.set()
+
+    threading.Thread(target=pick_shadow, name="shadow-picker", daemon=True).start()
+    if not finished.wait(PICKER_DISPATCH_TIMEOUT_SECONDS):
+        result["selection"] = _picker_fallback(
+            "timeout",
+            spec["comment"],
+            latency_ms=round((time.monotonic() - started) * 1000, 3),
+        )
+    selection = result["selection"]
+    _attach_shadow_picker_selection(spec["run_id"], selection)
+
+
+def _start_shadow_picker_selection(
+    *,
+    run_id: str,
+    node: TaskNode,
+    config: Mapping[str, Any],
+    project: str,
+    repo: Path,
+    ledger_root: Path,
+    session: str,
+    comment: str,
+) -> None:
+    """Start a bounded detached reader without extending dispatch's lifetime."""
+    directory = run_dir(run_id)
+    spec_path = directory / "shadow-picker.json"
+    _write_json(
+        spec_path,
+        {
+            "run_id": run_id,
+            "node": node.as_dict(),
+            "config": dict(config),
+            "project": project,
+            "repo": str(repo),
+            "ledger_root": str(ledger_root),
+            "session": session,
+            "comment": comment,
+        },
+    )
+    log = (directory / "shadow-picker.log").open("a", encoding="utf-8")
+    try:
+        subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                "from pathlib import Path; from reckon.crew.dispatch import _record_shadow_picker_selection; import sys; _record_shadow_picker_selection(Path(sys.argv[1]))",
+                str(spec_path),
+            ],
+            cwd=repo,
+            stdin=subprocess.DEVNULL,
+            stdout=log,
+            stderr=log,
+            start_new_session=True,
+            env={
+                **os.environ,
+                "PYTHONPATH": str(Path(__file__).parents[2])
+                + os.pathsep
+                + os.environ.get("PYTHONPATH", ""),
+            },
+        )
+    finally:
+        log.close()
+
+
 def _picker_refusal_reasons(selection: Mapping[str, Any]) -> str:
     reasons = [
         str(selection[key])
@@ -6474,13 +6584,23 @@ def dispatch(
     # ledger, a conflicting mount or a raising budget view is recorded against
     # the input that failed and the picker is left to fall back, so a picker
     # meant only to inform the dispatch can never abort the dispatch itself.
+    resolved_route = resolve_dispatch_route(config, route)
+    deferred_shadow_selection = (
+        picker_selection is None
+        and resolved_route != "picker"
+        and (
+            resolved_route == "deterministic"
+            or local
+            or bool(backend_override or default_backend_override)
+        )
+    )
     if picker_selection is not None:
         # The caller already asked the picker and ran the availability check on
         # its answer, so asking again would both double the pick's latency and
         # let the second pick choose a backend the check never saw. Reuse the
         # caller's answer so the checked backend is the dispatched backend.
         picker_selection = dict(picker_selection)
-    else:
+    elif not deferred_shadow_selection:
         (
             picker_records,
             picker_inputs,
@@ -7642,6 +7762,24 @@ def dispatch(
             node_claim.release()
     if node_claim is not None and node_claim.reclaimed:
         record["reclaimed_node_claim"] = node_claim.reclaimed
+    if deferred_shadow_selection:
+        try:
+            _start_shadow_picker_selection(
+                run_id=run_id,
+                node=node,
+                config=config,
+                project=project,
+                repo=repo_root,
+                ledger_root=ledger_root,
+                session=session,
+                comment=comment,
+            )
+        except (OSError, TypeError, ValueError) as exc:
+            selection = _picker_fallback(
+                f"shadow launch failed: {type(exc).__name__}: {exc}", comment
+            )
+            record["picker_selection"] = selection
+            _attach_shadow_picker_selection(run_id, selection)
     return record
 
 
