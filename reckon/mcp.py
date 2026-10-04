@@ -4375,16 +4375,19 @@ def _crew(
             )
             claim_map: dict[str, list[dict[str, Any]]] = {}
             for claim in planned["claims"]:
+                # Every owner carries a verdict. A claim that arrives without
+                # one is treated as binding, the same answer the read model
+                # defaults to and the rule gives a pointer whose worker is not
+                # yet recorded; a reader must never have to guess the absence.
                 owner: dict[str, Any] = {
                     "run_id": claim["run_id"],
                     "node": claim["node"],
                     "declared_path": claim["declared_path"],
+                    "binding": bool(claim.get("binding", True)),
+                    "disposition_reason": str(claim.get("disposition_reason", "")),
                 }
                 if claim.get("derived_from") is not None:
                     owner["derived_from"] = claim["derived_from"]
-                if "binding" in claim:
-                    owner["binding"] = claim["binding"]
-                    owner["disposition_reason"] = claim.get("disposition_reason", "")
                 claim_map.setdefault(claim["path"], []).append(owner)
             return {
                 "ok": True,

@@ -242,3 +242,34 @@ def test_the_scopes_view_marks_each_claim_owner(home, repo: Path) -> None:
 
     assert owners["r-running"]["binding"] is True
     assert owners["r-stopped-clean"]["binding"] is False
+    for owner in result["claim_map"][DECLARED]:
+        assert "binding" in owner
+        assert "disposition_reason" in owner
+
+
+def test_an_unverdicted_claim_still_lists_a_binding_verdict(
+    home, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A reader never has to guess what an absent verdict means."""
+    monkeypatch.setattr(
+        mcp.crew_module,
+        "plan_scope_lanes",
+        lambda *args, **kwargs: {
+            "claims": [
+                {
+                    "path": CANDIDATE,
+                    "run_id": "r-unverdicted",
+                    "node": "worker",
+                    "declared_path": CANDIDATE,
+                }
+            ],
+            "conflicts": [],
+            "live_conflicts": [],
+            "lanes": [],
+        },
+    )
+
+    owner = _scopes_view(repo)["claim_map"][CANDIDATE][0]
+
+    assert owner["binding"] is True
+    assert owner["disposition_reason"] == ""
