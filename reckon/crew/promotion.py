@@ -335,15 +335,16 @@ def _require_commits_beyond_base(
     The comparison is made in the run's own tree, so a citation that resolves
     to an abbreviated revision still equals the base it names, and a citation
     that resolves nowhere is left to the guard whose refusal names the
-    repository it consulted rather than answered here with this one. A tree
-    git cannot read, or a base that does not resolve in it, leaves the guard
-    silent: an unmeasured citation is not a defect in the citation.
+    repository it consulted rather than answered here with this one. The tree
+    is the one the record names, read the way every other reader reads it: a
+    record that names no readable directory is not measured here rather than
+    measured against whatever repository the promotion happens to run in. A
+    tree git cannot read, or a base that does not resolve in it, leaves the
+    guard silent: an unmeasured citation is not a defect in the citation.
     """
     base = str(record.get("base_sha") or "").strip()
-    tree = Path(str(record.get("worktree") or ""))
-    if not tree.is_dir():
-        tree = Path(str(record.get("repo") or ""))
-    if not base or not tree.is_dir():
+    tree = _record_tree(record)
+    if not base or tree is None:
         return
     canonical_base = _commit_canonical_id(tree, base)
     if canonical_base is None:
@@ -3398,7 +3399,7 @@ def _record_stream_paths(record: Mapping[str, Any]) -> list[Path]:
 
 
 def _primary_read_targets(
-    primary: Mapping[str, Any], tree: Path
+    primary: Mapping[str, Any], tree: Path | None
 ) -> tuple[str, tuple[str, ...]]:
     """The landed commit and changed paths a shadow could have read.
 
@@ -3406,11 +3407,13 @@ def _primary_read_targets(
     and the paths are the files that sha changed, read back from the shared
     object store so no manifest or fixture needs to have named them. A primary
     with no cited commit (a shadow of a shadow, which does not land code) has
-    nothing a run could read as an answer.
+    nothing a run could read as an answer, and a run whose record names no
+    readable tree has nowhere to read the paths back from: both answer with no
+    targets rather than consulting a tree the run was never dispatched for.
     """
     commits = [str(sha) for sha in (primary.get("commits") or ()) if str(sha).strip()]
     commit = commits[-1] if commits else ""
-    if not commit:
+    if not commit or tree is None:
         return "", ()
     result = subprocess.run(
         [
@@ -3435,7 +3438,7 @@ def _primary_read_targets(
 def _shadow_stream_contamination(
     record: Mapping[str, Any],
     ledger_runs: Iterable[Mapping[str, Any]],
-    tree: Path,
+    tree: Path | None,
 ) -> str | None:
     """Scan a shadow's streams for reads of its primary's landed answer.
 
@@ -4750,11 +4753,14 @@ def _review_changed_scope(
     whatever has not said it changed nothing — it has said nothing, which is a
     different statement, and a reviewer cannot read a diff the run never named.
     Such a silent scope is reported unmeasured so the caller grants the fuller
-    review rather than the lighter one.
+    review rather than the lighter one. A record that names no readable tree
+    measures no commit either: the diff belongs to the run's own tree, and the
+    directory the promotion happens to run in cannot supply it.
     """
-    worktree = Path(str(record.get("worktree") or ""))
-    tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
+    tree = _record_tree(record)
     if commit_list:
+        if tree is None:
+            return (), None, False
         resolved = _resolve_commits(cwd=tree, revisions=commit_list, run_id=run_id)
         cumulative = _committed_scope(cwd=tree, commits=resolved, run_id=run_id)
         lines = cumulative.changed_lines
@@ -6794,6 +6800,25 @@ def _record_tree(record: Mapping[str, Any]) -> Path | None:
     return None
 
 
+def _tree_for_measurement(record: Mapping[str, Any], run_id: str) -> Path:
+    """The run's own tree as its record names it, or a refusal naming absence.
+
+    A citation is resolved, a commit diffed and a shadow patch measured in the
+    tree the run's record names. A record that names no readable directory
+    names no instrument at all, and the directory this promotion happens to run
+    in cannot stand in for it: measuring against that ambient checkout would
+    answer about a repository the run was never dispatched for, which is a
+    confident wrong answer rather than a missing one.
+    """
+    tree = _record_tree(record)
+    if tree is None:
+        raise CrewError(
+            f"run {run_id!r} names no readable worktree or repository, so the "
+            "work it presents cannot be measured in the run's own tree"
+        )
+    return tree
+
+
 def _run_promoted_revision(
     record: Mapping[str, Any], commit_list: Sequence[str]
 ) -> str:
@@ -7383,7 +7408,6 @@ def _landing_scope_products(
     record: Mapping[str, Any],
     *,
     shadow: bool,
-    tree: Path,
     node: Mapping[str, Any],
     commits: Sequence[str],
     accepted_paths: Mapping[str, str] | None,
@@ -7395,17 +7419,23 @@ def _landing_scope_products(
     non-writing role is refused here rather than recorded as the verifier's
     work. A shadow asserts no code, so its scope is its patch. Everything the
     row carries is returned rather than recomputed, so the refusal and the row
-    it would have written cannot disagree.
+    it would have written cannot disagree. The tree the scope is measured in is
+    the run's own, resolved through :func:`_tree_for_measurement`: a patch or a
+    citation belongs to the run's tree, never to the directory the promotion
+    happens to run in.
     """
     if shadow:
         artifact = _write_shadow_patch(record)
         return {
             "shadow_patch": str(artifact),
-            "changed_lines": _shadow_patch_stat(artifact, cwd=tree),
+            "changed_lines": _shadow_patch_stat(
+                artifact, cwd=_tree_for_measurement(record, run_id)
+            ),
             "scope_acceptances": [],
         }
     if not commits:
         return {"shadow_patch": "", "changed_lines": None, "scope_acceptances": []}
+    tree = _tree_for_measurement(record, run_id)
     cumulative = _committed_scope(cwd=tree, commits=commits, run_id=run_id)
     acceptances: list[dict[str, str]] = []
     if cumulative.changed_lines.get("available", True):
@@ -7487,8 +7517,6 @@ def _landing_preconditions(
     if existing is not None:
         return {"already_landed": True}
 
-    worktree = Path(str(record.get("worktree") or ""))
-    tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
     refusals: list[BaseException] = []
 
     def attempt(check: Callable[[], Any]) -> tuple[bool, Any]:
@@ -7508,7 +7536,11 @@ def _landing_preconditions(
     resolved: Sequence[str] = []
     if commit_list:
         resolved_ok, resolved = attempt(
-            lambda: _resolve_commits(cwd=tree, revisions=commit_list, run_id=run_id)
+            lambda: _resolve_commits(
+                cwd=_tree_for_measurement(record, run_id),
+                revisions=commit_list,
+                run_id=run_id,
+            )
         )
     if not resolved_ok:
         # The changed-scope and role checks diff the cited commits, so an
@@ -7533,7 +7565,6 @@ def _landing_preconditions(
                 run_id,
                 record,
                 shadow=shadow,
-                tree=tree,
                 node=node,
                 commits=tuple(resolved),
                 accepted_paths=accepted_paths,
@@ -7699,8 +7730,7 @@ def _complete_locked(
     # that commit refuses before either store is written rather than leaving a
     # half-landed, uncommitted state behind.
     _require_committable_checkout(checkout, run_id)
-    worktree = Path(str(record.get("worktree") or ""))
-    tree = worktree if worktree.is_dir() else Path(str(record.get("repo") or "."))
+    tree = _record_tree(record)
     # A landing that will carry the plan file must not sweep an unrelated
     # uncommitted edit into its commit. The check runs here, before either
     # store is written, so a refusal leaves no ledger row and no plan comment
