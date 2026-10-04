@@ -204,7 +204,7 @@ def _write_pointer(
                 else ""
             ),
             "suite_command": suite_command,
-            "worktree": worktree,
+            "worktree": worktree or str(repository),
             "node": {
                 "id": "node-a",
                 "plan": PLAN,
