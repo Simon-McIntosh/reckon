@@ -6,7 +6,8 @@ plan HTML, the cumulative evidence record and the plan-wide figure topic — are
 no longer dispatcher-owned, so naming one is an ordinary read declaration and is
 charged like any other. A clause that excludes a path from the declared inputs
 is the reverse of a read, so it charges nothing even though it names the same
-keywords.
+keywords — and an exclusion governs only the paths its own verb names, so one
+clause may declare a path and exclude another.
 """
 
 from __future__ import annotations
@@ -27,6 +28,9 @@ FRAGMENT_PATH = f"docs/evidence/fragments/{PLAN}/{NODE}.html"
 FIGURE_PATH = f"docs/figures/{PLAN}/{NODE}"
 LARGE_INPUT_PATH = "package/large.py"
 WRITE_PATH = "package/target.py"
+DECLARED_INPUT_PATH = "package/a.py"
+FIRST_EXCLUDED_PATH = "package/b.py"
+SECOND_EXCLUDED_PATH = "package/c.py"
 BYTES_PER_TOKEN = 3.5
 
 
@@ -134,6 +138,9 @@ def _seed_named_inputs(repo: Path) -> None:
     package.mkdir(parents=True)
     (repo / WRITE_PATH).write_bytes(b"v" * 10)
     (repo / LARGE_INPUT_PATH).write_bytes(b"a" * 200_007)
+    (repo / DECLARED_INPUT_PATH).write_bytes(b"a" * 21)
+    (repo / FIRST_EXCLUDED_PATH).write_bytes(b"b" * 200_000)
+    (repo / SECOND_EXCLUDED_PATH).write_bytes(b"c" * 100_000)
 
 
 def _estimated_tokens(byte_count: int) -> int:
@@ -200,3 +207,71 @@ def test_the_declaration_form_of_the_same_clause_charges_the_file(
     assert records[LARGE_INPUT_PATH]["estimated_tokens"] == _estimated_tokens(
         (tmp_path / LARGE_INPUT_PATH).stat().st_size
     )
+
+
+def test_a_mixed_clause_keeps_its_declared_path_charged(tmp_path: Path) -> None:
+    """A clause declaring one path and excluding another charges the declared one.
+
+    The exclusion verb governs the path it names, not the whole clause, so the
+    declared path stays a read while the excluded one is withheld.
+    """
+    _seed_named_inputs(tmp_path)
+    authority = _authority(tmp_path)
+    node = _node(
+        write_paths=[],
+        done_when=(
+            f"Declare {DECLARED_INPUT_PATH} as an input "
+            f"and avoid {FIRST_EXCLUDED_PATH}"
+        ),
+    )
+
+    tokens, inputs = _context_file_inputs(tmp_path, node, authority)
+    records = _records_by_path(inputs["named_files"])
+
+    # Both files exist, so the declared charge and the withheld one are
+    # decisions about the verbs rather than about what is present.
+    assert (tmp_path / FIRST_EXCLUDED_PATH).stat().st_size > 100_000
+    assert set(records) == {DECLARED_INPUT_PATH}
+    assert records[DECLARED_INPUT_PATH]["counted"] is True
+    assert tokens == _estimated_tokens((tmp_path / DECLARED_INPUT_PATH).stat().st_size)
+
+
+def test_the_excluded_first_order_of_a_mixed_clause_reads_the_same_way(
+    tmp_path: Path,
+) -> None:
+    """Reversing the two phrases moves no charge between them."""
+    _seed_named_inputs(tmp_path)
+    authority = _authority(tmp_path)
+    node = _node(
+        write_paths=[],
+        done_when=(
+            f"Avoid {FIRST_EXCLUDED_PATH} and declare {DECLARED_INPUT_PATH} "
+            "as an input"
+        ),
+    )
+
+    tokens, inputs = _context_file_inputs(tmp_path, node, authority)
+    records = _records_by_path(inputs["named_files"])
+
+    assert set(records) == {DECLARED_INPUT_PATH}
+    assert records[DECLARED_INPUT_PATH]["counted"] is True
+    assert tokens == _estimated_tokens((tmp_path / DECLARED_INPUT_PATH).stat().st_size)
+
+
+def test_one_exclusion_verb_governs_every_path_it_lists(tmp_path: Path) -> None:
+    """A second path joined to an exclusion list is excluded with the first."""
+    _seed_named_inputs(tmp_path)
+    authority = _authority(tmp_path)
+    node = _node(
+        write_paths=[],
+        done_when=(
+            f"Exclude {FIRST_EXCLUDED_PATH} and {SECOND_EXCLUDED_PATH} "
+            "from the declared inputs"
+        ),
+    )
+
+    tokens, inputs = _context_file_inputs(tmp_path, node, authority)
+
+    assert (tmp_path / SECOND_EXCLUDED_PATH).stat().st_size > 50_000
+    assert inputs["named_files"] == []
+    assert tokens == 0

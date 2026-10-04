@@ -61,11 +61,16 @@ _NAMED_REPOSITORY_FILE = re.compile(
     r"(?=[^A-Za-z0-9_./-]|$)"
 )
 # A brief keeps a worker off a large file by naming it in an exclusion
-# ("Exclude ``pkg/large.py`` from the declared inputs"). That clause carries
-# the same "declared input" keywords as a read declaration while asserting the
-# opposite, so a cue that negates the read makes the clause a non-declaration.
-_EXCLUSION_CUE = re.compile(
-    r"exclud\w*|omit\w*|avoid\w*|ignor\w*|\bunread\b|\b(?:do not|don't|never|not)\s+read\b",
+# ("Exclude ``pkg/large.py`` from the declared inputs"), and the same brief may
+# declare one path and exclude another in one clause ("Declare ``pkg/a.py`` as
+# an input and avoid ``pkg/b.py``"). The two verbs govern different paths, so
+# the exclusion is read per path: each verb governs the paths that follow it up
+# to the next verb, and a path with no verb before it is charged, because the
+# clause reached this point by declaring an input.
+_GOVERNING_VERB = re.compile(
+    r"\b(?:(?P<exclude>exclud\w*|omit\w*|avoid\w*|ignor\w*|unread"
+    r"|(?:do not|don't|never|not)\s+(?:be\s+)?read)"
+    r"|(?P<charge>declar\w*|treat\w*|read\w*|charg\w*|count\w*|includ\w*))\b",
     re.IGNORECASE,
 )
 
@@ -2953,8 +2958,8 @@ def _declared_input_files(node: TaskNode) -> list[str]:
     against its window. A path counts only when the clause naming it also
     declares it an input; a clause that only mentions the path is a reference,
     not a load. A clause that negates the read -- telling the worker a path is
-    excluded -- names the same keywords while asserting the opposite, so an
-    exclusion cue makes the clause a non-declaration.
+    excluded -- names the same keywords while asserting the opposite, so the
+    paths its own exclusion phrase governs are withheld.
     """
 
     text = f"{node.goal}\n{node.done_when}"
@@ -2963,10 +2968,27 @@ def _declared_input_files(node: TaskNode) -> list[str]:
         lowered = clause.lower()
         if "input" not in lowered or "declar" not in lowered:
             continue
-        if _EXCLUSION_CUE.search(clause):
-            continue
-        declared.update(_NAMED_REPOSITORY_FILE.findall(clause))
+        declared.update(_paths_a_clause_charges(clause))
     return sorted(declared)
+
+
+def _paths_a_clause_charges(clause: str) -> list[str]:
+    """Return the paths one declaration clause's own verbs put in charge.
+
+    A verb governs the paths that follow it until the next verb, so a mixed
+    clause keeps the path its declaration verb names -- the reason the clause
+    was read as a declaration at all -- while the path its exclusion verb
+    names is withheld.
+    """
+
+    verbs = list(_GOVERNING_VERB.finditer(clause))
+    charged: list[str] = []
+    for named in _NAMED_REPOSITORY_FILE.finditer(clause):
+        preceding = [verb for verb in verbs if verb.end() <= named.start()]
+        if preceding and preceding[-1].lastgroup == "exclude":
+            continue
+        charged.append(named.group(0))
+    return charged
 
 
 def _context_file_inputs(
