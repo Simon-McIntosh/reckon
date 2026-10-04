@@ -1262,31 +1262,30 @@ def _severity_stated(finding: dict[str, Any]) -> bool:
     return review_module.declared_severity(finding) is not None
 
 
-def _unmarked_finding_severity_findings(node: TaskNode | None) -> list[str]:
-    """Report a review run's stored findings that declare no severity.
+def _reviewer_store_records(
+    node: TaskNode | None,
+) -> list[tuple[Path, str, dict[str, Any]]]:
+    """The stored records a reviewer's own declaration grants, once each.
 
-    A finding that declares no severity cannot be told from a follow-on by the
-    gate that reads the stored record, so the reviewer's judgement is missing
-    rather than negative, and the reviewer is the only party that can restate
-    it. The dispatch grants the review store's record paths on the node, so the
-    record to judge is read from those declarations: the project is the
+    The dispatch grants the review store's record paths on the node, so the
+    records to judge are read from those declarations: the project is the
     directory beneath the store root and the reviewed run is the id the
-    record's own name keys. A declared record path that is not a record this
-    store would read, or that cannot be read yet, is not a finding of its own
-    — a review that has not stored its record is judged by the gates that
-    require one, and this check only reports what the stored record says.
+    record's own name keys. The legacy and head-keyed declarations name one
+    run, and the reader selects one record for it, so the record is returned
+    once however many spellings the dispatch granted. A declared record path
+    that is not a record this store would read, or that cannot be read yet, is
+    not a finding of its own — a review that has not stored its record is
+    judged by the gates that require one, and the checks built on this only
+    report what a readable record says.
 
     A node that is not a review is not judged: its deliverable is repository
     work, and a path that happens to sit under the store root belongs to
-    another run's delivery. Each unmarked finding is reported on its own,
-    naming the finding's file and line, so the reviewer can restate the
-    severities in the same turn; nothing is rewritten here, because the fix
-    belongs in the record's next write by the party that authored it.
+    another run's delivery.
     """
     if node is None or not _node_is_a_reviewer(node):
         return []
     store_root = review_module.review_store_root()
-    findings: list[str] = []
+    records: list[tuple[Path, str, dict[str, Any]]] = []
     read: set[tuple[str, str]] = set()
     for declared in node.write_paths or ():
         candidate = Path(str(declared)).expanduser()
@@ -1295,9 +1294,6 @@ def _unmarked_finding_severity_findings(node: TaskNode | None) -> list[str]:
         reviewed_run_id = _record_name_reviewed_run(candidate.name)
         if not reviewed_run_id:
             continue
-        # The legacy and head-keyed declarations name one run, and the reader
-        # selects one record for it, so the record is judged once however many
-        # spellings the dispatch granted.
         key = (candidate.parent.name, reviewed_run_id)
         if key in read:
             continue
@@ -1311,7 +1307,43 @@ def _unmarked_finding_severity_findings(node: TaskNode | None) -> list[str]:
             continue
         if record is None:
             continue
-        findings.extend(_unmarked_findings_in_record(record, stored_at or candidate))
+        records.append((stored_at or candidate, reviewed_run_id, record))
+    return records
+
+
+def _unmarked_finding_severity_findings(node: TaskNode | None) -> list[str]:
+    """Report a review run's stored findings that declare no severity.
+
+    A finding that declares no severity cannot be told from a follow-on by the
+    gate that reads the stored record, so the reviewer's judgement is missing
+    rather than negative, and the reviewer is the only party that can restate
+    it. Each unmarked finding is reported on its own, naming the finding's file
+    and line, so the reviewer can restate the severities in the same turn;
+    nothing is rewritten here, because the fix belongs in the record's next
+    write by the party that authored it.
+    """
+    findings: list[str] = []
+    for record_path, _run_id, record in _reviewer_store_records(node):
+        findings.extend(_unmarked_findings_in_record(record, record_path))
+    return findings
+
+
+def _unresolved_revision_findings(node: TaskNode | None) -> list[str]:
+    """Report a review run's stored revisions that name no commit.
+
+    A record's base and head are typed by hand, and a sha that lost characters
+    mid-value still looks like one, so the pair is resolved against the
+    reviewed run's own repository before the review run may complete. The
+    refusal names the stored value beside the head the reviewed worktree
+    actually carries, so the reviewer corrects its own record in the same turn
+    — the alternative is a clean promotion here and a reviewed run that finds
+    no review of its revision hours later, which buys a whole second review.
+    """
+    findings: list[str] = []
+    for record_path, _run_id, record in _reviewer_store_records(node):
+        refusal = review_module.unresolved_reviewed_revision(record)
+        if refusal:
+            findings.append(f"review record {str(record_path)!r} {refusal}")
     return findings
 
 
@@ -2001,6 +2033,7 @@ def audit_manifest(
         _commit_citation_findings(manifest, worktree=worktree, repository=repository)
     )
     findings.extend(_unmarked_finding_severity_findings(node))
+    findings.extend(_unresolved_revision_findings(node))
     if node is not None and manifest["changed_paths"]:
         declared = tuple(node.write_paths or ())
         stray = sorted(
