@@ -1,0 +1,161 @@
+<section data-reckon="evidence" data-node="snapshot-tests-under-load">
+  <h3>Snapshot tests under load — why two ids fail in the suite and pass alone</h3>
+<p>
+Node <code>snapshot-tests-under-load</code> (role: test — attribution, not verdict), run
+<code>r-20261004T011824432285-snapshot-tests-under-load</code>, 2026-10-04.
+Subject: <code>tests/test_obligations_snapshot_is_published.py</code> at the worktree
+(HEAD <code>78a3735b7</code>) and at <code>29e9c94ca</code>, the parent of the merge that added the
+<code>joined_watch_sweeps</code> fixture. Both ids failed in the half-1 suite run at
+<code>76ed64992</code> under <code>pytest -n 8</code>
+(<code>~/.config/reckon/crew/runs/r-20261004T001205658772-the-integrated-suite-at-76ed64992-half-1/suite-half-1-worktree.log</code>):
+</p>
+<ul>
+<li><code>test_a_file_change_and_the_floor_tick_each_republish</code> — line 368,
+<code>assert sweep_at(_computed_at(first) + timedelta(seconds=5)) == []</code>, returned
+<code>[PosixPath('…/test_a_file_change_and_the_flo0/config/crew/obligations/snapshot-fixture/coordinator-fixture.json')]</code>.</li>
+<li><code>test_a_slow_sweep_does_not_hold_the_next_transition</code> — line 548,
+<code>assert started.wait(timeout=30.0)</code> was <code>False</code>: the claim's first sweep never called
+the test's patched <code>sweep</code>. Both failures were on <code>[gw2]</code>, ~10 s apart.</li>
+</ul>
+<h2>Measurement — 30 loops per revision under load</h2>
+<p>
+Each loop runs the test file under <code>pytest -n 8</code> with a per-loop temporary
+<code>RECKON_HOME</code> and <code>--basetemp</code> under the run's scratch, beside 8 CPU spinner
+processes (python busy loops, killed by explicit PID). Logs: one file per loop, exit code appended.
+</p>
+<table>
+<tr><th>id</th><th>main <code>78a3735b7</code> (30 loops)</th><th><code>29e9c94ca</code> (30 loops)</th><th>instrumented main (45 loops, <code>-p sweeplog</code>)</th></tr>
+<tr><td><code>test_a_file_change_and_the_floor_tick_each_republish</code></td><td>0 failures</td><td>0 failures</td><td>0 failures</td></tr>
+<tr><td><code>test_a_slow_sweep_does_not_hold_the_next_transition</code></td><td>0 failures</td><td>0 failures</td><td>0 failures</td></tr>
+<tr><td>whole file (12 tests per loop)</td><td>30/30 loops exit 0</td><td>30/30 loops exit 0</td><td>45/45 loops exit 0</td></tr>
+</table>
+<p>
+Loop logs: <code>loops/main/loop-01..30.log</code>, <code>loops/base/loop-01..30.log</code>,
+<code>loops/inst-main/loop-NN.log</code>; per-loop exit/second/summary/failed-id rows in each
+directory's <code>progress.txt</code>; the arms' trees and head shas in each <code>header.txt</code>
+(main = worktree HEAD; base = extraction of <code>29e9c94ca</code> at
+<code>&lt;scratch&gt;/tree-base</code>). Loop wall time 6–17 s. The test file is byte-identical across
+the three revisions (<code>git archive</code> extraction checked by direct comparison).
+</p>
+<h2>Verdict on the declared negative control</h2>
+<p>
+The declared control: a loop count of zero failures at the parent beside a nonzero count at main
+implicates <code>joined_watch_sweeps</code>; equal counts clear it. Measured: <strong>0/30 at main,
+0/30 at the parent — equal counts, and the fixture is cleared by count.</strong>
+The fixture is also cleared by mechanism: it never creates, clears or keys
+<code>obligation_snapshot._SWEEPS</code>; it joins by thread name with a bounded
+<code>WATCH_SWEEP_JOIN_SECONDS</code>, and the instrumented traces show every sweep thread exiting in
+≤ 1.2 s under load. It is the messenger that surfaces the state, not the state's author.
+</p>
+<h2>What the trace shows about the failed assertion (id 1)</h2>
+<p>
+The instrumented arm (<code>loops/inst-main/trace-NN.txt</code>) logs every <code>sweep()</code> call
+with its <code>now</code>, the cadence memory before and after, and the write count. One MainThread
+sequence (trace-41, one worker's <code>test_a_file_change_and_the_floor_tick_each_republish</code>):
+</p>
+<pre>
+producer write  now=01:38:34.600161  before[none]  after[checked_at=34.600161 published_at=34.600161 identity=0]  nwritten=1
+sweep_at(C+5)   now=01:38:39.600161  before[checked_at=34.600161 …]  after[unchanged]  nwritten=0   -&gt; []          (assert passes)
+sweep_at(C+15)  now=01:38:49.600161  before[checked_at=34.600161 …]  after[checked_at=49.600161 identity=1]  nwritten=1   (plan file written; identity 0 -&gt; 1)
+sweep_at(C+61)  now=01:39:50.600161  before[checked_at=49.600161 …]  after[checked_at=50.600161 identity=1]  nwritten=1   (floor tick)
+</pre>
+<p>
+The +5 call lands with margin <code>now − checked_at = 5.000 s</code> against
+<code>STAT_IDENTITY_INTERVAL_SECONDS = 10.0</code>: the cached branch runs, the just-written plan
+file is deliberately <em>not</em> looked for yet, <code>nwritten=0</code>, and the assert's
+<code>[]</code> follows — exactly as the test's comment says it should.
+</p>
+<p>
+<code>obligation_snapshot.sweep()</code> takes <strong>one</strong> instant per call
+(<code>instant = _utc_now() if now is None else now</code>) and stamps it into three places: the
+document (<code>document_for(…, computed_at=instant)</code>), and the memory's
+<code>checked_at</code> and <code>published_at</code> on the write path. A cached call preserves
+both memory fields untouched. Therefore, given a single key and a single memory, at
+<code>now = C + 5</code>:
+</p>
+<ul>
+<li><code>checked</code> is unconditionally true (margin ≤ 5 &lt; 10, because
+<code>checked_at ≥ published_at = C</code>);</li>
+<li>with <code>checked</code> true, <code>identity</code> <em>is</em> <code>memory.identity</code>,
+so the identity trigger cannot fire;</li>
+<li>the floor needs <code>now − published_at ≥ 60</code>, i.e. <code>published_at ≤ C − 55</code>,
+which a memory whose <code>published_at</code> is <code>C</code> cannot satisfy.</li>
+</ul>
+<p>
+<strong>The assert is arithmetically safe whenever the memory the test consults is the memory the
+producer's sweep wrote.</strong> The observed failure (a republish returned) therefore requires the
+consulted memory to be absent or stale relative to the writer of <code>first</code> — a different
+process, a different home resolution, or a second module instance holding its own
+<code>_SWEEPS</code>. Two candidate mechanisms were tested and falsified; the divergence is not
+reproducible in 105 loop runs of this file alone.
+</p>
+<h2>Hypotheses tested</h2>
+<table>
+<tr><th>Hypothesis</th><th>Test</th><th>Result</th></tr>
+<tr>
+<td>SPEC hypothesis: a sweep thread whose bounded join timed out keeps a <code>sweep_lock</code> a later producer shares.</td>
+<td>Read <code>runs._publish_watch_stream</code> / <code>_run_obligation_sweep</code> / <code>join_watch_sweeps</code>; instrumented trace of every SWEEPTHREAD ENTER/EXIT under load.</td>
+<td><span>Not supported by any measurement.</span> The lock is released in a <code>finally</code>; a later claim builds a fresh producer with a fresh lock; ENTER→EXIT ≤ 1.2 s in all 45 instrumented loops; no 30 s stall appears. Formally still open only because the failure itself never reproduced here.</td>
+</tr>
+<tr>
+<td>Module-identity split: the by-path loader in <code>reckon/hooks/coordinator_obligations.snapshot_module()</code> (and <code>cli.py</code> ~2984) replaces <code>sys.modules["reckon.crew.obligation_snapshot"]</code> with a second instance, giving the producer and the test different <code>_SWEEPS</code> and different patched <code>sweep</code> objects.</td>
+<td>Three probes in the repo's own venv: <code>scripts/probe_bypath.py</code> run before the test file in one pytest process (<code>loops/split-repro.log</code>); <code>scripts/ordering_probe.py</code> / <code>ordering_probe_b.py</code> (<code>loops/instance-probes.log</code>), covering both orderings of canonical import vs by-path load.</td>
+<td><span>Falsified.</span> The by-path load does build a second instance and does replace the <code>sys.modules</code> entry, but <code>from reckon.crew import obligation_snapshot</code> resolves the parent-module attribute in every ordering — producer and test always hold the same instance and share one <code>_SWEEPS</code> (probe A: producer is test instance = true, even with <code>sys.modules</code> holding the by-path copy; probe B: both are the by-path copy). Consistently, all 12 tests in the file passed in the probe run (1 failed = the probe's own expected-split assertion, 12 passed).</td>
+</tr>
+<tr>
+<td><code>joined_watch_sweeps</code> fixture implicated.</td>
+<td>The 30/30 vs 30/30 loop arms (declared negative control).</td>
+<td><span>Cleared by count</span> (equal counts) and by mechanism (above).</td>
+</tr>
+</table>
+<h2>What remains open</h2>
+<p>
+The failing branch needs <code>memory is None</code> (or a stale memory) at the test's direct
+<code>sweep()</code> call: at <code>sweep_at(C+5)</code>, a missing memory makes <code>due</code>
+true (the first sweep of a producer always writes), which returns the written path and fails the
+assert exactly as the log shows. A missing/stale memory cannot arise within one process, one
+module instance and one <code>RECKON_HOME</code> (the home is set per test by
+<code>monkeypatch.setenv</code> and resolved per call). Every single-file loop I could build —
+with load, with xdist, with instrumentation — stays within that envelope, which is why 105 runs
+show zero failures. The original failure ran the <em>whole suite</em>: a worker there also carries
+the hook/watch tests, and with <code>--dist load</code> the per-worker file mix and import order
+are scheduling-dependent. The one structural difference I can name between the failing context and
+my loops is that context, and it is exactly where a second instance or a stale key could be born;
+it is not reachable from this file alone. The honest statement is: <strong>the trigger is a
+consulted-memory divergence, its required arithmetic is proven, the fixture is cleared, the module
+split is falsified, and the remaining reproduction demands the full-suite worker context.</strong>
+</p>
+<h2>Proposed fixing node</h2>
+<p>Two phases; the first makes the second cheap.</p>
+<ol>
+<li><strong>Make the failure self-diagnosing (write paths:
+<code>tests/test_obligations_snapshot_is_published.py</code>, and optionally a read-only accessor in
+<code>reckon/crew/obligation_snapshot.py</code>).</strong> At both asserts, capture on failure: the
+key <code>str(snapshot_dir(project))</code>, the <code>_SWEEPS</code> entry for that key
+(<code>checked_at</code>, <code>published_at</code>, identity length), the resolved
+<code>RECKON_HOME</code>, the current thread names, and whether <code>sys.modules</code>' entry for
+<code>reckon.crew.obligation_snapshot</code> differs from the test module's instance.
+Done-when: the assert failure message alone names which divergence occurred, and the existing
+passing behaviour is unchanged (30 loops, 0 new failures).</li>
+<li><strong>Reproduce in the true context and fix the divergence (write path: whichever file the
+capture names — the loader in <code>reckon/hooks/coordinator_obligations.py</code>, or the memory
+keying in <code>reckon/crew/obligation_snapshot.py</code>).</strong> Run the snapshot file in a
+worker that also runs the hook/watch tests (<code>pytest -n 8</code> over a file set that includes
+both), ≥ 30 iterations under the same CPU load generator. Done-when: either the instrumented
+failure fires and names the divergence, or 30 iterations pass in that context; if the by-path
+loader is named, the fix is to make the loader return the canonical instance rather than replace
+the <code>sys.modules</code> entry.</li>
+</ol>
+<h2>Artifacts</h2>
+<ul>
+<li>Loops and traces: <code>…/runs/r-20261004T011824432285-snapshot-tests-under-load/loops/</code>
+(<code>main/</code>, <code>base/</code>, <code>inst-main/</code>, <code>split-repro.log</code>,
+<code>instance-probes.log</code>).</li>
+<li>Harness scripts: <code>…/scripts/run-loops.sh</code>, <code>run-inst.sh</code>,
+<code>sweeplog.py</code>, <code>probe_bypath.py</code>, <code>ordering_probe.py</code>,
+<code>ordering_probe_b.py</code>.</li>
+<li>Original failure: half-1 suite log, above; source authority: plan
+<code>the-obligations-hook-reads-a-snapshot</code> §20.</li>
+<li>Repository changes: none — this role is read-only.</li>
+</ul>
+</section>
