@@ -3979,13 +3979,23 @@ def _follow_watch_lines(
             # newline, so a record the producer is still writing is not split
             # across the two reads: a line boundary is a record boundary.
             boundary = _follow_boundary(stream_path)
-            # What this session's pane was last shown, one state per run. A
-            # re-attach with a record replays the gap as a diff: one row per run
-            # that moved, from the state the record names, under a header that
-            # says how many runs were found and how many of them changed. A
-            # session with no record has no pane to diff against, so it derives
-            # the fleet as a first arming does.
-            record = runs.read_delivered(project, session) if first_attach else {}
+            # What this session's pane was last shown, one state per run. It is
+            # consulted only by an attach that has no place to resume from. A
+            # re-arm whose recorded offset still names this stream continues
+            # from it, and what its pane missed is exactly what the stream
+            # gained — the fleet replay's job, as it was. An attach with no
+            # place — one whose checkpoint is gone, or whose recorded offset
+            # names a stream that no longer exists — has no such gap to read,
+            # and re-deriving the fleet would stamp a run that has been working
+            # all along with the moment it attached and drop the runs that
+            # finished. The record replays that gap as a diff instead: one row
+            # per run that moved, from the state the record names, under a
+            # header that says how many runs were found and how many changed.
+            record = (
+                runs.read_delivered(project, session)
+                if first_attach and mode in ("baseline", "restart")
+                else {}
+            )
             gap_rows = (
                 _follow_gap_rows(
                     cursor["baseline"],
@@ -4017,6 +4027,15 @@ def _follow_watch_lines(
                         live_runs, len(gap_rows), str(record.get("recorded_at") or "")
                     ),
                 }
+            if record:
+                # The pane has already been shown these states, so a line the
+                # read loop passes again for one of these runs is not news. An
+                # attach with no place reads the stream from a position that
+                # predates the record — it has no offset to open at — and this
+                # memory is what stops the runs that did not move from being
+                # announced a second time as the loop re-reads them.
+                for run_id, state in (record.get("states") or {}).items():
+                    path.remember(str(run_id), str(state))
             if mode != "baseline" and first_attach:
                 # The event restores the pane's stored history for a terminal,
                 # and carries no remembered states: the replay below draws the

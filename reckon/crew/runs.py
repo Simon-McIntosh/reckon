@@ -260,7 +260,10 @@ def write_delivered(
 
     Written atomically, so a reader sees the previous record whole or the new
     one whole. A write that fails costs a later re-attach its diff and must
-    never cost this arming its pane, so it is not raised.
+    never cost this arming its pane, so it is not raised. Entries whose run no
+    longer has a live pointer are dropped: the record is the pane's memory of
+    live work, and one a session leaves armed for days would otherwise carry
+    every run it ever showed.
     """
     if not session:
         return
@@ -269,7 +272,11 @@ def write_delivered(
         "project": project,
         "session": session,
         "recorded_at": at or _utc_now(),
-        "states": {str(run_id): str(state) for run_id, state in states.items()},
+        "states": {
+            str(run_id): str(state)
+            for run_id, state in states.items()
+            if pointer_path(str(run_id)).exists()
+        },
     }
     try:
         from reckon._store import write_json_atomically

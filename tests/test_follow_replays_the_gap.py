@@ -12,6 +12,14 @@ The record is written where a row is written to the pane, never where one is
 generated: a row this reader never received is not one it saw, and a replay
 built from a record that counted it would subtract a run the reader has not been
 told about.
+
+The diff answers an attach with no place to resume from — the follower whose
+recorded offset is gone — so these cases drop the stored place before the
+second arming rather than leaving the arming to resume from its offset. An
+arming that still has a place is owed what the stream gained while it was
+away, and the fleet replay delivers exactly that; the record's diff would
+lose a transition that ends where it started and draw nothing when nothing
+changed.
 """
 
 from __future__ import annotations
@@ -22,7 +30,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli, crew
-from reckon.crew import runs
+from reckon.crew import follow_checkpoint, runs
 from reckon.crew import ticker as ticker_module
 
 PROJECT = "replays-the-gap"
@@ -125,6 +133,22 @@ def _run_follow() -> None:
     assert result.exit_code == 0, result.output
 
 
+def _the_place() -> Path:
+    """Where this session's follower records the place it may resume from."""
+    return follow_checkpoint.checkpoint_path(PROJECT, SESSION)
+
+
+def _drop_the_place() -> None:
+    """Take the place away, so the next arming has none to resume from.
+
+    An arming that still has a place resumes from its offset and is owed the
+    transitions the stream gained while it was away, which is the fleet
+    replay's job. These cases measure the attach that has no such place.
+    """
+    _the_place().unlink(missing_ok=True)
+    assert not _the_place().exists(), f"{_the_place()} still names a place"
+
+
 def _fleet_rows(lines) -> list[str]:
     """The drawn fleet rows, without the pane's framing or the follower's end."""
     return [
@@ -160,11 +184,15 @@ def test_a_reattach_replays_only_the_runs_that_moved(home, follow_lines) -> None
         )
         shown_at = str(record.get("recorded_at") or "")
         assert shown_at, record
+        assert _the_place().exists(), (
+            "the first arming leaves a place in the stream behind it"
+        )
 
         # One owned run moves while nothing is attached; the other does not.
         _deliver(home, RUN_A, "complete")
         crew.list_live(project=PROJECT)
 
+        _drop_the_place()
         follow_lines.clear()
         _run_follow()
 
@@ -207,6 +235,7 @@ def test_a_run_the_record_does_not_name_is_replayed_from_dispatched(
 
         _write_pointer(home, RUN_C, "node-c", phase="working")
         crew.list_live(project=PROJECT)
+        _drop_the_place()
         follow_lines.clear()
         _run_follow()
 
@@ -235,10 +264,12 @@ def test_the_record_follows_every_row_the_pane_receives(home, follow_lines) -> N
 
         _deliver(home, RUN_A, "complete")
         crew.list_live(project=PROJECT)
+        _drop_the_place()
         _run_follow()
         record = runs.read_delivered(PROJECT, SESSION)
         assert record.get("states", {}).get(RUN_A) == "completed_unpromoted", record
 
+        _drop_the_place()
         follow_lines.clear()
         _run_follow()
 
