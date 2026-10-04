@@ -17,8 +17,6 @@
   <meta name="plan-capability-risk" content="moderate">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
-  <meta name="plan-modified" content="2026-10-02">
-  <meta name="plan-version" content="138">
   <meta name="plan-informs" content="a-follower-outlives-its-monitor">
   <title>A Dispatch Returns Without Its Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
@@ -26,6 +24,8 @@
 <meta name="plan-sprint" content="S22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.96">
+<meta name="plan-version" content="139">
+<meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
   <main class="plan-doc">
@@ -1325,6 +1325,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261001T125431075529-the-skill-runs-a-dispatch-in-the-foreground" data-who="reckon-build" data-when="2026-10-01T13:14:21.228Z">
     <div class="r-comment-body"><p>The skill text now runs a CLI dispatch in the foreground — the launch-kind table in skills/reckon-build/SKILL.md returns the call once the run's supervisor is running, without waiting for the worker's spawn and claiming no order between its exit and the spawn; skills/reckon-build/references/orchestrator-harness/claude-code.md names the follower as the session's only monitor and says a `reckon crew dispatch` is never backgrounded; the scout note in sprint-orchestration.md and the `cli` line in worker-backends.md drop background-and-yield. Measured: `grep -rn "dispatch" skills/` read line by line leaves no sentence instructing a backgrounded CLI dispatch, and the nine skill-pinning test files run 132 passed with 1 pre-existing unrelated failure at 62eb59ff6, delta 0 against base 4e5f0a870c.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261004T080008326060-check-a-busy-member-launch-holds" data-who="reckon-build" data-when="2026-10-04T08:23:15.977Z">
+    <div class="r-comment-body"><p>Half 1 unmet as written at 657e199ba — the only member hold is dispatch.py:6757-6765 for a named member, and its verdict&#x27;s terminal-phase arm (node.py:355-361, asserted by tests/test_member_guard_counts_live_processes.py:134) releases a live worker without a process check, so a run that has recorded a terminal end while its worker still holds the session is launched onto; no wait or fresh-session substitution path exists anywhere (session reuse dispatch.py:10922-10983 ignores liveness); half 2 unmet — observe never reads stderr.log on a zero-length stream (dispatch.py:10616-10631 names the path in a detail string only) and, because launch-failed is not terminal, overwrites a stored launch-failed phase with orphaned, converting a reaper-recorded launch failure with its stderr reason into interrupted with no reason (control: the same pointer classifies launch-failed with the reason when classified directly, probes/classify_without_observe.log); full code paths, asserting tests and probe tables in report.md.</p></div>
 </div>
 </section>
 </main>
