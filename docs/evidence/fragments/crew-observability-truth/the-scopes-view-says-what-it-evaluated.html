@@ -25,11 +25,13 @@
     at its declared paths is binding with the reason clause
     <em>&hellip;promote or recover&hellip;</em>; a stopped run with nothing left is
     non-binding with the reason clause <em>&hellip;so its claim is disregarded</em>.
-    The <code>mcp.py</code> scopes view threads both fields into the
-    <code>claim_map</code> owners, and the conditional is deliberate:
-    <code>tests/test_mcp_response_budget.py</code> stubs the planner with claims
-    that carry no binding key, and an unconditional read would have taken that test
-    red for a shape it does not assert.
+    The <code>mcp.py</code> scopes view gives every <code>claim_map</code> owner
+    both fields unconditionally, defaulting an unverdicted claim to binding
+    &mdash; the answer the read model's own default and the disposition rule's
+    no-recorded-process branch both give, so a reader never has to guess what an
+    absent key meant. <code>tests/test_mcp_response_budget.py</code>, which stubs
+    the planner with claims that never carry a verdict, exercises that default,
+    and the node's test file pins it directly with a stubbed planner of its own.
   </p>
   <p>
     <strong>Gate.</strong> The node's own file
@@ -50,16 +52,20 @@
     1 failed, 19 passed, EXIT=1 (<code>scopes-flat-suite-after.log</code>).
   </p>
   <p>
-    <strong>The one head failure is outside this fence, and is the census's own
-    evidence.</strong>
+    <strong>The pinning test, repaired under a widened fence.</strong>
     <code>tests/test_crew.py::test_scopes_view_reads_claim_owners_without_mutating_the_pointer</code>
-    asserts exact dict equality on the <code>claim_map</code> owners &mdash; the
-    owner-only shape whose dropping of the verdict is the second defect this node
-    repairs. The file is not in this node's write scope, so the failure is recorded
-    under <code>follow_ons</code> rather than triaged: the expected owner dicts in
-    that test need <code>"binding": True</code> and <code>"disposition_reason": ""</code>
-    added beside <code>declared_path</code>, which is the entire two-line repair. No
-    other id moved between the two arms.
+    asserts exact dict equality on the <code>claim_map</code> owners and the
+    <code>claims</code> list &mdash; the owner-only shape whose dropping of the
+    verdict is the second defect this node repairs &mdash; so the change reddened
+    it at head. The first head arm named the id and stopped rather than editing
+    outside its fence; with the fence widened to <code>tests/test_crew.py</code>,
+    <code>b51177a2c</code> updates both expected dicts to the widened shape,
+    deriving the expected verdict from <code>claim_disposition</code> itself and
+    keeping the assertion that the live pointer is not mutated. The same commit
+    makes every owner carry <code>binding</code> and
+    <code>disposition_reason</code> unconditionally rather than only when the
+    planner supplied the key, with a stubbed-planner case in the node file pinning
+    the unverdicted default.
   </p>
   <p>
     <strong>Negative control.</strong> Declared string: <em>a scratch copy at head
@@ -84,6 +90,9 @@
     <code>"evaluated"</code>/<code>"unevaluated"</code>, judged by whether the
     caller supplied any candidate nodes; a wave that was supplied and produces an
     empty lane partition is <em>evaluated</em>, which is the distinction this node
-    exists to draw.
+    exists to draw. The owner shape was completed at <code>b51177a2c</code>: every
+    listed owner carries the verdict unconditionally, and the pinning test in
+    <code>tests/test_crew.py</code> now asserts the widened shape while still
+    proving the live pointer is not mutated.
   </p>
 </article>
