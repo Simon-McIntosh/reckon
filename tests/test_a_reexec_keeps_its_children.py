@@ -19,6 +19,11 @@ as if it had launched them, because it is the same process and is still their
 parent. A second defect, that the reaper starter trusts a recorded thread
 object rather than a live thread, is tested beside it because it produces the
 same symptom by a different route.
+
+Each assertion asks only about the pids its own case launched: a corpse that
+some other case on the same pytest worker left behind belongs to that case, and
+asking about every child of the process made this file red on the order in
+which xdist happened to distribute its neighbours.
 """
 
 from __future__ import annotations
@@ -99,17 +104,45 @@ def _pid_gone(pid: int, within: float = 6.0) -> bool:
     return False
 
 
-def _no_defunct_child_under_self() -> bool:
-    """Whether this process has no child left to wait on.
+def _pid_defunct_within(pid: int, within: float = 5.0) -> bool:
+    """Whether the pid has exited and is still sitting unreaped in the table.
 
-    Only this test process calls ``waitpid(-1, ...)``; the reapers wait on
-    specific registered pids, so a successful non-blocking sweep here is a
-    faithful reading of "no corpse of ours".
+    ``/proc`` keeps a zombie's entry until somebody waits on it, so an entry
+    whose state is ``Z`` is exactly the unreaped corpse a launcher that
+    survived its worker used to leave behind; a reaped pid has no entry at all.
     """
-    try:
-        return os.waitpid(-1, os.WNOHANG) == (0, 0)
-    except ChildProcessError:
-        return True
+    deadline = time.monotonic() + within
+    while time.monotonic() < deadline:
+        try:
+            stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8")
+        except FileNotFoundError:
+            return False
+        # The comm field can itself hold spaces and parentheses, so the state
+        # is the first token after the final ')'.
+        if stat.rsplit(")", 1)[-1].split()[0] == "Z":
+            return True
+        time.sleep(0.05)
+    return False
+
+
+def _no_defunct_launched_child(pids: list[int]) -> bool:
+    """Whether none of the pids this case launched is left unreaped.
+
+    Only the given pids are asked about. A defunct child answers a
+    non-blocking wait with its own pid — the state every caller here treats as
+    a failure — a running child answers (0, 0), and a reaped one is no longer
+    a child at all (ECHILD). A corpse another case on the same xdist worker
+    left behind is neither reaped here, which would steal its owner's exit
+    status, nor reported, which made this file red on test order alone.
+    """
+    for pid in pids:
+        try:
+            waited, _status = os.waitpid(pid, os.WNOHANG)
+        except ChildProcessError:
+            continue
+        if waited == pid:
+            return False
+    return True
 
 
 def _wait_reaped(*pids: int) -> None:
@@ -211,9 +244,9 @@ def test_pids_outstanding_at_a_replacement_land_in_the_new_registry(
     with _LAUNCHED_WORKERS_LOCK:
         assert {first, second} == _LAUNCHED_WORKERS
     # Both children exit after the handover and are collected before this test
-    # ends, leaving nothing defunct under this process for a successor to trip on.
+    # ends, leaving nothing defunct of this case's for a successor to trip on.
     _wait_reaped(first, second)
-    assert _no_defunct_child_under_self()
+    assert _no_defunct_launched_child([first, second])
 
 
 def test_a_carried_worker_that_finishes_after_the_replacement_is_collected(
@@ -239,7 +272,7 @@ def test_a_carried_worker_that_finishes_after_the_replacement_is_collected(
     # The child was still running at handover and exits afterwards; the new
     # image collects it rather than leaving a corpse for a zero-signal probe.
     assert _pid_gone(pid), "the carried worker was not collected after the swap"
-    assert _no_defunct_child_under_self()
+    assert _no_defunct_launched_child([pid])
     assert "launched-worker-ran" in log.read_text(encoding="utf-8")
 
 
@@ -420,3 +453,94 @@ def test_the_reloader_exports_launched_pids_beside_the_checkpoint(
     # for a successor test.
     release.write_text("release\n", encoding="utf-8")
     _wait_reaped(pid)
+
+
+def test_an_unreaped_child_of_this_process_does_not_redden_the_reexec_cases(
+    tmp_path: Path,
+) -> None:
+    """A corpse this process already held is not the carried worker's business.
+
+    An xdist worker runs this file beside whatever earlier case left an exited,
+    unreaped child of its own in the same process, and which earlier case that
+    is depends on how the tests are dealt out. This case leaves a corpse of
+    exactly that shape — its own child, exited and deliberately not waited on —
+    and then runs both re-exec assertions beside it: the carried workers are
+    still collected, and the per-pid checks still read clean. A whole-process
+    wait instead reaps this stray corpse, reads a waitable child and reddens
+    the case.
+    """
+    tree = tmp_path
+    tree.mkdir(exist_ok=True)
+    # A launcher that never waits: the shape an earlier case in this process
+    # can leave behind. The handle is held for the life of the case, because
+    # collecting the Popen would reap the child and dissolve the corpse this
+    # case exists to keep in place.
+    stray = subprocess.Popen(
+        [sys.executable, "-c", "pass"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        assert _pid_defunct_within(stray.pid), (
+            "the case's own child exited and was left unreaped"
+        )
+        first, _ = _spawn_worker(tree, "one-beside-an-unreaped-child", sleep=1.5)
+        second, _ = _spawn_worker(tree, "two-beside-an-unreaped-child", sleep=1.5)
+        _export_launched_workers_for_reexec()
+        with _LAUNCHED_WORKERS_LOCK:
+            _LAUNCHED_WORKERS.clear()
+        _LAUNCHED_WORKER_REAPER["thread"] = None
+        _adopt_launched_workers_from_reexec()
+        _wait_reaped(first, second)
+        assert _no_defunct_launched_child([first, second]), (
+            "the handover assertion asks only about the workers this case launched"
+        )
+
+        carried, _ = _spawn_worker(tree, "carried-beside-an-unreaped-child", sleep=1.5)
+        _export_launched_workers_for_reexec()
+        with _LAUNCHED_WORKERS_LOCK:
+            _LAUNCHED_WORKERS.clear()
+        _LAUNCHED_WORKER_REAPER["thread"] = None
+        _adopt_launched_workers_from_reexec()
+        assert _pid_gone(carried), "the carried worker was not collected after the swap"
+        assert _no_defunct_launched_child([carried]), (
+            "the collected-worker assertion asks only about the worker this case launched"
+        )
+    finally:
+        stray.wait(timeout=10)
+
+
+def test_a_worker_left_defunct_after_the_replacement_is_still_reported(
+    tmp_path: Path,
+) -> None:
+    """A carried worker the replacement forgot is reported, not waited past.
+
+    The failure this file's remedy removes is a replacement image that does not
+    adopt the pids its previous image launched: the workers are still children
+    of the process, no reaper owns them, and a finished one sits unreaped in
+    the process table answering a zero-signal probe. The case produces that
+    state — the handover is taken and then dropped rather than adopted — and
+    shows both facts the assertion reads: the pid still present, and still
+    waitable. A check that had stopped noticing a carried corpse reports it
+    here rather than passing over it.
+    """
+    tree = tmp_path
+    tree.mkdir(exist_ok=True)
+    pid, _ = _spawn_worker(tree, "left-defunct", sleep=1.5)
+    _export_launched_workers_for_reexec()
+    # The replacement image did not adopt: module state is gone and the new
+    # registry is empty, which is the defect the handover exists to fix.
+    with _LAUNCHED_WORKERS_LOCK:
+        _LAUNCHED_WORKERS.clear()
+    _LAUNCHED_WORKER_REAPER["thread"] = None
+    os.environ.pop(_LAUNCHED_WORKERS_HANDOVER_ENV, None)
+    assert _pid_defunct_within(pid), (
+        f"worker {pid} exited and nothing waited on it after the replacement"
+    )
+    assert not _pid_gone(pid, within=0.3), (
+        "a defunct worker still has its entry in the process table"
+    )
+    assert not _no_defunct_launched_child([pid]), (
+        "the assertion reports the worker the replacement left defunct; a "
+        "check that passed here would miss the corpse entirely"
+    )
