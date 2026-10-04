@@ -1754,9 +1754,10 @@ def _landing_record_beside(root: Path, plan: str) -> Path | None:
     """The landing record a plan's fragments compose into, when one exists.
 
     The archived spelling is canonical and the live one is accepted because
-    fragments live beside either. A plan with no record yet is not a defect: a
-    fragment may be written before the record exists, and there is then nothing
-    for it to collide with.
+    fragments live beside either. ``None`` means the plan has no landed record
+    yet, which is the state of nearly every plan: the record is synthesised
+    once, at closure, and the caller audits the fragments on their own until
+    then.
     """
 
     evidence = root / "docs" / "evidence"
@@ -1787,8 +1788,10 @@ def _composed_record_id_findings(
 
     A run that changes no fragment is not audited: a composed record the run
     did not touch is not its defect, and refusing it would make a collision
-    already merged into every later run's way. A plan whose fragments have no
-    record yet has nothing to collide with and is skipped for the same reason.
+    already merged into every later run's way. A plan whose landing record does
+    not exist yet is audited over its fragments instead, because the record is
+    synthesised once, at closure: until then the fragments are the composition,
+    and two of them that reuse an id collide with each other.
     """
 
     plans = sorted(
@@ -1800,13 +1803,18 @@ def _composed_record_id_findings(
     if root is None:
         return []
     findings: list[str] = []
+    tree = Path(root)
     for plan in plans:
-        record = _landing_record_beside(Path(root), plan)
-        if record is None:
-            continue
+        record = _landing_record_beside(tree, plan)
+        plan_findings = (
+            doccheck.audit_composed_record_ids(record, plan)
+            if record is not None
+            else doccheck.audit_fragment_ids(
+                tree.joinpath(*_FRAGMENT_SUBTREE_PARTS, plan)
+            )
+        )
         findings.extend(
-            f"[{finding.code}] {finding.message}"
-            for finding in doccheck.audit_composed_record_ids(record, plan)
+            f"[{finding.code}] {finding.message}" for finding in plan_findings
         )
     return findings
 

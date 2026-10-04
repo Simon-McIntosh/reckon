@@ -1476,6 +1476,37 @@ def audit_composed_record_ids(
     )
 
 
+def audit_fragment_ids(fragment_dir: Path) -> list[Finding]:
+    """Report duplicate element ids among a plan's fragments composed together.
+
+    A plan's landing record is synthesised once, at closure, so until then the
+    fragments are the whole of what the composed record will carry: two that
+    reuse an ``id`` collide with each other exactly as they will collide in the
+    record built from them, and no record file has to exist for that to be
+    checkable. Each fragment is read as its body alone, the way composition
+    appends it, so the count sees the anchors a reader meets and not the ones a
+    fragment's own ``head`` holds. The finding text is the one a composed
+    record reports, so a collision reads the same wherever it is caught.
+    """
+
+    from reckon.evidence import _fragment_body_bytes
+
+    directory = Path(fragment_dir)
+    if not directory.is_dir():
+        return []
+    fragments = sorted(directory.glob("*.html"))
+    if not fragments:
+        return []
+    composed = b"".join(_fragment_body_bytes(fragment) for fragment in fragments)
+    return _duplicate_element_id_findings(
+        composed.decode("utf-8", errors="replace"),
+        [
+            (f"fragment {fragment.name}", _plan_html._read_plan_text(fragment))
+            for fragment in fragments
+        ],
+    )
+
+
 def audit_file(path: Path, *, project: str | None = None) -> list[Finding]:
     from reckon.evidence import evidence_record_plan
 

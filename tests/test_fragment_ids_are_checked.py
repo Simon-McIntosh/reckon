@@ -33,6 +33,14 @@ COLLIDING_ID = "landing-what-landed"
 CHANGED_FRAGMENT = f"docs/evidence/fragments/{PLAN}/second-node.html"
 OTHER_CHANGED_PATH = "notes/fragment-plan.txt"
 FRESHLY_PLANNED_FRAGMENT = "docs/evidence/fragments/fresh-plan/fresh-node.html"
+RECORDLESS_PLAN = "recordless-plan"
+RECORDLESS_ID = "recordless-landing"
+RECORDLESS_COMMITTED_FRAGMENT = (
+    f"docs/evidence/fragments/{RECORDLESS_PLAN}/first-node.html"
+)
+RECORDLESS_CHANGED_FRAGMENT = (
+    f"docs/evidence/fragments/{RECORDLESS_PLAN}/second-node.html"
+)
 
 PLAN_HTML = """\
 <!doctype html>
@@ -147,6 +155,8 @@ def run(tmp_path: Path) -> RunFixture:
     The first fragment is committed and the second exists only as the run's
     working-tree change, which is the state a collision is made in: the worker
     writing a new fragment has no memory of the ones already in the directory.
+    A second plan carries the same shape without a record yet, which is the
+    state every plan is in until its record is synthesised at closure.
     """
     repo = tmp_path / "repo"
     fragment_dir = repo / "docs" / "evidence" / "fragments" / PLAN
@@ -164,6 +174,14 @@ def run(tmp_path: Path) -> RunFixture:
     (fresh_dir / "fresh-node.html").write_text(
         _fragment("fresh-node", "fresh-node-landing"), encoding="utf-8"
     )
+    recordless_dir = repo / "docs" / "evidence" / "fragments" / RECORDLESS_PLAN
+    recordless_dir.mkdir()
+    (repo / "docs" / "plans" / f"{RECORDLESS_PLAN}.html").write_text(
+        PLAN_HTML.replace(PLAN, RECORDLESS_PLAN), encoding="utf-8"
+    )
+    (recordless_dir / "first-node.html").write_text(
+        _fragment("first-node", RECORDLESS_ID), encoding="utf-8"
+    )
     (repo / "notes").mkdir()
     (repo / "notes" / "fragment-plan.txt").write_text("run notes\n", encoding="utf-8")
     _git(repo, "init", "-q", "-b", "main")
@@ -177,12 +195,15 @@ def run(tmp_path: Path) -> RunFixture:
         "commit",
         "-q",
         "-m",
-        "seed the plan, its record and one fragment",
+        "seed the plans, the record and their first fragments",
     )
     head = _git(repo, "rev-parse", "HEAD")
 
     (fragment_dir / "second-node.html").write_text(
         _fragment("second-node", COLLIDING_ID), encoding="utf-8"
+    )
+    (repo / RECORDLESS_CHANGED_FRAGMENT).write_text(
+        _fragment("second-node", RECORDLESS_ID), encoding="utf-8"
     )
     manifest = tmp_path / "manifest.md"
     manifest.write_text(_manifest(head, changed=CHANGED_FRAGMENT), encoding="utf-8")
@@ -205,6 +226,7 @@ def run(tmp_path: Path) -> RunFixture:
                     CHANGED_FRAGMENT,
                     OTHER_CHANGED_PATH,
                     FRESHLY_PLANNED_FRAGMENT,
+                    RECORDLESS_CHANGED_FRAGMENT,
                 ],
             },
             "manifest_path": str(manifest),
@@ -264,3 +286,20 @@ def test_a_plan_with_no_record_yet_has_nothing_to_collide_with(
 
     assert result.exit_code == 0, result.output
     assert json.loads(result.output)["findings"] == []
+
+
+def test_a_plan_with_no_record_yet_has_its_fragments_audited_together(
+    run: RunFixture,
+) -> None:
+    """The record is synthesised once, at closure: until then the fragments collide."""
+    run.declare(RECORDLESS_CHANGED_FRAGMENT)
+
+    result = _check()
+
+    assert result.exit_code != 0, result.output
+    payload = json.loads(result.output)
+    duplicates = [f for f in payload["findings"] if "[duplicate-element-id]" in f]
+    assert len(duplicates) == 1
+    assert RECORDLESS_ID in duplicates[0]
+    assert "fragment first-node.html" in duplicates[0]
+    assert "fragment second-node.html" in duplicates[0]
