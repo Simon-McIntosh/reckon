@@ -4,11 +4,14 @@ A node's landing scope is its own fragment, so the estimator exempts the
 fragment dispatch grants and nothing else. The plan's shared landing paths — the
 plan HTML, the cumulative evidence record and the plan-wide figure topic — are
 no longer dispatcher-owned, so naming one is an ordinary read declaration and is
-charged like any other.
+charged like any other. A clause that excludes a path from the declared inputs
+is the reverse of a read, so it charges nothing even though it names the same
+keywords.
 """
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 from reckon import crew
@@ -22,6 +25,9 @@ PLAN_PATH = f"docs/plans/{PLAN}.html"
 EVIDENCE_PATH = f"docs/evidence/archive/{PLAN}-landed.html"
 FRAGMENT_PATH = f"docs/evidence/fragments/{PLAN}/{NODE}.html"
 FIGURE_PATH = f"docs/figures/{PLAN}/{NODE}"
+LARGE_INPUT_PATH = "package/large.py"
+WRITE_PATH = "package/target.py"
+BYTES_PER_TOKEN = 3.5
 
 
 def _node(*, write_paths: list[str], done_when: str = "") -> crew.TaskNode:
@@ -120,3 +126,77 @@ def test_a_named_shared_record_remains_a_chargeable_read(tmp_path: Path) -> None
     assert tokens == records[EVIDENCE_PATH]["estimated_tokens"]
     assert evidence.stat().st_size > 1_000_000
     assert tokens > 1_000_000
+
+
+def _seed_named_inputs(repo: Path) -> None:
+    """A large file a brief may exclude, beside the small write path it edits."""
+    package = repo / "package"
+    package.mkdir(parents=True)
+    (repo / WRITE_PATH).write_bytes(b"v" * 10)
+    (repo / LARGE_INPUT_PATH).write_bytes(b"a" * 200_007)
+
+
+def _estimated_tokens(byte_count: int) -> int:
+    return math.ceil(byte_count / BYTES_PER_TOKEN)
+
+
+def test_a_plain_exclusion_clause_is_not_a_declared_read(tmp_path: Path) -> None:
+    """A clause telling the worker not to read a file declares no read."""
+    _seed_named_inputs(tmp_path)
+    authority = _authority(tmp_path)
+    node = _node(
+        write_paths=[WRITE_PATH],
+        done_when=f"Exclude {LARGE_INPUT_PATH}; do not read it",
+    )
+
+    tokens, inputs = _context_file_inputs(tmp_path, node, authority)
+
+    # The named file is real and expensive, so a zero charge is a refusal
+    # rather than a missing file: only the small write path is charged.
+    assert (tmp_path / LARGE_INPUT_PATH).stat().st_size > 200_000
+    assert inputs["named_files"] == []
+    assert tokens == _estimated_tokens((tmp_path / WRITE_PATH).stat().st_size)
+
+
+def test_an_excluded_path_is_not_charged_when_the_clause_says_declared_inputs(
+    tmp_path: Path,
+) -> None:
+    """Naming a path in an exclusion is not declaring it an input."""
+    _seed_named_inputs(tmp_path)
+    authority = _authority(tmp_path)
+    node = _node(
+        write_paths=[WRITE_PATH],
+        done_when=f"Exclude {LARGE_INPUT_PATH} from declared inputs",
+    )
+
+    tokens, inputs = _context_file_inputs(tmp_path, node, authority)
+
+    assert inputs["named_files"] == []
+    assert tokens == _estimated_tokens((tmp_path / WRITE_PATH).stat().st_size)
+
+
+def test_the_declaration_form_of_the_same_clause_charges_the_file(
+    tmp_path: Path,
+) -> None:
+    """Only the verb moves between the exclusion and the declaration, and the
+    charge returns: the fixture's bytes put the large file at 57,145 tokens and
+    the write path at 3, so the declared form totals 57,148."""
+    _seed_named_inputs(tmp_path)
+    authority = _authority(tmp_path)
+    node = _node(
+        write_paths=[WRITE_PATH],
+        done_when=f"Treat {LARGE_INPUT_PATH} as a declared input",
+    )
+
+    tokens, inputs = _context_file_inputs(tmp_path, node, authority)
+    records = _records_by_path(inputs["named_files"])
+    expected = _estimated_tokens(
+        (tmp_path / LARGE_INPUT_PATH).stat().st_size
+    ) + _estimated_tokens((tmp_path / WRITE_PATH).stat().st_size)
+
+    assert expected == 57_148
+    assert tokens == expected
+    assert records[LARGE_INPUT_PATH]["counted"] is True
+    assert records[LARGE_INPUT_PATH]["estimated_tokens"] == _estimated_tokens(
+        (tmp_path / LARGE_INPUT_PATH).stat().st_size
+    )
