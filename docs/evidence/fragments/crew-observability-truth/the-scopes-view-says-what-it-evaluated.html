@@ -1,0 +1,98 @@
+<article class="landed-report" data-run-id="r-20261004T030028315026-the-scopes-view-says-what-it-evaluated">
+  <h3>the-scopes-view-says-what-it-evaluated &mdash; the payload names the question it asked, and each claim carries the enforcer's binding verdict</h3>
+  <p>
+    The dispatch-refusal-surface census found the scopes view answering two questions
+    with one shape. A scopes call carrying no candidate wave returned empty
+    <code>conflicts</code>, empty <code>live_conflicts</code> and empty
+    <code>lanes</code> &mdash; the same payload an evaluated, clean wave produces
+    &mdash; so a caller that forgot the manifest read a clean verdict out of an
+    unasked question. And a listed live claim carried its owner (run id, node,
+    declared path) but not whether that claim <em>binds</em>: the registry read
+    dropped the verdict the enforcer had already computed, so a worker reading the
+    registry for itself chose a stricter rule than dispatch applies and blocked on a
+    stopped claim that holds no unintegrated work while dispatch walks past it.
+  </p>
+  <p>
+    <strong>What the payload says now.</strong> <code>plan_scope_lanes</code> in
+    <code>reckon/crew/runs.py</code> returns a <code>candidate_wave</code> block:
+    <code>state: "unevaluated"</code> with a detail naming what was not evaluated
+    when no candidates were supplied, <code>state: "evaluated"</code> once a wave
+    is. Each claim from <code>_LiveScopeClaim.as_dict()</code> now carries
+    <code>binding</code> and <code>disposition_reason</code>, computed by
+    <code>claim_disposition</code> (<code>reckon/crew/node.py</code>) &mdash; the
+    same function the dispatch scope check runs, not a parallel rule. A pointer
+    naming no pid, or a live pid, is binding; a stopped run with unintegrated work
+    at its declared paths is binding with the reason clause
+    <em>&hellip;promote or recover&hellip;</em>; a stopped run with nothing left is
+    non-binding with the reason clause <em>&hellip;so its claim is disregarded</em>.
+    The <code>mcp.py</code> scopes view gives every <code>claim_map</code> owner
+    both fields unconditionally, defaulting an unverdicted claim to binding
+    &mdash; the answer the read model's own default and the disposition rule's
+    no-recorded-process branch both give, so a reader never has to guess what an
+    absent key meant. <code>tests/test_mcp_response_budget.py</code>, which stubs
+    the planner with claims that never carry a verdict, exercises that default,
+    and the node's test file pins it directly with a stubbed planner of its own.
+  </p>
+  <p>
+    <strong>Gate.</strong> The node's own file
+    <code>tests/test_the_scopes_view_says_what_it_evaluated.py</code> (7 tests) runs
+    in a temporary <code>RECKON_HOME</code> and a temporary repository, and the real
+    live-pointer directory is snapshotted at setup and asserted unchanged at
+    teardown, so an isolated read cannot stand in for an isolated write. It shows:
+    a scopes call without candidates reports <code>unevaluated</code>; a disjoint
+    supplied candidate reports <code>evaluated</code> with empty conflicts; a
+    stopped clean claim is listed non-binding <em>and</em>
+    <code>claim_disposition</code> on the same pointer agrees; a running claim
+    (<code>pid=os.getpid()</code>) is binding; giving the stopped tree an
+    unintegrated commit flips its claim to binding with the promote-or-recover
+    reason. Flat suite (<code>-k "scopes or scope_claims or scope_claim or
+    _repository_scope_claims"</code>): base <code>61abcb5df</code> 13 passed,
+    EXIT=0 (<code>scopes-flat-suite-baseline.log</code>); head <code>b7c9cb1c8</code>
+    node file 7 passed, EXIT=0 (<code>scopes-node-gate.log</code>); head flat suite
+    1 failed, 19 passed, EXIT=1 (<code>scopes-flat-suite-after.log</code>).
+  </p>
+  <p>
+    <strong>The pinning test, repaired under a widened fence.</strong>
+    <code>tests/test_crew.py::test_scopes_view_reads_claim_owners_without_mutating_the_pointer</code>
+    asserts exact dict equality on the <code>claim_map</code> owners and the
+    <code>claims</code> list &mdash; the owner-only shape whose dropping of the
+    verdict is the second defect this node repairs &mdash; so the change reddened
+    it at head. The first head arm named the id and stopped rather than editing
+    outside its fence; with the fence widened to <code>tests/test_crew.py</code>,
+    <code>b51177a2c</code> updates both expected dicts to the widened shape,
+    deriving the expected verdict from <code>claim_disposition</code> itself and
+    keeping the assertion that the live pointer is not mutated. The same commit
+    makes every owner carry <code>binding</code> and
+    <code>disposition_reason</code> unconditionally rather than only when the
+    planner supplied the key, with a stubbed-planner case in the node file pinning
+    the unverdicted default.
+  </p>
+  <p>
+    <strong>Negative control.</strong> Declared string: <em>a scratch copy at head
+    that omits the binding flag fails the non-binding assertion</em>. Applied to a
+    <code>git archive HEAD</code> copy under the run scratch: with
+    <code>"binding"</code> and <code>"disposition_reason"</code> removed from
+    <code>_LiveScopeClaim.as_dict()</code>, the node's file runs 4 failed, 3 passed,
+    EXIT=1 &mdash; including
+    <code>test_a_stopped_claim_with_no_work_left_is_listed_non_binding</code>, an id
+    the head arm does not fail, plus the running-claim, unintegrated-commit and
+    <code>claim_map</code> owner cases, all of which read the omitted key. Log:
+    <code>negative-control-omit-binding-flag.log</code>, taken in the scratch tree
+    (<code>module.__file__</code> names it) with the head arm's log taken in the
+    worktree.
+  </p>
+  <p>
+    <strong>Landing note.</strong> Carried by <code>b7c9cb1c8</code> over
+    <code>reckon/crew/runs.py</code>, <code>reckon/mcp.py</code> and the new test
+    file (+288/&minus;3). The binding rule itself was not re-implemented: the
+    change routes the existing <code>claim_disposition</code> verdict into the read
+    model. The <code>candidate_wave</code> state is a literal
+    <code>"evaluated"</code>/<code>"unevaluated"</code>, judged by whether the
+    caller supplied any candidate nodes; a wave that was supplied and produces an
+    empty lane partition is <em>evaluated</em>, which is the distinction this node
+    exists to draw. The owner shape was completed at <code>b51177a2c</code>: every
+    listed owner carries the verdict unconditionally, and the pinning test in
+    <code>tests/test_crew.py</code> now asserts the widened shape while still
+    proving the live pointer is not mutated.
+  </p>
+</article>

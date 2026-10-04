@@ -1590,6 +1590,7 @@ def test_scopes_view_reads_claim_owners_without_mutating_the_pointer(
     home, repo
 ) -> None:
     from reckon import mcp
+    from reckon.crew.node import claim_disposition
 
     owner = _write_running_pointer(
         home,
@@ -1600,6 +1601,7 @@ def test_scopes_view_reads_claim_owners_without_mutating_the_pointer(
     )
     pointer = crew.pointer_path(owner["run_id"])
     before = pointer.read_bytes()
+    disposition = claim_disposition(json.loads(before))
 
     result = mcp._crew("proj", view="scopes", checkout_path=str(repo))
 
@@ -1610,6 +1612,8 @@ def test_scopes_view_reads_claim_owners_without_mutating_the_pointer(
                 "run_id": owner["run_id"],
                 "node": "owner-node",
                 "declared_path": "reckon/crew.py",
+                "binding": disposition.binding,
+                "disposition_reason": disposition.reason,
             }
         ]
     }
@@ -1619,6 +1623,8 @@ def test_scopes_view_reads_claim_owners_without_mutating_the_pointer(
             "run_id": owner["run_id"],
             "node": "owner-node",
             "declared_path": "reckon/crew.py",
+            "binding": disposition.binding,
+            "disposition_reason": disposition.reason,
         }
     ]
     assert pointer.read_bytes() == before
@@ -3714,9 +3720,7 @@ def test_opt_in_budget_watchdog_stops_and_records_the_run_phase(
     monkeypatch.setattr(
         crew,
         "_signal_process_group",
-        lambda pid, started_at, *, reason="", **kwargs: signalled.append(
-            (pid, reason)
-        ),
+        lambda pid, started_at, *, reason="", **kwargs: signalled.append((pid, reason)),
     )
     config = {
         "fences": {
