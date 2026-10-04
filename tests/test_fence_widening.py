@@ -1,12 +1,10 @@
 """A blocked run's fence is widened through the pointer it will be judged by.
 
-The fence is drawn once, at dispatch: ``--write-path`` is read there and no
-later command touches scope, so a worker that blocks because its scope is too
-narrow forces a choice between a redispatch that discards its session and its
-commits, and a hand-edit of run state that promotion then reads. These cases
-drive the CLI runner rather than the pointer helper, because what is under test
-is the command surface a coordinator reaches for, and the field it writes is the
-one the promotion validator reads.
+The fence starts with the paths declared at dispatch. A blocked run can add a
+path through the command surface, which must refuse a peer's live claim and
+carry an accepted path into the committed record. These cases drive the CLI
+runner rather than the pointer helper because they exercise the coordinator's
+verb and the field promotion reads.
 
 Running the command is also held to the repository rule that a write-shaped test
 accounts for the state it did not isolate. A case points RECKON_HOME at a
@@ -244,6 +242,12 @@ def test_a_free_path_reaches_the_promoted_ledger(
 def test_a_peer_held_path_refuses_without_changing_pointer_bytes(
     blocked_run: dict, tmp_path: Path, crew_home_watch: CrewHomeWatch
 ) -> None:
+    subprocess.run(
+        ["git", "init", "-q", "-b", "main"],
+        cwd=tmp_path / "repo",
+        check=True,
+        capture_output=True,
+    )
     holder_id = "r-20260921T000000000000-holder"
     holder = _blocked_pointer(tmp_path, holder_id, phase="working")
     holder["node"]["write_paths"] = [GRANTED]

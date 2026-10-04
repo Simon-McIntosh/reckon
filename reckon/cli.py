@@ -5529,7 +5529,9 @@ def crew_widen(run_id, write_paths, pretty):
     decision outstanding. Eligibility is read twice -- once on the pointer as it
     stands and again on the record read under the per-run lock -- so a run that
     reaches either read in a non-wideniable state is refused rather than widened
-    in place.
+    in place. Added paths are checked against other binding live claims during
+    that locked write; a conflict names its holder and leaves this pointer
+    unchanged.
     """
     crew_module, _ = _crew_modules()
     try:
