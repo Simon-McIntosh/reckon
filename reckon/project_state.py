@@ -1344,14 +1344,14 @@ def evaluate_held_blocker(
     blocker, version = read_resource(docs_dir, project, "blocker", blocker_id)
     if blocker.get("kind") != "held":
         raise ProjectStateError(f"blocker {blocker_id!r} is not held")
-    probe_id = blocker.get("probe")
-    if not isinstance(probe_id, str) or probe_id not in PROBES:
-        raise ProjectStateError(f"unknown held blocker probe id: {probe_id!r}")
     if blocker.get("status") == "cleared":
         reason = blocker.get("cleared_reason")
         if not isinstance(reason, str) or not reason.strip():
             raise ProjectStateError(f"cleared blocker {blocker_id!r} has no reason")
         return {"id": blocker_id, "status": "cleared", "reason": reason}
+    probe_id = blocker.get("probe")
+    if not isinstance(probe_id, str) or probe_id not in PROBES:
+        raise ProjectStateError(f"unknown held blocker probe id: {probe_id!r}")
     subject = blocker.get("subject")
     if not isinstance(subject, str) or not subject.strip():
         raise ProjectStateError(f"held blocker {blocker_id!r} has no subject")
