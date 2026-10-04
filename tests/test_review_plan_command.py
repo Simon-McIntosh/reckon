@@ -241,6 +241,73 @@ def test_review_plan_dry_run_resolves_the_shared_composition(project):
     assert runs.list_live(project="sample") == []
 
 
+def _report_listing() -> list[str]:
+    root = plan_review.review_report_directory("sample", "fixture", "unused").parent
+    if not root.exists():
+        return []
+    return sorted(str(path.relative_to(root)) for path in root.rglob("*"))
+
+
+def test_review_plan_dry_run_leaves_the_report_root_unchanged(project):
+    before = _report_listing()
+    for _ in range(2):
+        result = CliRunner().invoke(
+            cli.main,
+            [
+                "crew",
+                "review-plan",
+                "--project",
+                "sample",
+                "--plan",
+                "fixture",
+                "--session",
+                "coordinator",
+                "--dry-run",
+            ],
+        )
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        assert payload["dry_run"] is True
+        assert not Path(payload["node"]["brief"]).exists()
+    after = _report_listing()
+    assert after == before
+    assert after == []
+
+
+def test_review_plan_real_dispatch_writes_the_composed_artifacts(project, monkeypatch):
+    _, _, _ = project
+    dispatch = importlib.import_module("reckon.crew.dispatch")
+    monkeypatch.setattr(
+        dispatch, "dispatch", lambda **kwargs: {"run_id": "launched-review"}
+    )
+    result = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            "review-plan",
+            "--project",
+            "sample",
+            "--plan",
+            "fixture",
+            "--session",
+            "coordinator",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["review_run_id"] == "launched-review"
+    root = plan_review.review_report_directory("sample", "fixture", "unused").parent
+    run_directories = sorted(path for path in root.iterdir() if path.is_dir())
+    assert len(run_directories) == 1
+    directory = run_directories[0]
+    brief = directory / "brief.md"
+    assert brief.is_file() and "RUBRIC" in brief.read_text()
+    snapshot = directory / "plan.html"
+    assert snapshot.is_file() and snapshot.read_bytes() == project[2].read_bytes()
+    sidecar = json.loads((directory / "plan-review.json").read_text())
+    assert sidecar["plan_slug"] == "fixture"
+    assert sidecar["report_path"] == str(directory / "report.md")
+
+
 def test_review_plan_launch_passes_session_and_local(project, monkeypatch):
     dispatch = importlib.import_module("reckon.crew.dispatch")
     calls = []

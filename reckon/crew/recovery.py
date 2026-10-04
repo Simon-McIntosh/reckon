@@ -491,6 +491,7 @@ def _review_dispatch_fields(
     record: Mapping[str, Any],
     *,
     delta: Mapping[str, Any] | None = None,
+    write: bool = True,
 ) -> dict[str, Any]:
     """The facts a scoring run's review dispatch is built from.
 
@@ -512,6 +513,15 @@ def _review_dispatch_fields(
     the pair a review stands for — the run it reviews and the head it read —
     so the caller comparing a standing review against this dispatch needs the
     head the dispatch composed for, not only the paths it granted.
+
+    ``write`` is False for a preview. A plan review's report directory, brief,
+    plan snapshot and sidecar are then returned as the paths and text they
+    would be written with — ``brief_text`` carries the composed brief — and
+    nothing is created: a preview leaves the plan's report root unchanged and
+    repeated previews mint no run directory for
+    :func:`plan_review.store_delivered_report` to miss. The paths returned are
+    the same ones a real dispatch writes, so the preview still names the
+    command and the scope that dispatch would use.
     """
     if record.get("subject") == "plan":
         from reckon import _plan_html
@@ -521,10 +531,8 @@ def _review_dispatch_fields(
         document = document_bytes.decode("utf-8")
         project, slug, run_id = record["project"], record["plan_slug"], record["run_id"]
         directory = plan_review.review_report_directory(project, slug, run_id)
-        directory.mkdir(parents=True, exist_ok=True)
         report = directory / "report.md"
         snapshot = directory / "plan.html"
-        snapshot.write_bytes(document_bytes)
         blob = subprocess.run(
             ["git", "hash-object", "--stdin"],
             input=document_bytes,
@@ -539,23 +547,30 @@ def _review_dispatch_fields(
             else review_module.load_plan_review_prompt()
         )
         brief = directory / "brief.md"
-        brief.write_text(
+        brief_text = (
             prompt + f"\nPlan path: {path}\nReview the composed snapshot: {snapshot}\n"
             f"Repository roots to search: {record['repo']}\nReport path: {report}\n"
             "Write RUBRIC and FINDING lines to the report path. Review the snapshot "
-            "so the report describes the content named by its sidecar.\n",
-            encoding="utf-8",
+            "so the report describes the content named by its sidecar.\n"
         )
-        sidecar = plan_review.write_review_sidecar(
-            directory,
-            project=project,
-            plan_slug=slug,
-            plan_version=_plan_html.read_state_file(snapshot).get("version") or 0,
-            reviewed_blob_sha=blob,
-            plan_fingerprint=plan_review.plan_fingerprint(document),
-            rubric=rubric,
-            report_path=report,
-        )
+        # The sidecar's name belongs to the store that reads it back, so the
+        # composed path and the written path are one spelling rather than two.
+        sidecar = directory / plan_review._REVIEW_SIDECAR_NAME
+        plan_version = _plan_html.read_state(document).get("version") or 0
+        if write:
+            directory.mkdir(parents=True, exist_ok=True)
+            snapshot.write_bytes(document_bytes)
+            brief.write_text(brief_text, encoding="utf-8")
+            plan_review.write_review_sidecar(
+                directory,
+                project=project,
+                plan_slug=slug,
+                plan_version=plan_version,
+                reviewed_blob_sha=blob,
+                plan_fingerprint=plan_review.plan_fingerprint(document),
+                rubric=rubric,
+                report_path=report,
+            )
         return {
             "run_id": run_id,
             "project": project,
@@ -567,6 +582,7 @@ def _review_dispatch_fields(
             "session": record["session"],
             "time_budget": "20m",
             "brief": str(brief),
+            "brief_text": brief_text,
             "sidecar": str(sidecar),
             "goal": f"review the {rubric} of plan {slug}",
             "done_when": (
@@ -2236,6 +2252,20 @@ def _resolved_review_config(
     return flight.resolve(project=project).config
 
 
+def _standing_plan_review(project: str, plan_slug: str) -> str:
+    """The live plan-review run standing for ``plan_slug``, or empty.
+
+    One reader for both the locked dispatch and the preview, so the answer a
+    dry run reports and the answer the lock protects cannot be two spellings
+    of the same scan.
+    """
+    for pointer in list_live(project=project):
+        node = pointer.get("node") or {}
+        if node.get("id") == f"plan-review-of-{plan_slug}":
+            return str(pointer.get("run_id") or "")
+    return ""
+
+
 def dispatch_review_for_run(
     record: Mapping[str, Any],
     *,
@@ -2264,6 +2294,26 @@ def dispatch_review_for_run(
     exception stays visible after the command that supplied it is gone.
     """
     if record.get("subject") == "plan":
+        if dry_run:
+            # A preview takes no lock and creates nothing: the directory and
+            # its lock file are themselves artifacts of a dispatch that has not
+            # happened, and the in-flight read it guards is a plain read here.
+            standing = _standing_plan_review(record["project"], record["plan_slug"])
+            if standing:
+                return {
+                    "dispatched": False,
+                    "review_run_id": standing,
+                    "reason": "a plan review is already in flight as a live run",
+                }
+            return _dispatch_composed_review(
+                record,
+                _review_dispatch_fields(record, write=False),
+                config=config,
+                launcher=launcher,
+                allow_unreconciled_runs=allow_unreconciled_runs,
+                prefer_local=prefer_local,
+                dry_run=True,
+            )
         directory = plan_review.review_report_directory(
             record["project"], record["plan_slug"], record["run_id"]
         ).parent
@@ -2271,14 +2321,13 @@ def dispatch_review_for_run(
         # The lock spans the pointer check and launch across coordinator sessions.
         with (directory / "dispatch.lock").open("a") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
-            for pointer in list_live(project=record["project"]):
-                node = pointer.get("node") or {}
-                if node.get("id") == f"plan-review-of-{record['plan_slug']}":
-                    return {
-                        "dispatched": False,
-                        "review_run_id": pointer.get("run_id"),
-                        "reason": "a plan review is already in flight as a live run",
-                    }
+            standing = _standing_plan_review(record["project"], record["plan_slug"])
+            if standing:
+                return {
+                    "dispatched": False,
+                    "review_run_id": standing,
+                    "reason": "a plan review is already in flight as a live run",
+                }
             return _dispatch_composed_review(
                 record,
                 _review_dispatch_fields(record),
@@ -2286,7 +2335,7 @@ def dispatch_review_for_run(
                 launcher=launcher,
                 allow_unreconciled_runs=allow_unreconciled_runs,
                 prefer_local=prefer_local,
-                dry_run=dry_run,
+                dry_run=False,
             )
     run_id = str(record.get("run_id") or "")
     if _is_review_node(record):
@@ -2511,16 +2560,34 @@ def _dispatch_composed_review(
         time_budget=fields["time_budget"],
     )
     if dry_run:
-        resolution = dispatch_module.plan_dispatch(
-            node=node,
-            config=resolved,
-            project=project,
-            repo=repo,
-            session=fields["session"],
-            local=on_local_lane,
-            backend_override=backend or None,
-            route="deterministic",
-        )
+        # The plan review's brief is composed rather than given, so a preview
+        # holds its text while a dispatch writes it. The resolver reads the
+        # brief to digest it, so the composed text is staged into a scratch
+        # copy for that read and removed with the call: the preview reaches the
+        # verdict a real dispatch reaches, the digest is over the bytes the
+        # real brief would carry, and the report root is left untouched. The
+        # staged path is never the path the preview reports.
+        staged_brief: tempfile.TemporaryDirectory[str] | None = None
+        if record.get("subject") == "plan" and fields.get("brief_text"):
+            staged_brief = tempfile.TemporaryDirectory(prefix="plan-review-preview-")
+            staged_path = Path(staged_brief.name) / "brief.md"
+            staged_path.write_text(str(fields["brief_text"]), encoding="utf-8")
+            node.brief = str(staged_path)
+        try:
+            resolution = dispatch_module.plan_dispatch(
+                node=node,
+                config=resolved,
+                project=project,
+                repo=repo,
+                session=fields["session"],
+                local=on_local_lane,
+                backend_override=backend or None,
+                route="deterministic",
+            )
+        finally:
+            if staged_brief is not None:
+                node.brief = str(fields.get("brief") or "")
+                staged_brief.cleanup()
         return {
             "dispatched": False,
             "dry_run": True,
