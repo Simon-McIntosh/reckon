@@ -1743,7 +1743,9 @@ def resolve_graph_target(
     either an inventory list or a mapping carrying ``inventory`` and optional
     ``sprints``, ``active_sprint_id`` and ``project_manifest`` values. Only the
     endpoint handle is authored; every member and metric below is recomputed
-    from the current plans and their dependency edges.
+    from the current plans and their dependency edges, and each member's
+    readiness is the roadmap's own verdict for that plan rather than a second
+    computation of the same fact.
     """
 
     target_handle = str(handle or "").strip()
@@ -1874,29 +1876,19 @@ def resolve_graph_target(
         graph_sections_map = _plan_decision_sections(
             plan, None, graph_project, graph_slug
         )
-        decisions = _decision_rows(plan, graph_sections_map)
-        # A decision scoped to sections holds those sections, not the plan, so
-        # only an unscoped open decision keeps this member out of the ready set.
-        open_decisions = plan_level_decisions(decisions)
         decision_blocker_rows.extend(unsettled_decisions(plan, graph_sections_map))
         closure_blocker_rows.extend(closure_blockers(plan))
         dependencies_complete = all(
             _status(plans[dependency]) in COMPLETED_STATUSES
             for dependency in plan_blocking_graph[key]
         )
-        blockers = [
-            row
-            for row in plan.get("blocking") or []
-            if isinstance(row, dict) and row.get("kind") in ("explicit", "held")
-        ]
-        if (
-            dependencies_complete
-            and not blockers
-            and not unpassed_gate_blockers(execution_gates(plan))
-            and not open_decisions
-            and _status(plan) in _AUTHORISED_STATUSES
-            and _dispatchability(plan)[0]
-        ):
+        # Readiness is the roadmap row's own verdict for this plan, so both
+        # surfaces answer from one computation: authorisation (including a plan
+        # released by its cleared hold), its blockers, gates, decisions and
+        # dispatchability are decided once. The closure contributes only the
+        # dependency debt the graph resolves across projects.
+        member_row = schedule_rows.get(key)
+        if member_row is not None and member_row.get("ready") and dependencies_complete:
             ready.append(_qualified_plan(*key))
 
     deferred_members = sorted(
