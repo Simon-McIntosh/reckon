@@ -63,6 +63,7 @@ def _write_pointer(
         "phase": phase,
         "pid": os.getpid(),
         "log_path": str(stream),
+        "manifest_path": str(stream.parent / "manifest.md"),
         "node": {"plan": "visible-work", "section": "delivery", "role": "implement"},
     }
     live = home / "crew" / "live"
@@ -101,15 +102,26 @@ def test_crew_responds_within_one_second_over_forty_live_pointers(
     crew_server,
 ) -> None:
     home = crew_server["home"]
+    stream_lines = '{"type":"thread.started"}\n' * 10000
     for index in range(40):
         run_id = f"run-{index:02d}"
         stream = home / "crew" / "runs" / run_id / "stream.jsonl"
+        if index:
+            stream.parent.mkdir(parents=True)
+            stream.write_text(stream_lines, encoding="utf-8")
+            (stream.parent / "manifest.md").write_text(
+                "status: in-progress\n", encoding="utf-8"
+            )
+            (stream.parent / "worker.json").write_text(
+                json.dumps({"run_id": run_id, "pid": os.getpid()}), encoding="utf-8"
+            )
         _write_pointer(
             home, run_id, stream, phase="starting" if index == 0 else "working"
         )
-        assert not stream.exists()
+    assert not (home / "crew" / "runs" / "run-00" / "stream.jsonl").exists()
 
     elapsed, payload = _crew_response(crew_server["port"])
     assert len(payload["runs"]) == 40
+    assert sum(row["last_activity"] is not None for row in payload["runs"]) == 39
     print(f"GET /crew over 40 live pointers: {elapsed:.3f} s", flush=True)
     assert elapsed < 1.0
