@@ -24,12 +24,13 @@ changed.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
 
-from reckon import cli, crew
+from reckon import cli, crew, ledger
 from reckon.crew import follow_checkpoint, runs
 from reckon.crew import ticker as ticker_module
 
@@ -38,6 +39,7 @@ SESSION = "s-gap"
 RUN_A = "r-gap-a"
 RUN_B = "r-gap-b"
 RUN_C = "r-gap-c"
+RUN_P = "r-gap-p"
 
 
 @pytest.fixture()
@@ -78,24 +80,26 @@ def follow_lines(monkeypatch):
     return lines
 
 
-def _write_pointer(home: Path, run_id: str, node: str, *, phase: str) -> None:
+def _write_pointer(
+    home: Path, run_id: str, node: str, *, phase: str, repo: Path | None = None
+) -> None:
     log = home / "logs" / f"{run_id}.jsonl"
     log.parent.mkdir(parents=True, exist_ok=True)
     log.write_text('{"type":"turn.started"}\n')
-    crew._write_json(
-        crew.pointer_path(run_id),
-        {
-            "run_id": run_id,
-            "project": PROJECT,
-            "session": SESSION,
-            "node": {"id": node, "plan": "plan-a", "time_budget": "20m"},
-            "phase": phase,
-            "created_at": runs._utc_now(),
-            "manifest_path": str(home / "manifests" / f"{run_id}.md"),
-            "log_path": str(log),
-            "process_alive": None,
-        },
-    )
+    pointer = {
+        "run_id": run_id,
+        "project": PROJECT,
+        "session": SESSION,
+        "node": {"id": node, "plan": "plan-a", "time_budget": "20m"},
+        "phase": phase,
+        "created_at": runs._utc_now(),
+        "manifest_path": str(home / "manifests" / f"{run_id}.md"),
+        "log_path": str(log),
+        "process_alive": None,
+    }
+    if repo is not None:
+        pointer["repo"] = str(repo)
+    crew._write_json(crew.pointer_path(run_id), pointer)
 
 
 def _two_live_runs(home: Path) -> None:
@@ -112,7 +116,7 @@ def _deliver(home: Path, run_id: str, status: str) -> None:
     )
 
 
-def _run_follow() -> None:
+def _run_follow(*, json_output: bool = False) -> None:
     """Arm the real follower command once, to its own short lifetime."""
     result = CliRunner().invoke(
         cli.crew,
@@ -127,6 +131,7 @@ def _run_follow() -> None:
             "--no-color",
             "--width",
             "200",
+            *(["--json"] if json_output else []),
         ],
         catch_exceptions=False,
     )
@@ -147,6 +152,16 @@ def _drop_the_place() -> None:
     """
     _the_place().unlink(missing_ok=True)
     assert not _the_place().exists(), f"{_the_place()} still names a place"
+
+
+def _promote(home: Path, run_id: str, repo: Path) -> None:
+    """Word a run promoted in the ledger, with its live pointer left behind."""
+    _deliver(home, run_id, "complete")
+    row = ledger.run_path(PROJECT, run_id, str(repo))
+    row.parent.mkdir(parents=True, exist_ok=True)
+    row.write_text(
+        json.dumps({"run_id": run_id, "project": PROJECT, "commits": ["HEAD"]})
+    )
 
 
 def _fleet_rows(lines) -> list[str]:
@@ -277,3 +292,49 @@ def test_the_record_follows_every_row_the_pane_receives(home, follow_lines) -> N
     assert "0 changed" in follow_lines[0], follow_lines[0]
     assert not _naming(follow_lines, "node-a"), follow_lines
     assert not _naming(follow_lines, "node-b"), follow_lines
+
+
+def test_a_json_arming_records_only_what_a_pane_would_draw(
+    home, follow_lines
+) -> None:
+    """The record is the pane's memory, not the JSON consumer's.
+
+    A session can be armed as a JSON reader and later as a pane in front of a
+    person. JSON output carries the settled inventory a pane withholds — a
+    promoted run asks a reader for nothing — and recording one would leave the
+    record holding a state only the JSON consumer received. The pane's next
+    attach would diff against a state it never showed, and read the run's
+    re-dispatch as a promotion the reader was never told about.
+    """
+    repo = home / "repo"
+    repo.mkdir()
+    _write_pointer(home, RUN_A, "node-a", phase="working")
+    _write_pointer(home, RUN_P, "node-p", phase="working", repo=repo)
+    _promote(home, RUN_P, repo)
+
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
+        assert acquired
+        crew.list_live(project=PROJECT)
+        _run_follow(json_output=True)
+        record = runs.read_delivered(PROJECT, SESSION)
+        assert record.get("states", {}).get(RUN_A) == "working", record
+        assert RUN_P not in record.get("states", {}), (
+            f"a row only the JSON consumer received is not one the pane drew; got {record!r}"
+        )
+
+        # The run is dispatched again while nothing is attached, so the pane's
+        # next attach has something to say about it.
+        ledger.run_path(PROJECT, RUN_P, str(repo)).unlink()
+        _deliver(home, RUN_P, "in-progress")
+        crew.list_live(project=PROJECT)
+        _drop_the_place()
+        follow_lines.clear()
+        _run_follow()
+
+    assert "re-attached" in follow_lines[0], follow_lines
+    rows = _naming(follow_lines, "node-p")
+    assert len(rows) == 1, f"the re-dispatched run is drawn once; got {follow_lines!r}"
+    assert "dispatched" in rows[0] and "working" in rows[0], rows[0]
+    assert "promoted" not in rows[0], (
+        f"the pane was never shown that promotion; got {rows[0]!r}"
+    )

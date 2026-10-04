@@ -3993,7 +3993,7 @@ def _follow_watch_lines(
             # header that says how many runs were found and how many changed.
             record = (
                 runs.read_delivered(project, session)
-                if first_attach and mode in ("baseline", "restart")
+                if first_attach and not reloaded_in_place and mode in ("baseline", "restart")
                 else {}
             )
             gap_rows = (
@@ -4742,7 +4742,13 @@ def crew_follow(
                 continue
             if json_output:
                 _emit_crew_result(event, pretty, observation=True)
-                note_delivered(event)
+                # The record is the pane's memory, and there is one per session
+                # rather than one per output mode: a row only the JSON consumer
+                # received is not one the pane in front of the session drew, and
+                # counting it would subtract the run from that pane's next
+                # re-attach.
+                if not _row_is_stale_inventory(event):
+                    note_delivered(event)
             elif not _row_is_stale_inventory(event):
                 # An observing follower draws the owner column on every row so
                 # the grid stays aligned, and the owning session's own rows are
