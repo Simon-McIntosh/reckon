@@ -217,6 +217,13 @@
                     "$ref": "#/$defs/SandboxMode",
                     "description": "Filesystem blast radius granted to workers of this backend."
                 },
+                "serves_orchestrators": {
+                    "description": "Whether this backend's lane carries this deployment's orchestrators. Declared, never inferred from the backend's name: the orchestrator role is a property of the deployment, so an alias or a backend that renames must both reach a fence that reads this key, and a rule matching on a name breaks the moment an orchestrator runs somewhere else. Absent means the lane declares nothing and is dispatchable as before. A lane declaring true is one whose capacity background work spends against the sessions that dispatch, merge, promote and record, so a lane saturated there stops every session rather than one node.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
+                },
                 "session_reuse": {
                     "description": "Whether a finished worker session can be resumed rather than respawned.",
                     "type": [
@@ -471,6 +478,13 @@
                 "sandbox": {
                     "$ref": "#/$defs/SandboxMode",
                     "description": "Filesystem blast radius granted to workers of this backend."
+                },
+                "serves_orchestrators": {
+                    "description": "Whether this backend's lane carries this deployment's orchestrators. Declared, never inferred from the backend's name: the orchestrator role is a property of the deployment, so an alias or a backend that renames must both reach a fence that reads this key, and a rule matching on a name breaks the moment an orchestrator runs somewhere else. Absent means the lane declares nothing and is dispatchable as before. A lane declaring true is one whose capacity background work spends against the sessions that dispatch, merge, promote and record, so a lane saturated there stops every session rather than one node.",
+                    "type": [
+                        "boolean",
+                        "null"
+                    ]
                 },
                 "session_reuse": {
                     "description": "Whether a finished worker session can be resumed rather than respawned.",
