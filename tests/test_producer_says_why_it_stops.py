@@ -136,6 +136,68 @@ def test_follower_reports_logged_stop_reason(tmp_path, monkeypatch, line) -> Non
     assert "producer lease expired" in event["line"]
 
 
+def _stop_events(tmp_path, monkeypatch, *, phase: str | None, identity=None):
+    """Arm the follower against a stopped producer and collect its events."""
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path))
+    log = runs.watch_log_path("sample")
+    log.parent.mkdir(parents=True, exist_ok=True)
+    log.write_text("reckon crew watch stopped: producer lease expired\n")
+    if phase is not None:
+        runs._write_json(
+            runs.pointer_path("r-live"),
+            {"run_id": "r-live", "project": "sample", "phase": phase, "session": ""},
+        )
+    monkeypatch.setattr(runs, "producer_live", lambda project: False)
+    if identity is not None:
+        monkeypatch.setattr(runs, "watch_producer_identity", lambda project: identity)
+    stop = threading.Event()
+    events = cli._follow_watch_lines(
+        "sample", stop=stop, sweep=None, sleeper=lambda interval: stop.set()
+    )
+    return events, stop
+
+
+def test_stop_without_live_work_stays_quiet(tmp_path, monkeypatch) -> None:
+    """An idle follower's producer exit keeps the pane silent but the event."""
+    events, stop = _stop_events(tmp_path, monkeypatch, phase=None)
+    event = next(events)
+    stop.set()
+    events.close()
+
+    assert event["event"] == cli.FOLLOWER_PRODUCER_STOPPED_EVENT
+    assert "producer lease expired" in event["line"]
+    assert event["pane_line"] is False
+
+
+def test_stop_events_with_live_work_print(tmp_path, monkeypatch) -> None:
+    """A producer that stops while a run is live reaches the pane line."""
+    events, stop = _stop_events(tmp_path, monkeypatch, phase="working")
+    event = next(events)
+    stop.set()
+    events.close()
+
+    assert event["event"] == cli.FOLLOWER_PRODUCER_STOPPED_EVENT
+    assert event["pane_line"] is True
+
+
+def test_reload_failed_follows_the_same_predicate(tmp_path, monkeypatch) -> None:
+    """The reload-failed line is quiet for the same empty population."""
+    events, stop = _stop_events(
+        tmp_path,
+        monkeypatch,
+        phase=None,
+        identity={"reload_started_at": "2026-10-02T12:58:12Z", "log_path": "x"},
+    )
+    first = next(events)
+    second = next(events)
+    stop.set()
+    events.close()
+
+    assert first["event"] == cli.FOLLOWER_PRODUCER_STOPPED_EVENT
+    assert second["event"] == cli.FOLLOWER_PRODUCER_RELOAD_FAILED_EVENT
+    assert second["pane_line"] is False
+
+
 def test_signal_writes_stop_reason(tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
     monkeypatch.setattr(cli._StampPoll, "start", lambda self: None)
