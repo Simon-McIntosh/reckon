@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import http.client
 import json
 import shutil
 import subprocess
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
 
-from reckon import _plan_html, _store, crew, mcp, mcp_views, roadmap
+from reckon import _plan_html, _store, crew, mcp, mcp_views, roadmap, serve
 from reckon.crew.node import TaskNode
 
 
@@ -295,6 +297,33 @@ def test_state_write_drops_non_authoritative_attribute(
     assert "data-attempts" not in plan.read_text()
     assert _plan_html.read_state(plan.read_text())["sections"][0]["attempts"] == 0
     assert _section(root)["attempts"] == 1
+
+
+def test_server_plan_payload_delivers_derived_attempts(
+    tmp_path: Path, monkeypatch
+) -> None:
+    root, _plan = _repository(tmp_path, monkeypatch)
+    run = _dispatch(root, "server-run")
+    monkeypatch.setattr(serve, "_MOUNTS_FILE", tmp_path / "config/mounts.json")
+    monkeypatch.setattr(serve, "_STATE_ROOT", root / "docs/state")
+    server = serve.ThreadingHTTPServer(("127.0.0.1", 0), serve.Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    connection = http.client.HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+    try:
+        connection.request("GET", "/plan/sample/fixture")
+        response = connection.getresponse()
+        payload = json.loads(response.read())
+    finally:
+        connection.close()
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+    assert response.status == 200
+    assert payload["sections"][0]["attempts"] == 1
+    assert payload["sections"][0]["attempt_outcomes"] == [
+        {"run_id": run["run_id"], "status": "in_flight"}
+    ]
 
 
 def test_refused_worker_start_does_not_count(tmp_path: Path, monkeypatch) -> None:

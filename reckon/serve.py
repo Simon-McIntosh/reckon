@@ -3038,6 +3038,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(HTTPStatus.CONFLICT, {"error": str(exc)})
                 return
             rec = _plan_html.parse_plan(pf) if pf else {}
+            if rec.get("type") == "plan" and rec.get("sections"):
+                from reckon.mcp_views import with_section_attempts
+
+                rec["sections"] = with_section_attempts(
+                    project, slug, rec["sections"], Path(mts[project]).parent
+                )
             self._send_json(HTTPStatus.OK, rec)
             return
 
