@@ -289,11 +289,14 @@ def _armed_in_a_child(
     return payload
 
 
-def _run_follow(lines: list[str], *, terminal: bool = False) -> None:
+def _run_follow(lines: list[str] | None = None, *, terminal: bool = False) -> list[str]:
     """Arm the real follower command once, to its own short lifetime.
 
     The command runs in a child of this test (see `_armed_in_a_child`), and
-    the child's rows are brought back into the list the case is holding.
+    the rows it drew are handed to the case: appended to ``lines`` when one is
+    given, and otherwise replayed through whatever ``cli._echo_follow_line``
+    the case installed, which is how a case capturing in the runner observes
+    them. The rows are returned either way.
     """
     payload = _armed_in_a_child(
         [
@@ -311,7 +314,13 @@ def _run_follow(lines: list[str], *, terminal: bool = False) -> None:
         terminal=terminal,
     )
     assert payload["exit_code"] == 0, payload["output"]
-    lines.extend(payload["rows"])
+    rows = payload["rows"]
+    if lines is None:
+        for row in rows:
+            cli._echo_follow_line(row)
+    else:
+        lines.extend(rows)
+    return rows
 
 
 def _fleet_rows(lines: list[str]) -> list[str]:
