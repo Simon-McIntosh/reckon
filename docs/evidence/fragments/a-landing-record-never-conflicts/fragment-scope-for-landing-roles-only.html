@@ -17,7 +17,7 @@
       <p class="lead">A node's default write scope grants its own evidence fragment and figure directory. That grant was keyed on sandbox writability alone, so a verifier role whose sandbox can write the worktree was handed a repository write path it could never land. The grant now reads the same role predicate the promotion refusal reads.</p>
     </header>
 
-    <section id="the-defect">
+    <section id="fragment-scope-for-landing-roles-only-the-defect">
       <h2>The defect: a verifier offered a path it cannot land</h2>
       <p>The default scope added by section 2 grants <code>docs/evidence/fragments/&lt;plan&gt;/&lt;node-id&gt;.html</code> and <code>docs/figures/&lt;plan&gt;/&lt;node-id&gt;/</code>. The grant sat behind one gate — sandbox writability of the worktree — so any role whose sandbox is <code>worktree-full</code> received it. The <code>test</code> role is <code>worktree-full</code> in the flight defaults, so a verifier was offered a repository write path.</p>
       <p>Promotion reads a second rule: a test role may not commit any repository path, so a run that wrote the fragment it was handed is refused at promotion. The two rules disagreed. Measured at base <code>29af302f</code>, a <code>test</code>-role dispatch with a <code>worktree-full</code> sandbox carried both paths in its write scope:</p>
@@ -25,7 +25,7 @@
       <p>A review or read-only investigate role already lost the paths through the sandbox gate, but only as a side effect of its sandbox; the role rule itself was not consulted.</p>
     </section>
 
-    <section id="what-changed">
+    <section id="fragment-scope-for-landing-roles-only-what-changed">
       <h2>What changed</h2>
       <ul>
         <li><code>reckon/crew/dispatch.py</code> gates the default fragment grant on <code>role_may_write_repository_paths(node.role)</code> as well as <code>_can_write_worktree(...)</code>. <code>role_may_write_repository_paths</code> is the single spelling of "this role may write repository paths" — the same predicate promotion refuses on — so the grant and its refusal read one authority and cannot drift.</li>
@@ -35,7 +35,7 @@
       <p>The figure <a href="/reckon/figures/a-landing-record-never-conflicts/fragment-scope-for-landing-roles-only/landing-grant-gate.svg">the landing grant before and after: one gate, then two</a> draws the decision the change makes.</p>
     </section>
 
-    <section id="the-test">
+    <section id="fragment-scope-for-landing-roles-only-the-test">
       <h2>The gate</h2>
       <ul>
         <li><code>test_an_implement_role_receives_the_landing_paths_in_its_write_scope</code> — an implement role receives its own <code>docs/evidence/fragments/plan-a/role-scope-node.html</code> and <code>docs/figures/plan-a/role-scope-node</code>, its declared deliverable, and neither <code>docs/plans/plan-a.html</code> nor <code>docs/evidence/archive/plan-a-landed.html</code>.</li>
@@ -45,7 +45,7 @@
       </ul>
     </section>
 
-    <section id="negative-control">
+    <section id="fragment-scope-for-landing-roles-only-negative-control">
       <h2>Declared negative control</h2>
       <p>Declared mutation: <em>grant the fragment path to every role again; the verifier-role case must then fail</em>. Run in a scratch copy of this tree with the guard replaced by an unconditional grant, <code>tests/test_role_write_scope.py -k "verifier or read_only_role"</code> fails 5 of 5 verifier cases, <code>EXIT=1</code>, including <code>test_a_verifier_whose_sandbox_can_write_gains_no_landing_paths</code>. The writable-sandbox verifier case passes in the after arm and turns red only under the mutation, so it is the assertion the guard is measured by.</p>
       <table>

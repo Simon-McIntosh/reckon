@@ -53,7 +53,7 @@
       <p>The gate is the new test plus the existing roadmap, serve, flight and MCP test files that call <code>build_roadmap</code>, 45 files in all, each arm listed on disk with its header naming the revision, the tree, the command, the served <code>reckon.__file__</code> and the resolved cwd, and each ending in an <code>EXIT=</code> line.</p>
     </section>
 
-    <section id="negative-control">
+    <section id="the-roadmap-reads-the-checkout-it-inventoried-negative-control">
       <h2>Declared negative control</h2>
       <p>Declared mutation: <em>drop the <code>docs_dir</code> argument from one caller in a scratch copy; the worktree-declaration test must fail for that caller</em>. In a scratch tree copy of base plus this change with <code>docs_dir</code> removed from <code>reckon/flight.py::_project_roadmap</code>, the test fails at the flight arm &mdash; the finding the checkout's declaration should silence is reported &mdash; while the other arms stay green. The red log's first line repeats the declaration verbatim, and its header parses the served <code>module.__file__</code> and cwd inside the scratch tree, so the failure cannot have come from the head tree.</p>
       <p>An earlier attempt failed for the wrong reason: pytest ran from a shell whose working directory still pointed at the base tree, so the test resolved base's modules and died at the serve arm. The re-run under <code>env -C</code> is the log this record cites.</p>

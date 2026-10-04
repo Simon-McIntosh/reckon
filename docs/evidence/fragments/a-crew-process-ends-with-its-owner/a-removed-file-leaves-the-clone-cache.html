@@ -19,7 +19,7 @@
       <p class="lead">The clone scan's corpus fingerprint cache is bounded to one entry per corpus file. A path present in the cache counted toward that cap unconditionally, so a file removed or renamed out of the corpus kept its own entry in the count and pinned the cap open: neither the removed path nor a superseded revision of a live path could ever be evicted, and <code>corpus.json</code> grew with every path ever scanned rather than with the current corpus. A cached path now counts toward the cap only while a recent scan read it.</p>
     </header>
 
-    <section id="what-changed">
+    <section id="a-removed-file-leaves-the-clone-cache-what-changed">
       <h2>What changed</h2>
       <ul>
         <li><code>reckon/clones.py</code>: each cache entry records <code>seen</code>, the scan ordinal at which its path was last part of a scan's corpus. The cap counts a cached path (<code>_fresh_cached_paths</code>) only while <code>scan - seen &lt; _STALE_PATH_SCANS</code>; a path no scan has read for that span stops counting and the least-recently-used prune evicts it.</li>
@@ -30,7 +30,7 @@
       </ul>
     </section>
 
-    <section id="the-gate">
+    <section id="a-removed-file-leaves-the-clone-cache-the-gate">
       <h2>The gate</h2>
       <p><code>tests/test_a_removed_file_leaves_the_clone_cache.py</code> scans a five-file corpus, removes one file, runs <code>_STALE_PATH_SCANS + 1</code> scans of the remaining four, and asserts the removed path's entry is gone while the entry count equals the current corpus. A second case keeps the partial-scan guarantee: a full scan, a one-file scan, and a full scan again re-parse nothing. A third scans repository A once, scans repository B past the span, then scans A again and asserts A re-parses nothing; a fourth asserts a worktree and its main checkout resolve to one repository key.</p>
       <table>
@@ -45,7 +45,7 @@
       </table>
     </section>
 
-    <section id="negative-control">
+    <section id="a-removed-file-leaves-the-clone-cache-negative-control">
       <h2>The declared negative control</h2>
       <p>The first mutation restores the pre-change cap &mdash; every cached path counted, stale ones included &mdash; and the removed-file case fails with the removed path still held beside the four live ones. The second mutation makes both repositories share one cache again, and repository A's second scan then re-parses all five of its paths: the cross-repository aging the per-repository cache exists to prevent.</p>
     </section>

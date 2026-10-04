@@ -24,7 +24,7 @@
     <figcaption>What the sixteen existing atomic JSON writers differ on. The new primitive concentrates the safe set &mdash; unique sibling temporary, removal on failure, fsync on by default &mdash; while each caller's migration keeps the extra guarantee it already carries.</figcaption>
   </figure>
 
-  <section id="behaviour">
+  <section id="one-atomic-writer-and-one-number-decoder-behaviour">
     <h2>The behaviour the tests fix</h2>
     <ul>
       <li><strong>No stray temporary.</strong> A write whose serialisation raises leaves the destination byte-for-byte as it was and no sibling temporary behind: the scratch directory holds the target and nothing else.</li>
@@ -38,7 +38,7 @@
     <p><strong>Negative control.</strong> The declared mutation &mdash; drop the temporary-file removal on failure &mdash; leaves the failed write's sibling <code>.record.json.*.tmp</code> behind, so the no-stray-temporary case fails on the stray-file assertion: 1 failed, exit 1 (<code>negative-control.log</code>, whose first line repeats the declared string verbatim). Re-run at the head above, <code>9d3cf2dd</code>. The mutation was confined to a scratch copy at <code>/tmp/red-arm-atomic-writer</code>; the committed tree keeps the removal.</p>
   </section>
 
-  <section id="inventory">
+  <section id="one-atomic-writer-and-one-number-decoder-inventory">
     <h2>The sixteen writers, and what each migration must keep</h2>
     <p>The starting list is the code-depth census's clone group (<code>docs/research/data/crew-pattern-review/code-depth/findings.md</code>, copies at census commit <code>056c08e0</code>), which counts repeated six-line windows and so counts <em>clones</em>, not the writer population. Re-derived mechanically at the base revision <code>a928b6be</code> with <code>git grep</code> for a rename-into-place call joined to a JSON serialization &mdash; <code>git grep -n -E 'os\.(replace|rename)\(' a928b6be -- reckon</code> returns 13 sites and <code>git grep -n -E 'json\.dump\b' a928b6be -- reckon</code> returns 6, and joining both per enclosing definition (which the mention of <code>os.replace</code> alone misses, because most copies move a temporary with <code>Path.replace</code>) yields the population below. That join found two writers the census's window comparison did not group: <code>reckon/_backends.py:_write_private_json</code> and <code>reckon/cli.py:_write_json_atomically</code>, both real atomic JSON writers whose bodies differ enough from the group to fall outside a six-line window. The census pins its line numbers at the older commit; the symbol names below are what <code>git grep</code> resolves at the base. Three copies flush with <code>fsync</code>, ten remove their temporary on failure, and one takes a lock &mdash; each row is a durability or concurrency guarantee the migration must carry forward, and none may be silently dropped.</p>
     <ul>
@@ -74,7 +74,7 @@
     <p>No caller is migrated here. Each migration is a one-line import swap that keeps the caller's name, so it can proceed independently of the others.</p>
   </section>
 
-  <section id="scope">
+  <section id="one-atomic-writer-and-one-number-decoder-scope">
     <h2>What this node did and did not do</h2>
     <p>Landed: <code>reckon/_store.py</code> (the shared helper and <code>write_json_atomically</code>), <code>reckon/_observations.py</code>, and <code>tests/test_one_atomic_writer_and_number_decoder.py</code>. Not landed here: any caller migration, and the mutation of the sixteen writers and four decoders onto the new primitives. That is the handoff the inventory above supports, and it is what the follow-on nodes carry. This node's gate measures only its own change; verifying the merged result belongs to a separately dispatched test node.</p>
   </section>

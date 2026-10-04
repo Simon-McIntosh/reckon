@@ -20,7 +20,7 @@
   <main class="plan-doc">
     <h1>The follow loop holds a half-written record until its newline arrives</h1>
 
-    <section id="measure">
+    <section id="follow-reads-whole-lines-measure">
       <h2>What the loop now does</h2>
       <p>A producer appends one JSON record per line to the watch stream, and
         may still be writing the last one when the follow loop reads it.
@@ -39,7 +39,7 @@
         offset (<code>_follow_boundary</code>) reads backward in chunks of at
         most 64 KiB rather than loading the whole stream to find one newline.</p>
 
-      <section id="gate">
+      <section id="follow-reads-whole-lines-gate">
         <h2>Gate</h2>
         <table>
           <thead><tr><th>Check</th><th>Result</th><th>Evidence</th></tr></thead>
