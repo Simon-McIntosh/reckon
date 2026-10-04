@@ -1,0 +1,27 @@
+<section data-reckon="evidence" data-node="the-lane-event-grouping-keeps-its-own-vocabulary">
+  <h3>A lane event groups by its cause, not by the run that reported it</h3>
+  <p>The lane-event signature now removes the tokens a run's own record contributes — its
+  run id, a process id, a timestamp — before the cause is hashed, so simultaneous ends for
+  one cause are one lane event while two ends with different causes stay apart. Display
+  aliases such as <code>lane event</code> moved out of <code>STATE_HUE</code> into their
+  own <code>DISPLAY_HUE</code> table, so <code>CLASSIFIER_STATE_WORDS</code> carries only
+  producer and classifier words, while both aliases still resolve to a hue on both themes.
+  The base arm over the assertion-carrying files reads the defect at
+  <code>81b535347</code> (<strong>5 failed, 19 passed, EXIT=1</strong>): the one-event case
+  across a run id, a pid and a timestamp, the grid contract, and the alias exclusion. The
+  grouped row's <code>fleet_verdict.state</code> assertion passes at base, so it is
+  regression coverage rather than a fail-at-base case; it is kept, and a mutation control
+  holds it: a scratch copy of the head tree whose grouped row emits a hand-built verdict
+  without state <code>lane-event</code> fails on exactly that assertion in all four places
+  it is made (<strong>4 failed, 10 passed, EXIT=1</strong>). The declared negative control
+  reddens the one-event case in a scratch copy with the signature taken over the full
+  reason text again (<strong>3 failed, 1 passed, EXIT=1</strong>), while the
+  two-different-causes case still passes. The stacked measure's ticker-layout failure was
+  repaired by resolving a state word's hue the way the renderer does — through
+  <code>STATE_HUE</code> and then <code>DISPLAY_HUE</code> — so the check still fails when
+  an emitted word has no hue in either table: with the alias hues dropped from
+  <code>DISPLAY_HUE</code> in a scratch copy it reddens with
+  <code>('light', ['lane event', 'unpromoted'])</code> instead of skipping them. The
+  five-file baseline arm records <strong>216 passed, EXIT=0</strong> and the six-file head
+  arm at <code>5c565e664</code> records <strong>221 passed, EXIT=0</strong>.</p>
+</section>

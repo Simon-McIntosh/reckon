@@ -137,7 +137,6 @@ STATE_HUE = {
         "stopped": 124,
         "abandoned": 124,
         "lane-event": 124,
-        "lane event": 124,
         "stalled": 130,
         "complete": 28,
         "promoted": 22,
@@ -156,7 +155,6 @@ STATE_HUE = {
         "unwritten": 124,
         "held": 97,
         "needs-help": 124,
-        "unpromoted": 30,
     },
     "dark": {
         "blocked": 203,
@@ -165,7 +163,6 @@ STATE_HUE = {
         "stopped": 203,
         "abandoned": 203,
         "lane-event": 203,
-        "lane event": 203,
         "stalled": 179,
         "complete": 78,
         "promoted": 71,
@@ -184,8 +181,18 @@ STATE_HUE = {
         "unwritten": 203,
         "held": 104,
         "needs-help": 203,
-        "unpromoted": 80,
     },
+}
+
+# The hue of a word the cell spells that is not the word the fleet emits. The
+# state cell shows the display form (see :data:`DISPLAY`), and the display form
+# is what the renderer resolves a hue for, so the aliases carry their hue in
+# their own table rather than in :data:`STATE_HUE`: that table is the source of
+# :data:`CLASSIFIER_STATE_WORDS`, which names only words a producer or the
+# recovery classifier can put on either side of the transition.
+DISPLAY_HUE = {
+    "light": {"lane event": 124, "unpromoted": 30},
+    "dark": {"lane event": 203, "unpromoted": 80},
 }
 
 # Every state word the producer or recovery classifier can put on either side
@@ -853,6 +860,19 @@ def lane_mean_from_text(raw: str | None, *, now: datetime) -> float | str:
 
 def _display_state(state: Any) -> str:
     return elide(DISPLAY.get(str(state or ""), str(state or "")), STATE_WORD)
+
+
+def _state_hue(theme: str, word: str) -> Any:
+    """The hue for a word on the row, its display alias included.
+
+    The row's state cells carry display forms, so the lookup answers for both
+    tables: a classifier word finds its hue in :data:`STATE_HUE`, and a display
+    alias finds its own in :data:`DISPLAY_HUE`. A word in neither renders dim.
+    """
+    hues = STATE_HUE[theme]
+    if word in hues:
+        return hues[word]
+    return DISPLAY_HUE[theme].get(word, "dim")
 
 
 def _display_role(role: Any) -> str:
@@ -1614,7 +1634,6 @@ class Ticker:
 
         role = _display_role(event.get("role"))
         model_cell, effort_cell = _model_and_effort(event)
-        hues = STATE_HUE[self.theme]
 
         cells: list[tuple[str, Any]] = [
             (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
@@ -1634,7 +1653,7 @@ class Ticker:
         if from_state:
             cells.extend(
                 [
-                    (f"{from_state:>{STATE_WORD}}", hues.get(from_state, "dim")),
+                    (f"{from_state:>{STATE_WORD}}", _state_hue(self.theme, from_state)),
                     (" " * ARROW_GAP, None),
                     (ARROW, "dim"),
                     (" " * ARROW_GAP, None),
@@ -1644,7 +1663,7 @@ class Ticker:
             cells.append((" " * NEW_STATE_OFFSET, None))
         cells.extend(
             [
-                (f"{to_state:<{STATE_WORD}}", hues.get(to_state, "dim")),
+                (f"{to_state:<{STATE_WORD}}", _state_hue(self.theme, to_state)),
                 (" " * GAP, None),
             ]
         )

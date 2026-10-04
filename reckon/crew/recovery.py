@@ -7318,6 +7318,33 @@ def _classification_key(identities: Mapping[str, str]) -> str:
     return hashlib.sha256(rendered.encode("utf-8")).hexdigest()
 
 
+# Tokens a terminal message carries that belong to the run rather than to the
+# cause: the run's own id, a named process id, and any timestamp the message
+# quotes. They are removed before the message is hashed into a lane-cause
+# signature, so two runs one cause stopped correlate, while everything else the
+# message says and the cause kind beside it stay in the hash and keep two
+# different causes apart.
+_LANE_CAUSE_RUN_ID = re.compile(r"\br-\d{8}t\d{6,}[a-z0-9-]*")
+_LANE_CAUSE_PID = re.compile(r"\bpid[=: ]+\d+\b")
+_LANE_CAUSE_TIMESTAMP = re.compile(
+    r"\b\d{4}-\d{2}-\d{2}[t ]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:z|[+-]\d{2}:?\d{2})?\b"
+)
+_LANE_CAUSE_CLOCK_TIME = re.compile(r"\b\d{1,2}:\d{2}(?::\d{2})?(?:[ap]\.?m\.?)?\b")
+
+
+def _lane_cause_signature_text(lowered: str) -> str:
+    """A terminal message with the tokens that vary per run removed."""
+    text = lowered
+    for pattern in (
+        _LANE_CAUSE_RUN_ID,
+        _LANE_CAUSE_PID,
+        _LANE_CAUSE_TIMESTAMP,
+        _LANE_CAUSE_CLOCK_TIME,
+    ):
+        text = pattern.sub(" ", text)
+    return " ".join(text.split())
+
+
 def _terminal_lane_signal(
     record: Mapping[str, Any],
 ) -> tuple[dict[str, str] | None, str | None]:
@@ -7370,7 +7397,10 @@ def _terminal_lane_signal(
     ) or str(record.get("model") or "").strip()
     # A generic catalog error cannot identify which model was unserved without
     # the configured model. Keep its per-run cause, but do not correlate it.
-    identity = f"{kind}\0{model if kind == 'backend-catalog-change' else ''}\0{lowered}"
+    identity = (
+        f"{kind}\0{model if kind == 'backend-catalog-change' else ''}\0"
+        f"{_lane_cause_signature_text(lowered)}"
+    )
     signature = (
         hashlib.sha256(identity.encode("utf-8")).hexdigest()
         if kind != "backend-catalog-change" or model

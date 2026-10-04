@@ -451,7 +451,9 @@ def test_every_state_the_snapshot_can_emit_has_a_colour():
     """
     # Every state _watch_snapshot can produce: the manifest statuses, the phases
     # it maps, the recovery classifications it falls through to, and the
-    # promotion the transition fold synthesises.
+    # promotion the transition fold synthesises. The display aliases are in the
+    # set because the cell spells them, and each carries its hue in a table of
+    # its own.
     emitted = {
         "dispatched",
         "working",
@@ -466,7 +468,11 @@ def test_every_state_the_snapshot_can_emit_has_a_colour():
         "promoted",
     } | set(ticker_module.DISPLAY.values())
     for theme in ("light", "dark"):
-        missing = emitted - set(ticker_module.STATE_HUE[theme])
+        # Resolved the way the renderer resolves it, so a word with no hue in
+        # either table still reads as the gap this test exists to find.
+        missing = {
+            word for word in emitted if ticker_module._state_hue(theme, word) == "dim"
+        }
         assert not missing, (theme, sorted(missing))
 
 
