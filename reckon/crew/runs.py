@@ -199,6 +199,95 @@ def follower_lock_path(project: str, session: str) -> Path:
     return follower_dir(project) / f"{readable}-{digest}.lock"
 
 
+# The sidecar that records what one session's pane was last shown, one state
+# per run. It sits beside the registration rather than inside it, so writing it
+# never contends with the registration lock, and it is written by whoever writes
+# a row to the pane rather than by the row's producer: a row generated and then
+# withheld from the reader is not something the reader saw, and a re-attach that
+# treated it as delivered would replay a gap that never opened.
+DELIVERED_SUFFIX = ".delivered.json"
+
+# The record's own schema version, so a later shape change is recognised rather
+# than misread as the current one.
+DELIVERED_VERSION = 1
+
+
+def delivered_path(project: str, session: str) -> Path:
+    """The delivered-state record for one session, under its follower directory."""
+    readable = re.sub(r"[^A-Za-z0-9._-]", "-", session).strip("-") or "session"
+    digest = hashlib.sha256(session.encode()).hexdigest()[:12]
+    return follower_dir(project) / f"{readable}-{digest}{DELIVERED_SUFFIX}"
+
+
+def read_delivered(project: str, session: str | None) -> dict[str, Any]:
+    """Return the delivered-state record for one session, or ``{}`` when none.
+
+    An absent, unreadable or older-shaped record is no record: a follower then
+    arms as though its session had no pane before, because the fields a
+    mismatch leaves untrusted are exactly the ones the replay is built from.
+    """
+    if not session:
+        return {}
+    try:
+        raw = delivered_path(project, session).read_text(encoding="utf-8")
+    except OSError:
+        return {}
+    try:
+        record = json.loads(raw)
+    except (TypeError, ValueError):
+        return {}
+    if not isinstance(record, dict):
+        return {}
+    if record.get("version") != DELIVERED_VERSION:
+        return {}
+    if str(record.get("project") or "") != project:
+        return {}
+    if str(record.get("session") or "") != session:
+        return {}
+    if not isinstance(record.get("states"), Mapping):
+        return {}
+    return record
+
+
+def write_delivered(
+    project: str,
+    session: str | None,
+    states: Mapping[str, str],
+    *,
+    at: str | None = None,
+) -> None:
+    """Record the state each run was last shown at in this session's pane.
+
+    Written atomically, so a reader sees the previous record whole or the new
+    one whole. A write that fails costs a later re-attach its diff and must
+    never cost this arming its pane, so it is not raised.
+    """
+    if not session:
+        return
+    record = {
+        "version": DELIVERED_VERSION,
+        "project": project,
+        "session": session,
+        "recorded_at": at or _utc_now(),
+        "states": {str(run_id): str(state) for run_id, state in states.items()},
+    }
+    try:
+        from reckon._store import write_json_atomically
+
+        write_json_atomically(
+            delivered_path(project, session),
+            record,
+            indent=None,
+            sort_keys=True,
+            mode=None,
+            fsync=True,
+            fsync_directory=True,
+            create_parents=True,
+        )
+    except OSError:
+        return
+
+
 def _pipe_reader_pids(inode: int, *, exclude: int) -> list[int]:
     """Return the pids holding the other end of one pipe, by its inode."""
     target = f"pipe:[{inode}]"

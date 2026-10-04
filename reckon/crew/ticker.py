@@ -338,6 +338,18 @@ SETTLED_STATES = frozenset(
     }
 )
 
+# The subset of the settled states whose inventory rows the human pane
+# withholds. It is the settled set minus the states whose row is the news a
+# reader attaching needs: a run that finished and is waiting to be promoted,
+# one that failed, and one that was abandoned have all stopped, and each of
+# them asks the coordinator for something. Withholding those rows hid work that
+# only the coordinator can advance. What remains is the work that asks for
+# nothing — complete and reviewed, promoted, recorded, stopped — and those rows
+# stay inventory the pane does not re-show.
+HIDDEN_AT_ATTACH = SETTLED_STATES - frozenset(
+    {"completed_unpromoted", "failed", "abandoned"}
+)
+
 _CELLS = ("working", "blocked", "unpromoted")
 _WAIT_CELL = "queued"
 
@@ -1006,6 +1018,20 @@ def settled_at_attach(event: Mapping[str, Any]) -> bool:
     if not is_baseline(event):
         return False
     return str(event.get("to_state") or "") in SETTLED_STATES
+
+
+def hidden_at_attach(event: Mapping[str, Any]) -> bool:
+    """Whether this row is inventory the human pane withholds at attach.
+
+    The same judgement as :func:`settled_at_attach` narrowed to
+    :data:`HIDDEN_AT_ATTACH`: a settled run whose state asks the reader for
+    nothing is withheld, while a settled run with a duty outstanding — waiting
+    to be promoted, failed, abandoned — reaches the pane. A row that is not
+    inventory is never withheld here.
+    """
+    if not is_baseline(event):
+        return False
+    return str(event.get("to_state") or "") in HIDDEN_AT_ATTACH
 
 
 # ── The follower's row policy ───────────────────────────────────────────────
