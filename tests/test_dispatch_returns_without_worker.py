@@ -86,12 +86,21 @@ SUPERVISOR_ENTRY = "__supervise__"
 # dispatch which waited for it would blow its return bound.
 WORKTREE_COUNT = 30
 
-# Dispatch's own return bound, on dispatch's clock. It is set well above the
-# two to four seconds dispatch needs for its own work even when the case runs
-# beside seven siblings over four workers, and far below the roughly thirty
-# seconds the held scan lasts, so a dispatch that waited for the supervisor's
-# scan blows it decisively while ordinary contention does not.
-DISPATCH_EXIT_BOUND = 8.0
+# Dispatch's own return bound, on dispatch's clock, is derived from a reference
+# measured on this host at this moment rather than fixed. One reference unit is
+# a fresh interpreter importing the package under test — the class of process
+# dispatch's pre-return path starts (the worktree script, the launcher
+# intermediate, the supervisor) — and the reference is the slowest of a few
+# samples taken beside the dispatch, so the bound follows the host's load. A
+# fixed bound cannot carry this: at load near 50 this case's dispatch measured
+# about 10.9 s against a fixed 8.0 s and failed as readily at the base revision
+# as at the fix, so the constant was measuring the host rather than dispatch.
+# REFERENCE_UNITS is generous beside the pre-return work dispatch measured on
+# this host and far below the roughly thirty-second hold a dispatch that joined
+# its supervisor must outlast, so that failure is still caught decisively.
+REFERENCE_IMPORT = "import reckon.crew.dispatch"
+REFERENCE_SAMPLES = 3
+REFERENCE_UNITS = 8.0
 MARKER_BOUND = 60.0
 EXIT_RECORD_BOUND = 10.0
 SPAWN_BOUND = 60.0
@@ -784,6 +793,56 @@ def _tail(path: Path, limit: int = 2000) -> str:
 
 
 # --------------------------------------------------------------------------
+# The measured reference the exit bound is derived from.
+# --------------------------------------------------------------------------
+
+
+def _measured_reference_seconds(host: dict[str, Any]) -> float:
+    """Time fresh interpreters importing the package under test, here and now.
+
+    Each unit is one interpreter startup that imports the package under test,
+    which is the class of process every repository-facing step of dispatch's
+    pre-return path starts and therefore the unit its cost is paid in on this
+    host. The slowest of ``REFERENCE_SAMPLES`` samples is returned, so one
+    lucky sample cannot set the bound below what the host is charging while the
+    dispatch runs, and the value is taken beside the dispatch rather than from
+    an earlier session on another machine.
+    """
+    slowest = 0.0
+    for _ in range(REFERENCE_SAMPLES):
+        started = time.monotonic()
+        subprocess.run(
+            [str(PYTHON), "-c", REFERENCE_IMPORT],
+            cwd=str(host["base"]),
+            env={**os.environ, "PYTHONPATH": str(PACKAGE_ROOT)},
+            check=True,
+            capture_output=True,
+        )
+        slowest = max(slowest, time.monotonic() - started)
+    return slowest
+
+
+def _survival_window_seconds() -> float:
+    """The bounded wait dispatch itself is designed to spend before returning.
+
+    Read from the module under test rather than restated, so the bound follows
+    the window it is built on if that window changes.
+    """
+    return float(dispatch_module.SUPERVISOR_SURVIVAL_SECONDS)
+
+
+def _dispatch_exit_bound(reference_seconds: float) -> float:
+    """Dispatch's own-clock bound: its survival window plus measured units.
+
+    The window is the bounded wait ``_confirm_supervisor_survived`` performs
+    while the supervisor it started is alive and has not yet recorded a worker;
+    the rest is REFERENCE_UNITS units of the reference round trip the case
+    measured on this host at this moment.
+    """
+    return _survival_window_seconds() + REFERENCE_UNITS * reference_seconds
+
+
+# --------------------------------------------------------------------------
 # The cases.
 # --------------------------------------------------------------------------
 
@@ -791,17 +850,23 @@ def _tail(path: Path, limit: int = 2000) -> str:
 def test_dispatch_returns_once_its_supervisor_runs(
     host: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Case one: a five-second return, and a scan held open across it.
+    """Case one: a return bounded from a reference measured on this host, and a
+    scan held open across it.
 
     The stub writes its marker at once, so the only thing between dispatch's
     start and the marker is the supervisor's own work. The shim holds the
     supervisor's boundary scan until this case releases it, so the return bound
     is measured against a scan that is still in progress rather than against a
-    fixed wait for a slow scan to finish.
+    fixed wait for a slow scan to finish. The bound itself is not fixed: a
+    reference round trip is measured on this host immediately before the
+    dispatch, and dispatch's clock is bounded by its survival window plus
+    REFERENCE_UNITS of those units, so a loaded host widens the bound with the
+    load instead of failing on a constant chosen on a quiet day.
     """
     marker_dir = tmp_path / "markers"
     marker_dir.mkdir()
     real_before = _snapshot(REAL_LIVE_DIR)
+    reference_seconds = _measured_reference_seconds(host)
     run = _start_dispatch(
         host,
         tag="returns",
@@ -829,17 +894,28 @@ def test_dispatch_returns_once_its_supervisor_runs(
         outcome["driver_process_pid"] = run.process.pid
         startup = float(output.get("startup_seconds") or 0.0)
         outcome["driver_startup_seconds"] = round(startup, 3)
-        assert exit_after <= DISPATCH_EXIT_BOUND + startup + DRIVER_EXIT_SLACK, (
+        # Two readings of the same quantity, the driver's own import timed
+        # inside the process that pays it and the case's reference round trips
+        # beside it; the slower one sets the bound, so neither a lucky spawn in
+        # the case nor a warm import cache in the driver can hold the bound
+        # under what this host is charging while the dispatch runs.
+        reference = max(reference_seconds, startup)
+        bound = _dispatch_exit_bound(reference)
+        outcome["reference_seconds"] = round(reference, 3)
+        outcome["dispatch_exit_bound"] = round(bound, 3)
+        assert exit_after <= bound + startup + DRIVER_EXIT_SLACK, (
             f"the dispatch process was alive {exit_after:.3f} s after its start, "
             f"{startup:.3f} s of it importing the package under test, past the "
-            f"{DISPATCH_EXIT_BOUND} s bound, so it waited on something that "
-            "belongs to the supervisor"
+            f"{bound:.3f} s bound derived here from the {reference:.3f} s "
+            "reference measured on this host at this moment, so it waited on "
+            "something that belongs to the supervisor"
         )
         outcome["dispatch_seconds"] = round(float(output["dispatch_seconds"]), 3)
-        assert float(output["dispatch_seconds"]) <= DISPATCH_EXIT_BOUND, (
+        assert float(output["dispatch_seconds"]) <= bound, (
             f"dispatch itself took {output['dispatch_seconds']:.3f} s, past its "
-            f"{DISPATCH_EXIT_BOUND} s bound, so it waited on something that "
-            "belongs to the supervisor"
+            f"{bound:.3f} s bound derived here from the {reference:.3f} s "
+            "reference measured on this host at this moment, so it waited on "
+            "something that belongs to the supervisor"
         )
         assert output.get("run_id"), "the dispatch process reported no run id"
         assert str(output.get("reckon_file", "")).startswith(str(PACKAGE_ROOT)), (

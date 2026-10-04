@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>The dispatch exit bound reads its machine | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet-type" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <section id="the-dispatch-exit-bound-reads-its-machine">
+      <header>
+        <p class="eyebrow">Execution evidence &middot; fragment</p>
+        <h2>The dispatch exit bound reads its machine</h2>
+        <p class="lead">The case that proves a dispatch returns without waiting for its supervisor asserted the return against a fixed <code>DISPATCH_EXIT_BOUND = 8.0</code> seconds. On a loaded host that constant measures the machine, not the return: at load near 50 the same case measured about 10.9 s and failed on both the base and the head. The bound is now derived from a reference round trip measured on the dispatch's own host at the moment of the dispatch, so a loaded host widens the bound instead of failing it, while the mutation that makes a dispatch join its supervisor still fails the case.</p>
+      </header>
+      <section id="the-dispatch-exit-bound-reads-its-machine-what-changed">
+        <h2>What changed</h2>
+        <ul>
+          <li><code>tests/test_dispatch_returns_without_worker.py</code> measures a reference immediately before the dispatch: the slowest of three fresh-interpreter <code>import reckon.crew.dispatch</code> runs, and the dispatch driver's self-reported <code>startup_seconds</code> as a second sample of the same quantity. The slower reading sets the bound.</li>
+          <li>The bound is <code>SUPERVISOR_SURVIVAL_SECONDS + 8.0 &times; reference</code>, reading the survival window from <code>reckon.crew.dispatch</code> rather than duplicating it. At normal load the reference measures 0.6&ndash;0.9 s, giving a bound of about 7.2&ndash;8.8 s against a dispatch that returns in about 4.6&ndash;5.2 s.</li>
+          <li>The gate report carries <code>reference_seconds</code>, <code>dispatch_exit_bound</code>, <code>driver_startup_seconds</code> and <code>dispatch_seconds</code>, so each run's margin is readable rather than inferred from a constant.</li>
+        </ul>
+      </section>
+      <section id="the-dispatch-exit-bound-reads-its-machine-the-gate">
+        <h2>The gate</h2>
+        <table>
+          <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+          <tbody>
+            <tr><td>Head <code>9fe9b48fa</code>, 20 runs beside 8 CPU-bound spinners, 8 concurrent, startup loadavg 5.9&ndash;10.2</td><td>20 passed of 20, one bare <code>EXIT=0</code> per run, 33 s elapsed; two recorded margins &mdash; bound 8.324 against a 4.874 s return, bound 8.044 against 4.787 s</td><td><code>measured/head-returns/logs/</code>, summary <code>measured/head-returns.summary</code></td></tr>
+            <tr><td>Head, that file whole, <code>-n 8</code></td><td>7 passed in 27.79 s, <code>EXIT=0</code></td><td><code>population-head-dispatch-returns.log</code></td></tr>
+            <tr><td>Base <code>0513a121e</code> archive, that file whole, <code>-n 8</code></td><td>7 passed in 32.67 s, <code>EXIT=0</code></td><td><code>population-base-dispatch-returns.log</code></td></tr>
+            <tr><td>Head, dispatch-subject slice of the importing population (<code>tests/test_dispatch_*.py</code> and <code>tests/test_crew_dispatch_*.py</code>, 20 files), <code>-n 8</code></td><td>214 passed, 1 skipped, <code>EXIT=0</code> in 91.82 s</td><td><code>population-head-dispatch-slice.log</code></td></tr>
+            <tr><td>Base, the same slice, <code>-n 8</code></td><td>214 passed, 0 added failures, 1 skipped, <code>EXIT=0</code> in 103.28 s</td><td><code>population-base-dispatch-slice.log</code></td></tr>
+          </tbody>
+        </table>
+        <p>The population delta is zero: the same 214 ids pass and the same one skips on both revisions. The full importing population was not re-run in this node; the slice is named as a subset and the whole-population delta stands as a follow-on in the manifest.</p>
+      </section>
+      <section id="the-dispatch-exit-bound-reads-its-machine-negative-control">
+        <h2>Declared negative control</h2>
+        <p>With the mutation that joins the supervisor applied, the test fails, which is the failure the bound must still catch.</p>
+        <p>In a scratch copy, <code>_spawn_detached_supervisor</code> waits for the supervisor to exit before reporting its pid (<code>while process_alive(pid): time.sleep(0.05)</code>). Beside eight spinners the case reports <code>1 failed in 62.85 s</code>, <code>EXIT=1</code>, at the driver wait with the boundary scan still held open: a dispatch that joins its supervisor cannot return while the case holds the scan, so the return bound never receives a returning dispatch to bound; the derived bound only ever judges a dispatch that returned.</p>
+        <p>Log <code>negative-control-join-supervisor.log</code> names the revision, the scratch tree, the command, the imported module and the working directory; the mutant tree is the run's gate report <code>package_root</code>.</p>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
