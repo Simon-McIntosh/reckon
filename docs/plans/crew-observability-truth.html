@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.76">
-<meta name="plan-version" content="700">
+<meta name="plan-version" content="701">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;deferred&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;deferred&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;,&quot;s34&quot;:&quot;done&quot;,&quot;s35&quot;:&quot;done&quot;,&quot;s36&quot;:&quot;done&quot;,&quot;s37&quot;:&quot;done&quot;,&quot;s38&quot;:&quot;implementable&quot;,&quot;s39&quot;:&quot;implementable&quot;,&quot;s40&quot;:&quot;done&quot;,&quot;s41&quot;:&quot;done&quot;,&quot;s42&quot;:&quot;done&quot;,&quot;s43&quot;:&quot;implementable&quot;,&quot;s44&quot;:&quot;implementable&quot;}">
@@ -4128,7 +4128,10 @@ if isinstance(argv, list) and argv:
     <div class="r-comment-body">gate tests/test_producer_says_why_it_stops.py passed (9 passed, 0 added failures, negative control EXIT=1); review 88; section closed by one node; the review's follow-on (assert the pane line, not the event mark) is carried by §44</div>
 </div>
 <div class="r-comment" data-section="s42" data-id="c-run-r-20261004T124026698163-producer-stop-reported-only-when-work-is-unwatched" data-who="reckon-build" data-when="2026-10-04T13:21:33.449Z">
-    <div class="r-comment-body"><p>producer-stopped and producer-reload-failed pane lines now print only when the follower&#x27;s population holds a non-terminal live pointer (JSON event always emitted); gate 9 passed, zero-pointer case red under the declared mutation.</p></div>
+    <div class="r-comment-body"><p>producer-stopped and producer-reload-failed pane lines now print only when the follower's population holds a non-terminal live pointer (JSON event always emitted); gate 9 passed, zero-pointer case red under the declared mutation.</p></div>
+</div>
+<div class="r-comment" data-section="s42" data-id="c-run-r-20261004T131206569579-review-of-producer-stop-reported-only-when-work-is-unwatched" data-who="reckon-build" data-when="2026-10-04T13:27:36.055Z">
+    <div class="r-comment-body"><p>stored an independent review of run r-20261004T124026698163 at base 314650e09e31959f0ad02d437c2638068e3b3c74 / head b6d72e7a661c0643e7df520738e062d352cd7bb0, scoring goal_fidelity 19, evidence 15, scope_discipline 20, durability 16, fit 18 (total 88) with one follow-on finding on the untested consumer guard; added_failure_count 0 from the run&#x27;s own gate logs.</p></div>
 </div>
 <div class="r-comment" data-section="s44" data-id="c-20261004T1327-s44" data-who="reckon-build" data-when="2026-10-04T13:27:00Z">
     <div class="r-comment-body">Verification addition from §42's review: add a consumer-level case that drives the follow command's pane path with a producer-stopped event carrying pane_line False and asserts no line is echoed, and with pane_line True asserts the line is echoed, so a regression that dropped the consumer's guard at the emission branch turns red rather than leaving the mark-only cases green.</div>
