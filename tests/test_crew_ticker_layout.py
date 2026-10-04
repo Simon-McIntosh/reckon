@@ -81,19 +81,44 @@ def grid():
     return ticker_module.Ticker(width=180, theme="light", color=False, model_aliases=())
 
 
-def test_every_line_is_exactly_the_requested_width(grid):
-    """A short line and a crowded line end on the same column.
+def test_every_line_stays_within_the_requested_width(grid):
+    """No row overruns the margin, whatever it carries.
 
-    The stats block is right-aligned against the margin, so a line that stops
-    early breaks the one edge a reader uses to compare counts.
+    A row that wraps costs a quarter of the visible history, so the grid is the
+    hard ceiling. A row with nothing to explain ends at its last fixed glyph
+    rather than being padded to the edge, so the row lengths differ by their
+    own clauses.
     """
     lines = [
-        grid.render(_event(from_state=None, to_state="dispatched")),
-        grid.render(_event(to_state="complete", reason="")),
-        grid.render(_event(reason="pytest exited 1")),
-        grid.render(_event(node="n" * 80, working=12, blocked=9, unpromoted=7)),
+        plain(grid.render(_event(from_state=None, to_state="dispatched"))),
+        plain(grid.render(_event(to_state="complete", reason=""))),
+        plain(grid.render(_event(reason="pytest exited 1"))),
+        plain(grid.render(_event(node="n" * 80, working=12, blocked=9, unpromoted=7))),
     ]
-    assert {len(plain(line)) for line in lines} == {180}
+    assert all(len(line) <= 180 for line in lines)
+
+
+def test_a_row_with_no_clause_ends_at_its_last_glyph(grid):
+    """An empty clause is bounded by the fixed columns' room but not padded.
+
+    The clause is the row's last column and nothing follows it, so a right pad
+    buys no alignment and only overruns the pane the row is read in. A row with
+    nothing to explain therefore ends on its last fixed glyph, and its fixed
+    columns share the offsets of a row that carries a clause, so only the
+    clause's own width differs between the two.
+    """
+    empty = plain(grid.render(_event(to_state="blocked", reason="")))
+    with_clause = plain(grid.render(_event(to_state="blocked", reason="disk full")))
+    # The last visible character is a glyph, never a blank painted or plain, so
+    # the row carries no trailing whitespace at all.
+    assert empty and empty[-1] != " "
+    assert empty == empty.rstrip()
+    # And it stops short of the grid, because the empty clause spends nothing.
+    assert len(empty) < grid.width
+    # Column alignment is unchanged: every fixed column starts on the same
+    # screen column as the row whose clause reaches into the margin.
+    assert counters(empty).start() == counters(with_clause).start()
+    assert empty.index("blocked") == with_clause.index("blocked")
 
 
 def test_columns_start_on_the_same_screen_column(grid):
@@ -230,8 +255,8 @@ def test_the_queued_counter_keeps_the_block_a_constant_width_across_counts():
             )
             for count in (0, 9, 10, 99)
         }
-        # Every row is exactly the requested width with the wider cell present.
-        assert {len(row) for row in rows.values()} == {width}, width
+        # No row overruns the requested width with the wider cell present.
+        assert all(len(row) <= width for row in rows.values()), width
         # The block's right edge — where the spelled word ends — holds its own
         # column at every count, so the right edge never moves.
         edges = {row.index("q", row.index("u")) + 1 for row in rows.values()}
@@ -305,7 +330,7 @@ def test_long_internal_state_names_render_within_the_column(grid):
     line = plain(grid.render(_event(to_state="completed_unpromoted")))
     assert "unpromoted" in line
     assert "completed_unpromoted" not in line
-    assert len(line) == 180
+    assert len(line) <= 180
 
 
 def test_a_node_name_past_the_column_is_elided_not_wrapped(grid):
@@ -314,7 +339,7 @@ def test_a_node_name_past_the_column_is_elided_not_wrapped(grid):
     assert node not in line
     assert node[:10] in line
     assert "…" in line
-    assert len(line) == 180
+    assert len(line) <= 180
 
 
 def test_only_the_state_being_entered_may_explain_itself(grid):
@@ -342,7 +367,7 @@ def test_a_reason_is_truncated_to_the_room_the_grid_leaves(grid):
     """
     reason = "the canonical installed writer named by the plan does not satisfy it"
     line = plain(grid.render(_event(reason=reason)))
-    assert len(line) == 180
+    assert len(line) <= 180
     assert "\n" not in line
     assert "…" in line
     assert line.count("…") == 1
@@ -364,7 +389,7 @@ def test_a_reason_clipped_at_the_margin_ends_on_a_word(grid):
         "dry run which reported the marker moved before its files were read"
     )
     clipped = plain(grid.render(_event(to_state="blocked", reason=long_reason)))
-    assert len(clipped) == 180
+    assert len(clipped) <= 180
     # The clause owns the margin the retired attention column used to spend, and
     # the compressed fixed cells nearly triple the room it had, so it reaches
     # well into the sentence before the cut.
@@ -376,7 +401,7 @@ def test_a_reason_clipped_at_the_margin_ends_on_a_word(grid):
     short = plain(grid.render(_event(to_state="blocked", reason="disk full")))
     assert "disk full" in short
     assert "…" not in short
-    assert len(short) == 180
+    assert len(short) <= 180
 
 
 def test_colour_is_off_by_default_so_callers_get_a_plain_string():
@@ -490,14 +515,14 @@ def test_with_session_does_not_insert_a_column_outside_the_reading_order():
     assert node in line
     assert "ship-s10-20260901" not in line
     assert line == unscoped
-    assert len(line) == 180
+    assert len(line) <= 180
 
 
 def test_a_narrow_width_is_widened_to_what_the_columns_need():
     """Asking for less than the grid occupies must not produce a wrapped row."""
     grid = ticker_module.Ticker(width=40, color=False, model_aliases=())
     line = plain(grid.render(_event(), with_session=True))
-    assert len(line) == grid.width
+    assert len(line) <= grid.width
     assert grid.width >= ticker_module.MIN_WIDTH
 
 
@@ -625,7 +650,7 @@ def test_the_ordinary_roles_size_the_column_and_a_longer_one_elides():
     assert len(rendered) == ticker_module.ROLE
     assert rendered in line
     assert "documentation" not in line
-    assert len(line) == 180
+    assert len(line) <= 180
 
 
 def test_the_widest_role_word_never_widens_the_row_budget(grid):
@@ -706,12 +731,11 @@ def test_a_role_column_still_leaves_every_other_column_on_its_own_position():
         plain(grid.render(_event(role="review", to_state="promoted"))),
         plain(grid.render(_event(role="test", working=12, blocked=0, unpromoted=3))),
     ]
-    assert len({len(row) for row in rows}) == 1
+    assert all(len(row) <= 180 for row in rows)
     assert all("→" in row for row in rows)
     assert len({row.index("→") for row in rows}) == 1
     for letter in ("w", "b", "u"):
         assert len({letter_columns(row)[letter] for row in rows}) == 1, letter
-    assert {len(row) for row in rows} == {180}
 
 
 def test_a_narrow_width_still_widens_to_fit_the_role_column():
@@ -719,7 +743,7 @@ def test_a_narrow_width_still_widens_to_fit_the_role_column():
     assert grid.width >= ticker_module.MIN_WIDTH
     assert ticker_module.ROLE > 0
     line = plain(grid.render(_event()))
-    assert len(line) == grid.width
+    assert len(line) <= grid.width
 
 
 # ── The agent: model and effort as two cells, one tight gap between them ────
@@ -750,7 +774,7 @@ def test_a_declared_alias_and_its_effort_render_in_two_cells(grid):
     assert "\N{MIDDLE DOT}" not in between
     assert line.index("sonnet5") < line.index("medium")
     assert "claude-sonnet-5" not in line
-    assert len(line) == 180
+    assert len(line) <= 180
 
 
 def test_a_backend_with_no_alias_renders_the_model_id_not_an_empty_cell(grid):
@@ -770,7 +794,7 @@ def test_a_backend_with_no_alias_renders_the_model_id_not_an_empty_cell(grid):
     assert cell.endswith("\N{HORIZONTAL ELLIPSIS}")
     assert cell in line
     # The cut cell is exactly the model column, so the effort keeps its offset.
-    assert len(line) == 180
+    assert len(line) <= 180
     assert line.index("xhigh") - ticker_module.PAIR_GAP == (
         line.index(cell) + grid.model_width
     )
@@ -815,7 +839,7 @@ def test_the_model_and_effort_are_not_fused_into_one_cell(grid):
     between = line[line.index("dsv4-flash") + len("dsv4-flash") : line.index("medium")]
     assert "\N{MIDDLE DOT}" not in between
     assert line.index("dsv4-flash") < line.index("medium")
-    assert len(line) == 180
+    assert len(line) <= 180
 
 
 def test_the_longest_role_model_and_effort_elide_within_budget(grid):
@@ -841,7 +865,7 @@ def test_the_longest_role_model_and_effort_elide_within_budget(grid):
     assert ticker_module._display_role("documentation") in line
     assert "dsv4-flash" in line
     assert "minimal" in line
-    assert len(line) == ticker_module.DEFAULT_WIDTH
+    assert len(line) <= ticker_module.DEFAULT_WIDTH
     assert len(line) <= grid.width
 
 
@@ -863,7 +887,7 @@ def test_a_pointer_written_before_this_change_still_renders_two_cells(grid):
     assert line.index(cut) + grid.model_width + ticker_module.PAIR_GAP == line.index(
         "medium"
     )
-    assert len(line) == 180
+    assert len(line) <= 180
 
 
 def test_a_legacy_composed_string_renders_the_same_cells_as_separate_facts(
@@ -904,7 +928,7 @@ def test_a_record_with_no_effort_renders_the_alias_alone(grid):
     )
     assert "sonnet5" in line
     assert "sonnet5\N{MIDDLE DOT}" not in line
-    assert len(line) == 180
+    assert len(line) <= 180
 
 
 def test_an_effort_only_record_renders_without_a_leading_separator(grid):
@@ -912,7 +936,7 @@ def test_an_effort_only_record_renders_without_a_leading_separator(grid):
     line = plain(grid.render(_event(agent="", effort="high")))
     assert "high" in line
     assert "\N{MIDDLE DOT}high" not in line
-    assert len(line) == 180
+    assert len(line) <= 180
 
 
 def test_the_effort_column_keeps_one_offset_whatever_the_alias_length(grid):
@@ -1190,12 +1214,12 @@ def test_a_non_terminal_device_offers_no_width(monkeypatch):
     assert ticker_module.resolve_terminal_width() == ticker_module.DEFAULT_WIDTH
 
 
-def test_every_line_ends_at_the_resolved_width_when_crowded(monkeypatch):
+def test_a_crowded_line_stays_within_the_resolved_width(monkeypatch):
     """A long node, a long reason and wide counts together never overflow.
 
     A wrapped row costs a quarter of the visible history, which is worse than a
-    line that only falls short, so the grid composes to exactly the resolved
-    width either way, and the counters hold their fixed column while the reason
+    line that only falls short, so the grid composes within the resolved width
+    and never past it, and the counters hold their fixed column while the reason
     takes whatever remains.
     """
     path, master, slave = _open_terminal(150)
@@ -1218,9 +1242,8 @@ def test_every_line_ends_at_the_resolved_width_when_crowded(monkeypatch):
             )
         )
     )
-    # Measured on the rendered row, not on the format string: the row is exactly
-    # the resolved width and no more.
-    assert len(line) == resolved
+    # Measured on the rendered row, not on the format string: the row stays
+    # within the resolved width and never past it.
     assert len(line) <= resolved
     # The counters sit ahead of the reason, at the same column a one-digit row
     # puts them, so a pane clipping its own right edge takes free text and
@@ -1272,11 +1295,11 @@ def _measure_column(model_width: int) -> tuple[int, int]:
     return (prefix, ticker_module.WALL)
 
 
-def test_a_line_with_spend_facts_is_exactly_the_requested_width_at_three_sizes():
+def test_a_line_with_spend_facts_stays_within_the_requested_width_at_three_sizes():
     """The spend block holds the fixed grid at its floor and beyond.
 
-    A rendered line is exactly the requested visible width with no wrapping, so
-    the floor is asserted too (the narrowest width the grid can honour). The
+    A rendered line stays within the requested visible width with no wrapping,
+    so the floor is asserted too (the narrowest width the grid can honour). The
     floor is read from the grid at its floor request, because a config
     declaring an alias wider than the default raises that floor by the model
     cell's growth.
@@ -1296,7 +1319,7 @@ def test_a_line_with_spend_facts_is_exactly_the_requested_width_at_three_sizes()
                     event, with_session=with_session
                 )
             )
-            assert len(line) == width, (width, len(line))
+            assert len(line) <= width, (width, len(line))
 
 
 def test_the_measure_cell_renders_the_elapsed_figure_alone():
@@ -1493,7 +1516,7 @@ def test_the_measured_pane_width_leaves_a_readable_reason_column(
             _event(to_state="blocked", reason="x" * 400)
         )
     )
-    assert len(line) == width
+    assert len(line) <= width
     # The reason cell begins where the fixed columns end; everything after it
     # is free text, and the resolved pane must spare enough for a clause.
     assert width - line.index("x") >= ticker_module.MIN_REASON
@@ -1513,13 +1536,13 @@ def test_the_elapsed_measure_precedes_the_fleet_counters():
 def test_a_follower_opened_at_a_pane_width_emits_a_grid_at_that_width(
     monkeypatch,
 ) -> None:
-    """Every row a follower delivers is a transition, ending at the measured width.
+    """Every row a follower delivers is a transition, within the measured width.
 
     The width is read from the terminal an ancestor owns by the same ioctl; the
     delivered stream carries no calibration line. A follower attached to a pane
-    of a known width emits its rows at exactly that width — and every delivered
-    row carries a node and a state pair, so a coordinator reading each line as
-    a delivery never sees geometry.
+    of a known width emits its rows within that width — and every delivered row
+    carries a node and a state pair, so a coordinator reading each line as a
+    delivery never sees geometry.
     """
     path, master, slave = _open_terminal(208)
     try:
@@ -1542,6 +1565,6 @@ def test_a_follower_opened_at_a_pane_width_emits_a_grid_at_that_width(
     # columns, and no layout line is delivered alongside the transitions.
     assert len(rows) == 2
     for row in rows:
-        assert len(row) == 208
+        assert len(row) <= 208
         assert ("n-west-review-pr8-cut" in row) or ("second-node" in row)
         assert "working → blocked" in row

@@ -146,7 +146,7 @@ def test_every_classifier_transition_keeps_one_grid() -> None:
             # restate the destination, so the row is not printed at all.
             assert row == "", (previous, new, row)
             continue
-        assert len(row) == width, row
+        assert len(row) <= width, row
 
         measured = {
             "model": row.index(model_text),
@@ -176,11 +176,18 @@ def test_every_classifier_transition_keeps_one_grid() -> None:
             (columns["node"] + ticker_module.NODE, columns["transition"]),
             (columns["transition"] + ticker_module.STATE, columns["elapsed"]),
             (columns["elapsed"] + ticker_module.WALL, columns["counters"]),
-            (columns["counters"] + ticker_module.STATS, columns["reason"]),
         )
         for start, stop in gutters:
             assert stop - start >= 2
             assert row[start:stop] == " " * (stop - start)
+        # The two-space separator ahead of the clause exists only when the row
+        # carries one: a row with nothing to explain drops the separator with the
+        # clause rather than ending on a blank.
+        if len(row) > columns["counters"] + ticker_module.STATS:
+            assert (
+                row[columns["counters"] + ticker_module.STATS : columns["reason"]]
+                == " " * ticker_module.GAP
+            )
 
         between_transition_and_elapsed = row[columns["transition"] : columns["elapsed"]]
         assert not ACTION_WORDS & set(between_transition_and_elapsed.split())

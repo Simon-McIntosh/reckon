@@ -135,14 +135,13 @@ def test_the_only_span_on_the_row_is_the_reading_runs_own_elapsed_time():
 
 
 @pytest.mark.parametrize("width", [180, 208])
-def test_a_stale_fleet_row_holds_the_requested_width(width):
+def test_a_stale_fleet_row_stays_within_the_requested_width(width):
     """Removing the cell must not leave a gap where it stood.
 
-    The cell was paid for out of the free text's margin, so a row that grew to
-    keep it — or kept the width it spent — would wrap in a pane the grid already
-    fills, and a wrapped row costs the reader two lines of the eight a pane
-    shows.
+    The cell was paid for out of the free text's margin, so a row that grew
+    past the grid would wrap in a pane it already fills, and a wrapped row
+    costs the reader two lines of the eight a pane shows.
     """
     stale = _row([_transition("r-old", ARRIVED_LONG_AGO)], width=width, blocked=1)
-    assert len(stale) == width
+    assert len(stale) <= width
     assert spans(stale) == {}
