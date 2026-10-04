@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-impl" content="0.86">
-<meta name="plan-version" content="61">
+<meta name="plan-version" content="62">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
 </head>
@@ -585,6 +585,9 @@
 <div class="r-comment" data-section="_top" data-id="c-20260924T0500-lifetime-cannot-bound-a-poll" data-who="" data-when="2026-09-24">
     <div class="r-comment-body"><p><strong>The lifetime does not bound a poll that never returns.</strong> Measured by imas-codex-0d at 23:27 on 2026-09-23 under degraded storage. Two <code>crew follow --lifetime 29m</code> processes, for page-load-20260923 and one started through <code>python -c</code>, ran 3 h 36 m and 2 h 07 m. Both sat inside the full-tree <code>git status --untracked-files=all</code> walk that <code>_tree_state</code> runs over every registered worktree. The deadline is checked between polls, and a poll inside a walk over 312 trees at about 30 s each lasts hours. So §3's bound held for the check, not for the process. Two remedies compose. S19's snapshot scoping (reckon-e5) removes the walk from <code>crew follow</code>. And the deadline must also bound a poll: a poll that outlives the remaining lifetime is abandoned and the follower ends. The second is a follow-on for <code>reckon/cli.py</code>, alongside the replacement-image setup overshoot recorded at §8. Separately, when a monitor expires the host can leave its follower running with ppid 1. imas-ambix-af's interim rule is one follower per session, stopping the old one by pid before re-arming.</p></div>
 </div>
+<div class="r-comment" data-section="_top" data-id="c-20261003T235959939273" data-who="" data-when="">
+    <div class="r-comment-body"><p>Third instance, 2026-10-04: <code>tests/test_producer_takes_new_code.py::test_the_follow_json_surface_carries_the_stale_producer</code> crashed worker gw0 in a whole-suite head arm at <code>-n 10</code> (stacked commit 0ed9ce868). The file runs 8 passed in 3 of 3 runs at <code>-n 2</code> on both trees. This is a producer-reload test, so the re-execute-in-place path is now implicated in all three crashes.</p></div>
+</div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20260923T044801073919-review-of-a-follower-outlives-its-monitor" data-who="reckon-ship" data-when="2026-09-23T06:20:18.145Z">
     <div class="r-comment-body"><p>read-back of a-follower-outlives-its-monitor: 41 multi-reading sentences, 9 material; §4 and §7 revised at c08c55da, §3 items carried to its review</p></div>
 </div>
@@ -691,7 +694,7 @@
     <div class="r-comment-body"><p>independent review of r-20261001T031827152052-follower-bounds-its-lifetime stored at the legacy and head-keyed review paths: status parsed, all five dimensions scored in 0..20 (goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 19; total 97), added_failure_count 0 / added_failure_ids [] derived from the run's own baseline_suite (33c5e761d, 6 failed) and after_suite (4536c411c, 0 failed) gate logs, one follow-on finding (a second copy of the watcher remedy sentence at reckon/crew/dispatch.py:1050 duplicating reckon/crew/node.py:441), and no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261003T232817229036-review-of-a-watcher-parses-a-stream-once" data-who="reckon-build" data-when="2026-10-03T23:33:33.429Z">
-    <div class="r-comment-body"><p>Independent review of r-20261003T223948632015-a-watcher-parses-a-stream-once at base 81b535347259d3e171447e1be7880affb700ef03, head 977aaf7542100c2387702915a9fb1a76bf1875fe: scores goal_fidelity 18, evidence 18, scope_discipline 19, durability 17, fit 15, total 87; added_failure_count 0 and added_failure_ids [] derived from the run&#x27;s own baseline_suite (220 passed) and after_suite (222 passed) logs; one follow-on finding that reckon/_backends.py:3553 mutates the shared _PARSED_STREAMS without a lock under a ThreadingHTTPServer.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261003T223948632015-a-watcher-parses-a-stream-once at base 81b535347259d3e171447e1be7880affb700ef03, head 977aaf7542100c2387702915a9fb1a76bf1875fe: scores goal_fidelity 18, evidence 18, scope_discipline 19, durability 17, fit 15, total 87; added_failure_count 0 and added_failure_ids [] derived from the run's own baseline_suite (220 passed) and after_suite (222 passed) logs; one follow-on finding that reckon/_backends.py:3553 mutates the shared _PARSED_STREAMS without a lock under a ThreadingHTTPServer.</p></div>
 </div>
 </section>
 </main>
