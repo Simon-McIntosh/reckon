@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-restarted-server-meets-its-shipped-measures">
+  <meta name="plan-verifies" content="reckon:the-restarted-server-meets-its-shipped-measures#s4">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-04">
+  <meta name="evidence-commit" content="f31a38d86">
+  <title>A sprint file renders as its sprint | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-done">
+<section id="a-sprint-file-renders-as-its-sprint">
+  <h2>A sprint file renders as its sprint</h2>
+
+  <p><strong>Verdict: pass.</strong> At base <code>f31a38d86</code> a served fixture project
+  whose <code>docs/sprints/&lt;id&gt;.html</code> exists renders the sprint on its sprint
+  route: the server discovers the row from the file, and the authored sprint view, executed
+  as shipped, returns the sprint surface carrying that sprint's id and theme instead of the
+  view's "No sprint." placeholder. Removing the fixture's sprint file reddens the render
+  assertion with exactly that placeholder, so the pin distinguishes a present sprint from an
+  absent one.</p>
+
+  <h3>What was measured</h3>
+
+  <p><code>tests/test_a_sprint_file_renders_as_its_sprint.py</code> builds a distributed
+  fixture project (complete project-state marker, the marker's resource list omitting the
+  sprint so the row can only arrive by the scan of the sprint directory), starts the real
+  <code>serve.Handler</code> over it through a temporary mounts file and state root, requests
+  the route's own page <code>GET /&lt;project&gt;/</code> and then
+  <code>GET /_discover/&lt;project&gt;</code> — the data request the view on that route
+  performs — and executes <code>docs/ui/sprint.jsx</code> unchanged in node against that
+  payload with the hooks and <code>React.createElement</code> stubbed, asserting on the
+  element tree the view returns:
+  <code>rootClass</code> carries <code>r-sprint-surface</code>, the placeholder branch
+  (<code>r-page</code> with the text <code>No sprint.</code>) is not taken, and the flattened
+  tree carries the fixture's sprint id and theme. Head: <strong>1 passed</strong>
+  (<code>logs/head-single.log</code>). The test reads and writes no state outside its
+  temporary project and directory.</p>
+
+  <h3>Negative control</h3>
+
+  <p>The declared mutation removes the fixture's sprint-file write. The mutated copy fails at
+  the first render assertion with
+  <code>{'rootClass': 'r-page', 'sprintSurface': False, 'placeholder': True, 'text': 'No
+  sprint.'}</code>, exit 1 (<code>logs/negative-control.log</code>) — the guarded thing was
+  made to happen and the refusal shown, so the green head arm is the file's presence, not a
+  vacuous evaluator.</p>
+
+  <h3>Population arms</h3>
+
+  <p>The population is the test files importing <code>reckon.serve</code> (78 files,
+  <code>logs/population.txt</code>). Base (77 files, this node's test absent):
+  <strong>824 passed, 27 skipped, 0 failed</strong>, exit 0
+  (<code>logs/base-population.log</code>). Head (78 files): <strong>825 passed, 27 skipped,
+  0 failed</strong>, exit 0 (<code>logs/head-population.log</code>). Added failures: zero.
+  No production source changed.</p>
+
+  <h3>Landing</h3>
+
+  <p>This record plus one new test file; no production source changed. The follow-on from the
+  previous pin — the payload was asserted, not the view's id match and render — is closed: a
+  regression in the view's sprint-id match or in the discovery payload it matches against now
+  fails this gate.</p>
+</section>
+</main>
+</body>
+</html>
