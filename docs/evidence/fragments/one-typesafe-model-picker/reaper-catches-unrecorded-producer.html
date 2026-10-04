@@ -1,29 +1,35 @@
 <article class="r-evidence" data-plan="one-typesafe-model-picker" data-node="reaper-catches-unrecorded-producer">
   <h3 id="reaper-catches-unrecorded-producer-change">The per-test reaper reaches a producer that never wrote its seat record</h3>
   <p>The per-test reaper in <code>tests/conftest.py</code> found producers only
-  through their seat records (<code>reapable_watch_pids</code>). A producer a
-  test armed but which had not yet written its record when the test ended was
-  never signalled; it survived to fail the session-end
-  <code>leaked_watch_producers</code> scan at teardown, which is the
-  load-dependent failure recorded on this node. The repair adds
-  <code>unrecorded_watch_producers_naming</code> and
-  <code>per_test_reap_pids</code>: the per-test reap is now the union of the
-  record-based pids and the live <code>crew watch</code> producers whose own
+  through their seat records. A producer a test armed but which had not yet
+  written its record when the test ended was never signalled; it survived to
+  fail the session-end <code>leaked_watch_producers</code> scan at teardown,
+  which is the load-dependent failure recorded on this node.</p>
+  <p><code>reapable_watch_pids(root)</code> — the seam the per-test reaper
+  signals — now unions the records under <code>root</code> with the live
+  <code>crew watch</code> producers whose own
   <code>/proc/&lt;pid&gt;/environ</code> names a <code>RECKON_HOME</code> under
-  that test's <code>tmp_path</code>. A process whose environment cannot be read,
-  or that names any other home, is still left alone; the session-end scan and
-  its failure are unchanged as the backstop.</p>
+  <code>root</code> (the new <code>unrecorded_watch_producers_naming</code>). A
+  process whose environment cannot be read, or that names any other home, is
+  still left alone. The named half is a whole-host scan, so the per-test fixture
+  runs it only for a test marked <code>arms_watch_producer</code>
+  (<code>per_test_reap_pids(root, armed=…)</code>); the session-end reap passes
+  <code>include_named_half=False</code> and keeps the scan and its failure
+  unchanged as the backstop.</p>
   <p>The new test <code>tests/test_reaper_catches_unrecorded_producer.py</code>
   arms a stand-in producer whose argv and environment match
   <code>_live_watch_producers</code>, lies under the test's tree, and writes no
-  seat record. One arm shows the defect (the record reap returns nothing while
-  the producer is live); the other shows the repaired reap signals it and reads
-  the child's own exit as <code>-SIGTERM</code> (exit 15).</p>
+  seat record. It shows the precondition (live, no record), the repair
+  (<code>reapable_watch_pids</code> names it; the child's own exit is
+  <code>-SIGTERM</code>), and the scoping (the named half is absent for an
+  unarmed test, present for an armed one).</p>
   <p>Gate: the new file, <code>test_a_review_never_runs_in_harness.py</code>, and
   the files naming <code>reap_watch_producers</code>,
   <code>reapable_watch_pids</code>, <code>leaked_watch_producers</code> or
-  <code>preserve_seat_records</code> — 18 passed / 1 skipped at head against
-  17 passed / 1 failed / 1 skipped at base (the one failure is the new test
-  against the unfixed reaper). Negative control: restrict the reaper to
-  record-listed pids again and the unrecorded-stand-in test fails.</p>
+  <code>preserve_seat_records</code> — head 19 passed / 1
+  skipped against base 2 failed / 17 passed / 1 skipped, where the base arm's
+  behavioural failure is <code>assert 4138063 in []</code> from
+  <code>reapable_watch_pids</code> returning only records. Negative controls:
+  revert the reaper to record-listed pids and the unrecorded-stand-in test
+  fails; revert the scoping and the scoping test fails.</p>
 </article>
