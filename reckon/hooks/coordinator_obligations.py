@@ -105,12 +105,21 @@ _SNAPSHOT_MODULE_NAME = "reckon.crew.obligation_snapshot"
 
 @cache
 def snapshot_module() -> Any:
-    """The snapshot reader, loaded by file path and registered in sys.modules.
+    """The snapshot reader, loaded by file path when nothing has loaded it.
 
-    Registration precedes ``exec_module`` so the module's own name resolves
-    while its body runs. Nothing else in this process imports the loader, so
-    the key is this loading's alone.
+    An instance ``sys.modules`` already holds is reused rather than replaced:
+    the producer reaches this module through ``reckon.crew`` and keeps its
+    per-project sweep memory (``_SWEEPS``) on the instance it reaches, so a
+    second copy here would split a process into two readers that disagree
+    about what a sweep has published. Reaching the module through the facade
+    is still avoided -- that would import every concern module -- and the path
+    load runs only when no instance is registered at all. Registration
+    precedes ``exec_module`` so the module's own name resolves while its body
+    runs.
     """
+    loaded = sys.modules.get(_SNAPSHOT_MODULE_NAME)
+    if loaded is not None:
+        return loaded
     path = Path(__file__).resolve().parents[1] / "crew" / "obligation_snapshot.py"
     specification = importlib.util.spec_from_file_location(_SNAPSHOT_MODULE_NAME, path)
     if specification is None or specification.loader is None:

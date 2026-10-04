@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-title" content="The snapshot loaders keep one module instance per process">
+  <meta name="plan-summary" content="snapshot_module() in reckon/hooks/coordinator_obligations.py no longer replaces a reckon.crew.obligation_snapshot instance sys.modules already holds: it reuses the registered instance and loads by path only when none exists, still without importing the crew facade. The cli loader near reckon/cli.py:3007 already reused one; the new test pins both loaders, the registration and the package attribute to one object. The serial whole-suite reproduction (a cli-importing module, the hook tests, the published file) fails 2 at base with the module-split diagnostic and passes 34 at head; the identity test fails 2-to-1 at base and passes at head, and fails under the declared negative control.">
+  <meta name="plan-evidence-for" content="reckon:the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-verifies" content="reckon:the-obligations-hook-reads-a-snapshot#s20">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,watch,snapshot,hooks,tests">
+  <title>The snapshot loaders keep one module instance per process — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-snapshot-loader-keeps-one-instance" data-reckon="landed" data-when="2026-10-04">
+  <h2>The snapshot loaders keep one module instance per process</h2>
+  <p><code>snapshot_module()</code> in <code>reckon/hooks/coordinator_obligations.py</code> loaded <code>reckon.crew.obligation_snapshot</code> by file path and assigned <code>sys.modules["reckon.crew.obligation_snapshot"]</code> unconditionally, so a process that ran it after the module was imported carried two instances: the producer reached the module through <code>reckon.crew</code> (which resolves the registration, since a by-path load sets no package attribute) and memoised its per-project sweep memory <code>_SWEEPS</code> on one, while a caller holding the import read the other. The hook now returns an instance <code>sys.modules</code> already holds and path-loads only when none is registered, still without importing the crew facade. The cli loader at <code>reckon/cli.py:3007</code> already reused a registered instance; no change was needed there, and the test pins it. Landing commit <code>b67525396</code>.</p>
+  <p><strong>The measured split, base to head.</strong> The reproduction order is the worker's: a module importing <code>reckon.cli</code> is collected before the published module, so the cli's path load registers the instance the published file later inherits; a hook test then runs <code>snapshot_module()</code> and replaces it. One serial process — <code>tests/test_archive.py</code>, <code>tests/test_coordinator_obligations_hook.py</code>, <code>tests/test_obligations_snapshot_is_published.py</code> — at base <code>95b482f2</code>: 2 failed, 32 passed, both ids (<code>test_a_file_change_and_the_floor_tick_each_republish</code> and <code>test_a_slow_sweep_does_not_hold_the_next_transition</code>) reporting <code>sys.modules holds a different instance</code> with the other instance's <code>_SWEEPS</code> entry present and the test's absent — the same two ids and the same diagnostic as the whole-suite head log. At head the same command: 34 passed, <code>EXIT=0</code>. The new identity test (registration, package attribute and both loaders' returns are one object) fails at base 1 failed/1 passed and passes at head 2 passed; the wider hook-and-obligations family runs 72 passed at head in one serial process.</p>
+  <p><strong>Negative control (declared).</strong> A scratch copy of the head bytes with the reuse guard removed — the unconditional registration restored — fails exactly <code>test_both_loaders_keep_the_one_imported_snapshot_module</code>, <code>EXIT=1</code>; that id passes at the head arm. Log <code>negative-control.log</code> in run <code>r-20261004T035251552205-the-snapshot-loader-keeps-one-instance</code>.</p>
+  <p>This gate measures only this node's own change; verifying the merged result belongs to a separately dispatched test node.</p>
+</article>
+</body>
+</html>
