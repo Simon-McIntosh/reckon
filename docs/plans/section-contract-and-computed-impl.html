@@ -21,12 +21,12 @@
   <meta name="plan-tags" content="reckon-tooling,crew,spa">
   <meta name="plan-north-star" content="state-that-tells-the-truth">
   <meta name="plan-informs" content="work-scheduling-surface">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;}">
   <title>Section contract and computed impl | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.91">
-<meta name="plan-version" content="92">
+<meta name="plan-version" content="93">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -491,7 +491,7 @@
 <p>Follow-on from §4's landing (64d48f52f). The derived attempt count is recomputed on every delivered read. It aggregates the run ledger and the live pointers, and its review measured the roadmap build at 29.9 s before and 38.0 s after, and the section view at 6.2 s before and 9.3 s after, on a 3,604-row ledger. The count moves only when a run launches, is promoted or is discarded, so recomputing it on every read pays for nothing.</p><p><strong>Done when</strong> the aggregation is cached against an identity that changes whenever its inputs do: the ledger's index version or newest run file, plus the live-pointer set's names and modification times. A read with unchanged inputs reuses the cached result. A run launched, promoted or discarded between two reads changes the next read's count. A test asserts both, with a counter on the aggregation. The roadmap build and section view timings at base and head are stated as numbers over this repository's real ledger, as a read-only measurement script. The negative control is the cache disabled, where the counter rises on every read.</p>
 
     <h2 id="s14">§14 — The executable-role set is one constant</h2>
-<section data-reckon="section" data-id="s14" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s14" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p>From the review of landed-record-at-closure §7 (score 95). The set of roles whose runs count as attempts on a section, implement and test, is now spelled in four places: <code>reckon/evidence.py</code> <code>_VERDICT_ROLES</code>, <code>reckon/mcp_views.py</code> twice (about lines 1605 and 1643), and <code>reckon/crew/promotion.py</code> (about 6910). A change to the vocabulary must be chased through all four. A reader that misses one counts a different population from the others: the closure verdict and the attempt count would then disagree about the same section.</p><p><strong>Done when</strong> one named constant holds the set, and the attempt count, the closure verdict and promotion all import it. A test asserts that the three readers count the same population for one fixture holding an implement run, a test run, a review and an investigation. The negative control adds a role to one reader's local copy at base, and the test must fail.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
@@ -772,6 +772,9 @@
 </div>
 <div class="r-comment" data-section="s14" data-id="c-run-r-20261004T193528320375-the-executable-role-set-is-one-constant" data-who="reckon-build" data-when="2026-10-04T20:12:32Z">
     <div class="r-comment-body"><p>Shared one executable section role set across verdict, attempt count, indexed query and promotion; 93-file importer cohort 1018 passed at base and head, zero added failures, declared mutation failed 1 test.</p></div>
+</div>
+<div class="r-comment" data-section="s14" data-id="c-20261004-s14-landed" data-who="s22-coord" data-when="2026-10-04T20:29:00Z">
+    <div class="r-comment-body"><p><strong>Landed at merge 121fe45d4.</strong> <code>reckon.evidence.EXECUTABLE_SECTION_ROLES</code> is the one constant holding implement and test. The closure verdict in <code>reckon/evidence.py</code>, both attempt readers in <code>reckon/mcp_views.py</code> and promotion's impl-move rule import it, and the indexed attempt query now binds the roles as parameters instead of spelling them inline. <code>tests/test_the_executable_role_set_is_one_constant.py</code> counts the same population through all three readers for one fixture holding an implement run, a test run, a review and an investigation. Adding <code>investigate</code> to one reader's copy at base reddened it: 5 attempts counted against 4 expected. Review scored 98 with no findings. The coordinator's stacked population of 95 files read 1024 passed and 1 failed at base, 1026 passed and none failed at head; the base failure is the load-sensitive bound a-dispatch-returns-without-its-worker §15 owns.</p></div>
 </div>
 </section>
 </main>
