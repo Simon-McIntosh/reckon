@@ -6,355 +6,941 @@
   <meta name="docs-project" content="reckon">
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-plan-is-reviewed-before-it-is-built-landed">
-  <meta name="plan-title" content="A plan is reviewed before it is built &mdash; landed evidence">
-  <meta name="plan-summary" content="One section per node: the plan-review record, its fingerprint join and its store (PR-1).">
-  <meta name="plan-evidence-for" content="reckon:a-plan-is-reviewed-before-it-is-built">
-  <meta name="plan-verifies" content="reckon:a-plan-is-reviewed-before-it-is-built#s2">
-  <meta name="plan-recorded-at" content="2026-09-25">
+  <meta name="plan-title" content="A plan is reviewed before it is built — landed record">
+  <meta name="plan-summary" content="Closure synthesis for A plan is reviewed before it is built: 17 committed run(s), 28 section-anchored comment(s), and 18 landed commit(s).">
+  <meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
   <meta name="plan-verdict" content="pass">
-  <meta name="plan-environment" content="Linux compute node; Python project venv; detached git worktree">
-  <meta name="plan-commits" content="b906f66b,b0027963">
-  <meta name="plan-artifacts" content="reckon/crew/plan_review.py,tests/test_plan_review_store.py,docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-store.svg">
-  <title>A plan is reviewed before it is built &mdash; landed evidence | reckon</title>
+  <meta name="plan-recorded-at" content="2026-10-04T19:52:00.835Z">
+  <meta name="plan-commits" content="b906f66b2f33d2d29a96b15d5cb8965db4b60266,98cbbaebce793549c991032719af6dceeeb5cbfa,b0027963b2c5dd036a1f95f361de1aa467c5e074,eb2fc40f77cebf13cc38a9f60b8a84fa1e9ac424,e2685b55e958a51e052e067e825e20f75b42ce51,557fb583aeb3ca40e4d4651f8bd56ef0600b7e49,13b0b98c2040dcf9af635cc4ec93967061ced3e8,22d985c61dcfb9e2cf136b5ba443620c4fdd924b,990b0f6c5a37104e063298d5d1efd69e51c8696d,e95c1d6d01b81c96b981469fecc9b14757d820f7,8f17d808aded746dfd3ab5ee0427640bf065a7da,4cf5d6f35dc70910aa9737b07cc0addbc2d30268,e6556e6ac8154ca3a7eb194a7b6dc014ff254568,35da2422755587c4f7f329f229c31fce8760ca8f,70a3ef80fd66147417cb7db9779bb32d7feb0e7e,dedb1bad0b1218899fbbde48cbe297d39b8328e3,6367ab1e8e221c25bc4719b42306188cad797d0f,d37b5f6f5fdfb1d3d3423a32a85506ca9ba260cb">
+  <title>A plan is reviewed before it is built — landed record | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 </head>
 <body>
-<main class="plan-doc">
-  <header class="plan-header">
-    <h1>A plan is reviewed before it is built &mdash; landed evidence</h1>
-    <p class="plan-summary">The plan-review record: one durable file per reviewed version,
-    joined to the plan content it read by a fingerprint that drops the metadata
-    scalars the store rewrites on every edit.</p>
-  </header>
+ <main class="plan-doc">
+  <h1>A plan is reviewed before it is built — landed record</h1>
+  <p>Closure synthesis for A plan is reviewed before it is built: 17 committed run(s), 28 section-anchored comment(s), and 18 landed commit(s).</p>
 
-  <section id="plan-review-record-and-store">
-    <h2>&sect;2 &mdash; The plan-review record and its store</h2>
-    <p><strong>Node:</strong> <code>plan-review-record-and-store</code>.</p>
-
-    <p><strong>What landed.</strong> One module, <code>reckon/crew/plan_review.py</code>,
-    owning the plan-review record: <code>plan_review_path</code>,
-    <code>store_plan_review</code>, <code>read_plan_review</code>,
-    <code>list_plan_reviews</code>, <code>plan_fingerprint</code>,
-    <code>record_response</code> and <code>declined_recurrence</code>. The record lives at
-    <code>reviews/&lt;project&gt;/plan-&lt;slug&gt;.v&lt;N&gt;.json</code> beside the code
-    reviews, with a <code>.at-&lt;blob8&gt;</code> sibling the second review of one version
-    lands on, so a re-review accumulates beside its predecessor instead of over it.</p>
-    <p><strong>The fingerprint join.</strong> The plan store and the MCP write path bump
-    <code>version</code> on every write, including the impl-only edit that must not produce a
-    review, so a record keyed to the integer would be orphaned at the first impl bump and
-    no review could clear the later gate. The record is therefore joined to plan content by
-    <code>plan_fingerprint</code>, which digests two components: the parsed state with the
-    exclusion set removed, and the document's authored prose. An authored edit moves the
-    fingerprint and a metadata-only edit does not, so the review-due rule and the dispatch
-    gate agree by construction.</p>
-    <p><strong>The exclusion set is two sets.</strong> Dropping the ten server-managed
-    metadata scalars (<code>version, modified, impl, status, roi, effort_hours, owner,
-    sprint, tags, archived</code>) proved insufficient, and the review of this node found
-    it: the parser derives further state from those scalars, so writing the named effort
-    field to a plan that carried only the legacy effort letter moved the derived
-    calibration flag and the diagnostics list, changing the fingerprint on a metadata-only
-    write and orphaning a review on exactly the plans that predate the named field. A sweep
-    of every document under <code>docs/</code> named the two keys and no others; both are
-    now excluded as <code>PLAN_DERIVED_SCALARS</code>, named beside the scalar set with the
-    reason for each.</p>
-    <p><strong>The prose is digested separately, because the state has none.</strong> The
-    parsed state carries no section prose at all &mdash; <code>read_state</code> reads the
-    metas, the typed section records and the reckon-owned blocks, and the paragraphs a
-    reader sees under each heading are never part of it. A fingerprint over state alone
-    therefore did not move when a plan's prose was rewritten, leaving the one edit a review
-    exists to catch invisible. The digest now also covers the body text outside every
-    <code>data-reckon</code> block (whitespace-normalised), with the head skipped so a
-    metadata write cannot reach it through the title.</p>
-
-    <figure>
-      <img src="/reckon/figures/a-plan-is-reviewed-before-it-is-built/plan-review-store.svg"
-           alt="The plan-review pipeline: a plan write is fingerprinted with the metadata scalars dropped, stored keyed by version and blob, answered per finding, and counted for recurrence across distinct plans.">
-      <figcaption>One write, one fingerprint, one durable record per reviewed version; a
-      finding type declined across three distinct plans surfaces to the lead.</figcaption>
-    </figure>
-    <h3>Method and the six named cases</h3>
-    <p><code>tests/test_plan_review_store.py</code> runs six cases, each named for the
-    property it holds:</p>
-    <ul>
-      <li><code>test_two_versions_of_one_plan_are_two_records</code> &mdash; reviews of
-      versions 1 and 2 land at <code>plan-demo.v1.json</code> and
-      <code>plan-demo.v2.json</code>, and a fingerprint filter selects the right one.</li>
-      <li><code>test_metadata_only_edit_keeps_the_fingerprint</code> &mdash; every excluded
-      scalar moves while no content key does, and the two fingerprints are equal; a content
-      edit moves the fingerprint.</li>
-      <li><code>test_re_reviewing_one_version_keeps_both_files</code> &mdash; a second review
-      of one version lands at <code>plan-demo.v1.at-bbbbbbbb.json</code> and the first file
-      survives; re-storing identical content is idempotent on the plain path.</li>
-      <li><code>test_a_response_without_a_reason_is_refused</code> &mdash; a reasonless
-      decline raises before any write, the stored record is untouched, and an act or a
-      decline-with-reason closes the finding.</li>
-      <li><code>test_recurrence_counts_distinct_plans</code> &mdash; one type declined in
-      three distinct plans surfaces (<code>plan_count 3, surfaced true</code>) and in two does
-      not; a plan carrying two declines of one type still counts once.</li>
-      <li><code>test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it</code>
-      &mdash; the boundary against the real corpus, not a fixture: each excluded scalar is
-      written in turn to a legacy plan (<code>reckon-mcp-plan.html</code>, which carries the
-      legacy effort letter and the derived uncalibrated flag) and to a current plan
-      (<code>a-plan-is-reviewed-before-it-is-built.html</code>), the edit is asserted to have
-      landed in the parsed state, and the fingerprint is asserted unchanged; an authored
-      paragraph inside a section then moves it on both plans.</li>
-    </ul>
-    <h3>Gate</h3>
-    <p>The gate is <code>pytest -q tests/test_plan_review_store.py</code>, run in the
-    worktree at revision <code>20e687ae</code> with the root project interpreter. It reports
-    <code>6 passed</code> (exit 0). Log:
-    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T100927825379-plan-review-record-and-store/gate-plan-review-store.log</code>,
-    whose header names the revision, the tree, the command and the imported
-    <code>module.__file__</code>. This measures only this node's own change; both touched
-    files are clean under <code>ruff check</code> and <code>ruff format --check</code>.</p>
-
-    <h3>Negative control</h3>
-    <p><strong>Declared mutation:</strong> <em>plan_fingerprint folds the derived calibration
-    flag into the digest, so the legacy plan's metadata-only case must fail</em>. Applied
-    &mdash; <code>"effort_calibrated"</code> removed from
-    <code>PLAN_DERIVED_SCALARS</code> &mdash; the legacy plan's <code>effort_hours</code>
-    case fails at its first assertion, and for that reason:</p>
-    <pre>AssertionError: reckon-mcp-plan.html: effort_hours is metadata, so the fingerprint must not move
-assert '3e7e6496d697...3691bf3c877f2' == '0fa3d0b6b200...08dbdd9a86223'
-FAILED tests/test_plan_review_store.py::test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it
-1 failed in 0.62s</pre>
-    <p>The mutation was then reverted and the file's sha256 re-checked against its
-    pre-mutation digest (<code>8df4befe&hellip;b61282d3</code>), and the gate re-run green.
-    The log carries both digests on its own <code># module sha256 before mutation</code> and
-    <code># module sha256 after revert</code> lines, so the restoration is checkable from the
-    artifact rather than from a claim about it. Its first line is the declared mutation
-    verbatim:
-    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T100927825379-plan-review-record-and-store/negative-control-plan-review-store.log</code>.</p>
-    <p>The node's earlier control, whose red log is superseded by this one, declared
-    <em>plan_fingerprint folds in the version meta, so the metadata-only case must fail</em>
-    and removed <code>"version"</code> from <code>PLAN_METADATA_SCALARS</code>; that leaf
-    case is still held by <code>test_metadata_only_edit_keeps_the_fingerprint</code>.</p>
-    <section id="plan-review-rubric-prompts">
-    <h2>&sect;2 &mdash; The rubric prompts and their loaders</h2>
-    <p><strong>Node:</strong> <code>plan-review-rubric-prompts</code>.</p>
-    <p><strong>What landed.</strong> Two rubric prompts held as diffable files rather than
-    strings in a module, each read from disk at call time. <code>reckon/crew/prompts/plan_review.md</code>
-    reads a plan's authored content for <code>wiring</code>, <code>done_when</code> (measurable,
-    with a declared negative control), <code>single_goal</code>, <code>evidence_paths</code>,
-    <code>anchors_resolve</code> and <code>naming</code>, and adds a <code>reasoning</code> check in
-    three parts: the stated root cause matches the cited evidence, each section's mechanism produces
-    its done-when, and the mechanism runs on the real code path with its caller named. The
-    <code>anchors_resolve</code> item resolves an href that names no file extension as
-    <code>&lt;path&gt;.html</code>, as the surface does (<code>docs/ui/plan.jsx</code> fetches
-    <code>/&lt;project&gt;/&lt;href&gt;.html</code>), before it reports a finding &mdash; the house
-    convention, per the pilot's own declined finding.
-    <code>reckon/crew/prompts/plan_design_review.md</code> carries four items:
-    <code>reuse_search</code>, <code>deep_module</code>, <code>thin_wrapper</code> and
-    <code>duplicate_owner</code>, the last requiring that a duplicate finding name the owning file.
-    Every finding in either prompt carries a <code>WOULD_CHANGE_THE_PLAN</code> verdict and a
-    one-line <code>REASON</code>, so a review is scored on whether it would have changed the plan
-    rather than on finding count.</p>
-    <p><strong>Loaders and mirror.</strong> <code>load_plan_review_prompt</code> and
-    <code>load_plan_design_review_prompt</code> live beside <code>load_review_prompt</code> in
-    <code>reckon/crew/review.py</code>, with the item constants <code>PLAN_REVIEW_ITEMS</code> and
-    <code>PLAN_DESIGN_REVIEW_ITEMS</code>. Each prompt carries its own <code>RUBRIC_ITEMS:</code>
-    line, and <code>tests/test_plan_review_prompt.py</code> holds the two together in both
-    directions for both prompts: every item the constant enumerates is named in the prompt, and the
-    prompt's own list equals the constant.</p>
-    <p><strong>Gate.</strong> <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider
-    -q tests/test_plan_review_prompt.py</code> &rarr; <code>8 passed in 0.41s, exit 0</code>. Log:
-    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T122637024608-plan-review-rubric-prompts/gate-plan-review-prompt.log</code>.
-    The change is additive &mdash; no existing symbol in <code>reckon/crew/review.py</code> is
-    altered &mdash; and <code>tests/test_review_scoring.py</code> (31 tests) stays green on the same
-    tree. Both new files are clean under <code>ruff check</code>.</p>
-    <h3>Negative control</h3>
-    <p><strong>Declared mutation:</strong> <em>delete one rubric item from plan_review.md; the
-    mirror test must fail</em>. Applied &mdash; <code>naming</code> removed from the
-    <code>RUBRIC_ITEMS:</code> line of <code>plan_review.md</code> &mdash; the mirror case fails, and
-    for that reason:</p>
-    <pre>E  AssertionError: the prompt's RUBRIC_ITEMS list disagrees with PLAN_REVIEW_ITEMS
-E  assert ['wiring', 'd..., 'reasoning'] == ['wiring', 'd...'naming', ...]
-FAILED tests/test_plan_review_prompt.py::test_prompt_names_every_item_and_every_item_is_in_the_prompt[PLAN_REVIEW_ITEMS-...]
-1 failed, 7 passed in 0.53s</pre>
-    <p>The mutation was then reverted and the file's sha256 re-checked against its pre-mutation
-    digest (<code>4161e393&hellip;f830d0</code>), and the gate re-run green. The red log's first
-    line is the declared mutation verbatim:
-    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T122637024608-plan-review-rubric-prompts/negative-control-mirror.log</code>.</p>
-    <p><strong>Scope note.</strong> <code>reckon/crew/review.py</code> is the module the build
-    contract names for the loader (&ldquo;a sibling of <code>load_review_prompt</code>&rdquo;) and is
-    claimed by no concurrent node; the change is additive only, so a later reconciliation is a
-    deletion of the added symbols rather than a merge. Commit <code>eb2fc40f</code>.</p>
+  <section id="s2">
+    <h2>§2 — A rubber-duck review of every plan create and edit</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20260925T083257138237-plan-review-pilot-luna">
+      <p><small>reckon-build · 2026-09-25T08:48:18Z</small></p>
+      <div class="r-comment-body"><p>luna rubber-duck pilot of six live plans: 14 findings, 13 rated would-change-the-plan (a stop hook that recreates its root defect, a section marked done against its own outcome, a locked decision contradicting an invariant, a root cause quoting absent text, a missing blocks edge, broken .html anchors); checker exit 0; status repaired blocked-&gt;complete, as-delivered kept, because check-manifest refuses report-only records</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260925T083345319450-plan-review-design-scout">
+      <p><small>reckon-build · 2026-09-25T10:15:54.822Z</small></p>
+      <div class="r-comment-body"><p>plan-review design brief: 39 citations checked, 0 failed; five nodes PR-1..PR-5; adopted in c-20260925T1210-design-brief</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260925T083334058244-plan-review-pilot-dsv">
+      <p><small>reckon-build · 2026-09-25T10:23:18.627Z</small></p>
+      <div class="r-comment-body"><p>dsv4.1 rubber-duck pilot of six plans: 15 findings (8 yes, 4 maybe, 3 no); overlap with luna on about 4 sections</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260925T111913513328-review-of-plan-review-record-and-store">
+      <p><small>reckon-build · 2026-09-25T11:33:57Z</small></p>
+      <div class="r-comment-body"><p>review stored; findings routed to the implementer's repair round</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260925T1305-plan-review-record-and-store">
+      <p><small>plan-review-record-and-store · 2026-09-25T13:05:00Z</small></p>
+      <div class="r-comment-body"><p><b>Node <code>plan-review-record-and-store</code> landed.</b> <code>reckon/crew/plan_review.py</code> now owns the plan-review record: <code>plan_review_path</code>, <code>store_plan_review</code>, <code>read_plan_review</code>, <code>list_plan_reviews</code>, <code>plan_fingerprint</code>, <code>record_response</code>, <code>declined_recurrence</code>. A record lives at <code>reviews/&lt;project&gt;/plan-&lt;slug&gt;.v&lt;N&gt;.json</code>, with a <code>.at-&lt;blob8&gt;</code> sibling when one version is reviewed twice, and joins to plan content by a fingerprint that drops the ten metadata scalars (so an impl bump neither triggers nor orphans a review). Commit <code>b906f66b</code>. Gate: <code>pytest -q tests/test_plan_review_store.py</code> → 5 passed, exit 0. Negative control <i>plan_fingerprint folds in the version meta</i> executed: the metadata-only case failed, then the mutation was reverted and the file sha re-checked. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#plan-review-record-and-store">§2 landed record</a>. Remaining §2 nodes: rubric prompts, eligibility sweep, dispatch gate, responses and surface (repo <code>reckon</code>).</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260925T121422918393-re-review-of-plan-review-record-and-store">
+      <p><small>reckon-build · 2026-09-25T12:26:22Z</small></p>
+      <div class="r-comment-body"><p>review stored; findings routed or carried as followups</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260925T100927825379-plan-review-record-and-store">
+      <p><small>reckon-build · 2026-09-25T12:22:23.556Z</small></p>
+      <div class="r-comment-body"><p>plan-review record and store with a content fingerprint excluding server-managed and derived metadata; review 85 then re-review 100; merged 8a11525c</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260925T130133-plan-review-rubric-prompts">
+      <p><small>plan-review-rubric-prompts · 2026-09-25T13:01:33Z</small></p>
+      <div class="r-comment-body"><p><b>Node <code>plan-review-rubric-prompts</code> landed.</b> Two rubric prompts held as diffable files. <code>reckon/crew/prompts/plan_review.md</code> reads a plan's authored content for wiring; a measurable done-when that carries a negative control; a single goal per node; evidence and gate logs on durable paths; anchors that resolve; and naming with no plan labels or ticket numbers. It adds a reasoning check with three parts: the stated root cause matches the cited evidence, each section's mechanism produces its done-when, and the mechanism runs on the real code path with its caller named. <code>reckon/crew/prompts/plan_design_review.md</code> searches for existing machinery before new machinery, prefers a deep module behind a smaller interface, requires a thin wrapper to justify why the existing machinery cannot be extended, and makes a duplicate name the file that owns the mechanism. Each finding carries a <code>WOULD_CHANGE_THE_PLAN</code> verdict and a one-line <code>REASON</code>. Loaders <code>load_plan_review_prompt</code> and <code>load_plan_design_review_prompt</code> sit beside <code>load_review_prompt</code> in <code>reckon/crew/review.py</code>, with item constants <code>PLAN_REVIEW_ITEMS</code> and <code>PLAN_DESIGN_REVIEW_ITEMS</code>. The anchor item resolves an href that names no extension as <code>&lt;path&gt;.html</code>, as the surface does (<code>docs/ui/plan.jsx</code>), before it reports. Commit <code>eb2fc40f</code>. Gate: <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_plan_review_prompt.py</code> → 8 passed, exit 0. Negative control <i>delete one rubric item from plan_review.md; the mirror test must fail</i> executed: the mirror case failed, then the mutation was reverted and the file sha256 re-checked identical. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#plan-review-rubric-prompts">§2 landed record</a>.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260925T130740397874-review-of-plan-review-rubric-prompts">
+      <p><small>reckon-build · 2026-09-25T13:16:06Z</small></p>
+      <div class="r-comment-body"><p>review stored: 86, one scope finding (coordinator spec omission)</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260925T1410-plan-review-record-and-store-repair">
+      <p><small>plan-review-record-and-store · 2026-09-25T14:10:00Z</small></p>
+      <div class="r-comment-body"><p><b>Node <code>plan-review-record-and-store</code>: repair after review.</b> The review of run <code>r-20260925T100927825379</code> scored 85 and found that the fingerprint was wrong in two directions, both fixed in commit <code>b0027963</code> and both held by tests against <code>docs/plans</code> rather than a fixture. <b>(1) Derived metadata.</b> The exclusion set dropped only the ten named scalars, but the parser derives further state from them: writing <code>plan-effort-hours</code> to a plan that carried only the legacy effort letter moved the derived calibration flag (and the diagnostics list), so a metadata-only write invalidated a review on exactly the plans predating that field. A sweep of every document under <code>docs/</code> named those two keys and no others; they are now excluded as <code>PLAN_DERIVED_SCALARS</code>. <b>(2) Prose.</b> The parsed state carries no section prose at all, so rewriting the paragraphs a reader sees under a heading did not move the fingerprint — the one edit a review exists to catch. The digest now also covers the authored body text outside every <code>data-reckon</code> block. The gate is now six cases (<code>6 passed</code>), the negative control now declares the derived-flag mutation and fails on the legacy plan's <code>effort_hours</code> case. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#plan-review-record-and-store">§2 landed record</a>. Remaining §2 nodes unchanged.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260925T170351236569-review-of-plan-review-dispatch-gate">
+      <p><small>reckon-build · 2026-09-25T18:05:39.491Z</small></p>
+      <div class="r-comment-body"><p>review record stored and read by the coordinator</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260925T1507-plan-review-dispatch-gate">
+      <p><small>plan-review-dispatch-gate · 2026-09-25T15:07:23Z</small></p>
+      <div class="r-comment-body"><p><b>Node <code>plan-review-dispatch-gate</code> implemented and committed; one scope request open through the coordinator.</b> <code>require_plan_reviewed</code> sits in <code>reckon/crew/routing.py</code> beside <code>require_plan_section_visible</code> and is called from <code>plan_dispatch</code> right after it; <code>PlanReviewMissingError</code> sits beside <code>PlanVisibilityError</code> in <code>reckon/crew/node.py</code> with one new family in <code>DISPATCH_REFUSAL_REMEDIES</code> naming the composed plan-review dispatch; <code>--allow-unreviewed-plan</code> records <code>unreviewed_plan_override</code> on the run pointer beside the unreconciled-runs waiver. The join is by <code>plan_fingerprint</code>, so a metadata-only plan write neither demands a review nor orphans one, and investigation, test and review roles are exempt through the same predicate the promotion boundary uses to stop reviews of reviews. Commit <code>557fb583</code>. Gate: <code>pytest -q tests/test_plan_review_gate.py</code> → 8 passed, exit 0. Negative control <i>require_plan_reviewed returns reviewed unconditionally; the refusal case must fail</i> executed, then reverted. <b>Open:</b> the compatibility suites go 49 passed at base to 20 failed and 29 passed, because eighteen of those failures are implementation dispatches against minimal plan fixtures that carry no stored review and two are the refusal census, which enumerates the family set as <code>range(1, 23)</code>. Both need edits in <code>tests/test_crew_dispatch_guard.py, tests/test_crew_routing_visibility.py, tests/test_crew_refusal_visibility.py</code>, which are outside this node's fence, so they are requested rather than taken. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#plan-review-dispatch-gate">§2 landed record</a>. Remaining §2 nodes: eligibility sweep, responses and surface.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260925T1530-plan-review-dispatch-gate-fixtures">
+      <p><small>plan-review-dispatch-gate · 2026-09-25T15:38:00Z</small></p>
+      <div class="r-comment-body"><p><b>Scope resolved: the three compatibility fixtures now carry the review.</b> The coordinator extended this node's fence to <code>tests/test_crew_dispatch_guard.py, tests/test_crew_routing_visibility.py, tests/test_crew_refusal_visibility.py</code>. Each fixture that dispatches an implementation node now stores an answered review for its own plan at the crew review store root, joined by <code>plan_review.plan_fingerprint</code>, so the fixture still tests what it tested before rather than being waived past the gate; the refusal census grows to the new family id. The gate is unchanged — the fixtures satisfy it instead of avoiding it. Re-run against base <code>ea867750</code>: compatibility gate <code>50 passed, exit 0</code> against the base arm's <code>49 passed, exit 0</code> — <strong>zero added failures</strong> (the one-test rise is the new family id joining the parametrised census case); spec gate <code>tests/test_plan_review_gate.py</code> 8 passed. Lint and format add no finding on the three files against the base archive tree. Commits <code>557fb583</code> and <code>e95c1d6d</code>. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#plan-review-dispatch-gate">§2 landed record</a>.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260926T0750-plan-review-dispatch-gate-report-only">
+      <p><small>plan-review-dispatch-gate · 2026-09-26T07:50:00Z</small></p>
+      <div class="r-comment-body"><p><b>Review changes and the lead decision landed: the gate ships report-only behind a flight key.</b> Three changes, all in commit <code>4cf5d6f35dc70910aa9737b07cc0addbc2d30268</code>. (1) The unanswered-findings branch in <code>require_plan_reviewed</code> had no case: a stored review carrying one finding no response answers is now refused, and the refusal names that finding. (2) A <code>--dry-run</code> against an unreviewed plan answered <code>plan-unavailable</code> while the launch path answered <code>plan-review-missing</code>, sending a diagnosing operator to the mounts; both paths now answer <code>plan-review-missing</code>. (3) Report-only is the shipped default, because almost no plan carries a stored review yet and the node that writes one is not built: a missing or unanswered review is recorded as a warning on the dispatch result and the dispatch proceeds, and <code>plan_review_gate: enforce</code> in a flight layer restores the refusal unchanged. <b>The key is checked in <code>reckon/flight.py</code>, not in the generated model:</b> the shipped defaults layer is schema-checked like every other layer and the generated <code>FlightConfig</code> sets <code>extra = "forbid"</code>, so naming the key in <code>reckon/schema/flight-defaults.yaml</code> alone raises <code>FlightConfigError</code> on every flight resolution until the LinkML source is regenerated — measured, not assumed. The key is therefore held out of the schema check and validated beside it, which leaves <code>reckon/_flight_schema.py</code> as its source produces it; the defaults layer names <code>report</code>. Gates: spec <code>tests/test_plan_review_gate.py</code> 17 passed, exit 0; compatibility gate at the repaired head 50 passed, exit 0 against the stated base <code>ea867750</code>'s 49 passed, exit 0 — zero added failures; a wider arm over flight, provenance, dry-run and dispatch-guard 122 passed, 2 skipped, exit 0; lint adds no finding on the five changed files against the base archive tree. Negative control <i>the branch that refuses a review whose finding no response answers is deleted, so such a review is admitted; the case asserting that the refusal names the open finding must then fail</i>: base arm 1 passed, head arm 1 failed with <code>DID NOT RAISE PlanReviewMissingError</code>, both arms naming revision, tree and command, in scratch trees exported from the same revision. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#plan-review-dispatch-gate">§2 landed record</a>.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260926T075839396843-re-review-of-plan-review-dispatch-gate">
+      <p><small>reckon-build · 2026-09-26T09:28:05.110Z</small></p>
+      <div class="r-comment-body"><p>review record stored and read by the coordinator (92; its launch-path finding is covered by launch-path-reports-plan-review-missing)</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260926T0930-launch-path-reports-plan-review-missing">
+      <p><small>launch-path-reports-plan-review-missing · 2026-09-26T09:30:00Z</small></p>
+      <div class="r-comment-body"><p><b>Node <code>launch-path-reports-plan-review-missing</code> landed.</b> The re-review of the dispatch gate (run <code>r-20260925T131953539635</code>, 92) found the launch path's <code>plan-review-missing</code> mapping untested while the dry-run mapping beside it was asserted, so the divergence an earlier review caught could return on the launch side and still pass. One case now drives <code>crew dispatch</code> without <code>--dry-run</code>, under <code>plan_review_gate: enforce</code>, for an implement node on the fixture plan that carries no stored review, and asserts the emitted error is <code>plan-review-missing</code> naming <code>fixture</code>. No worker is spawned — the gate refuses inside <code>plan_dispatch</code> before a worktree, pointer or ledger row exists. Commit <code>35da2422</code>. Gate: <code>pytest -q tests/test_plan_review_gate.py</code> → 18 passed, exit 0 (base <code>4b0ccd34</code> 17 passed), and the compatibility gate <code>tests/test_crew_dispatch_guard.py</code> 14 passed against 14 at base — <strong>zero added failures</strong>. Negative control <i>change the launch-path mapping in <code>reckon/cli.py</code> to emit <code>plan-unavailable</code>; the new case must fail</i>: base arm 1 passed, head arm 1 failed with <code>assert 'plan-unavailable' == 'plan-review-missing'</code>, both arms in scratch trees exported from the same revision, header lines naming revision, tree, <code>module.__file__</code> and command. Landed record: <a href="/reckon/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed#launch-path-reports-plan-review-missing">§2 landed record</a>.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20260926T092819229022-review-of-launch-path-reports-plan-review-missing">
+      <p><small>reckon-build · 2026-09-26T10:41:55.710Z</small></p>
+      <div class="r-comment-body"><p>review record stored and read by the coordinator (96)</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20260925T083257138237-plan-review-pilot-luna</code></td>
+        <td>plan-review-pilot-luna</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>15m 10s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260925T083345319450-plan-review-design-scout</code></td>
+        <td>plan-review-design-scout</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>99m 1s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260925T083334058244-plan-review-pilot-dsv</code></td>
+        <td>plan-review-pilot-dsv</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>108m 44s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260925T111913513328-review-of-plan-review-record-and-store</code></td>
+        <td>review-of-plan-review-record-and-store</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>14m 29s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260925T100927825379-plan-review-record-and-store</code></td>
+        <td>plan-review-record-and-store</td>
+        <td><code>b906f66b2f33d2d29a96b15d5cb8965db4b60266</code><br><code>98cbbaebce793549c991032719af6dceeeb5cbfa</code><br><code>b0027963b2c5dd036a1f95f361de1aa467c5e074</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>131m 30s</td>
+        <td><code>{&quot;added&quot;:1059,&quot;files&quot;:5,&quot;removed&quot;:0}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260925T121422918393-re-review-of-plan-review-record-and-store</code></td>
+        <td>re-review-of-plan-review-record-and-store</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>11m 46s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260925T130740397874-review-of-plan-review-rubric-prompts</code></td>
+        <td>review-of-plan-review-rubric-prompts</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>8m 11s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260925T122637024608-plan-review-rubric-prompts</code></td>
+        <td>plan-review-rubric-prompts</td>
+        <td><code>eb2fc40f77cebf13cc38a9f60b8a84fa1e9ac424</code><br><code>e2685b55e958a51e052e067e825e20f75b42ce51</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>53m 37s</td>
+        <td><code>{&quot;added&quot;:382,&quot;files&quot;:6,&quot;removed&quot;:0}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260925T170351236569-review-of-plan-review-dispatch-gate</code></td>
+        <td>review-of-plan-review-dispatch-gate</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>60m 35s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260925T131953539635-plan-review-dispatch-gate</code></td>
+        <td>plan-review-dispatch-gate</td>
+        <td><code>557fb583aeb3ca40e4d4651f8bd56ef0600b7e49</code><br><code>13b0b98c2040dcf9af635cc4ec93967061ced3e8</code><br><code>22d985c61dcfb9e2cf136b5ba443620c4fdd924b</code><br><code>990b0f6c5a37104e063298d5d1efd69e51c8696d</code><br><code>e95c1d6d01b81c96b981469fecc9b14757d820f7</code><br><code>8f17d808aded746dfd3ab5ee0427640bf065a7da</code><br><code>4cf5d6f35dc70910aa9737b07cc0addbc2d30268</code><br><code>e6556e6ac8154ca3a7eb194a7b6dc014ff254568</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>997m 41s</td>
+        <td><code>{&quot;added&quot;:877,&quot;files&quot;:15,&quot;removed&quot;:59}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260926T091353695982-launch-path-reports-plan-review-missing</code></td>
+        <td>launch-path-reports-plan-review-missing</td>
+        <td><code>35da2422755587c4f7f329f229c31fce8760ca8f</code><br><code>70a3ef80fd66147417cb7db9779bb32d7feb0e7e</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>13m 13s</td>
+        <td><code>{&quot;added&quot;:99,&quot;files&quot;:3,&quot;removed&quot;:0}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260926T075839396843-re-review-of-plan-review-dispatch-gate</code></td>
+        <td>re-review-of-plan-review-dispatch-gate</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>88m 28s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20260926T092819229022-review-of-launch-path-reports-plan-review-missing</code></td>
+        <td>review-of-launch-path-reports-plan-review-missing</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>72m 25s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report" data-run-id="r-20260925T083257138237-plan-review-pilot-luna" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/plan-review-pilot-luna/findings.json">
+      <h3>plan-review-pilot-luna &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/plan-review-pilot-luna/findings.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;review&quot;: {
+    &quot;plan&quot;: &quot;a-plan-is-reviewed-before-it-is-built&quot;,
+    &quot;section&quot;: &quot;s2&quot;,
+    &quot;base_revision&quot;: &quot;37dad635334fe8e88d055047fdeb57ea8e325715&quot;,
+    &quot;rubric&quot;: [
+      &quot;wiring&quot;,
+      &quot;measurable done-when with a negative control&quot;,
+      &quot;single goal per node&quot;,
+      &quot;durable evidence paths&quot;,
+      &quot;every cited anchor resolves&quot;,
+      &quot;no plan labels in code&quot;,
+      &quot;mechanism-to-done-when reasoning&quot;,
+      &quot;root-cause-to-evidence reasoning&quot;
+    ]
+  },
+  &quot;findings&quot;: [
+    {
+      &quot;plan&quot;: &quot;a-placement-with-no-reservation-mints-one-per-worker&quot;,
+      &quot;section&quot;: &quot;s3&quot;,
+      &quot;rubric_item&quot;: &quot;wiring and mechanism-to-done-when reasoning&quot;,
+      &quot;quoted_text&quot;: &quot;That retirement is a precondition of this section, not a consequence of it: implemented alone against today&#x27;s code, a dispatch would publish a record no other project reads, and the sharing mechanism would not share.&quot;,
+      &quot;why_wrong&quot;: &quot;The plan&#x27;s metadata declares that this plan blocks the-fleet-shares-one-allocation, while that plan declares that it depends on this plan. The section therefore has a required predecessor that the graph does not represent; the prose only says the two plans pair. Dispatching this plan as a ready node can produce a host-global record that other projects still read through per-project keying, so its own cross-project done-when cannot be produced.&quot;,
+      &quot;would_change_plan&quot;: &quot;yes&quot;,
+      &quot;verdict_reason&quot;: &quot;Add an explicit dependency or a joint gate for the keying retirement, or move ownership of that prerequisite into this plan and repair the reverse edge.&quot;
+    },
+    {
+      &quot;plan&quot;: &quot;a-placement-with-no-reservation-mints-one-per-worker&quot;,
+      &quot;section&quot;: &quot;s3&quot;,
+      &quot;rubric_item&quot;: &quot;durable evidence paths&quot;,
+      &quot;quoted_text&quot;: &quot;The test that currently pins the bare-srun wrapping is replaced by one whose name states the ensure.&quot;,
+      &quot;why_wrong&quot;: &quot;A test name is not a durable evidence path. The done-when names a recording scheduler and counts allocation requests, but gives no test file, command, or log location that a later reader can open to verify the count and the two-project placement.&quot;,
+      &quot;would_change_plan&quot;: &quot;yes&quot;,
+      &quot;verdict_reason&quot;: &quot;Name the test path and require a receipt/log path containing the allocation count, job ids, and the two step launches.&quot;
+    },
+    {
+      &quot;plan&quot;: &quot;a-placement-with-no-reservation-mints-one-per-worker&quot;,
+      &quot;section&quot;: &quot;s3&quot;,
+      &quot;rubric_item&quot;: &quot;measurable done-when with a negative control&quot;,
+      &quot;quoted_text&quot;: &quot;Done when. A dispatch declaring placement with no readable reservation holds the shared allocation, publishes it, and runs its worker as a step inside it with --overlap and the job id it just published. A second dispatch under a different project reads that same host-global record, starts no allocation of its own, and runs its worker as a step in the allocation it found, asserted against a recording scheduler as exactly one allocation-obtaining request across both dispatches together. Concurrent dispatches racing from no record still produce one allocation. A live allocation is never replaced, and a backend declaring no placement is untouched.&quot;,
+      &quot;why_wrong&quot;: &quot;The positive scenarios measure one allocation and the untouched no-placement branch, but no declared mutation or failing receipt demonstrates that the old bare-srun path, a second hold, or replacement of a live allocation would be caught. A passing recording-scheduler test can therefore validate the happy path without proving the guard refuses the defect this plan names.&quot;,
+      &quot;would_change_plan&quot;: &quot;yes&quot;,
+      &quot;verdict_reason&quot;: &quot;Declare a mutation such as dropping the ensure/job-id or forcing a live-record replacement, and require its refusal or extra-allocation assertion in a named negative-control log.&quot;
+    },
+    {
+      &quot;plan&quot;: &quot;the-page-paints-from-an-index&quot;,
+      &quot;section&quot;: &quot;s7&quot;,
+      &quot;rubric_item&quot;: &quot;durable evidence paths&quot;,
+      &quot;quoted_text&quot;: &quot;The write path is the report under the session&#x27;s reports directory.&quot;,
+      &quot;why_wrong&quot;: &quot;This identifies only a directory class, not a stable filename or exact path. A timing gate that writes an unnamed session-local report is not independently auditable by a later coordinator, and the section does not say which rows, raw timings, or py-spy receipt must be retained there.&quot;,
+      &quot;would_change_plan&quot;: &quot;yes&quot;,
+      &quot;verdict_reason&quot;: &quot;Specify the exact durable report path/name and the required per-project cold/warm records, host/load values, restart timestamp, and diagnostic receipt.&quot;
+    },
+    {
+      &quot;plan&quot;: &quot;the-page-paints-from-an-index&quot;,
+      &quot;section&quot;: &quot;s7&quot;,
+      &quot;rubric_item&quot;: &quot;measurable done-when with a negative control&quot;,
+      &quot;quoted_text&quot;: &quot;The gate is hard: every /_index request answers 200 in under 1 s in both passes, and the port accepts a connection within 5 s of the restart. A slower request fails the gate, and the report names it with a py-spy dump frame.&quot;,
+      &quot;why_wrong&quot;: &quot;The cold and warm timing thresholds are measurable, but §7 declares no mutation or negative-control run. The gate can pass while the timing harness, restart boundary, or report writer is wrong; there is no recorded slowed startup or delayed endpoint that must fail the same assertions.&quot;,
+      &quot;would_change_plan&quot;: &quot;yes&quot;,
+      &quot;verdict_reason&quot;: &quot;Add a named negative control that injects startup or index delay and requires the latency gate to fail with the corresponding diagnostic receipt.&quot;
+    },
+    {
+      &quot;plan&quot;: &quot;a-worker-cannot-write-your-home&quot;,
+      &quot;section&quot;: &quot;s1&quot;,
+      &quot;rubric_item&quot;: &quot;mechanism-to-done-when reasoning&quot;,
+      &quot;quoted_text&quot;: &quot;launch_plan(fence=False) is the default at main, and no caller passes True. So §1&#x27;s measure, that every CLI worker launches inside a fence, is not yet met in the running system.&quot;,
+      &quot;why_wrong&quot;: &quot;The section is declared done even though its own recorded outcome says the production launcher remains unfenced and the measure is not met. The bwrap composition and stub falsifier prove only a capability, not that every dispatch, resume, and redispatch actually uses it.&quot;,
+      &quot;would_change_plan&quot;: &quot;yes&quot;,
+      &quot;verdict_reason&quot;: &quot;Keep §1 implementable or move its completion to the §2 activation gate, and make the done-when require a real production launch with fence enabled.&quot;
+    },
+    {
+      &quot;plan&quot;: &quot;a-worker-cannot-write-your-home&quot;,
+      &quot;section&quot;: &quot;s2&quot;,
+      &quot;rubric_item&quot;: &quot;durable evidence paths&quot;,
+      &quot;quoted_text&quot;: &quot;That is checked by a before and after listing of ~/.claude/projects restricted to the run&#x27;s worktree name. A codex worker does the same with ~/.codex/auth.json unchanged.&quot;,
+      &quot;why_wrong&quot;: &quot;The real-worker falsifier names observations but no command receipt, log path, or evidence artifact. A later reader cannot distinguish a completed smoke test from an assertion that was never run, especially because the section also requires resume continuity and transcript placement.&quot;,
+      &quot;would_change_plan&quot;: &quot;yes&quot;,
+      &quot;verdict_reason&quot;: &quot;Require a durable smoke-test receipt beside the run record containing the session id, transcript path, resume result, protected-home listing/digest, and auth digest.&quot;
+    },
+    {
+      &quot;plan&quot;: &quot;an-orchestrator-cannot-forget-its-obligations&quot;,
+      &quot;section&quot;: &quot;s7&quot;,
+      &quot;rubric_item&quot;: &quot;mechanism-to-done-when reasoning&quot;,
+      &quot;quoted_text&quot;: &quot;In worker mode, the Stop hook blocks while the manifest is absent or its status is not complete, blocked or failed. ... It blocks at most three times per run, so a worker that genuinely cannot finish is never trapped. ... Stop is blocked when the manifest is missing or in-progress, allowed when it is complete, and allowed after the third block.&quot;,
+      &quot;why_wrong&quot;: &quot;After the third block, the mechanism explicitly allows a worker with no manifest or an in-progress manifest to end. That recreates the root defect described in §1: work can end while outstanding and leave no terminal durable record. The three-attempt escape is bounded, but it is not a handoff to failed/blocked state and therefore does not establish the plan&#x27;s title or its done-when.&quot;,
+      &quot;would_change_plan&quot;: &quot;yes&quot;,
+      &quot;verdict_reason&quot;: &quot;Make the escape write or require a terminal failed/blocked manifest and preserve an obligation, or otherwise prove that the third-block path cannot discard unresolved work.&quot;
+    },
+    {
+      &quot;plan&quot;: &quot;an-orchestrator-cannot-forget-its-obligations&quot;,
+      &quot;section&quot;: &quot;s2&quot;,
+      &quot;rubric_item&quot;: &quot;every cited anchor resolves&quot;,
+      &quot;quoted_text&quot;: &quot;&lt;a href=\&quot;/reckon/evidence/archive/an-orchestrator-is-bound-by-its-inbox-landed#obligations-derived-view\&quot;&gt;derived obligations evidence&lt;/a&gt;&quot;,
+      &quot;why_wrong&quot;: &quot;The cited archive target is missing its .html suffix. The checkout contains docs/evidence/archive/an-orchestrator-cannot-forget-its-obligations-landed.html with the obligations-derived-view anchor, but no extensionless file at the href target, so the evidence link does not resolve as written.&quot;,
+      &quot;would_change_plan&quot;: &quot;yes&quot;,
+      &quot;verdict_reason&quot;: &quot;Correct the href to the actual .html archive path and keep the section fragment.&quot;
+    },
+    {
+      &quot;plan&quot;: &quot;the-ledger-is-one-file-per-run&quot;,
+      &quot;section&quot;: &quot;decisions&quot;,
+      &quot;rubric_item&quot;: &quot;mechanism-to-done-when reasoning&quot;,
+      &quot;quoted_text&quot;: &quot;A run file is never moved, renamed or deleted once committed. Its content changes only when history-persists-as-detail-washes-out&#x27;s rotation removes detail fields from it. ... Per-file write through the one serialiser — add targeted run-file read/write and retain the committed report.&quot;,
+      &quot;why_wrong&quot;: &quot;The locked integrated-gate decision adds a targeted write to an already committed run file, which contradicts the earlier immutability rule that permits only detail rotation. Without reconciling this, §1&#x27;s append-only safety reasoning and §2&#x27;s duplicate comparison do not state whether an integrated-gate update is an allowed versioned mutation or a violation.&quot;,
+      &quot;would_change_plan&quot;: &quot;yes&quot;,
+      &quot;verdict_reason&quot;: &quot;Define integrated-gate re-recording as an explicit permitted mutation with version/serialization and reader semantics, or remove it from the per-file design; add the corresponding gate.&quot;
+    },
+    {
+      &quot;plan&quot;: &quot;the-ledger-is-one-file-per-run&quot;,
+      &quot;section&quot;: &quot;s2&quot;,
+      &quot;rubric_item&quot;: &quot;every cited anchor resolves&quot;,
+      &quot;quoted_text&quot;: &quot;&lt;a href=\&quot;/reckon/evidence/archive/the-ledger-is-one-file-per-run-landed#reader-files\&quot;&gt;Reader evidence and gate receipts&lt;/a&gt;&quot;,
+      &quot;why_wrong&quot;: &quot;The href omits .html. The checkout contains docs/evidence/archive/the-ledger-is-one-file-per-run-landed.html#reader-files, but the extensionless archive path is absent, so the cited reader receipt is not reachable as written.&quot;,
+      &quot;would_change_plan&quot;: &quot;yes&quot;,
+      &quot;verdict_reason&quot;: &quot;Correct the archive href to the existing .html file while retaining the reader-files fragment.&quot;
+    },
+    {
+      &quot;plan&quot;: &quot;a-worker-can-take-a-brief&quot;,
+      &quot;section&quot;: &quot;s5&quot;,
+      &quot;rubric_item&quot;: &quot;root-cause-to-evidence reasoning and every cited anchor resolves&quot;,
+      &quot;quoted_text&quot;: &quot;reckon-build SKILL.md §3b currently says \&quot;there is deliberately no flag for passing prose to a worker\&quot;. It is rewritten: a probe, measurement, review or investigation may carry a brief...&quot;,
+      &quot;why_wrong&quot;: &quot;The live skills/reckon-build/SKILL.md §3b is a pre-dispatch checklist and does not contain the quoted prohibition; a search of the live file finds no \&quot;there is deliberately no flag for passing prose to a worker\&quot;. The plan&#x27;s stated cause and requested edit are therefore stale, so the section may implement no change while claiming to retire the old rule.&quot;,
+      &quot;would_change_plan&quot;: &quot;yes&quot;,
+      &quot;verdict_reason&quot;: &quot;Refresh §5 against the current skill, identify the actual carrier rule that still blocks briefs, and make its negative check target the exact live text.&quot;
+    },
+    {
+      &quot;plan&quot;: &quot;a-worker-can-take-a-brief&quot;,
+      &quot;section&quot;: &quot;s3&quot;,
+      &quot;rubric_item&quot;: &quot;measurable done-when with a negative control&quot;,
+      &quot;quoted_text&quot;: &quot;A test composes the prompts for a plan dispatch and for a brief dispatch of the same node. It asserts that the brief prompt contains the brief text and the manifest contract, and contains no plan-section read instruction or plan-landing instruction. The plan prompt is byte-identical to its output before the change.&quot;,
+      &quot;why_wrong&quot;: &quot;The prompt assertions are measurable, but the section declares no mutation or red control for the accidental-plan-instruction failure it is intended to prevent. Byte identity of the plan prompt is only a regression comparison; it does not show that a brief cannot silently retain a plan landing instruction or omit the manifest contract under a broken branch.&quot;,
+      &quot;would_change_plan&quot;: &quot;yes&quot;,
+      &quot;verdict_reason&quot;: &quot;Add a named negative control that restores the plan-instruction branch for a brief and requires the no-plan-instruction assertion to fail, with its log retained.&quot;
+    },
+    {
+      &quot;plan&quot;: &quot;a-worker-can-take-a-brief&quot;,
+      &quot;section&quot;: &quot;s4&quot;,
+      &quot;rubric_item&quot;: &quot;mechanism-to-done-when reasoning&quot;,
+      &quot;quoted_text&quot;: &quot;With --plan-link, the row carries plan_link; with --unplanned-reason, it carries unplanned_reason. ... Either lands on the ledger row, so a product change never lands without a stated owner.&quot;,
+      &quot;why_wrong&quot;: &quot;Persisting an arbitrary string proves only that a field was copied. The mechanism does not say that --plan-link resolves to an existing plan or that it names the plan whose product the implement run changed; therefore the claimed owner traceability can be satisfied by a nonexistent or unrelated slug.&quot;,
+      &quot;would_change_plan&quot;: &quot;maybe&quot;,
+      &quot;verdict_reason&quot;: &quot;If a free-form owner note is intentional, narrow the claim to stated ownership; otherwise require plan-slug resolution and a test that the link is recorded against the changed product.&quot;
+    }
+  ]
+}
+</pre></div>
+    </article>
+    <article class="landed-report landed-report-unreadable" data-run-id="r-20260925T083345319450-plan-review-design-scout">
+      <h3>plan-review-design-scout &mdash; no record composed</h3>
+      <p>This run landed no commits and no path in its manifest resolves to a readable file (/home/ITER/mcintos/Code/reckon/design.md — the design brief for building the plan-review loop (§2 and §3) under the three locked decisions; sections A–H: authority/constraints, loop diagram, mechanism map into existing machinery (file :: symbol), decisions D1–D6 (content fingerprint keying, derived eligibility, pointer as surface state, the dispatch gate), the machine-checked citations block, the five-node build split PR-1..PR-5 with exclusive write paths, predecessors, done-when and negative control each, plus dependency waves, and 4 interpretation notes the plan does not lock, /home/ITER/mcintos/Code/reckon/check_design.py — parses the citations fence and asserts every cited file exists under --repo and every cited symbol is literally present in that file; prints node count; exit 0 only when all pass, /home/ITER/mcintos/Code/reckon/check_design.log — gate output at rev 37dad635, exit 0, 39/39, nodes 5, /home/ITER/mcintos/Code/reckon/negative_control_design.md + check_design.negative.log — the mutated-copy control, /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/plan-review-design-scout), so no section could be composed from a report. The absence is recorded here rather than left as an anchored section with no content.</p>
+    </article>
+    <article class="landed-report landed-report-unreadable" data-run-id="r-20260925T083334058244-plan-review-pilot-dsv">
+      <h3>plan-review-pilot-dsv &mdash; no record composed</h3>
+      <p>This run landed no commits and no path in its manifest resolves to a readable file (/home/ITER/mcintos/Code/reckon/findings.json (15 findings; yes=8 is the plan-changing set, /home/ITER/mcintos/Code/reckon/maybe=4, /home/ITER/mcintos/Code/reckon/no=3); check_findings.py with check_findings.log (gate, /home/ITER/mcintos/Code/reckon/exit 0); negative_control.log (mutated copy, /home/ITER/mcintos/Code/reckon/exit 1); plans/ holds the six reviewed plan HTMLs at base_sha, /home/ITER/mcintos/Code/reckon/so the checker&#x27;s section and quote assertions read the reviewed text rather than a live tree, /home/ITER/mcintos/.config/reckon/crew/reports/reckon/s21-coord/plan-review-pilot-dsv), so no section could be composed from a report. The absence is recorded here rather than left as an anchored section with no content.</p>
+    </article>
+    <article class="landed-report" data-run-id="r-20260925T111913513328-review-of-plan-review-record-and-store" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T100927825379-plan-review-record-and-store.json">
+      <h3>review-of-plan-review-record-and-store &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T100927825379-plan-review-record-and-store.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;call_site_count&quot;: 0,
+  &quot;call_sites&quot;: [],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;reckon/crew/plan_review.py&quot;,
+      &quot;line&quot;: &quot;123-129&quot;,
+      &quot;text&quot;: &quot;A valid addition of the named plan-effort-hours scalar to the real legacy docs/plans/reckon-mcp-plan.html:15-21 changes the fingerprint because parsing also changes effort_calibrated; D1 must either exclude that derived transition or document it as semantic, and the missing real-plan test leaves the boundary unguarded.&quot;
+    }
+  ],
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;no production call sites found&quot;,
+    &quot;diff&quot;: &quot;8877d879..98cbbaeb adds the plan_review module and focused tests plus the declared evidence, figure and plan landing; no production caller is present in the target head.&quot;,
+    &quot;done_when&quot;: &quot;the source manifest records five named tests passing at gate-plan-review-store.log, including the metadata-only, two-version, re-review, refusal and recurrence cases; real-plan-html-fingerprint.log checks target-head HTML.&quot;,
+    &quot;goal&quot;: &quot;reckon/crew/plan_review.py:1-482 implements the requested plan-review record, durable store, fingerprint, response and recurrence functions; the real-plan check also exercises its D1 join.&quot;,
+    &quot;manifest&quot;: &quot;the source manifest is complete at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T100927825379-plan-review-record-and-store/manifest.md, names b906f66b and 98cbbaeb, the green gate and its red mutation control.&quot;,
+    &quot;write_paths&quot;: &quot;the manifest declares the module, focused test, cumulative evidence anchor, figure directory and plan; the target diff changes exactly those five paths.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;tests/test_plan_review_store.py:81-135 guards the fixture exclusion set and its mutation red, but no committed test parses a real legacy plan or catches the derived calibration transition.&quot;,
+    &quot;evidence&quot;: &quot;the worker&#x27;s gate-plan-review-store.log records 5 passed and negative-control-plan-review-store.log records the intended mutation red, while real-plan-html-fingerprint.log finds all present named scalars stable but exposes the legacy effort-hours transition.&quot;,
+    &quot;fit&quot;: &quot;reckon/crew/plan_review.py:52-53 reuses the existing plan parser and review-store root, and lines 238-245 retain the repository&#x27;s atomic-write idiom without a forbidden name.&quot;,
+    &quot;goal_fidelity&quot;: &quot;reckon/crew/plan_review.py:114-245 provides the D1 fingerprint and atomic version/blob-keyed store, while reckon/crew/plan_review.py:399-482 provides response and recurrence handling; a legacy-plan metadata edge remains.&quot;,
+    &quot;scope_discipline&quot;: &quot;the target diff is limited to the five paths declared by the source manifest, with the cumulative evidence record and plan landing included.&quot;
+  },
+  &quot;model&quot;: &quot;review&quot;,
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;reviewed_base_sha: 8877d879d647a6f570e66f69fa20977f7d6b1f91\nreviewed_head_sha: 98cbbaebce793549c991032719af6dceeeb5cbfa\nVERDICT goal: reckon/crew/plan_review.py:1-482 implements the requested plan-review record, durable store, fingerprint, response and recurrence functions; the real-plan check also exercises its D1 join.\nVERDICT done_when: the source manifest records five named tests passing at gate-plan-review-store.log, including the metadata-only, two-version, re-review, refusal and recurrence cases; real-plan-html-fingerprint.log checks target-head HTML.\nVERDICT write_paths: the manifest declares the module, focused test, cumulative evidence anchor, figure directory and plan; the target diff changes exactly those five paths.\nVERDICT manifest: the source manifest is complete at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T100927825379-plan-review-record-and-store/manifest.md, names b906f66b and 98cbbaeb, the green gate and its red mutation control.\nVERDICT diff: 8877d879..98cbbaeb adds the plan_review module and focused tests plus the declared evidence, figure and plan landing; no production caller is present in the target head.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:114-245 provides the D1 fingerprint and atomic version/blob-keyed store, while reckon/crew/plan_review.py:399-482 provides response and recurrence handling; a legacy-plan metadata edge remains.\nSCORE evidence: 14\nJUSTIFICATION evidence: the worker&#x27;s gate-plan-review-store.log records 5 passed and negative-control-plan-review-store.log records the intended mutation red, while real-plan-html-fingerprint.log finds all present named scalars stable but exposes the legacy effort-hours transition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the target diff is limited to the five paths declared by the source manifest, with the cumulative evidence record and plan landing included.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_plan_review_store.py:81-135 guards the fixture exclusion set and its mutation red, but no committed test parses a real legacy plan or catches the derived calibration transition.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/plan_review.py:52-53 reuses the existing plan parser and review-store root, and lines 238-245 retain the repository&#x27;s atomic-write idiom without a forbidden name.\nFINDING reckon/crew/plan_review.py:123-129 A valid addition of the named plan-effort-hours scalar to the real legacy docs/plans/reckon-mcp-plan.html:15-21 changes the fingerprint because parsing also changes effort_calibrated; D1 must either exclude that derived transition or document it as semantic, and the missing real-plan test leaves the boundary unguarded.\n&quot;,
+  &quot;review_run_id&quot;: &quot;r-20260925T111913513328-review-of-plan-review-record-and-store&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;8877d879d647a6f570e66f69fa20977f7d6b1f91&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;98cbbaebce793549c991032719af6dceeeb5cbfa&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20260925T100927825379-plan-review-record-and-store&quot;,
+  &quot;reviewer&quot;: &quot;review-of-plan-review-record-and-store&quot;,
+  &quot;reviewer_run_id&quot;: &quot;r-20260925T111913513328-review-of-plan-review-record-and-store&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 15,
+    &quot;evidence&quot;: 14,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 17,
+    &quot;scope_discipline&quot;: 20
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-09-25T11:31:28.101125+00:00&quot;,
+  &quot;total&quot;: 85
+}
+</pre></div>
+    </article>
+    <article class="landed-report" data-run-id="r-20260925T121422918393-re-review-of-plan-review-record-and-store" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T100927825379-plan-review-record-and-store.json">
+      <h3>re-review-of-plan-review-record-and-store &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T100927825379-plan-review-record-and-store.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;call_site_count&quot;: 0,
+  &quot;call_sites&quot;: [],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;reckon/crew/plan_review.py&quot;,
+      &quot;line&quot;: &quot;123-129&quot;,
+      &quot;text&quot;: &quot;A valid addition of the named plan-effort-hours scalar to the real legacy docs/plans/reckon-mcp-plan.html:15-21 changes the fingerprint because parsing also changes effort_calibrated; D1 must either exclude that derived transition or document it as semantic, and the missing real-plan test leaves the boundary unguarded.&quot;
+    }
+  ],
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;no production call sites found&quot;,
+    &quot;diff&quot;: &quot;8877d879..98cbbaeb adds the plan_review module and focused tests plus the declared evidence, figure and plan landing; no production caller is present in the target head.&quot;,
+    &quot;done_when&quot;: &quot;the source manifest records five named tests passing at gate-plan-review-store.log, including the metadata-only, two-version, re-review, refusal and recurrence cases; real-plan-html-fingerprint.log checks target-head HTML.&quot;,
+    &quot;goal&quot;: &quot;reckon/crew/plan_review.py:1-482 implements the requested plan-review record, durable store, fingerprint, response and recurrence functions; the real-plan check also exercises its D1 join.&quot;,
+    &quot;manifest&quot;: &quot;the source manifest is complete at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T100927825379-plan-review-record-and-store/manifest.md, names b906f66b and 98cbbaeb, the green gate and its red mutation control.&quot;,
+    &quot;write_paths&quot;: &quot;the manifest declares the module, focused test, cumulative evidence anchor, figure directory and plan; the target diff changes exactly those five paths.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;tests/test_plan_review_store.py:81-135 guards the fixture exclusion set and its mutation red, but no committed test parses a real legacy plan or catches the derived calibration transition.&quot;,
+    &quot;evidence&quot;: &quot;the worker&#x27;s gate-plan-review-store.log records 5 passed and negative-control-plan-review-store.log records the intended mutation red, while real-plan-html-fingerprint.log finds all present named scalars stable but exposes the legacy effort-hours transition.&quot;,
+    &quot;fit&quot;: &quot;reckon/crew/plan_review.py:52-53 reuses the existing plan parser and review-store root, and lines 238-245 retain the repository&#x27;s atomic-write idiom without a forbidden name.&quot;,
+    &quot;goal_fidelity&quot;: &quot;reckon/crew/plan_review.py:114-245 provides the D1 fingerprint and atomic version/blob-keyed store, while reckon/crew/plan_review.py:399-482 provides response and recurrence handling; a legacy-plan metadata edge remains.&quot;,
+    &quot;scope_discipline&quot;: &quot;the target diff is limited to the five paths declared by the source manifest, with the cumulative evidence record and plan landing included.&quot;
+  },
+  &quot;model&quot;: &quot;review&quot;,
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;reviewed_base_sha: 8877d879d647a6f570e66f69fa20977f7d6b1f91\nreviewed_head_sha: 98cbbaebce793549c991032719af6dceeeb5cbfa\nVERDICT goal: reckon/crew/plan_review.py:1-482 implements the requested plan-review record, durable store, fingerprint, response and recurrence functions; the real-plan check also exercises its D1 join.\nVERDICT done_when: the source manifest records five named tests passing at gate-plan-review-store.log, including the metadata-only, two-version, re-review, refusal and recurrence cases; real-plan-html-fingerprint.log checks target-head HTML.\nVERDICT write_paths: the manifest declares the module, focused test, cumulative evidence anchor, figure directory and plan; the target diff changes exactly those five paths.\nVERDICT manifest: the source manifest is complete at /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T100927825379-plan-review-record-and-store/manifest.md, names b906f66b and 98cbbaeb, the green gate and its red mutation control.\nVERDICT diff: 8877d879..98cbbaeb adds the plan_review module and focused tests plus the declared evidence, figure and plan landing; no production caller is present in the target head.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:114-245 provides the D1 fingerprint and atomic version/blob-keyed store, while reckon/crew/plan_review.py:399-482 provides response and recurrence handling; a legacy-plan metadata edge remains.\nSCORE evidence: 14\nJUSTIFICATION evidence: the worker&#x27;s gate-plan-review-store.log records 5 passed and negative-control-plan-review-store.log records the intended mutation red, while real-plan-html-fingerprint.log finds all present named scalars stable but exposes the legacy effort-hours transition.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the target diff is limited to the five paths declared by the source manifest, with the cumulative evidence record and plan landing included.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_plan_review_store.py:81-135 guards the fixture exclusion set and its mutation red, but no committed test parses a real legacy plan or catches the derived calibration transition.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/plan_review.py:52-53 reuses the existing plan parser and review-store root, and lines 238-245 retain the repository&#x27;s atomic-write idiom without a forbidden name.\nFINDING reckon/crew/plan_review.py:123-129 A valid addition of the named plan-effort-hours scalar to the real legacy docs/plans/reckon-mcp-plan.html:15-21 changes the fingerprint because parsing also changes effort_calibrated; D1 must either exclude that derived transition or document it as semantic, and the missing real-plan test leaves the boundary unguarded.\n&quot;,
+  &quot;review_run_id&quot;: &quot;r-20260925T111913513328-review-of-plan-review-record-and-store&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;8877d879d647a6f570e66f69fa20977f7d6b1f91&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;98cbbaebce793549c991032719af6dceeeb5cbfa&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20260925T100927825379-plan-review-record-and-store&quot;,
+  &quot;reviewer&quot;: &quot;review-of-plan-review-record-and-store&quot;,
+  &quot;reviewer_run_id&quot;: &quot;r-20260925T111913513328-review-of-plan-review-record-and-store&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 15,
+    &quot;evidence&quot;: 14,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 17,
+    &quot;scope_discipline&quot;: 20
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-09-25T11:31:28.101125+00:00&quot;,
+  &quot;total&quot;: 85
+}
+</pre></div>
+    </article>
+    <article class="landed-report" data-run-id="r-20260925T130740397874-review-of-plan-review-rubric-prompts" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T122637024608-plan-review-rubric-prompts.json">
+      <h3>review-of-plan-review-rubric-prompts &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T122637024608-plan-review-rubric-prompts.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;call_site_count&quot;: 0,
+  &quot;call_sites&quot;: [],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;reckon/crew/review.py&quot;,
+      &quot;line&quot;: &quot;100&quot;,
+      &quot;text&quot;: &quot;the implementation adds both plan-rubric constants, paths and loaders to a file outside the node exclusive write paths; the manifest notes the breach but a missing scope extension cannot be converted into authorization after the write.&quot;
+    }
+  ],
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;no production call sites found&quot;,
+    &quot;diff&quot;: &quot;read eb2fc40f and e2685b55 commit by commit against 8a11525c; 382 inserted lines touch six files, the prompt and test content is additive and semantically matches the plan, while reckon/crew/review.py is an undeclared seventh scope entry relative to the source node fence.&quot;,
+    &quot;done_when&quot;: &quot;the worker gate and declared mutation cover both prompt mirrors and the two pilot clauses; gate-plan-review-prompt.log records 8 passed and negative-control-mirror.log records 1 failed with naming removed, and the independent exact-head recheck reproduced 8 passed in review-gate.log.&quot;,
+    &quot;goal&quot;: &quot;the exact goal is present in reckon/crew/prompts/plan_review.md:21-55 and reckon/crew/prompts/plan_design_review.md:20-40; the content prompt covers all section 2 items plus the three-part reasoning check, the design prompt covers all section 3 items, both require would-change verdicts with reasons, the extensionless-href rule is explicit at plan_review.md:34-40, and the real-path caller is required at plan_review.md:51-53.&quot;,
+    &quot;manifest&quot;: &quot;read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T122637024608-plan-review-rubric-prompts/manifest.md; it reports complete, names eb2fc40f and e2685b55, records both green gates and the red control, and explicitly acknowledges reckon/crew/review.py as outside its fence.&quot;,
+    &quot;write_paths&quot;: &quot;the declared paths are the two prompts, the focused test, the cumulative evidence file, the figures directory and the plan HTML, but the diff also modifies reckon/crew/review.py, which is absent from that exclusive fence.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;tests/test_plan_review_prompt.py:47-100 contains bidirectional prompt-to-constant mirrors plus focused assertions for extensionless hrefs, would-change reasons and the real-path caller; removing naming from the content prompt list produced the recorded 1 failed and 7 passed control.&quot;,
+    &quot;evidence&quot;: &quot;tests/test_plan_review_prompt.py:47-100 checks both prompt mirrors, both would-change forms, extensionless resolution, the three-part reasoning clause and call-time loading; the declared mutation reddened the mirror and review-gate.log independently reproduced 8 passed at e2685b55.&quot;,
+    &quot;fit&quot;: &quot;reckon/crew/review.py:151-158 and 229-236 follow the existing disk-backed loader idiom, and both prompts use the repository review grammar and mechanism-based names without forbidden source labels.&quot;,
+    &quot;goal_fidelity&quot;: &quot;reckon/crew/prompts/plan_review.md:21-55 and reckon/crew/prompts/plan_design_review.md:20-40 implement every requested section 2, section 3, pilot and reasoning clause, including the named production caller check at plan_review.md:51-53.&quot;,
+    &quot;scope_discipline&quot;: &quot;reckon/crew/review.py:100-158 and 229-236 were added even though reckon/crew/review.py is absent from the exclusive write paths in the source dispatch and manifest orientation.&quot;
+  },
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: the exact goal is present in reckon/crew/prompts/plan_review.md:21-55 and reckon/crew/prompts/plan_design_review.md:20-40; the content prompt covers all section 2 items plus the three-part reasoning check, the design prompt covers all section 3 items, both require would-change verdicts with reasons, the extensionless-href rule is explicit at plan_review.md:34-40, and the real-path caller is required at plan_review.md:51-53.\nVERDICT done_when: the worker gate and declared mutation cover both prompt mirrors and the two pilot clauses; gate-plan-review-prompt.log records 8 passed and negative-control-mirror.log records 1 failed with naming removed, and the independent exact-head recheck reproduced 8 passed in review-gate.log.\nVERDICT write_paths: the declared paths are the two prompts, the focused test, the cumulative evidence file, the figures directory and the plan HTML, but the diff also modifies reckon/crew/review.py, which is absent from that exclusive fence.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T122637024608-plan-review-rubric-prompts/manifest.md; it reports complete, names eb2fc40f and e2685b55, records both green gates and the red control, and explicitly acknowledges reckon/crew/review.py as outside its fence.\nVERDICT diff: read eb2fc40f and e2685b55 commit by commit against 8a11525c; 382 inserted lines touch six files, the prompt and test content is additive and semantically matches the plan, while reckon/crew/review.py is an undeclared seventh scope entry relative to the source node fence.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/prompts/plan_review.md:21-55 and reckon/crew/prompts/plan_design_review.md:20-40 implement every requested section 2, section 3, pilot and reasoning clause, including the named production caller check at plan_review.md:51-53.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_plan_review_prompt.py:47-100 checks both prompt mirrors, both would-change forms, extensionless resolution, the three-part reasoning clause and call-time loading; the declared mutation reddened the mirror and review-gate.log independently reproduced 8 passed at e2685b55.\nSCORE scope_discipline: 8\nJUSTIFICATION scope_discipline: reckon/crew/review.py:100-158 and 229-236 were added even though reckon/crew/review.py is absent from the exclusive write paths in the source dispatch and manifest orientation.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_plan_review_prompt.py:47-100 contains bidirectional prompt-to-constant mirrors plus focused assertions for extensionless hrefs, would-change reasons and the real-path caller; removing naming from the content prompt list produced the recorded 1 failed and 7 passed control.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/review.py:151-158 and 229-236 follow the existing disk-backed loader idiom, and both prompts use the repository review grammar and mechanism-based names without forbidden source labels.\nFINDING reckon/crew/review.py:100 the implementation adds both plan-rubric constants, paths and loaders to a file outside the node exclusive write paths; the manifest notes the breach but a missing scope extension cannot be converted into authorization after the write.\n&quot;,
+  &quot;review_run_id&quot;: &quot;r-20260925T130740397874-review-of-plan-review-rubric-prompts&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;8a11525c42e2f77f4369b663df76b4ca7645cd14&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;e2685b55e958a51e052e067e825e20f75b42ce51&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20260925T122637024608-plan-review-rubric-prompts&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 19,
+    &quot;evidence&quot;: 20,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 20,
+    &quot;scope_discipline&quot;: 8
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-09-25T13:13:35.735142+00:00&quot;,
+  &quot;total&quot;: 86
+}
+</pre></div>
+    </article>
+    <article class="landed-report" data-run-id="r-20260925T170351236569-review-of-plan-review-dispatch-gate" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T131953539635-plan-review-dispatch-gate.json">
+      <h3>review-of-plan-review-dispatch-gate &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T131953539635-plan-review-dispatch-gate.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;call_site_count&quot;: 7,
+  &quot;call_sites&quot;: [
+    &quot;reckon/crew/dispatch.py:2919&quot;,
+    &quot;reckon/crew/dispatch.py:2925&quot;,
+    &quot;reckon/crew/routing.py:1152&quot;,
+    &quot;reckon/crew/routing.py:1202&quot;,
+    &quot;reckon/flight.py:370&quot;,
+    &quot;reckon/cli.py:1276&quot;,
+    &quot;reckon/cli.py:1348&quot;
+  ],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;reckon/cli.py&quot;,
+      &quot;line&quot;: &quot;1348&quot;,
+      &quot;text&quot;: &quot;the launch path&#x27;s plan-review-missing mapping is asserted by no test while the dry-run mapping at reckon/cli.py:1276 is (tests/test_plan_review_gate.py:397 is the only assertion of that key in the tree), so the divergence between these two paths that the prior review caught can be reintroduced on one side and ship green.&quot;
+    }
+  ],
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;verified 7 production call site(s)&quot;,
+    &quot;diff&quot;: &quot;read commit by commit from fb9c67be to e6556e6a; the repair commits answer the prior review&#x27;s three findings (the unanswered-findings branch refuses by name at reckon/crew/routing.py:1202, both CLI paths emit plan-review-missing, and the log headers were added) and add the mode key with the validation and schema exclusion at reckon/flight.py:350 and reckon/flight.py:455.&quot;,
+    &quot;done_when&quot;: &quot;the done_when names tests/test_plan_review_gate.py; I re-ran that file myself in the reviewed worktree at e6556e6a with the module resolution pinned to the reviewed tree and recorded 17 passed (log recheck-spec-head.log), and the run&#x27;s manifest records the same target and result against the same revision.&quot;,
+    &quot;goal&quot;: &quot;the node&#x27;s goal is to hold a build dispatch until the plan it implements carries a stored review; I read the gate at reckon/crew/routing.py:1156 (require_plan_reviewed), its production call at reckon/crew/dispatch.py:2919, the mode resolver at reckon/flight.py:370 and the two CLI refusals at reckon/cli.py:1276 and reckon/cli.py:1348, and found the refusal, the named remedy and the report-only default (reckon/schema/flight-defaults.yaml:76) all landed at head.&quot;,
+    &quot;manifest&quot;: &quot;read; status complete with commits 557fb583 through e6556e6a, the receipts it names (repair/spec-head.log 17 passed, compat-head 50 against compat-base 49, flight-arm 122 passed 2 skipped) all exist and carry revision, tree and command headers, and its declared negative control reddens the case it names.&quot;,
+    &quot;write_paths&quot;: &quot;the pointer&#x27;s node.write_paths (read live) carries twelve paths and every changed path is inside them except reckon/flight.py and reckon/schema/flight-defaults.yaml, which the resume-3 directive names as in-fence and the manifest&#x27;s follow_ons disclose with the promotion command that carries the grant.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;the declared negative control turns the named case red with DID NOT RAISE PlanReviewMissingError, but the launch-path mapping at reckon/cli.py:1348 has no case of its own while the dry-run path is guarded, so a drift between the pair the prior review already caught once ships green.&quot;,
+    &quot;evidence&quot;: &quot;the spec gate was independently reproduced at e6556e6a with module resolution pinned to the reviewed tree (recheck-spec-head.log), and the flight arm receipt at repair/flight-arm.log names the prior revision with uncommitted edits present, which transfers to 4cf5d6f3 only by the resumed stream&#x27;s write times rather than by its own header.&quot;,
+    &quot;fit&quot;: &quot;the report-only sentence is composed once at reckon/crew/routing.py:1153 and shared by both modes, the mode key is validated beside the layer check and held out of the generated schema at reckon/flight.py:455, and the added names carry no plan, ticket or version label.&quot;,
+    &quot;goal_fidelity&quot;: &quot;the gate refuses an unreviewed build through reckon/crew/routing.py:1152 and names the unanswered finding at reckon/crew/routing.py:1202, while the shipped layer at reckon/schema/flight-defaults.yaml:76 records rather than refuses until an operator opts in, which is the mode the directive chose.&quot;,
+    &quot;scope_discipline&quot;: &quot;thirteen of fifteen changed paths are inside the pointer&#x27;s node.write_paths and the remaining two are granted in the resume-3 directive, with the pointer-record lag disclosed in the manifest&#x27;s follow_ons rather than hidden.&quot;
+  },
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: the node&#x27;s goal is to hold a build dispatch until the plan it implements carries a stored review; I read the gate at reckon/crew/routing.py:1156 (require_plan_reviewed), its production call at reckon/crew/dispatch.py:2919, the mode resolver at reckon/flight.py:370 and the two CLI refusals at reckon/cli.py:1276 and reckon/cli.py:1348, and found the refusal, the named remedy and the report-only default (reckon/schema/flight-defaults.yaml:76) all landed at head.\nVERDICT done_when: the done_when names tests/test_plan_review_gate.py; I re-ran that file myself in the reviewed worktree at e6556e6a with the module resolution pinned to the reviewed tree and recorded 17 passed (log recheck-spec-head.log), and the run&#x27;s manifest records the same target and result against the same revision.\nVERDICT write_paths: the pointer&#x27;s node.write_paths (read live) carries twelve paths and every changed path is inside them except reckon/flight.py and reckon/schema/flight-defaults.yaml, which the resume-3 directive names as in-fence and the manifest&#x27;s follow_ons disclose with the promotion command that carries the grant.\nVERDICT manifest: read; status complete with commits 557fb583 through e6556e6a, the receipts it names (repair/spec-head.log 17 passed, compat-head 50 against compat-base 49, flight-arm 122 passed 2 skipped) all exist and carry revision, tree and command headers, and its declared negative control reddens the case it names.\nVERDICT diff: read commit by commit from fb9c67be to e6556e6a; the repair commits answer the prior review&#x27;s three findings (the unanswered-findings branch refuses by name at reckon/crew/routing.py:1202, both CLI paths emit plan-review-missing, and the log headers were added) and add the mode key with the validation and schema exclusion at reckon/flight.py:350 and reckon/flight.py:455.\nCALL_SITES: reckon/crew/dispatch.py:2919, reckon/crew/dispatch.py:2925, reckon/crew/routing.py:1152, reckon/crew/routing.py:1202, reckon/flight.py:370, reckon/cli.py:1276, reckon/cli.py:1348\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the gate refuses an unreviewed build through reckon/crew/routing.py:1152 and names the unanswered finding at reckon/crew/routing.py:1202, while the shipped layer at reckon/schema/flight-defaults.yaml:76 records rather than refuses until an operator opts in, which is the mode the directive chose.\nSCORE evidence: 18\nJUSTIFICATION evidence: the spec gate was independently reproduced at e6556e6a with module resolution pinned to the reviewed tree (recheck-spec-head.log), and the flight arm receipt at repair/flight-arm.log names the prior revision with uncommitted edits present, which transfers to 4cf5d6f3 only by the resumed stream&#x27;s write times rather than by its own header.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: thirteen of fifteen changed paths are inside the pointer&#x27;s node.write_paths and the remaining two are granted in the resume-3 directive, with the pointer-record lag disclosed in the manifest&#x27;s follow_ons rather than hidden.\nSCORE durability: 17\nJUSTIFICATION durability: the declared negative control turns the named case red with DID NOT RAISE PlanReviewMissingError, but the launch-path mapping at reckon/cli.py:1348 has no case of its own while the dry-run path is guarded, so a drift between the pair the prior review already caught once ships green.\nSCORE fit: 19\nJUSTIFICATION fit: the report-only sentence is composed once at reckon/crew/routing.py:1153 and shared by both modes, the mode key is validated beside the layer check and held out of the generated schema at reckon/flight.py:455, and the added names carry no plan, ticket or version label.\nFINDING reckon/cli.py:1348 the launch path&#x27;s plan-review-missing mapping is asserted by no test while the dry-run mapping at reckon/cli.py:1276 is (tests/test_plan_review_gate.py:397 is the only assertion of that key in the tree), so the divergence between these two paths that the prior review caught can be reintroduced on one side and ship green.&quot;,
+  &quot;review_run_id&quot;: &quot;r-20260926T075839396843-re-review-of-plan-review-dispatch-gate&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;fb9c67bea298ca41460894b17cd70c7e904a4785&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;e6556e6ac8154ca3a7eb194a7b6dc014ff254568&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20260925T131953539635-plan-review-dispatch-gate&quot;,
+  &quot;role&quot;: &quot;review&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 17,
+    &quot;evidence&quot;: 18,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 19,
+    &quot;scope_discipline&quot;: 19
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-09-26T09:07:31.537888+00:00&quot;,
+  &quot;total&quot;: 92
+}
+</pre></div>
+    </article>
+    <article class="landed-report" data-run-id="r-20260926T075839396843-re-review-of-plan-review-dispatch-gate" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T131953539635-plan-review-dispatch-gate.json">
+      <h3>re-review-of-plan-review-dispatch-gate &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260925T131953539635-plan-review-dispatch-gate.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;call_site_count&quot;: 7,
+  &quot;call_sites&quot;: [
+    &quot;reckon/crew/dispatch.py:2919&quot;,
+    &quot;reckon/crew/dispatch.py:2925&quot;,
+    &quot;reckon/crew/routing.py:1152&quot;,
+    &quot;reckon/crew/routing.py:1202&quot;,
+    &quot;reckon/flight.py:370&quot;,
+    &quot;reckon/cli.py:1276&quot;,
+    &quot;reckon/cli.py:1348&quot;
+  ],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;reckon/cli.py&quot;,
+      &quot;line&quot;: &quot;1348&quot;,
+      &quot;text&quot;: &quot;the launch path&#x27;s plan-review-missing mapping is asserted by no test while the dry-run mapping at reckon/cli.py:1276 is (tests/test_plan_review_gate.py:397 is the only assertion of that key in the tree), so the divergence between these two paths that the prior review caught can be reintroduced on one side and ship green.&quot;
+    }
+  ],
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;verified 7 production call site(s)&quot;,
+    &quot;diff&quot;: &quot;read commit by commit from fb9c67be to e6556e6a; the repair commits answer the prior review&#x27;s three findings (the unanswered-findings branch refuses by name at reckon/crew/routing.py:1202, both CLI paths emit plan-review-missing, and the log headers were added) and add the mode key with the validation and schema exclusion at reckon/flight.py:350 and reckon/flight.py:455.&quot;,
+    &quot;done_when&quot;: &quot;the done_when names tests/test_plan_review_gate.py; I re-ran that file myself in the reviewed worktree at e6556e6a with the module resolution pinned to the reviewed tree and recorded 17 passed (log recheck-spec-head.log), and the run&#x27;s manifest records the same target and result against the same revision.&quot;,
+    &quot;goal&quot;: &quot;the node&#x27;s goal is to hold a build dispatch until the plan it implements carries a stored review; I read the gate at reckon/crew/routing.py:1156 (require_plan_reviewed), its production call at reckon/crew/dispatch.py:2919, the mode resolver at reckon/flight.py:370 and the two CLI refusals at reckon/cli.py:1276 and reckon/cli.py:1348, and found the refusal, the named remedy and the report-only default (reckon/schema/flight-defaults.yaml:76) all landed at head.&quot;,
+    &quot;manifest&quot;: &quot;read; status complete with commits 557fb583 through e6556e6a, the receipts it names (repair/spec-head.log 17 passed, compat-head 50 against compat-base 49, flight-arm 122 passed 2 skipped) all exist and carry revision, tree and command headers, and its declared negative control reddens the case it names.&quot;,
+    &quot;write_paths&quot;: &quot;the pointer&#x27;s node.write_paths (read live) carries twelve paths and every changed path is inside them except reckon/flight.py and reckon/schema/flight-defaults.yaml, which the resume-3 directive names as in-fence and the manifest&#x27;s follow_ons disclose with the promotion command that carries the grant.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;the declared negative control turns the named case red with DID NOT RAISE PlanReviewMissingError, but the launch-path mapping at reckon/cli.py:1348 has no case of its own while the dry-run path is guarded, so a drift between the pair the prior review already caught once ships green.&quot;,
+    &quot;evidence&quot;: &quot;the spec gate was independently reproduced at e6556e6a with module resolution pinned to the reviewed tree (recheck-spec-head.log), and the flight arm receipt at repair/flight-arm.log names the prior revision with uncommitted edits present, which transfers to 4cf5d6f3 only by the resumed stream&#x27;s write times rather than by its own header.&quot;,
+    &quot;fit&quot;: &quot;the report-only sentence is composed once at reckon/crew/routing.py:1153 and shared by both modes, the mode key is validated beside the layer check and held out of the generated schema at reckon/flight.py:455, and the added names carry no plan, ticket or version label.&quot;,
+    &quot;goal_fidelity&quot;: &quot;the gate refuses an unreviewed build through reckon/crew/routing.py:1152 and names the unanswered finding at reckon/crew/routing.py:1202, while the shipped layer at reckon/schema/flight-defaults.yaml:76 records rather than refuses until an operator opts in, which is the mode the directive chose.&quot;,
+    &quot;scope_discipline&quot;: &quot;thirteen of fifteen changed paths are inside the pointer&#x27;s node.write_paths and the remaining two are granted in the resume-3 directive, with the pointer-record lag disclosed in the manifest&#x27;s follow_ons rather than hidden.&quot;
+  },
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: the node&#x27;s goal is to hold a build dispatch until the plan it implements carries a stored review; I read the gate at reckon/crew/routing.py:1156 (require_plan_reviewed), its production call at reckon/crew/dispatch.py:2919, the mode resolver at reckon/flight.py:370 and the two CLI refusals at reckon/cli.py:1276 and reckon/cli.py:1348, and found the refusal, the named remedy and the report-only default (reckon/schema/flight-defaults.yaml:76) all landed at head.\nVERDICT done_when: the done_when names tests/test_plan_review_gate.py; I re-ran that file myself in the reviewed worktree at e6556e6a with the module resolution pinned to the reviewed tree and recorded 17 passed (log recheck-spec-head.log), and the run&#x27;s manifest records the same target and result against the same revision.\nVERDICT write_paths: the pointer&#x27;s node.write_paths (read live) carries twelve paths and every changed path is inside them except reckon/flight.py and reckon/schema/flight-defaults.yaml, which the resume-3 directive names as in-fence and the manifest&#x27;s follow_ons disclose with the promotion command that carries the grant.\nVERDICT manifest: read; status complete with commits 557fb583 through e6556e6a, the receipts it names (repair/spec-head.log 17 passed, compat-head 50 against compat-base 49, flight-arm 122 passed 2 skipped) all exist and carry revision, tree and command headers, and its declared negative control reddens the case it names.\nVERDICT diff: read commit by commit from fb9c67be to e6556e6a; the repair commits answer the prior review&#x27;s three findings (the unanswered-findings branch refuses by name at reckon/crew/routing.py:1202, both CLI paths emit plan-review-missing, and the log headers were added) and add the mode key with the validation and schema exclusion at reckon/flight.py:350 and reckon/flight.py:455.\nCALL_SITES: reckon/crew/dispatch.py:2919, reckon/crew/dispatch.py:2925, reckon/crew/routing.py:1152, reckon/crew/routing.py:1202, reckon/flight.py:370, reckon/cli.py:1276, reckon/cli.py:1348\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the gate refuses an unreviewed build through reckon/crew/routing.py:1152 and names the unanswered finding at reckon/crew/routing.py:1202, while the shipped layer at reckon/schema/flight-defaults.yaml:76 records rather than refuses until an operator opts in, which is the mode the directive chose.\nSCORE evidence: 18\nJUSTIFICATION evidence: the spec gate was independently reproduced at e6556e6a with module resolution pinned to the reviewed tree (recheck-spec-head.log), and the flight arm receipt at repair/flight-arm.log names the prior revision with uncommitted edits present, which transfers to 4cf5d6f3 only by the resumed stream&#x27;s write times rather than by its own header.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: thirteen of fifteen changed paths are inside the pointer&#x27;s node.write_paths and the remaining two are granted in the resume-3 directive, with the pointer-record lag disclosed in the manifest&#x27;s follow_ons rather than hidden.\nSCORE durability: 17\nJUSTIFICATION durability: the declared negative control turns the named case red with DID NOT RAISE PlanReviewMissingError, but the launch-path mapping at reckon/cli.py:1348 has no case of its own while the dry-run path is guarded, so a drift between the pair the prior review already caught once ships green.\nSCORE fit: 19\nJUSTIFICATION fit: the report-only sentence is composed once at reckon/crew/routing.py:1153 and shared by both modes, the mode key is validated beside the layer check and held out of the generated schema at reckon/flight.py:455, and the added names carry no plan, ticket or version label.\nFINDING reckon/cli.py:1348 the launch path&#x27;s plan-review-missing mapping is asserted by no test while the dry-run mapping at reckon/cli.py:1276 is (tests/test_plan_review_gate.py:397 is the only assertion of that key in the tree), so the divergence between these two paths that the prior review caught can be reintroduced on one side and ship green.&quot;,
+  &quot;review_run_id&quot;: &quot;r-20260926T075839396843-re-review-of-plan-review-dispatch-gate&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;fb9c67bea298ca41460894b17cd70c7e904a4785&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;e6556e6ac8154ca3a7eb194a7b6dc014ff254568&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20260925T131953539635-plan-review-dispatch-gate&quot;,
+  &quot;role&quot;: &quot;review&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 17,
+    &quot;evidence&quot;: 18,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 19,
+    &quot;scope_discipline&quot;: 19
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-09-26T09:07:31.537888+00:00&quot;,
+  &quot;total&quot;: 92
+}
+</pre></div>
+    </article>
+    <article class="landed-report" data-run-id="r-20260926T092819229022-review-of-launch-path-reports-plan-review-missing" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260926T091353695982-launch-path-reports-plan-review-missing.json">
+      <h3>review-of-launch-path-reports-plan-review-missing &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20260926T091353695982-launch-path-reports-plan-review-missing.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;call_site_count&quot;: 2,
+  &quot;call_sites&quot;: [
+    &quot;reckon/cli.py:1391&quot;,
+    &quot;reckon/crew/routing.py:1156&quot;
+  ],
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;docs/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed.html&quot;,
+      &quot;line&quot;: &quot;323&quot;,
+      &quot;text&quot;: &quot;the parenthetical places the two error-key mappings at 4cf5d6f3&#x27;s lines 1348 and 1276; at this head they are reckon/cli.py:1397 and reckon/cli.py:1325, so a reader following the citation lands between the branches.&quot;
+    }
+  ],
+  &quot;item_aggregate&quot;: 6,
+  &quot;item_verdicts&quot;: {
+    &quot;call_sites&quot;: &quot;verified 2 production call site(s)&quot;,
+    &quot;diff&quot;: &quot;read commit by commit against 4b0ccd34; 99 insertions and no deletions, the new case at tests/test_plan_review_gate.py:401.&quot;,
+    &quot;done_when&quot;: &quot;the done_when&#x27;s gate is tests/test_plan_review_gate.py with the new case green against base and the control logged; the manifest and logs record 18 passed at the head against 17 at base 4b0ccd34, and the recheck at head 70a3ef80 reproduced 18 passed.&quot;,
+    &quot;goal&quot;: &quot;the node&#x27;s goal is one new case asserting the launching dispatch path reports plan-review-missing, and tests/test_plan_review_gate.py:401 is exactly that case.&quot;,
+    &quot;manifest&quot;: &quot;read; it records both gate runs, the executed control and commits 35da2422 and 70a3ef80, and every figure it states matches the recheck.&quot;,
+    &quot;write_paths&quot;: &quot;read the declared write paths; the diff&#x27;s three changed files all lie inside them.&quot;
+  },
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;the new case fails when the launching branch&#x27;s key is reverted, as the recheck showed by applying the declared mutation in a scratch tree of 70a3ef80 and watching tests/test_plan_review_gate.py:451 fail with assert &#x27;plan-unavailable&#x27; == &#x27;plan-review-missing&#x27;.&quot;,
+    &quot;evidence&quot;: &quot;the gate at tests/test_plan_review_gate.py:401 passed 18 at the reviewed head against 17 at base and the recheck reproduced it there, but the four non-control logs (logs/gate.log, logs/spec-base.log, logs/guard-head.log, logs/guard-base.log) carry no revision or command header, so only the control logs are self-locating.&quot;,
+    &quot;fit&quot;: &quot;the case mirrors the dry-run case at tests/test_plan_review_gate.py:348 in fixture, monkeypatch and assertions, and its names carry no plan labels or ticket numbers.&quot;,
+    &quot;goal_fidelity&quot;: &quot;tests/test_plan_review_gate.py:401 drives crew dispatch without --dry-run under plan_review_gate enforce and asserts the plan-review-missing key, which is the goal verbatim.&quot;,
+    &quot;scope_discipline&quot;: &quot;the only changed paths are tests/test_plan_review_gate.py, docs/plans/a-plan-is-reviewed-before-it-is-built.html:173 and docs/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed.html:316, all inside the declared write paths, with no deletions anywhere.&quot;
+  },
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: the node&#x27;s goal is one new case asserting the launching dispatch path reports plan-review-missing, and tests/test_plan_review_gate.py:401 is exactly that case.\nVERDICT done_when: the done_when&#x27;s gate is tests/test_plan_review_gate.py with the new case green against base and the control logged; the manifest and logs record 18 passed at the head against 17 at base 4b0ccd34, and the recheck at head 70a3ef80 reproduced 18 passed.\nVERDICT write_paths: read the declared write paths; the diff&#x27;s three changed files all lie inside them.\nVERDICT manifest: read; it records both gate runs, the executed control and commits 35da2422 and 70a3ef80, and every figure it states matches the recheck.\nVERDICT diff: read commit by commit against 4b0ccd34; 99 insertions and no deletions, the new case at tests/test_plan_review_gate.py:401.\nCALL_SITES: reckon/cli.py:1391, reckon/crew/routing.py:1156\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_plan_review_gate.py:401 drives crew dispatch without --dry-run under plan_review_gate enforce and asserts the plan-review-missing key, which is the goal verbatim.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate at tests/test_plan_review_gate.py:401 passed 18 at the reviewed head against 17 at base and the recheck reproduced it there, but the four non-control logs (logs/gate.log, logs/spec-base.log, logs/guard-head.log, logs/guard-base.log) carry no revision or command header, so only the control logs are self-locating.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only changed paths are tests/test_plan_review_gate.py, docs/plans/a-plan-is-reviewed-before-it-is-built.html:173 and docs/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed.html:316, all inside the declared write paths, with no deletions anywhere.\nSCORE durability: 20\nJUSTIFICATION durability: the new case fails when the launching branch&#x27;s key is reverted, as the recheck showed by applying the declared mutation in a scratch tree of 70a3ef80 and watching tests/test_plan_review_gate.py:451 fail with assert &#x27;plan-unavailable&#x27; == &#x27;plan-review-missing&#x27;.\nSCORE fit: 18\nJUSTIFICATION fit: the case mirrors the dry-run case at tests/test_plan_review_gate.py:348 in fixture, monkeypatch and assertions, and its names carry no plan labels or ticket numbers.\nFINDING docs/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed.html:323 the parenthetical places the two error-key mappings at 4cf5d6f3&#x27;s lines 1348 and 1276; at this head they are reckon/cli.py:1397 and reckon/cli.py:1325, so a reader following the citation lands between the branches.&quot;,
+  &quot;review_run_id&quot;: &quot;r-20260926T092819229022-review-of-launch-path-reports-plan-review-missing&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;4b0ccd340ed992d28e0fb7accc22f91bba39db6b&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;70a3ef80fd66147417cb7db9779bb32d7feb0e7e&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20260926T091353695982-launch-path-reports-plan-review-missing&quot;,
+  &quot;role&quot;: &quot;review&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 20,
+    &quot;evidence&quot;: 18,
+    &quot;fit&quot;: 18,
+    &quot;goal_fidelity&quot;: 20,
+    &quot;scope_discipline&quot;: 20
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-09-26T09:58:35.427611+00:00&quot;,
+  &quot;total&quot;: 96
+}
+</pre></div>
+    </article>
   </section>
 
-  <section id="plan-review-dispatch-gate">
-    <h2>&sect;2 &mdash; The dispatch gate</h2>
-    <p><strong>Node:</strong> <code>plan-review-dispatch-gate</code>. <strong>State:</strong>
-    implemented and committed, with the compatibility fixtures brought to the new contract in the
-    same node, and the gate shipping <strong>report-only</strong> until a flight layer names
-    <code>plan_review_gate: enforce</code>.</p>
-    <figure>
-      <img src="/reckon/figures/a-plan-is-reviewed-before-it-is-built/dispatch-gate.svg"
-        alt="The gate's decision path: exempt role or recorded waiver admits immediately; otherwise the plan is fingerprinted and its review read by fingerprint, admitting when every finding is answered and refusing when no review matches or a finding is unanswered.">
-      <figcaption>The gate refuses on the review being absent or unread &mdash; never on the plan
-      saying something a reviewer disliked: an answered decline admits a node exactly as an
-      acceptance does. In the shipped mode the two refusal edges instead record the same sentence as
-      a warning and admit; naming <code>enforce</code> restores the edges drawn here.</figcaption>
-    </figure>
-    <p><strong>What landed.</strong> <code>require_plan_reviewed</code> sits beside
-    <code>require_plan_section_visible</code> in <code>reckon/crew/routing.py</code> and is called
-    from <code>plan_dispatch</code> immediately after the visibility check, so a plan that cannot be
-    read is refused for that reason before its review is considered. The join is by
-    <code>plan_review.plan_fingerprint</code>, so an impl or version bump neither demands a review
-    nor orphans one, while an authored edit demands a fresh one. <code>PlanReviewMissingError</code>
-    sits beside <code>PlanVisibilityError</code> in <code>reckon/crew/node.py</code> and renders
-    through one new family in <code>DISPATCH_REFUSAL_REMEDIES</code>, whose remedy names the composed
-    plan-review dispatch. Investigation, test and review roles are exempt through the same predicate
-    the promotion boundary uses to stop reviews of reviews, so the plan-review run itself, whose node
-    names the plan, can be dispatched. <code>--allow-unreviewed-plan</code> records
-    <code>unreviewed_plan_override</code> on the run pointer beside the unreconciled-runs waiver, in
-    both the dry-run and real dispatch paths, and reaches the operator as exit 4 with
-    <code>{"error": "plan-review-missing"}</code>.</p>
-    <p><strong>Gate.</strong> <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q
-    tests/test_plan_review_gate.py</code> &rarr; <code>8 passed in 2.64s, exit 0</code>. Log:
-    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/gate-final.log</code>.
-    The cases: an unreviewed implementation dispatch is refused naming the plan and its remedy; an
-    answered advisory finding admits it; <code>review</code>, <code>investigate</code> and
-    <code>test</code> roles are exempt; a node whose identity is the review of the fixture uses the
-    same exemption; a metadata-only plan edit leaves the stored review current; and the waiver is
-    recorded on the run pointer.</p>
-    <h3>Negative control</h3>
-    <p><strong>Declared mutation:</strong> <em>require_plan_reviewed returns reviewed
-    unconditionally; the refusal case must fail</em>. Applied as an early return at the top of the
-    function, the refusal case fails and for that reason:</p>
-    <pre>E  Failed: DID NOT RAISE PlanReviewMissingError
-1 failed in 1.08s</pre>
-    <p>The mutation was then reverted and the module re-read to prove the gate refuses again. The red
-    log's first line is the declared string verbatim:
-    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/negative-control.log</code>.</p>
-    <h3>The compatibility fixtures brought to the new contract</h3>
-    <p>The compatibility gate &mdash; the dispatch-guard, routing-visibility and refusal-visibility
-    suites &mdash; first went from <strong>49 passed</strong> at base to <strong>20 failed and 29
-    passed</strong>. Every failure was the intended refusal reaching a fixture that predates it, and
-    each classified as one of two causes. Eighteen were implementation nodes dispatched against
-    minimal plan fixtures carrying no stored review, so the gate refused them; those fixtures and this
-    gate's own refusal case are shape-identical (same project mount, same plan slug, implementation
-    role, no review record), so no predicate can refuse the one the specification requires be refused
-    and admit the others. Two were the refusal census, which enumerated the family set as
-    <code>range(1, 23)</code> and asserted the source calls the shared formatter only for families in
-    that set.</p>
-    <p>The repair gives each fixture plan an answered review of its current content, stored at the
-    crew review store root the gate reads through and joined by
-    <code>plan_review.plan_fingerprint</code>, so the fixture still tests what it tested before rather
-    than being waived past the gate; the refusal census grows to the new family id in the same pass.
-    The gate itself is unchanged &mdash; the fixtures now satisfy it instead of avoiding it. The
-    compatible gate is re-run against base <code>ea867750</code>: <strong>50 passed, exit 0</strong>,
-    against the base arm's <strong>49 passed, exit 0</strong>, so <strong>zero added failures</strong>.
-    (The one-test rise is the new family id joining the parametrised census case.) Both arms are
-    logged:</p>
-    <ul>
-      <li>base: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/baseline-suite.log</code>
-      (<code>revision=ea867750&hellip;</code>, 49 passed, EXIT=0)</li>
-      <li>after: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/compat-after.log</code>
-      (50 passed, EXIT=0)</li>
-    </ul>
-    <p>Lint and format add no finding on the three files against the base archive tree: the dispatch
-    guard carries one pre-existing <code>I001</code> and one pre-existing formatting hunk at base and
-    after, and the other two files are clean either side. Commits <code>557fb583</code> (the gate) and
-    <code>e95c1d6d</code> (the fixtures).</p>
-    <h3>The gate ships report-only, and the dry run names the review</h3>
-    <p>A review of this node and a lead decision left three changes, all landed in
-    <code>4cf5d6f35dc70910aa9737b07cc0addbc2d30268</code>.</p>
-    <ol>
-      <li><strong>The unanswered finding is refused by name.</strong> The branch existed in
-      <code>require_plan_reviewed</code> with no case exercising it. A stored review carrying one
-      finding whose id no response answers is now refused, and the refusal names that finding.</li>
-      <li><strong>Both paths answer the same error key.</strong> A <code>--dry-run</code> against an
-      unreviewed plan answered <code>plan-unavailable</code>, which sent an operator diagnosing with
-      it to the mounts for what was a missing review, while the launching path answered
-      <code>plan-review-missing</code>. Both now answer <code>plan-review-missing</code>, on the dry
-      run and on the launch.</li>
-      <li><strong>Report-only is the shipped mode.</strong> Almost no plan carries a stored review yet
-      and the node that writes one is not built, so an enforced gate would stop nearly every build and
-      be turned off rather than answered. In the default mode a missing or unanswered review is
-      recorded on the dispatch result as a warning and the dispatch proceeds; naming
-      <code>plan_review_gate: enforce</code> in a flight layer restores the refusal unchanged.</li>
-    </ol>
-    <p><strong>The mode is a flight key checked in <code>reckon/flight.py</code>, not in the generated
-    model.</strong> The shipped defaults layer is schema-checked like every other layer and
-    <code>FlightConfig</code> sets <code>extra = "forbid"</code>, so naming the key in
-    <code>reckon/schema/flight-defaults.yaml</code> alone raises <code>FlightConfigError</code> in
-    <code>validate_layer</code> on every flight resolution &mdash; measured, not assumed. The key is
-    therefore held out of the schema check and validated beside it, which leaves
-    <code>reckon/_flight_schema.py</code> the artifact its LinkML source produces rather than a
-    hand-edited file. The key is separate from the evidence gates' own <code>gates.enforce</code>
-    because the two default to opposite polarities: an evidence gate ships <code>strict</code> and is
-    relaxed, this one ships <code>report</code> and is strengthened.</p>
-    <p><strong>Gate.</strong> <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q
-    tests/test_plan_review_gate.py</code> &rarr; <code>17 passed in 3.06s, exit 0</code>
-    (<code>repair/spec-head.log</code>): the eight cases above plus a finding left unanswered refused
-    by name, report-only recording the missing review and the unanswered finding while admitting both,
-    the dry-run key asserted in both modes, and the shipped default, a layer-set mode and a mode
-    outside the declared set each asserted through <code>flight.resolve</code> rather than through a
-    hand-built mapping. The compatibility gate is re-run at the repaired head against the stated base
-    <code>ea867750</code>: <strong>50 passed, exit 0</strong> against <strong>49 passed, exit
-    0</strong> &mdash; <strong>zero added failures</strong> (<code>repair/compat-head.log</code>,
-    <code>repair/compat-base.log</code>). A wider arm over the flight, provenance, dry-run and
-    dispatch-guard suites is <strong>122 passed, 2 skipped, exit 0</strong>
-    (<code>repair/flight-arm.log</code>), so the layer check adds no regression.</p>
-    <p><strong>Negative control.</strong> Declared mutation: <em>the branch that refuses a review
-    whose finding no response answers is deleted, so such a review is admitted; the case asserting
-    that the refusal names the open finding must then fail.</em> The mutation removed eight lines from
-    <code>require_plan_reviewed</code> in a scratch tree exported from the same revision, and the
-    driver asserted it applied. Base arm (the tree as committed): <strong>1 passed</strong>. Head arm
-    (branch deleted): <strong>1 failed</strong>, and for that reason &mdash;</p>
-    <pre>E  Failed: DID NOT RAISE PlanReviewMissingError</pre>
-    <p>Both arms name their own revision, tree and command on the line above their result; the scratch
-    trees are removed by the driver and the worktree under test was never mutated:
-    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260925T131953539635-plan-review-dispatch-gate/negative-control.log</code>.</p>
-    <p>Lint adds no finding against the base archive tree on the five changed files: only
-    <code>tests/test_plan_review_gate.py</code> moved, from clean to clean; the other four carry the
-    same finding counts at base and at the head, and <code>reckon/crew/dispatch.py</code> carries the
-    same pre-existing formatting hunk either side.</p>
+  <section id="s4">
+    <h2>§4 — Build the plan-review loop: PR-1, then PR-3 and PR-4, then PR-2 and PR-5</h2>
+    <article class="landed-comment" data-comment-id="c-20261004T1645-pr2-pr5-landed">
+      <p><small>too-coord-1004 · 2026-10-04T16:45:00Z</small></p>
+      <div class="r-comment-body">PR-2 (the sweep that dispatches plan reviews) and PR-5 (responses and surface) landed under the-orchestrator-orchestrates §3 per D2 and D6: see that plan's evidence record anchor s3. PR-1, PR-3 and PR-4 were already on main. The first plan design review of any project ran on 2026-10-04 as r-20261004T130140304192.</div>
+    </article>
   </section>
 
-  <section id="launch-path-reports-plan-review-missing">
-    <h2>&sect;2 &mdash; The launching path reports the missing review under its own key</h2>
-    <p><strong>Node:</strong> <code>launch-path-reports-plan-review-missing</code>. <strong>State:</strong>
-    implemented and committed.</p>
-    <p><strong>What landed.</strong> The re-review of the dispatch gate found that only the dry-run
-    mapping of <code>PlanReviewMissingError</code> to <code>tests/test_plan_review_gate.py</code> was
-    exercised. The launching branch is a separate <code>except</code> clause in <code>reckon/cli.py</code>
-    (the launch path emits <code>plan-review-missing</code> at reckon/cli.py line 1397, the dry-run at
-    line 1325, as of 95e186ad), so a change to only one of the two would leave the other answering a different error key
-    and still pass the suite. One case now drives <code>crew dispatch</code> <em>without</em>
-    <code>--dry-run</code>, with <code>plan_review_gate: enforce</code>, for an implement node on the
-    fixture plan that carries no stored review, and asserts the emitted error is
-    <code>plan-review-missing</code> with <code>fixture</code> in its detail. No worker is spawned:
-    the gate refuses inside <code>plan_dispatch</code>, before a worktree, pointer or ledger row
-    exists, so the case is as cheap as the dry-run one beside it.</p>
-    <p><strong>Gate.</strong> <code>PYTHONPATH=$PWD .venv/bin/python -m pytest -p no:cacheprovider -q
-    tests/test_plan_review_gate.py</code> &rarr; <code>18 passed in 2.57s, exit 0</code>, against the
-    base arm at <code>4b0ccd34</code> <code>17 passed, exit 0</code> &mdash; the one-test rise is the
-    new case and no failure is added (<code>logs/gate.log</code>, <code>logs/spec-base.log</code>).
-    The compatibility gate <code>tests/test_crew_dispatch_guard.py</code> is unchanged and re-run
-    either side: <code>14 passed, exit 0</code> at the head against <code>14 passed, exit 0</code> at
-    base &mdash; <strong>zero added failures</strong> (<code>logs/guard-head.log</code>,
-    <code>logs/guard-base.log</code>).</p>
-    <p><strong>Negative control.</strong> Declared mutation: <em>change the launch-path mapping in
-    <code>reckon/cli.py</code> to emit <code>plan-unavailable</code>; the new case must fail</em>. The
-    mutation was applied in a scratch tree exported from the same revision, and the driver asserted it
-    applied. Base arm (the tree as committed): <strong>1 passed</strong>. Head arm (launch mapping
-    switched to <code>plan-unavailable</code>): <strong>1 failed</strong>, and for that reason &mdash;</p>
-    <pre>E       AssertionError: assert 'plan-unavailable' == 'plan-review-missing'
-E         + plan-unavailable
-tests/test_plan_review_gate.py:451: AssertionError
-1 failed in 0.24s</pre>
-    <p>Both arms name their own revision, tree, <code>module.__file__</code> and command on the header
-    lines above their result, and each resolved <code>import reckon</code> to its own scratch tree. The
-    red log's first line repeats the declared string verbatim:
-    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20260926T091353695982-launch-path-reports-plan-review-missing/logs/negctl-mutated.log</code>
-    (base arm: <code>logs/negctl-base.log</code>).</p>
-    <p><strong>Scope.</strong> The only source file changed is <code>tests/test_plan_review_gate.py</code>,
-    from clean to clean under <code>ruff check</code> and <code>ruff format --check</code> either side
-    of the base archive tree. Committed at <code>35da2422</code>.</p>
+  <section id="s5">
+    <h2>§5 — The plan-review store test reads frozen plans, not live ones</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261002T141513710685-plan-review-test-reads-frozen-plans">
+      <p><small>reckon-build · 2026-10-02T14:57:32.539Z</small></p>
+      <div class="r-comment-body"><p>tests/test_plan_review_store.py reads three committed fixture copies under tests/fixtures/plan_review_store/ (a legacy plan without the named effort field, a modern plan whose authored impl stands on records short of its declarations, and a plan whose impl is computed from records covering its declarations); no case reads a path under docs/plans/, the metadata-edit case passes, and a new case holds that a plan-impl edit on the derived plan leaves the derived impl and the fingerprint unchanged; head gate 7 passed / 0 failed (base: 1 failed, 5 passed, EXIT=1), negative control fails test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it with EXIT=1.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261002T164034134416-review-of-plan-review-test-reads-frozen-plans">
+      <p><small>reckon-build · 2026-10-02T17:03:16.505Z</small></p>
+      <div class="r-comment-body"><p>the independent review for run r-20261002T141513710685-plan-review-test-reads-frozen-plans is stored as a parsed record scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 19 (total 98), reading base ba2c17c79 and head dedb1bad, with added_failure_count 0 and no added_failure_ids; it reproduces both the base-arm defect and the head-arm pass and verifies the three fixture copies byte-for-byte against their claimed live sources.</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261002T141513710685-plan-review-test-reads-frozen-plans</code></td>
+        <td>plan-review-test-reads-frozen-plans</td>
+        <td><code>dedb1bad0b1218899fbbde48cbe297d39b8328e3</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>41m 20s</td>
+        <td><code>{&quot;added&quot;:724,&quot;files&quot;:4,&quot;removed&quot;:13}</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261002T164034134416-review-of-plan-review-test-reads-frozen-plans</code></td>
+        <td>review-of-plan-review-test-reads-frozen-plans</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>21m 53s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report" data-run-id="r-20261002T164034134416-review-of-plan-review-test-reads-frozen-plans" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261002T141513710685-plan-review-test-reads-frozen-plans.json">
+      <h3>review-of-plan-review-test-reads-frozen-plans &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261002T141513710685-plan-review-test-reads-frozen-plans.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [
+    &quot;goal&quot;,
+    &quot;done_when&quot;,
+    &quot;write_paths&quot;,
+    &quot;manifest&quot;,
+    &quot;diff&quot;,
+    &quot;call_sites&quot;
+  ],
+  &quot;added_failure_count&quot;: 0,
+  &quot;added_failure_ids&quot;: [],
+  &quot;backend&quot;: &quot;clive&quot;,
+  &quot;base_log_revision&quot;: &quot;ba2c17c79dba7b530c60cb0f4e13f5f3ac3afabf&quot;,
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;tests/test_plan_review_store.py&quot;,
+      &quot;line&quot;: &quot;318&quot;,
+      &quot;severity&quot;: &quot;follow-on&quot;,
+      &quot;text&quot;: &quot;follow-on: the run&#x27;s declared negative control mutates CURRENT_PLAN onto a live plan to fail the metadata-edit case, but the new case test_a_metadata_edit_leaves_a_derived_impl_and_the_fingerprint_unchanged is not falsified by that mutation; its premise and its fingerprint assertion are each falsifiable (an authored fixture fails the premise, a prose-inclusive fingerprint fails the digest comparison), so the omission is advisory rather than a defect.&quot;
+    }
+  ],
+  &quot;head_log_revision&quot;: &quot;dedb1bad0b1218899fbbde48cbe297d39b8328e3&quot;,
+  &quot;item_aggregate&quot;: null,
+  &quot;item_verdicts&quot;: {},
+  &quot;justifications&quot;: {
+    &quot;durability&quot;: &quot;the change converts a monitor into a test by freezing the plan copies; the fixtures are committed, the assertions run in the suite, and the fingerprint stability no longer moves when a live plan is edited.&quot;,
+    &quot;evidence&quot;: &quot;both arms independently reproduced \u2014 the base tree at ba2c17c79 extracted to scratch fails test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it (1 failed, 5 passed, EXIT=1), and the reviewed head dedb1bad passes (7 passed, EXIT=0); the three fixture sha256 read back byte-for-byte equal to their claimed live sources; two negative controls fire beyond the run&#x27;s own (an authored fixture fails the new case&#x27;s premise, and a prose-inclusive fingerprint fails its digest comparison), so one point is docked because the run&#x27;s declared control exercises only the metadata-edit case.&quot;,
+    &quot;fit&quot;: &quot;the change follows the file&#x27;s existing fixture idiom, adds no plan label to a filename, symbol or comment, rewrites the module docstring to describe the frozen-copy boundary, and names the derived-impl shape as a first-class fixture rather than an inline string; one point is docked because the frozen-copy rationale is restated in both the module docstring and the inline comment above FIXTURES.&quot;,
+    &quot;goal_fidelity&quot;: &quot;every clause of section 5&#x27;s done-when holds: the metadata-edit case reads three committed copies under tests/fixtures/plan_review_store/ (legacy_plan.html with no named effort field, current_plan.html whose authored impl stands, derived_impl_plan.html whose impl derives from complete records), no case reads a live plan (grep finds no docs/plans or PLANS_DIR reference), the case passes (7 passed), and the second case asserts a plan-impl edit on the derived plan leaves the impl, its source and the fingerprint unchanged.&quot;,
+    &quot;scope_discipline&quot;: &quot;the reviewed diff touches exactly the four declared paths (tests/test_plan_review_store.py and the three fixtures); no live plan, state file or index is mutated; the commit is local, conventional, carries a body, and names no plan, sprint or ticket identifier.&quot;
+  },
+  &quot;model&quot;: &quot;deepseek-v4.1-flash&quot;,
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;raw_text&quot;: &quot;SCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: every clause of section 5&#x27;s done-when holds: the metadata-edit case reads three committed copies under tests/fixtures/plan_review_store/ (legacy_plan.html with no named effort field, current_plan.html whose authored impl stands, derived_impl_plan.html whose impl derives from complete records), no case reads a live plan (grep finds no docs/plans or PLANS_DIR reference), the case passes (7 passed), and the second case asserts a plan-impl edit on the derived plan leaves the impl, its source and the fingerprint unchanged.\nSCORE evidence: 19\nJUSTIFICATION evidence: both arms independently reproduced \u2014 the base tree at ba2c17c79 extracted to scratch fails test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it (1 failed, 5 passed, EXIT=1), and the reviewed head dedb1bad passes (7 passed, EXIT=0); the three fixture sha256 read back byte-for-byte equal to their claimed live sources; two negative controls fire beyond the run&#x27;s own (an authored fixture fails the new case&#x27;s premise, and a prose-inclusive fingerprint fails its digest comparison), so one point is docked because the run&#x27;s declared control exercises only the metadata-edit case.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the reviewed diff touches exactly the four declared paths (tests/test_plan_review_store.py and the three fixtures); no live plan, state file or index is mutated; the commit is local, conventional, carries a body, and names no plan, sprint or ticket identifier.\nSCORE durability: 20\nJUSTIFICATION durability: the change converts a monitor into a test by freezing the plan copies; the fixtures are committed, the assertions run in the suite, and the fingerprint stability no longer moves when a live plan is edited.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the file&#x27;s existing fixture idiom, adds no plan label to a filename, symbol or comment, rewrites the module docstring to describe the frozen-copy boundary, and names the derived-impl shape as a first-class fixture rather than an inline string; one point is docked because the frozen-copy rationale is restated in both the module docstring and the inline comment above FIXTURES.\nFINDING tests/test_plan_review_store.py:318 follow-on: the run&#x27;s declared negative control mutates CURRENT_PLAN onto a live plan to fail the metadata-edit case, but the new case test_a_metadata_edit_leaves_a_derived_impl_and_the_fingerprint_unchanged is not falsified by that mutation; its premise and its fingerprint assertion are each falsifiable (an authored fixture fails the premise, a prose-inclusive fingerprint fails the digest comparison), so the omission is advisory rather than a defect.\nreviewed_base_sha: ba2c17c79dba7b530c60cb0f4e13f5f3ac3afabf\nreviewed_head_sha: dedb1bad0b1218899fbbde48cbe297d39b8328e3\n&quot;,
+  &quot;review_run_id&quot;: &quot;r-20261002T164034134416-review-of-plan-review-test-reads-frozen-plans&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;ba2c17c79dba7b530c60cb0f4e13f5f3ac3afabf&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;dedb1bad0b1218899fbbde48cbe297d39b8328e3&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20261002T141513710685-plan-review-test-reads-frozen-plans&quot;,
+  &quot;scores&quot;: {
+    &quot;durability&quot;: 20,
+    &quot;evidence&quot;: 19,
+    &quot;fit&quot;: 19,
+    &quot;goal_fidelity&quot;: 20,
+    &quot;scope_discipline&quot;: 20
+  },
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;total&quot;: 98
+}
+</pre></div>
+    </article>
   </section>
-</section>
-</main>
+
+  <section id="s7">
+    <h2>§7 — The settle window is declared in the defaults file</h2>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T194017618136-review-of-the-settle-window-is-declared-in-defaults">
+      <p><small>reckon-build · 2026-10-04T19:48:48.179Z</small></p>
+      <div class="r-comment-body"><p>Independent review of run r-20261004T191138845689-the-settle-window-is-declared-in-defaults stored at the review store keyed by its reviewed head 6367ab1e8; the record parses as status parsed, scores goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 18 (total 97), revision pair reviewed_base_sha f31a38d86 / reviewed_head_sha 6367ab1e8, added_failure_count 0 and added_failure_ids [] derived from the run's own base-arm.log and after-arm.log.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-run-r-20261004T191138845689-the-settle-window-is-declared-in-defaults">
+      <p><small>reckon-build · 2026-10-04T19:52:00.835Z</small></p>
+      <div class="r-comment-body"><p>Declared review.plan_settle_seconds: 600 in reckon/schema/flight-defaults.yaml beside review.tiers (commits 6367ab1e8 and d37b5f6f5), validated by the flight layer check and pinned by tests/test_plan_settle_window_is_declared.py; the test population importing reckon.flight measured 1023 passed/3 skipped at base f31a38d86 against 1024 passed/3 skipped at head with zero added failures, and deleting the key reddens the new test (EXIT=1).</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20261004-s7-landed">
+      <p><small>s22-coord · 2026-10-04T19:54:00Z</small></p>
+      <div class="r-comment-body"><p><strong>Landed at merge a5b2687f7.</strong> <code>reckon/schema/flight-defaults.yaml</code> declares <code>review.plan_settle_seconds: 600</code> beside <code>review.tiers</code>. <code>tests/test_plan_settle_window_is_declared.py</code> validates the shipped layer and asserts that resolution reports the key's origin as <code>shipped</code> with the value 600, so the code fallback in <code>reckon/flight.py</code> can no longer satisfy it. Deleting the key reddens the provenance assertion. The flight-importing population read 1023 passed at base and 1024 at head, none failed. Review scored 97. Its one finding, a missing final newline in the test and in the fragment, was repaired by the same worker in <code>d37b5f6f5</code> before the merge.</p></div>
+    </article>
+    <table>
+      <thead>
+        <tr><th>Run</th><th>Node</th><th>Commits</th><th>Gate</th><th>Tests added</th><th>Worker time</th><th>Changed lines</th><th>Scope</th></tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td><code>r-20261004T194017618136-review-of-the-settle-window-is-declared-in-defaults</code></td>
+        <td>review-of-the-settle-window-is-declared-in-defaults</td>
+        <td>—</td>
+        <td><strong>not-run</strong></td>
+        <td>—</td>
+        <td>7m 51s</td>
+        <td><code>—</code></td>
+        <td>unchanged</td>
+      </tr>
+      <tr>
+        <td><code>r-20261004T191138845689-the-settle-window-is-declared-in-defaults</code></td>
+        <td>the-settle-window-is-declared-in-defaults</td>
+        <td><code>6367ab1e8e221c25bc4719b42306188cad797d0f</code><br><code>d37b5f6f5fdfb1d3d3423a32a85506ca9ba260cb</code></td>
+        <td><strong>passed</strong></td>
+        <td>—</td>
+        <td>39m 35s</td>
+        <td><code>{&quot;added&quot;:42,&quot;files&quot;:3,&quot;removed&quot;:0}</code></td>
+        <td>unchanged</td>
+      </tr>
+      </tbody>
+    </table>
+    <article class="landed-report" data-run-id="r-20261004T194017618136-review-of-the-settle-window-is-declared-in-defaults" data-report-path="/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T191138845689-the-settle-window-is-declared-in-defaults.at-6367ab1e8e221c25bc4719b42306188cad797d0f.json">
+      <h3>review-of-the-settle-window-is-declared-in-defaults &mdash; delivered report</h3>
+      <p>Cited from <code>/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/r-20261004T191138845689-the-settle-window-is-declared-in-defaults.at-6367ab1e8e221c25bc4719b42306188cad797d0f.json</code>.</p>
+      <div class="landed-report-body"><pre>{
+  &quot;project&quot;: &quot;reckon&quot;,
+  &quot;reviewed_run_id&quot;: &quot;r-20261004T191138845689-the-settle-window-is-declared-in-defaults&quot;,
+  &quot;review_run_id&quot;: &quot;r-20261004T194017618136-review-of-the-settle-window-is-declared-in-defaults&quot;,
+  &quot;status&quot;: &quot;parsed&quot;,
+  &quot;timestamp&quot;: &quot;2026-10-04T19:45:51Z&quot;,
+  &quot;reviewed_base_sha&quot;: &quot;f31a38d86c60218d71c838c63ceb956d35ccd00b&quot;,
+  &quot;reviewed_head_sha&quot;: &quot;6367ab1e8e221c25bc4719b42306188cad797d0f&quot;,
+  &quot;scores&quot;: {
+    &quot;goal_fidelity&quot;: 20,
+    &quot;evidence&quot;: 19,
+    &quot;scope_discipline&quot;: 20,
+    &quot;durability&quot;: 20,
+    &quot;fit&quot;: 18
+  },
+  &quot;total&quot;: 97,
+  &quot;absent&quot;: [],
+  &quot;absent_items&quot;: [],
+  &quot;item_verdicts&quot;: {
+    &quot;goal&quot;: &quot;verified: section 7 asks that review.plan_settle_seconds be declared in reckon/schema/flight-defaults.yaml beside review.tiers, validated, with a test pinning the resolved value to the file; at the reviewed head 6367ab1e8 the key is present in the shipped layer, validate_layer accepts it, and tests/test_plan_settle_window_is_declared.py asserts origin &#x27;shipped&#x27;, key presence and value 600.&quot;,
+    &quot;done_when&quot;: &quot;verified: the shipped layer names the key (flight-defaults.yaml review.plan_settle_seconds: 600), flight.validate_layer checks its shape (reckon/flight.py:863-867), and the new test asserts resolved.origin(&#x27;review.plan_settle_seconds&#x27;) == &#x27;shipped&#x27; plus the resolved mapping carries 600; I reproduced the module 1 passed EXIT=0 at head and, deleting the key from an extracted head tree, 1 failed EXIT=1 at the provenance assertion (None == &#x27;shipped&#x27;) in my own scratch tree.&quot;,
+    &quot;write_paths&quot;: &quot;verified: git diff f31a38d86..6367ab1e8 changes exactly reckon/schema/flight-defaults.yaml, tests/test_plan_settle_window_is_declared.py and docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/the-settle-window-is-declared-in-defaults.html (3 files, 42 insertions), all inside the manifest&#x27;s declared write paths and nothing else.&quot;,
+    &quot;manifest&quot;: &quot;read: it declares status complete, the three changed paths, names its gate logs under test_logs, and arms baseline_suite (base-arm.log, rev f31a38d86, completed, 0 failures) and after_suite (after-arm.log, rev 6367ab1e8, completed, 0 failures); the two arms plus the negative control reproduce.&quot;,
+    &quot;diff&quot;: &quot;read against the base: the diff adds five lines to flight-defaults.yaml (the comment block and plan_settle_seconds: 600), adds tests/test_plan_settle_window_is_declared.py, and adds the evidence fragment; reckon/flight.py is unchanged by this run, so the accessor and validator it leans on were already present at base.&quot;,
+    &quot;call_sites&quot;: &quot;verified reckon/crew/recovery.py:4128 flight.plan_review_settle_seconds(resolved) inside the sweeping branch reads the key to skip a plan whose mtime sits within the window, and the accessor is reckon/flight.py:684.&quot;
+  },
+  &quot;item_aggregate&quot;: 6,
+  &quot;justifications&quot;: {
+    &quot;goal_fidelity&quot;: &quot;the change does exactly what section 7 asked and no more: review.plan_settle_seconds: 600 joins review.tiers in reckon/schema/flight-defaults.yaml:133, flight.validate_layer validates it at reckon/flight.py:863-867, and the test pins the value to the file by provenance rather than to the accessor&#x27;s fallback, which also answers 600 (reckon/flight.py:688).&quot;,
+    &quot;evidence&quot;: &quot;strong and independently reproduced: the base and head population arms are durable run-dir logs (1023 vs 1024 passed, 0 failures, both completed to summary) bracketing the change, the negative control is red EXIT=1, and I reproduced the head module green (1 passed) and the key-deleted tree red at the provenance assertion; one point withheld because the focused gate result (1 passed) is asserted in the manifest&#x27;s tests field but no focused-gate log file is stored beside base-arm.log/after-arm.log, so that single figure is reproduced by me rather than readable from the run&#x27;s own evidence.&quot;,
+    &quot;scope_discipline&quot;: &quot;the commit touches only the three declared paths and nothing outside them; flight.py, the module offering the accessor and validator, is untouched, so the node did not reach into a file it did not own.&quot;,
+    &quot;durability&quot;: &quot;one commit 6367ab1e8 carries a conventional subject and a body with no attribution, plan label or version number; the manifest was written incrementally and is complete; all gate logs sit under the run directory; the reviewed worktree remains on disk with a committed tree.&quot;,
+    &quot;fit&quot;: &quot;the change reuses the machinery already in reckon/flight.py rather than forking it, keeps the key out of the generated LinkML schema through the existing _schema_view exclusion, and reads like the surrounding defaults; two points withheld because the new test file tests/test_plan_settle_window_is_declared.py fails ruff on its own new content (W292, no newline at end of file, 26:69) and ruff format would reformat it, and the evidence fragment likewise lacks a trailing newline.&quot;
+  },
+  &quot;findings&quot;: [
+    {
+      &quot;file&quot;: &quot;tests/test_plan_settle_window_is_declared.py&quot;,
+      &quot;line&quot;: &quot;26&quot;,
+      &quot;severity&quot;: &quot;follow-on&quot;,
+      &quot;text&quot;: &quot;the node&#x27;s new test file is not ruff-clean: `ruff check` reports W292 (no newline at end of file, 26:69) and `ruff format --check` would reformat it, against the repository&#x27;s stated ruff target; the new file is content the node introduced, so this is a finding it added rather than a pre-existing one. It does not hold the node: the test is green at head and red when the key is deleted. The added evidence fragment docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/the-settle-window-is-declared-in-defaults.html likewise ends without a newline.&quot;
+    }
+  ],
+  &quot;call_sites&quot;: [
+    &quot;reckon/crew/recovery.py:4128&quot;,
+    &quot;reckon/flight.py:684&quot;
+  ],
+  &quot;call_site_count&quot;: 2,
+  &quot;added_failure_count&quot;: 0,
+  &quot;added_failure_ids&quot;: [],
+  &quot;added_failures_source&quot;: &quot;derived from the reviewed run&#x27;s own suite fields: baseline_suite names logs/base-arm.log (revision f31a38d86, completed, 1023 passed/3 skipped, failure_count 0) and after_suite names logs/after-arm.log (revision 6367ab1e8, completed, 1024 passed/3 skipped, failure_count 0); review.py added_failures_from_gate_logs reads both arms, each with no FAILED/ERROR summary line, so the head has no failing id the base lacks — added_failure_count 0, added_failure_ids [].&quot;,
+  &quot;base_log_revision&quot;: &quot;f31a38d86c60218d71c838c63ceb956d35ccd00b&quot;,
+  &quot;head_log_revision&quot;: &quot;6367ab1e8e221c25bc4719b42306188cad797d0f&quot;,
+  &quot;raw_text&quot;: &quot;VERDICT goal: section 7 asks that review.plan_settle_seconds be declared in reckon/schema/flight-defaults.yaml beside review.tiers, validated, with a test pinning the resolved value to the file; at the reviewed head 6367ab1e8 the key is present in the shipped layer, validate_layer accepts it, and tests/test_plan_settle_window_is_declared.py asserts origin &#x27;shipped&#x27; and origin&#x27;s key presence and value 600, so the goal is met.\nVERDICT done_when: the shipped layer names the key (flight-defaults.yaml review.plan_settle_seconds: 600), reckon/flight.py:863 validates its shape, and the new test asserts resolved.origin(&#x27;review.plan_settle_seconds&#x27;) == &#x27;shipped&#x27; plus the resolved mapping carries 600; I reproduced the module 1 passed EXIT=0 at head and 1 failed EXIT=1 (None == &#x27;shipped&#x27;) when the key is deleted from an extracted head tree.\nVERDICT write_paths: git diff f31a38d86..6367ab1e8 changes exactly reckon/schema/flight-defaults.yaml, tests/test_plan_settle_window_is_declared.py and the evidence fragment (3 files, 42 insertions), all inside the manifest&#x27;s declared write paths.\nVERDICT manifest: read; status complete, the three changed paths declared and named under test_logs, baseline_suite (base-arm.log f31a38d86, completed, 0 failures) and after_suite (after-arm.log 6367ab1e8, completed, 0 failures) both armed and reproduced.\nVERDICT diff: read against the base; the diff adds the five-line defaults block, the new test, and the evidence fragment; reckon/flight.py is unchanged by this run, so the accessor and validator it uses predate it.\nCALL_SITES: reckon/crew/recovery.py:4128, reckon/flight.py:684\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: the change does exactly what section 7 asked and no more: review.plan_settle_seconds: 600 joins review.tiers in reckon/schema/flight-defaults.yaml:133, flight.validate_layer validates it at reckon/flight.py:863-867, and the test pins the value to the file by provenance rather than to the accessor&#x27;s fallback which also answers 600 (reckon/flight.py:688).\nSCORE evidence: 19\nJUSTIFICATION evidence: the base and head population arms are durable run-dir logs (1023 vs 1024 passed, 0 failures, both completed) bracketing the change, the negative control is red EXIT=1, and I reproduced the head test green and the key-deleted tree red at the provenance assertion; deducted one because the focused gate figure (1 passed) sits in the manifest&#x27;s tests field with no focused-gate log stored beside the two arm logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the commit touches only the three declared paths; reckon/flight.py, the module offering the accessor and validator, is untouched, so nothing outside the node&#x27;s scope was reached.\nSCORE durability: 20\nJUSTIFICATION durability: one commit 6367ab1e8 carries a conventional subject and a body with no attribution, plan label or version number; the manifest is complete and was written incrementally; the gate logs sit under the run directory; the reviewed worktree remains on disk with a committed tree.\nSCORE fit: 18\nJUSTIFICATION fit: the change reuses reckon/flight.py rather than forking it and keeps the key out of the generated schema through the existing _schema_view exclusion; deducted two because the new test file fails ruff (W292, 26:69) and would be reformatted, against the repository&#x27;s ruff target, and the evidence fragment also lacks a trailing newline.\nFINDING tests/test_plan_settle_window_is_declared.py:26 follow-on: the node&#x27;s new test file is not ruff-clean (W292 no newline at end of file, and ruff format would reformat it); the new file is content the node introduced, so it is a finding it added, and it does not hold the node because the test is green at head and red when the key is deleted.&quot;
+}</pre></div>
+    </article>
+  </section>
+
+  <section id="top">
+    <h2>top</h2>
+    <article class="landed-comment" data-comment-id="c-20260925T1035-plan-review-gate">
+      <p><small>unknown · undated</small></p>
+      <div class="r-comment-body"><p>Lead decision, 2026-09-25, which revises §2's 'nothing blocks': <b>a review must exist; its findings stay advisory.</b> The first implementation dispatch against a plan version is refused until a plan review of that version exists and the author has acted on or declined, with a reason, each of its findings. The findings themselves never block. The aim is to catch reasoning errors before work is submitted, without making the rubber duck a veto. Ownership: this plan moved from s22-coord to s21-coord with s22's agreement (it still counts toward S22 in the rollup). Rubric input from s22's measurement the same day: code-review findings were acted on about 12 times in 20, and the misses were semantic (a reuse-map misattribution, a contract break) caught later by gates. So pilots and the rubric score a finding on whether it would have changed the plan, not on finding count. It ties to scoring-should-stop-a-promotion §2i's blocking/advisory split.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260925T1050-pilot-first-loop">
+      <p><small>unknown · undated</small></p>
+      <div class="r-comment-body"><p>First pilot, 2026-09-25: plan-review-pilot-luna (r-20260925T083257138237, codex-luna, 14 min) reviewed six live plans and produced 14 findings, 13 rated would-change-the-plan. Findings: <code>~/.config/reckon/crew/reports/reckon/s21-coord/plan-review-pilot-luna/findings.json</code>. The dsv4.1 run of the same six plans is pending comparison. The act-or-decline loop ran by hand on two of them. <b>Acted on:</b> an-orchestrator-cannot-forget-its-obligations §7, where after three refusals the hook let a worker end with no terminal record, recreating the plan's own root defect. The owner amended §s7 in plan version 7 so that the final allowed stop writes a blocked record. <b>Declined, as a rubric false positive:</b> evidence hrefs without <code>.html</code> are the house convention (387 of 404 links in docs/plans) and the SPA resolves them. So the anchor-resolves rubric item must resolve an href the way the SPA does, with an extensionless path matching <code>&lt;path&gt;.html</code>, before it reports a finding. Two process notes for the build. First, <code>check-manifest</code> refuses a report-only investigate record (complete with no commits, and artifacts outside the repository scope), so the pilot wrongly marked itself blocked. A plan-review node needs a manifest shape the checker accepts. Second, rubric scoring worked as intended: every finding carried a would-change verdict and its reason, and the declined one was the only one resting on a convention the reviewer could not see.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260925T1210-design-brief">
+      <p><small>unknown · undated</small></p>
+      <div class="r-comment-body"><p>Design brief by plan-review-design-scout (r-20260925T083345319450), at <code>~/.config/reckon/crew/reports/reckon/s21-coord/plan-review-design-scout/design.md</code>, with 39 file and function citations machine-checked and none failing. Adopted as the build contract. <b>D1</b>: a review record is keyed by plan and version and joined by a content fingerprint that excludes the server-managed metadata scalars (version, modified, impl, status, roi, effort-hours, owner, sprint, tags, archived). A version-only or impl-only write therefore neither triggers nor invalidates a review, and the gate keys on the fingerprint. <b>D2</b>: eligibility is derived by a sweep (fingerprint changed, and quiet longer than the settle window), never enqueued by a write hook. So MCP, POST and hand edits are all caught. <b>D3</b>: the plan pointer is surface state beside the plan, not written into the HTML. <b>D4</b>: an implementation-role dispatch is refused without a review of the current fingerprint in which every finding is acted on or declined with a reason. The first implementation dispatch of a plan also requires the §3 design review. An <code>--allow-unreviewed-plan</code> waiver is recorded on the run pointer, so a broken local lane cannot stop every build. <b>D5</b>: review-role nodes are exempt through <code>_is_review_node</code>. <b>D6</b>: plan-review dispatch extends the existing review reflex rather than copying it. Nodes: PR-1 record and store (<code>reckon/crew/plan_review.py</code>), then PR-3 rubric prompts and PR-4 dispatch gate, then PR-2 sweep and PR-5 responses and surface. Pilot input folded into PR-3: the anchor-resolves check resolves an extensionless href as the SPA does.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260925T1558-pr3-landed">
+      <p><small>unknown · undated</small></p>
+      <div class="r-comment-body"><p>Two of five nodes have landed. PR-1 (review store and plan pointer) and PR-3 (the plan-review rubric prompts, merged at <code>fe707812</code>, commits <code>eb2fc40f</code> and <code>e2685b55</code>) are both on main. PR-3 also wrote <code>reckon/crew/review.py</code>, which the coordinator left out of its scope; the path was accepted at promotion. PR-4, the dispatch gate, was moved to clive during the codex pause. Its fence was widened with <code>reckon/cli.py</code> for the public <code>--allow-unreviewed-plan</code> option. PR-2 and PR-5 follow PR-4.</p></div>
+    </article>
+    <article class="landed-comment" data-comment-id="c-20260926T1115-pr4-landed">
+      <p><small>unknown · undated</small></p>
+      <div class="r-comment-body"><p><strong>PR-4, the dispatch gate, landed</strong> at <code>95e186ad</code> (re-review 92). <strong>Lead decision:</strong> the gate ships <strong>report-only</strong>. Dispatch of an implement node consults the plan's stored review. A missing review, or a finding with no response, is recorded as a warning on the dispatch result, and the dispatch proceeds. When the flight key <code>plan_review_gate: enforce</code> is set, it refuses as designed. The refusal names the unanswered finding, and dry-run and launch both report <code>plan-review-missing</code>. <strong>Before switching to enforce:</strong> PR-2, which dispatches plan reviews, must exist, and the active sprint's plans must carry a review. <strong>Open:</strong> the re-review found the launch path's <code>plan-review-missing</code> mapping untested (only dry-run is asserted); a follow-on test node covers it. The merge also joined PR-4's key with <code>harness_home_files</code> in flight's schema exclusion, resolved in a scratch worktree. PR-2 and PR-5 remain.</p></div>
+    </article>
+  </section>
+ </main>
 </body>
 </html>
