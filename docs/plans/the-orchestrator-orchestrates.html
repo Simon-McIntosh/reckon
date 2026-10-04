@@ -20,11 +20,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-informs" content="a-plan-is-reviewed-before-it-is-built,the-crew-contract-fits-one-read,a-worker-reuses-before-it-writes,nova:nova-portfolio-replan">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
   <title>The Orchestrator Orchestrates | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -148,20 +148,12 @@
     <p><strong>Enforcement.</strong> The gate's mode stays <code>report</code> in the shipped defaults until
       the first five plan reviews have landed through this path; the decision below records when it flips.</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-04</span>
     <h2 id="s4">§4 — The code review judges reuse</h2>
-
-<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> The landed-node review prompt gains a reuse clause under its
-      <code>fit</code> dimension and a matching reading instruction: for each function, class or module the
-      diff adds, the reviewer searches the repository for an existing mechanism with the same capability and,
-      when one exists, emits a <code>FINDING</code> naming the owning file and whether the addition extends,
-      wraps or duplicates it. The reading bound is kept — the reviewer opens the owner it names and nothing
-      else — so the review stays ten minutes. A duplicate of an owned mechanism scores <code>fit</code> below
-      the light tier's floor, which is what makes the finding reach the coordinator rather than the archive.</p>
-    <p><strong>Done when</strong> <code>reckon/crew/prompts/review.md</code> states the reuse clause in the
-      <code>fit</code> dimension and the search instruction in the reading section, the parser still reads a
-      review emitted under the new prompt (the existing prompt-contract tests pass unchanged), and
-      <code>tests/test_review_prompt_contract.py</code> asserts the clause with a control that deletes it.</p>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed <code>reckon/crew/prompts/review.md</code>: the <code>fit</code> dimension scores an added definition whose capability the repository already owns below 10 unless it extends that owner, with a FINDING naming the owner, and the reading section allows the one owner read. Gate 14 passed, deletion control exit 1; independent review 95/100. Commit <code>ebb350e30</code>, merged at <code>716628820</code>. <a href="s4">full record</a></p>
+</section>
 
     <h2 id="s5">§5 — The coordinator's loop</h2>
 
@@ -242,6 +234,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20261004T1313-design-decisions" data-who="too-coord-1004" data-when="2026-10-04T13:13:00Z">
     <div class="r-comment-body">Why the report and sidecar rather than the reviewer writing the store record directly, as code reviewers do: the record's join keys — the content fingerprint, the plan version and the reviewed blob — are what the gate reads, and a reviewer cannot compute them reliably (this plan's own design reviewer recorded plan_version null because the file had never been server-written). The dispatcher knows all three at compose time, so it writes the sidecar and the reviewer writes only RUBRIC and FINDING lines; store_delivered_report joins the two through store_plan_review, which stays the one writer. §3 is split into two nodes for the local lane's context window: the record side (parse_review_report, review_report_directory, write_review_sidecar, delivered_reports, store_delivered_report, and the store-at-read branch in require_plan_reviewed) as run r-20261004T130452090056, then the composition, sweep, command and view. The second lands PR-2 and PR-5 of a-plan-is-reviewed-before-it-is-built §4 under that plan's D2 and D6: the plan subject is added to the existing review-dispatch composer in reckon/crew/recovery.py and the reflex sweep gains plan eligibility behind a settle window, so reckon crew review-plan is the manual trigger of the same composition, not a second one.</div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261004T130003476921" data-who="reckon-build" data-when="2026-10-04T13:20:00Z">
+    <div class="r-comment-body">gate passed (14 passed, control exit 1); review 95/100; section closed at merge 716628820</div>
 </div>
 </section>
 </main>
