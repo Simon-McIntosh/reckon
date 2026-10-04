@@ -419,8 +419,8 @@ def _registered_repository_roots() -> list[Path]:
     return roots
 
 
-def _run_commit_directory(record: Mapping[str, Any]) -> Path:
-    """The directory a run's commit objects are read through.
+def _run_commit_directory(record: Mapping[str, Any]) -> Path | None:
+    """The directory a run's commit objects are read through, or None.
 
     A run commits in its own worktree, and a worktree is a checkout of a
     repository that shares its object store, so the same revisions resolve
@@ -430,15 +430,11 @@ def _run_commit_directory(record: Mapping[str, Any]) -> Path:
     a run whose worktree was already reclaimed impossible to promote. Reading
     its commits through the repository instead keeps resolution, ancestry and
     citation checks answering for it as they did while the worktree was there.
-    A record that names no repository keeps the worktree path, so a caller's
-    own unmeasurable case is unchanged.
+    A record that names no readable directory names none at all: an empty field
+    is absent rather than the current directory, and a caller reads the absence
+    as a citation that cannot be measured rather than one that is absent.
     """
-    worktree = Path(str(record.get("worktree") or ""))
-    if str(record.get("worktree") or "").strip() and worktree.is_dir():
-        return worktree
-    if str(record.get("repo") or "").strip():
-        return Path(str(record.get("repo") or ""))
-    return worktree
+    return _record_tree(record)
 
 
 def _commit_canonical_id(root: Path, revision: str) -> str | None:
@@ -616,7 +612,13 @@ def _worktree_repository_changes(record: Mapping[str, Any]) -> tuple[str, ...]:
     manifest check rather than being refused on no evidence — the same silence
     ``_require_gate_evidence`` keeps when it cannot read the repository.
     """
-    tree = Path(str(record.get("worktree") or "")).expanduser()
+    # The worktree is the only tree this measures: the record's repository is a
+    # different tree the run did not work in, so a change found there is not
+    # this run's, and a blank field names no tree rather than the current
+    # directory.
+    tree = _record_worktree(record)
+    if tree is None:
+        return ()
     base = str(record.get("base_sha") or "").strip()
     changed: set[str] = set()
     if base:
@@ -645,7 +647,13 @@ def _manifest_declares_no_change(
     if not _changed_paths_declare_no_paths(manifest, record, manifest_text):
         return False
     base = str(record.get("base_sha") or "").strip()
-    tree = Path(str(record.get("worktree") or "")).expanduser()
+    # The run's own worktree only: the repository is a different tree whose
+    # history this run did not write, and a blank field names no tree rather
+    # than the current directory. With no tree named, a citation is not settled
+    # here at all.
+    tree = _record_worktree(record)
+    if tree is None:
+        return False
     canonical_base = _commit_canonical_id(tree, base) if base else None
     for raw in manifest.get("commits") or ():
         cited = str(raw).strip()
@@ -704,10 +712,10 @@ def _worktree_unchanged_since_base(record: Mapping[str, Any]) -> bool:
     one, so an existing worktree with no base is refused the exemption rather
     than allowed on its manifest alone.
     """
-    tree = Path(str(record.get("worktree") or "")).expanduser()
-    base = str(record.get("base_sha") or "").strip()
-    if not tree.is_dir():
+    tree = _record_worktree(record)
+    if tree is None:
         return False
+    base = str(record.get("base_sha") or "").strip()
     if not base:
         return False
     canonical_base = _commit_canonical_id(tree, base)
@@ -917,7 +925,7 @@ def _require_gate_evidence(
     manifest_present, fresh = _manifest_freshness(record)
     delivered: dict[str, Any] = {}
     delivered_text = ""
-    if manifest_present and fresh and tree.is_dir():
+    if manifest_present and fresh and tree is not None:
         try:
             delivered_text = Path(str(record["manifest_path"])).read_text(
                 encoding="utf-8"
@@ -945,13 +953,16 @@ def _require_gate_evidence(
         # The measurement is taken in a tree that can be read, which for a
         # reclaimed run is its repository rather than the worktree it no longer
         # has.
-        unresolved_presented: list[str] = []
-        if tree.is_dir():
-            unresolved_presented = [
-                candidate
-                for candidate in presented
-                if _commit_canonical_id(tree, candidate) is None
-            ]
+        if tree is None:
+            # With no tree named, none of these citations can be measured, and
+            # an unmeasured citation is not a failed one: this branch's subset
+            # report is not written.
+            return None
+        unresolved_presented = [
+            candidate
+            for candidate in presented
+            if _commit_canonical_id(tree, candidate) is None
+        ]
         # A commitless declaration the declaration parser recognises means the
         # run presents no commits rather than a value that names nothing: a
         # review writes `commits: none (review node; no repository change)`
@@ -1010,7 +1021,9 @@ def _require_gate_evidence(
     # nothing is the defect this refusal exists for, so it is raised under the
     # citation's own name before the commitless guard below can answer with the
     # broader complaint that no commit was cited at all.
-    unresolved = [] if declared_absent else _unresolved_citations(tree, declared)
+    unresolved = (
+        [] if declared_absent or tree is None else _unresolved_citations(tree, declared)
+    )
     if unresolved:
         raise CrewError(
             f"run {run_id!r} cites "
@@ -1032,7 +1045,7 @@ def _require_gate_evidence(
     # that mistake.
     stated = (
         []
-        if declared_absent
+        if declared_absent or tree is None
         else [
             candidate
             for candidate in declared
@@ -1055,9 +1068,10 @@ def _require_gate_evidence(
     # the fallback above does not apply: the repository's HEAD belongs to a
     # tree this run did not work in, and reading it for a run whose worktree is
     # gone would refuse a truthful promotion on another tree's movement. With
-    # no worktree there is nothing to ask, so the guard stays silent.
-    worktree = Path(str(record.get("worktree") or ""))
-    if not base or not worktree.is_dir():
+    # no worktree there is nothing to ask, so the guard stays silent: a blank
+    # field names no worktree rather than the current directory.
+    worktree = _record_worktree(record)
+    if not base or worktree is None:
         return None
     head = subprocess.run(
         ["git", "rev-parse", "--verify", "--quiet", "HEAD"],
@@ -3055,15 +3069,22 @@ def _repository_tree_boundary_violations(
     if not isinstance(before_trees, list):
         return []
     repository = Path(str(record.get("repo") or ".")).resolve()
-    own_tree = Path(str(record.get("worktree") or "")).resolve()
+    # The own tree is the worktree only: the repository is not a fallback here,
+    # because the main checkout is a tree this run did not work in and
+    # excluding it would drop the very edits this scan exists to report. A
+    # blank field names no tree rather than the current directory.
+    own_tree = _record_worktree(record)
+    worktree_field = str(record.get("worktree") or "").strip()
     # A fenced run's boundary check reads only its own worktree and the main
     # checkout: every other tree is a write the operating system already
     # refused. The recorded fact is read rather than the current default, so a
     # later change to the default cannot redefine what a run already dispatched
     # is checked against. A record written before the field existed carries
     # neither value and keeps the full scan.
-    if record.get("fenced") is True and str(record.get("worktree") or "").strip():
-        roots: list[str | Path] | None = _boundary_tree_roots(repository, own_tree)
+    if record.get("fenced") is True and worktree_field:
+        roots: list[str | Path] | None = _boundary_tree_roots(
+            repository, worktree_field
+        )
     else:
         roots = [
             str(tree.get("path") or "")
@@ -3078,7 +3099,9 @@ def _repository_tree_boundary_violations(
     }
     declared = (record.get("node") or {}).get("write_paths") or ()
     declared_roots = _repository_scope_paths(
-        declared, worktree=own_tree, repository=repository
+        declared,
+        worktree=own_tree if own_tree is not None else repository,
+        repository=repository,
     )
     shared_files = _shared_write_paths(str(record.get("project") or ""), repository)
     # The paths each live peer holds its worktree for, resolved through the same
@@ -3114,7 +3137,7 @@ def _repository_tree_boundary_violations(
         if not raw_path:
             continue
         path = Path(raw_path).resolve()
-        if path == own_tree:
+        if own_tree is not None and path == own_tree:
             continue
         peer_roots = peer_grants.get(path, ())
         shadow_record = terminal_shadows.get(path)
@@ -3251,9 +3274,9 @@ def _is_shadow(record: Mapping[str, Any]) -> bool:
 def _write_shadow_patch(record: Mapping[str, Any]) -> Path:
     """Persist the complete diff from a shadow's fixed base, including new files."""
     run_id = str(record.get("run_id") or "")
-    worktree = Path(str(record.get("worktree") or ""))
+    worktree = _record_worktree(record)
     base = str(record.get("base_sha") or "")
-    if not worktree.is_dir():
+    if worktree is None:
         raise CrewError(
             f"shadow run {run_id!r} has no readable worktree; its patch cannot be preserved"
         )
@@ -6798,6 +6821,24 @@ def _record_tree(record: Mapping[str, Any]) -> Path | None:
         if value and (tree := Path(value)).is_dir():
             return tree
     return None
+
+
+def _record_worktree(record: Mapping[str, Any]) -> Path | None:
+    """The run's own worktree as this record names it, or None.
+
+    The worktree-only sibling of :func:`_record_tree`. The repository is
+    deliberately not a fallback here: a reader of this shape measures the tree
+    the run *worked in*, and the repository is a different tree whose HEAD
+    follows the integration branch, so a measurement taken there answers about
+    work the run never did. An empty field is absent rather than the current
+    directory, and a record naming no readable worktree resolves no tree at
+    all, so its reader reports the absence.
+    """
+    value = str(record.get("worktree") or "").strip()
+    if not value:
+        return None
+    tree = Path(value)
+    return tree.resolve() if tree.is_dir() else None
 
 
 def _tree_for_measurement(record: Mapping[str, Any], run_id: str) -> Path:
