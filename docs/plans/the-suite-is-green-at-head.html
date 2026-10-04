@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.98">
-<meta name="plan-version" content="262">
+<meta name="plan-version" content="263">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 <meta name="plan-artifacts" content="docs/research/suite-failures-at-head.html">
@@ -1277,9 +1277,15 @@
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §2</pre>
     <p class="r-fu-outcome">Measured in two foreground halves at heads 935bb39e8 and b5f74d36b, both carrying dc4e52cc7 and 015ca29a4. 13,094 passed, with 1 failure and 1 error, and no id fails when run alone. Both reds are threads from an earlier test that outlive it. Evidence anchor s2-final-measure-after-the-dispatch-fix.</p>
     </article>
-<article class="r-fu" data-id="f-tsigah-close-after-the-thread-leaks" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-03T21:30:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tsigah-close-after-the-thread-leaks" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-10-03T21:30:00Z" data-recommends-skill="/reckon-build" data-resolved-at="2026-10-04T00:12:45+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Close §2 once the two thread leaks between tests are repaired</h4>
     <div class="r-fu-body">The final measure has no deterministic red. Its two reds are threads that outlive the test that started them. §2's own node, the-change-stream-test-leaves-no-scanner-running, makes test_two_change_streams_recompute_discovery_once wait for its HTTP handler threads. It is gated by 20 passes in a row of the two-test pair under CPU load. s22-coord's a-sweep-thread-ends-with-its-test (the-obligations-hook-reads-a-snapshot §17) adds a runs.py helper and an autouse conftest fixture that join every producer's sweep thread after each test. Once both are merged, re-run the two affected files under -n 8 together with their neighbours. If they are green, collapse §2 and set the plan to shipped. No further whole-suite run is needed: neither repair touches anything outside those threads' tests and the shared fixture, and the fixture's own gate covers the suite population that uses the producer.</div>
+    <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §2</pre>
+    <p class="r-fu-outcome">Both thread leaks are repaired. 4e82b1a88 joins the change-stream handlers, and s22-coord's 222b6706f joins the sweep threads after every test. the-two-thread-leaks-hold-at-the-merged-head (run r-20261004T000119388166) ran the six affected files five times at -n 8 at fdd9dd7d3: each time 138 passed, EXIT=0, with no lines reporting an exception in a thread. The followup said no further whole-suite run was needed, but §2's own measure asks for one full-suite run at the merged head with zero failures and zero errors. So that run is taken next, as two halves pinned to one revision.</p>
+    </article>
+<article class="r-fu" data-id="f-tsigah-the-pinned-full-suite-measure" data-status="open" data-written-by="reckon-build" data-written-at="2026-10-04T00:13:00Z" data-recommends-skill="/reckon-build" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">One full-suite run pinned at 76ed64992 decides §2</h4>
+    <div class="r-fu-body">The-integrated-suite-at-76ed64992 half 1 and half 2 run one after the other. Each works on a git-archive tree of 76ed64992 with a .venv symlink and a git repository, in one foreground call at -n 8. The node fence is 60 min, so the suite is split into halves, but both run at one revision, which makes them one full-suite run. If the sum reports zero failures and zero errors, §2's measure is met: collapse §2 with a link to the evidence anchor. Any red that is left goes to its owner. One example is the xdist worker crash in follower re-arm tests that s22-coord filed as a-follower-outlives-its-monitor §12.</div>
     <pre class="r-fu-prompt">/reckon-build the-suite-is-green-at-head §2</pre>
     </article>
 </section>
@@ -1849,7 +1855,7 @@ reviewed worktree is untouched (git status --porcelain empty).</p></div>
     <div class="r-comment-body"><p>Independent review of r-20261003T212143648453-the-change-stream-test-leaves-no-scanner-running stored at reviewed head 65617b3f2 (base d6d1f4ef3): total 94 (goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 20), added_failure_count 0, added_failure_ids []; one follow-on finding -- the declared negative control did not reproduce on this host.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261004T000119388166-the-two-thread-leaks-hold-at-the-merged-head" data-who="reckon-build" data-when="2026-10-04T00:10:02.995Z">
-    <div class="r-comment-body"><p>Five -n 8 repetitions of the six thread-leak files at fdd9dd7d3 all hold: 138 passed each, EXIT=0, zero FAILED/ERROR/thread-exception lines (load_before 6.00-11.09, covering the 8.84 band of the last pre-repair red); both pre-existing load-only reds (test_a_report_keeps_a_discovery_newer_than_the_report, test_byte_scan_miss_never_parses_aggregate_or_opens_other_run) are green, zero new failures, so the verdict is held and section 2&#x27;s close condition is met.</p></div>
+    <div class="r-comment-body"><p>Five -n 8 repetitions of the six thread-leak files at fdd9dd7d3 all hold: 138 passed each, EXIT=0, zero FAILED/ERROR/thread-exception lines (load_before 6.00-11.09, covering the 8.84 band of the last pre-repair red); both pre-existing load-only reds (test_a_report_keeps_a_discovery_newer_than_the_report, test_byte_scan_miss_never_parses_aggregate_or_opens_other_run) are green, zero new failures, so the verdict is held and section 2's close condition is met.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-20260925T0305-cwd" data-who="reckon-build" data-when="2026-09-25T01:05:00Z">
     <div class="r-comment-body"><p>surface-test-pins-its-working-directory: gate passed. The public-surface test's child interpreter now runs with <code>cwd</code> set to the checkout root, so it imports this repository's <code>reckon</code> wherever pytest is launched. At the merged head <code>cfa804a4</code> it passes launched both from the repository root and from <code>/tmp</code>. Independent review scored 92 with no findings. A verification note for the final run: the product recognises a test directory by pytest's default base-temp path. A <code>--basetemp</code> outside it makes <code>test_watch_arming_isolation</code> report false failures, so the bounded full run uses pytest's own temp root.</p></div>
