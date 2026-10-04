@@ -19,7 +19,7 @@
   <main class="plan-doc">
     <h1>An unmarked finding is refused at the write</h1>
 
-    <section id="defect">
+    <section id="an-unmarked-finding-is-refused-at-write-defect">
       <h2>The defect</h2>
       <p>A finding in a stored review record that opens with neither declared
         severity is recorded without a <code>severity</code> key &mdash; the parser never
@@ -38,7 +38,7 @@
         nothing.</p>
     </section>
 
-    <section id="change">
+    <section id="an-unmarked-finding-is-refused-at-write-change">
       <h2>The change</h2>
       <p><code>reckon/crew/reports.py</code> adds a write-time check to
         <code>audit_manifest</code>. When the node's role is the review role, the
@@ -60,7 +60,7 @@
         untouched.</p>
     </section>
 
-    <section id="gate">
+    <section id="an-unmarked-finding-is-refused-at-write-gate">
       <h2>The gate</h2>
       <p>The new falsifier plus every existing test file under <code>tests/</code> that
         calls <code>audit_manifest</code> (nine files), run in a scratch export of the
@@ -100,7 +100,7 @@
         <code>reports.py</code> at both revisions, zero in the new test file).</p>
     </section>
 
-    <section id="negative-control">
+    <section id="an-unmarked-finding-is-refused-at-write-negative-control">
       <h2>The negative control</h2>
       <p>The declared mutation removes the unmarked-finding check from
         <code>audit_manifest</code> in <code>reckon/crew/reports.py</code>; the unmarked
@@ -110,7 +110,7 @@
         <code>test_a_record_with_an_unmarked_finding_is_refused_at_the_write</code>.</p>
     </section>
 
-    <section id="limits">
+    <section id="an-unmarked-finding-is-refused-at-write-limits">
       <h2>What this node does not do</h2>
       <p>The check reads and reports; it changes no stored record and no promotion
         decision. A gate that refuses a promotion on blocking findings alone is a

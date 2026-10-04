@@ -20,7 +20,7 @@
   <main class="plan-doc">
     <h1>The lifecycle scalars are one block, and a duplicated scalar reads by a stated rule</h1>
 
-    <section id="defect">
+    <section id="plan-scalars-are-one-block-defect">
       <h2>The defect</h2>
       <p>A union-resolved merge of two landing records leaves a document carrying two copies of a
         <code>plan-*</code> scalar line, and the three lifecycle scalars — <code>plan-impl</code>,
@@ -44,7 +44,7 @@
         impl sits after version or modified.</p>
     </section>
 
-    <section id="changes">
+    <section id="plan-scalars-are-one-block-changes">
       <h2>What changed</h2>
       <ol>
         <li><code>reckon/_plan_html.py</code>: <code>_set_meta_block</code> emits several metas as
@@ -81,7 +81,7 @@
       </ol>
     </section>
 
-    <section id="evidence">
+    <section id="plan-scalars-are-one-block-evidence">
       <h2>Evidence</h2>
       <table>
         <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
@@ -132,7 +132,7 @@
       <p>Judged by delta against the base revision as the repository's test protocol requires: the head arm adds <strong>no failure identifier</strong> over base — every identifier it reports is also in the base arm, so none is a condition this change introduced; the base arm additionally carries 3 identifier(s) the head arm does not (<code>test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated</code>; <code>test_dispatch_returns_without_worker.py::test_dispatch_returns_once_its_supervisor_runs</code>; <code>test_dispatch_returns_without_worker.py::test_dispatch_returns_when_its_supervisor_finished_the_launch</code>), all in <code>test_dispatch_returns_without_worker.py</code>, which measures dispatch timing under load — recorded rather than attributed to this change, since the two arms ran concurrently on the same node. The corpus write test named above appears in neither arm's failure list: at the corrected head it passes unedited.</p>
     </section>
 
-    <section id="provenance">
+    <section id="plan-scalars-are-one-block-provenance">
       <h2>Reproduction</h2>
       <table>
         <thead><tr><th>Item</th><th>Value</th></tr></thead>

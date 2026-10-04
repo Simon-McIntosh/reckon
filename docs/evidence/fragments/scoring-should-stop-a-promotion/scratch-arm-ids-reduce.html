@@ -19,7 +19,7 @@
   <main class="plan-doc">
     <h1>An arm's ids reduce against the directory its own record names</h1>
 
-    <section id="defect">
+    <section id="scratch-arm-ids-reduce-defect">
       <h2>The defect</h2>
       <p>pytest prints a summary line's node id relative to the root directory it resolved, and that
         directory can sit above the arm's own working directory. A base arm run as
@@ -50,7 +50,7 @@
         gate command pins the arm to.</p>
     </section>
 
-    <section id="change">
+    <section id="scratch-arm-ids-reduce-change">
       <h2>The change</h2>
       <p><code>canonical_node_id</code> in <code>reckon/crew/review.py</code> takes the arm's
         recorded working directory and, before it splits the path, drops the longest leading run of
@@ -69,7 +69,7 @@
         it is not reduced and stays a different test from the repository's <code>tests/</code>.</p>
     </section>
 
-    <section id="gate">
+    <section id="scratch-arm-ids-reduce-gate">
       <h2>The gate</h2>
       <p>Every test file that imports <code>reckon.crew.review</code> (32 files at base, plus this
         change's own file at head), run in a scratch tree exported from the base revision and in
@@ -111,7 +111,7 @@
         failure.</p>
     </section>
 
-    <section id="negative-control">
+    <section id="scratch-arm-ids-reduce-negative-control">
       <h2>The negative control</h2>
       <p>The declared control reverts the reduction and requires the scratch-prefix case to go red.
         Its log's first line, verbatim:</p>
@@ -124,7 +124,7 @@
         exit 1. The tree was restored byte-identically (sha256 equal before and after).</p>
     </section>
 
-    <section id="limits">
+    <section id="scratch-arm-ids-reduce-limits">
       <h2>What the gate arms do not show</h2>
       <p>Both gate arms were run with their own tree as the working directory and with relative test
         paths, so neither log carried a scratch prefix and the reduction is the identity on both

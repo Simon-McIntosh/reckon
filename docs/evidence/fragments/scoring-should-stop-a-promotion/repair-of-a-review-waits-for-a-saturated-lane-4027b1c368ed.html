@@ -19,7 +19,7 @@
   <main class="plan-doc">
     <h1>A held review's printed action names the hold, not the withheld lane</h1>
 
-    <section id="defect">
+    <section id="repair-of-a-review-waits-for-a-saturated-lane-4027b1c368ed-defect">
       <h2>The defect</h2>
       <p><code>_composed_review_lane</code> returned <code>['--local']</code> whenever
         <code>_review_lane_candidates</code> yielded nothing. That empty ordering is exactly the
@@ -32,7 +32,7 @@
         ends in <code>--local</code>.</p>
     </section>
 
-    <section id="change">
+    <section id="repair-of-a-review-waits-for-a-saturated-lane-4027b1c368ed-change">
       <h2>The change</h2>
       <p>In <code>reckon/crew/recovery.py</code>, <code>_composed_review_lane</code> consults
         <code>_review_lane_plan</code> and returns <code>None</code> for a withheld selection rather
@@ -43,13 +43,13 @@
         become a silent refusal of every printed command.</p>
     </section>
 
-    <section id="gate">
+    <section id="repair-of-a-review-waits-for-a-saturated-lane-4027b1c368ed-gate">
       <h2>The gate</h2>
       <p><code>tests/test_a_review_waits_for_a_saturated_lane.py</code> and seven neighbouring
         suites that drive the same reflex: <strong>50 passed</strong>, exit 0.</p>
     </section>
 
-    <section id="negative-control">
+    <section id="repair-of-a-review-waits-for-a-saturated-lane-4027b1c368ed-negative-control">
       <h2>The negative control</h2>
       <p>Declared mutation, the log's first line verbatim: <em>revert each answering commit in turn
         and confirm the check the finding names fails without it.</em> Reverting
