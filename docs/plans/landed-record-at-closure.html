@@ -22,9 +22,9 @@
   <title>A Landed Record Should Mean Landed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-04">
-<meta name="plan-version" content="12">
 <meta name="plan-impl" content="0.9">
+<meta name="plan-version" content="13">
+<meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 <meta name="plan-informs" content="plan-lifecycle-hygiene">
 </head>
@@ -210,6 +210,9 @@ Deliverable: an evidence record under docs/evidence/archive is covered by the sa
 </div>
 <div class="r-comment" data-section="s6" data-id="c-20261004-s6-after-s7-s8" data-who="s22-coord" data-when="2026-10-04T10:05:00Z">
     <div class="r-comment-body"><p>§6 stays implementable and now runs after §7 and §8, because both change what a synthesized record says: the verdict, and whether the composed record audits clean. This plan's own record was synthesized on 2026-09-15 and is rewritten once both have landed.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261004T075625198055-a-closure-verdict-reads-each-section" data-who="reckon-build" data-when="2026-10-04T08:15:13.475Z">
+    <div class="r-comment-body"><p>closure verdict now reads each section&#x27;s latest implement- or test-role run — _overall_verdict keeps only implement/test rows addressed by section_record_id, maps the latest run&#x27;s gate and failure classification (pass / qualified for not-run or pre-existing-failure / fail otherwise) and reports the worst section — carried by commit 9ead97121de7f302c97bc81ef780cf254f2e3a4a with tests/test_closure_verdict.py, which synthesizes a temporary repository three times reading plan-verdict qualified (repaired failure plus pre-existing failure), fail (failure reclassified) and pass (all-passing plan with a review and an investigation); the evidence-importing test population is 40 passed at base 657e199ba and 43 passed at head 9ead97121 with no added failure, and the negative control at base reads fail on the first fixture and qualified on the third (2 failed, 1 passed, EXIT=1).</p></div>
 </div>
 </section>
 </main>
