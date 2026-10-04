@@ -734,14 +734,12 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
         roster_member = roster_by_project.get(name, {}).get(member_id, {})
         last_activity, age, lines = _log_activity(pointer)
         terminal = _stream_is_terminal(pointer, lines)
-        # The phase is the crew live view's own classification, read from the
-        # same judgement every other crew surface renders, so one run cannot
-        # read two ways. A dispatch writes its pre-spawn label at launch, so a
-        # run whose worker has not started yet reads as launching rather than
-        # waits for a stream that does not exist. The stream reading stands only
-        # where the classifier has no phase to give — a pointer recording no
-        # phase and carrying no evidence of a launch.
-        phase = str(crew.classify_pointer(pointer).get("phase") or "")
+        # A recorded phase past launch is already the classifier's observed
+        # phase. Only a pre-spawn label needs its evidence read again: the
+        # worker may have started while the launcher still says starting.
+        phase = str(pointer.get("phase") or "")
+        if phase in {"starting", "launching", "launcher", "dispatching"} or not phase:
+            phase = str(crew.classify_pointer(pointer).get("phase") or "")
         if not phase:
             phase = (
                 "done"
