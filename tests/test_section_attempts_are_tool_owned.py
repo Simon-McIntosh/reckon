@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _plan_html, _store, crew, mcp, mcp_views, roadmap, serve
+from reckon import _plan_html, _store, crew, ledger, mcp, mcp_views, roadmap, serve
 from reckon.crew.node import TaskNode
 
 
@@ -226,6 +226,19 @@ def test_attempts_derive_from_executable_runs_and_their_outcomes(
         "failure_classification": "negative-result",
     }
     assert review["run_id"] not in outcomes
+    with monkeypatch.context() as patched:
+        load = ledger.load
+
+        def headers_only(*args, **kwargs):
+            if kwargs.get("headers_only") is not True:
+                raise AssertionError("full ledger requested")
+            return load(*args, **kwargs)
+
+        patched.setattr(ledger, "load", headers_only)
+        with pytest.raises(AssertionError, match="full ledger requested"):
+            ledger.load("sample", root)
+        assert mcp_views.section_attempt_count("sample", "fixture", "work", root) == 2
+        assert mcp_views.section_attempt_count("sample", "fixture", "other", root) == 0
     assert _plan_html.read_state(plan.read_text())["sections"][0]["attempts"] == 0
 
     raw = mcp._read_plan(

@@ -128,7 +128,7 @@ def _node() -> TaskNode:
     return TaskNode(
         id="raise-check",
         goal="resolve at the raised class once the section has been tried",
-        plan="section-contract-and-computed-impl",
+        plan="section-attempts",
         section="§5",
     )
 

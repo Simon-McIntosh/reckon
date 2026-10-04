@@ -249,18 +249,21 @@ def section_id_candidates(section: Any) -> set[str]:
     return {candidate for candidate in candidates if candidate}
 
 
-def _section_record(plan_path: str | Path, section: str) -> Mapping[str, Any]:
-    """Return the typed record for one plan section, or an empty mapping."""
+def _section_record(
+    plan_path: str | Path, section: str
+) -> tuple[Mapping[str, Any], str]:
+    """Return one typed record and its owning project."""
     wanted = section_record_id(section)
     if not wanted:
-        return {}
+        return {}, ""
     state = _plan_html.read_state_file(Path(plan_path))
+    project = str(state.get("project") or "")
     for record in state.get("sections") or ():
         if not isinstance(record, Mapping):
             continue
         if section_record_id(str(record.get("id") or "")) == wanted:
-            return record
-    return {}
+            return record, project
+    return {}, project
 
 
 def capability_raise(
@@ -317,16 +320,20 @@ def resolve_section_routing(
 ) -> dict[str, Any]:
     """Resolve a node's routing at the capability its section's attempts earn.
 
-    The plan's typed section record is the authority for both the capability
-    the work declares and the attempts it has cost, so a section that keeps
-    costing attempts lands on a stronger class's lane through the same config
-    that routes every other node, and the returned summary says which count
-    caused it. Nothing moved records no raise.
+    The typed record declares capability. Distinct executable runs provide the
+    count that may raise it; an authored legacy count never steers the lane.
     """
-    record = _section_record(plan_path, node.section)
-    attempts = record.get("attempts")
-    if isinstance(attempts, bool) or not isinstance(attempts, int):
-        attempts = None
+    from reckon.mcp_views import section_attempt_count
+
+    record, project = _section_record(plan_path, node.section)
+    path = Path(plan_path).resolve()
+    docs = path.parent.parent if path.parent.name == "plans" else path.parent
+    root = docs.parent if docs.name == "docs" else None
+    attempts = (
+        section_attempt_count(project, node.plan, node.section, root)
+        if record
+        else None
+    )
     declared = record.get("capability")
     if not isinstance(declared, Mapping):
         declared = None
