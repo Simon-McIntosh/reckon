@@ -23,7 +23,7 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;}">
 </head>
@@ -263,6 +263,9 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
 </div>
 <div class="r-comment" data-section="s8" data-id="c-20261004-s8-landed" data-who="s22-coord" data-when="2026-10-04T21:31:00Z">
     <div class="r-comment-body"><p><strong>Landed at merge 97fe6421f.</strong> <code>plan_fingerprint</code> drops the comments whose id begins with <code>RUN_COMMENT_PREFIX</code> (<code>c-run-</code>) before digesting, and drops any section left with none. Recording a landing therefore leaves a reviewed plan's fingerprint equal and composes no review, while an authored comment still moves it and composes one. <code>tests/test_a_run_comment_earns_no_plan_review.py</code> asserts both and pins the prefix to the id promotion writes. Folding run comments back in reddens both assertions. The plan_review-importing population read 137 passed at base and 139 at head. Review scored 96 with no added failures. Its follow-on is that <code>promotion._LANDING_COMMENT_PREFIX</code> still spells the same prefix separately, so promotion should import this constant. Of the six plans holding a stored plan review, the new definition leaves exactly one, a-dispatch-returns-without-its-worker, to be reviewed again.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-20261004-s8-correction" data-who="s22-coord" data-when="2026-10-04T21:38:00Z">
+    <div class="r-comment-body"><p><strong>Correction to the landing comment above.</strong> It says the new fingerprint leaves one plan to be reviewed again. That census read the six <code>plan-*.vN.json</code> records in the review store, but the sweep compares the <code>plan-review.json</code> sidecars under <code>crew/reports/reckon/plan-review/</code>. Of the 51 plans with a sidecar, the redefinition flipped 37 whose content had not changed since their last review. Two minutes after the merge, the sweep began a one-time wave of about 44 plan reviews on the local lane, mostly repeating reviews from earlier the same day. A future change to the fingerprint's definition should run that census against the sidecars before it merges, and should keep a stored fingerprint that equals the legacy digest of the current plan counting as current.</p></div>
 </div>
 </section>
 </main>
