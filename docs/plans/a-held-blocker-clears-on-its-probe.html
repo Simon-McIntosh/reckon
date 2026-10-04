@@ -14,7 +14,7 @@
 <meta name="plan-status" content="active">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-informs" content="a-sprint-closes-on-completable-work">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
 </head>
@@ -72,6 +72,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20261004-s2-landed" data-who="s22-coord" data-when="2026-10-04T13:02:00Z">
     <div class="r-comment-body"><p><strong>Landed at merge 306903ad0.</strong> Composition drops a cleared blocker from the sprint item that named it, so a released plan read exactly like one that never carried a hold. The roadmap then synthesized an unrecorded blocker for the legacy <code>blocked</code> status. <code>_plans_released_by_cleared_blockers</code> in <code>reckon/roadmap.py</code> reads the raw sprint record. A plan whose every recorded blocker is a cleared resource with a reason reads ready; a blocked status with no blocker resource still reads blocked. Measured at a stacked merge of main 488bb4992 over 48 head-tree importer files: 538 passed at base and 540 at head. Review scored 97. Its follow-on that matters is §4.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261004T110102591352-a-graph-target-reads-one-readiness" data-who="reckon-build" data-when="2026-10-04T11:29:32.466Z">
+    <div class="r-comment-body"><p>resolve_graph_target now reads each member&#x27;s readiness from the roadmap row&#x27;s own verdict for that plan, built from the same project state, with the graph&#x27;s cross-project closure dependency check kept beside it, so a plan released by a cleared hold reads ready in both the roadmap and the graph target; the new test is red at base 0fdfb5570 (1 failed, 347 passed) and green at head 37cd98d5e (348 passed), and the 30 pre-existing importer test files pass 346 at both arms with zero added failures.</p></div>
 </div>
 </section>
 </main>
