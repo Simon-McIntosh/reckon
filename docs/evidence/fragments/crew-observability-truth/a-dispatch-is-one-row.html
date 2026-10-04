@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-is-one-row">
+  <meta name="plan-title" content="a dispatch prints one row: the arrival collapses into the run's first transition">
+  <meta name="plan-summary" content="RowPolicy now holds an arrival — a run's first sighting in dispatched — for the 90 s launch window and discharges it on the run's first transition out of dispatched, so a launch prints one row reading dispatched -> state where it printed two. An arrival that has not moved by the window's end prints late. When the first move out of dispatched is itself a held flicker, the hold passes to it and the resolution prints once wearing the arrival's left side; a repeated arrival from a re-arm keeps the hold rather than printing an extra row. Focused gate: head 36 passed (EXIT=0); base arm of the two pre-existing suites 30 passed 0 failed (EXIT=0); the declared mutation (arrival hold removed) fails 5 ids at EXIT=1. Rows-per-launch over the last 24 h of the live watch stream replayed through PaneRowPath for 299 launches that reached working inside 90 s: base 598 rows (2.000/launch), head 300 rows (1.003/launch); 298 launches collapse to exactly one row and the one exception is a run whose working transition landed exactly on the 90 s window boundary.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-tags" content="crew,ticker,row-policy,follower,arrival">
+  <title>a dispatch is one row | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-dispatch-is-one-row" data-reckon="landed" data-when="2026-10-04">
+  <h2>A dispatch prints one row: the arrival collapses into the run's first transition</h2>
+  <p><strong>Landed.</strong> <code>RowPolicy</code> in <code>reckon/crew/ticker.py</code> gains an arrival hold: the kind <code>(None, "dispatched")</code> is withheld for a 90 s window and discharged by any transition out of <code>dispatched</code>. Unlike a noise pair, the resolving row is kept — it already reads <code>dispatched → &lt;state&gt;</code> — so the launch collapses to one row. An arrival that has not moved by the window's end prints late, because a run still sitting in <code>dispatched</code> is a duty. When the first move out of <code>dispatched</code> is itself a held flicker (<code>dispatched → abandoned</code>), the hold passes to it, and on <code>abandoned → working</code> the single released row carries <code>from_state dispatched</code> rather than <code>abandoned</code>; a flicker that does not complete prints its opener late as before and the arrival is dropped. A second arrival from a re-arm keeps the standing hold rather than printing an extra row.</p>
+  <p><strong>Focused gate.</strong> <code>tests/test_a_dispatch_is_one_row.py</code> (six cases, the five named in the section plus the repeated-arrival case) together with <code>tests/test_follower_prints_only_policy_rows.py</code> and <code>tests/test_ticker_row_is_one_transition.py</code> reads 36 passed at <code>EXIT=0</code>. Neither pre-existing suite rewrote an expectation: the base arm of those two files reads 30 passed, 0 failed at <code>EXIT=0</code>, so the change adds zero failures against the base revision.</p>
+  <p><strong>Negative control.</strong> The declared mutation removes the <code>(None, "dispatched")</code> hold from the arrival table, so the arrival row prints at once; the arrival-then-working case then sees two rows. Applied to a scratch copy of the head, <code>tests/test_a_dispatch_is_one_row.py</code> runs <code>EXIT=1</code> with five failing ids including <code>test_arrival_then_working_prints_one_row</code>.</p>
+  <p><strong>Rows-per-launch.</strong> The last 24 h of every project's watch stream (343 runs with events) replayed through <code>PaneRowPath</code> for the 299 launches that reached <code>working</code> inside 90 s: base 598 rows (2.000/launch), head 300 rows (1.003/launch). 298 of 299 collapse to exactly one row; the single exception (<code>r-20261003T155148436042-review-of-picker-outcomes</code>) moved to <code>working</code> exactly 90.0 s after its arrival, where the hold releases at the window's own boundary. This fragment carries no element ids, so it adds none to the composition it is checked by.</p>
+</article>
+</body>
+</html>
