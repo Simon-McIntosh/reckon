@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-passing-run-clears-every-arm-it-cited">
+  <meta name="plan-title" content="A passing run clears every arm it cites">
+  <meta name="plan-summary" content="Promotion clears the arms a manifest declares — the log fields, the suite records' log and basetemp, and the artifact paths — under the node-local temp root, copies their logs into the run directory first, and does so only when the gate passed.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verifies" content="crew-runtime-positive-controls#s57">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-verdict" content="passed">
+  <title>Cited-arm release evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header>
+    <p class="eyebrow">Execution evidence</p>
+    <h1>A passing run clears every arm it cites</h1>
+    <p class="lead">A release reads the fields that declare an arm — the two log fields, the suite records' own log and basetemp, and an artifact path rather than the description beside it — removes every declared path under the node-local temp root after copying its logs into the run directory, and leaves a blocked or failed run's arms in place as the evidence a repair reads.</p>
+  </header>
+  <section id="release-mechanism">
+    <h2>What the release does</h2>
+    <p>The manifest is parsed with the shared manifest reader, and only the structured fields that carry a declared path are read: <code>test_logs</code>, <code>negative_control_log</code>, the <code>log_path</code> of <code>baseline_suite</code> and <code>after_suite</code>, the <code>--basetemp</code> inside those suites' own commands, and the artifact paths. An <code>artifacts</code> field is read differently by shape because its two shapes put the declaration in different places: given as a mapping, each key is the declared path and each value is a free-text description of what the run did with it, so only the keys are read; given as a list, each item is itself a path. That distinction is the same prose rule applied one level down — a description saying where a file came from, or naming the tree a peer session left behind, is not a declaration and never becomes a removal candidate. Prose fields are not read at all, so a landing line, a checkpoint or a follow-on naming another session's directory is never a candidate either, and a path merely mentioned on a shared node cannot cost a peer its tree.</p>
+    <p>A declared directory is removed when it resolves under the node-local temp root (the parent of the run's own scratch root), is not the run's own scratch subtree, does not contain or sit inside the repository, the worktree or the run directory, and is not declared by another run holding a live pointer — that other run's own record is read through the same field set. Only a run whose gate verdict passed is cleared: a blocked or failed run reports the withheld verdict on <code>arms_withheld</code> and keeps every arm. Declared logs inside a removal target are copied to <code>&lt;run&gt;/cleared-arms/&lt;arm-name&gt;/&lt;relative path&gt;</code> before the tree goes, so a gate log survives the arm it measured, and a log that cannot be copied holds its directory in place. The receipt carries <code>arms_removed_paths</code> (path and byte count per removal), <code>arms_kept</code> (path and reason) and <code>arms_logs_copied</code>, and all of it persists to the ledger through the existing release mapping.</p>
+  </section>
+  <section id="round-measure">
+    <h2>Measure and controls</h2>
+    <p>The focused file <code>tests/test_a_passing_run_clears_its_arms.py</code> synthesises a config home, a repository with a worktree, and a node-local temp root. <strong>Declared arms</strong>: a declared arm and a declared control tree are removed with their byte counts recorded (11 and 14), a basetemp declared by a second live run is kept naming that run, a declared tree outside the temp root is kept naming the temp-root bound, and both declared logs are readable under the run directory. <strong>Prose</strong>: a temp-root directory named only in <code>checkpoint</code> and <code>follow_ons</code> survives untouched and is not even listed as kept, while the run's declared arm is still removed. <strong>Artifact description</strong>: an <code>artifacts</code> mapping declares one arm in its key and describes it in its value, naming a different existing temp-root tree; the declared path in the key is removed and the described tree survives with its file intact. <strong>Failed gate</strong>: the same declaration promoted with <code>gate=failed</code> leaves both arms in place, records no removal and no copied log, and reports the withheld verdict.</p>
+    <p>Negative controls. At the reviewed head <code>675ef337f</code> — before the declared-field and passing-gate fixes — the file, then three tests, is <strong>3 failed, EXIT=1</strong>: the prose-named directory had been removed, and a failed gate had cleared both arms. At the plan base <code>6a04552fd</code>, where no arm release exists, it is <strong>3 failed, EXIT=1</strong>. At <code>128f6efe5</code> — after those two fixes and before the artifacts fix — the file's fourth test is <strong>1 failed, 3 passed, EXIT=1</strong>, and the one failure is <code>test_an_artifact_description_is_not_a_declaration</code>, whose described peer tree the value-reading code removed. At the fixed head <code>5f5c43d85</code> all four are <strong>4 passed in 25.47&nbsp;s, EXIT=0</strong>.</p>
+  </section>
+  <section id="population">
+    <h2>Population</h2>
+    <p>The arm population is the 58 test files that import <code>reckon.crew.promotion</code>, run once per arm with the same six-way parallelism. The base arm, whose tests and package resolve from a base-tree extraction, completed <strong>497 passed, EXIT=0</strong> in 535.90&nbsp;s. The reviewed head <code>675ef337f</code> completed <strong>1 failed, 496 passed</strong>; the failure was <code>tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated</code>, a file this node does not touch, which then passed alone at head and alone at base, so it is recorded as a flake of that supervisor test rather than as a delta from this work. The fixed head <code>6d8fb8c18</code> completed <strong>497 passed, EXIT=0</strong> in 528.93&nbsp;s — the base arm's result, with no flake. The artifact-path head <code>5f5c43d85</code> re-ran the same 58 files at the same six-way parallelism and completed <strong>497 passed, EXIT=0</strong> in 275.92&nbsp;s. The population is the files that import <code>reckon.crew.promotion</code>, so the focused file itself is not among them and its four tests move none of these counts; the three arms agree at 497.</p>
+  </section>
+  <section id="round-logs">
+    <h2>Logs</h2>
+    <p>In the delivering run directory: <code>logs/gate-arms-head.log</code> (the four focused tests at the artifact-path head, 4 passed in 25.47&nbsp;s, EXIT=0), <code>logs/negative-control-artifacts-at-current-head.log</code> (the fourth test red at <code>128f6efe5</code>, 1 failed/3 passed, EXIT=1), <code>logs/negative-control-new-tests-at-reviewed-head.log</code>, <code>logs/negative-control-new-tests-at-base.log</code>, <code>logs/focused-regression-fixed-head.log</code> (100 passed, EXIT=0, 262.21&nbsp;s), <code>logs/gate-base-promotion-import-population.log</code>, <code>logs/gate-head-promotion-import-population.log</code>, <code>logs/after-suite-promotion-import-population.log</code>, <code>logs/discriminator-base-alone.log</code>, <code>logs/discriminator-head-alone2.log</code>. The base arm log's <code># module</code> header was written by a separate <code>python -c</code> probe whose <code>sys.path[0]</code> is the working directory, so that line reads the worktree copy and does not describe the arm; the arm's tests and package resolved from the base-tree extraction through pytest's prepend import mode, as the log's <code># tree</code> line states.</p>
+  </section>
+</main>
+</body>
+</html>
