@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="check-manifest-reads-the-commitless-roles">
+  <meta name="plan-title" content="check-manifest reads its commitless roles from promotion's own set">
+  <meta name="plan-summary" content="crew check-manifest exempted only the review role from the commit finding, so a complete investigation whose changed paths all lie outside the repository was refused by the audit promotion accepts (reproduced at base 07ad28145: commits none on the investigate manifest reads ['status is complete but no commit is recorded'], exit 1). The audit now imports promotion's commitless-role set, so the two surfaces cannot disagree about which roles promote with no commit; the same field no longer answers the finding with a value of nothing but zeros, the null object id that resolves to no commit in any store. Focused gate at head 276997646: 5 passed (EXIT=0); declared mutation at base 07ad28145 with the new test copied in: 3 failed (EXIT=1), the investigate case and the zero-citation case among them. Population of the 22 test files importing reckon.crew.reports: base 518 passed 0 failed, head 518 passed 0 failed, zero added failures.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-tags" content="crew,check-manifest,commitless,roles">
+  <title>check-manifest reads its commitless roles from promotion's own set | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="check-manifest-reads-the-commitless-roles" data-reckon="landed" data-when="2026-10-04">
+  <h2>check-manifest reads its commitless roles from promotion's own set</h2>
+  <p><strong>Landed.</strong> <code>crew check-manifest</code> takes its commitless-role set from promotion's <code>_COMMITLESS_ROLES</code>, so a complete investigation with a clean worktree and only out-of-repository changes reads clean, where it was refused at base <code>07ad28145</code> with <code>['status is complete but no commit is recorded']</code>. A role that owes a commit is still asked for one, and a value of nothing but zeros no longer answers the finding: it names the null object id, which resolves to no commit in any store, while every other spelling stays with the citation resolver and the store that settles it. Focused gate at head <code>276997646</code>: 5 passed, <code>EXIT=0</code>; the declared mutation at base fails 3 ids at <code>EXIT=1</code>. Population of the 22 test files importing <code>reckon.crew.reports</code>: base 518 passed, head 518 passed, zero added failures.</p>
+</article>
+</body>
+</html>
