@@ -59,6 +59,7 @@ import time
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timezone
+from functools import partial
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -83,12 +84,14 @@ from reckon._store import (
     write_json_atomically,
 )
 from reckon._timestamps import parse_utc
+from reckon.crew.recovery import _PRE_SPAWN_PHASES
 from reckon.evidence import (
     EvidenceSynthesisError,
     compose_landed_record,
     evidence_record_plan,
 )
 from reckon.figures import figure_rows
+from reckon.file_memo import memoized
 from reckon.lifecycle import (
     effective_status,
     unpassed_gate_blockers,
@@ -645,7 +648,7 @@ def _stream_is_terminal(pointer: dict, lines: list[str]) -> bool:
 
 
 def _log_activity(pointer: dict) -> tuple[str | None, float | None, list[str]]:
-    """Return the log modification stamp, age in seconds and bounded tail."""
+    """Return the log stamp and age, with a tail only for unresolved phases."""
     raw_path = pointer.get("log_path")
     if not raw_path:
         return None, None, []
@@ -662,7 +665,12 @@ def _log_activity(pointer: dict) -> tuple[str | None, float | None, list[str]]:
         .replace("+00:00", "Z")
     )
     age = max(0.0, datetime.now(tz=timezone.utc).timestamp() - modified)
-    return stamp, age, _read_log_tail(path)
+    phase = str(pointer.get("phase") or "")
+    return (
+        stamp,
+        age,
+        _read_log_tail(path) if not phase or phase in _PRE_SPAWN_PHASES else [],
+    )
 
 
 def _elapsed_since(stamp: object) -> int | None:
@@ -677,6 +685,17 @@ def _elapsed_since(stamp: object) -> int | None:
     return max(0, int((datetime.now(tz=timezone.utc) - started).total_seconds()))
 
 
+def _read_crew_plan_details(plan_path: Path) -> tuple[str, float | None]:
+    with plan_path.open(encoding="utf-8") as source:
+        head = re.split(
+            r"</head\s*>", source.read(16384), maxsplit=1, flags=re.IGNORECASE
+        )[0]
+    metadata = _plan_html.read_state(head)
+    if metadata.get("effort_hours") is None or not metadata.get("sprint"):
+        metadata = _plan_html.parse_meta(plan_path)
+    return str(metadata.get("sprint") or ""), metadata.get("effort_hours")
+
+
 def _crew_plan_details(docs: Path, slug: str) -> tuple[str, float | None]:
     """Read navigation and effort from one referenced plan without discovery."""
     if not slug or not SAFE_NAME.fullmatch(slug):
@@ -687,15 +706,15 @@ def _crew_plan_details(docs: Path, slug: str) -> tuple[str, float | None]:
         docs / "plans" / "archive" / f"{slug}.html",
     )
     for plan_path in candidates:
-        if not plan_path.is_file():
-            continue
         try:
-            metadata = _plan_html.parse_meta(plan_path)
-            return (
-                str(metadata.get("sprint") or ""),
-                metadata.get("effort_hours"),
+            return memoized(
+                "crew-plan-details",
+                plan_path,
+                partial(_read_crew_plan_details, plan_path),
             )
-        except (OSError, ValueError):
+        except FileNotFoundError:
+            continue
+        except (OSError, ValueError, UnicodeError):
             return "", None
     return "", None
 
@@ -714,7 +733,7 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
     for name in referenced_projects:
         docs = mounts[name]
         try:
-            roster, _version = ledger.load(name, docs.parent)
+            roster, _version = ledger.load(name, docs.parent, headers_only=True)
         except (OSError, ledger.LedgerError):
             roster = {"members": []}
         roster_by_project[name] = {
@@ -733,16 +752,14 @@ def _crew_rows(mounts: dict[str, Path], project: str | None = None) -> list[dict
         member_id = str(pointer.get("member") or "")
         roster_member = roster_by_project.get(name, {}).get(member_id, {})
         last_activity, age, lines = _log_activity(pointer)
-        terminal = _stream_is_terminal(pointer, lines)
-        # The phase is the crew live view's own classification, read from the
-        # same judgement every other crew surface renders, so one run cannot
-        # read two ways. A dispatch writes its pre-spawn label at launch, so a
-        # run whose worker has not started yet reads as launching rather than
-        # waits for a stream that does not exist. The stream reading stands only
-        # where the classifier has no phase to give — a pointer recording no
-        # phase and carrying no evidence of a launch.
-        phase = str(crew.classify_pointer(pointer).get("phase") or "")
+        # A recorded phase past launch is already the classifier's observed
+        # phase. Only a pre-spawn label needs its evidence read again: the
+        # worker may have started while the launcher still says starting.
+        phase = str(pointer.get("phase") or "")
+        if phase in _PRE_SPAWN_PHASES or not phase:
+            phase = str(crew.classify_pointer(pointer).get("phase") or "")
         if not phase:
+            terminal = _stream_is_terminal(pointer, lines)
             phase = (
                 "done"
                 if terminal

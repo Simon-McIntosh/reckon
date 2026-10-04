@@ -65,14 +65,12 @@ def test_crew_rows_preserve_fields_without_discovery(
 ) -> None:
     repo = _project(tmp_path)
     _isolate_pointer_work(monkeypatch, [_pointer()])
-    monkeypatch.setattr(
-        ledger,
-        "load",
-        lambda _project, _root: (
-            {"members": [{"id": "observer", "role": "review"}]},
-            1,
-        ),
-    )
+
+    def load_roster(_project: str, _root: Path, *, headers_only: bool):
+        assert headers_only
+        return {"members": [{"id": "observer", "role": "review"}]}, 1
+
+    monkeypatch.setattr(ledger, "load", load_roster)
 
     rows = serve._crew_rows({"active": repo / "docs"})
 
@@ -106,7 +104,8 @@ def test_crew_rows_cost_ignores_unreferenced_mounts(
     _isolate_pointer_work(monkeypatch, [_pointer()])
     loaded_projects: list[str] = []
 
-    def load_roster(project: str, _root: Path):
+    def load_roster(project: str, _root: Path, *, headers_only: bool):
+        assert headers_only
         loaded_projects.append(project)
         return {"members": []}, 1
 
