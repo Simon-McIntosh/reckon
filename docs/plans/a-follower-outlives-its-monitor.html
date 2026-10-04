@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-impl" content="0.86">
-<meta name="plan-version" content="69">
+<meta name="plan-version" content="70">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s12&quot;:&quot;implementable&quot;}">
 </head>
@@ -719,6 +719,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261003T223948632015-a-watcher-parses-a-stream-once" data-who="reckon-build" data-when="2026-10-04T00:02:11Z">
     <div class="r-comment-body"><p>Synchronized the shared parsed-stream cache without holding its lock during file reads or JSON parsing, and audited its read-only event consumers; unsafe source 977aaf754 raised RuntimeError and KeyError after 1,581 iterations/1,509 evictions, while repair a0c434743 completed 2,347 iterations/3,974 evictions over 52 streams with full-reparse parity; focused suite moved from 3 failed/21 passed to 24 passed; evidence fragment docs/evidence/fragments/a-follower-outlives-its-monitor/a-watcher-parses-a-stream-once.html.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261004T062409552509-review-of-a-rearm-test-never-ends-its-worker" data-who="reckon-build" data-when="2026-10-04T06:26:37.430Z">
+    <div class="r-comment-body"><p>review of r-20261004T054811534741-a-rearm-test-never-ends-its-worker (base 0f5941a18..head 1b0fa5af3): the fix confines each re-arm case&#x27;s follower invocation to a child process the test owns and freezes the code stamp per case; scored durability 19, evidence 20, fit 19, goal_fidelity 19, scope_discipline 20 (total 97), added_failure_count 0</p></div>
 </div>
 </section>
 </main>
