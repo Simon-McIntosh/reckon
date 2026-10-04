@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-held-blocker-clears-on-its-probe">
+  <meta name="plan-title" content="A graph target reads readiness from the one computation">
+  <meta name="plan-summary" content="A graph target's ready set now reads each member's readiness from the roadmap's own verdict for that plan, so a plan released by a cleared hold appears in both the roadmap's ready set and the graph target's, while a plan with one blocker cleared and one still holding stays blocked in both.">
+  <meta name="plan-evidence-for" content="a-held-blocker-clears-on-its-probe">
+  <meta name="plan-verifies" content="a-held-blocker-clears-on-its-probe#s4">
+  <meta name="plan-verdict" content="pass">
+  <title>A graph target reads readiness from the one computation &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <h1 id="a-graph-target-reads-one-readiness-title">A graph target reads readiness from the one computation</h1>
+  <p id="a-graph-target-reads-one-readiness-defect">At base <code>0fdfb5570</code> the defect reproduces: <code>resolve_graph_target</code> built its own ready list, whose membership still required <code>_status(plan)</code> in <code>_AUTHORISED_STATUSES</code>, so a plan persisted <code>blocked</code> whose only blocker was a probe-cleared held blocker read <code>ready</code> in the roadmap's <code>ready_now</code> and was absent from a graph target's <code>ready</code>. Each member's readiness is now the roadmap row's own verdict for that plan, built from the same project state, with the graph's cross-project closure dependency check kept beside it, so one computation answers both views.</p>
+
+  <section id="a-graph-target-reads-one-readiness-cases">
+    <h2>Both cases in both views</h2>
+    <ul>
+      <li id="a-graph-target-reads-one-readiness-case-released">Plan <code>probed</code>, persisted <code>blocked</code> and carrying graph handle <code>release</code>, held by probe <code>path-exists</code> on <code>research/outcome.html</code>: blocked in both views before arrival, with an empty graph ready set; after the probe clears the hold, it reads <code>ready_now</code> on the roadmap and <code>sample:probed</code> in the graph's ready set, while its member row still reports <code>status: blocked</code> &mdash; the release is read from the readiness computation, not written into the status.</li>
+      <li id="a-graph-target-reads-one-readiness-case-partial">Plan held by two blockers, <code>waiting</code> (whose probe arrives) and <code>later</code> (whose probe never does): after <code>waiting</code> clears, the plan stays <code>blocked</code> on the roadmap with <code>later</code> named as its held blocker, and the graph's ready set stays empty.</li>
+    </ul>
+  </section>
+
+  <section id="a-graph-target-reads-one-readiness-measure">
+    <h2>Measure</h2>
+    <p id="a-graph-target-reads-one-readiness-measure-arms">Both arms ran in scratch trees with the same command, the module under test resolving from each tree. New test file: at base <code>0fdfb5570</code> 1 failed and 347 passed, exit 1, the failure being <code>test_graph_member_released_by_a_cleared_hold_is_ready_in_both_views</code> with <code>assert [] == ['sample:probed']</code>; at head <code>37cd98d5e</code> 348 passed, exit 0. Importer population (30 pre-existing test files importing <code>reckon.roadmap</code>): 346 passed at base and 346 passed at head, exit 0 both sides, zero added failures. Logs and module paths are in the run manifest.</p>
+  </section>
+</main>
+</body>
+</html>
