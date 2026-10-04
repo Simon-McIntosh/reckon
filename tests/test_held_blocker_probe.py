@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from reckon import _plan_html, project_state
+from reckon import _plan_html, held_probes, project_state
 from reckon.cli import main
 from reckon.roadmap import build_roadmap
 from reckon.serve import _derive_lifecycle, discover_plans
@@ -120,6 +120,70 @@ def test_named_probe_clears_only_when_its_subject_arrives(tmp_path: Path) -> Non
     )
     blocked = _roadmap_for(docs)["blocked"]
     assert all(row["slug"] != "work" for row in blocked), blocked
+
+    project_state.write_resource(
+        docs,
+        "sample",
+        "blocker",
+        "unknown",
+        {
+            "kind": "held",
+            "summary": "Unknown probe",
+            "probe": "missing-probe",
+            "subject": "research/outcome.html",
+        },
+        0,
+        create=True,
+    )
+    with pytest.raises(
+        project_state.ProjectStateError,
+        match="unknown held blocker probe id: 'missing-probe'",
+    ):
+        project_state.evaluate_held_blocker(docs, "sample", "unknown")
+    unknown, version = project_state.read_resource(docs, "sample", "blocker", "unknown")
+    assert unknown.get("status") != "cleared"
+    assert version == 1
+
+
+def test_cleared_blocker_reports_its_clear_after_its_probe_leaves_the_registry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    project_state.create_project_state(docs, "sample")
+    project_state.write_resource(
+        docs,
+        "sample",
+        "blocker",
+        "waiting",
+        {
+            "kind": "held",
+            "summary": "Waiting for an outcome",
+            "probe": "path-exists",
+            "subject": "research/outcome.html",
+        },
+        0,
+        create=True,
+    )
+    subject = docs / "research" / "outcome.html"
+    subject.parent.mkdir()
+    subject.write_text("arrived")
+    cleared = project_state.evaluate_held_blocker(docs, "sample", "waiting")
+    assert cleared == {
+        "id": "waiting",
+        "probe": "path-exists",
+        "subject": "research/outcome.html",
+        "finding": "research/outcome.html exists",
+        "status": "cleared",
+        "reason": "probe path-exists: research/outcome.html exists",
+    }
+
+    monkeypatch.delitem(held_probes.PROBES, "path-exists")
+    assert project_state.evaluate_held_blocker(docs, "sample", "waiting") == {
+        "id": "waiting",
+        "status": "cleared",
+        "reason": "probe path-exists: research/outcome.html exists",
+    }
 
     project_state.write_resource(
         docs,
