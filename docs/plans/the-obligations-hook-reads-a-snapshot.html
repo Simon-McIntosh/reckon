@@ -23,7 +23,7 @@
   <title>The Obligations Hook Reads A Snapshot | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="98">
+<meta name="plan-version" content="99">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;}">
 </head>
@@ -460,6 +460,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-20261004T025959910595" data-who="" data-when="">
     <div class="r-comment-body"><p>A further reproduction, 2026-10-04: both snapshot ids failed together again in a coordinator base arm. That arm was the 130 follower files at <code>-n 8</code> on main e41b7eecc, with no follower change applied. So the pair is a property of main under that worker mix, not of any change being measured.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-20261004T035412693062" data-who="" data-when="">
+    <div class="r-comment-body"><p>Cause found, 2026-10-04. The self-diagnosing asserts fired in a coordinator whole-suite head arm (stacked at main 61abcb5df, <code>-n 10</code>, worker gw2). Both failures reported the same three things:</p><ul><li><code>sys.modules holds a different instance</code> of <code>reckon.crew.obligation_snapshot</code> from the one the test imported;</li><li>that other instance's <code>_SWEEPS</code> held the producer's entry;</li><li>the test's own instance had none ("absent").</li></ul><p>Both by-path loaders assign <code>sys.modules["reckon.crew.obligation_snapshot"]</code> unconditionally: <code>snapshot_module()</code> in <code>reckon/hooks/coordinator_obligations.py</code>, and the loader near <code>reckon/cli.py:3012</code>. So a test that runs either one after the module is already imported splits the process. Producer code reaches the by-path copy through <code>sys.modules</code>, while the test holds the package attribute. The investigation's isolated probes could not reproduce this, because the split needs an earlier test in the same worker to run a loader. The fix node, the-snapshot-loader-keeps-one-instance, makes both loaders reuse an instance already loaded.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261002T125957426768-hook-reads-the-snapshot" data-who="reckon-build" data-when="2026-10-02T14:46:08.574Z">
     <div class="r-comment-body"><p>the prompt path reads the session's published snapshot (reader loaded by file path, no crew facade, none of the three derivation modules in a fresh process; session resolved from the follower registrations; freshness() and live_payload() consumed; local-lane rewrite, formatting and digest unchanged; a not-fresh snapshot answered by one line naming the reason and the remedy; snapshot never written; exit 0 in every case) and the gate's two arms add no failure id — head 97 passed against base 92 passed, the same two pre-existing skill-contract ids — with the second-slowest of 20 fresh-process prompt-hook invocations at 112.7 ms against the 250 ms target</p></div>
