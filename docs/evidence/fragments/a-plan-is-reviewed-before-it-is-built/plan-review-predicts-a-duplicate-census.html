@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-title" content="The design review predicts a duplicate before it is built">
+  <meta name="plan-summary" content="A read-only census of every stored plan review: one row per review with its finding types, whether each finding's anchor resolves, and whether a later repair confirmed it. Every stored review carries a reuse_search, duplicate_owner or thin_wrapper finding (9 of 9), and every such finding's anchor resolves (23 of 23).">
+  <meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+  <meta name="plan-recorded-at" content="2026-10-05">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>The design review predicts a duplicate before it is built | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The design review predicts a duplicate before it is built</h1>
+
+    <section id="plan-review-predicts-a-duplicate-census-anchor">
+      <h2>What was measured</h2>
+      <p>Every stored plan review, enumerated only through
+        <code>reckon.crew.plan_review.list_plan_reviews()</code> so the population,
+        each record's <code>project</code> and its <code>review_path</code> come from
+        the one reader that walks every project and excludes code reviews. The
+        census sits in the plan's cumulative record at
+        <code>docs/evidence/archive/a-plan-is-reviewed-before-it-is-built-landed.html#s11</code>,
+        and the script that reproduces its table byte for byte is
+        <code>docs/figures/a-plan-is-reviewed-before-it-is-built/plan-review-census/census.py</code>.</p>
+      <p><strong>Share of reviews carrying a reuse_search, duplicate_owner or
+        thin_wrapper finding:</strong> 9 of 9. <strong>Share of those findings
+        whose anchor resolves:</strong> 23 of 23. Unresolved anchors: none. The
+        reading's <code>--as-of</code> is the newest stored review timestamp
+        (2026-10-04T23:14:03Z), so two runs diff empty.</p>
+      <p>Gate: <code>census.py</code> run twice, <code>diff</code> empty, EXIT=0;
+        9 rows equal the 9 <code>plan-*.json</code> files under the crew review
+        store. The script asserts its own negative control on every run — three
+        anchors known not to resolve must be reported unresolved — so the
+        all-resolved column is shown to be a measurement rather than a blind spot.</p>
+    </section>
+  </main>
+</body>
+</html>
