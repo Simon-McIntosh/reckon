@@ -27,6 +27,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -1501,3 +1502,234 @@ def test_the_checkpoint_carries_the_identity_of_the_file_it_read(home) -> None:
     assert follow_checkpoint.continues(record, stream_path) is False, (
         "a replaced stream cannot be continued, so the next arming restarts"
     )
+
+
+# ── A reload marks the format switch only when the grid moved ───────────────
+
+_STALE_STAMP = "0" * 64
+
+
+def _plant_seat(*, code_stamp: str) -> None:
+    """Leave a seat record on disk, as an external arming would."""
+    path = runs.watch_lock_path(PROJECT)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "project": PROJECT,
+                "started_at": runs._utc_now(),
+                "stream_path": str(runs.watch_stream_path(PROJECT)),
+                "log_path": str(runs.watch_log_path(PROJECT)),
+                "reckon_version": runs.__version__,
+                "code_stamp": code_stamp,
+            }
+        )
+    )
+
+
+class _Clock:
+    """A monotonic stand-in whose value only the wait passes advance."""
+
+    def __init__(self, start: float = 1000.0) -> None:
+        self.value = start
+
+    def __call__(self) -> float:
+        return self.value
+
+
+def _pin_follower_to_this_process(monkeypatch) -> None:
+    """Judge the seat by its stamp and keep the arming alive for a live owner."""
+    monkeypatch.setattr(runs, "producer_live", lambda project: True)
+    monkeypatch.setattr(
+        runs,
+        "follower_owner",
+        lambda: (os.getpid(), runs._process_start_time(os.getpid())),
+    )
+
+
+def _reload_events(monkeypatch, *, layout, stop_after: int = 2) -> list[dict]:
+    """Drive one in-place reload and return every event it yields.
+
+    The resume payload carries an offset that still names the stream, so the
+    reload continues from its recorded place rather than restarting -- the mode
+    whose first pass emits the format marker. ``layout`` is the grid signature
+    the departed image handed to this one.
+    """
+    _pin_follower_to_this_process(monkeypatch)
+    stream_path = runs.watch_stream_path(PROJECT)
+    stream_path.parent.mkdir(parents=True, exist_ok=True)
+    stream_path.write_text("", encoding="utf-8")
+    stop = threading.Event()
+    sleeps = {"count": 0}
+
+    def sleeper(_seconds: float) -> None:
+        sleeps["count"] += 1
+        if sleeps["count"] >= stop_after:
+            stop.set()
+
+    return list(
+        cli._follow_watch_lines(
+            PROJECT,
+            session=SESSION,
+            resume={
+                "offset": 0,
+                "stream_path": str(stream_path),
+                "reported": {},
+                "layout": layout,
+            },
+            reloaded_in_place=True,
+            poll_interval=0.001,
+            sleeper=sleeper,
+            stop=stop,
+            on_poll=None,
+            sweep=None,
+        )
+    )
+
+
+def _format_events(events: list[dict]) -> list[dict]:
+    return [
+        event for event in events if event.get("event") == cli.FOLLOWER_FORMAT_EVENT
+    ]
+
+
+def test_a_reload_whose_grid_did_not_move_keeps_the_pane_quiet(
+    home, monkeypatch
+) -> None:
+    """A reload that left every column where it was is not news on the pane.
+
+    The follower reloads onto new code many times an hour; the marker exists to
+    tell a reader that the rows below it were drawn differently from the rows
+    above. Two images that lay a row out in the same columns drew it
+    identically, so the event still reaches the JSON consumer, but the pane is
+    handed no marker.
+    """
+    _plant_seat(code_stamp=runs.follower_code_stamp())
+    events = _reload_events(monkeypatch, layout=cli._ticker_layout_signature())
+
+    marks = _format_events(events)
+    assert marks, "the JSON stream still receives the format event"
+    assert marks[0]["layout_changed"] is False
+    assert marks[0]["pane_line"] is False, (
+        "a reload whose grid did not move printed the format marker"
+    )
+
+
+def test_a_reload_whose_grid_moved_marks_the_switch_once(home, monkeypatch) -> None:
+    """A reload onto a different grid marks the switch, exactly once.
+
+    The replacement's grid differs from the one the rows on screen were drawn
+    with, so the reader is owed the one marker standing between old and new
+    rows -- the case the marker exists for.
+    """
+    _plant_seat(code_stamp=runs.follower_code_stamp())
+    events = _reload_events(monkeypatch, layout="a-grid-this-image-does-not-draw")
+
+    marks = _format_events(events)
+    assert len(marks) == 1, marks
+    assert marks[0]["layout_changed"] is True
+    assert marks[0]["pane_line"] is True
+
+
+def _producer_reload_events(
+    monkeypatch, *, window: float, catch_up_on=None, stop_after: int = 3
+) -> list[dict]:
+    """Drive a reload against a stale seat and return its events.
+
+    ``catch_up_on`` names the wait pass at which the seat is rewritten to the
+    follower's own stamp, standing in for a producer that reloaded itself
+    inside its window. The clock advances one step per pass, so the window's
+    edge is decided by the wait passes rather than by how fast the test runs.
+    """
+    _plant_seat(code_stamp=_STALE_STAMP)
+    _pin_follower_to_this_process(monkeypatch)
+    stream_path = runs.watch_stream_path(PROJECT)
+    stream_path.parent.mkdir(parents=True, exist_ok=True)
+    stream_path.write_text("", encoding="utf-8")
+    clock = _Clock()
+    stop = threading.Event()
+    sleeps = {"count": 0}
+
+    def sleeper(_seconds: float) -> None:
+        sleeps["count"] += 1
+        if catch_up_on is not None and sleeps["count"] == catch_up_on:
+            _plant_seat(code_stamp=runs.follower_code_stamp())
+        clock.value += 1.0
+        if sleeps["count"] >= stop_after:
+            stop.set()
+
+    return list(
+        cli._follow_watch_lines(
+            PROJECT,
+            session=SESSION,
+            reloaded_in_place=True,
+            producer_reload_window=window,
+            poll_interval=0.001,
+            sleeper=sleeper,
+            clock=clock,
+            stop=stop,
+            on_poll=None,
+            sweep=None,
+        )
+    )
+
+
+def _kinds(events: list[dict]) -> list[str]:
+    return [str(event.get("event")) for event in events]
+
+
+def test_a_producer_reload_inside_its_window_keeps_the_pane_quiet(
+    home, monkeypatch
+) -> None:
+    """A producer that catches up inside its window keeps the pane silent.
+
+    A follower that reloads onto new code often reads the seat before the
+    producer has reloaded itself; warning then sends an operator to cycle a
+    seat that would catch up on its own. The mismatch is deferred for the
+    reload window, so the reloading note reaches the JSON stream but is not
+    echoed, and a producer that catches up inside that window never earns the
+    cycle advice at all.
+    """
+    events = _producer_reload_events(monkeypatch, window=1000.0, catch_up_on=1)
+
+    kinds = _kinds(events)
+    assert cli.FOLLOWER_PRODUCER_RELOADING_EVENT in kinds, kinds
+    assert cli.FOLLOWER_STALE_PRODUCER_EVENT not in kinds, (
+        "a producer that reloaded inside its window was reported as stale"
+    )
+    reloading = [
+        event
+        for event in events
+        if event.get("event") == cli.FOLLOWER_PRODUCER_RELOADING_EVENT
+    ]
+    assert all(event["pane_line"] is False for event in reloading), (
+        "a producer still catching up inside its window printed to the pane"
+    )
+
+
+def test_a_producer_reload_past_its_window_names_the_reload_then_the_remedy(
+    home, monkeypatch
+) -> None:
+    """A producer still behind past the window is named once, then cycled.
+
+    Once the window has passed with the mismatch still standing, the producer
+    is not going to catch up on its own: the reloading note reaches the pane
+    exactly once -- the earlier in-window note was JSON-only -- and the cycle
+    advice follows it.
+    """
+    events = _producer_reload_events(monkeypatch, window=0.0, catch_up_on=None)
+
+    kinds = _kinds(events)
+    assert kinds.count(cli.FOLLOWER_STALE_PRODUCER_EVENT) == 1, kinds
+    reloading = [
+        event
+        for event in events
+        if event.get("event") == cli.FOLLOWER_PRODUCER_RELOADING_EVENT
+    ]
+    echoed = [event for event in reloading if event["pane_line"]]
+    assert len(echoed) == 1, (
+        f"an overrun prints the reloading line exactly once; got {reloading!r}"
+    )
+    note_index = events.index(echoed[0])
+    advance_index = kinds.index(cli.FOLLOWER_STALE_PRODUCER_EVENT)
+    assert note_index < advance_index, "the reloading note precedes the remedy"

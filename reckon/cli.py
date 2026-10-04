@@ -1,5 +1,6 @@
 import contextlib
 import functools
+import hashlib
 import json
 import os
 import shlex
@@ -3072,6 +3073,37 @@ def _logged_producer_stop(project: str) -> str | None:
 # once, the same event a reload emits once the window has passed.
 
 
+def _ticker_layout_signature() -> str:
+    """Fingerprint the ticker's fixed grid geometry, not the code that emits rows.
+
+    A follower reloads onto new code many times an hour on a busy branch, and
+    the format marker exists to tell a reader that the rows below it were drawn
+    differently from the rows above. Two images that lay a row out in the same
+    columns drew it identically, so there is nothing to mark: the marker is
+    owed only when the replacement image's grid differs from the one on screen.
+    The comparison keys on what the grid fixes -- the ordered widths of the
+    fixed cells, the gutters between them, and the minimum width they compose --
+    which is what moves when a column is added, resized or reordered, and is
+    unchanged when only the rendering of a cell's contents changes.
+    """
+    from reckon.crew import ticker as ticker_module
+
+    layout = (
+        ticker_module.CLOCK,
+        ticker_module.MODEL,
+        ticker_module.EFFORT,
+        ticker_module.ROLE,
+        ticker_module.NODE,
+        ticker_module.STATE,
+        ticker_module.SPEND,
+        ticker_module.STATS,
+        ticker_module.GAP,
+        ticker_module.SPEND_GAP,
+        ticker_module.MIN_WIDTH,
+    )
+    return hashlib.sha256(repr(layout).encode()).hexdigest()[:16]
+
+
 def _needs_you_runs(project: str, *, session: str | None) -> list[dict[str, str]]:
     """List the owning session's runs whose state needs the coordinator now.
 
@@ -3729,6 +3761,10 @@ def _follow_watch_lines(
                     "reported": dict(path.reported),
                     "stream_path": str(stream_path) if stream_path else "",
                     "offset": offset,
+                    # The grid this image draws with, carried to the replacement
+                    # so a reload that leaves every column where it was does not
+                    # claim the drawing style changed.
+                    "layout": _ticker_layout_signature(),
                 }
             )
         if stream_path is not None:
@@ -3834,13 +3870,24 @@ def _follow_watch_lines(
             ),
         }
 
-    def _producer_reloading_event(identity: Mapping[str, Any]) -> dict[str, Any]:
-        """Name a producer still catching up, before the window has passed."""
+    def _producer_reloading_event(
+        identity: Mapping[str, Any], *, pane_line: bool
+    ) -> dict[str, Any]:
+        """Name a producer still catching up.
+
+        ``pane_line`` is the reload having overrun its window: while the window
+        is still open the producer may catch up on its own at any poll, and a
+        follower reloading onto the same new code many times an hour must not
+        put a line on the pane for each -- the event still reaches the JSON
+        stream, but only an overrun, which is the case that needs a reader, is
+        echoed to the pane.
+        """
         return {
             "event": FOLLOWER_PRODUCER_RELOADING_EVENT,
             "project": project,
             "session": session or "",
             "run_id": None,
+            "pane_line": pane_line,
             "code_stamp": identity.get("code_stamp"),
             "current_stamp": identity.get("current_stamp"),
             "line": (
@@ -3855,13 +3902,17 @@ def _follow_watch_lines(
         """Lines about a producer whose code the follower has outrun.
 
         A mismatch first seen after this image reloaded is deferred for the
-        reload window, one line saying the producer is reloading; the cycle
-        advice follows only once the window has passed with the mismatch
-        still standing. A fresh arming reports the advice at once, because it
-        never saw the code move and cannot vouch that the mismatch is fresh.
-        The deferral keys on ``reloaded_in_place`` rather than on a non-empty
-        checkpoint: the fact that matters is that this image replaced another,
-        and a reload whose checkpoint was empty is still a reload.
+        reload window: while the window is open the producer may catch up on
+        its own, so the note that it is reloading reaches the JSON stream but
+        stays off the pane, which otherwise carries a line for every reload on
+        a branch that moves many times an hour. Only a mismatch that outlasts
+        the window earns a pane line -- the reloading note once, then the cycle
+        advice that says the seat needs cycling by hand. A fresh arming has no
+        such window to grant: it never saw the code move and cannot vouch that
+        the mismatch is fresh, so the advice is owed at once. The deferral keys
+        on ``reloaded_in_place`` rather than on a non-empty checkpoint: the
+        fact that matters is that this image replaced another, and a reload
+        whose checkpoint was empty is still a reload.
         """
         nonlocal producer_stale_since, producer_reload_deferred, producer_stale_advised
         if not identity.get("stale"):
@@ -3876,14 +3927,22 @@ def _follow_watch_lines(
             producer_stale_since = moment
             if reloaded_in_place:
                 producer_reload_deferred = True
-                return [_producer_reloading_event(identity)]
+                # Inside the window: the event is kept for the JSON stream but
+                # not echoed to the pane.
+                return [_producer_reloading_event(identity, pane_line=False)]
         if not producer_reload_deferred:
             producer_stale_advised = True
             return [_producer_stale_event(identity)]
         if moment - producer_stale_since < reload_window:
             return []
+        # The reload overran its window: the note reaches the pane once, then
+        # the remedy, because a producer still behind after the window is one a
+        # reader has to cycle rather than wait out.
         producer_stale_advised = True
-        return [_producer_stale_event(identity)]
+        return [
+            _producer_reloading_event(identity, pane_line=True),
+            _producer_stale_event(identity),
+        ]
 
     def _producer_reload_pending() -> bool:
         return producer_stale_since is not None and not producer_stale_advised
@@ -4028,13 +4087,21 @@ def _follow_watch_lines(
             # The pane's own line, before the rows': the format switch, never a
             # run's row. It carries the remembered states so the renderer can
             # seed its grid from the same map, which is what keeps a row's left
-            # side on the state the pane last showed.
+            # side on the state the pane last showed. The line is owed only when
+            # the replacement image's grid differs from the one the rows already
+            # on screen were drawn with; a reload that left every column where
+            # it was is not news, so the event still reaches the JSON stream but
+            # the pane stays quiet. ``pane_line`` carries that decision to the
+            # consumer, the way the producer's stop and reload-failed lines do.
             if first_attach:
+                layout_changed = resume_state.get("layout") != _ticker_layout_signature()
                 yield {
                     "event": FOLLOWER_FORMAT_EVENT,
                     "project": project,
                     "session": session or "",
                     "reported": dict(path.reported),
+                    "layout_changed": layout_changed,
+                    "pane_line": layout_changed,
                 }
         else:
             # Every arming of a fresh image — a first attach and a re-arm alike
@@ -4749,10 +4816,14 @@ def crew_follow(
                 # drew before the reload were drawn by the old format and are
                 # replayed verbatim from the log, so the marker stands between
                 # them and the new ones; the DIM row is the reader's signal that
-                # the drawing style changed here.
+                # the drawing style changed here. A reload whose grid did not
+                # move is not news: its event still reaches the JSON stream, but
+                # the pane is handed no marker and the log records none, so a
+                # later re-arm does not replay a switch that never happened.
+                pane_line = bool(event.pop("pane_line", True))
                 if json_output:
                     _emit_crew_result(event, pretty, observation=True)
-                elif session is not None:
+                elif pane_line and session is not None:
                     _echo_follow_line(replay_dim(history_module.FORMAT_CHANGED_TEXT))
                     history_module.append_history(
                         project,
@@ -4825,10 +4896,13 @@ def crew_follow(
                 # format marker it is about the pane rather than the fleet, so
                 # it is never rendered as a run's row: JSON mode emits the
                 # object with the stamps (and the remedy when there is one), and
-                # text mode prints the one dim line.
+                # text mode prints the one dim line. A reloading note marks its
+                # own pane reach on ``pane_line``: while the window is still
+                # open it is kept off the pane, and only an overrun is echoed.
+                pane_line = bool(event.pop("pane_line", True))
                 if json_output:
                     _emit_crew_result(event, pretty, observation=True)
-                else:
+                elif pane_line:
                     _echo_follow_line(replay_dim(str(event.get("line") or "")))
                 continue
             if json_output:

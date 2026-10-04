@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="reload-chatter-only-when-the-layout-moved">
+  <meta name="plan-title" content="a reload marks the format switch only when the ticker's grid moved">
+  <meta name="plan-summary" content="The follower's reload marker now gates on a layout signature: _ticker_layout_signature() fingerprints the ticker's fixed grid geometry and travels on the on_poll payload to the replacement image, so a reload onto the same columns emits the follower-format-changed event with pane_line False and prints no marker, while a changed signature prints one. The producer-reloading note keeps the same convention: inside the reload window its pane_line is False (JSON only) and only an overrun emits it with pane_line True once, ahead of the cycle advice. Focused gate: 59 passed at EXIT=0 across test_follow_rearm_continues.py, test_follower_freshness.py, test_producer_says_why_it_stops.py and the sibling deferral file; the declared negative control (signature comparison dropped) fails test_a_reload_whose_grid_did_not_move_keeps_the_pane_quiet at EXIT=1.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-tags" content="crew,ticker,follower,reload,chatter">
+  <title>reload chatter only when the layout moved | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="reload-chatter-only-when-the-layout-moved-landed" class="r-note" data-node="reload-chatter-only-when-the-layout-moved" data-reckon="landed" data-when="2026-10-04">
+  <h2 id="reload-chatter-only-when-the-layout-moved-heading">A reload marks the format switch only when the ticker's grid moved</h2>
+  <p id="reload-chatter-only-when-the-layout-moved-body"><strong>Landed.</strong> <code>reckon/cli.py</code> gains <code>_ticker_layout_signature()</code>, a hash of the ticker's fixed grid geometry (the ordered column widths, the gutters and the minimum width). The signature travels to the replacement image on the <code>_tick</code> on-poll payload, so the reload branch compares the departed image's grid with its own and sets both <code>layout_changed</code> and <code>pane_line</code> on the <code>follower-format-changed</code> event: an unchanged grid still reaches the JSON stream but prints no marker and records none, and a changed grid prints exactly one. The producer-reloading note adopts the same <code>pane_line</code> convention already used by the stop and reload-failed lines — inside its window it is JSON-only, and only an overrun emits it with <code>pane_line</code> True once, ahead of the cycle advice.</p>
+  <p id="reload-chatter-only-when-the-layout-moved-gate"><strong>Focused gate.</strong> <code>tests/test_follow_rearm_continues.py</code> (four new cases), <code>tests/test_producer_says_why_it_stops.py</code> (the consumer-echo case) together with <code>tests/test_follower_freshness.py</code> and <code>tests/test_stale_producer_warning_waits_for_its_reload.py</code> read 59 passed at <code>EXIT=0</code>.</p>
+  <p id="reload-chatter-only-when-the-layout-moved-control"><strong>Negative control.</strong> The declared mutation drops the signature comparison so every reload prints the marker; the unchanged-layout case then fails. Applied to a scratch copy of the head, <code>tests/test_follow_rearm_continues.py::test_a_reload_whose_grid_did_not_move_keeps_the_pane_quiet</code> runs <code>EXIT=1</code>.</p>
+</article>
+</body>
+</html>
