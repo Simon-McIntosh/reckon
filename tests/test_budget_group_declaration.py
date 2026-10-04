@@ -85,11 +85,11 @@ def _home_manifest(home: Path) -> dict[str, str]:
 
 
 @pytest.fixture()
-def declared_home(monkeypatch):
+def declared_home(monkeypatch, tmp_path):
     """A throwaway home carrying the declarations, with the real one watched."""
     real = _config_home()
     before = _home_manifest(real)
-    home = _temp_config_home("reckon-wallet-declaration-")
+    home = _temp_config_home("reckon-wallet-declaration-", directory=tmp_path)
     (home / "flight.yaml").write_text(HOST_LAYER)
     (home / "mounts.json").write_text("{}")
     monkeypatch.setenv("RECKON_HOME", str(home))
