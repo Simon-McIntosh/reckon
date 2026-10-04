@@ -6199,8 +6199,18 @@ def _retire_disposable_identity(record: Mapping[str, Any]) -> dict[str, Any]:
 # or one another live run's pointer or manifest also cites — is reported and
 # left in place rather than reached for.
 
+_CITED_ABSOLUTE_NOTE = ""
+
 _CITED_ABSOLUTE_PATH = re.compile(r"/(?:[^\s\"'`()\[\]{}<>,;]+)")
 _CITED_PATH_EDGE_PUNCTUATION = ".,:;)]}\"'"
+# The suite fields carry exactly one path each that the run owns: the log the
+# suite wrote and the basetemp its own command was given. Every other token in
+# a command — the interpreter, the repository, the test paths — belongs to
+# somebody else's tree, and the basetemp is the only one a suite creates.
+_BASETEMP_IN_COMMAND = re.compile(r"(?:--basetemp(?:=|\s+)|basetemp=)(\S+)")
+_ARM_LOG_FIELDS = ("test_logs", "negative_control_log")
+_ARM_SUITE_FIELDS = ("baseline_suite", "after_suite")
+_ARM_ARTIFACT_FIELD = "artifacts"
 
 
 def _string_leaves(value: Any) -> Iterable[str]:
@@ -6215,64 +6225,137 @@ def _string_leaves(value: Any) -> Iterable[str]:
             yield from _string_leaves(item)
 
 
-def _cited_absolute_paths(value: Any) -> list[Path]:
-    """Every absolute path spelled anywhere in a manifest's fields or text.
+def _absolute_paths_in(text: str) -> list[Path]:
+    """Every absolute path spelled in one field's value.
 
-    The manifest's written form is the source, so a citation is found in
-    whatever field the manifest put it in rather than in a vocabulary this
-    reader fixed: a worker names its arms in the keys it chooses. Trailing
-    sentence punctuation is stripped — a path cited inside a sentence ends at
-    the path, not at the full stop after it — and a token that strips to the
-    root is dropped, because removing / is never a reading of a citation.
+    Trailing sentence punctuation is stripped — a path cited inside a sentence
+    ends at the path, not at the full stop after it — and a token that strips
+    to the root is dropped, because removing / is never a reading of a citation.
     """
     found: list[Path] = []
-    for text in _string_leaves(value):
-        for match in _CITED_ABSOLUTE_PATH.findall(text):
-            token = match.rstrip(_CITED_PATH_EDGE_PUNCTUATION)
-            if len(token) > 1:
-                found.append(Path(token))
+    for match in _CITED_ABSOLUTE_PATH.findall(text):
+        token = match.rstrip(_CITED_PATH_EDGE_PUNCTUATION)
+        if len(token) > 1:
+            found.append(Path(token))
+    return found
+
+
+def _suite_record(value: Any) -> Mapping[str, Any]:
+    """A suite field as a mapping, however the manifest spelled it."""
+    if isinstance(value, Mapping):
+        return value
+    if isinstance(value, str):
+        text = value.strip()
+        if text.startswith("{"):
+            try:
+                loaded = json.loads(text)
+            except json.JSONDecodeError:
+                return {}
+            if isinstance(loaded, Mapping):
+                return loaded
+    return {}
+
+
+def _declared_arm_paths(declared: Mapping[str, Any]) -> list[Path]:
+    """The paths a manifest declares as its own arms, basetemps and controls.
+
+    Only the structured fields that carry a declared path are read: the two log
+    fields, the suite records' own log and basetemp, and the artifacts field. A
+    path that merely appears in prose is not a declaration of ownership, so a
+    landing line, a checkpoint or a follow-on naming another session's
+    directory is never a removal candidate. The run's own scratch directory and
+    its timestamp-stemmed siblings are not read here either; the scratch
+    removal that runs immediately before this step owns them.
+    """
+    found: list[Path] = []
+    for field_name in _ARM_LOG_FIELDS:
+        for text in _string_leaves(declared.get(field_name)):
+            found.extend(_absolute_paths_in(text))
+    for text in _string_leaves(declared.get(_ARM_ARTIFACT_FIELD)):
+        found.extend(_absolute_paths_in(text))
+    for field_name in _ARM_SUITE_FIELDS:
+        value = declared.get(field_name)
+        for text in _string_leaves(_suite_record(value).get("log_path")):
+            found.extend(_absolute_paths_in(text))
+        # The basetemp is read from the field's whole text as well as from a
+        # spelled-out record, because a manifest that writes its suite as one
+        # line keeps the flag inside the command and names it nowhere else.
+        for text in _string_leaves(value):
+            for match in _BASETEMP_IN_COMMAND.finditer(text):
+                found.extend(_absolute_paths_in(match.group(1)))
+    return found
+
+
+def _declared_manifest(record: Mapping[str, Any]) -> Mapping[str, Any]:
+    """A run's manifest as parsed fields, or an empty mapping when unreadable."""
+    text = _manifest_text(record)
+    if not text.strip():
+        return {}
+    try:
+        declared = parse_manifest(text)
+    except (ValueError, KeyError):
+        return {}
+    return declared if isinstance(declared, Mapping) else {}
+
+
+def _arm_citations_of(pointer: Mapping[str, Any]) -> list[Path]:
+    """Every path a live run's own record declares as one of its arms.
+
+    Both halves of the record are read, because either may cite a tree: the
+    pointer carries the scratch directory the launch was given, while the arms
+    live in the manifest the pointer names. Nothing else on a pointer is read —
+    its node brief and its prose fields are not declarations of ownership.
+    """
+    found = _declared_arm_paths(_declared_manifest(pointer))
+    scratch = str(pointer.get("scratch") or "").strip()
+    if scratch:
+        found.extend(_absolute_paths_in(scratch))
     return found
 
 
 def _other_live_run_citations(run_id: str) -> dict[Path, str]:
-    """The paths every other live run cites, with the run that cites each.
-
-    Both halves of a live run's own record are read, because either may cite a
-    tree: the pointer carries the scratch directory the launch was given, while
-    the arms live in the manifest the pointer names.
-    """
+    """The paths every other live run cites, with the run that cites each."""
     citations: dict[Path, str] = {}
     for other in list_live():
         other_id = str(other.get("run_id") or "")
         if not other_id or other_id == run_id:
             continue
-        for path in _cited_absolute_paths([other, _manifest_text(other)]):
+        for path in _arm_citations_of(other):
             citations.setdefault(path.resolve(), other_id)
     return citations
 
 
-def remove_cited_arms(record: Mapping[str, Any]) -> dict[str, Any]:
-    """Remove the directories a run's manifest cites as arms, keeping the rest.
+def remove_cited_arms(record: Mapping[str, Any], *, gate: str = "") -> dict[str, Any]:
+    """Remove the directories a passing run's manifest declares as its arms.
 
-    The reach is bounded: a directory is removed only when it resolves under
-    the node-local temp root, which is the parent of the run's scratch root,
-    and never when it is, contains, or lies inside the repository, the run
-    directory or the scratch root — nor when any other live run's pointer or
-    manifest cites it. A cited log inside a directory that is about to go is
-    copied into ``<run directory>/cleared-arms`` first, so the evidence outlives
-    the tree that held it; a log that cannot be copied holds its directory in
-    place, because a removal that destroys evidence is worse than a tree left
-    for a later sweep. Every removal and every keep is enumerated on the
-    result; nothing is selected by a name pattern.
+    Only a run whose gate verdict passed has its arms cleared: a blocked or
+    failed run's arms are the evidence a repair or a reviewer reads, so they
+    are retained and the withheld verdict is recorded instead. The reach is
+    bounded as well: a directory is removed only when it resolves under the
+    node-local temp root, which is the parent of the run's scratch root — never
+    when it is, contains, or lies inside the repository, the run directory or
+    the scratch root, nor when any other live run's pointer or manifest cites
+    it. A cited log inside a directory that is about to go is copied into
+    ``<run directory>/cleared-arms`` first, so the evidence outlives the tree
+    that held it; a log that cannot be copied holds its directory in place,
+    because a removal that destroys evidence is worse than a tree left for a
+    later sweep. Every removal and every keep is enumerated on the result;
+    nothing is selected by a name pattern.
     """
     result: dict[str, Any] = {
         "arms_removed_paths": [],
         "arms_kept": [],
         "arms_logs_copied": [],
+        "arms_withheld": "",
     }
-    manifest_text = _manifest_text(record)
-    if not manifest_text:
+    verdict = str(gate).strip().lower()
+    if verdict != "passed":
+        result["arms_withheld"] = (
+            f"gate verdict {verdict or 'none'!r} is not passing; cited arms "
+            "retained as evidence"
+        )
         return result
+    citations = _declared_arm_paths(_declared_manifest(record))
     scratch_root = worker_scratch_root().resolve()
     temp_root = scratch_root.parent
     run_dir_path = run_directory_of(record)
@@ -6287,7 +6370,6 @@ def remove_cited_arms(record: Mapping[str, Any]) -> dict[str, Any]:
     if run_dir_path is not None:
         protections.append((Path(run_dir_path).resolve(), "the run directory"))
 
-    citations = _cited_absolute_paths(manifest_text)
     cited_logs = [
         path for path in citations if not path.is_symlink() and path.is_file()
     ]
@@ -6395,6 +6477,7 @@ def _release_run_workspace(
     release_worktree: bool = True,
     worktree_withheld: str = "",
     keep_process: bool = False,
+    gate: str = "",
 ) -> dict[str, Any]:
     """Release a promoted run's own worktree, process, and scratch directory.
 
@@ -6522,8 +6605,11 @@ def _release_run_workspace(
     )
     # Cited arms outside the scratch directory are cleared after that step, so
     # what the scratch removal already took — and recorded — is not reported a
-    # second time as a cited arm that is no longer present.
-    result.update(remove_cited_arms(record))
+    # second time as a cited arm that is no longer present. Only a passing gate
+    # clears them: a blocked or failed run's arms are the evidence a repair or
+    # a reviewer reads, and the scratch removal above still runs, because
+    # scratch is node-local space rather than evidence.
+    result.update(remove_cited_arms(record, gate=gate))
     return result
 
 
@@ -6558,6 +6644,7 @@ def _release_after_promotion(
                     "for recovery"
                 ),
                 keep_process=blocked_for_resume,
+                gate=verdict,
             )
         except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
             fallback = {
@@ -6573,6 +6660,7 @@ def _release_after_promotion(
             retention,
             process_already_ended=process_already_ended,
             keep_process=blocked_for_resume,
+            gate=verdict,
         )
     except Exception as exc:  # noqa: BLE001 - cleanup must never mask promotion
         fallback = {
@@ -8670,6 +8758,7 @@ def _remove_discarded_worktree(record: Mapping[str, Any]) -> dict[str, Any]:
             "arms_removed_paths",
             "arms_kept",
             "arms_logs_copied",
+            "arms_withheld",
         )
         if key in release
     }
