@@ -45,7 +45,7 @@ implicates <code>joined_watch_sweeps</code>; equal counts clear it. Measured: <s
 The fixture is also cleared by mechanism: it never creates, clears or keys
 <code>obligation_snapshot._SWEEPS</code>; it joins by thread name with a bounded
 <code>WATCH_SWEEP_JOIN_SECONDS</code>, and the instrumented traces show every sweep thread exiting in
-≤ 1.2 s under load. It is the messenger that surfaces the state, not the state's author.
+within 2.98 s under load (47 of 360 exits took longer than 1.2 s; the maximum was 2.978 s). It is the messenger that surfaces the state, not the state's author.
 </p>
 <h2>What the trace shows about the failed assertion (id 1)</h2>
 <p>
@@ -95,7 +95,7 @@ reproducible in 105 loop runs of this file alone.
 <tr>
 <td>SPEC hypothesis: a sweep thread whose bounded join timed out keeps a <code>sweep_lock</code> a later producer shares.</td>
 <td>Read <code>runs._publish_watch_stream</code> / <code>_run_obligation_sweep</code> / <code>join_watch_sweeps</code>; instrumented trace of every SWEEPTHREAD ENTER/EXIT under load.</td>
-<td><span>Not supported by any measurement.</span> The lock is released in a <code>finally</code>; a later claim builds a fresh producer with a fresh lock; ENTER→EXIT ≤ 1.2 s in all 45 instrumented loops; no 30 s stall appears. Formally still open only because the failure itself never reproduced here.</td>
+<td><span>Not supported by any measurement.</span> The lock is released in a <code>finally</code>; a later claim builds a fresh producer with a fresh lock; ENTER→EXIT at most 2.978 s across all 45 instrumented loops (47 of 360 exits above 1.2 s); no 30 s stall appears. Formally still open only because the failure itself never reproduced here.</td>
 </tr>
 <tr>
 <td>Module-identity split: the by-path loader in <code>reckon/hooks/coordinator_obligations.snapshot_module()</code> (and <code>cli.py</code> ~2984) replaces <code>sys.modules["reckon.crew.obligation_snapshot"]</code> with a second instance, giving the producer and the test different <code>_SWEEPS</code> and different patched <code>sweep</code> objects.</td>
@@ -158,4 +158,5 @@ the <code>sys.modules</code> entry.</li>
 <code>the-obligations-hook-reads-a-snapshot</code> §20.</li>
 <li>Repository changes: none — this role is read-only.</li>
 </ul>
+<p><strong>Correction, recorded by the coordinator after review:</strong> the report first stated that every sweep thread exited within 1.2 s. Its own traces hold 47 of 360 exits above 1.2 s, with a maximum of 2.978 s. The figures above are corrected. The conclusion is unchanged, because 2.978 s is well inside the 10 s join bound and the 30 s wait.</p>
 </section>
