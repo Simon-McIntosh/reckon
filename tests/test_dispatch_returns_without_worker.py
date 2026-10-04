@@ -47,7 +47,9 @@ import tempfile
 import time
 import uuid
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from threading import Event
 from typing import Any
 
 import pytest
@@ -1198,7 +1200,9 @@ def test_sigkill_to_the_worker_is_recorded(
         host["outcomes"].append(outcome)
 
 
-def test_a_discarded_run_is_not_recreated(host: dict[str, Any], tmp_path: Path) -> None:
+def test_a_discarded_run_is_not_recreated(
+    host: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Case four: a discard during a live worker leaves nothing behind."""
     marker_dir = tmp_path / "markers"
     marker_dir.mkdir()
@@ -1238,8 +1242,8 @@ def test_a_discarded_run_is_not_recreated(host: dict[str, Any], tmp_path: Path) 
             "whose worker was still alive"
         )
 
-        pointer.unlink(missing_ok=True)
-        shutil.rmtree(run_directory)
+        monkeypatch.setenv("RECKON_HOME", str(run.home))
+        dispatch_module._release_launch_claim(str(output["run_id"]))
         outcome["discarded_at_seconds"] = round(run.elapsed(), 3)
         assert not pointer.exists() and not run_directory.exists(), (
             "the discard did not remove the pointer and the run directory"
@@ -1285,7 +1289,7 @@ def test_a_discarded_run_is_not_recreated(host: dict[str, Any], tmp_path: Path) 
         host["outcomes"].append(outcome)
 
 
-def test_a_phase_publish_does_not_restore_an_unlinked_pointer(
+def test_a_phase_publish_does_not_restore_a_released_claim(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("RECKON_HOME", str(tmp_path))
@@ -1296,18 +1300,40 @@ def test_a_phase_publish_does_not_restore_an_unlinked_pointer(
     pointer.parent.mkdir(parents=True)
     pointer.write_text(json.dumps({"run_id": run_id, "phase": "starting"}))
     original_write = dispatch_module._write_json
-    writes: list[Path] = []
+    original_remove = dispatch_module.shutil.rmtree
+    write_started = Event()
+    allow_write = Event()
+    removal_started = Event()
+    allow_removal = Event()
 
-    def discard_during_write(path: Path, payload: dict[str, Any]) -> None:
-        assert pointer.exists()
-        pointer.unlink()
-        writes.append(path)
+    def delayed_write(path: Path, payload: dict[str, Any]) -> None:
+        write_started.set()
+        assert allow_write.wait(10)
         original_write(path, payload)
 
-    monkeypatch.setattr(dispatch_module, "_write_json", discard_during_write)
-    dispatch_module._publish_stored_phase({"run_id": run_id}, ended=False)
-    assert writes, "the supervisor did not reach its pointer write"
-    assert not pointer.exists(), "the publish recreated the discarded pointer"
+    def delayed_remove(path: Path, *args: Any, **kwargs: Any) -> None:
+        removal_started.set()
+        assert allow_removal.wait(10)
+        original_remove(path, *args, **kwargs)
+
+    monkeypatch.setattr(dispatch_module, "_write_json", delayed_write)
+    monkeypatch.setattr(dispatch_module.shutil, "rmtree", delayed_remove)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        publish = pool.submit(
+            dispatch_module._publish_stored_phase, {"run_id": run_id}, ended=False
+        )
+        try:
+            assert write_started.wait(10), "the phase publish did not reach its write"
+            release = pool.submit(dispatch_module._release_launch_claim, run_id)
+            removal_started.wait(2)
+            allow_write.set()
+            publish.result(timeout=10)
+            allow_removal.set()
+            release.result(timeout=10)
+        finally:
+            allow_write.set()
+            allow_removal.set()
+    assert not pointer.exists(), "the publish recreated the released pointer"
 
 
 def test_a_delegated_launch_records_a_boundary_snapshot(

@@ -1913,7 +1913,10 @@ def _release_launch_claim(run_id: str) -> None:
     Neither removal is an argument about whose claim it is — the path is this
     run's own — so a call for a run that published nothing removes nothing.
     """
-    pointer_path(run_id).unlink(missing_ok=True)
+    # Publish and release use the same lock, so a publish already in progress
+    # finishes before the removal and cannot write the pointer back afterward.
+    with _pointer_lock(run_id):
+        pointer_path(run_id).unlink(missing_ok=True)
     shutil.rmtree(run_dir(run_id), ignore_errors=True)
 
 
@@ -5028,12 +5031,10 @@ def dispatch_picker_selection(
 
 
 def _write_existing_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
-    """Write only a live run's pointer, clearing a discard that races the write.
+    """Write a present pointer while its caller holds the removal lock.
 
-    Discard removes the pointer before the run directory and does not take the
-    pointer lock. Check both sides of the atomic replacement: the first check
-    avoids a write after discard, and the second removes a pointer written
-    while the run directory was being removed. The caller holds the lock.
+    The run directory checks also keep a removed directory from being restored
+    by a late supervisor write.
     """
     path = pointer_path(run_id)
     directory = run_dir(run_id)
