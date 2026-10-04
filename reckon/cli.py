@@ -2526,6 +2526,78 @@ def crew_shadow(run_id, session, wave, backend, overrides, member, dry_run, pret
     _emit_crew_result(record, pretty)
 
 
+@crew.command(name="review-plan")
+@click.option("--project", required=True)
+@click.option("--plan", "plan_slug", required=True)
+@click.option("--session", default="")
+@click.option("--rubric", type=click.Choice(["design", "content"]), default="design")
+@click.option("--local", is_flag=True)
+@click.option("--dry-run", is_flag=True)
+@click.option("--pretty", is_flag=True)
+@click.option("--answer", default="")
+@click.option("--acted", is_flag=True)
+@click.option("--declined", default=None, help="Decline a finding with this reason.")
+@_holds_stdout_for_one_document
+def crew_review_plan(
+    project, plan_slug, session, rubric, local, dry_run, pretty, answer, acted, declined
+):
+    """Dispatch a plan review or answer a finding on its newest stored record."""
+    from reckon.crew import plan_review, recovery
+    from reckon.crew.node import CrewError
+
+    detail = ""
+    if answer:
+        if acted == (declined is not None):
+            detail = "--answer requires exactly one of --acted or --declined REASON"
+        elif dry_run or local:
+            detail = "--dry-run and --local apply only to review dispatch"
+    elif acted or declined is not None:
+        detail = "--acted and --declined require --answer FINDING_ID"
+    elif not session:
+        detail = "review dispatch requires --session"
+    if detail:
+        _emit({"error": "crew_error", "detail": detail}, pretty)
+        raise click.exceptions.Exit(1)
+    try:
+        if answer:
+            record = plan_review.read_plan_review(project, plan_slug)
+            if record is None:
+                _emit(
+                    {
+                        "error": "crew_error",
+                        "detail": f"no stored review for {project}:{plan_slug}",
+                    },
+                    pretty,
+                )
+                raise click.exceptions.Exit(1)
+            path = plan_review.record_response(
+                record,
+                answer,
+                action="acted" if acted else "declined",
+                reason=declined,
+                by=session,
+            )
+            updated = json.loads(path.read_text(encoding="utf-8"))
+            _emit(
+                {
+                    "record": updated,
+                    "unanswered": plan_review.unanswered_findings(updated),
+                },
+                pretty,
+            )
+            return
+        subject = recovery.plan_review_subject(
+            project, plan_slug, session, rubric=rubric, local=local
+        )
+        result = recovery.dispatch_review_for_run(subject, dry_run=dry_run)
+        _emit(result, pretty)
+        if result.get("refused") or result.get("awaiting_lane") or result.get("error"):
+            raise click.exceptions.Exit(1)
+    except (ValueError, OSError, CrewError) as exc:
+        _emit({"error": "crew_error", "detail": str(exc)}, pretty)
+        raise click.exceptions.Exit(1) from exc
+
+
 @crew.command(name="attach")
 @click.option("--run", "run_id", required=True, help="Run id returned by dispatch.")
 @click.option("--task", required=True, help="The harness's own task identifier.")

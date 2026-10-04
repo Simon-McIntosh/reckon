@@ -24,7 +24,7 @@ from reckon import review_tiers
 from reckon._timestamps import parse_utc
 from reckon.capabilities import _charged_input_from_usage
 from reckon.crew import lane_document as _lane_document
-from reckon.crew import metering, quota_weight, runs
+from reckon.crew import metering, plan_review, quota_weight, runs
 from reckon.crew import repair as repair_module
 from reckon.crew import review as review_module
 from reckon.crew.node import (
@@ -235,7 +235,7 @@ def _is_review_node(record: Mapping[str, Any]) -> bool:
     and each link of that chain is a real dispatch against a real member.
     """
     node = record.get("node") or {}
-    return str(node.get("id") or "").startswith(REVIEW_NODE_PREFIX)
+    return str(node.get("id") or "").startswith((REVIEW_NODE_PREFIX, "plan-review-of-"))
 
 
 def _review_tree(record: Mapping[str, Any]) -> Path | None:
@@ -435,6 +435,58 @@ def _canonical_commits(tree: Path | None, entries: Iterable[Any]) -> list[str]:
     return resolved
 
 
+def plan_review_subject(
+    project: str,
+    slug: str,
+    session: str,
+    *,
+    rubric: str = "design",
+    local: bool = False,
+) -> dict[str, Any]:
+    """Resolve a mounted plan as the subject of the shared review composer."""
+    from reckon import flight
+    from reckon.crew.dispatch import resolve_project_repository
+
+    if not re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9_-]*", slug):
+        raise CrewError("plan must name one slug")
+    if rubric not in ("design", "content"):
+        raise CrewError("rubric must be design or content")
+    docs = flight.mounted_project_docs().get(project)
+    if docs is None:
+        raise CrewError(f"project {project!r} has no mounted docs")
+    path = docs / "plans" / f"{slug}.html"
+    if not path.is_file():
+        raise CrewError(f"plan {slug!r} does not exist at {path}")
+    return {
+        "subject": "plan",
+        "project": project,
+        "plan_slug": slug,
+        "plan_path": str(path),
+        "repo": str(resolve_project_repository(project, None)),
+        "session": session,
+        "rubric": rubric,
+        "local": local,
+        "run_id": runs.new_run_id(f"plan-review-of-{slug}"),
+    }
+
+
+def _plan_review_pending(record: Mapping[str, Any]) -> bool:
+    """Whether this content still needs a report, stored or delivered."""
+    project, slug = record["project"], record["plan_slug"]
+    fingerprint = plan_review.plan_fingerprint(Path(record["plan_path"]))
+    if (
+        plan_review.read_plan_review(project, slug, plan_fingerprint=fingerprint)
+        is not None
+    ):
+        return False
+    return not any(
+        not report["stored"]
+        for report in plan_review.delivered_reports(
+            project, slug, plan_fingerprint=fingerprint
+        )
+    )
+
+
 def _review_dispatch_fields(
     record: Mapping[str, Any],
     *,
@@ -461,6 +513,70 @@ def _review_dispatch_fields(
     so the caller comparing a standing review against this dispatch needs the
     head the dispatch composed for, not only the paths it granted.
     """
+    if record.get("subject") == "plan":
+        from reckon import _plan_html
+
+        path = Path(record["plan_path"])
+        document = path.read_text(encoding="utf-8")
+        project, slug, run_id = record["project"], record["plan_slug"], record["run_id"]
+        directory = plan_review.review_report_directory(project, slug, run_id)
+        directory.mkdir(parents=True, exist_ok=True)
+        report = directory / "report.md"
+        snapshot = directory / "plan.html"
+        snapshot.write_text(document, encoding="utf-8")
+        blob = subprocess.run(
+            ["git", "hash-object", "--stdin"],
+            input=document,
+            text=True,
+            capture_output=True,
+            check=True,
+            cwd=record["repo"],
+        ).stdout.strip()
+        rubric = record.get("rubric", "design")
+        prompt = (
+            review_module.load_plan_design_review_prompt()
+            if rubric == "design"
+            else review_module.load_plan_review_prompt()
+        )
+        brief = directory / "brief.md"
+        brief.write_text(
+            prompt + f"\nPlan path: {path}\nReview the composed snapshot: {snapshot}\n"
+            f"Repository roots to search: {record['repo']}\nReport path: {report}\n"
+            "Write RUBRIC and FINDING lines to the report path. Review the snapshot "
+            "so the report describes the content named by its sidecar.\n",
+            encoding="utf-8",
+        )
+        sidecar = plan_review.write_review_sidecar(
+            directory,
+            project=project,
+            plan_slug=slug,
+            plan_version=_plan_html.read_state_file(path).get("version") or 0,
+            reviewed_blob_sha=blob,
+            plan_fingerprint=plan_review.plan_fingerprint(document),
+            rubric=rubric,
+            report_path=report,
+        )
+        return {
+            "run_id": run_id,
+            "project": project,
+            "head": blob,
+            "plan": "",
+            "section": "",
+            "source_node": slug,
+            "node_id": f"plan-review-of-{slug}",
+            "session": record["session"],
+            "time_budget": "20m",
+            "brief": str(brief),
+            "sidecar": str(sidecar),
+            "goal": f"review the {rubric} of plan {slug}",
+            "done_when": (
+                f"{report} contains RUBRIC lines for every checklist item and "
+                "FINDING lines carrying WOULD_CHANGE_THE_PLAN and REASON for "
+                "each finding; the manifest names the delivered report"
+            ),
+            "write_path": str(directory),
+            "write_paths": [str(directory)],
+        }
     node = record.get("node") or {}
     run_id = str(record.get("run_id") or "")
     project = str(record.get("project") or "")
@@ -559,10 +675,11 @@ def _review_dispatch_tokens(
         "dispatch",
         "--project",
         fields["project"],
-        "--plan",
-        fields["plan"],
-        "--section",
-        fields["section"],
+        *(
+            ["--brief", fields["brief"]]
+            if fields.get("brief")
+            else ["--plan", fields["plan"], "--section", fields["section"]]
+        ),
         "--role",
         "review",
         "--spec-level",
@@ -606,6 +723,13 @@ def _composed_review_lane(
     there, because a command naming that lane would send a retyped review onto
     the lane the hold is protecting; the caller prints the hold instead.
     """
+    if record.get("subject") == "plan":
+        resolved = _resolved_review_config(project, config)
+        if record.get("local"):
+            return ["--local", "--backend", str(resolved.get("local_backend") or "")]
+        backend = (resolved.get("roles", {}).get("review") or {}).get("backend")
+        backend = backend or resolved.get("default_backend")
+        return ["--backend", str(backend)] if backend else []
     owning_backend = str(record.get("backend") or "").strip()
     try:
         resolved = _resolved_review_config(project, config)
@@ -1254,7 +1378,7 @@ def _review_in_flight(record: Mapping[str, Any]) -> str:
 
 
 def _record_review_dispatch(
-    run_id: str,
+    run_id: str | Mapping[str, Any],
     *,
     status: str,
     reason: str,
@@ -1296,7 +1420,21 @@ def _record_review_dispatch(
         }
         return pointer
 
-    _mutate_pointer(run_id, record)
+    if isinstance(run_id, Mapping):
+        from reckon._store import write_json_atomically
+
+        directory = plan_review.review_report_directory(
+            run_id["project"], run_id["plan_slug"], run_id["run_id"]
+        )
+        write_json_atomically(
+            directory / "dispatch.json",
+            record({})[REVIEW_DISPATCH_FIELD],
+            indent=2,
+            sort_keys=True,
+            mode=None,
+        )
+    else:
+        _mutate_pointer(run_id, record)
 
 
 def _object_id(text: str) -> str:
@@ -2105,6 +2243,7 @@ def dispatch_review_for_run(
     launcher: Callable[..., Any] | None = None,
     allow_unreconciled_runs: bool = True,
     prefer_local: bool = False,
+    dry_run: bool = False,
 ) -> dict[str, Any]:
     """Run the review dispatch a scoring run has already composed for itself.
 
@@ -2124,6 +2263,31 @@ def dispatch_review_for_run(
     the review run's own pointer by dispatch, naming the runs it waived, so the
     exception stays visible after the command that supplied it is gone.
     """
+    if record.get("subject") == "plan":
+        directory = plan_review.review_report_directory(
+            record["project"], record["plan_slug"], record["run_id"]
+        ).parent
+        directory.mkdir(parents=True, exist_ok=True)
+        # The lock spans the pointer check and launch across coordinator sessions.
+        with (directory / "dispatch.lock").open("a") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            for pointer in list_live(project=record["project"]):
+                node = pointer.get("node") or {}
+                if node.get("id") == f"plan-review-of-{record['plan_slug']}":
+                    return {
+                        "dispatched": False,
+                        "review_run_id": pointer.get("run_id"),
+                        "reason": "a plan review is already in flight as a live run",
+                    }
+            return _dispatch_composed_review(
+                record,
+                _review_dispatch_fields(record),
+                config=config,
+                launcher=launcher,
+                allow_unreconciled_runs=allow_unreconciled_runs,
+                prefer_local=prefer_local,
+                dry_run=dry_run,
+            )
     run_id = str(record.get("run_id") or "")
     if _is_review_node(record):
         return {
@@ -2227,12 +2391,39 @@ def dispatch_review_for_run(
             "refused": True,
             "reason": reason,
         }
+    return _dispatch_composed_review(
+        record,
+        fields,
+        config=config,
+        launcher=launcher,
+        allow_unreconciled_runs=allow_unreconciled_runs,
+        prefer_local=prefer_local,
+        dry_run=dry_run,
+    )
+
+
+def _dispatch_composed_review(
+    record: Mapping[str, Any],
+    fields: Mapping[str, Any],
+    *,
+    config: Mapping[str, Any] | None,
+    launcher: Callable[..., Any] | None,
+    allow_unreconciled_runs: bool,
+    prefer_local: bool,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Launch either review subject from the shared fields and dispatch path."""
+    run_id = str(record.get("run_id") or "")
+    dispatch_subject = record if record.get("subject") == "plan" else run_id
     project = fields["project"]
     repo = str(record.get("repo") or "")
     if not project or not repo:
         reason = "the run records no project or repository to dispatch against"
         _record_review_dispatch(
-            run_id, status="refused", reason=reason, reviewed_head=fields["head"]
+            dispatch_subject,
+            status="refused",
+            reason=reason,
+            reviewed_head=fields["head"],
         )
         return {"run_id": run_id, "dispatched": False, "reason": reason}
 
@@ -2241,74 +2432,109 @@ def dispatch_review_for_run(
     from reckon.crew.node import TaskNode
 
     resolved = _resolved_review_config(project, config)
-    try:
-        from reckon import flight
+    if record.get("subject") != "plan" or record.get("local"):
+        try:
+            from reckon import flight
 
-        resolved = flight.select_local_backend(resolved)
-    except Exception as exc:  # noqa: BLE001 - the configured lane is the reason
-        reason = f"the local lane is unavailable: {exc}"
-        _record_review_dispatch(
-            run_id, status="awaiting-lane", reason=reason, reviewed_head=fields["head"]
-        )
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "awaiting_lane": True,
-            "reason": reason,
-        }
+            resolved = flight.select_local_backend(resolved)
+        except Exception as exc:  # noqa: BLE001 - the configured lane is the reason
+            reason = f"the local lane is unavailable: {exc}"
+            _record_review_dispatch(
+                dispatch_subject,
+                status="awaiting-lane",
+                reason=reason,
+                reviewed_head=fields["head"],
+            )
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "awaiting_lane": True,
+                "reason": reason,
+            }
 
-    # The continuous reflex can try another eligible lane after one drops a
-    # review. Recovery's explicit sweep stays on the local lane unless the
-    # reviewed node declared another, and waits if that lane is unavailable.
-    local_lane = str(resolved.get("local_backend") or "").strip()
-    owning_lane = str(record.get("backend") or "").strip()
-    if prefer_local:
-        node = record.get("node") or {}
-        declaration = node.get("lane_declaration") or {}
-        owning_lane = str(declaration.get("backend") or "").strip()
-    previous_lane = _failed_review_backend(record)
-    candidates = [
-        name
-        for name in _review_lane_candidates(resolved, owning_backend=owning_lane)
-        if name != previous_lane
-        and (not prefer_local or name == (owning_lane or local_lane))
-    ]
-    if not candidates:
-        reason = _no_lane_reason(
-            run_id,
-            resolved,
-            owning_backend=owning_lane,
-            kind="review",
-            previous_lane=previous_lane,
-        )
-        _record_review_dispatch(
-            run_id,
-            status="awaiting-lane",
-            reason=reason,
-            backend=previous_lane,
-            reviewed_head=fields["head"],
-        )
-        return {
-            "run_id": run_id,
-            "dispatched": False,
-            "awaiting_lane": True,
-            "backend": previous_lane,
-            "reason": reason,
-        }
-    backend = candidates[0]
-    on_local_lane = backend == local_lane
+    if record.get("subject") == "plan":
+        lane = _composed_review_lane(project, record, resolved)
+        on_local_lane = "--local" in lane
+        backend = lane[-1] if lane else str(resolved.get("default_backend") or "")
+    else:
+        # The continuous reflex can try another eligible lane after one drops a
+        # review. Recovery's explicit sweep stays on the local lane unless the
+        # reviewed node declared another, and waits if that lane is unavailable.
+        local_lane = str(resolved.get("local_backend") or "").strip()
+        owning_lane = str(record.get("backend") or "").strip()
+        if prefer_local:
+            node = record.get("node") or {}
+            declaration = node.get("lane_declaration") or {}
+            owning_lane = str(declaration.get("backend") or "").strip()
+        previous_lane = _failed_review_backend(record)
+        candidates = [
+            name
+            for name in _review_lane_candidates(resolved, owning_backend=owning_lane)
+            if name != previous_lane
+            and (not prefer_local or name == (owning_lane or local_lane))
+        ]
+        if not candidates:
+            reason = _no_lane_reason(
+                run_id,
+                resolved,
+                owning_backend=owning_lane,
+                kind="review",
+                previous_lane=previous_lane,
+            )
+            _record_review_dispatch(
+                dispatch_subject,
+                status="awaiting-lane",
+                reason=reason,
+                backend=previous_lane,
+                reviewed_head=fields["head"],
+            )
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "awaiting_lane": True,
+                "backend": previous_lane,
+                "reason": reason,
+            }
+        backend = candidates[0]
+        on_local_lane = backend == local_lane
 
     node = TaskNode(
         id=fields["node_id"],
         goal=fields["goal"],
         plan=fields["plan"],
         section=fields["section"],
+        brief=str(fields.get("brief") or ""),
         role="review",
         spec_level="exact",
         done_when=fields["done_when"],
         write_paths=list(fields["write_paths"]),
         time_budget=fields["time_budget"],
     )
+    if dry_run:
+        resolution = dispatch_module.plan_dispatch(
+            node=node,
+            config=resolved,
+            project=project,
+            repo=repo,
+            session=fields["session"],
+            local=on_local_lane,
+            backend_override=backend or None,
+            route="deterministic",
+        )
+        return {
+            "dispatched": False,
+            "dry_run": True,
+            "refused": not resolution.validation.ok,
+            **resolution.as_dict(),
+            "argv": _review_dispatch_tokens(
+                fields,
+                lane
+                if record.get("subject") == "plan"
+                else ["--local"]
+                if on_local_lane
+                else ["--backend", backend],
+            ),
+        }
     try:
         launched = dispatch_module.dispatch(
             node=node,
@@ -2319,13 +2545,16 @@ def dispatch_review_for_run(
             launcher=launcher,
             watch_required=True,
             local=on_local_lane,
-            backend_override=None if on_local_lane else backend,
+            backend_override=backend
+            if record.get("subject") == "plan" or not on_local_lane
+            else None,
             unreconciled_override=allow_unreconciled_runs,
+            route="deterministic",
         )
     except BudgetHold as exc:
         reason = f"the {backend} lane is unavailable: {exc}"
         _record_review_dispatch(
-            run_id,
+            dispatch_subject,
             status="awaiting-lane",
             reason=reason,
             backend=backend,
@@ -2352,7 +2581,7 @@ def dispatch_review_for_run(
             or f"the {backend} lane gate is {gate.get('state')!r}"
         )
         _record_review_dispatch(
-            run_id,
+            dispatch_subject,
             status="lane-paused",
             reason=reason,
             backend=backend,
@@ -2372,7 +2601,7 @@ def dispatch_review_for_run(
         # they are skipped, so the refusal is recorded and reported rather than
         # caught and shrugged off.
         _record_review_dispatch(
-            run_id,
+            dispatch_subject,
             status="refused",
             reason=str(exc),
             backend=backend,
@@ -2388,7 +2617,7 @@ def dispatch_review_for_run(
 
     review_run_id = str(launched.get("run_id") or "")
     _record_review_dispatch(
-        run_id,
+        dispatch_subject,
         status="dispatched",
         reason=f"the review dispatched automatically as run {review_run_id}",
         review_run_id=review_run_id,
@@ -2403,6 +2632,7 @@ def dispatch_review_for_run(
         "scope": fields.get("scope"),
         "review_tier": fields.get("review_tier"),
         "reason": f"dispatched the composed review as run {review_run_id}",
+        **({"dispatch": launched} if record.get("subject") == "plan" else {}),
     }
 
 
@@ -3888,6 +4118,37 @@ def dispatch_awaiting_reviews(
         if repair_report.get("dispatched"):
             reports.append(repair_report)
             repaired.append(str(repair_report.get("repair_run_id") or ""))
+    if sweeping:
+        from reckon import _plan_html, flight
+
+        for mounted_project, docs in flight.mounted_project_docs().items():
+            if project and project != mounted_project:
+                continue
+            resolved = _resolved_review_config(mounted_project, config)
+            settle = flight.plan_review_settle_seconds(resolved)
+            for path in sorted((docs / "plans").glob("*.html")):
+                state = _plan_html.read_state_file(path)
+                if state.get("status") not in ("active", "draft"):
+                    continue
+                if time.time() - path.stat().st_mtime < settle:
+                    continue
+                subject = plan_review_subject(
+                    mounted_project, path.stem, sweeping, local=True
+                )
+                if not _plan_review_pending(subject):
+                    continue
+                report = dispatch_review_for_run(
+                    subject, config=resolved, launcher=launcher, prefer_local=True
+                )
+                reports.append(report)
+                if report.get("dispatched"):
+                    dispatched.append(str(report.get("review_run_id") or ""))
+                elif report.get("awaiting_lane"):
+                    awaiting_lane.append(str(report.get("run_id") or ""))
+                elif report.get("error") == "lane-paused":
+                    lane_paused.append(str(report.get("run_id") or ""))
+                elif report.get("refused"):
+                    refused.append(report)
     return {
         "reports": reports,
         "dispatched": dispatched,
