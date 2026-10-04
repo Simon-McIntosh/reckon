@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+<meta name="plan" content="crew-runtime-positive-controls">
+<meta name="node" content="the-reap-test-asks-about-its-own-children">
+<title>the-reap-test-asks-about-its-own-children</title>
+</head><body>
+
+<h2 id="the-reap-test-asks-about-its-own-children-landing">The reap test asks only about the pids it launched</h2>
+
+<p id="the-reap-test-asks-about-its-own-children-landing-line">Landed at
+<code>9d486d3db</code> on <code>tests/test_resume_reaps_its_child.py</code>:
+<code>_no_defunct_launched_child</code> waits on each pid the case launched
+instead of <code>os.waitpid(-1)</code>, so an exited, unreaped child that
+another case on the same xdist worker left behind is neither reaped here nor
+reported; a new paired case leaves such a corpse of its own in the process and
+the reap case beside it still passes, and a new sensitivity case shows a worker
+the launcher genuinely left defunct is still reported. Gate: the file passed
+20 of 20 runs at <code>-n 8</code> (6 passed in each); the defunct-launcher
+control arm reddens the four reap cases (4 failed, 2 passed); restoring
+<code>waitpid(-1)</code> in the helper reddens the paired case (1 failed,
+5 passed).</p>
+
+</body></html>
