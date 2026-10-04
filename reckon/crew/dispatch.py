@@ -11043,6 +11043,8 @@ def _prior_same_task_run(
     continuing its conversation would carry the shadow's context into the work
     it was only meant to inform.
     """
+    from reckon.crew.resumption import resolve_session
+
     runs = list(records)
     candidates = []
     for record in runs:
@@ -11051,7 +11053,13 @@ def _prior_same_task_run(
             continue
         if _task_identity(record, project, runs) != identity:
             continue
-        if not str(record.get("session_id") or "").strip():
+        session = resolve_session(
+            str(record.get("run_id") or ""),
+            record=record,
+            project=project,
+            root=record.get("repo"),
+        )
+        if not session["resolved"]:
             continue
         candidates.append(record)
     if not candidates:
@@ -11085,6 +11093,8 @@ def _task_session_resolution(
     than composed, and the withholding names it, so a reader sees the refusal
     rather than a bare absence.
     """
+    from reckon.crew.resumption import resolve_session
+
     records = [*committed_runs, *live_pointers]
     identity = _task_identity(
         {
@@ -11101,7 +11111,13 @@ def _task_session_resolution(
     prior = _prior_same_task_run(identity, records, project=project)
     if prior is None:
         return {"session_id": None, "withheld": None}
-    session_id = str(prior.get("session_id") or "").strip()
+    session = resolve_session(
+        str(prior.get("run_id") or ""),
+        record=prior,
+        project=project,
+        root=prior.get("repo"),
+    )
+    session_id = str(session.get("session_id") or "").strip()
     owner = str(
         prior.get("session_harness")
         or prior.get("dialect")
@@ -11227,21 +11243,22 @@ def _current_harness_session(
     from reckon.crew.resumption import resolve_session
 
     run_id = str(record.get("run_id") or "")
+    resolved = resolve_session(run_id, record=record)
     if record.get("launch") != "cli":
-        return resolve_session(run_id, record=record)
+        return resolved
     owner = str(record.get("session_harness") or "")
     boundary = record.get("lane_change") or {}
     changed_harness = boundary.get("session") == "fresh" and boundary.get(
         "from_harness"
     ) != boundary.get("to_harness")
     if not owner and not changed_harness:
-        return resolve_session(run_id, record=record)
+        return resolved
     backend = _backend_settings(record, config)
     harness = _backends.dialect_for(backend).name
     if (not changed_harness and (not owner or owner == harness)) or (
-        record.get("session_id") and owner == harness
+        resolved["resolved"] and owner == harness
     ):
-        return resolve_session(run_id, record=record)
+        return resolved
     observation = _backends.observe_log(
         backend_name=str(record.get("backend") or ""),
         backend=backend,
@@ -11262,7 +11279,7 @@ def _current_harness_session(
         "withheld": None
         if found
         else {
-            "session_id": record.get("session_id") or boundary.get("session_id"),
+            "session_id": resolved.get("session_id") or boundary.get("session_id"),
             "reason": reason,
         },
     }
@@ -12243,6 +12260,11 @@ def record_resumption(
     """Record a launched resumption without overwriting newer observations."""
 
     def resume(record: dict[str, Any]) -> dict[str, Any]:
+        from reckon.crew.resumption import resolve_session
+
+        prior_session_resumed = record.get("session_resumed")
+        if prior_session_resumed is None:
+            prior_session_resumed = resolve_session(run_id, record=record)["resolved"]
         current_attempt = bool(
             attempt_started_at or manifest_baseline_mtime_ns is not None
         )
@@ -12255,9 +12277,7 @@ def record_resumption(
                 "attempt_kind": "resume",
                 # A harness change may require a fresh session even though
                 # this attempt was requested through the resume command.
-                "session_resumed": bool(
-                    record.get("session_resumed", record.get("session_id"))
-                ),
+                "session_resumed": bool(prior_session_resumed),
                 "attempt_started_at": attempt_started_at or _utc_now(),
                 "manifest_baseline_mtime_ns": (
                     _manifest_mtime_ns(record.get("manifest_path") or "")

@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
+import os
 from importlib import import_module
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
-from reckon.crew import promotion
-from reckon.crew.runs import capture_run_session, run_dir
+from reckon.crew import promotion, resumption
+from reckon.crew.runs import _write_json, capture_run_session, pointer_path, run_dir
 
 dispatch = import_module("reckon.crew.dispatch")
 
@@ -34,6 +35,8 @@ def run_with_stream(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
         "role": "implement",
         "launch": "cli",
         "backend": "codex",
+        "argv": ["codex", "exec"],
+        "dialect": "codex",
         "log_path": str(stream),
         "session_id": None,
         "session_harness": "codex",
@@ -66,3 +69,49 @@ def test_promotion_guard_reads_the_same_resolution(run_with_stream: dict) -> Non
     answer = promotion._recoverable_session(run_with_stream)
 
     assert answer == {"session_id": THREAD_ID, "source": "stream"}
+
+
+def test_promotion_guard_consults_ledger_after_pointer_and_stream(
+    run_with_stream: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_with_stream["launch"] = "in-harness"
+    monkeypatch.setattr(
+        resumption, "_ledger_session", lambda *args, **kwargs: THREAD_ID
+    )
+
+    answer = promotion._recoverable_session(run_with_stream)
+
+    assert answer == {"session_id": THREAD_ID, "source": "ledger"}
+
+
+def test_current_harness_reads_resolved_stream_after_boundary(
+    run_with_stream: dict,
+) -> None:
+    run_with_stream["lane_change"] = {
+        "session": "fresh",
+        "from_harness": "other",
+        "to_harness": "codex",
+    }
+
+    answer = dispatch._current_harness_session(run_with_stream)
+
+    assert answer["session_id"] == THREAD_ID
+    assert answer["source"] == "stream"
+    assert answer["consulted"] == ["pointer", "stream", "ledger"]
+
+
+def test_resumption_record_reads_stream_for_legacy_session_flag(
+    run_with_stream: dict,
+) -> None:
+    run_id = run_with_stream["run_id"]
+    _write_json(pointer_path(run_id), run_with_stream)
+
+    answer = dispatch.record_resumption(
+        run_id,
+        pid=os.getpid(),
+        turn=2,
+        log_path=run_with_stream["log_path"],
+        stderr_path=run_dir(run_id) / "stderr.log",
+    )
+
+    assert answer["session_resumed"] is True
