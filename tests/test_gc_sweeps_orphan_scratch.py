@@ -7,6 +7,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from unittest.mock import patch
 
 from click.testing import CliRunner
 
@@ -70,7 +71,13 @@ def test_sweep_reports_and_removes_only_old_unclaimed_scratch(tmp_path, monkeypa
         assert by_name["old"]["withheld"] == ""
         assert dry["would_free_bytes"] == len(b"fixture")
         assert all(path.exists() for path in (live, held, young, old))
-        applied = routing.garbage_collect_orphan_scratch(apply=True, now=now)
+        with patch.object(
+            routing.shutil, "rmtree", wraps=routing.shutil.rmtree
+        ) as remove:
+            applied = routing.garbage_collect_orphan_scratch(apply=True, now=now)
+        removed_targets = [Path(call.args[0]) for call in remove.call_args_list]
+        assert removed_targets == [old]
+        assert all(not path.is_relative_to(real_root) for path in removed_targets)
         assert applied["removed"] == [str(old)]
         assert applied["bytes_freed"] == len(b"fixture")
         assert all(path.exists() for path in (live, held, young))
@@ -116,6 +123,8 @@ def test_ordinary_gc_includes_scratch_without_applying_it(tmp_path, monkeypatch)
     result = CliRunner().invoke(cli.main, ["crew", "gc", "--repo", str(repo)])
     assert result.exit_code == 0, result.output
     report = json.loads(result.output)
+    assert report["scratch"]["root"] == str(root)
+    assert report["scratch"]["removed"] == []
     assert report["scratch"]["entries"][0]["path"] == str(old)
     assert report["scratch"]["would_free_bytes"] == len(b"fixture")
     assert old.exists()
