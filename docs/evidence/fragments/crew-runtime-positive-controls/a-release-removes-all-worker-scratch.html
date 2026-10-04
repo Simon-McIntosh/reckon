@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-release-removes-all-worker-scratch">
+  <meta name="plan-title" content="Promotion releases every directory owned by a worker run">
+  <meta name="plan-summary" content="A stub worker left a bare-id sibling at base; promotion now removes it with TMPDIR and records each path and size.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verifies" content="crew-runtime-positive-controls#s51">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-verdict" content="passed">
+  <title>Worker scratch release evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <header>
+    <p class="eyebrow">Execution evidence</p>
+    <h1>Promotion releases every directory owned by a worker run</h1>
+    <p class="lead">The promoted stub's five-byte TMPDIR file and six-byte bare-id sibling both disappear, and the release receipt names both paths with their sizes.</p>
+  </header>
+  <section id="measure">
+    <h2>Reproduction and measure</h2>
+    <p>The test launches a subprocess with dispatch's worker environment in a temporary <code>RECKON_HOME</code>. It writes one file beneath <code>TMPDIR</code> and one beneath the scratch root in a directory named by the timestamp stem. Promotion at base <code>f87d778c9c986d6b55705d3589531fdf8212afc1</code> removed the former and left the latter: the focused test failed with <code>EXIT=1</code>. The base four-file population completed with <strong>1 failed, 25 passed</strong>; the new sibling case was its only failure.</p>
+    <p>At <code>e2e41121817d1d4af3240457357f552fd3a909f4</code>, release removes real direct children bearing the run's timestamp stem and records each successful removal as a path and byte count. The same four-file population completed with <strong>26 passed, EXIT=0</strong>. The existing recorded-path check still refuses a path outside the current scratch root or one naming a different run. The base and head logs are <code>baseline-suite.log</code> and <code>after-suite-committed.log</code> in the delivering run directory.</p>
+  </section>
+  <section id="historical-scratch">
+    <h2>Historical scratch inventory</h2>
+    <p>Observed on the fleet node on 2026-10-04. Sizes for present directories are apparent bytes from <code>du -sb</code>. The first directory had already been removed by the coordinator; the other directories predate this run and are left for owner-directed cleanup. No live pointer was found for the three named completed runs. The untagged extraction has no run id from which release can establish ownership.</p>
+    <table>
+      <thead><tr><th>Scratch directory under /tmp/reckon-crew-scratch</th><th>Owning run</th><th>Observed state</th></tr></thead>
+      <tbody>
+        <tr><td><code>r-20261003T212316369541</code></td><td><code>r-20261003T212316369541-a-sweep-thread-ends-with-its-test</code></td><td>Absent; coordinator had removed the 740 MB orphan before this node started.</td></tr>
+        <tr><td><code>r-20261002T164034134416</code></td><td><code>r-20261002T164034134416-review-of-plan-review-test-reads-frozen-plans</code></td><td>Present, 259,809,225 bytes; historical completed run, outside this release.</td></tr>
+        <tr><td><code>r-20261002T002018472087-review</code></td><td><code>r-20261002T002018472087-review-of-landing-commit-carries-only-its-own-comment</code></td><td>Present, 346,648,188 bytes; historical completed run, outside this release.</td></tr>
+        <tr><td><code>r-20261002T113050890295-section-who-wait-base</code></td><td><code>r-20261002T113050890295-section-wait-stays-off-the-summary</code></td><td>Present, 206,914,510 bytes; historical completed run, outside this release.</td></tr>
+        <tr><td><code>base.nulhdY</code></td><td>Unknown; no run id in its name.</td><td>Present, 217,910,355 bytes; untagged source extraction, ownership not established.</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+</body>
+</html>
