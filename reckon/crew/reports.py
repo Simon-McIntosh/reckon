@@ -1491,36 +1491,6 @@ def _citation_tokens(entry: str) -> list[str]:
     return tokens
 
 
-# A value of nothing but zeros names the null object id, which resolves to no
-# commit in any store, so it states the count of commits rather than citing
-# one.
-_ZERO_COUNT = re.compile(r"0+")
-
-
-def _cites_a_commit(manifest: dict[str, Any]) -> bool:
-    """Whether the ``commits`` field carries at least one revision citation.
-
-    The field is a citation list, and a count is not a citation: ``0`` parses
-    to a non-empty list, so the field's presence cannot answer the question a
-    role that owes a commit asks. An entry that is nothing but zeros is the
-    count of commits written as a value, and the all-zero object id it spells
-    is the null one, which resolves to no commit in any store. Every other
-    non-empty entry is a citation attempt whatever its width, left to the
-    citation check's token reader and the store that resolves it; a shape rule
-    here would refuse an honest abbreviation, the width trap the citation
-    check records. A value that reaches this reader structured rather than as
-    a list carries no entry and cites nothing.
-    """
-    commits = manifest.get("commits") or ()
-    if not isinstance(commits, (list, tuple)):
-        return False
-    for item in commits:
-        entry = str(item).strip()
-        if entry and not _ZERO_COUNT.fullmatch(entry):
-            return True
-    return False
-
-
 def _commit_resolves_in(root: Path, revision: str) -> bool:
     """Report whether one revision names a commit object in one repository."""
     probe = subprocess.run(
@@ -1929,12 +1899,16 @@ def audit_manifest(
             findings.append(refusal)
     elif status not in ("complete", "blocked", "failed"):
         findings.append(f"status {status!r} is not complete, blocked or failed")
-    if (
-        status == "complete"
-        and _role_owes_a_commit(node)
-        and not _cites_a_commit(manifest)
-    ):
-        findings.append("status is complete but no commit is recorded")
+    if status == "complete" and _role_owes_a_commit(node):
+        # One predicate decides citation for both readers, so the field cannot
+        # read as a citation at the gate and as no citation here — a count is
+        # not a citation. Imported at the use because promotion imports this
+        # module.
+        from reckon.crew.promotion import _manifest_cites_a_commit
+
+        role = "" if node is None else str(node.role or "").strip()
+        if not _manifest_cites_a_commit(manifest, {"role": role}, text):
+            findings.append("status is complete but no commit is recorded")
     if status == "complete" and not manifest.get("tests"):
         findings.append("status is complete but no test result is recorded")
     # Judged whatever the status and whether or not the run is armed: a
