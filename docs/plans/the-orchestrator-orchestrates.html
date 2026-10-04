@@ -20,11 +20,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-informs" content="a-plan-is-reviewed-before-it-is-built,the-crew-contract-fits-one-read,a-worker-reuses-before-it-writes,nova:nova-portfolio-replan">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;}">
   <title>The Orchestrator Orchestrates | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -85,30 +85,12 @@
       build skill becomes a short loop whose middle step is a decision (§5). Consolidating nova and capping
       open work belong to the plans that already own them (§6).</p>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-04</span>
     <h2 id="s2">§2 — A section dispatches with the coordinator's brief</h2>
-
-<section data-reckon="section" data-id="s2" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>reckon crew dispatch --plan &lt;slug&gt; --section &lt;id&gt;
-      --brief &lt;file&gt;</code> is accepted. The plan section stays the semantic authority and every gate that
-      joins a node to its committed section — base-blob visibility, the plan-review gate, the done-when
-      overlap check — runs exactly as it does today. The brief is the coordinator's voice beside it: the
-      reuse map's verdicts for this section, the module to extend and the one not to fork, the interface the
-      change must not widen, what sibling nodes found, which open question the worker may not settle. The
-      prompt carries both, in this order: <code>PLAN project:slug §N</code>, then <code>BRIEF</code> with the
-      file's bytes verbatim. The brief's sha256 and stored copy are recorded on the run and the ledger row as
-      they are for a brief-only run. Landing stays plan-carried: the record goes to the section and impl is
-      expected to move. A brief without a plan keeps its present meaning and its promotion owner requirement.</p>
-    <p><strong>Why not a plan edit instead.</strong> A plan is for what should outlive the session; a brief is
-      for what the next worker needs now. Forcing the second through the first is why coordinators stopped
-      saying it. The brief's bytes are stored on the run, so nothing a worker read is lost; a coordinator that
-      finds a brief worth keeping promotes it into the plan at the landing beat.</p>
-    <p><strong>Done when</strong> <code>validate_node</code> accepts a node naming a plan, a section and a brief;
-      <code>plan_dispatch</code> on that node reaches the committed-section gate and the plan-review gate
-      (asserted with the same spy the exclusivity test used, now expecting the call); the composed prompt carries
-      the <code>PLAN</code> line and the brief's text, and a brief-only prompt is byte-identical to today's;
-      <code>reckon crew dispatch --dry-run</code> with all three succeeds; and
-      <code>tests/test_brief_beside_a_plan_section.py</code> passes with its negative control — the pair check
-      restored in <code>validate_node</code> — turning the acceptance case red.</p>
+<section data-reckon="section" data-id="s2" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed: <code>reckon crew dispatch --plan --section --brief</code> is accepted; the plan stays the authority and every plan gate runs for the pair; the prompt carries <code>PLAN</code> then <code>BRIEF</code>; a briefed plan without a section is refused. Commit <code>741817e6e</code> (review 92/100) and repair <code>c385ef76c</code> (review 98/100), merged at <code>6e3343c62</code>. Every node of this plan's own wave used it. <a href="s2">full record</a></p>
+</section>
 
     <h2 id="s3">§3 — The design review runs before the first build node, and lands where the gate reads</h2>
 
@@ -155,38 +137,12 @@
   <p class="landed-summary">Landed <code>reckon/crew/prompts/review.md</code>: the <code>fit</code> dimension scores an added definition whose capability the repository already owns below 10 unless it extends that owner, with a FINDING naming the owner, and the reading section allows the one owner read. Gate 14 passed, deletion control exit 1; independent review 95/100. Commit <code>ebb350e30</code>, merged at <code>716628820</code>. <a href="s4">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-04</span>
     <h2 id="s5">§5 — The coordinator's loop</h2>
-
-<section data-reckon="section" data-id="s5" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> <code>skills/reckon-build/SKILL.md</code> rewritten as the coordinator's
-      loop in at most 4,000 words, which is <code>the-crew-contract-fits-one-read</code> §3 brought forward
-      at the lead's direction of 4 October. The present text moves whole to
-      <code>references/coordinator-reference.md</code> so no enforced rule is lost while the core is read end to
-      end. The loop has six steps and the fourth is the one the present skill lacks:</p>
-    <ol>
-      <li><strong>Read</strong> the plan, the code it names and the prior evidence. Reading code for design is
-        the coordinator's job; writing product code is not.</li>
-      <li><strong>Review the design</strong> with <code>reckon crew review-plan</code> before the first build
-        node, and answer every finding. The reuse map is its output.</li>
-      <li><strong>Shape the wave.</strong> The unit of dispatch is the section's deliverable. A section is one
-        node unless two of its write scopes must run in parallel. Each node carries a brief citing the reuse
-        map: the module to extend, the interface not to widen, the question the worker may not settle.</li>
-      <li><strong>Decide between nodes.</strong> At each landing read the diff for design, not only for scope:
-        a new helper beside an owner, a wrapper over a mechanism that should have been extended, a widened
-        surface. Then choose one of three: accept and record; re-brief the next node; or re-plan the section
-        and say so in the plan. Nothing is dispatched on an unverified or undecided landing.</li>
-      <li><strong>Integrate</strong> the reviewed head, run the integrated gate, promote, write the plan in
-        the same beat.</li>
-      <li><strong>Close</strong> the section when its deliverable is in the tree, not when its last sliver
-        promoted; drain followups; report what changed, what remains and why.</li>
-    </ol>
-    <p>The core keeps the sentences the skill-contract tests pin and the four fences the tool enforces; it
-      drops every paragraph that restates a refusal the tool will raise. The references stay for a coordinator
-      composing a delegation by hand.</p>
-    <p><strong>Done when</strong> <code>skills/reckon-build/SKILL.md</code> is at most 4,000 words and states
-      the six steps; <code>tests/test_skill_contracts.py</code> and <code>tests/test_skill_contract_parity.py</code>
-      pass; the former text is reachable at <code>references/coordinator-reference.md</code>; and the total of
-      the skill and its references is recorded in this plan's landing against the 37,619 words measured here.</p>
+<section data-reckon="section" data-id="s5" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed: <code>skills/reckon-build/SKILL.md</code> is the six-step loop at 3,485 words; the former body is whole at <code>references/coordinator-reference.md</code> (11,618 words). Gate 76 passed; review 90/100 with two follow-ons (a disclaimed table caption, legacy step numbers the contract tests pin). Commit <code>4e60a9e3b</code>, merged <code>14fd4eb5f</code>. Skill plus references now total 41,004 words against 37,619 before, because the reference keeps the old body; pruning it to the 12,000-word target is <code>the-crew-contract-fits-one-read</code> §3's remaining work. <a href="s5">full record</a></p>
+</section>
 
     <h2 id="s6">§6 — What this plan does not own</h2>
 
@@ -246,6 +202,9 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261004T132516591083-review-of-plan-review-report-parses-and-stores-at-read" data-who="reckon-build" data-when="2026-10-04T13:42:03.890Z">
     <div class="r-comment-body"><p>an independent review of r-20261004T130452090056-plan-review-report-parses-and-stores-at-read is stored as a parsed five-dimension record (goal_fidelity 19, evidence 15, scope_discipline 20, durability 16, fit 18; total 88) keyed to base 14e314a1 and head 54593fb, carrying added_failure_count null (unmeasured) and added_failure_ids [] derived from the reviewed manifest's own suite fields, with two follow-on findings.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-20261004T1605-record-side-landed" data-who="too-coord-1004" data-when="2026-10-04T16:05:00Z">
+    <div class="r-comment-body">Record side landed: run r-20261004T130452090056 added parse_review_report, review_report_directory, write_review_sidecar, delivered_reports and store_delivered_report to plan_review.py and the store-at-read branch to require_plan_reviewed; gate 46 passed, control exit 1; review 88/100 with two follow-ons on log-header revisions; integrated gate re-run 46 passed. Its merge (head 54593fb63) was absorbed into a peer session's promotion commit 107ad6494 when HEAD moved mid-merge; the content is intact (second parent 54593fb63, no diff). Positive control: the landed parser read this plan's own design review into three findings with stable ids. The composition, sweep, command and view are dispatched as r-20261004T160445080071 on codex-astra, because the write set exceeds the local window; the settle-window key defaults in code since reckon/schema/flight-defaults.yaml is claimed by a peer run.</div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261004T130003476921" data-who="reckon-build" data-when="2026-10-04T13:20:00Z">
     <div class="r-comment-body">gate passed (14 passed, control exit 1); review 95/100; section closed at merge 716628820</div>
 </div>
@@ -265,7 +224,7 @@
     <div class="r-comment-body"><p>review-of-build-skill-is-the-coordinators-loop — independent review of r-20261004T130057296274-build-skill-is-the-coordinators-loop stored: 90/100 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 15, fit 18), two follow-on findings.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261004T130057296274-build-skill-is-the-coordinators-loop" data-who="reckon-build" data-when="2026-10-04T16:02:41.913Z">
-    <div class="r-comment-body"><p>build-skill-is-the-coordinators-loop — skills/reckon-build/SKILL.md rewritten as the coordinator&#x27;s six-step loop at 3485 words (&lt;= 4000 ceiling); former body moved whole to references/coordinator-reference.md.</p></div>
+    <div class="r-comment-body"><p>build-skill-is-the-coordinators-loop — skills/reckon-build/SKILL.md rewritten as the coordinator's six-step loop at 3485 words (&lt;= 4000 ceiling); former body moved whole to references/coordinator-reference.md.</p></div>
 </div>
 </section>
 </main>
