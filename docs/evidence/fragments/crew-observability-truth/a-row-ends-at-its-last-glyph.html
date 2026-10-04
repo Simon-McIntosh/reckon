@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-row-ends-at-its-last-glyph">
+  <meta name="plan-title" content="a row ends at its last glyph: the reason clause is bounded but not right-padded">
+  <meta name="plan-summary" content="Ticker.render no longer right-pads the reason cell to the grid's remaining room, and the two-column separator that introduces the clause travels with it, so a row with nothing to explain ends on its last fixed glyph and carries no trailing whitespace. The clause is still bounded by the room the fixed columns leave after the separator, and every column ahead of it keeps its width, so the fixed columns' offsets are unchanged. Focused gate: head 146 passed (EXIT=0); base arm of the eight layout and width files 145 passed, 0 failed (EXIT=0); the declared mutation (the right pad restored) fails the new empty-reason case at EXIT=1.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-tags" content="crew,ticker,row,layout,width,padding">
+  <title>a row ends at its last glyph | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-row-ends-at-its-last-glyph" data-reckon="landed" data-when="2026-10-04">
+  <h2>A row ends at its last glyph: the reason clause is bounded but not right-padded</h2>
+  <p><strong>Landed.</strong> <code>Ticker.render</code> in <code>reckon/crew/ticker.py</code> appends the reason clause at its own length instead of left-justifying it into the grid's remaining room, and the two-column separator that introduces the clause is now appended only when the clause is present. A row with nothing to explain therefore ends on its last fixed glyph rather than in dozens of blank cells. The clause is still bounded by the room the fixed columns leave after the separator (<code>room = grid_width - head - GAP</code>), and every column ahead of it keeps its fixed width, so the fixed columns' offsets are unchanged and the row's visible width is at most the grid width and exactly its content.</p>
+  <p><strong>Focused gate.</strong> The eight layout and width files named in the section (<code>tests/test_crew_ticker_layout.py</code>, <code>tests/test_crew_ticker.py</code>, <code>tests/test_ticker_row_is_one_transition.py</code>, <code>tests/test_ticker_shows_the_lane_mean.py</code>, <code>tests/test_counter_carries_age.py</code>, <code>tests/test_ticker_renders_wait_facts.py</code>, <code>tests/test_ticker_node_names_keep_their_ends.py</code>, <code>tests/test_fleet_counter_launch_failure.py</code>) read 146 passed at <code>EXIT=0</code> at head. The base arm of the same eight files reads 145 passed, 0 failed at <code>EXIT=0</code>, so the change adds zero failures against the base revision; the single added test is the new empty-reason case. Every expectation that pinned the pad moved from exact width to at-most width: each <code>assert len(...) == &lt;width&gt;</code> became <code>assert len(...) &lt;= &lt;width&gt;</code> (or <code>all(len(row) &lt;= &lt;width&gt; ...)</code>), the two row-length equality checks that compared rows within one test became at-most comparisons, the trailing reason-separator gutter assertion in <code>test_every_classifier_transition_keeps_one_grid</code> became conditional on the row carrying a clause, and five test names/docstrings that stated exactness were rewritten to at-most (<code>test_every_line_stays_within_the_requested_width</code>, <code>test_a_crowded_line_stays_within_the_resolved_width</code>, <code>test_a_line_with_spend_facts_stays_within_the_requested_width_at_three_sizes</code>, <code>test_the_row_stays_within_the_pane_width</code>, <code>test_a_stale_fleet_row_stays_within_the_requested_width</code>).</p>
+  <p><strong>Negative control.</strong> The declared mutation restores the right pad: <code>cells.append((f"{reason:&lt;{room}}", "dim"))</code> in place of the unpadded append. Applied to a scratch copy of the head, <code>tests/test_crew_ticker_layout.py::test_a_row_with_no_clause_ends_at_its_last_glyph</code> runs <code>EXIT=1</code>, failing on <code>assert empty[-1] != " "</code> as the empty-reason row again ends in a run of blanks.</p>
+  <p>This fragment carries no element ids, so it adds none to the composition it is checked by.</p>
+</article>
+</body>
+</html>
