@@ -1,0 +1,51 @@
+<article class="landed-report" data-run-id="r-20261004T004533986813-an-exclusion-is-not-a-fit-input">
+  <h3>an-exclusion-is-not-a-fit-input &mdash; an exclusion clause charges nothing, a declaration still charges</h3>
+  <p>
+    A brief that keeps a worker off a large file by naming it in an exclusion
+    (<code>Exclude package/large.py from declared inputs</code>) carries the same
+    &ldquo;declared input&rdquo; keywords a read declaration does, so the fit
+    estimator read the exclusion as a declaration and charged the excluded file at
+    full size &mdash; the refusal the plan records, a done-when naming eleven
+    peer-held paths refused at 232,650 tokens against a 172,800 window for source
+    the node would never open. Reproduced at base <code>626dcd594</code> with the
+    census probe's own fixture (<code>package/large.py</code> 200,007 bytes,
+    <code>package/target.py</code> 10 bytes):
+    <code>plain-exclusion: tokens=3 named_count=0</code>,
+    <code>declared-input-exclusion: tokens=57148 named_count=1
+    named_counted=[True]</code>,
+    <code>positive-input: tokens=57148 named_count=1 named_counted=[True]</code>.
+  </p>
+  <p>
+    <code>reckon/crew/routing.py::_declared_input_files</code> now treats a clause
+    carrying an exclusion cue (<code>_EXCLUSION_CUE</code>: exclude, omit, avoid,
+    ignore, unread, not/never read) as a non-declaration, so an excluded path is
+    never charged; a clause that declares the read still is. After the change the
+    first two probes read <code>tokens=3 named_count=0</code> and the declaration
+    probe is unchanged. Committed at <code>b20f7f065</code>.
+  </p>
+  <p>
+    <strong>Measure.</strong> Gate over <code>tests/test_context_estimate_excludes_granted_paths.py</code>
+    and <code>tests/test_context_estimate_reads_declared_files.py</code>. Base arm
+    (scratch extraction of <code>626dcd594</code>): 6 passed, <code>EXIT=0</code>.
+    Head arm (<code>b20f7f065</code>): 9 passed, <code>EXIT=0</code> &mdash; the
+    three added cases pin both exclusion phrasings at zero tokens for the named
+    large file and the declaration form of the same clause at 57,148 (57,145 for
+    <code>package/large.py</code> plus 3 for <code>package/target.py</code>). A
+    wider sweep over the estimator-touching files (crew routes, routing surface,
+    effective-window slot, picker bound, execution fit, context budget): 52 passed,
+    <code>EXIT=0</code>.
+  </p>
+  <p>
+    <strong>Negative control.</strong> The declared mutation &mdash; change only the
+    exclusion wording into an input wording &mdash; makes the estimate charge the
+    file again: in a scratch extraction of <code>b20f7f065</code> the probe sentence
+    becomes <code>Treat package/large.py as a declared input</code> and the run is
+    1 failed / 8 passed, <code>EXIT=1</code>, failing
+    <code>test_an_excluded_path_is_not_charged_when_the_clause_says_declared_inputs</code>
+    with the record printing <code>package/large.py</code> at 57,145 tokens. A
+    source-side control (the exclusion-cue guard removed from
+    <code>_declared_input_files</code>) reddens the same single case. Logs under the
+    run directory: <code>logs/negative-control-wording.log</code>,
+    <code>logs/negative-control-cue-removed.log</code>.
+  </p>
+</article>
