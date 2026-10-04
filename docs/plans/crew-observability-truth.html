@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.64">
-<meta name="plan-version" content="687">
+<meta name="plan-version" content="688">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;deferred&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;deferred&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;,&quot;s34&quot;:&quot;done&quot;,&quot;s35&quot;:&quot;done&quot;,&quot;s36&quot;:&quot;done&quot;,&quot;s37&quot;:&quot;done&quot;,&quot;s38&quot;:&quot;implementable&quot;,&quot;s39&quot;:&quot;implementable&quot;,&quot;s40&quot;:&quot;implementable&quot;,&quot;s41&quot;:&quot;implementable&quot;,&quot;s42&quot;:&quot;implementable&quot;,&quot;s43&quot;:&quot;implementable&quot;,&quot;s44&quot;:&quot;implementable&quot;}">
@@ -4088,6 +4088,9 @@ if isinstance(argv, list) and argv:
 </div>
 <div class="r-comment" data-section="s40" data-id="c-20261004-s40-landed" data-who="s22-coord" data-when="2026-10-04T14:28:00Z">
     <div class="r-comment-body"><p><strong>Check landed at merge 2c93bc6ac.</strong> <code>audit_manifest</code> carries the names of the fragments each run changed, per plan, into <code>doccheck.audit_composed_record_ids</code> and <code>audit_fragment_ids</code>. It reports a duplicate only where one occurrence lies in one of those fragments. A run adding a cleanly prefixed fragment beside a plan's older collisions now reads ok. A run whose fragment repeats a committed id still reads not ok and names both carriers. A focused gate at the merged head passed 52 tests. Review scored 97. The second half of this section remains: renaming the older bare-id collisions in committed fragments, plan by plan. Those collisions are now reported to no run and still make each composed record fail <code>audit-doc</code> at closure. The section stays open for that node.</p></div>
+</div>
+<div class="r-comment" data-section="s40" data-id="c-run-r-20261004T122658566148-fragment-ids-renamed-batch-c" data-who="reckon-build" data-when="2026-10-04T12:49:20.741Z">
+    <div class="r-comment-body"><p>Renamed all 83 colliding element ids across 36 committed evidence fragments so each begins with its own fragment&#x27;s node id (19 distinct bare ids), with the same-file href anchors renamed alongside; audit_fragment_ids reports 28 duplicate-element-id findings over the nine fragment directories at base 07ad28145 and none at head aa3367847.</p></div>
 </div>
 </section>
 </main>
