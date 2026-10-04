@@ -90,6 +90,7 @@ from reckon.crew.runs import (
     record_process_alive,
     run_dir,
 )
+from reckon.evidence import EXECUTABLE_SECTION_ROLES
 
 # ── Promotion: the transient record becomes committed evidence ──────────────
 
@@ -7324,7 +7325,6 @@ def _plan_remaining_sections(state: Mapping[str, Any]) -> list[str]:
     return sorted(plan_section_anchors(state) - landed)
 
 
-_IMPL_MOVE_ENFORCED_ROLES = frozenset({"implement", "test"})
 _IMPL_MOVE_EXEMPT_CLASSIFICATIONS = frozenset({"negative-result", "correct-refusal"})
 # A run that continues earlier work inherits that work's plan movement: the
 # impl the plan gained belongs to the dispatch the retry corrects, so demanding
@@ -7357,7 +7357,7 @@ def _require_brief_owner(
         # names is its owner, so no discharge is needed.
         return None
     role = str(record.get("role") or "")
-    if role not in _IMPL_MOVE_ENFORCED_ROLES:
+    if role not in EXECUTABLE_SECTION_ROLES:
         return None
     link = str(plan_link).strip()
     reason = str(unplanned_reason).strip()
@@ -7412,7 +7412,7 @@ def _require_impl_moved(
         check["verdict"] = "exempt"
         check["reason"] = "brief-names-no-plan"
         return check
-    if role not in _IMPL_MOVE_ENFORCED_ROLES:
+    if role not in EXECUTABLE_SECTION_ROLES:
         check["verdict"] = "exempt"
         check["reason"] = f"role-not-enforced:{role or 'unknown'}"
         return check

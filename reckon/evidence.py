@@ -272,7 +272,7 @@ _VERDICT_SEVERITY = {"pass": 0, "qualified": 1, "fail": 2}
 #: investigation records its gate as not-run by design, so counting one would
 #: deny every reviewed plan a passing record; a section attempt count reads
 #: this same population.
-_VERDICT_ROLES = frozenset({"implement", "test"})
+EXECUTABLE_SECTION_ROLES = frozenset({"implement", "test"})
 
 
 def _run_verdict(record: Mapping[str, Any]) -> str:
@@ -304,7 +304,7 @@ def _overall_verdict(records: Sequence[Mapping[str, Any]]) -> str:
 
     latest: dict[str, tuple[tuple[str, str], str]] = {}
     for record in records:
-        if str(record.get("role") or "") not in _VERDICT_ROLES:
+        if str(record.get("role") or "") not in EXECUTABLE_SECTION_ROLES:
             continue
         section = section_record_id(record.get("section"))
         if not section:
