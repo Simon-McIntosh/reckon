@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="the-orchestrator-orchestrates">
   <meta name="plan-title" content="The Orchestrator Orchestrates">
   <meta name="plan-summary" content="A coordinator briefs a section, a design review runs before the first build node and lands a reuse map, and the build skill becomes a loop that decides.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="14.0">
   <meta name="plan-capability-version" content="1.0">
@@ -20,11 +20,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-informs" content="a-plan-is-reviewed-before-it-is-built,the-crew-contract-fits-one-read,a-worker-reuses-before-it-writes,nova:nova-portfolio-replan">
   <meta name="plan-north-star" content="legible-to-human-and-agent">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;}">
   <title>The Orchestrator Orchestrates | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -92,43 +92,12 @@
   <p class="landed-summary">Landed: <code>reckon crew dispatch --plan --section --brief</code> is accepted; the plan stays the authority and every plan gate runs for the pair; the prompt carries <code>PLAN</code> then <code>BRIEF</code>; a briefed plan without a section is refused. Commit <code>741817e6e</code> (review 92/100) and repair <code>c385ef76c</code> (review 98/100), merged at <code>6e3343c62</code>. Every node of this plan's own wave used it. <a href="s2">full record</a></p>
 </section>
 
+    <section class="section-landed">
+  <header><span class="badge badge-shipped">&#10003; landed 2026-10-04</span>
     <h2 id="s3">§3 — The design review runs before the first build node, and lands where the gate reads</h2>
-
-<section data-reckon="section" data-id="s3" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> One command, <code>reckon crew review-plan --project P --plan &lt;slug&gt;
-      --session S [--rubric design|content] [--local]</code>, composes and dispatches the plan review the store
-      was built for. It is a brief dispatch under the <code>review</code> role: the brief is the rubric prompt
-      from <code>reckon/crew/prompts/</code> with the plan's path, the codebase roots to search and the report
-      path filled in; the node id is <code>plan-review-of-&lt;slug&gt;</code>, which the gate already exempts;
-      the write path is one report directory under the crew reports root. Beside the report the dispatch writes
-      a sidecar naming the plan slug, version, blob sha and content fingerprint it composed for, so the record
-      is keyed to what the reviewer read and not to what the plan says later.</p>
-    <p>The reviewer emits the rubric's <code>RUBRIC</code> and <code>FINDING</code> lines into the report.
-      <code>plan_review.parse_review_report</code> turns them into the store's record shape — one finding per
-      line with a stable id, type, text, and the would-change verdict and reason — and
-      <code>plan_review.store_delivered_report</code> joins report and sidecar and writes through
-      <code>store_plan_review</code>. <strong>The gate stores at read.</strong> When
-      <code>require_plan_reviewed</code> finds no stored review for the plan's fingerprint, it looks for a
-      delivered report whose sidecar carries that fingerprint, stores it, and judges the result. The coordinator
-      never runs a store step and never has to remember one; it dispatches the review, and the next build
-      dispatch finds it.</p>
-    <p>The coordinator reads the review through <code>crew(project, view="plan-review", plan=&lt;slug&gt;)</code>:
-      the stored record, its unanswered findings, and any delivered report not yet stored. It answers through
-      <code>reckon crew review-plan --project P --plan &lt;slug&gt; --answer &lt;finding-id&gt; --acted|--declined
-      "&lt;reason&gt;"</code>, which is <code>record_response</code> behind one flag pair. The design rubric's
-      <code>reuse_search</code> finding is the reuse map the build skill has asked for in prose since hard rule
-      17: it names the mechanism and the file that owns it, and the coordinator's brief for each section cites it.</p>
-    <p><strong>Done when</strong> <code>reckon crew review-plan --dry-run</code> against a committed plan
-      resolves a brief dispatch whose node id is <code>plan-review-of-&lt;slug&gt;</code> and whose brief
-      contains the design rubric's four items; a fixture report with two findings parses to two findings with
-      ids, types and verdicts, and a report missing a <code>RUBRIC</code> line reports that item absent;
-      <code>require_plan_reviewed</code> in enforce mode, with no stored review and a delivered report plus
-      sidecar for the plan's fingerprint, stores the record and then refuses by the unanswered finding's name,
-      and admits the build once both findings are answered; the MCP view returns the stored record and the
-      unanswered ids; and <code>tests/test_plan_review_dispatch.py</code> passes with its negative control —
-      the store-at-read branch removed — turning the enforce-mode case red.</p>
-    <p><strong>Enforcement.</strong> The gate's mode stays <code>report</code> in the shipped defaults until
-      the first five plan reviews have landed through this path; the decision below records when it flips.</p>
+<section data-reckon="section" data-id="s3" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section></header>
+  <p class="landed-summary">Landed in two nodes. Record side: <code>parse_review_report</code>, the sidecar, <code>delivered_reports</code>, <code>store_delivered_report</code> and the store-at-read branch in <code>require_plan_reviewed</code> (commit <code>aba2f8d3c</code>, review 88/100, merged in <code>107ad6494</code>). Composition side: the shared review composer takes a plan subject, the reflex sweep composes a design review for quiet unreviewed plan content behind <code>review.plan_settle_seconds</code>, <code>reckon crew review-plan</code> is the manual trigger with an answer mode, and the crew tool gains the <code>plan-review</code> view (commit <code>789867093</code>, gate 191 passed, review 94/100, merged <code>c1c3157f4</code>). The first plan design review of any project ran against this plan at r-20261004T130140304192. <a href="s3">full record</a></p>
+</section>
 
     <section class="section-landed">
   <header><span class="badge badge-shipped">&#10003; landed 2026-10-04</span>
@@ -178,10 +147,11 @@
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
-<article class="r-fu" data-id="f-too-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-04" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-too-001" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-04" data-recommends-skill="" data-resolved-at="2026-10-04T16:47:02+00:00" data-resolved-by="too-coord-1004">
     <h4 class="r-fu-title">Land the brief, the review command and the skill core</h4>
     <div class="r-fu-body"><p>§2 and §3 are independent and §4 is small; §5 follows §3 because the loop's second step names the command. The lead directed this work inline on 4 October.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-orchestrator-orchestrates</pre>
+    <p class="r-fu-outcome">Landed: §2 brief beside a plan section (741817e6e, repair c385ef76c), §3 the plan design review composed, swept and stored (aba2f8d3c, 789867093), §4 the review prompt judges reuse (ebb350e30), §5 the build skill as the six-step loop (4e60a9e3b). The two follow-on repairs are sections 6 and 7 of a-plan-is-reviewed-before-it-is-built, which owns the plan-review loop; the two decisions this plan leaves to the lead stay recorded as its open decisions. done — no followup</p>
     </article>
 <article class="r-fu" data-id="f-too-verify-gate-replays-the-result-clause" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="too-coord-1004" data-written-at="2026-10-04" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">verify-gate replays a worker&#x27;s tests line including its result clause</h4>
@@ -209,7 +179,7 @@
     <div class="r-comment-body"><p>Extended the shared review composer and launcher with plan subjects, quiet fingerprint eligibility, one review-plan command for dispatch and responses, and one plan-review crew view; final gate 191 passed / 0 failed, negative control 1 failed with the second reviewed-plan dispatch, lint adds 0 findings.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261004T163749214582-review-of-review-plan-command-and-view" data-who="reckon-build" data-when="2026-10-04T16:43:16.346Z">
-    <div class="r-comment-body"><p>Attached an independent review of r-20261004T160445080071-review-plan-command-and-view: a parsed record scoring goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 19 (total 94) at reviewed_base_sha 357025eace484e38f5b33aa86a60521421c5bee1 and reviewed_head_sha 789867093dec0c6a908e495e5700ca4b51b4285b, with added_failure_count 0 and added_failure_ids [] derived from the reviewed run&#x27;s own baseline.log and head-gate.log, and one follow-on finding.</p></div>
+    <div class="r-comment-body"><p>Attached an independent review of r-20261004T160445080071-review-plan-command-and-view: a parsed record scoring goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 19 (total 94) at reviewed_base_sha 357025eace484e38f5b33aa86a60521421c5bee1 and reviewed_head_sha 789867093dec0c6a908e495e5700ca4b51b4285b, with added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own baseline.log and head-gate.log, and one follow-on finding.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261004T130003476921" data-who="reckon-build" data-when="2026-10-04T13:20:00Z">
     <div class="r-comment-body">gate passed (14 passed, control exit 1); review 95/100; section closed at merge 716628820</div>

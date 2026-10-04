@@ -23,9 +23,9 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="22">
+<meta name="plan-version" content="23">
 <meta name="plan-modified" content="2026-10-04">
-<meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -98,6 +98,14 @@
 <section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
 <p><code>tests/test_plan_review_store.py::test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it</code> reads the live <code>docs/plans/a-plan-is-reviewed-before-it-is-built.html</code> and <code>docs/plans/reckon-mcp-plan.html</code>. Since the followup migration (f65cc8edf) gave the first a complete set of section records, its impl is derived, so the test's <code>plan-impl</code> edit no longer reaches the impl state and the case fails (<code>assert 0.0 != 0.0</code>), found by S21's closing suite at ca630c06e. A test whose outcome moves when a plan is edited is a monitor of the docs tree, not a test of the fingerprint.</p><p><strong>Done when</strong> the test reads committed fixture copies under <code>tests/fixtures/plan_review_store/</code>, one legacy plan without a named effort field and one current plan whose impl is authored, so editing any live plan cannot change its outcome; the case passes; and a second case asserts that on a plan whose impl derives from complete section records, a <code>plan-impl</code> edit leaves both the impl state and the fingerprint unchanged.</p>
 
+    <h2 id="s6">§6 — A review dry run composes nothing on disk</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> <code>reckon crew review-plan --dry-run</code> previews the composed plan review without writing its report directory, brief, plan snapshot or sidecar: the composer in <code>reckon/crew/recovery.py</code> returns the fields it would write and writes them only on a real dispatch, and repeated previews mint no run directories that <code>store_delivered_report</code> never consumes. Found by the review of run r-20261004T160445080071.</p><p><strong>Done when</strong> a dry run against a committed plan leaves the plan's report root unchanged (asserted by listing it before and after in <code>tests/test_review_plan_command.py</code>), a real dispatch still writes all four files, and the negative control restores the early write and reddens the listing assertion.</p>
+
+    <h2 id="s7">§7 — The settle window is declared in the defaults file</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p><strong>Deliverable.</strong> <code>review.plan_settle_seconds: 600</code> added to <code>reckon/schema/flight-defaults.yaml</code> beside <code>review.tiers</code>, so the key the sweep reads through <code>reckon/flight.py:plan_review_settle_seconds</code> is declared rather than defaulted in code alone. Deferred from the-orchestrator-orchestrates §3 because run r-20261004T121716121040 held a live claim on the defaults file.</p><p><strong>Done when</strong> the shipped default layer names the key, the schema validation accepts it, and a test asserts the resolved config carries 600 from the file with no code default involved.</p>
+
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
 <div class="r-dec" data-key="declined-finding-recurrence" data-choice="surface-recurrence" data-by="lead" data-when="2026-09-25T08:32:15+00:00">
@@ -132,10 +140,11 @@
     <pre class="r-fu-prompt">/reckon-build a-plan-is-reviewed-before-it-is-built §2</pre>
     <p class="r-fu-outcome">Moved into §4 as an implementable section, because the roadmap schedules sections and never followups (work-is-a-section-not-a-followup §4).</p>
     </article>
-<article class="r-fu" data-id="f-apirbiib-pr2-pr5-carried" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="too-coord-1004" data-written-at="2026-10-04" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-apirbiib-pr2-pr5-carried" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="too-coord-1004" data-written-at="2026-10-04" data-recommends-skill="" data-resolved-at="2026-10-04T16:46:35+00:00" data-resolved-by="too-coord-1004">
     <h4 class="r-fu-title">PR-2 and PR-5 of §4 are carried by the-orchestrator-orchestrates §3</h4>
     <div class="r-fu-body">Pointer, not work: the sweep that dispatches plan reviews (PR-2) and the responses-and-surface half (PR-5) are being built under the-orchestrator-orchestrates §3, which extends the review-dispatch composer in reckon/crew/recovery.py to a plan subject per D6 and adds the settle-window eligibility per D2. The first plan review of any project landed there on 2026-10-04 as run r-20261004T130140304192. Resolve this followup when that section collapses; §4 here then records PR-2 and PR-5 as landed by that plan.</div>
     <pre class="r-fu-prompt">/reckon-build the-orchestrator-orchestrates §3</pre>
+    <p class="r-fu-outcome">Landed by the-orchestrator-orchestrates §3: the review composer in reckon/crew/recovery.py takes a plan subject, the reflex sweep composes a design review for quiet unreviewed plan content behind review.plan_settle_seconds, reckon crew review-plan triggers and answers it, and the crew tool's plan-review view reads it (commits aba2f8d3c and 789867093, merged 107ad6494 and c1c3157f4). Two small repairs it left are the sections below.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -210,6 +219,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261002T164034134416-review-of-plan-review-test-reads-frozen-plans" data-who="reckon-build" data-when="2026-10-02T17:03:16.505Z">
     <div class="r-comment-body"><p>the independent review for run r-20261002T141513710685-plan-review-test-reads-frozen-plans is stored as a parsed record scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 20, fit 19 (total 98), reading base ba2c17c79 and head dedb1bad, with added_failure_count 0 and no added_failure_ids; it reproduces both the base-arm defect and the head-arm pass and verifies the three fixture copies byte-for-byte against their claimed live sources.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20261004T1645-pr2-pr5-landed" data-who="too-coord-1004" data-when="2026-10-04T16:45:00Z">
+    <div class="r-comment-body">PR-2 (the sweep that dispatches plan reviews) and PR-5 (responses and surface) landed under the-orchestrator-orchestrates §3 per D2 and D6: see that plan's evidence record anchor s3. PR-1, PR-3 and PR-4 were already on main. The first plan design review of any project ran on 2026-10-04 as r-20261004T130140304192.</div>
 </div>
 </section>
 </main>
