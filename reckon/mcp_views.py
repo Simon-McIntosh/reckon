@@ -1479,10 +1479,10 @@ def section_attempts_by_plan(
     Committed rows settle an outcome; a live pointer for the same run id adds
     nothing. The legacy ``data-attempts`` attribute is not an input.
     """
-    from reckon import crew
+    from reckon.crew import runs
     from reckon.crew.routing import section_record_id
 
-    history, _version = ledger.load(project, root, use_index=False)
+    history, _version = ledger.load(project, root)
     observed: dict[str, tuple[str, str, dict[str, Any]]] = {}
     for row in history.get("runs", []):
         if not isinstance(row, Mapping) or row.get("role") not in {"implement", "test"}:
@@ -1514,7 +1514,7 @@ def section_attempts_by_plan(
             },
         )
     if pointers is None:
-        pointers = crew.list_live()
+        pointers = runs._list_live_records(project=project)
     for pointer in pointers:
         if (
             not isinstance(pointer, Mapping)
@@ -1542,6 +1542,26 @@ def section_attempts_by_plan(
         record["attempts"] += 1
         record["attempt_outcomes"].append(outcome)
     return grouped
+
+
+def with_section_attempts(
+    project: str,
+    slug: str,
+    sections: list[dict[str, Any]],
+    root: str | Path | None = None,
+) -> list[dict[str, Any]]:
+    """Add run-derived attempts to section records for a delivered plan view."""
+    from reckon.crew.routing import section_record_id
+
+    by_section = section_attempts_by_plan(project, root).get(slug, {})
+    enriched = []
+    for record in sections:
+        details = by_section.get(section_record_id(record["id"]))
+        item = {**record, "attempts": details["attempts"] if details else 0}
+        if details:
+            item["attempt_outcomes"] = details["attempt_outcomes"]
+        enriched.append(item)
+    return enriched
 
 
 def _recorded_live_run_classifications(project: str) -> dict[str, dict[str, Any]]:
@@ -2426,6 +2446,7 @@ def _summary(
     }
     if selector.type == "plan":
         result["section_blocking"] = _section_blocking(deps)
+        result["sections"] = list(data.get("sections") or [])
     return result
 
 
@@ -2731,6 +2752,20 @@ def resource_view(
     """Transform one canonical resource into the requested response view."""
 
     selected = normalize_view(view)
+    if (
+        selector.type == "plan"
+        and selected in {"summary", "detail", "section", "raw"}
+        and data.get("sections")
+    ):
+        data = {
+            **data,
+            "sections": with_section_attempts(
+                selector.project,
+                selector.id,
+                data["sections"],
+                provenance.get("checkout"),
+            ),
+        }
     if selector.type == "review" and selected in {"summary", "detail"}:
         checkout = provenance.get("checkout")
         if checkout:

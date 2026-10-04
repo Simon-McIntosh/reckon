@@ -2206,6 +2206,7 @@ def _build_roadmap(
     selected_slugs = _scope_slugs(all_plans, membership, sprint_id)
     plans = {slug: all_plans[slug] for slug in selected_slugs}
     from reckon import crew
+    from reckon.crew import runs
     from reckon.crew.routing import section_record_id
 
     pointers = crew.list_live()
@@ -2213,7 +2214,7 @@ def _build_roadmap(
     attempts_by_plan = section_attempts_by_plan(
         project,
         root=resolved_docs.parent if resolved_docs is not None else None,
-        pointers=pointers,
+        pointers=runs._list_live_records(project=project),
     )
     findings: list[dict[str, Any]] = []
     dependency_rows: dict[str, list[dict[str, Any]]] = defaultdict(list)

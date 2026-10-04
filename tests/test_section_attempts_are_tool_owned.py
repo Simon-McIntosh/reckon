@@ -150,8 +150,10 @@ def _dispatch(
 
 
 def _section(root: Path, section: str = "work") -> dict:
-    state, _version = _store.read_plan("sample", "fixture", root, artifact_type="plan")
-    return next(row for row in state["sections"] if row["id"] == section)
+    response = mcp._read_plan(
+        project="sample", slug="fixture", checkout_path=str(root), view="raw"
+    )
+    return next(row for row in response["data"]["sections"] if row["id"] == section)
 
 
 def test_attempts_derive_from_executable_runs_and_their_outcomes(
@@ -172,6 +174,20 @@ def test_attempts_derive_from_executable_runs_and_their_outcomes(
         first["run_id"],
         second["run_id"],
     }
+    with monkeypatch.context() as patched:
+
+        def refuse_classification(*_args, **_kwargs):
+            raise AssertionError("live run classification was requested")
+
+        patched.setattr(crew, "list_live", refuse_classification)
+        with pytest.raises(AssertionError, match="classification was requested"):
+            crew.list_live()
+        assert (
+            mcp_views.section_attempts_by_plan("sample", root)["fixture"]["work"][
+                "attempts"
+            ]
+            == 2
+        )
     assert plan.read_bytes() == before
     assert _git(root, "rev-parse", "HEAD") == base
 
@@ -214,6 +230,19 @@ def test_attempts_derive_from_executable_runs_and_their_outcomes(
         project="sample", slug="fixture", checkout_path=str(root), view="raw"
     )
     assert raw["data"]["sections"][0]["attempts"] == 2
+    for view in ("summary", "detail"):
+        response = mcp._read_plan(
+            project="sample", slug="fixture", checkout_path=str(root), view=view
+        )
+        assert response["sections"][0]["attempts"] == 2
+    section_view = mcp._read_plan(
+        project="sample",
+        slug="fixture",
+        checkout_path=str(root),
+        view="section",
+        section="work",
+    )
+    assert section_view["section"]["record"]["attempts"] == 2
     inventory = [_plan_html.parse_meta(plan)]
     report = roadmap.build_roadmap(
         "sample", inventory, [], docs_dir=root / "docs", review={}
@@ -258,7 +287,8 @@ def test_state_write_drops_non_authoritative_attribute(
     root, plan = _repository(tmp_path, monkeypatch)
     _dispatch(root, "one")
     state, version = _store.read_plan("sample", "fixture", root, artifact_type="plan")
-    assert state["sections"][0]["attempts"] == 1
+    assert state["sections"][0]["attempts"] == 0
+    assert _section(root)["attempts"] == 1
     state["sections"][0]["attempts"] = 99
     state["summary"] = "An ordinary plan edit"
     _store.write_plan("sample", "fixture", state, version, root, artifact_type="plan")

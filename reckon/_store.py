@@ -1511,21 +1511,7 @@ def read_plan(
                 data = compose_project_state(docs_dir, project)
                 return data, 0
         return _load_json_envelope(state_path(project, slug, root))
-    data, version = _read_state(project, slug, root, artifact_type)
-    if data.get("type") == "plan" and data.get("sections"):
-        from reckon.crew.routing import section_record_id
-        from reckon.mcp_views import section_attempts_by_plan
-
-        attempts = section_attempts_by_plan(project, root).get(slug, {})
-        enriched = []
-        for record in data["sections"]:
-            details = attempts.get(section_record_id(record["id"]))
-            item = {**record, "attempts": details["attempts"] if details else 0}
-            if details:
-                item["attempt_outcomes"] = details["attempt_outcomes"]
-            enriched.append(item)
-        data["sections"] = enriched
-    return data, version
+    return _read_state(project, slug, root, artifact_type)
 
 
 def write_plan(
