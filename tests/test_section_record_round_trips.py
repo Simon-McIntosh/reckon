@@ -112,6 +112,17 @@ def _fixture_html(records=None):
     )
 
 
+def _without_attempt_metadata(text: str) -> str:
+    return re.sub(r' data-attempts="[^"]*"', "", text)
+
+
+def _zero_attempt_records(records: list[dict]) -> list[dict]:
+    result = deepcopy(records)
+    for record in result:
+        record["attempts"] = 0
+    return result
+
+
 def test_three_sections_parse_all_six_fields(tmp_path):
     path = tmp_path / "section-example.html"
     path.write_text(_fixture_html())
@@ -126,14 +137,16 @@ def test_three_sections_parse_all_six_fields(tmp_path):
     assert from_html(path.read_text()).canonical_dump()["sections"] == RECORDS
 
 
-def test_section_record_round_trip_is_byte_stable(tmp_path):
+def test_section_record_round_trip_drops_legacy_attempts_once(tmp_path):
     original = _fixture_html()
     state = read_state(original)
     assert state["sections"] == RECORDS
     rendered = write_state(original, state)
-    assert rendered == original
+    assert rendered == _without_attempt_metadata(original)
     assert write_state(rendered, from_html(rendered).canonical_dump()) == rendered
-    assert read_state(rendered) == state
+    expected_state = deepcopy(state)
+    expected_state["sections"] = _zero_attempt_records(RECORDS)
+    assert read_state(rendered) == expected_state
 
     # Reconstruct the records from parsed state so leaving stale markup untouched
     # cannot pass as regeneration.
@@ -144,7 +157,7 @@ def test_section_record_round_trip_is_byte_stable(tmp_path):
     assert reconstructed == rendered
     path = tmp_path / "section-example.html"
     path.write_text(reconstructed)
-    assert parse_plan(path)["sections"] == RECORDS
+    assert parse_plan(path)["sections"] == _zero_attempt_records(RECORDS)
 
 
 @pytest.mark.parametrize(
@@ -205,7 +218,8 @@ def test_write_updates_record_fields_and_preserves_authored_prose():
     state["sections"][1]["effort_hours"] = 3.75
     state["sections"][1]["links"] = ["other:inputs#ready"]
     rendered = write_state(original, state)
-    assert read_state(rendered)["sections"] == state["sections"]
+    assert read_state(rendered)["sections"] == _zero_attempt_records(state["sections"])
+    assert "data-attempts" not in rendered
     assert (
         rendered.count(
             '<p class="authored">Keep &amp; preserve <strong>these bytes</strong>.</p>'
@@ -248,7 +262,7 @@ def test_raw_read_exposes_section_records(tmp_path, monkeypatch):
         checkout_path=str(checkout),
     )
     assert result.get("ok") is not False, result
-    assert result["data"]["sections"] == RECORDS
+    assert result["data"]["sections"] == _zero_attempt_records(RECORDS)
 
 
 def test_section_records_survive_canonical_typed_dump():
@@ -273,10 +287,10 @@ def test_heading_carried_record_round_trips_and_preserves_authored_attributes():
     )
     state = read_state(original)
     assert state["sections"] == RECORDS
-    assert write_state(original, state) == original
+    assert write_state(original, state) == _without_attempt_metadata(original)
     state["sections"][0]["attempts"] = 1
     rendered = write_state(original, state)
-    assert read_state(rendered)["sections"][0]["attempts"] == 1
+    assert read_state(rendered)["sections"][0]["attempts"] == 0
     assert 'class="authored"' in rendered
     assert ">The <em>design</em> work</h2>" in rendered
     assert write_state(rendered, read_state(rendered)) == rendered
@@ -327,7 +341,7 @@ def test_optional_capability_floors_survive_regeneration():
     )
     state = read_state(original)
     assert state["sections"][0]["capability"]["requirements"]["context"] == "extended"
-    assert write_state(original, state) == original
+    assert write_state(original, state) == _without_attempt_metadata(original)
 
 
 def test_boolean_attempts_cannot_enter_typed_state():
@@ -345,8 +359,8 @@ def test_structural_section_wrappers_without_record_metadata_are_preserved():
     state = read_state(original)
     assert state["sections"] == []
     assert write_state(original, state) == original
-    assert (
-        read_state(write_state(original, {"sections": RECORDS}))["sections"] == RECORDS
+    assert read_state(write_state(original, {"sections": RECORDS}))["sections"] == (
+        _zero_attempt_records(RECORDS)
     )
     assert "<p>Authored prose</p></section>" in write_state(
         original, {"sections": RECORDS}
