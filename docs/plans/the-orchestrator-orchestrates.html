@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="the-orchestrator-orchestrates">
   <meta name="plan-title" content="The Orchestrator Orchestrates">
-  <meta name="plan-summary" content="A coordinator briefs a section, a design review runs before the first build node and lands a reuse map, and the build skill becomes a loop that decides between nodes.">
+  <meta name="plan-summary" content="A coordinator briefs a section, a design review runs before the first build node and lands a reuse map, and the build skill becomes a loop that decides.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="14.0">
@@ -24,6 +24,8 @@
   <title>The Orchestrator Orchestrates | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
   <main class="plan-doc">
@@ -206,34 +208,42 @@
       plans and closing or abandoning them before any new node is cut.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="plan-review-gate-mode" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">When does the plan-review gate move from report to enforce?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="after-five-landed">After five plan reviews have landed through review-plan</button>
-          <button class="r-opt" data-value="now">Now, with --allow-unreviewed-plan as the recorded waiver</button>
-          <button class="r-opt" data-value="per-project">Per project, in that project's flight layer</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-      <div class="r-dec" data-key="unit-of-dispatch" data-choice="" data-by="" data-when="">
-        <p class="r-dec-q">Does the single-goal lint read the section's deliverable or the node's measure?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="section-deliverable">The section's deliverable; a section is one node by default</button>
-          <button class="r-opt" data-value="node-measure">The node's measure, as today</button>
-        </p>
-        <p class="r-dec-rat"></p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="plan-review-gate-mode" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">When does the plan-review gate move from report to enforce?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="after-five-landed">After five plan reviews have landed through review-plan</button>
+      <button class="r-opt" data-value="now">Now, with --allow-unreviewed-plan as the recorded waiver</button>
+      <button class="r-opt" data-value="per-project">Per project, in that project&#x27;s flight layer</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+<div class="r-dec" data-key="unit-of-dispatch" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">Does the single-goal lint read the section&#x27;s deliverable or the node&#x27;s measure?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="section-deliverable">The section&#x27;s deliverable; a section is one node by default</button>
+      <button class="r-opt" data-value="node-measure">The node&#x27;s measure, as today</button>
+      </p>
+    <p class="r-dec-rat"></p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-too-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-04">
-        <h4 class="r-fu-title">Land the brief, the review command and the skill core</h4>
-        <div class="r-fu-body"><p>§2 and §3 are independent and §4 is small; §5 follows §3 because the loop's second step names the command. The lead directed this work inline on 4 October.</p></div>
-        <pre class="r-fu-prompt">/reckon-build the-orchestrator-orchestrates</pre>
-      </article>
-    </section>
-  </main>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-too-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-04" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the brief, the review command and the skill core</h4>
+    <div class="r-fu-body"><p>§2 and §3 are independent and §4 is small; §5 follows §3 because the loop's second step names the command. The lead directed this work inline on 4 October.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-orchestrator-orchestrates</pre>
+    </article>
+</section>
+  <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="s1" data-id="c-20261004T1312-design-review" data-who="too-coord-1004" data-when="2026-10-04T13:12:00Z">
+    <div class="r-comment-body">Design review of this plan (prior-art and depth rubric) ran as run r-20261004T130140304192 on the local lane, 8 minutes, report under the session's crew reports directory. Four RUBRIC verdicts, three findings, all three acted on: reuse_search — §2 is already landed at commit 741817e6e, so it is recorded as landed rather than re-dispatched; thin_wrapper — the report-plus-sidecar delivery and store-at-read branch over store_plan_review now carry their justification in the §3 comment below; duplicate_owner — §3 lands PR-2 and PR-5 of a-plan-is-reviewed-before-it-is-built §4 and extends the existing review-dispatch composer rather than adding a second one. deep_module passed.</div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-20261004T1313-design-decisions" data-who="too-coord-1004" data-when="2026-10-04T13:13:00Z">
+    <div class="r-comment-body">Why the report and sidecar rather than the reviewer writing the store record directly, as code reviewers do: the record's join keys — the content fingerprint, the plan version and the reviewed blob — are what the gate reads, and a reviewer cannot compute them reliably (this plan's own design reviewer recorded plan_version null because the file had never been server-written). The dispatcher knows all three at compose time, so it writes the sidecar and the reviewer writes only RUBRIC and FINDING lines; store_delivered_report joins the two through store_plan_review, which stays the one writer. §3 is split into two nodes for the local lane's context window: the record side (parse_review_report, review_report_directory, write_review_sidecar, delivered_reports, store_delivered_report, and the store-at-read branch in require_plan_reviewed) as run r-20261004T130452090056, then the composition, sweep, command and view. The second lands PR-2 and PR-5 of a-plan-is-reviewed-before-it-is-built §4 under that plan's D2 and D6: the plan subject is added to the existing review-dispatch composer in reckon/crew/recovery.py and the reflex sweep gains plan eligibility behind a settle window, so reckon crew review-plan is the manual trigger of the same composition, not a second one.</div>
+</div>
+</section>
+</main>
 </body>
 </html>
