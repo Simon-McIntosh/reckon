@@ -3112,9 +3112,12 @@ def _repository_tree_boundary_violations(
     # the peer does not declare is a stray edit this check exists to catch.
     held_trees = {tree for tree in _live_worktree_claims() if tree != own_tree}
     peer_grants: dict[Path, list[Path]] = {}
+    # A pointer naming no worktree names no tree: a blank field resolved as
+    # Path("") is the directory this promotion started in, and a live claim on
+    # that tree would read this pointer's declaration onto it.
     for pointer in list_live():
-        peer_tree = Path(str(pointer.get("worktree") or "")).resolve()
-        if peer_tree not in held_trees:
+        peer_tree = _record_worktree(pointer)
+        if peer_tree is None or peer_tree not in held_trees:
             continue
         if Path(str(pointer.get("repo") or ".")).resolve() != repository:
             continue

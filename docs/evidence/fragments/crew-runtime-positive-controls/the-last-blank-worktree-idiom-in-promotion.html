@@ -1,0 +1,74 @@
+<!doctype html>
+<html><head>
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+<meta name="plan" content="crew-runtime-positive-controls">
+<meta name="node" content="the-last-blank-worktree-idiom-in-promotion">
+<title>the-last-blank-worktree-idiom-in-promotion</title>
+</head><body>
+
+<h2 id="the-last-blank-worktree-idiom-in-promotion-landing">The last unguarded blank-worktree idiom in promotion grants nothing to the ambient tree</h2>
+
+<p>Landed at <code>f9841e84d</code> on <code>reckon/crew/promotion.py</code>, with
+<code>tests/test_promotion_last_blank_worktree_site.py</code> added. This is the
+last instance of the idiom in the file: a grep for
+<code>Path(str(&lt;record or pointer&gt;.get("worktree") or ""))</code> across
+<code>reckon/crew/*.py</code> finds one remaining match,
+<code>resumption.py:1245</code>, guarded on the next line by
+<code>if not str(pointer.get("worktree") or "") or not worktree.is_dir():</code>.</p>
+
+<p>The boundary scan's peer-grant loop in
+<code>_repository_tree_boundary_violations</code> resolved each live pointer's
+tree as <code>Path(str(pointer.get("worktree") or "")).resolve()</code>, and
+<code>Path("")</code> is <code>Path(".")</code> &mdash; the directory the
+promotion started in. Where another live pointer legitimately held that tree,
+such as a promotion running from the main checkout with a peer working there, a
+blank pointer's declared write paths were granted to it: an uncommitted edit at
+one of those paths was exempted from the boundary walk instead of reported. The
+loop now resolves each pointer's tree through <code>_record_worktree</code>,
+which returns no tree for a blank field, and the grant loop skips a pointer
+whose tree resolves to nothing, so a blank pointer donates no grants.</p>
+
+<h3 id="the-last-blank-worktree-idiom-in-promotion-reproduction">The recorded defect, reproduced against the base tree</h3>
+
+<p><code>promotion.py</code> is byte-identical between base
+<code>e7323d72a</code> and the revision this worktree started from,
+<code>c1c3157f4</code>, so reverting only this site in the working tree
+reproduces base behaviour exactly there. The population of test files importing
+<code>reckon.crew.promotion</code> (60 files, enumerated by import line), each
+arm run from this worktree with the header naming the revision, the command, the
+tree and <code>promotion.py</code>'s resolved path: base behaviour &mdash;
+<strong>1 failed, 539 passed, 7 warnings in 222.93s</strong>,
+<code>EXIT=1</code> (<code>population-base.log</code>), the single failure being
+exactly the case this node adds; after the fix &mdash; <strong>540 passed, 7
+warnings in 218.77s</strong>, <code>EXIT=0</code>
+(<code>population-after.log</code>). The after arm adds no failure against base,
+so the fix turns the population green rather than merely moving the failure.</p>
+
+<h3 id="the-last-blank-worktree-idiom-in-promotion-gate">Gate</h3>
+
+<p>The new file at head, together with
+<code>tests/test_promotion_blank_worktree_sites.py</code>, which covers the seven
+earlier sites of the same idiom: <strong>8 passed in 9.90s</strong>,
+<code>EXIT=0</code> (<code>head-focused.log</code>). The grep above is the
+node's second gate: no unguarded instance of the exact idiom remains under
+<code>reckon/crew/</code>, and the one match that does remain is guarded by its
+own <code>is_dir</code> and truthiness check
+(<code>grep-idiom-exact.log</code>).</p>
+
+<h3 id="the-last-blank-worktree-idiom-in-promotion-negative-control">Negative control</h3>
+
+<p>Base product code at <code>e7323d72a</code> (reproduced by reverting the
+site in the working tree, byte-identical there to that base) with the new test
+file, the log's first line repeating the declared mutation: <strong>1 failed in
+2.11s</strong>, <code>EXIT=1</code>, failing id
+<code>test_blank_peer_worktree_grants_no_path_matches_the_ambient_tree</code>,
+which the head arm's <strong>8 passed</strong>, <code>EXIT=0</code> does not
+fail (<code>negative-control-base.log</code>, named in the manifest under
+<code>negative_control_log</code>). The test seeds two live pointers, one
+legitimately holding the ambient tree and one naming no worktree at all while
+declaring the edited path: at base the blank pointer's grant exempts the edit so
+no violation is reported; at head the edit stays charged as a main-checkout
+violation, which is what the case requires.</p>
+
+</body></html>
