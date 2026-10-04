@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import time
 from copy import deepcopy
 
 import pytest
@@ -77,10 +78,10 @@ def test_dispatch_resolves_routing_key(
     monkeypatch.setattr(picker, "pick", lambda *_a, **_k: selection())
     payload = invoke(repo, route=override, dry_run=dry_run)
     assert payload["backend"] == expected_backend
-    if dry_run and expected_route != "picker":
+    if expected_route != "picker" and (dry_run or expected_route == "deterministic"):
         # A preview carries the picker answer only when it routed by one; a
         # shadow or deterministic preview reads the same whatever the picker
-        # said, so its report cannot drift with the picker's per-call timing.
+        # said. A deterministic launch records its shadow answer after return.
         assert payload["picker_selection"] is None
     else:
         assert payload["picker_selection"]["backend"] == "beta"
@@ -88,11 +89,25 @@ def test_dispatch_resolves_routing_key(
     assert payload["route_override"] == override
     if not dry_run:
         home = _store._config_home()
-        record = json.loads(
-            (home / "crew" / "live" / f"{payload['run_id']}.json").read_text()
-        )
+        pointer = home / "crew" / "live" / f"{payload['run_id']}.json"
+        record = json.loads(pointer.read_text())
         assert record["route"] == expected_route
         assert record["route_override"] == override
+        assert record["backend"] == expected_backend
+        if expected_route == "deterministic":
+            deadline = (
+                time.monotonic() + dispatch_module.PICKER_DISPATCH_TIMEOUT_SECONDS + 5
+            )
+            while record["picker_selection"] is None and time.monotonic() < deadline:
+                time.sleep(0.05)
+                record = json.loads(pointer.read_text())
+            assert record["picker_selection"] is not None
+            assert record["picker_selection"]["action"] in {
+                "route",
+                "refuse",
+                "fallback",
+                "hold",
+            }
 
 
 def test_absent_picker_selection_resolves_deterministically():
