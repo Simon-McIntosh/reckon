@@ -22,10 +22,10 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="153">
-<meta name="plan-modified" content="2026-10-04">
+<meta name="plan-version" content="154">
+<meta name="plan-modified" content="2026-10-05">
 </head>
 <body>
   <main class="plan-doc">
@@ -1010,6 +1010,10 @@
     <h2 id="s15">§15 — The dispatch-exit bound holds at the fleet node&#x27;s working load</h2>
 <section data-reckon="section" data-id="s15" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
 <p>§14 derived the bound in <code>test_dispatch_returns_once_its_supervisor_runs</code> from a reference measured on the host at the same moment. At a load average near 11 on the fleet compute node on 2026-10-04 it still failed in 3 of 4 runs across base and head: dispatch took 6.074 s against a 5.796 s bound derived from a 0.475 s reference, and 6.473 s against 5.952 s from 0.494 s. The reference measures interpreter start and module import, but the dispatch does more work than that, and the extra work grows faster under load than the reference does, so a fixed multiple of it under-reads.</p><p><strong>Done when</strong> the node names, with file and line, the part of the dispatch's own time that the reference does not scale with, and the bound is derived from a reference that includes it. A mutation that joins the supervisor still fails the case at any load. The case passes 20 of 20 beside eight CPU-bound spinners with the pytest run itself at <code>-n 8</code>. The negative control is main, where the same contended runs fail at least once.</p>
+
+    <h2 id="s16">§16 — A plan-review dispatch that never launches leaves no pointer</h2>
+<section data-reckon="section" data-id="s16" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p>Measured 2026-10-04. During a wave of about 44 plan reviews that saturated the local lane, <code>r-20261004T213154691561-plan-review-of-a-live-worker-can-be-reached</code> wrote its live pointer and <code>brief.md</code> at 23:31:58 and never launched. It had no <code>attempt.json</code>, no supervisor, no worker record and no pid, and its phase stayed <code>starting</code>. The coordinator found it 49 minutes later and discarded it by hand. Code-review dispatches held at the same moment were refused with exit 75 and left nothing behind. So the plan-review path through <code>dispatch_review_for_run</code> keeps a claim that a refused or abandoned launch should release.</p><p><strong>Done when</strong> the node names, with file and line, the step that writes the plan-review pointer before admission is decided, and a plan-review dispatch refused at admission, or failing before its supervisor spawns, leaves no live pointer. A test drives a plan-review dispatch against an admission that holds and asserts the live directory is unchanged. The negative control is main, where the same test finds a pidless <code>starting</code> pointer.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
