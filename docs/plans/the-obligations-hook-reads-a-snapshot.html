@@ -23,7 +23,7 @@
   <title>The Obligations Hook Reads A Snapshot | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="99">
+<meta name="plan-version" content="100">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s20&quot;:&quot;implementable&quot;}">
 </head>
@@ -556,6 +556,9 @@
 </div>
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261004T021820421933-review-of-snapshot-asserts-name-their-divergence" data-who="reckon-build" data-when="2026-10-04T02:24:51.038Z">
     <div class="r-comment-body"><p>review of run r-20261004T015001204635-snapshot-asserts-name-their-divergence stored as a parsed record at both the current-review and head-keyed paths (project reckon, reviewed_base_sha fd25b13b1a5cfcb3e01cb0ad6a3b4ce5b1d00c95, reviewed_head_sha 2b82b33ae543fee3c5457b659cccde7a8e3d3f55): status parsed, scores goal_fidelity 19 evidence 19 scope_discipline 20 durability 19 fit 19, total 96, added_failure_count 0 and added_failure_ids [] derived from the reviewed run's own baseline_suite (logs/loops/base) and after_suite (logs/loops/after) gate logs; one follow-on finding that the wait-timeout diagnostic is not falsified by the declared negative control</p></div>
+</div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261004T035251552205-the-snapshot-loader-keeps-one-instance" data-who="reckon-build" data-when="2026-10-04T04:20:21.361Z">
+    <div class="r-comment-body"><p>the-snapshot-loader-keeps-one-instance: the hook&#x27;s snapshot_module() now returns an instance sys.modules already holds and loads by path only when none is registered (still no crew facade); the cli loader already reused one, so reckon/cli.py is unchanged; the identity test fails at base 95b482f2 (1 failed, 1 passed) and passes at head (2 passed), the serial split arm fails 2 at base (test_a_file_change_and_the_floor_tick_each_republish, test_a_slow_sweep_does_not_hold_the_next_transition) and passes 34 at head, and under the declared negative control the identity test fails at EXIT=1.</p></div>
 </div>
 </section>
 </main>
