@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="A test's temporary files live under its own tmp_path">
+  <meta name="plan-summary" content="The throwaway configuration-home factory and the node-manifest helpers now place their directories under the requesting test's tmp_path or the session base temp directory; a gate runs each affected file in a subprocess whose TMPDIR is an empty directory and asserts it stays empty.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verifies" content="crew-runtime-positive-controls#s52">
+  <meta name="plan-verdict" content="pass">
+  <title>A test's temporary files live under its own tmp_path &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <h1>A test's temporary files live under its own tmp_path &mdash; evidence</h1>
+  <p><strong>Reproduction, base helpers.</strong> The gate <code>tests/test_test_temp_files_stay_under_tmp_path.py</code> runs each affected file in a subprocess with <code>TMPDIR</code> pointed at an empty directory and its own <code>--basetemp</code> elsewhere. Against the base helpers at <code>9a641736e</code> it fails: the empty TMPDIR gained 11 <code>reckon-wallet-declaration-*</code> entries (one per declaring test) and 2 <code>reckon-node-manifests-&lt;pid&gt;</code> entries from the case that imports the node helper in a spawned process. Log: <code>logs/negative-control-base-helpers.log</code>, <code>EXIT=1</code>, failing ids <code>...[test_budget_group_declaration.py]</code> and <code>...[test_crew.py]</code>.</p>
+  <p><strong>Head.</strong> At <code>ebe96568b</code> the same gate passes 3/3 (<code>EXIT=0</code>). The factory takes the requesting test's directory and the declaration fixture passes its <code>tmp_path</code>; the session publishes its base temp directory in the environment and the manifest helpers place a process-local directory under it.</p>
+  <p><strong>Existing entries on this node's /tmp.</strong> 814 <code>reckon-wallet-declaration-*</code> and 787 <code>reckon-node-manifests-*</code>, accumulated since 2026-09-30. 1593 were removed after confirming no live writer: every pid-named directory's process was gone, and no live process referenced any candidate. 8 recent <code>reckon-node-manifests-*</code> directories were left and named in <code>logs/tmp-entry-inventory-removal.log</code> because they are younger than the one-hour staleness window. Remaining after removal: 0 and 8.</p>
+  <p><strong>Population.</strong> The three files plus the arming-isolation file, the other user of the factory: 296 passed at base (<code>9a641736e</code>) and 296 passed at head (<code>ebe96568b</code>), each with its own <code>TMPDIR</code> empty afterwards.</p>
+  <p><strong>Commits.</strong> <code>ebe96568b</code> &mdash; helpers and gate.</p>
+</main>
+</body>
+</html>
