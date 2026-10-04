@@ -32,7 +32,7 @@
     <p>The default budget classifies and reports; it does not signal a worker. The existing <code>_apply_budget_watchdog</code> has a separate opt-in ceiling: only an operator setting <code>fences.enforce_budget_watchdog</code> can enable its signal after the configured grace multiple. The shipped value in <code>reckon/schema/flight-defaults.yaml</code> is <code>false</code>. The call-graph test scans functions under <code>reckon/</code> reachable from budget and overrun computation. It permits exactly the watchdog's signal, checks that the early-return guard precedes it, reads the shipped default, and exercises the default path to assert that it signals nothing. A scratch copy that adds <code>terminate()</code> inside budget computation makes that test fail.</p>
     <p>Delivering an overrun message to a running worker waits on <code>a-live-worker-can-be-reached</code> section 7. No delivery channel is added here, and this fragment claims only the cause and non-signalling default.</p>
 
-    <h2 id="evidence">Measured arms and source bindings</h2>
+    <h2 id="an-overrun-names-its-cause-evidence">Measured arms and source bindings</h2>
     <table>
       <thead><tr><th>Arm</th><th>Result</th><th>Run record</th></tr></thead>
       <tbody>
