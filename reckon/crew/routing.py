@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
@@ -1803,6 +1804,9 @@ def garbage_collect(
         "run_directories_reaped_with_explicitly_absent_figures": (
             run_directories_reaped_with_explicitly_absent_figures
         ),
+        "scratch": (
+            garbage_collect_orphan_scratch(apply=apply) if run_id is None else None
+        ),
     }
 
 
@@ -1830,6 +1834,106 @@ SCRATCH_UNATTRIBUTED = "unattributed"
 # a whole corpus; the figure names a tree that filled the disk, it is not an
 # accounting figure a caller reconciles against.
 _UNATTRIBUTED_SIZE_LIMIT = 200_000
+
+SCRATCH_GRACE_SECONDS = 2 * 60 * 60
+
+
+def _scratch_ctime(path: Path) -> float:
+    """Read directory ctime, which archive extraction cannot backdate."""
+    return path.stat().st_ctime
+
+
+def _scratch_process_holders(root: Path) -> dict[str, list[int]]:
+    """Read process cwd and fd links once for every scratch child."""
+    holders: dict[str, list[int]] = {}
+    proc = Path("/proc")
+    for entry in proc.iterdir():
+        if not entry.name.isdigit():
+            continue
+        for link in (entry / "cwd", *(entry / "fd").glob("*")):
+            try:
+                relative = link.resolve().relative_to(root)
+            except (OSError, ValueError):
+                continue
+            if relative.parts:
+                holders.setdefault(relative.parts[0], []).append(int(entry.name))
+    return holders
+
+
+def garbage_collect_orphan_scratch(
+    *, apply: bool = False, now: float | None = None
+) -> dict[str, Any]:
+    """Report aged, unclaimed scratch; remove it only after rechecking claims.
+
+    The configured root is the only permitted target. Directory ctime is used
+    because extracted archives can carry arbitrarily old file mtimes.
+    """
+    from reckon.crew.dispatch import tree_size_bytes, worker_scratch_root
+
+    root = worker_scratch_root()
+    # A private state home cannot prove that the host-wide default root has no
+    # live pointers in the operator's state home.
+    if os.environ.get("RECKON_HOME") and not os.environ.get(
+        "RECKON_WORKER_SCRATCH_ROOT"
+    ):
+        return {"root": str(root), "entries": [], "removed": [],
+                "bytes_freed": 0, "withheld": "state and scratch roots differ"}
+    if root.is_symlink() or root.resolve() != root.absolute():
+        raise CrewError(f"scratch sweep refuses noncanonical root {root}")
+    if not root.exists():
+        return {"root": str(root), "entries": [], "removed": [], "bytes_freed": 0}
+    if not root.is_dir() or not Path("/proc").is_dir():
+        raise CrewError(f"scratch sweep cannot safely inspect {root} and /proc")
+    stamp = time.time() if now is None else now
+    live_ids = {str(row.get("run_id") or "") for row in list_live()}
+    holders = _scratch_process_holders(root)
+    entries: list[dict[str, Any]] = []
+    removed: list[str] = []
+    bytes_freed = 0
+    for child in sorted(root.iterdir()):
+        if child.is_symlink() or not child.is_dir():
+            entries.append({"path": str(child), "bytes": 0, "removed": False,
+                            "withheld": "not a real directory"})
+            continue
+        size = tree_size_bytes(child)
+        age = max(0.0, stamp - _scratch_ctime(child))
+        reason = ""
+        if child.name in live_ids:
+            reason = "live pointer"
+        elif age < SCRATCH_GRACE_SECONDS:
+            reason = f"ctime within {SCRATCH_GRACE_SECONDS} second grace"
+        elif holders.get(child.name):
+            reason = f"held by process {holders[child.name]}"
+        entry: dict[str, Any] = {
+            "path": str(child), "bytes": size, "ctime_age_seconds": age,
+            "removed": False, "withheld": reason,
+        }
+        entries.append(entry)
+    if apply:
+        # A second /proc pass catches holders that appeared during sizing,
+        # without rescanning all processes separately for every directory.
+        current_holders = _scratch_process_holders(root)
+        for entry in entries:
+            if entry["withheld"]:
+                continue
+            child = Path(entry["path"])
+            if pointer_path(child.name).exists():
+                entry["withheld"] = "live pointer appeared during sweep"
+            elif current_holders.get(child.name):
+                entry["withheld"] = f"held by process {current_holders[child.name]}"
+            elif child.is_symlink() or child.resolve().parent != root:
+                entry["withheld"] = "path left configured scratch root"
+            elif stamp - _scratch_ctime(child) < SCRATCH_GRACE_SECONDS:
+                entry["withheld"] = "ctime refreshed during sweep"
+            else:
+                shutil.rmtree(child)
+                entry["removed"] = True
+                removed.append(str(child))
+                bytes_freed += entry["bytes"]
+    return {"root": str(root), "entries": entries, "removed": removed,
+            "bytes_freed": bytes_freed, "would_free_bytes": sum(
+                row["bytes"] for row in entries if not row["withheld"]
+            )}
 
 
 def _scratch_disposition(
