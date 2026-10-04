@@ -1264,6 +1264,11 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
       <div class="r-comment-body"><p><strong>PR-4, the dispatch gate, landed</strong> at <code>95e186ad</code> (re-review 92). <strong>Lead decision:</strong> the gate ships <strong>report-only</strong>. Dispatch of an implement node consults the plan's stored review. A missing review, or a finding with no response, is recorded as a warning on the dispatch result, and the dispatch proceeds. When the flight key <code>plan_review_gate: enforce</code> is set, it refuses as designed. The refusal names the unanswered finding, and dry-run and launch both report <code>plan-review-missing</code>. <strong>Before switching to enforce:</strong> PR-2, which dispatches plan reviews, must exist, and the active sprint's plans must carry a review. <strong>Open:</strong> the re-review found the launch path's <code>plan-review-missing</code> mapping untested (only dry-run is asserted); a follow-on test node covers it. The merge also joined PR-4's key with <code>harness_home_files</code> in flight's schema exclusion, resolved in a scratch worktree. PR-2 and PR-5 remain.</p></div>
     </article>
   </section>
- </main>
+   <section id="s9">
+    <h2>§9 — the plan-review report parser lives beside parse_review</h2>
+    <p>Acting on finding duplicate_owner-1 of this plan's own design review (r-20261004T174151398715). Run r-20261004T231624708849 on the local lane, 7 minutes, dispatched under the enforced gate after the version 36 review was answered. Gate 48 passed exit 0; negative control deleting the shared line reader: 5 failed exit 1 across both named test files. Review r-20261004T232409066390: 96/100 (goal 20, evidence 19, scope 20, durability 19, fit 18); follow-on: the re-exported <code>PLAN_REVIEW_RUBRICS</code> alias in plan_review.py has no reader. Commit <code>9790ecf13</code>, merged <code>36e436aa4</code>.</p>
+  </section>
+
+</main>
 </body>
 </html>
