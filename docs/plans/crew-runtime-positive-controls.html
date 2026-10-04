@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="306">
+<meta name="plan-version" content="307">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -2214,6 +2214,9 @@
 </div>
 <div class="r-comment" data-section="s52" data-id="c-run-r-20261004T045908294307-test-temp-files-live-under-tmp-path" data-who="reckon-build" data-when="2026-10-04T05:37:47.078Z">
     <div class="r-comment-body"><p>crew-runtime-positive-controls §52 — a test's temporary files now live under its own tmp_path or the session basetemp: the config-home factory takes the requesting test's directory, the session publishes its basetemp for helpers called from spawned processes, and the node-manifest helpers use it; gate tests/test_test_temp_files_stay_under_tmp_path.py runs each affected file with TMPDIR at an empty dir and asserts it stays empty (base helpers: 2 failed with reckon-wallet-declaration and reckon-node-manifests entries; head: 3 passed); 1593 stale /tmp entries removed, 8 recent ones left named.</p></div>
+</div>
+<div class="r-comment" data-section="s53" data-id="c-run-r-20261004T090324518502-an-empty-worktree-field-is-absent" data-who="reckon-build" data-when="2026-10-04T09:42:57.523Z">
+    <div class="r-comment-body"><p>An empty worktree field now resolves no tree in promotion&#x27;s promoted-revision reader and review gate (one _record_tree helper, blank fields absent, &quot;&quot; rather than the cwd&#x27;s head), the gate-evidence fixture carries a real worktree path, and a new reader test is red at base (4 failed/1 passed, EXIT=1) and green at head (5 passed); the named gate is 26 passed from a non-git directory and the 54-file promotion-importing population adds no failure against base (head 498 passed/0 failed, base 19 failed/479 passed).</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
