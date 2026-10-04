@@ -2987,6 +2987,13 @@ FOLLOWER_FORMAT_EVENT = "follower-format-changed"
 # it travels as its own event and is never rendered as a run's row.
 FOLLOWER_STALE_PRODUCER_EVENT = "stale-producer"
 
+# A re-attach whose session has a delivered-state record opens with one line
+# about the pane rather than the fleet: that the follower re-attached, how many
+# live runs it found, and how many of them moved since the record was written.
+# It travels as its own event, like the resume and format markers, so it is
+# never rendered as a run's row.
+FOLLOWER_REATTACH_EVENT = "follower-reattached"
+
 
 # A producer re-executes in place when its code stamp moves, and the window a
 # mismatch is deferred for is the window the prompt hook reads to show a
@@ -3376,6 +3383,63 @@ def _fleet_replay(
     for row in rows:
         printed.extend(path.feed(row, now=clock()))
     return printed
+
+
+# The one line a session's re-attach opens with, before any fleet row: it names
+# the population it found and how much of it the rows below will show.
+_FOLLOW_REATTACH_FRAME = (
+    "── re-attached · {live} live runs · {changed} changed since {when} ──"
+)
+
+
+def _follow_reattach_line(live: int, changed: int, recorded_at: str) -> str:
+    """Compose the framing line of a re-attach, stamped with the record's time."""
+    from reckon.crew import ticker as ticker_module
+
+    return _FOLLOW_REATTACH_FRAME.format(
+        live=live, changed=changed, when=ticker_module.local_clock(recorded_at)
+    )
+
+
+def _follow_gap_rows(
+    baseline: Iterable[Mapping[str, Any]],
+    record: Mapping[str, Any],
+    *,
+    session: str | None,
+    observed: Iterable[str],
+    run_ids: tuple[str, ...],
+) -> list[dict[str, Any]]:
+    """The rows a re-attach replays: one per owned run whose state moved.
+
+    The record holds the state each of the session's runs was last shown at, so
+    a run still at the state the record names carries no news and draws nothing:
+    the gap between two armings is replayed rather than a whole fleet
+    re-announced. A run the record does not name was dispatched while nothing
+    was attached, so it is replayed from ``dispatched``, the state every launch
+    passes through. Each row keeps the remembered state as its left half, so it
+    reads as the ordinary transition the run made while the pane was away, and
+    takes its right half and its clock from the live classification rather than
+    from any stored phase.
+    """
+    states = {
+        str(run_id): str(state)
+        for run_id, state in dict(record.get("states") or {}).items()
+    }
+    rows: list[dict[str, Any]] = []
+    for row in baseline:
+        if not _follow_selects(
+            row, session=session, observed=observed, run_ids=run_ids
+        ):
+            continue
+        run_id = str(row.get("run_id") or "")
+        event = dict(row)
+        current = str(event.get("to_state") or "")
+        recorded = states.get(run_id)
+        if recorded == current:
+            continue
+        event["from_state"] = recorded or "dispatched"
+        rows.append(event)
+    return rows
 
 
 def _follow_watch_lines(
@@ -3936,11 +4000,59 @@ def _follow_watch_lines(
             # newline, so a record the producer is still writing is not split
             # across the two reads: a line boundary is a record boundary.
             boundary = _follow_boundary(stream_path)
+            # What this session's pane was last shown, one state per run. It is
+            # consulted only by an attach that has no place to resume from. A
+            # re-arm whose recorded offset still names this stream continues
+            # from it, and what its pane missed is exactly what the stream
+            # gained — the fleet replay's job, as it was. An attach with no
+            # place — one whose checkpoint is gone, or whose recorded offset
+            # names a stream that no longer exists — has no such gap to read,
+            # and re-deriving the fleet would stamp a run that has been working
+            # all along with the moment it attached and drop the runs that
+            # finished. The record replays that gap as a diff instead: one row
+            # per run that moved, from the state the record names, under a
+            # header that says how many runs were found and how many changed.
+            record = (
+                runs.read_delivered(project, session)
+                if first_attach and not reloaded_in_place and mode in ("baseline", "restart")
+                else {}
+            )
+            gap_rows = (
+                _follow_gap_rows(
+                    cursor["baseline"],
+                    record,
+                    session=session,
+                    observed=observed_sessions,
+                    run_ids=selected_runs,
+                )
+                if record
+                else []
+            )
+            if record:
+                live_runs = sum(
+                    1
+                    for row in cursor["baseline"]
+                    if _follow_selects(
+                        row,
+                        session=session,
+                        observed=observed_sessions,
+                        run_ids=selected_runs,
+                    )
+                )
+                yield {
+                    "event": FOLLOWER_REATTACH_EVENT,
+                    "project": project,
+                    "session": session or "",
+                    "run_id": None,
+                    "line": _follow_reattach_line(
+                        live_runs, len(gap_rows), str(record.get("recorded_at") or "")
+                    ),
+                }
             if mode != "baseline" and first_attach:
                 # The event restores the pane's stored history for a terminal,
-                # and carries no remembered states: the replay below is about to
-                # draw the whole fleet, and seeding the pane's memory with the
-                # very states it is re-announcing would suppress every row of
+                # and carries no remembered states: the replay below draws the
+                # runs that moved, and seeding the pane's memory with the very
+                # states it is about to re-announce would suppress every row of
                 # it. The rows themselves restore the memory as they are drawn.
                 yield {
                     "event": FOLLOWER_RESUME_EVENT,
@@ -3948,31 +4060,41 @@ def _follow_watch_lines(
                     "session": session or "",
                     "reported": {},
                 }
-            # A first arming has no place in this stream, so it has no gap to
-            # deliver and derives the fleet as it stands: the place the replay
-            # resumes from is the boundary itself. A re-arm did have a place, and
-            # everything the stream gained between it and the boundary is what
-            # the pane missed.
-            resume_from = boundary if mode == "baseline" else offset
-            for printed in _fleet_replay(
-                path,
-                baseline=cursor["baseline"],
-                stream_path=stream_path,
-                clock=clock,
-                reannounce=mode != "baseline",
-                resume_from=resume_from,
-                boundary=boundary,
-            ):
-                yield printed
+            if record:
+                # The diff covers the whole gap, so the read loop opens at the
+                # boundary and the rows above are the only rows for the runs
+                # they name.
+                for row in gap_rows:
+                    for printed in path.feed(row, now=clock()):
+                        yield printed
+            else:
+                # A first arming has no place in this stream, so it has no gap
+                # to deliver and derives the fleet as it stands: the place the
+                # replay resumes from is the boundary itself. A re-arm did have
+                # a place, and everything the stream gained between it and the
+                # boundary is what the pane missed.
+                resume_from = boundary if mode == "baseline" else offset
+                for printed in _fleet_replay(
+                    path,
+                    baseline=cursor["baseline"],
+                    stream_path=stream_path,
+                    clock=clock,
+                    reannounce=mode != "baseline",
+                    resume_from=resume_from,
+                    boundary=boundary,
+                ):
+                    yield printed
             # A re-arm's replay delivered its gap as news up to the boundary, so
             # the read loop opens there: the gap it already covered is not read
             # again, which is what stops a run that moved from being drawn twice
-            # — as a replay row and then as a transition. A first arming read
+            # — as a replay row and then as a transition. The record's diff
+            # covers the same ground from the pane's own memory, so an attach
+            # that drew it opens at the boundary too. A first arming read
             # nothing to the boundary — it derives the fleet — so it leaves every
             # line already in the stream to the read loop, which opens at the
             # cursor's own offset and delivers them. Opening a first arming at
             # the boundary would drop the lines it never replayed.
-            if mode != "baseline":
+            if record or mode != "baseline":
                 cursor["offset"] = boundary
         # Left behind before the first read rather than after the first line:
         # an arming that starts against a quiet stream and then ends has still
@@ -4234,13 +4356,17 @@ def _row_is_stale_inventory(event) -> bool:
 
     A follower emits one baseline per live run the moment it attaches, so a
     restart prints a burst of rows for work that already finished, each reading
-    exactly like a landing that just happened. The machine stream still carries
-    them — a consumer reconstructing the fleet needs the inventory — so the
-    judgement is made here, on the human path only.
+    exactly like a landing that just happened. Only the inventory that asks the
+    reader for nothing is withheld: a run waiting to be promoted, one that
+    failed and one that was abandoned are finished work with a duty still
+    outstanding, and their rows are exactly what a reader attaching must see.
+    The machine stream still carries every one of them — a consumer
+    reconstructing the fleet needs the inventory — so the judgement is made
+    here, on the human path only.
     """
     from reckon.crew import ticker as ticker_module
 
-    return ticker_module.settled_at_attach(event)
+    return ticker_module.hidden_at_attach(event)
 
 
 def _ticker_grid(width, theme, no_color):
@@ -4508,6 +4634,29 @@ def crew_follow(
         history_caps = _follow_history_caps(project) if session is not None else None
         replay_dim = _dim_history_line if getattr(grid, "color", False) else str
 
+        # The state each run was last handed to this reader at, so the session's
+        # next attach can replay the gap rather than re-announce the fleet. It
+        # is written as rows are delivered, because a row the pane never
+        # received is not one the reader saw and must not subtract a run from
+        # the next replay. The record this attach inherited is carried forward:
+        # a run drawing nothing here keeps the state its last row carried, and
+        # a write that dropped it would replay the run from `dispatched` as soon
+        # as one other run moved.
+        delivered_states: dict[str, str] = {
+            str(run_id): str(state)
+            for run_id, state in (
+                runs_module.read_delivered(project, session).get("states") or {}
+            ).items()
+        }
+
+        def note_delivered(row) -> None:
+            run_id = str(row.get("run_id") or "")
+            state = str(row.get("to_state") or "")
+            if not run_id or not state or delivered_states.get(run_id) == state:
+                return
+            delivered_states[run_id] = state
+            runs_module.write_delivered(project, session, delivered_states)
+
         for event in _follow_watch_lines(
             project,
             session=session,
@@ -4559,6 +4708,17 @@ def crew_follow(
                         max_seconds=history_caps[1],
                     )
                 continue
+            if event.get("event") == FOLLOWER_REATTACH_EVENT:
+                # The pane's own header, written before any fleet row: it says
+                # the follower re-attached, how many live runs it found and how
+                # many the replay below will draw. Like the other framing lines
+                # it is about the pane rather than the fleet, so it is never
+                # rendered as a run's row.
+                if json_output:
+                    _emit_crew_result(event, pretty, observation=True)
+                else:
+                    _echo_follow_line(replay_dim(str(event.get("line") or "")))
+                continue
             if event.get("event") == FOLLOWER_RESUME_EVENT:
                 # A re-arm, before any fresh row: restore the pane exactly as
                 # the reader last saw it, in one write so the whole view lands
@@ -4603,6 +4763,13 @@ def crew_follow(
                 continue
             if json_output:
                 _emit_crew_result(event, pretty, observation=True)
+                # The record is the pane's memory, and there is one per session
+                # rather than one per output mode: a row only the JSON consumer
+                # received is not one the pane in front of the session drew, and
+                # counting it would subtract the run from that pane's next
+                # re-attach.
+                if not _row_is_stale_inventory(event):
+                    note_delivered(event)
             elif not _row_is_stale_inventory(event):
                 # An observing follower draws the owner column on every row so
                 # the grid stays aligned, and the owning session's own rows are
@@ -4617,6 +4784,7 @@ def crew_follow(
                     session=session,
                 )
                 _echo_follow_line(rendered)
+                note_delivered(event)
                 if history_caps is not None and not reannounced:
                     # The row's bytes as drawn, and the stamp it carried, so a
                     # later re-arm replays the pane rather than a re-derivation
