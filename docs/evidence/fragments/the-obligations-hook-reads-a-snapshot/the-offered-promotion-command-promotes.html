@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-obligations-hook-reads-a-snapshot">
+  <meta name="plan-verifies" content="reckon:the-obligations-hook-reads-a-snapshot#s19">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-10-04">
+  <meta name="evidence-commit" content="f87d778c9">
+  <title>The offered promotion command for a read-only run is one crew complete accepts | reckon</title>
+  <link rel="stylesheet" href="/reckon/_shared/foundation.css">
+  <link rel="stylesheet" href="/reckon/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="the-offered-promotion-command-promotes">
+  <h2>The offered promotion command for a read-only run is one crew complete accepts</h2>
+  <p>A read-only run — an investigation that changed no repository file — records its dispatch
+  base as its only commit, because its manifest must name one and the base is what its worktree
+  sits on. The recovery classifier's promotable branch read that citation back and offered
+  <code>crew complete --run &lt;id&gt; --gate &lt;verdict&gt; --commit &lt;base&gt;</code>, which
+  promotion refuses: a citation of the base predates the run, so it would record landed work that
+  is not the run's. The offer the obligations hook relays, and the command promotion accepts,
+  disagreed about what a read-only run's promotion is.</p>
+
+  <p>The promotable branch of <code>classify_pointer</code> in
+  <code>reckon/crew/recovery.py</code> now compares the run's resolved commits against the pointer's
+  dispatch base. When the only commit equals the base, the offer is
+  <code>reckon crew complete --run &lt;id&gt; --gate not-run --no-commit '&lt;why the run produced
+  no commit&gt;' --outcome '&lt;what the run produced&gt;'</code> — the commitless declaration
+  promotion accepts, with both placeholders carried as literals. A run with a commit of its own
+  keeps the citation list unchanged. The obligations hook copies the classifier's action verbatim
+  into <code>next_command</code>, so one edit repairs both surfaces.</p>
+
+  <h3>What the new test cases check</h3>
+  <ul>
+    <li><code>test_the_offered_command_for_a_read_only_run_promotes_it</code>: a temporary
+    <code>RECKON_HOME</code> and repository hold a complete read-only run whose only recorded commit
+    is its base, with an attached review keyed by that head. The classifier's
+    <code>next_action</code> is taken, split, and filled at its two placeholders only, then run
+    through the CLI — the run promotes: exit 0, the pointer is gone, the ledger row records
+    <code>commits: []</code> and the <code>--no-commit</code> reason, and the
+    <code>--outcome</code> text lands as the run's landing comment on the plan (the row defers the
+    narrative to the comment, as promotion does for every run). The offer's shape
+    (<code>--gate not-run</code>, <code>--no-commit</code>, <code>--outcome</code>, no
+    <code>--commit</code>, no base sha) is asserted after the exit status, so a base revision's
+    offer reports its refusal rather than a shape mismatch;</li>
+    <li><code>test_a_run_with_commits_beyond_its_base_still_gets_its_commit_list</code>: the same
+    drive for a run that committed on top of its base — the offer cites the head with
+    <code>--commit</code> and carries neither <code>--no-commit</code> nor
+    <code>--outcome</code>.</li>
+  </ul>
+
+  <h3>Gate — both arms over the on-surface population</h3>
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th><th>failure ids</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td><code>f87d778c9</code> (git archive extraction)</td><td>1 failed, 137 passed in 38.21 s, EXIT=1</td><td><code>tests/test_the_offered_promotion_command_promotes.py::test_the_offered_command_for_a_read_only_run_promotes_it</code></td></tr>
+      <tr><td>head</td><td>worker worktree</td><td>138 passed in 38.89 s, EXIT=0</td><td>none</td></tr>
+    </tbody>
+  </table>
+  <p>The population is seven test files naming <code>next_action</code> or
+  <code>review-ready</code> and closest to the classifier, the obligations hook and the promotion
+  offer: <code>test_crew_recovery.py</code>, <code>test_crew_obligations.py</code>,
+  <code>test_coordinator_obligations_hook.py</code>, <code>test_crew_scoring_state.py</code>,
+  <code>test_review_role_is_not_reviewed.py</code>,
+  <code>test_promotion_picks_the_descendant_commit.py</code> and the new file. Both arms run under
+  <code>pytest-xdist -n 6 --dist loadfile</code>. The wider sweep of all 35 files naming those
+  tokens (677 tests) exceeded its wall-clock bound in both arms at 8 workers and is left as a
+  follow-on; every failure the base arm reports is the one repaired here.</p>
+
+  <h3>Negative control</h3>
+  <p>The declared mutation — the base revision's offered command, filled in, is refused for citing
+  the base as the run's own work — was exercised by running the new test file against an extraction
+  of base <code>f87d778c9</code>: <strong>1 failed, 1 passed in 5.06 s, EXIT=1</strong>, the failing
+  id being
+  <code>tests/test_the_offered_promotion_command_promotes.py::test_the_offered_command_for_a_read_only_run_promotes_it</code>
+  with the refusal <em>cites 5b05e55238ea… as its own work, but that is the base it was dispatched
+  against</em> — the id the head arm does not fail. Log:
+  <code>logs/negative-control.log</code>.</p>
+
+  <p>Logs, all under the run directory: <code>logs/head-arm.log</code>,
+  <code>logs/base-subset.log</code>, <code>logs/head-subset.log</code>,
+  <code>logs/negative-control.log</code>, plus the timed-out wider-sweep logs
+  <code>logs/head-population.log</code>, <code>logs/head-population-a.log</code>.</p>
+</section>
+</main>
+</body>
+</html>
