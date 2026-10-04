@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-fragment-check-names-only-the-runs-collisions">
+  <meta name="plan-title" content="check-manifest names only the fragment id collisions the run took part in">
+  <meta name="plan-summary" content="audit_manifest composed a plan's whole landing record and refused every duplicate element id in it, so a run that added one cleanly prefixed fragment was reported not ok for collisions between fragments committed before the id-prefix rule existed (reproduced at e49e4731a: the clean new fragment reads ok false on 'measure' carried by first-node.html and zeroth-node.html, both committed and untouched). The composed-record reader now reports a duplicate only where one of its occurrences lies in a fragment the run changed. Focused gate: head 6 passed (EXIT=0), base arm of the declared mutation eff21542c 4 failed (EXIT=1), negative control eff21542c 4 failed EXIT=1. Population of the 45 test files importing reckon.crew.reports or reckon.doccheck: base e49e4731a 711 passed 0 failed, head 738d1db02 711 passed 0 failed, zero added failures.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-tags" content="crew,doccheck,fragment-ids,check-manifest">
+  <title>check-manifest names only the fragment id collisions the run took part in | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-fragment-check-names-only-the-runs-collisions" data-reckon="landed" data-when="2026-10-04">
+  <h2>check-manifest names only the fragment id collisions the run took part in</h2>
+  <p><strong>Landed.</strong> A duplicate element id is reported to a run only where one of its occurrences lies in a fragment the run changed. The reproduction at base <code>e49e4731a</code>: a plan whose two committed fragments both carry <code>measure</code>, with the run adding a cleanly prefixed fragment, reads <code>ok: false</code> naming only those two committed fragments; at head the same run reads <code>ok: true</code>, and a run whose fragment repeats a committed id reads <code>ok: false</code> naming both carriers and neither inherited collision. The declared mutation (<code>eff21542c</code>, the check without the scoping, new tests copied in) fails 4 ids at <code>EXIT=1</code>; the focused gate reads 6 passed. Population of the 45 test files importing <code>reckon.crew.reports</code> or <code>reckon.doccheck</code>: base 711 passed, head 711 passed, zero added failures. This fragment carries no element ids, so it adds none to the composition it is checked by.</p>
+</article>
+</body>
+</html>

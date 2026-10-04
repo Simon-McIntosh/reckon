@@ -1811,29 +1811,40 @@ def _composed_record_id_findings(
 
     A run that changes no fragment is not audited: a composed record the run
     did not touch is not its defect, and refusing it would make a collision
-    already merged into every later run's way. A plan whose landing record does
-    not exist yet is audited over its fragments instead, because the record is
-    synthesised once, at closure: until then the fragments are the composition,
-    and two of them that reuse an id collide with each other.
+    already merged into every later run's way. A duplicate is reported only
+    where one of its occurrences lies in a fragment the run changed, on the same
+    reasoning: a collision carried entirely by the plan's older fragments was
+    merged before this run and no run can clear it from inside its own write
+    scope. A plan whose landing record does not exist yet is audited over its
+    fragments instead, because the record is synthesised once, at closure:
+    until then the fragments are the composition, and two of them that reuse an
+    id collide with each other.
     """
 
-    plans = sorted(
-        {plan for path in changed_paths if (plan := _fragment_plan_of(path))}
-    )
-    if not plans:
+    changed_fragments: dict[str, set[str]] = {}
+    for path in changed_paths:
+        plan = _fragment_plan_of(path)
+        if plan is not None:
+            changed_fragments.setdefault(plan, set()).add(
+                _normalized_scope_path(path).name
+            )
+    if not changed_fragments:
         return []
     root = worktree if worktree is not None else repository
     if root is None:
         return []
     findings: list[str] = []
     tree = Path(root)
-    for plan in plans:
+    for plan in sorted(changed_fragments):
         record = _landing_record_beside(tree, plan)
         plan_findings = (
-            doccheck.audit_composed_record_ids(record, plan)
+            doccheck.audit_composed_record_ids(
+                record, plan, changed_fragments=changed_fragments[plan]
+            )
             if record is not None
             else doccheck.audit_fragment_ids(
-                tree.joinpath(*_FRAGMENT_SUBTREE_PARTS, plan)
+                tree.joinpath(*_FRAGMENT_SUBTREE_PARTS, plan),
+                changed_fragments=changed_fragments[plan],
             )
         )
         findings.extend(
