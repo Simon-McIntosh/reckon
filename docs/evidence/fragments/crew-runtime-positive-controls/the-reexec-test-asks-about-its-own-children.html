@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="doc">
+<meta name="plan" content="crew-runtime-positive-controls">
+<meta name="node" content="the-reexec-test-asks-about-its-own-children">
+<title>the-reexec-test-asks-about-its-own-children</title>
+</head><body>
+
+<h2 id="the-reexec-test-asks-about-its-own-children-landing">The re-exec test asks only about the pids it launched</h2>
+
+<p id="the-reexec-test-asks-about-its-own-children-landing-line">Landed at
+<code>487f0b9a9</code> on <code>tests/test_a_reexec_keeps_its_children.py</code>:
+<code>_no_defunct_launched_child</code> waits on each pid the case launched with
+<code>os.waitpid(pid, os.WNOHANG)</code> instead of
+<code>os.waitpid(-1)</code>, so an exited, unreaped child another case on the
+same xdist worker left behind is neither reaped nor reported. The new paired
+case leaves such a corpse of its own in the process and runs both re-exec
+assertions beside it, which still pass; a sensitivity case shows a worker the
+replacement forgets is still reported. Gate: the file passed 20 of 20 runs at
+<code>-n 8</code> (15 passed in each); with the replacement collecting nothing
+the file reddens 4 cases (4 failed, 11 passed); restoring
+<code>waitpid(-1)</code> in the helper reddens the paired case (1 failed,
+14 passed).</p>
+
+</body></html>
