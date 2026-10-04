@@ -265,13 +265,63 @@ def _comment_entries(comments: Sequence[Mapping[str, Any]]) -> str:
     return "\n".join(entries)
 
 
-def _overall_verdict(records: Sequence[Mapping[str, Any]]) -> str:
-    verdicts = {str(record.get("gate") or "").strip().lower() for record in records}
-    if verdicts == {"passed"}:
+#: How the per-section verdicts rank: the record takes the worst reading.
+_VERDICT_SEVERITY = {"pass": 0, "qualified": 1, "fail": 2}
+
+#: The roles whose runs decide a section's verdict. A review or an
+#: investigation records its gate as not-run by design, so counting one would
+#: deny every reviewed plan a passing record; a section attempt count reads
+#: this same population.
+_VERDICT_ROLES = frozenset({"implement", "test"})
+
+
+def _run_verdict(record: Mapping[str, Any]) -> str:
+    """The verdict one implementing run earned from its gate and classification."""
+    gate = str(record.get("gate") or "").strip().lower()
+    if gate == "passed":
         return "pass"
-    if "failed" in verdicts:
+    if (
+        gate == "failed"
+        and str(record.get("failure_classification") or "").strip().lower()
+        != "pre-existing-failure"
+    ):
         return "fail"
     return "qualified"
+
+
+def _overall_verdict(records: Sequence[Mapping[str, Any]]) -> str:
+    """The worst section verdict over each section's latest implementing run.
+
+    The population and the section identity are the ones a section attempt
+    count already derives: implement- and test-role runs, addressed by
+    :func:`reckon.crew.routing.section_record_id`. Within a section the latest
+    run decides — ordered by completion, then run id, as the record's own run
+    tables are — so a failure a later run repaired no longer holds the
+    section. A not-run gate qualifies the section rather than failing it,
+    because the gate's evidence was not produced rather than produced and red.
+    """
+    from reckon.crew.routing import section_record_id
+
+    latest: dict[str, tuple[tuple[str, str], str]] = {}
+    for record in records:
+        if str(record.get("role") or "") not in _VERDICT_ROLES:
+            continue
+        section = section_record_id(record.get("section"))
+        if not section:
+            continue
+        order = (
+            str(record.get("completed_at") or ""),
+            str(record.get("run_id") or ""),
+        )
+        current = latest.get(section)
+        if current is None or order >= current[0]:
+            latest[section] = (order, _run_verdict(record))
+    if not latest:
+        return "qualified"
+    return max(
+        (verdict for _order, verdict in latest.values()),
+        key=lambda verdict: _VERDICT_SEVERITY[verdict],
+    )
 
 
 def _render_document(
