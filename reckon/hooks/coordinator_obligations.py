@@ -884,7 +884,9 @@ def _prompt(payload: dict[str, Any]) -> int:
 # run's committed ledger record and the tree on disk, and dropped when the
 # record shows the tree released or the tree is no longer a directory. The
 # record is the per-run file a project's ledger writes under its own state
-# directory, and the tree check costs one stat per row.
+# directory, never the aggregate beside it, which carries every run a project
+# has promoted and would cost a hook's whole budget to parse; the tree check
+# costs one stat per row.
 _WORKTREE_HELD_KIND = "worktree-held"
 
 # A run id is a path component when the record is resolved, so only the shape
@@ -906,24 +908,15 @@ def _run_ledger_record(
 ) -> Mapping[str, Any] | None:
     """The committed record for one run, from the project's own state.
 
-    The per-run file is the ledger's leaf; a run the split has written no file
-    for still lives as a row of the aggregate, which is read only when that
-    file is absent. A record that cannot be read answers None, which the caller
-    reads as no evidence about the tree rather than as the tree being gone.
+    Only the per-run file is read. The aggregate beside it gathers every run a
+    project has ever promoted and is orders of magnitude larger, so reading it
+    on this path would spend a hook's whole budget on one row; a run with no
+    file of its own therefore answers None, which the caller reads as no
+    evidence about the tree rather than as the tree being gone.
     """
     if docs_dir is None or not _RUN_ID.fullmatch(run_id):
         return None
-    record = _read_record(docs_dir / "state" / project / "runs" / f"{run_id}.json")
-    if record is not None:
-        return record
-    aggregate = _read_record(docs_dir / "state" / project / "crew.json")
-    rows = aggregate.get("runs") if aggregate is not None else None
-    if not isinstance(rows, list):
-        return None
-    for row in rows:
-        if isinstance(row, Mapping) and str(row.get("run_id") or "") == run_id:
-            return row
-    return None
+    return _read_record(docs_dir / "state" / project / "runs" / f"{run_id}.json")
 
 
 def _recorded_tree(record: Mapping[str, Any]) -> str:

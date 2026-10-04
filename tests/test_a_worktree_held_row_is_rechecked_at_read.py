@@ -8,7 +8,9 @@ being reclaimed, and the duty's own remedy — a run-scoped ``crew gc`` — is
 refused for a run with no tree. Each stale row costs the coordinator an
 acknowledgement, so the hook re-reads the run's committed record and the tree
 where the row is offered, and drops it when the record shows the tree released
-or the tree is no longer a directory.
+or the tree is no longer a directory. Only the run's own per-run file is read,
+never the aggregate ledger beside it, which carries every run the project has
+promoted and would cost a hook's whole budget on a single row.
 
 The released case is driven by a real ``crew complete``: the snapshot is taken
 from inside the promotion, at the moment the row is still a true reading, and
@@ -189,9 +191,52 @@ def _publish(payload: dict[str, Any]) -> Path:
     return obligation_snapshot.write_snapshot(PROJECT, SESSION, document)
 
 
-def _drive(repository: Path, *, mode: str = "stop") -> subprocess.CompletedProcess[str]:
+def _aggregate_trap(tmp_path: Path) -> Path:
+    """A site directory whose startup refuses a project's aggregate ledger.
+
+    The hook is driven as a subprocess, so the refusal has to be installed
+    where that process will import it. It raises rather than returning an
+    error the reader would swallow, because a reader that answers None for an
+    unreadable file would otherwise hide the read this exists to catch.
+    """
+    site = tmp_path / "aggregate-trap"
+    site.mkdir(parents=True, exist_ok=True)
+    (site / "sitecustomize.py").write_text(
+        "import pathlib\n"
+        "\n"
+        "_original = pathlib.Path.read_text\n"
+        "\n"
+        "\n"
+        "def _refuse_aggregate(self, *args, **kwargs):\n"
+        '    if self.name == "crew.json":\n'
+        '        raise AssertionError(f"the aggregate ledger was opened: {self}")\n'
+        "    return _original(self, *args, **kwargs)\n"
+        "\n"
+        "\n"
+        "pathlib.Path.read_text = _refuse_aggregate\n",
+        encoding="utf-8",
+    )
     environment = dict(os.environ)
-    environment["PYTHONPATH"] = str(REPO_ROOT)
+    environment["PYTHONPATH"] = str(site)
+    probe = subprocess.run(
+        [sys.executable, "-c", "import pathlib; pathlib.Path('crew.json').read_text()"],
+        capture_output=True,
+        text=True,
+        env=environment,
+        check=False,
+    )
+    assert probe.returncode != 0, "the aggregate trap did not arm"
+    assert "aggregate ledger was opened" in probe.stderr, probe.stderr
+    return site
+
+
+def _drive(
+    repository: Path, *, mode: str = "stop", trap: Path | None = None
+) -> subprocess.CompletedProcess[str]:
+    environment = dict(os.environ)
+    environment["PYTHONPATH"] = (
+        str(REPO_ROOT) if trap is None else f"{trap}{os.pathsep}{REPO_ROOT}"
+    )
     environment["CLAUDE_PID"] = str(_ABSENT_HARNESS_PID)
     completed = subprocess.run(
         [sys.executable, str(HOOK), "--hook", mode],
@@ -259,7 +304,7 @@ def test_a_tree_the_promotion_released_is_not_offered(
     # an assertion about the hook and not about a snapshot that lost it.
     assert RUN_ID in format_checklist(dict(captured["payload"]))
 
-    completed = _drive(fleet)
+    completed = _drive(fleet, trap=_aggregate_trap(tmp_path))
 
     assert completed.stdout == "", (
         "the released row was the only duty and must not hold the turn open: "
@@ -273,7 +318,7 @@ def test_a_held_tree_is_still_offered(fleet: Path, tmp_path: Path) -> None:
     ledger.append_run(PROJECT, _retained_record(tree), root=fleet, allow_create=True)
     _publish(obligations_view(PROJECT, SESSION))
 
-    completed = _drive(fleet)
+    completed = _drive(fleet, trap=_aggregate_trap(tmp_path))
 
     assert "[worktree-held]" in completed.stdout, completed.stdout
     assert RUN_ID in completed.stdout, completed.stdout
@@ -287,9 +332,34 @@ def test_a_vanished_tree_is_not_offered(fleet: Path, tmp_path: Path) -> None:
     shutil.rmtree(tree)
     assert str(tree.resolve()) in _git(fleet, "worktree", "list", "--porcelain")
 
-    completed = _drive(fleet)
+    completed = _drive(fleet, trap=_aggregate_trap(tmp_path))
 
     assert "worktree-held" not in completed.stdout, completed.stdout
+
+
+def test_a_row_without_a_per_run_file_is_kept(fleet: Path, tmp_path: Path) -> None:
+    """A run with no per-run file is no evidence about its tree, so it holds.
+
+    The aggregate beside the per-run files gathers every run a project has
+    promoted, so resolving the row through it would spend a hook's whole
+    budget on one row. The trap refuses it outright rather than answering
+    None, which the reader would swallow exactly as it swallows an absent
+    file, so a read fails the case instead of hiding inside a keep.
+    """
+    tree = _worktree(fleet, tmp_path)
+    ledger.append_run(PROJECT, _retained_record(tree), root=fleet, allow_create=True)
+    payload = obligations_view(PROJECT, SESSION)
+    assert RUN_ID in format_checklist(dict(payload))
+    _publish(payload)
+    run_file = ledger.run_path(PROJECT, RUN_ID, root=fleet)
+    assert run_file.is_file()
+    run_file.unlink()
+    assert tree.is_dir()
+
+    completed = _drive(fleet, trap=_aggregate_trap(tmp_path))
+
+    assert "[worktree-held]" in completed.stdout, completed.stdout
+    assert RUN_ID in completed.stdout, completed.stdout
 
 
 def test_a_recorded_release_is_not_offered_while_the_path_exists(
@@ -312,6 +382,6 @@ def test_a_recorded_release_is_not_offered_while_the_path_exists(
     tree.mkdir(parents=True)
     _publish(captured["payload"])
 
-    completed = _drive(fleet)
+    completed = _drive(fleet, trap=_aggregate_trap(tmp_path))
 
     assert "worktree-held" not in completed.stdout, completed.stdout
