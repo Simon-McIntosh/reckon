@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="crew-runtime-positive-controls">
+  <meta name="plan-title" content="A test's run scratch lands under its own temporary root">
+  <meta name="plan-summary" content="A session-scoped autouse fixture points RECKON_WORKER_SCRATCH_ROOT beneath the pytest base temp, so run scratch a dispatch creates under the suite dies with the session instead of accumulating in the node's shared /tmp/reckon-crew-scratch.">
+  <meta name="plan-evidence-for" content="crew-runtime-positive-controls">
+  <meta name="plan-verifies" content="crew-runtime-positive-controls#s55">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-verdict" content="passed">
+  <title>A test's run scratch lands under its own temporary root &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc" id="a-test-run-scratch-stays-in-its-temp-root-record">
+  <h1 id="a-test-run-scratch-stays-in-its-temp-root-title">A test's run scratch lands under its own temporary root &mdash; evidence</h1>
+  <section id="a-test-run-scratch-stays-in-its-temp-root-measure">
+    <h2 id="a-test-run-scratch-stays-in-its-temp-root-measure-heading">Measure</h2>
+    <p id="a-test-run-scratch-stays-in-its-temp-root-reproduction"><strong>Reproduction, fixture removed.</strong> The declared mutation removes the session fixture's assignment of <code>RECKON_WORKER_SCRATCH_ROOT</code>, restoring the base behaviour. The new test then failed: the dispatch's own worker-runtime environment builder created <code>/tmp/reckon-crew-scratch/r-20261004T101655975444-run-scratch-stays-in-its-temp-root</code>, which is not beneath the session base temp, and the real root gained that entry. <code>EXIT=1</code>, failing id <code>tests/test_run_scratch_stays_in_its_temp_root.py::test_a_dispatch_writes_its_scratch_beneath_the_session_temp_root</code>. The run removed exactly the directory it created, by name and only when it was not already present, so the red run added no leak. Log: <code>logs/negative-control-run-scratch-stays-in-its-temp-root.log</code>.</p>
+    <p id="a-test-run-scratch-stays-in-its-temp-root-head"><strong>Head.</strong> At <code>774da08f9</code> a session-scoped autouse fixture in <code>tests/conftest.py</code> points <code>RECKON_WORKER_SCRATCH_ROOT</code> at <code>&lt;session base temp&gt;/reckon-crew-scratch</code> for the whole session and restores any previous value at the end, so a run's scratch directory is a direct child of a root pytest retains and prunes. <code>tests/test_run_scratch_stays_in_its_temp_root.py</code> pins both halves: the resolved root sits beneath the session base temp and is not the real root, and the dispatch's scratch directory (<code>TMPDIR</code>) is beneath that root while the real <code>/tmp/reckon-crew-scratch</code> gains no direct entry across the dispatch. Both tests pass in 1.07&nbsp;s, <code>EXIT=0</code>.</p>
+    <p id="a-test-run-scratch-stays-in-its-temp-root-population"><strong>Population.</strong> The test files that dispatch &mdash; in-process entry point, CLI, or the run-scratch machinery: 99 files. At head, <strong>1301 passed, 1 skipped, 1 error</strong> in 9&nbsp;m&nbsp;30&nbsp;s. At base <code>4e9e26f7e</code> the same population minus the new test file (98 files) gave <strong>1298 passed, 1 failed, 1 skipped, 1 error</strong> in 8&nbsp;m&nbsp;26&nbsp;s. Added failures: <strong>none</strong> &mdash; the base failure (<code>test_member_registration_commits.py::test_the_live_home_and_the_shared_checkout_are_untouched</code>) passes at head. The one error at each arm is the same id, <code>tests/conftest.py::test_temp_config_home</code>: the population passes <code>conftest.py</code> as a path, so pytest collects that imported helper and finds no <code>prefix</code> fixture. It is an artifact of the population command, identical on both arms.</p>
+    <p id="a-test-run-scratch-stays-in-its-temp-root-commits"><strong>Commit.</strong> <code>774da08f9</code> &mdash; fixture and test. Logs: <code>logs/gate-head-dispatch-population.log</code>, <code>logs/gate-base-dispatch-population.log</code>.</p>
+  </section>
+</main>
+</body>
+</html>
