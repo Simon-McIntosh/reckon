@@ -5027,14 +5027,32 @@ def dispatch_picker_selection(
     )
 
 
+def _write_existing_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
+    """Write only a live run's pointer, clearing a discard that races the write.
+
+    Discard removes the pointer before the run directory and does not take the
+    pointer lock. Check both sides of the atomic replacement: the first check
+    avoids a write after discard, and the second removes a pointer written
+    while the run directory was being removed. The caller holds the lock.
+    """
+    path = pointer_path(run_id)
+    directory = run_dir(run_id)
+    if not path.exists() or not directory.is_dir():
+        return False
+    _write_json(path, record)
+    if not directory.is_dir():
+        path.unlink(missing_ok=True)
+        return False
+    return True
+
+
 def _attach_shadow_picker_selection(run_id: str, selection: Mapping[str, Any]) -> None:
     """Update a live pointer without recreating a discarded run."""
     with _pointer_lock(run_id):
-        path = pointer_path(run_id)
-        if path.exists():
+        if pointer_path(run_id).exists():
             pointer = read_pointer(run_id)
             pointer["picker_selection"] = dict(selection)
-            _write_json(path, pointer)
+            _write_existing_pointer(run_id, pointer)
 
 
 def _record_shadow_picker_selection(spec_path: Path) -> None:
@@ -7685,7 +7703,19 @@ def dispatch(
             spawned_start_time = _process_start_time(spawned_pid)
             record["pid"] = spawned_pid
             record["pid_start_time"] = spawned_start_time
-            _write_json(pointer_path(run_id), record)
+            # The supervisor may already have advanced this pointer's phase.
+            # Merge the launch identity under the same lock as that advance so
+            # neither writer replaces the other's newer fields with its copy.
+            def attach_launch_identity(pointer: dict[str, Any]) -> dict[str, Any]:
+                pointer["pid"] = spawned_pid
+                pointer["pid_start_time"] = spawned_start_time
+                if "repository_tree_snapshot" in record:
+                    pointer["repository_tree_snapshot"] = record[
+                        "repository_tree_snapshot"
+                    ]
+                return pointer
+
+            record = _mutate_pointer(run_id, attach_launch_identity)
         else:
             # A delegated launch spawns no process, so there is no supervisor to
             # take the boundary baseline after dispatch's writes. Dispatch takes
@@ -10196,20 +10226,19 @@ def _publish_stored_phase(
     if not run_id:
         return
 
-    def mutate(record: dict[str, Any]) -> dict[str, Any]:
+    with _pointer_lock(run_id):
+        try:
+            record = read_pointer(run_id)
+        except CrewError:
+            return
         if not _record_is_this_attempt(record, spec):
-            return record
+            return
         phase = (
             _delivered_phase(record, exit_record) if ended else _started_phase(record)
         )
         if phase:
             record["phase"] = phase
-        return record
-
-    try:
-        _mutate_pointer(run_id, mutate)
-    except CrewError:
-        return
+        _write_existing_pointer(run_id, record)
 
 
 # A worker whose manifest reaches one of these has delivered its verdict and
