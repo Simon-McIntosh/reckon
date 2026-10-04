@@ -4,6 +4,11 @@ This is the dispatch procedure for a named lane. A lane is the backend name in
 flight configuration. The orchestrator names it; no worker component chooses,
 ranks, or recommends one.
 
+Do not dispatch background work to an orchestrator lane: it runs the
+orchestrators; background work there costs orchestrator capacity, and
+saturating it stops every session rather than one node. The resolved backend's
+`serves_orchestrators` declaration identifies that lane; its name does not.
+
 ## Name the lane, then trust no fallback
 
 Add `--backend <lane>` to a live `reckon crew dispatch` invocation. The same

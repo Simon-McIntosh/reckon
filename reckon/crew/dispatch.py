@@ -4458,11 +4458,10 @@ def _dispatch_orchestrator_lane_stop(
         "lane": backend_name,
         "detail": (
             f"resolved lane {backend_name!r} declares "
-            f"{ORCHESTRATOR_LANE_DECLARATION_KEY}: it carries this "
-            "workstation's orchestrators, so background work placed here spends "
-            "the capacity the sessions that dispatch, merge, promote and record "
-            "need, and a lane saturated there stops every session rather than "
-            "one node"
+            f"{ORCHESTRATOR_LANE_DECLARATION_KEY}. Do not dispatch background "
+            "work to an orchestrator lane: it runs the orchestrators; background "
+            "work there costs orchestrator capacity, and saturating it stops "
+            "every session rather than one node"
         ),
         "discharge": discharge,
     }
