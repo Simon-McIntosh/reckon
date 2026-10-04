@@ -2840,6 +2840,11 @@ detail         : ... conflicts with live claim ... held by run
     </figure>
   </section>
 
+  <section id="s41">
+    <h2>§41 — a dispatch is one row</h2>
+    <p>Worker commit <code>3176d8f8d</code>, merged at <code>6c6ce6b5f</code> on 2026-10-04. <code>RowPolicy</code> holds the arrival kind <code>(None, "dispatched")</code> for the 90 s launch window and discharges it on the run's first transition out of <code>dispatched</code>; the resolving row is kept, so a launch prints one row reading <code>dispatched → &lt;state&gt;</code>. An arrival that has not moved by the window's end prints late; a held launch flicker takes the hold over and its resolution prints once with <code>dispatched</code> on its left; a repeated arrival from a re-arm keeps the standing hold. Gate: 36 passed at head across the new file and the two existing policy suites, 0 added failures against base <code>f1aa483e3</code>, negative control (arrival hold removed) fails 5 ids at exit 1. Measurement: the last 24 h of the reckon watch stream replayed through <code>PaneRowPath</code>, 299 launches that reached <code>working</code> inside 90 s, 598 rows before and 300 after (2.000 → 1.003 rows per launch); the one exception moved to <code>working</code> exactly on the window boundary. Independent review scored 97 with 0 added failures and no findings.</p>
+  </section>
+
 </main>
 </body>
 </html>
