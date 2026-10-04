@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-artifacts" content="~/.config/reckon/crew/reports/display-reuse-map.md,~/.config/reckon/crew/reports/display-truth-reuse-wave-soft-limit.md,~/.config/reckon/crew/reports/display-truth-reuse-promotion-row.md,~/.config/reckon/crew/reports/display-truth-reuse-refusal-classifier.md">
 <meta name="plan-impl" content="0.71">
-<meta name="plan-version" content="696">
+<meta name="plan-version" content="697">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-commits" content="896ba48,45fc1b9,6af76565e2e88cc4b482ea8f5f89fc0fa0f92a9b,20e52db,ba487aa,8891cfa">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;deferred&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;deferred&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;done&quot;,&quot;s29&quot;:&quot;done&quot;,&quot;s30&quot;:&quot;done&quot;,&quot;s31&quot;:&quot;done&quot;,&quot;s32&quot;:&quot;done&quot;,&quot;s33&quot;:&quot;done&quot;,&quot;s34&quot;:&quot;done&quot;,&quot;s35&quot;:&quot;done&quot;,&quot;s36&quot;:&quot;done&quot;,&quot;s37&quot;:&quot;done&quot;,&quot;s38&quot;:&quot;implementable&quot;,&quot;s39&quot;:&quot;implementable&quot;,&quot;s40&quot;:&quot;done&quot;,&quot;s41&quot;:&quot;done&quot;,&quot;s42&quot;:&quot;implementable&quot;,&quot;s43&quot;:&quot;implementable&quot;,&quot;s44&quot;:&quot;implementable&quot;}">
@@ -4116,6 +4116,9 @@ if isinstance(argv, list) and argv:
 </div>
 <div class="r-comment" data-section="s41" data-id="c-20261004T1320-s41" data-who="reckon-build" data-when="2026-10-04T13:20:00Z">
     <div class="r-comment-body">gate tests/test_a_dispatch_is_one_row.py passed (36 passed with the two policy suites, 0 added failures, negative control EXIT=1); replay 2.000 → 1.003 rows per launch over 299 launches; review 97; section closed by one node</div>
+</div>
+<div class="r-comment" data-section="s41" data-id="c-run-r-20261004T123935269941-a-dispatch-is-one-row" data-who="reckon-build" data-when="2026-10-04T13:04:01.598Z">
+    <div class="r-comment-body"><p>RowPolicy holds an arrival — a run&#x27;s first sighting in dispatched — for the 90 s window and discharges it on the run&#x27;s first transition out of dispatched, so a launch prints one row reading dispatched -&gt; state; over the last 24 h of the watch stream replayed through PaneRowPath, launches reaching working inside 90 s fall from 2.000 rows each to 1.003 (298 of 299 collapse to exactly one).</p></div>
 </div>
 </section>
 </main>
