@@ -225,24 +225,31 @@ def test_attempts_derive_from_executable_runs_and_their_outcomes(
     }
 
 
-def test_concurrent_dispatches_leave_a_plan_edit_uncommitted(
+def test_concurrent_dispatches_leave_a_committed_plan_unchanged(
     tmp_path: Path, monkeypatch
 ) -> None:
     root, plan = _repository(tmp_path, monkeypatch)
     base = _git(root, "rev-parse", "HEAD")
-    plan.write_text(plan.read_text().replace("Work</h2>", "Updated work</h2>"))
-    dirty = plan.read_bytes()
+    before = plan.read_bytes()
     with ThreadPoolExecutor(max_workers=2) as pool:
         first = pool.submit(_dispatch, root, "parallel-work", section="work")
         second = pool.submit(_dispatch, root, "parallel-other", section="other")
         assert first.result()["run_id"] != second.result()["run_id"]
-    assert plan.read_bytes() == dirty
+    assert plan.read_bytes() == before
     assert _git(root, "rev-parse", "HEAD") == base
-    assert _git(root, "status", "--short", "--", "docs/plans/fixture.html") == (
-        "M docs/plans/fixture.html"
-    )
+    assert _git(root, "status", "--short", "--", "docs/plans/fixture.html") == ""
     assert _section(root, "work")["attempts"] == 1
     assert _section(root, "other")["attempts"] == 1
+
+
+def test_dispatch_refuses_a_dirty_plan(tmp_path: Path, monkeypatch) -> None:
+    root, plan = _repository(tmp_path, monkeypatch)
+    plan.write_text(plan.read_text().replace("Work</h2>", "Updated work</h2>"))
+    dirty = plan.read_bytes()
+    with pytest.raises(crew.PlanVisibilityError, match="differs from base"):
+        _dispatch(root, "uncommitted")
+    assert plan.read_bytes() == dirty
+    assert _section(root)["attempts"] == 0
 
 
 def test_state_write_drops_non_authoritative_attribute(
