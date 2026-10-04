@@ -168,8 +168,8 @@ def test_the_counter_block_keeps_four_cells_and_its_width() -> None:
     assert launch.count("·") == 0
     assert len(BLOCK) == BLOCK_WIDTH == STATS
 
-    # Every row keeps the pane's width, so nothing wrapped to make room.
-    assert all(len(row) == WIDTH for row in rows.values())
+    # Every row stays within the pane's width, so nothing wrapped to make room.
+    assert all(len(row) <= WIDTH for row in rows.values())
 
 
 def test_a_reading_without_a_launch_failure_names_no_launch_fault() -> None:

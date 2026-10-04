@@ -126,7 +126,7 @@ def test_two_names_that_cut_alike_each_carry_their_own_mint() -> None:
     )
     assert again.rstrip().endswith("6862")
     assert second.rstrip().endswith("0578")
-    assert len(grid.render(_event(CENSUS, CENSUS_ID))) == ticker_module.DEFAULT_WIDTH
+    assert len(grid.render(_event(CENSUS, CENSUS_ID))) <= ticker_module.DEFAULT_WIDTH
 
 
 def test_two_runs_of_one_node_show_different_cells() -> None:
@@ -146,7 +146,7 @@ def test_two_runs_of_one_node_show_different_cells() -> None:
     assert first.rstrip() != second.rstrip()
     assert again.rstrip().endswith("6862")
     assert second.rstrip().endswith("0578")
-    assert len(grid.render(_event(REPAIR, REPAIR_ID))) == ticker_module.DEFAULT_WIDTH
+    assert len(grid.render(_event(REPAIR, REPAIR_ID))) <= ticker_module.DEFAULT_WIDTH
 
 
 def test_a_lone_long_name_carries_no_suffix() -> None:
@@ -158,4 +158,4 @@ def test_a_lone_long_name_carries_no_suffix() -> None:
         CENSUS, ticker_module.NODE, keep_end=True
     )
     assert "…" in cell
-    assert len(grid.render(_event(CENSUS, CENSUS_ID))) == ticker_module.DEFAULT_WIDTH
+    assert len(grid.render(_event(CENSUS, CENSUS_ID))) <= ticker_module.DEFAULT_WIDTH

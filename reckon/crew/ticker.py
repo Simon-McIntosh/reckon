@@ -395,9 +395,8 @@ STAT_LETTER = {
 # the counts apart, and the reason's room pays them.
 STAT_DIGITS = 2
 _MAX_CELLS = (*_CELLS, _WAIT_CELL)
-STATS = (
-    sum(STAT_DIGITS + len(STAT_LETTER[label]) for label in _MAX_CELLS)
-    + (len(_MAX_CELLS) - 1)
+STATS = sum(STAT_DIGITS + len(STAT_LETTER[label]) for label in _MAX_CELLS) + (
+    len(_MAX_CELLS) - 1
 )
 
 # The widest the fixed columns can be, plus the stats block and one gap. A width
@@ -1678,7 +1677,7 @@ class Ticker:
         return f"{elide(node, NODE - RUN_STAMP_TAIL - 1, keep_end=True)} {tail}"
 
     def render(self, event: Mapping[str, Any], *, with_session: bool = False) -> str:
-        """One transition as one line, exactly ``width`` visible characters.
+        """One transition as one line, at most ``width`` visible characters.
 
         ``with_session`` is accepted for call-site compatibility. Ownership is
         no longer a row column: the follower already scopes delivery, while an
@@ -1783,20 +1782,24 @@ class Ticker:
         # clause's margin and never the pane's edge.
         if head + GAP + LANE_WIDTH <= grid_width:
             cells.extend(self._lane_cells(event))
-        cells.append((" " * GAP, None))
-
         head = sum(len(text) for text, _ in cells)
-        room = max(grid_width - head, 0)
-        # The clause keeps the whole margin: every column ahead of it is sized
-        # by what it carries, and what a row can say is what the pane has left
-        # after those. A width that leaves the reason nothing renders the fixed
+
+        # The clause is the row's last column and nothing follows it, so it is
+        # bounded by the room the fixed columns leave after the separator that
+        # introduces it, and it is not right-padded into it: a pad would buy no
+        # alignment and only overrun the pane the row is read in. Every column
+        # ahead of the clause keeps its fixed width, so the fixed columns'
+        # offsets are unchanged; the row's visible width is its content, at most
+        # the grid width. The separator travels with the clause, so a row with
+        # nothing to explain ends on its last fixed glyph rather than on painted
+        # blanks. A width that leaves the reason nothing renders the fixed
         # columns alone. The clause is one row and never wraps, so a bound on
         # its length is a bound on the row.
+        room = max(grid_width - head - GAP, 0)
         reason = self._reason(event, entry_state, room)
-        if room:
-            cells.append((f"{reason:<{room}}", "dim"))
-        else:
-            cells.append(("", None))
+        if reason:
+            cells.append((" " * GAP, None))
+            cells.append((reason, "dim"))
         # A shadow will never merge, so the row says so about itself end to end
         # rather than spending a column on an identifier a reader cannot use.
         shadow = is_shadow(event)
