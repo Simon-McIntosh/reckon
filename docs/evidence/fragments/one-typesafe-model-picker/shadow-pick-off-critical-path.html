@@ -1,0 +1,14 @@
+<section id="shadow-pick-off-critical-path-result" data-reckon="evidence">
+  <h3>Explicit lane shadow pick after launch</h3>
+  <p>Deterministic and explicitly named lanes now launch without awaiting their advisory picker. The detached picker has a five-second bound covering input construction and the pick, then writes its selection or a recorded fallback to the live run pointer. Picker-routed dispatches still resolve their pick before launch. A slow-client test holds the picker pending while dispatch returns, then confirms that the pointer and the ledger record builder read the later selection; a real detached-process test confirms the process writes the pointer.</p>
+  <table>
+    <caption>Fresh-process local-lane fixture, five launches per arm; wall time from dispatch call to return, seconds</caption>
+    <thead><tr><th>Picker condition</th><th>Base samples</th><th>Head samples</th><th>Median base → head</th></tr></thead>
+    <tbody>
+      <tr><td>Credential absent, immediate picker result</td><td>4.236, 4.432, 4.114, 4.224, 4.610</td><td>4.160, 4.052, 3.883, 4.915, 4.279</td><td>4.236 → 4.160 s (0.076 s less)</td></tr>
+      <tr><td>Picker call delayed three seconds in the dispatching process</td><td>11.934, 8.468, 8.220, 8.166, 9.081</td><td>3.151, 3.653, 3.982, 4.408, 4.092</td><td>8.468 → 3.982 s (4.486 s less)</td></tr>
+    </tbody>
+  </table>
+  <p>The first fixture's fast fallback leaves little picker latency to remove and shows host-time variation. The controlled slow-client arm tests the critical path directly. All twenty fixture invocations exited zero. The five head runs in each arm returned without a selection and later found one on the pointer; all five base runs in each arm had a selection before return. Each log records the imported module path and resolved working directory: base used the extracted base revision, and head used the assigned worktree.</p>
+  <p>The matched base gate recorded one failing slow-client test and 185 passing tests. The final head gate recorded that test passing, with one failure in the concurrent supervisor-lifecycle test (<code>test_dispatch_returns_when_its_supervisor_finished_the_launch</code>): 185 passed, one failed. This test uses the default shadow route and does not enter the new deferred-pick branch. Its owner is working in that test file; the failure is carried as a follow-on rather than changed within this node.</p>
+</section>
