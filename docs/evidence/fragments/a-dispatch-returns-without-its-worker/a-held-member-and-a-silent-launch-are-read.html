@@ -105,9 +105,19 @@
       <code>EXIT=1</code>.</p>
       <p>The population of test files importing <code>reckon.crew.node</code> or
       <code>reckon.crew.dispatch</code> (211 files) ran on both trees under
-      <code>-n 8</code>: the base arm at <code>92ab0ad47</code> and the head arm on the head
-      tree, both as full-run logs in <code>logs/</code>. The head arm adds no failure against
-      the base arm.</p>
+      <code>-n 8</code>: the base arm at <code>92ab0ad47</code> reported <code>9 failed, 2495
+      passed, 1 error</code> and the head arm <code>2 failed, 2502 passed, 2 errors</code>,
+      both as full-run logs in <code>logs/</code>. The head arm adds two failures, and both
+      are fixtures outside this change's write paths that the new rule meets:
+      <code>tests/test_crew.py::test_cross_model_dispatch_captures_a_fresh_session_without_losing_the_first</code>
+      and
+      <code>tests/test_ledger.py::test_a_later_session_is_not_written_over_the_captured_one</code>
+      dispatch a second member-bound run while the first run is still a live pointer whose
+      launcher stub returned pid 0; the member guard now holds that member, which is the
+      behaviour this change exists to produce, and each fixture needs the first run ended
+      before the second begins. The second added signal is an error at teardown of
+      <code>tests/test_member_friction.py</code>, which does not reproduce when that test is
+      run alone.</p>
     </section>
   </main>
 </body>
