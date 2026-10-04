@@ -7,7 +7,7 @@
 <title>an-empty-worktree-field-is-absent</title>
 </head><body>
 
-<h2 id="landing">An empty worktree field is absent, never the current directory</h2>
+<h2 id="an-empty-worktree-field-is-absent-landing">An empty worktree field is absent, never the current directory</h2>
 
 <p>Landed at <code>2d7ddd40e</code> and <code>cae89858e</code> on
 <code>reckon/crew/promotion.py</code>, with
@@ -29,7 +29,7 @@ confident wrong answer. The gate-evidence fixture writes
 <code>worktree: &lt;fixture repository&gt;</code> so its selection no longer
 depends on where the suite was started.</p>
 
-<h3 id="reproduction">The recorded defect, reproduced against the base tree</h3>
+<h3 id="an-empty-worktree-field-is-absent-reproduction">The recorded defect, reproduced against the base tree</h3>
 
 <p>The reader itself, run from inside an unrelated git repository at
 <code>060d94f50</code>, returned that repository's head for a record with an
@@ -41,7 +41,7 @@ run directory). The gate-evidence file run from a directory that is not a
 git repository at base: <strong>10 failed, 16 passed in 65.79s</strong>,
 <code>EXIT=1</code> (<code>base-from-nongit.log</code>).</p>
 
-<h3 id="gate">Gate</h3>
+<h3 id="an-empty-worktree-field-is-absent-gate">Gate</h3>
 
 <p><code>tests/test_gate_evidence.py</code> from a directory that is not a
 git repository at head <code>cae89858e</code>: <strong>26 passed in
@@ -72,7 +72,7 @@ keeps a case where a named worktree still resolves its own head &mdash; so
 the file discriminates the absence from a reader that returns nothing for
 every input.</p>
 
-<h3 id="negative-control">Negative control</h3>
+<h3 id="an-empty-worktree-field-is-absent-negative-control">Negative control</h3>
 
 <p>Base product code at <code>060d94f50</code> (extracted with
 <code>git archive</code>) with the new test file, its first line repeating
@@ -88,7 +88,7 @@ test passed its fourth case at base when both seeded repositories hashed to
 one commit, which is why <code>cae89858e</code> makes each seeded file carry
 its own path.</p>
 
-<h3 id="unmet">Unmet within this node's write scope</h3>
+<h3 id="an-empty-worktree-field-is-absent-unmet">Unmet within this node's write scope</h3>
 
 <p>The same empty-field-cwd idiom remains at four further functions in
 <code>reckon/crew/promotion.py</code>, verified by inspection and not
