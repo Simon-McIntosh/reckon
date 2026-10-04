@@ -29,6 +29,12 @@ skill never dispatches workers; `/reckon-build S1` executes the sprint.
 
 In a crew-managed repository, investigation and review fan-out is `reckon crew dispatch` work under the investigate and review roles; harness-native background agents bypass the run ledger, manifests and calibration and are refused by the guard.
 
+Do not dispatch background work to an orchestrator lane: it runs the
+orchestrators; background work there costs orchestrator capacity, and
+saturating it stops every session rather than one node. Read the
+[lane-routing reference](../reckon-build/references/lane-routing.md) when
+choosing a lane for sprint work.
+
 ## The model — independently versioned resources
 
 Sprints live under `docs/sprints/`, milestones under `docs/milestones/`,

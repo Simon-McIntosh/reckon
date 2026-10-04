@@ -1869,6 +1869,10 @@ def crew_dispatch(
 ):
     """Launch a node whose contract, routing, budget, watcher, and scope allow it.
 
+    Do not dispatch background work to an orchestrator lane: it runs the
+    orchestrators; background work there costs orchestrator capacity, and
+    saturating it stops every session rather than one node.
+
     One instruction covers every backend. Which harness runs, at what model,
     effort and sandbox tier, is resolved from flight config — so this command
     names none of them, and the caller branches only on the returned

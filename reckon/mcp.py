@@ -4198,6 +4198,10 @@ def _crew(
     and how much of each five-hour and weekly quota window remains. Consult it
     before choosing a lane; it reports availability only and never selects,
     ranks, or recommends one.
+    Do not dispatch background work to an orchestrator lane: it runs the
+    orchestrators; background work there costs orchestrator capacity, and
+    saturating it stops every session rather than one node.
+
     ``obligations`` derives the duties one coordinator session still owes — each
     with its kind, run, age and next command — from the live pointers, the
     review store and the ledger, and needs ``session``.

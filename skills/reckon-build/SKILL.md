@@ -130,6 +130,11 @@ is reachable from the integrated primary branch.
 
 #### Locally served worker routing
 
+Do not dispatch background work to an orchestrator lane: it runs the
+orchestrators; background work there costs orchestrator capacity, and
+saturating it stops every session rather than one node. Use the
+[lane-routing reference](references/lane-routing.md) before selecting a lane.
+
 The local lane is a routing choice, not only a flag: the coordinator adds `--local` to every dispatch, which selects the backend named by `local_backend` and refuses when it is unset. The `--local` flag selects that backend by name. A coordinator may select it unprompted when the node's declared level is `exact`, when metered lanes are constrained, or when the node needs no decision; it costs no metered quota. The context-fit refusal rejects a node exceeding the lane's window before
 a worktree exists, rather than the node dying mid-run. The node still gets a
 worktree, a manifest, a gate and a ledger record.
