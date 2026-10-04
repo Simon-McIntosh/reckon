@@ -30,15 +30,16 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
 
 from reckon import cli, crew
 from reckon.crew import follow_checkpoint, runs
@@ -86,16 +87,29 @@ def _a_live_owner(monkeypatch):
     runs._RESOLVED_FOLLOWER_OWNER.resolved = previous
 
 
+@pytest.fixture(autouse=True)
+def _a_moved_source_cannot_reload_the_arming(monkeypatch):
+    """Freeze the code stamp so an ambient source change cannot re-execute.
+
+    A follower replaces its own process image when the content stamp over its
+    source moves while it is attached, and in this suite the tree does move
+    under a running case: a peer's commit landing in the checkout, or the
+    reload cases that append probe bytes to the follower's source. An arming
+    that saw the move would re-execute the process hosting the suite — the
+    xdist worker — and its own lifetime would then end that worker, losing
+    every case still queued on it. The arming runs in a child this test owns
+    and the stamp is held still for the case, so neither the child nor the
+    runner can be replaced by an ambient edit. What the cases measure is a
+    re-arm's replay, which no reload takes part in.
+    """
+    held = runs.follower_code_stamp()
+    monkeypatch.setattr(runs, "follower_code_stamp", lambda: held)
+
+
 @pytest.fixture()
-def follow_lines(monkeypatch):
-    """Capture the follower command's own lines instead of writing them out."""
-    lines: list[str] = []
-
-    def capture(line, *, stream=None):
-        lines.append(line)
-
-    monkeypatch.setattr(cli, "_echo_follow_line", capture)
-    return lines
+def follow_lines():
+    """The rows the armed follower draws, collected by `_run_follow`."""
+    return []
 
 
 def _write_pointer(home: Path, run_id: str, node: str, *, session: str, phase: str):
@@ -165,10 +179,123 @@ def _append_legacy_line(stream_path: Path, text: str) -> None:
         handle.write(text + "\n")
 
 
-def _run_follow() -> None:
-    """Arm the real follower command once, to its own short lifetime."""
+_CHILD_ARMING = """\
+import json
+import pathlib
+import sys
+import traceback
+
+from click.testing import CliRunner
+
+from reckon import cli
+from reckon.crew import runs
+
+payload_path = pathlib.Path(sys.argv[1])
+entry_name, terminal, producer_live_hint = sys.argv[2], sys.argv[3] == "terminal", sys.argv[4] == "producer-live"
+arguments = sys.argv[5:]
+
+# An arming must not re-execute the process it runs in: a source edit landing
+# under it replaces the image, and the arming's own lifetime then ends the
+# replacement.
+held = runs.follower_code_stamp()
+runs.follower_code_stamp = lambda: held
+if producer_live_hint:
+    runs.producer_live = lambda project: True
+if terminal:
+    cli._follow_replay_visible = lambda: True
+
+rows = []
+cli._echo_follow_line = lambda line, *, stream=None: rows.append(line)
+payload = {"rows": [], "exit_code": None, "output": "", "error": ""}
+try:
     result = CliRunner().invoke(
-        cli.crew,
+        cli.crew if entry_name == "crew" else cli.main,
+        arguments,
+        catch_exceptions=False,
+    )
+    payload = {
+        "rows": rows,
+        "exit_code": result.exit_code,
+        "output": result.output,
+        "error": "",
+    }
+except BaseException:
+    payload["error"] = traceback.format_exc()
+    payload["rows"] = rows
+payload_path.write_text(json.dumps(payload))
+"""
+
+
+def _armed_in_a_child(
+    arguments: list[str],
+    *,
+    entry: str = "crew",
+    terminal: bool = False,
+    producer_live: bool = False,
+) -> dict:
+    """Run one arming in a child process of this test and bring its rows back.
+
+    The follower command can end the process it runs in: when the content
+    stamp over its source moves while it is attached it re-executes itself in
+    place, and the arming's own lifetime then ends the replacement. A test
+    runner hosting that arming is the process it ends, which is how a case
+    here crashed an xdist worker and took every case still queued on it. The
+    command therefore runs as a child process this test owns, with the case's
+    patches applied inside the child, and a child that ends without returning
+    its rows is reported as a failure of the case rather than a vanished
+    runner.
+    """
+    workdir = Path(tempfile.mkdtemp(prefix="reckon-arming-"))
+    try:
+        payload_path = workdir / "payload.json"
+        root = str(Path(cli.__file__).resolve().parents[1])
+        env = dict(os.environ)
+        env["PYTHONPATH"] = root + os.pathsep + env.get("PYTHONPATH", "")
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                _CHILD_ARMING,
+                str(payload_path),
+                entry,
+                "terminal" if terminal else "plain",
+                "producer-live" if producer_live else "plain",
+                *arguments,
+            ],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+        if not payload_path.exists():
+            raise AssertionError(
+                "the arming ended the process it ran in without returning (the "
+                "follower re-executed in place or exited); it runs in a child "
+                "this test owns, so the runner survives it. Child stderr: "
+                f"{completed.stderr[-2000:]}"
+            )
+        payload = json.loads(payload_path.read_text())
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+    if payload["error"]:
+        raise AssertionError(f"the arming failed in its child: {payload['error']}")
+    if payload["exit_code"] is None:
+        raise AssertionError(
+            "the arming ended the process it ran in without returning (the "
+            "follower re-executed in place or exited); it runs in a child this "
+            "test owns, so the runner survives it"
+        )
+    return payload
+
+
+def _run_follow(lines: list[str], *, terminal: bool = False) -> None:
+    """Arm the real follower command once, to its own short lifetime.
+
+    The command runs in a child of this test (see `_armed_in_a_child`), and
+    the child's rows are brought back into the list the case is holding.
+    """
+    payload = _armed_in_a_child(
         [
             "follow",
             "--project",
@@ -181,9 +308,10 @@ def _run_follow() -> None:
             "--width",
             "200",
         ],
-        catch_exceptions=False,
+        terminal=terminal,
     )
-    assert result.exit_code == 0, result.output
+    assert payload["exit_code"] == 0, payload["output"]
+    lines.extend(payload["rows"])
 
 
 def _fleet_rows(lines: list[str]) -> list[str]:
@@ -259,18 +387,16 @@ def test_a_pipe_rearm_with_nothing_new_draws_the_fleet(home, follow_lines) -> No
         assert acquired
         crew.list_live(project=PROJECT)
 
-        _run_follow()
+        _run_follow(follow_lines)
         assert follow_checkpoint.read_history(PROJECT, SESSION), (
             "the first arming must leave rows to replay, or this check is vacuous"
         )
         follow_lines.clear()
 
-        _run_follow()
+        _run_follow(follow_lines)
 
     rows = _fleet_rows(follow_lines)
-    assert len(rows) == 1, (
-        f"a re-arm draws its one live run exactly once; got {rows!r}"
-    )
+    assert len(rows) == 1, f"a re-arm draws its one live run exactly once; got {rows!r}"
     assert "node-a" in rows[0], rows[0]
     assert "working" in rows[0], rows[0]
 
@@ -287,7 +413,7 @@ def test_a_pipe_rearm_delivers_only_the_transitions_written_while_away(
         assert acquired
         crew.list_live(project=PROJECT)
         stream_path = Path(_seat["stream_path"])
-        _run_follow()
+        _run_follow(follow_lines)
         follow_lines.clear()
 
         stamp = _iso(time.time() - 15 * 60)
@@ -304,7 +430,7 @@ def test_a_pipe_rearm_delivers_only_the_transitions_written_while_away(
                 )
             ],
         )
-        _run_follow()
+        _run_follow(follow_lines)
 
     rows = _fleet_rows(follow_lines)
     assert len(rows) == 1, f"exactly the one gap transition; got {follow_lines!r}"
@@ -358,13 +484,12 @@ def test_a_terminal_rearm_shows_the_burst_under_one_frame_line(
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         crew.list_live(project=PROJECT)
-        _run_follow()
+        _run_follow(follow_lines)
         stored = follow_checkpoint.read_history(PROJECT, SESSION)
         assert stored, "the first arming leaves rows to restore"
         follow_lines.clear()
 
-        monkeypatch.setattr(cli, "_follow_replay_visible", lambda: True)
-        _run_follow()
+        _run_follow(follow_lines, terminal=True)
 
     writes = [line for line in _fleet_rows(follow_lines) if "\n" in line]
     assert len(writes) == 1, (
@@ -479,7 +604,7 @@ def test_a_flapping_run_discarded_before_the_stop_is_not_re_emitted(
         assert acquired
         stream_path = Path(seat["stream_path"])
         crew.list_live(project=PROJECT)
-        _run_follow()
+        _run_follow(follow_lines)
         assert any(
             "node-c" in row["text"]
             for row in follow_checkpoint.read_history(PROJECT, SESSION)
@@ -508,7 +633,7 @@ def test_a_flapping_run_discarded_before_the_stop_is_not_re_emitted(
                 ),
             ],
         )
-        _run_follow()
+        _run_follow(follow_lines)
         assert [line for line in follow_lines if "node-c" in line], (
             f"the flapping rows must be drawn before the discard: {follow_lines!r}"
         )
@@ -518,13 +643,13 @@ def test_a_flapping_run_discarded_before_the_stop_is_not_re_emitted(
         # after, and the re-arm must show nothing for the run that is now gone.
         _discard_pointer(RUN_C)
         crew.list_live(project=PROJECT)
-        _run_follow()
+        _run_follow(follow_lines)
         assert [line for line in follow_lines if "withdrawn" in line], (
             f"the withdrawal is drawn before the stop: {follow_lines!r}"
         )
         follow_lines.clear()
 
-        _run_follow()
+        _run_follow(follow_lines)
 
     assert [line for line in _fleet_rows(follow_lines) if "node-c" in line] == [], (
         f"a discarded run's rows must not be re-emitted; got {follow_lines!r}"
@@ -596,9 +721,8 @@ def test_the_real_watch_directory_is_untouched(home, follow_lines, monkeypatch) 
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         crew.list_live(project=PROJECT)
-        _run_follow()
-        monkeypatch.setattr(cli, "_follow_replay_visible", lambda: True)
-        _run_follow()
+        _run_follow(follow_lines)
+        _run_follow(follow_lines, terminal=True)
 
     for artifact in artifacts:
         assert not artifact.exists(), f"the real home gained a file: {artifact}"

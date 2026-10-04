@@ -23,12 +23,15 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
+import subprocess
+import sys
+import tempfile
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
 
 from reckon import cli, crew
 from reckon.crew import follow_checkpoint, recovery, runs
@@ -862,22 +865,148 @@ HISTORY_HEADER = "── history"
 HISTORY_SEPARATOR = "── re-armed"
 
 
+@pytest.fixture(autouse=True)
+def _a_moved_source_cannot_reload_the_arming(monkeypatch):
+    """Freeze the code stamp so an ambient source change cannot re-execute.
+
+    A follower replaces its own process image when the content stamp over its
+    source moves while it is attached, and in this suite the tree does move
+    under a running case: a peer's commit landing in the checkout, or the
+    reload cases that append probe bytes to the follower's source. An arming
+    that saw the move would re-execute the process hosting the suite — the
+    xdist worker — and its own lifetime would then end that worker, losing
+    every case still queued on it. The arming runs in a child this test owns
+    and the stamp is held still for the case, so neither the child nor the
+    runner can be replaced by an ambient edit. What the cases measure is a
+    re-arm's replay, which no reload takes part in.
+    """
+    held = runs.follower_code_stamp()
+    monkeypatch.setattr(runs, "follower_code_stamp", lambda: held)
+
+
 @pytest.fixture()
-def follow_lines(monkeypatch):
-    """Capture the follower command's own lines instead of writing them out."""
-    lines: list[str] = []
-
-    def capture(line, *, stream=None):
-        lines.append(line)
-
-    monkeypatch.setattr(cli, "_echo_follow_line", capture)
-    return lines
+def follow_lines():
+    """The rows the armed follower draws, collected by `_run_follow`."""
+    return []
 
 
-def _run_follow() -> None:
-    """Arm the real follower command once, to its own short lifetime."""
+_CHILD_ARMING = """\
+import json
+import pathlib
+import sys
+import traceback
+
+from click.testing import CliRunner
+
+from reckon import cli
+from reckon.crew import runs
+
+payload_path = pathlib.Path(sys.argv[1])
+entry_name, terminal, producer_live_hint = sys.argv[2], sys.argv[3] == "terminal", sys.argv[4] == "producer-live"
+arguments = sys.argv[5:]
+
+# An arming must not re-execute the process it runs in: a source edit landing
+# under it replaces the image, and the arming's own lifetime then ends the
+# replacement.
+held = runs.follower_code_stamp()
+runs.follower_code_stamp = lambda: held
+if producer_live_hint:
+    runs.producer_live = lambda project: True
+if terminal:
+    cli._follow_replay_visible = lambda: True
+
+rows = []
+cli._echo_follow_line = lambda line, *, stream=None: rows.append(line)
+payload = {"rows": [], "exit_code": None, "output": "", "error": ""}
+try:
     result = CliRunner().invoke(
-        cli.crew,
+        cli.crew if entry_name == "crew" else cli.main,
+        arguments,
+        catch_exceptions=False,
+    )
+    payload = {
+        "rows": rows,
+        "exit_code": result.exit_code,
+        "output": result.output,
+        "error": "",
+    }
+except BaseException:
+    payload["error"] = traceback.format_exc()
+    payload["rows"] = rows
+payload_path.write_text(json.dumps(payload))
+"""
+
+
+def _armed_in_a_child(
+    arguments: list[str],
+    *,
+    entry: str = "crew",
+    terminal: bool = False,
+    producer_live: bool = False,
+) -> dict:
+    """Run one arming in a child process of this test and bring its rows back.
+
+    The follower command can end the process it runs in: when the content
+    stamp over its source moves while it is attached it re-executes itself in
+    place, and the arming's own lifetime then ends the replacement. A test
+    runner hosting that arming is the process it ends, which is how a case
+    here crashed an xdist worker and took every case still queued on it. The
+    command therefore runs as a child process this test owns, with the case's
+    patches applied inside the child, and a child that ends without returning
+    its rows is reported as a failure of the case rather than a vanished
+    runner.
+    """
+    workdir = Path(tempfile.mkdtemp(prefix="reckon-arming-"))
+    try:
+        payload_path = workdir / "payload.json"
+        root = str(Path(cli.__file__).resolve().parents[1])
+        env = dict(os.environ)
+        env["PYTHONPATH"] = root + os.pathsep + env.get("PYTHONPATH", "")
+        completed = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                _CHILD_ARMING,
+                str(payload_path),
+                entry,
+                "terminal" if terminal else "plain",
+                "producer-live" if producer_live else "plain",
+                *arguments,
+            ],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+        if not payload_path.exists():
+            raise AssertionError(
+                "the arming ended the process it ran in without returning (the "
+                "follower re-executed in place or exited); it runs in a child "
+                "this test owns, so the runner survives it. Child stderr: "
+                f"{completed.stderr[-2000:]}"
+            )
+        payload = json.loads(payload_path.read_text())
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
+    if payload["error"]:
+        raise AssertionError(f"the arming failed in its child: {payload['error']}")
+    if payload["exit_code"] is None:
+        raise AssertionError(
+            "the arming ended the process it ran in without returning (the "
+            "follower re-executed in place or exited); it runs in a child this "
+            "test owns, so the runner survives it"
+        )
+    return payload
+
+
+def _run_follow(lines: list[str], *, terminal: bool = False) -> None:
+    """Arm the real follower command once, to its own short lifetime.
+
+    The command runs in a child of this test (see `_armed_in_a_child`), and
+    the child's rows are brought back into the list the case is holding.
+    """
+    payload = _armed_in_a_child(
         [
             "follow",
             "--project",
@@ -890,9 +1019,10 @@ def _run_follow() -> None:
             "--width",
             "200",
         ],
-        catch_exceptions=False,
+        terminal=terminal,
     )
-    assert result.exit_code == 0, result.output
+    assert payload["exit_code"] == 0, payload["output"]
+    lines.extend(payload["rows"])
 
 
 def _fleet_lines(lines: list[str]) -> list[str]:
@@ -924,13 +1054,13 @@ def test_a_rearm_bursts_the_history_only_to_a_terminal_and_in_one_write(
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         crew.list_live(project=PROJECT)
-        _run_follow()
+        _run_follow(follow_lines)
         stored = follow_checkpoint.read_history(PROJECT, SESSION)
         assert len(stored) == 2, stored
         follow_lines.clear()
 
         # A pipe: no burst at all.
-        _run_follow()
+        _run_follow(follow_lines)
         pipe_writes = [line for line in follow_lines if "\n" in line]
         assert pipe_writes == [], (
             f"a re-arm to a pipe writes no history burst; got {pipe_writes!r}"
@@ -938,8 +1068,7 @@ def test_a_rearm_bursts_the_history_only_to_a_terminal_and_in_one_write(
 
         # A terminal: the whole replay in one write, under one frame line.
         follow_lines.clear()
-        monkeypatch.setattr(cli, "_follow_replay_visible", lambda: True)
-        _run_follow()
+        _run_follow(follow_lines, terminal=True)
 
     writes = [line for line in follow_lines if "\n" in line]
     assert len(writes) == 1, (
@@ -973,13 +1102,13 @@ def test_a_terminal_replay_carries_one_frame_line_and_a_pipe_carries_none(
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         crew.list_live(project=PROJECT)
-        _run_follow()
+        _run_follow(follow_lines)
         stored = follow_checkpoint.read_history(PROJECT, SESSION)
         assert stored, "the baseline leaves rows to replay"
         follow_lines.clear()
 
         # A pipe: no frame line, and no burst for a frame to head.
-        _run_follow()
+        _run_follow(follow_lines)
         assert not [line for line in follow_lines if HISTORY_HEADER in line], (
             f"a re-arm to a pipe carries no frame line; got {follow_lines!r}"
         )
@@ -989,8 +1118,7 @@ def test_a_terminal_replay_carries_one_frame_line_and_a_pipe_carries_none(
 
         # A terminal: the frame line, exactly once.
         follow_lines.clear()
-        monkeypatch.setattr(cli, "_follow_replay_visible", lambda: True)
-        _run_follow()
+        _run_follow(follow_lines, terminal=True)
 
     frames = [line for line in follow_lines if HISTORY_HEADER in line]
     assert len(frames) == 1, (
@@ -1014,7 +1142,7 @@ def test_a_first_arming_replays_no_history(home, follow_lines) -> None:
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         crew.list_live(project=PROJECT)
-        _run_follow()
+        _run_follow(follow_lines)
 
     assert _fleet_lines(follow_lines), "the first arming draws the baseline"
     assert not [line for line in follow_lines if line.startswith(HISTORY_HEADER)], (
@@ -1036,9 +1164,9 @@ def test_a_pipe_rearm_draws_the_fleet_and_no_burst(home, follow_lines) -> None:
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         crew.list_live(project=PROJECT)
-        _run_follow()
+        _run_follow(follow_lines)
         follow_lines.clear()
-        _run_follow()
+        _run_follow(follow_lines)
 
     assert not [line for line in follow_lines if "\n" in line], (
         f"a non-TTY re-arm writes no history burst; got {follow_lines!r}"
@@ -1066,7 +1194,7 @@ def test_a_reload_marks_the_format_switch_and_re_emits_nothing(
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         crew.list_live(project=PROJECT)
-        _run_follow()
+        _run_follow(follow_lines)
         record = follow_checkpoint.read(PROJECT, SESSION)
         assert record, "the first arming leaves a place behind"
         follow_lines.clear()
@@ -1075,7 +1203,7 @@ def test_a_reload_marks_the_format_switch_and_re_emits_nothing(
             cli._FOLLOWER_CHECKPOINT_ENV,
             json.dumps({"project": PROJECT, "checkpoint": record}),
         )
-        _run_follow()
+        _run_follow(follow_lines)
         monkeypatch.delenv(cli._FOLLOWER_CHECKPOINT_ENV, raising=False)
 
         log = follow_checkpoint.read_history(PROJECT, SESSION)
