@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.91">
-<meta name="plan-version" content="88">
+<meta name="plan-version" content="89">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -524,10 +524,11 @@
     <pre class="r-fu-prompt">/reckon-build section-contract-and-computed-impl §7</pre>
     <p class="r-fu-outcome">All four review findings closed at 2b04c779, 35d2953b, 604026a6 and 44231f4b (merged 24611028): the wiring scan reads a plan standalone declaration from the inventoried checkout rather than the registered mount, the write path registers the declaration as plan state, the create skill states the wiring population, and both are pinned by tests with zero added failures at the committed head. Two remainders opened below.</p>
     </article>
-<article class="r-fu" data-id="f-scci-thread-docs-dir-through-callers" data-status="open" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-build section-contract-and-computed-impl §7" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-scci-thread-docs-dir-through-callers" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-written-by="coordinator" data-written-at="2026-09-19" data-recommends-skill="/reckon-build section-contract-and-computed-impl §7" data-resolved-at="2026-10-04T08:33:03+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Thread the inventoried checkout through every production caller of build_roadmap</h4>
     <div class="r-fu-body">Recorded by the findings node: reckon/mcp.py, reckon/serve.py and reckon/flight.py call build_roadmap without docs_dir, so on those surfaces the wiring scan still falls back to the registered mount and a worktree-scoped roadmap judges one tree's plans against another tree's declarations. Pass each caller's checkout path through, and pin one caller with a test that inventories a worktree carrying a declaration the mount lacks. The audit-message half of the fourth finding lives in reckon/_schema.py and reckon/cli.py and lands in the same node.</div>
     <pre class="r-fu-prompt">/reckon-build section-contract-and-computed-impl §7</pre>
+    <p class="r-fu-outcome">Done. §7 is declared done, and at main b4739ec79 every production caller of build_roadmap passes the inventoried checkout: reckon/serve.py:1986, reckon/mcp.py:4077 and :5156, and reckon/flight.py:1894 each pass docs_dir.</p>
     </article>
 <article class="r-fu" data-id="f-scci-doccheck-comment-figure" data-status="resolved" data-written-by="s22-coord" data-written-at="2026-09-25T08:55:00Z" data-recommends-skill="/reckon-build section-contract-and-computed-impl §6" data-resolved-at="2026-10-01T01:34:29+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Strip the frozen followup-census figure from the doccheck comment</h4>
