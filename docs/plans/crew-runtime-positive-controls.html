@@ -26,7 +26,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="1.0">
-<meta name="plan-version" content="332">
+<meta name="plan-version" content="333">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -2310,6 +2310,9 @@
 </div>
 <div class="r-comment" data-section="s58" data-id="c-20261004-s58-landed" data-who="s22-coord" data-when="2026-10-04T20:02:00Z">
     <div class="r-comment-body"><p><strong>Landed at merge a4ab6afb2.</strong> <code>_no_defunct_launched_child</code> waits on each pid the case launched with <code>os.waitpid(pid, os.WNOHANG)</code>, so an exited child that another case on the same xdist worker left behind is neither reaped nor reported. <code>test_an_unreaped_child_of_this_process_does_not_redden_the_reap_case</code> holds such a child of its own and the reap case beside it still passes. The file passed 20 of 20 runs at <code>-n 8</code>. Restoring <code>waitpid(-1)</code> reddens the paired case, and a launcher that leaves its worker defunct still reddens the four reap cases. Review scored 92 with no added failures. Its follow-on is §59.</p></div>
+</div>
+<div class="r-comment" data-section="s58" data-id="c-run-r-20261004T195424459933-review-of-the-reap-test-asks-about-its-own-children" data-who="reckon-build" data-when="2026-10-04T20:01:04.693Z">
+    <div class="r-comment-body"><p>Landed on the review record for r-20261004T193431195864-the-reap-test-asks-about-its-own-children at reviewed head 912d27eca: parsed record scores goal_fidelity 19, evidence 19, scope_discipline 20, durability 16, fit 18 (total 92), reviewed_base_sha 701c50686 and reviewed_head_sha 912d27eca, added_failure_count 0 with no added_failure_ids; all four arms reproduced (head 6 passed, base 4 passed, negative control 1 failed/5 passed, defunct-launcher arm 4 failed/2 passed); one follow-on recorded against the sibling file tests/test_a_reexec_keeps_its_children.py.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
