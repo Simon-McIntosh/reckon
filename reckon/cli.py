@@ -3114,6 +3114,33 @@ def _needs_you_runs(project: str, *, session: str | None) -> list[dict[str, str]
     return rows
 
 
+def _population_has_live_work(project: str, *, session: str | None) -> bool:
+    """Whether this follower's own fleet still holds a run that has not ended.
+
+    The seat a follower reads is a shared producer that exits when nothing
+    renews its ten-minute lease, so its going is the designed idle exit rather
+    than an outage whenever the follower's population — its session's runs, or
+    the project's when unscoped — holds nothing left to watch. Only a run that
+    has not reached a terminal phase is work still owed the pane at that
+    moment; a pointer already terminal waits on the coordinator's promotion
+    rather than on a producer, and the dispatch guard names an absent producer
+    with its remedy to the session that is trying to dispatch.
+    """
+    from reckon.crew import node as node_module
+    from reckon.crew import runs as runs_module
+
+    for pointer in runs_module._list_live_records(project=project):
+        owner = str(pointer.get("session") or "")
+        # A pointer with no recorded owner stays in the counted set, matching
+        # the dispatch fence: absence cannot prove it belongs to a peer.
+        if session is not None and owner and owner != session:
+            continue
+        if str(pointer.get("phase") or "") in node_module._TERMINAL_RUN_PHASES:
+            continue
+        return True
+    return False
+
+
 def _follower_end_line(
     *,
     attach_line: str,
@@ -3885,25 +3912,40 @@ def _follow_watch_lines(
         identity = runs.watch_producer_identity(project)
         if not runs.producer_live(project):
             reason = _logged_producer_stop(project)
-            if reason and not producer_stop_reported:
+            # A producer that stops while this follower's fleet still holds
+            # live work is a silent fleet the pane must name; one that stops
+            # with nothing left to watch -- the measured idle exit that armed
+            # no run -- keeps the pane quiet, and the event still reaches the
+            # JSON consumer and the session's record. The predicate is read
+            # once, at the moment the stop is observed, and only when a line is
+            # actually owed: this branch spins every poll while the seat is
+            # down, so a scan on each pass would tax a follower that has
+            # nothing to say.
+            report_stop = bool(reason) and not producer_stop_reported
+            report_reload = (
+                bool(identity.get("reload_started_at"))
+                and not producer_reload_failure_reported
+            )
+            if report_stop or report_reload:
+                watched = _population_has_live_work(project, session=session)
+            if report_stop:
                 producer_stop_reported = True
                 yield {
                     "event": FOLLOWER_PRODUCER_STOPPED_EVENT,
                     "project": project,
                     "session": session or "",
                     "run_id": None,
+                    "pane_line": watched,
                     "line": f"producer {project} is gone; {reason}",
                 }
-            if (
-                identity.get("reload_started_at")
-                and not producer_reload_failure_reported
-            ):
+            if report_reload:
                 producer_reload_failure_reported = True
                 yield {
                     "event": FOLLOWER_PRODUCER_RELOAD_FAILED_EVENT,
                     "project": project,
                     "session": session or "",
                     "run_id": None,
+                    "pane_line": watched,
                     "line": (
                         f"producer {project} stopped during its reload begun "
                         f"{identity['reload_started_at']}; last output: "
@@ -4758,10 +4800,24 @@ def crew_follow(
                         _echo_follow_line(burst)
                 continue
             if event.get("event") in (
-                FOLLOWER_STALE_PRODUCER_EVENT,
-                FOLLOWER_PRODUCER_RELOADING_EVENT,
                 FOLLOWER_PRODUCER_RELOAD_FAILED_EVENT,
                 FOLLOWER_PRODUCER_STOPPED_EVENT,
+            ):
+                # A producer stop reaches the JSON stream in every case and
+                # the pane only when the follower's own fleet still holds live
+                # work. The emission site marks that predicate on the event as
+                # ``pane_line``; stripping it here keeps the emitted object the
+                # shape every other JSON row carries, and a quiet pane is the
+                # whole point of the mark rather than a dropped event.
+                pane_line = bool(event.pop("pane_line", True))
+                if json_output:
+                    _emit_crew_result(event, pretty, observation=True)
+                elif pane_line:
+                    _echo_follow_line(replay_dim(str(event.get("line") or "")))
+                continue
+            if event.get("event") in (
+                FOLLOWER_STALE_PRODUCER_EVENT,
+                FOLLOWER_PRODUCER_RELOADING_EVENT,
             ):
                 # The seat's producer runs older code than this follower — with
                 # the cycle remedy once it is confirmed stale, or a line saying
