@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import os
 import re
 import subprocess
-import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping
@@ -116,8 +114,8 @@ _EVIDENCE_SIGNALS = re.compile(
 )
 
 _INDEPENDENT_READING = re.compile(
-    r"\bindependent\b.*\b(?:reading|measurement|measure)\b"
-    r"|\b(?:reading|measurement|measure)\b.*\bindependent\b",
+    r"\b(?:independent|second)\s+(?:\w+\s+){0,3}(?:reading|measurement|measure)\b"
+    r"|\b(?:reading|measurement|measure)\s+(?:\w+\s+){0,3}(?:independent|second)\b",
     re.IGNORECASE,
 )
 _NUMERIC_AGREEMENT = re.compile(
@@ -138,6 +136,18 @@ _COVERAGE_FLOOR = re.compile(
 )
 _BASE_COUNT = re.compile(
     r"\bbase\s+(?:count|corpus|population)\s*(?:of\s*)?(\d+)\b",
+    re.IGNORECASE,
+)
+_ABSOLUTE_GREEN_GATE = re.compile(
+    r"\bpytest\s+(tests/[\w./-]+\.py(?:\:\:[\w-]+)?)\s+exits?\s+0\b",
+    re.IGNORECASE,
+)
+_GREEN_BASE_REVISION = re.compile(
+    r"\bgreen\s+at\s+base\s+[0-9a-f]{7,40}\b", re.IGNORECASE
+)
+_DELTA_AGAINST_BASE = re.compile(
+    r"\b(?:adds?\s+no\s+(?:new\s+)?failures?\s+(?:to|over|against)"
+    r"|zero\s+added\s+failures?\s+against)\s+(?:the\s+)?base\b",
     re.IGNORECASE,
 )
 
@@ -960,84 +970,6 @@ _GATE_POPULATION = re.compile(
     r"(?<![\w.*?\[\]{}/-])([\w.*?\[\]{}-]+(?:/[\w.*?\[\]{}-]+)+)"
 )
 _GATE_POPULATION_IS_A_SET = re.compile(r"[?*\[]")
-_ABSOLUTE_GREEN_GATE = re.compile(
-    r"\bpytest\s+(tests/[\w./-]+\.py(?:\:\:[\w-]+)?)\s+exits?\s+0\b",
-    re.IGNORECASE,
-)
-
-
-def _red_base_gate_finding(node: TaskNode, repository: Path) -> dict[str, str] | None:
-    """Read a concrete named check before accepting an absolute-green demand."""
-    done_when = node.done_when
-    match = _ABSOLUTE_GREEN_GATE.search(done_when)
-    if not match or not re.search(r"\b(?:before|base)\b", done_when, re.IGNORECASE):
-        return None
-    selector = match.group(1)
-    test_path = selector.split("::", 1)[0]
-    test_file = (repository / test_path).resolve()
-    if not test_file.is_relative_to(repository.resolve()) or not test_file.is_file():
-        return {
-            "property": "base-gate",
-            "detail": f"named base check {selector} does not resolve to a test file",
-        }
-    tracked = subprocess.run(
-        ["git", "ls-files", "--error-unmatch", "--", test_path],
-        cwd=repository,
-        capture_output=True,
-        check=False,
-    )
-    unchanged = subprocess.run(
-        ["git", "diff", "--quiet", "HEAD", "--", test_path],
-        cwd=repository,
-        capture_output=True,
-        check=False,
-    )
-    if tracked.returncode or unchanged.returncode:
-        return {
-            "property": "base-gate",
-            "detail": f"named base check {selector} is not committed at this checkout's HEAD",
-        }
-    try:
-        result = subprocess.run(
-            [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", selector],
-            cwd=repository,
-            capture_output=True,
-            text=True,
-            env={
-                **os.environ,
-                "PYTHONPATH": os.pathsep.join(
-                    part
-                    for part in (
-                        str(repository.resolve()),
-                        os.environ.get("PYTHONPATH", ""),
-                    )
-                    if part
-                ),
-            },
-            timeout=10,
-            check=False,
-        )
-    except subprocess.TimeoutExpired:
-        return {
-            "property": "base-gate",
-            "detail": f"named base check {selector} did not finish within 10 seconds",
-        }
-    if result.returncode == 0:
-        return None
-    failures = re.findall(r"^FAILED\s+(\S+)", result.stdout, re.MULTILINE)
-    if failures:
-        failure_word = "failure" if len(failures) == 1 else "failures"
-        detail = (
-            f"named base check {selector} is red with {len(failures)} base "
-            f"{failure_word}: {', '.join(failures)}; account for these failures "
-            "with a delta measure instead of demanding absolute green"
-        )
-    else:
-        detail = (
-            f"named base check {selector} exited {result.returncode} without a "
-            "readable failure list; its base is not established green"
-        )
-    return {"property": "base-gate", "detail": detail}
 
 
 def gate_population_patterns(gate_command: str) -> list[str]:
@@ -1089,7 +1021,7 @@ def _population_covers_a_declared_write_path(pattern: str, declared: set[str]) -
 def gate_population_finding(
     node: TaskNode, *, repository: str | Path
 ) -> dict[str, str] | None:
-    """Compose the dispatch refusal for a gate the repository cannot support.
+    """Compose the dispatch refusal for a gate population the repository lacks.
 
     The gate command is the node's own measure — the check the brief tells the
     worker to run — and the populations it names are evidence about what was run.
@@ -1099,9 +1031,6 @@ def gate_population_finding(
     holds a match; the pattern's spelling is never the subject.
     """
     repository_path = Path(repository)
-    red_base = _red_base_gate_finding(node, repository_path)
-    if red_base is not None:
-        return red_base
     declared = {
         str(path).strip().strip("/") for path in node.write_paths if str(path).strip()
     }
@@ -1251,6 +1180,16 @@ def validate_node(
                     "measured-or-unmeasured evidence can pass with universal absence; "
                     "name a positive numerical measured-coverage floor and a base count",
                 )
+        if _ABSOLUTE_GREEN_GATE.search(done_when) and not (
+            _GREEN_BASE_REVISION.search(done_when)
+            or _DELTA_AGAINST_BASE.search(done_when)
+        ):
+            fail(
+                "demonstrable",
+                "a named check demanded to exit 0 must state the revision where it "
+                "is green (for example, 'green at base <sha>') or use a delta "
+                "measure (for example, 'adds no failure to base')",
+            )
 
     unlocked = [key for key in node.requires_decisions if key not in locked]
     if unlocked:

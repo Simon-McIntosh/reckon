@@ -147,6 +147,13 @@ def test_independent_reading_requires_numeric_agreement(repository: Path) -> Non
     refused_again, payload = _verdict(repository, band)
     assert refused_again != 0
 
+    unrelated, payload = _verdict(
+        repository,
+        "pytest tests/test_preconditions.py checks independent preconditions; "
+        "measure 2 recorded refusals",
+    )
+    assert unrelated == 0, payload
+
 
 def test_absence_markers_need_coverage_floor_and_base_count(repository: Path) -> None:
     cells = ["explicitly-unmeasured"] * 5
@@ -177,14 +184,24 @@ def test_absolute_green_accounts_for_red_named_base(repository: Path) -> None:
     check = "pytest tests/test_preexisting.py exits 0, before value of 14 failing tests"
     refused, payload = _verdict(repository, check)
     assert refused != 0
-    assert "test_preexisting_failure" in json.dumps(payload)
-    assert "1 base failure" in json.dumps(payload)
+    assert "green at base" in json.dumps(payload)
+    assert "adds no failure to base" in json.dumps(payload)
+
+    admitted_delta, payload = _verdict(repository, check + "; adds no failure to base")
+    assert admitted_delta == 0, payload
 
     (repository / "tests" / "test_preexisting.py").write_text(
         "def test_preexisting_failure():\n    assert 1 == 1\n", encoding="utf-8"
     )
     _commit_assertion(repository)
-    accepted, payload = _verdict(repository, check)
+    revision = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    accepted, payload = _verdict(repository, check + f"; green at base {revision}")
     assert accepted == 0, payload
 
     (repository / "tests" / "test_preexisting.py").write_text(
@@ -193,4 +210,16 @@ def test_absolute_green_accounts_for_red_named_base(repository: Path) -> None:
     _commit_assertion(repository)
     refused_again, payload = _verdict(repository, check)
     assert refused_again != 0
-    assert "test_preexisting_failure" in json.dumps(payload)
+
+    marker = repository / "test-was-executed"
+    (repository / "tests" / "test_side_effect.py").write_text(
+        "from pathlib import Path\n"
+        "def test_side_effect():\n"
+        f"    Path({str(marker)!r}).write_text('executed')\n",
+        encoding="utf-8",
+    )
+    side_effect_refused, _ = _verdict(
+        repository, "pytest tests/test_side_effect.py exits 0, before value of 0"
+    )
+    assert side_effect_refused != 0
+    assert not marker.exists()
