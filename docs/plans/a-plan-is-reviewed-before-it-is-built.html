@@ -23,9 +23,9 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-10-04">
-<meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -105,6 +105,10 @@
     <h2 id="s7">§7 — The settle window is declared in the defaults file</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> <code>review.plan_settle_seconds: 600</code> added to <code>reckon/schema/flight-defaults.yaml</code> beside <code>review.tiers</code>, so the key the sweep reads through <code>reckon/flight.py:plan_review_settle_seconds</code> is declared rather than defaulted in code alone. Deferred from the-orchestrator-orchestrates §3 because run r-20261004T121716121040 held a live claim on the defaults file.</p><p><strong>Done when</strong> the shipped default layer names the key, the schema validation accepts it, and a test asserts the resolved config carries 600 from the file with no code default involved.</p>
+
+    <h2 id="s8">§8 — A run&#x27;s promotion comment does not earn its plan a review</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<p>Measured 2026-10-04. the-restarted-server-meets-its-shipped-measures was not edited by anyone after 21:48, yet the plan-review sweep reviewed it at about 22:01, 22:27 and 23:01. Between those reviews, each promotion of a code-review run (21:49, 21:50, 22:16, 22:49) wrote a <code>c-run-…</code> comment into the plan, and <code>plan_fingerprint</code> (<code>reckon/crew/plan_review.py</code>, about line 236) digests parsed state including comments. So a run comment that records a landing reads as an authored change, and every review round on a plan's runs buys that plan another review of an unchanged design, at three to four local-lane minutes each.</p><p><strong>Done when</strong> the comments a promotion writes for a run, recognisable by their <code>c-run-</code> id, are left out of the fingerprint the sweep compares, while an authored comment, section, decision or prose change still moves it. A test fingerprints one plan before and after appending a run comment and finds them equal, and before and after appending an authored comment and finds them different. The sweep does not compose a review for the run-comment case. The negative control folds run comments back in, and the first assertion fails.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
