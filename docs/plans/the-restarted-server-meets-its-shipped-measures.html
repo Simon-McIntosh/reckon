@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-10-04">
 </head>
 <body>
@@ -128,7 +128,10 @@
     <div class="r-comment-body"><p>Stored the independent review of r-20261003T162906962061-a-sprint-that-exists-renders (plan reckon:the-restarted-server-meets-its-shipped-measures §4) as a parsed five-dimension record: goal_fidelity 17, evidence 15, scope_discipline 19, durability 16, fit 18, total 85, reviewed_base_sha 4d1feeed905d145a3130e71293f2cfdf1233f1d7 and reviewed_head_sha 0879c3414ea18a15a4f61c0a253ab8385e617063, with two follow-on findings and added_failure_count 0.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261004T191212090668-a-sprint-file-renders-as-its-sprint" data-who="reckon-build" data-when="2026-10-04T19:38:45.110Z">
-    <div class="r-comment-body"><p>tests/test_a_sprint_file_renders_as_its_sprint.py renders a served fixture project&#x27;s sprint on its sprint route: the authored sprint view, executed as shipped against the discovery payload the real serve.Handler delivers, returns the sprint surface carrying the fixture&#x27;s sprint id and theme rather than the view&#x27;s &quot;No sprint.&quot; placeholder (head 1 passed; removing the fixture&#x27;s sprint file reddens it with the placeholder; population 825 passed / 0 failed vs base 824 passed / 0 failed)</p></div>
+    <div class="r-comment-body"><p>tests/test_a_sprint_file_renders_as_its_sprint.py renders a served fixture project's sprint on its sprint route: the authored sprint view, executed as shipped against the discovery payload the real serve.Handler delivers, returns the sprint surface carrying the fixture's sprint id and theme rather than the view's "No sprint." placeholder (head 1 passed; removing the fixture's sprint file reddens it with the placeholder; population 825 passed / 0 failed vs base 824 passed / 0 failed)</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-20261004-s4-landed" data-who="s22-coord" data-when="2026-10-04T19:48:00Z">
+    <div class="r-comment-body"><p><strong>The cause is established at main, merged at 971853f62.</strong> <code>tests/test_a_sprint_file_renders_as_its_sprint.py</code> serves a fixture project whose <code>docs/sprints</code> file exists. It executes the authored sprint view against the discovery payload the real handler returns, and the view renders the fixture's sprint id and theme, not “No sprint.”. It passes at main, so the live server's “No sprint.” for S25 came from the server running code 12 files behind the checkout, not from a reader defect. Removing the fixture's sprint file reddens the assertion with the placeholder. Review scored 96 with no added failures. Its follow-on: the gate does not execute <code>docs/ui/state-loader.js</code> or the client mount, and no headless browser is installed on the compute node, so a literal in-browser render is still owed.</p><p><strong>What remains of this section</strong> is the re-measure on a server restarted onto main. The live server is the login node's <code>reckon.service</code>, which every session reads, so restarting it is the lead's call.</p></div>
 </div>
 </section>
 </main>
