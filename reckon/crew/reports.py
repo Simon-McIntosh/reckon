@@ -73,6 +73,7 @@ from reckon.crew.runs import _utc_now
 _MANIFEST_LIST_KEYS = (
     "commits",
     "changed_paths",
+    "retry_failures",
     "test_logs",
     "artifacts",
     "evidence_inputs",
@@ -754,6 +755,7 @@ def _declares_derived(fields: dict[str, Any]) -> bool:
 
 def _normalise_manifest_fields(fields: dict[str, Any]) -> dict[str, Any]:
     """Apply the typed post-processing shared by both manifest formats."""
+    has_retry_failures = "retry_failures" in fields
     for name in _MANIFEST_LIST_KEYS:
         value = fields.get(name)
         fields[name] = (
@@ -765,6 +767,12 @@ def _normalise_manifest_fields(fields: dict[str, Any]) -> dict[str, Any]:
         fields[name] = _typed_suite_observation(fields.get(name))
     fields["failure_attribution"] = _typed_failure_attribution(
         fields.get("failure_attribution")
+    )
+    retry_failures = fields["retry_failures"]
+    fields["retry_counted_failures"] = (
+        counted_retry_failures(retry_failures, fields["failure_attribution"])
+        if has_retry_failures and isinstance(retry_failures, list)
+        else None
     )
     return fields
 
@@ -939,6 +947,21 @@ def _validate_failure_attribution(raw: dict[str, Any]) -> dict[str, str]:
             continue
         attribution[failure_id.strip()] = commit.strip()
     return attribution
+
+
+def counted_retry_failures(
+    failure_ids: Iterable[str], attribution: Mapping[str, str] | str | None
+) -> int:
+    """Count failures unless an explicit scaffolding cause exempts them."""
+    marks = attribution if isinstance(attribution, Mapping) else {}
+    return sum(
+        not (
+            isinstance(mark := marks.get(failure_id), str)
+            and mark.startswith("scaffolding: ")
+            and mark.removeprefix("scaffolding: ").strip()
+        )
+        for failure_id in failure_ids
+    )
 
 
 def _as_list(value: Any) -> list[str]:
@@ -1841,6 +1864,10 @@ def audit_manifest(
             "ok": False,
         }
     findings: list[str] = []
+    retry_failures = manifest["retry_failures"]
+    if not isinstance(retry_failures, list):
+        findings.append("retry_failures must be a list of failure ids")
+        retry_failures = []
     resolved_manifest_path = manifest_path
     if resolved_manifest_path is None and node is not None and node.manifest_path:
         resolved_manifest_path = Path(node.manifest_path).expanduser()
@@ -1918,9 +1945,23 @@ def audit_manifest(
                 findings.append("failure_attribution must be an inline JSON object")
             else:
                 after_observation = manifest.get("after_suite")
+                after_ids = (
+                    set(after_observation.get("failure_ids") or ())
+                    if isinstance(after_observation, dict)
+                    else set()
+                )
+                overlap = set(retry_failures) & after_ids
+                if overlap:
+                    findings.append(
+                        "retry_failures ids must differ from after_suite.failure_ids"
+                    )
                 findings.extend(
                     ledger.failure_attribution_missing_fields(
-                        attribution,
+                        {
+                            key: value
+                            for key, value in attribution.items()
+                            if key not in retry_failures
+                        },
                         after_observation
                         if isinstance(after_observation, dict)
                         else None,
