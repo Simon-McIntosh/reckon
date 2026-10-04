@@ -65,7 +65,6 @@ from __future__ import annotations
 
 import json
 import re
-import subprocess
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -252,39 +251,6 @@ def carried_revision_pair(
 # commit there is refused at both the write and the review run's check.
 
 
-def _resolved_commit(repository: Path, revision: str) -> str:
-    """The full commit id ``revision`` names in ``repository``, or ``""``.
-
-    ``--verify`` refuses a value that names no commit rather than echoing it
-    back, and ``--end-of-options`` keeps a stored value from being read as an
-    option, so the caller can tell a revision that resolved from one merely
-    written down. The query is bounded so a repository on a stalled filesystem
-    cannot hold a check open.
-    """
-    try:
-        completed = subprocess.run(
-            [
-                "git",
-                "rev-parse",
-                "--verify",
-                "--quiet",
-                "--end-of-options",
-                f"{revision}^{{commit}}",
-            ],
-            cwd=repository,
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=10,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return ""
-    resolved = completed.stdout.strip()
-    if completed.returncode or not re.fullmatch(r"[0-9A-Fa-f]{40,64}", resolved):
-        return ""
-    return resolved
-
-
 def _reviewed_run_pointer(reviewed_run_id: str) -> Mapping[str, Any] | None:
     """The reviewed run's live pointer, or ``None`` when it is not readable.
 
@@ -327,13 +293,17 @@ def unresolved_reviewed_revision(record: Mapping[str, Any]) -> str | None:
     pointer = _reviewed_run_pointer(str(record.get("reviewed_run_id") or "").strip())
     if pointer is None:
         return None
-    from reckon.crew.recovery import _review_tree, _run_head_for_review
+    from reckon.crew.recovery import (
+        _resolve_commit,
+        _review_tree,
+        _run_head_for_review,
+    )
 
     tree = _review_tree(pointer)
     if tree is None:
         return None
     for key, sha in carried:
-        if not sha or _resolved_commit(tree, sha):
+        if not sha or _resolve_commit(tree, sha):
             continue
         head = _run_head_for_review(pointer)
         actual = (
