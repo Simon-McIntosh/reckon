@@ -8,10 +8,15 @@ only at closure — after the sessions that could have renamed the fragment had
 ended. Each case here drives ``check-manifest`` because the wiring under test is
 the audit's first fragment-writing caller.
 
-The fixture is a temporary repository holding a plan, its record and one
-committed fragment, with a run whose worktree adds a second fragment carrying
-the same id. Measured 2026-10-04: three fragments of one plan each carried the
-same three ids, so the composed record held nine duplicate element ids.
+Only a collision the run itself takes part in is reported against it. Two
+committed fragments of the same plan that already reuse an id collide before
+any new fragment arrives, and charging that to every run that later lands
+beside them would make one merged collision stand in every later run's way.
+So the fixture holds committed fragments that already collide, and the cases
+pair that with a run adding a cleanly prefixed fragment — which reads ok — and
+with one repeating a committed id — which reads not ok and names it. Measured
+2026-10-04: three fragments of one plan each carried the same three ids, and
+the plan's 21 duplicates were all committed before the id-prefix rule existed.
 """
 
 from __future__ import annotations
@@ -30,14 +35,16 @@ RUN_ID = "r-20261004T000000000000-fragment-ids"
 PLAN = "fragment-plan"
 PROJECT = "sample"
 COLLIDING_ID = "landing-what-landed"
+# An id two committed fragments already carry, the way a plan whose fragments
+# predate the id-prefix rule does. No run in these cases wrote it, so it is
+# never the run's to answer for.
+LEGACY_ID = "measure"
 CHANGED_FRAGMENT = f"docs/evidence/fragments/{PLAN}/second-node.html"
 OTHER_CHANGED_PATH = "notes/fragment-plan.txt"
 FRESHLY_PLANNED_FRAGMENT = "docs/evidence/fragments/fresh-plan/fresh-node.html"
 RECORDLESS_PLAN = "recordless-plan"
 RECORDLESS_ID = "recordless-landing"
-RECORDLESS_COMMITTED_FRAGMENT = (
-    f"docs/evidence/fragments/{RECORDLESS_PLAN}/first-node.html"
-)
+RECORDLESS_LEGACY_ID = "scope"
 RECORDLESS_CHANGED_FRAGMENT = (
     f"docs/evidence/fragments/{RECORDLESS_PLAN}/second-node.html"
 )
@@ -83,8 +90,15 @@ RECORD_HTML = """\
 """
 
 
-def _fragment(node: str, ident: str) -> str:
-    """A landing fragment as workers write them, carrying the anchor in question."""
+def _fragment(node: str, *idents: str) -> str:
+    """A landing fragment as workers write them, carrying the anchors in question."""
+    sections = "\n".join(
+        f"""    <section id="{ident}">
+      <h2>What landed</h2>
+      <p>{node}</p>
+    </section>"""
+        for ident in idents
+    )
     return f"""\
 <!doctype html>
 <html lang="en">
@@ -97,10 +111,7 @@ def _fragment(node: str, ident: str) -> str:
 </head>
 <body>
   <main class="plan-doc">
-    <section id="{ident}">
-      <h2>What landed</h2>
-      <p>{node}</p>
-    </section>
+{sections}
   </main>
 </body>
 </html>
@@ -122,7 +133,7 @@ node: fragment-check
 status: complete
 commits: {head}
 changed_paths: {changed}
-tests: pytest tests/test_fragment_ids_are_checked.py -q -> 4 passed
+tests: pytest tests/test_fragment_ids_are_checked.py -q -> 6 passed
 test_logs: /tmp/fragment-ids.log
 artifacts: none
 evidence_inputs: none
@@ -142,6 +153,9 @@ class RunFixture:
     def changed_fragment(self) -> Path:
         return self.repo / CHANGED_FRAGMENT
 
+    def changed_recordless_fragment(self) -> Path:
+        return self.repo / RECORDLESS_CHANGED_FRAGMENT
+
     def declare(self, changed: str) -> None:
         self.manifest.write_text(
             _manifest(self.head, changed=changed), encoding="utf-8"
@@ -150,13 +164,15 @@ class RunFixture:
 
 @pytest.fixture()
 def run(tmp_path: Path) -> RunFixture:
-    """A plan, its record and one committed fragment; the run adds a second.
+    """A plan, its record and two committed fragments; the run adds a third.
 
-    The first fragment is committed and the second exists only as the run's
-    working-tree change, which is the state a collision is made in: the worker
-    writing a new fragment has no memory of the ones already in the directory.
-    A second plan carries the same shape without a record yet, which is the
-    state every plan is in until its record is synthesised at closure.
+    The committed fragments already reuse ``LEGACY_ID``, which is the state a
+    plan whose fragments predate the id-prefix rule is in. The third fragment
+    exists only as the run's working-tree change, which is the state a
+    collision is made in: the worker writing a new fragment has no memory of
+    the ones already in the directory. A second plan carries the same shape
+    without a record yet, which is the state every plan is in until its record
+    is synthesised at closure.
     """
     repo = tmp_path / "repo"
     fragment_dir = repo / "docs" / "evidence" / "fragments" / PLAN
@@ -167,7 +183,10 @@ def run(tmp_path: Path) -> RunFixture:
     record.parent.mkdir(parents=True)
     record.write_text(RECORD_HTML, encoding="utf-8")
     (fragment_dir / "first-node.html").write_text(
-        _fragment("first-node", COLLIDING_ID), encoding="utf-8"
+        _fragment("first-node", COLLIDING_ID, LEGACY_ID), encoding="utf-8"
+    )
+    (fragment_dir / "zeroth-node.html").write_text(
+        _fragment("zeroth-node", LEGACY_ID), encoding="utf-8"
     )
     fresh_dir = repo / "docs" / "evidence" / "fragments" / "fresh-plan"
     fresh_dir.mkdir()
@@ -180,7 +199,11 @@ def run(tmp_path: Path) -> RunFixture:
         PLAN_HTML.replace(PLAN, RECORDLESS_PLAN), encoding="utf-8"
     )
     (recordless_dir / "first-node.html").write_text(
-        _fragment("first-node", RECORDLESS_ID), encoding="utf-8"
+        _fragment("first-node", RECORDLESS_ID, RECORDLESS_LEGACY_ID),
+        encoding="utf-8",
+    )
+    (recordless_dir / "zeroth-node.html").write_text(
+        _fragment("zeroth-node", RECORDLESS_LEGACY_ID), encoding="utf-8"
     )
     (repo / "notes").mkdir()
     (repo / "notes" / "fragment-plan.txt").write_text("run notes\n", encoding="utf-8")
@@ -252,9 +275,15 @@ def test_a_new_fragment_repeating_a_committed_id_is_refused_by_name(
     assert COLLIDING_ID in duplicates[0]
     assert "fragment first-node.html" in duplicates[0]
     assert "fragment second-node.html" in duplicates[0]
+    # The committed fragments collide on LEGACY_ID throughout, and the run that
+    # did not write it is not charged for it.
+    assert LEGACY_ID not in duplicates[0]
 
 
-def test_the_run_passes_once_the_new_fragments_id_is_prefixed(run: RunFixture) -> None:
+def test_a_clean_new_fragment_passes_beside_committed_collisions(
+    run: RunFixture,
+) -> None:
+    """One plan's older fragments collide; this run's fragment takes part in none."""
     run.changed_fragment().write_text(
         _fragment("second-node", f"second-node-{COLLIDING_ID}"), encoding="utf-8"
     )
@@ -303,3 +332,19 @@ def test_a_plan_with_no_record_yet_has_its_fragments_audited_together(
     assert RECORDLESS_ID in duplicates[0]
     assert "fragment first-node.html" in duplicates[0]
     assert "fragment second-node.html" in duplicates[0]
+    assert RECORDLESS_LEGACY_ID not in duplicates[0]
+
+
+def test_a_recordless_plan_passes_a_clean_new_fragment(
+    run: RunFixture,
+) -> None:
+    """Its committed fragments collide on their own; the run takes part in none."""
+    run.changed_recordless_fragment().write_text(
+        _fragment("second-node", f"second-node-{RECORDLESS_ID}"), encoding="utf-8"
+    )
+    run.declare(RECORDLESS_CHANGED_FRAGMENT)
+
+    result = _check()
+
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["findings"] == []

@@ -1388,6 +1388,11 @@ def _record_fragment_dir(record_path: Path, plan_slug: str) -> Path:
     return evidence_dir / "fragments" / plan_slug
 
 
+def _fragment_source_label(name: str) -> str:
+    """The label a fragment's source carries, and the one a match reads."""
+    return f"fragment {name}"
+
+
 def _composed_record_sources(path: Path, plan_slug: str) -> list[tuple[str, str]]:
     """Label each piece of a record's composed text by the source it comes from.
 
@@ -1403,14 +1408,20 @@ def _composed_record_sources(path: Path, plan_slug: str) -> list[tuple[str, str]
     fragment_dir = _record_fragment_dir(path, plan_slug)
     if fragment_dir.is_dir():
         sources.extend(
-            (f"fragment {fragment.name}", _plan_html._read_plan_text(fragment))
+            (
+                _fragment_source_label(fragment.name),
+                _plan_html._read_plan_text(fragment),
+            )
             for fragment in sorted(fragment_dir.glob("*.html"))
         )
     return sources
 
 
 def _duplicate_element_id_findings(
-    composed_text: str, sources: list[tuple[str, str]]
+    composed_text: str,
+    sources: list[tuple[str, str]],
+    *,
+    changed_fragments: set[str] | None = None,
 ) -> list[Finding]:
     """Report an element id that appears more than once in a composed record.
 
@@ -1421,6 +1432,12 @@ def _duplicate_element_id_findings(
     the second sees no effect on the anchor a reader follows. The finding names
     the id and, per occurrence, whether it comes from the record file or a named
     fragment, so the conflicting fragment is identified rather than described.
+
+    With ``changed_fragments`` the reader is auditing one run's change, and a
+    duplicate is reported only where one of its occurrences lies in one of
+    those fragments. A collision carried entirely by fragments the run did not
+    write was merged by an earlier run; charging it to this one would stand in
+    every later run's way, and no run could clear it from inside its own scope.
     """
     duplicates = {
         ident: count
@@ -1437,6 +1454,16 @@ def _duplicate_element_id_findings(
             count = source_counts.get(ident, 0)
             if count:
                 origins[ident].append((label, count))
+
+    if changed_fragments is not None:
+        authored = {_fragment_source_label(name) for name in changed_fragments}
+        duplicates = {
+            ident: total
+            for ident, total in duplicates.items()
+            if any(label in authored for label, _ in origins[ident])
+        }
+        if not duplicates:
+            return []
 
     details = {
         ident: "; ".join(f"{count} in {label}" for label, count in entries)
@@ -1456,7 +1483,11 @@ def _duplicate_element_id_findings(
 
 
 def audit_composed_record_ids(
-    record_path: Path, plan_slug: str, *, project: str | None = None
+    record_path: Path,
+    plan_slug: str,
+    *,
+    project: str | None = None,
+    changed_fragments: set[str] | None = None,
 ) -> list[Finding]:
     """Report duplicate element ids in a record composed with its fragments.
 
@@ -1468,15 +1499,24 @@ def audit_composed_record_ids(
     reports for a composed record, so both surfaces describe a collision with one
     wording. A composition that fails falls back to the record's own bytes, as it
     does in :func:`audit_file`, and only collisions visible there are reported.
+
+    ``changed_fragments`` names the fragments the calling run wrote, by file
+    name; a duplicate is then reported only where one of its occurrences is in
+    one of them, so a collision already merged among the plan's older fragments
+    is not the run's finding.
     """
 
     text, _ = _composed_record_text(record_path, plan_slug, project)
     return _duplicate_element_id_findings(
-        text, _composed_record_sources(record_path, plan_slug)
+        text,
+        _composed_record_sources(record_path, plan_slug),
+        changed_fragments=changed_fragments,
     )
 
 
-def audit_fragment_ids(fragment_dir: Path) -> list[Finding]:
+def audit_fragment_ids(
+    fragment_dir: Path, *, changed_fragments: set[str] | None = None
+) -> list[Finding]:
     """Report duplicate element ids among a plan's fragments composed together.
 
     A plan's landing record is synthesised once, at closure, so until then the
@@ -1487,6 +1527,10 @@ def audit_fragment_ids(fragment_dir: Path) -> list[Finding]:
     appends it, so the count sees the anchors a reader meets and not the ones a
     fragment's own ``head`` holds. The finding text is the one a composed
     record reports, so a collision reads the same wherever it is caught.
+
+    ``changed_fragments`` carries the same meaning it does in
+    :func:`audit_composed_record_ids`: only a duplicate one of whose
+    occurrences lies in a fragment the calling run wrote is reported.
     """
 
     from reckon.evidence import _fragment_body_bytes
@@ -1501,9 +1545,13 @@ def audit_fragment_ids(fragment_dir: Path) -> list[Finding]:
     return _duplicate_element_id_findings(
         composed.decode("utf-8", errors="replace"),
         [
-            (f"fragment {fragment.name}", _plan_html._read_plan_text(fragment))
+            (
+                _fragment_source_label(fragment.name),
+                _plan_html._read_plan_text(fragment),
+            )
             for fragment in fragments
         ],
+        changed_fragments=changed_fragments,
     )
 
 
