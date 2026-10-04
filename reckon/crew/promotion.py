@@ -2425,6 +2425,11 @@ def record_gate_rerun_at_integrated_revision(
     }
 
 
+# A value of nothing but zeros names the null object id, which resolves to no
+# commit in any store, so it states the count of commits rather than citing one.
+_ZERO_COUNT = re.compile(r"0+")
+
+
 def _manifest_cites_a_commit(
     manifest: Mapping[str, Any], record: Mapping[str, Any], manifest_text: str
 ) -> bool:
@@ -2442,11 +2447,26 @@ def _manifest_cites_a_commit(
     honoured first, so a sentence whose commas split it into several entries — or
     whose declaration word the list reader empties — is still read as the single
     absence it is rather than as a citation list.
+
+    This is the one reader of the question: the write-time audit and the guard
+    both ask it here, so the field cannot answer "cites" at the gate and "does
+    not" at check-manifest. An entry of nothing but zeros is the count of
+    commits written into a citation field, and the null object id it spells
+    resolves to no commit in any store, so it cites nothing wherever this is
+    asked. A value that reaches this reader structured rather than as a list
+    carries no entry and cites nothing.
     """
     if _commits_field_declares_absence(manifest_text, record):
         return False
-    entries = [str(item).strip() for item in (manifest.get("commits") or ())]
-    return any(entry and not _declares_absent_commits(entry) for entry in entries)
+    commits = manifest.get("commits") or ()
+    if not isinstance(commits, (list, tuple)):
+        return False
+    return any(
+        entry
+        and not _declares_absent_commits(entry)
+        and not _ZERO_COUNT.fullmatch(entry)
+        for entry in (str(item).strip() for item in commits)
+    )
 
 
 def _prose_changed_paths_name_no_paths(manifest: Mapping[str, Any]) -> bool:

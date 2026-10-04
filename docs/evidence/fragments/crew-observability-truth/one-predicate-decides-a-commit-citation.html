@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="one-predicate-decides-a-commit-citation">
+  <meta name="plan-title" content="One predicate decides whether a manifest cites a commit">
+  <meta name="plan-summary" content="audit_manifest and the promotion guard each answered whether a manifest's commits field cites a commit with a reader of their own, and the two readers disagreed on an all-zero value: the audit refused commits: 0 while promotion read it as a citation, so an implement run with repository changes read not ok at check-manifest and could still promote (reproduced at deefd1b55, where the agreement test fails 4 ids on the 0 case alone). The predicate is now promotion's _manifest_cites_a_commit, extended to refuse an entry of nothing but zeros, and the audit asks it instead of keeping a reader of its own. Focused gate: head 650c1167f 16 passed (EXIT=0); declared mutation (base source with the new test copied in) 4 failed (EXIT=1); population of the 78 test files importing reckon.crew.reports or reckon.crew.promotion: head 650c1167f 868 passed, 0 failed (EXIT=0).">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-recorded-at" content="2026-10-04">
+  <meta name="plan-tags" content="crew,manifest,commits,promotion,check-manifest">
+  <title>One predicate decides whether a manifest cites a commit | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="one-predicate-decides-a-commit-citation" data-reckon="landed" data-when="2026-10-04">
+  <h2>One predicate decides whether a manifest cites a commit</h2>
+  <p><strong>Landed.</strong> One predicate decides citation for both readers. <code>_manifest_cites_a_commit</code> in <code>reckon/crew/promotion.py</code> now refuses an entry of nothing but zeros — a count is not a citation, and the null object id it spells resolves to no commit in any store — and reads a structured non-list value as citing nothing. <code>reckon/crew/reports.py</code> no longer keeps a reader of its own: <code>audit_manifest</code> asks that one predicate, so the commit-owing finding and the guard's refusal are the same decision. The reproduction at base <code>deefd1b55</code>: with the new test file copied into the base source, 4 ids fail at <code>EXIT=1</code>, all on the <code>0</code> case — the guard reads <code>commits: 0</code> as a citation while the audit refuses it; at head the same file reads 16 passed, and the audit and the guard answer alike for <code>none</code>, <code>[]</code>, <code>0</code> and a resolving sha, for a role that owes a commit and a role that does not. Population of the 78 test files importing <code>reckon.crew.reports</code> or <code>reckon.crew.promotion</code>: head 868 passed, 0 failed, <code>EXIT=0</code>. This fragment carries no element ids, so it adds none to the composition it is checked by.</p>
+</article>
+</body>
+</html>
