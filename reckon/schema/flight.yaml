@@ -851,6 +851,17 @@ slots:
   cleanup:
     range: WorktreeCleanup
 
+  scratch_min_free_bytes:
+    description: Minimum free bytes on the worker scratch filesystem before a dispatch.
+    range: integer
+    minimum_value: 0
+
+  scratch_min_free_pct:
+    description: Minimum free percentage on the worker scratch filesystem before a dispatch.
+    range: integer
+    minimum_value: 0
+    maximum_value: 100
+
   reflex:
     description: The reporting shape a worker follows when it summarises.
 
@@ -1137,6 +1148,8 @@ classes:
     description: Worktree lifecycle policy.
     slots:
       - cleanup
+      - scratch_min_free_bytes
+      - scratch_min_free_pct
 
   SummaryConfig:
     description: When and how workers report.
