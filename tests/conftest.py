@@ -29,7 +29,11 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew.dispatch import WATCH_ARMING_ENV
+from reckon.crew.dispatch import (
+    WATCH_ARMING_ENV,
+    WORKER_SCRATCH_ROOT_ENV,
+    WORKER_SCRATCH_ROOT_NAME,
+)
 from reckon.crew.routing import signal_worker
 
 ARMING_MARKER = "arms_watch_producer"
@@ -620,6 +624,30 @@ def _publish_session_temp_root(tmp_path_factory):
         os.environ.pop(TEST_TEMP_ROOT_ENV, None)
     else:
         os.environ[TEST_TEMP_ROOT_ENV] = previous
+
+
+# The root a dispatched run's scratch directory is created beneath. Dispatch
+# honours ``RECKON_WORKER_SCRATCH_ROOT`` so a caller can own the root; without
+# an override it resolves to the node's real ``/tmp/reckon-crew-scratch``, a
+# node-local directory shared by every session on the machine, where an entry
+# a test wrote is owned by nobody and removed by nothing. The session points
+# the override at the base temp tree pytest retains and prunes, so scratch a
+# dispatched run creates dies with the session instead of accumulating in the
+# shared root. Subprocesses inherit the assignment with the rest of the
+# environment, which is what reaches a dispatch a test drives indirectly.
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _publish_worker_scratch_root(tmp_path_factory):
+    """Point run scratch beneath the session's base temp for the whole session."""
+    root = tmp_path_factory.getbasetemp() / WORKER_SCRATCH_ROOT_NAME
+    previous = os.environ.get(WORKER_SCRATCH_ROOT_ENV)
+    os.environ[WORKER_SCRATCH_ROOT_ENV] = str(root)
+    yield root
+    if previous is None:
+        os.environ.pop(WORKER_SCRATCH_ROOT_ENV, None)
+    else:
+        os.environ[WORKER_SCRATCH_ROOT_ENV] = previous
 
 
 def test_temp_config_home(
