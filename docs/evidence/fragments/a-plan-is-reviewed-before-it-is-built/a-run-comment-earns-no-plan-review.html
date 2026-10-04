@@ -1,0 +1,20 @@
+<section data-reckon="evidence" data-node="a-run-comment-earns-no-plan-review">
+  <h3>A run's landing comment earns its plan no review</h3>
+  <p><code>plan_fingerprint</code> (<code>reckon/crew/plan_review.py</code>) now
+  normalises comments whose id begins with <code>RUN_COMMENT_PREFIX</code>
+  (<code>c-run-</code>) out of the state it digests, dropping a section left
+  empty, so the comment a promotion writes for a run no longer moves the digest
+  the sweep and the dispatch gate compare. Every authored comment, section,
+  decision and prose change still moves it, and the run-comment id grammar
+  stays pinned by driving the promotion's own comment writer in the test.</p>
+  <p>Measured on the built plan: appending a promotion comment moved the digest
+  <code>e26fa10b…</code> → <code>2e3202c9…</code> before the change, and leaves
+  it equal after; an authored comment still moves it.
+  <code>tests/test_a_run_comment_earns_no_plan_review.py</code> holds both
+  sides, and its sweep case calls <code>dispatch_awaiting_reviews</code> against
+  a synthesised mounted project — no review is composed for the run comment,
+  one is for the authored comment. The test files importing
+  <code>reckon.crew.plan_review</code> run 139 passed at head against 137
+  passed at base: no added failure. Under the fold-back mutant both assertions
+  redden (exit 1). Change at <code>92c7413aa</code>.</p>
+</section>
