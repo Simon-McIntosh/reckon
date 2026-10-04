@@ -1,0 +1,624 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "xhigh",
+    "launch": "cli",
+    "local": true,
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "clive",
+  "base_sha": "488bb49925a0f21d56b44b44135666e81a7bd9f1",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 5658597,
+      "input_tokens_cumulative": 5658597,
+      "output_tokens": 37961,
+      "output_tokens_cumulative": 37961,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 12,
+    "files": 1,
+    "removed": 0
+  },
+  "clone_matches": [],
+  "commit_resolution": null,
+  "commits": [
+    "bb63301f81aea1f82f8f2ba9b9071da5242b8394"
+  ],
+  "completed_at": "2026-10-04T10:45:46.345Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-10-04T10:30:01Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "follow_on_paths": [],
+  "gate": "passed",
+  "gate_check": {
+    "command": "env TERM=dumb NO_COLOR=1 .venv/bin/python -m pytest -n 8 -p no:cacheprovider -q --timeout=300 tests/test_dispatch_reads_the_resolved_session.py tests/test_resumability_reads_the_resolution.py tests/test_session_resumes_only_its_own_task.py tests/test_a_held_member_is_read.py tests/test_empty_worktree_field_is_absent.py tests/test_member_guard_counts_live_processes.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T102935596448-a-resolved-session-fixture-models-a-finished-run/coordinator-gate-merged.log"
+  },
+  "impl_move": {
+    "at_complete": 0.64,
+    "at_dispatch": 0.64,
+    "plan": "crew-observability-truth",
+    "reason": "a fixture repair restoring the merged head to green; the section's status moves at the plan-write beat",
+    "verdict": "waived"
+  },
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-10-04T11:29:37.897212+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": null,
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-10-04T10:29:37Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 28,
+    "binding_observed": "unknown",
+    "detail": "lane document carries no numeric 'mean_context'",
+    "generating": 0,
+    "headroom": 16,
+    "mean_context": "unknown",
+    "observed_at": "2026-10-04T10:29:09Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-10-04T10:45:46.345Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": true,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T102935596448-a-resolved-session-fixture-models-a-finished-run/manifest.md",
+  "member": "disposable-r-20261004T102935596448-a-resolved-session-fixture-models-a-finished-run",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_dispatch_reads_the_resolved_session.py::test_same_task_dispatch_reuses_session_named_only_by_prior_stream"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "baseline_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_dispatch_reads_the_resolved_session.py::test_same_task_dispatch_reuses_session_named_only_by_prior_stream"
+    ],
+    "declaration": "At main 488bb4992 the unchanged fixture leaves the session withheld, so test_same_task_dispatch_reuses_session_named_only_by_prior_stream fails there",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T102935596448-a-resolved-session-fixture-models-a-finished-run/logs/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T102935596448-a-resolved-session-fixture-models-a-finished-run/logs/negative-control.log",
+    "test_paths": [
+      "tests/test_dispatch_reads_the_resolved_session.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "a-resolved-session-fixture-models-a-finished-run",
+  "node_definition": {
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 1462,
+          "cached_input_tokens": 526585,
+          "input_tokens": 528049,
+          "output_tokens": 1556,
+          "reasoning_output_tokens": 1023,
+          "total_tokens": 529605,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "bd47f8f3-7617-4973-86e9-6be0d83c0a53",
+      "session_id": "s22-coord"
+    },
+    "done_when": "At main 488bb4992 the four test files test_dispatch_reads_the_resolved_session.py, test_a_held_member_is_read.py, test_resumability_reads_the_resolution.py and test_session_resumes_only_its_own_task.py all pass, the fixture's assertions are unchanged, and the manifest states which pointer fields model the exited worker and why",
+    "estimated_hours": null,
+    "goal": "Make the run_with_stream fixture in tests/test_dispatch_reads_the_resolved_session.py model a prior run whose worker has exited, so the same-task session test exercises the resolved-session reader under the member hold that merged beside it at 1be48d1ff",
+    "id": "a-resolved-session-fixture-models-a-finished-run",
+    "lane_declaration": {
+      "backend": null,
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-10-04T10:29:37Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 28,
+      "binding_observed": "unknown",
+      "detail": "lane document carries no numeric 'mean_context'",
+      "generating": 0,
+      "headroom": 16,
+      "mean_context": "unknown",
+      "observed_at": "2026-10-04T10:29:09Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "lane document publishes no 'throughput' block, so the rate its generating population achieved is not measured",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261004T102935596448-a-resolved-session-fixture-models-a-finished-run/manifest.md",
+    "negative_control": "At main 488bb4992 the unchanged fixture leaves the session withheld, so test_same_task_dispatch_reuses_session_named_only_by_prior_stream fails there",
+    "plan": "crew-observability-truth",
+    "requested_backend": null,
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§36",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "tests/test_dispatch_reads_the_resolved_session.py",
+      "docs/evidence/fragments/crew-observability-truth/a-resolved-session-fixture-models-a-finished-run.html",
+      "docs/figures/crew-observability-truth/a-resolved-session-fixture-models-a-finished-run"
+    ]
+  },
+  "orientation_input_tokens": 3224502.0,
+  "outcome": "",
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "member": null,
+    "node": "a-resolved-session-fixture-models-a-finished-run",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-10-04T10:29:43.662771+00:00",
+    "score": 0.64375,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "route",
+    "answering_model": "typesafe/jev-1.13-20260917",
+    "backend": "clive",
+    "comment": "",
+    "confidence": 0.83,
+    "decision_source": "jev",
+    "effort": "xhigh",
+    "excluded": [
+      {
+        "availability": "not-probed",
+        "backend": "native",
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "in-harness",
+        "local": false,
+        "model": null,
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reasons": [
+          "in-harness-backend"
+        ],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "fallback_reason": null,
+    "family": "local",
+    "jev_latency_ms": 450.932,
+    "jev_model": "typesafe/jev-1.13",
+    "latency_ms": 4523.565,
+    "model": "deepseek-v4.1-flash",
+    "offered": [
+      {
+        "availability": "unknown",
+        "backend": "claude",
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "claude",
+        "local": false,
+        "model": "claude-sonnet-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-haiku",
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "claude",
+        "local": false,
+        "model": "claude-haiku-4-5-20251001",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "claude-opus",
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "claude",
+        "local": false,
+        "model": "claude-opus-5-5",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "served",
+        "backend": "clive",
+        "budget_reason": null,
+        "burn_multiple": null,
+        "congestion": {
+          "admission_verdict": "open",
+          "running": 0,
+          "slots_state": "measured",
+          "stale": false,
+          "waiting": 0
+        },
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "local",
+        "local": true,
+        "model": "deepseek-v4.1-flash",
+        "outcomes": {
+          "failed": 21,
+          "not-run": 17,
+          "passed": 603,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": 45
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex",
+        "budget_reason": "no recorded account-window reading for budget group codex-sub",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-sol",
+        "outcomes": {
+          "failed": 5,
+          "not-run": 0,
+          "passed": 12,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-astra",
+        "budget_reason": "no recorded account-window reading for budget group codex-sub",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-astra",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 1,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-luna",
+        "budget_reason": "no recorded account-window reading for budget group codex-sub",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-6-luna",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      },
+      {
+        "availability": "unknown",
+        "backend": "codex-terra",
+        "budget_reason": "no recorded account-window reading for budget group codex-sub",
+        "burn_multiple": null,
+        "congestion": null,
+        "days_to_reset": null,
+        "effort": "xhigh",
+        "family": "codex",
+        "local": false,
+        "model": "gpt-5.6-terra",
+        "outcomes": {
+          "failed": 0,
+          "not-run": 0,
+          "passed": 0,
+          "unknown": 0
+        },
+        "pace_allowance": null,
+        "reason": "eligible",
+        "reasons": [],
+        "resets_at": null,
+        "utilisation_pct": null,
+        "worker_slots": null
+      }
+    ],
+    "probabilities": {
+      "claude": 0,
+      "claude-haiku": 0,
+      "claude-opus": 0.01,
+      "clive": 0.86,
+      "codex": 0.07,
+      "codex-astra": 0.01,
+      "codex-luna": 0,
+      "codex-terra": 0,
+      "hold": 0.05
+    },
+    "rendered_token_estimate": 1102,
+    "usage": {
+      "cost": 0.000137928,
+      "input_tokens": 3284,
+      "output_tokens": 99
+    }
+  },
+  "plan": "crew-observability-truth",
+  "plan_impl_at_dispatch": 0.64,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "bb63301f81aea1f82f8f2ba9b9071da5242b8394",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "488bb49925a0f21d56b44b44135666e81a7bd9f1",
+    "reviewed_head_sha": "bb63301f81aea1f82f8f2ba9b9071da5242b8394",
+    "scores": {
+      "durability": 19,
+      "evidence": 17,
+      "fit": 19,
+      "goal_fidelity": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 95
+  },
+  "review_tier": "none",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261004T102935596448-a-resolved-session-fixture-models-a-finished-run",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§36",
+  "session": "s22-coord",
+  "session_harness": "claude",
+  "session_id": "2d4039c2-6e3c-48f3-b0a3-b2e719a8bfe7",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 5658597,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 936.918,
+    "generated_tokens": 37961,
+    "generation_seconds": 379.855,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 59.5,
+    "machine_seconds": 557.063,
+    "peak_input_tokens": 136852,
+    "tokens_per_second": 99.94,
+    "wall_tokens_per_second": 40.52
+  },
+  "time_budget": "60m",
+  "tool_steps": 59.0,
+  "unplanned_reason": null,
+  "unreconciled_override": {
+    "grace": "15m",
+    "requested": true,
+    "waived_runs": []
+  },
+  "wall_seconds": 945,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "exit_code": 0,
+    "exited_at": "2026-10-04T10:45:48Z",
+    "last_record_type": "result",
+    "launched_at": "2026-10-04T10:30:05Z",
+    "recorded_by": "supervisor",
+    "run_id": "r-20261004T102935596448-a-resolved-session-fixture-models-a-finished-run",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 9870,
+    "worker_pid": 1834047
+  },
+  "worker_seconds": 922,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
