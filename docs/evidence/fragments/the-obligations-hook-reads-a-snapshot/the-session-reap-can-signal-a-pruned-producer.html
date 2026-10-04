@@ -1,0 +1,46 @@
+<section id="the-session-reap-can-signal-a-pruned-producer">
+  <h2>The session-end reap signals a producer whose test tree was pruned</h2>
+  <p>
+    <code>preserve_seat_records</code> in <code>tests/conftest.py</code> copies
+    every seat record into <code>&lt;basetemp&gt;/_seat-records</code> so the
+    session-end reap (<code>reaped_watch_producers</code>) can still find a
+    producer after a passing test's tree has been pruned. The copy could never
+    be signalled: <code>reapable_watch_pids</code> binds a record to a producer
+    by comparing the home derived from the record's own directory
+    (<code>directory.parent.parent</code>) against the <code>RECKON_HOME</code>
+    in the producer's <code>/proc/&lt;pid&gt;/environ</code>, and a mirrored
+    record's derived home sits under <code>_seat-records/</code> while the live
+    producer names its original home. Only the per-test reap, reading originals
+    before the prune, ever signalled; the session-end reap reached nothing but
+    its <code>/proc</code> leak scan, which fails the session instead of
+    reaping. A second gap compounded it: <code>_set_aside_seat_record_mirror</code>
+    deleted the previous aside before renaming the current mirror, so the mirror
+    restored for the session end held only the last test's records.
+  </p>
+  <p>
+    A mirrored record now carries the home it was written under
+    (<code>preserve_seat_records</code> writes a <code>home</code> field into each
+    copy), and <code>watcher_record_pids</code> reads the home off the record,
+    falling back to the directory only for an original record that carries none.
+    The set-aside merges each cycle's mirror into the existing aside instead of
+    replacing it, so records whose original trees the prune has removed survive
+    to the session-end reap.
+  </p>
+  <p>
+    <strong>Measure.</strong>
+    <code>tests/test_the_session_reap_signals_a_pruned_producer.py</code> starts a
+    stub producer whose <code>RECKON_HOME</code> lies in a tree pruned after the
+    mirror is taken, sets the mirror aside and restores it the way the session
+    fixtures do, and asserts the pid appears in the list the session-end reap
+    signals (<code>reapable_watch_pids</code>) and ends by that SIGTERM; a second
+    case prunes the first cycle's home before a second cycle arms and asserts
+    both cycles' records survive. Base <code>0f5941a18</code>: the head test
+    module run against the base <code>tests/conftest.py</code> in a scratch tree
+    gives <code>assert [] == [&lt;pid&gt;]</code> — the mirrored record's derived
+    home never matches, so the stub is not signalled — 2 failed,
+    <code>EXIT=1</code>. Head <code>0f0483569</code>: the same module 2 passed,
+    and the gate over <code>tests/conftest.py</code>'s users (the sweep, watch
+    and reap modules) goes 70 passed + 1 skipped at base to 72 passed + 1
+    skipped, <code>EXIT=0</code>, no added failure id.
+  </p>
+</section>

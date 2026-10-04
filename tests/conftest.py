@@ -264,19 +264,33 @@ def watch_record_dirs(root: Path) -> list[Path]:
 _SEAT_RECORDS_DIR = "_seat-records"
 
 
+# The field ``preserve_seat_records`` writes into a mirrored record: the home
+# the record was written under. A live producer is bound to a run by its
+# environment's ``RECKON_HOME``, and the reap compares that against the home it
+# reads off a record, so a mirrored record has to carry the original home —
+# the copy's own directory sits under the mirror, and the mirror's path is not a
+# home any producer names.
+_SEAT_RECORD_HOME_FIELD = "home"
+
+
 def preserve_seat_records(root: Path) -> None:
     """Copy every seat record out of the test trees ``root`` is about to prune.
 
     The copy keeps the ``crew/watch`` shape and the home's path relative to
     ``root``, so a reader looking for records under the run's root still finds
-    them after the arming test's own directory is removed. The originals are
-    left in place until the prune removes them, so a reap taken now still reads
-    the home each record was actually written under.
+    them after the arming test's own directory is removed. Each copy also
+    carries the home the record was written under, because the mirror is not
+    under that home and a reader that derived the home from the copy's own
+    location would name the mirror, which no live producer's environment
+    matches. The originals are left in place until the home's whole tree is
+    pruned, so a reap taken now still reads the home each record was actually
+    written under.
     """
     mirror = root / _SEAT_RECORDS_DIR
     for directory in watch_record_dirs(root):
         if mirror in directory.parents:
             continue
+        home = directory.parent.parent
         destination = mirror / directory.relative_to(root)
         try:
             destination.mkdir(parents=True, exist_ok=True)
@@ -284,13 +298,29 @@ def preserve_seat_records(root: Path) -> None:
             continue
         for record in directory.glob("*.lock"):
             try:
-                shutil.copy2(record, destination / record.name)
+                _mirror_seat_record(record, destination / record.name, home)
             except OSError:
                 continue
 
 
+def _mirror_seat_record(record: Path, destination: Path, home: Path) -> None:
+    """Copy one seat record into the mirror, naming the home it came from."""
+    try:
+        value = json.loads(record.read_text() or "{}")
+    except ValueError:
+        value = None
+    if not isinstance(value, dict):
+        # Not readable as a record: copy the bytes so the mirror still holds
+        # what the producer wrote and the reap reads it exactly as it would the
+        # original.
+        shutil.copy2(record, destination)
+        return
+    value.setdefault(_SEAT_RECORD_HOME_FIELD, str(home))
+    destination.write_text(json.dumps(value), encoding="utf-8")
+
+
 def watcher_record_pids(root: Path) -> list[tuple[int, Path]]:
-    """Registered watch producer pids, with the home each record lies under.
+    """Registered watch producer pids, with the home each record was written under.
 
     The pid comes from the record the producer wrote into its own configuration
     home, never from a scan of command lines. A command-line pattern matches any
@@ -300,21 +330,35 @@ def watcher_record_pids(root: Path) -> list[tuple[int, Path]]:
     """
     found: list[tuple[int, Path]] = []
     for directory in watch_record_dirs(root):
-        home = directory.parent.parent
         for record in sorted(directory.glob("*.lock")):
-            pid = _record_pid(record)
-            if pid is not None:
-                found.append((pid, home))
+            value = _record_value(record)
+            pid = value.get("pid")
+            if isinstance(pid, int) and pid > 0:
+                found.append((pid, _record_home(value, directory)))
     return found
 
 
-def _record_pid(record: Path) -> int | None:
+def _record_value(record: Path) -> dict:
     try:
         value = json.loads(record.read_text() or "{}")
     except (OSError, ValueError):
-        return None
-    pid = value.get("pid") if isinstance(value, dict) else None
-    return pid if isinstance(pid, int) and pid > 0 else None
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def _record_home(value: dict, directory: Path) -> Path:
+    """The home the record was written under.
+
+    An original record sits in ``<home>/crew/watch``, so the directory names the
+    home. A mirrored copy was taken out of its home before the tree was pruned
+    and carries the home as a field: deriving the home from the mirror's own
+    path would name the mirror, and no live producer's environment ever matches
+    it, so the session-end reap would be left with nothing to signal.
+    """
+    home = value.get(_SEAT_RECORD_HOME_FIELD)
+    if isinstance(home, str) and home:
+        return Path(home)
+    return directory.parent.parent
 
 
 def _named_config_home(pid: int) -> Path | None:
@@ -488,9 +532,14 @@ def _set_aside_seat_record_mirror(root: Path) -> None:
     if not mirror.exists():
         return
     aside = _seat_record_mirror_aside(root)
-    if aside.exists():
-        shutil.rmtree(aside)
-    mirror.rename(aside)
+    # Merge into the aside rather than replacing it. The mirror is set aside on
+    # every test's setup and put back only once, at session end, so a cycle that
+    # discarded the previous aside would leave the restore holding the last
+    # test's records alone: every earlier test's records — the ones whose homes
+    # the prune has already removed, which the record-based reap cannot reach
+    # any other way — would be gone by the time the session-end reap runs.
+    shutil.copytree(mirror, aside, dirs_exist_ok=True)
+    shutil.rmtree(mirror)
 
 
 def _restore_seat_record_mirror(root: Path) -> None:
