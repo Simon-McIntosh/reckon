@@ -23,7 +23,7 @@
     <img src="/reckon/figures/crew-runtime-positive-controls/spawn-retries-a-vanished-bind/timeline.svg" alt="A two-row timeline. The first spawn is marked refused in red at about ten milliseconds because a bind source was gone at mount; a dotted line marks the 500 millisecond startup window; after a fifty-millisecond wait the retry spawns and is labelled running." style="max-width:100%;height:auto;">
     <figcaption>The spawn the retry absorbs. The first try dies inside the startup poll window because one of the launch's own <code>--ro-bind</code> sources is missing at mount; the retry waits <code>PROTECTED_BIND_WAIT_INTERVAL_SECONDS</code> (50&nbsp;ms) and spawns again, up to <code>PROTECTED_BIND_WAIT_ATTEMPTS</code> (10) tries. The window that decides whether the sandbox started is <code>SANDBOX_STARTUP_WINDOW_SECONDS</code> (500&nbsp;ms); nothing is recorded as a launch failure for the dead tries.</figcaption>
   </figure>
-  <section id="mechanism">
+  <section id="spawn-retries-a-vanished-bind-mechanism">
     <h2>The mechanism, and what is deliberately not retried</h2>
     <ul>
       <li><strong>Recognition is keyed to this launch's own binds.</strong> <code>_read_only_bind_sources(argv)</code> lists the <code>--ro-bind</code> sources the argv would mount, and <code>_refusal_names_a_bind_source</code> matches one of the two phrases bwrap answers with when a source is gone (<code>Can't bind mount</code>, <code>Can't find source path</code>) <em>and</em> a source this launch mounted. A refusal over anything else, and any spawn failure at all, is returned at once for its caller to record as the launch failure it is.</li>
@@ -38,7 +38,7 @@
     <h2>The pool control driver mutates what the fence reads</h2>
     <p>The fence composes from <code>declared_protected_paths</code> (the intent), not from the narrowed <code>protected_paths</code> (what is on disk now) &mdash; a protected path absent for an instant must still be sealed, which is the same race this node retries. <code>tests/test_fence_protects_the_worktree_pool.py</code>'s <code>_negative_control_report</code> therefore patches <code>declared_protected_paths</code> through <code>_without_pool</code>, so stripping <code>Code/.reckon-worktrees</code> removes the pool's read-only overlay from the composed argv and case&nbsp;1's write into the sibling lands, which is the control's red result. The new test file's last case pins both directions: the composed launch really does overlay the pool, and under the mutation it no longer does.</p>
   </section>
-  <section id="measure">
+  <section id="spawn-retries-a-vanished-bind-measure">
     <h2>The measure</h2>
     <p>The gate is the caller-derived set the brief names: every file under <code>tests/</code> matching <code>_spawn_detached_worker</code> (this node's new file) or <code>_supervisor_spawn_worker</code> (<code>tests/test_stored_phase_advances.py</code>, <code>tests/test_worker_env_export.py</code>), unioned with the changed fence file &mdash; four files at head, three at base, where the new file does not yet exist. Both arms ran under pytest-xdist <code>-n 8 --timeout=300</code> with their own basetemp outside any repository, each log naming its revision on its first line and ending <code>EXIT=code</code>.</p>
     <ul>
@@ -56,12 +56,12 @@
       <li><strong>The baseline arm is recorded as JSON</strong> (<code>gate-base-bind-2.json</code>: arm, revision, the literal command, <code>log_path</code>, <code>completed: true</code>, <code>exit_status</code>, <code>failed_ids</code>), run over the gate files from a fresh <code>git archive</code> of the base.</li>
     </ul>
   </section>
-  <section id="negative-control">
+  <section id="spawn-retries-a-vanished-bind-negative-control">
     <h2>The declared negative control</h2>
     <p>Declared: <em>With the spawn retry removed, the first case in <code>tests/test_spawn_retries_a_vanished_bind.py</code> records a failed launch and the test fails.</em></p>
     <p>Run in a scratch tree extracted from the head revision <code>f4cffd20e</code> with the retry removed (<code>limit = 1</code> in <code>_spawn_worker_retrying_a_vanished_bind</code>): <code>2 failed, 5 deselected in 2.24s</code>, <code>EXIT=1</code>, the two failing ids being both parametrizations of <code>test_a_spawn_refused_over_a_vanished_protected_bind_is_retried</code> &mdash; which the head arm does not fail (<code>neg-control-bind-3.log</code>).</p>
   </section>
-  <section id="landing">
+  <section id="spawn-retries-a-vanished-bind-landing">
     <h2>What landed</h2>
     <p>Five commits on base <code>a31484ff0</code>: <code>04538bea5</code> (the retry, the collected-exit record, the control driver's mutation, six cases and the fence-file update), <code>9bf13264b</code> (the launch seam's tolerance of a stand-in), <code>c81adfd6f</code> (this fragment and its figure), <code>897205ea4</code> (the reformat revert) and <code>f4cffd20e</code> (the named startup window). Files: <code>reckon/crew/dispatch.py</code>, <code>tests/test_fence_protects_the_worktree_pool.py</code>, <code>tests/test_spawn_retries_a_vanished_bind.py</code>.</p>
   </section>

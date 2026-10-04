@@ -18,7 +18,7 @@
  <main class="plan-doc">
   <h1>A gate log is judged against the arm it is cited for &mdash; evidence</h1>
   <p>The manifest template requires a gate log's first line to name the revision it ran at, the tree and the command, and nothing checked it. The write-time audit now compares each suite arm's cited log against the revision that arm records: a log whose first line names no revision, or names another arm's, is reported by path while the writer still holds a turn. The control log is left to the exit-status reader it already has, since no manifest field records a revision for it to be compared against. Beside it, the presented branch of the gate-evidence guard no longer drops an unresolvable presented identifier: the value is refused by name where the presentation is read, and the guard keeps its silence when the worktree cannot be read, so a run whose worktree is gone is not refused for a citation no store was asked about.</p>
-  <section id="measure">
+  <section id="control-gate-repairs-measure">
     <h2>The measure</h2>
     <ul>
       <li><strong>Base arm</strong> (33c5e761, the new cases copied into the unfixed tree): <code>3 failed, 340 passed in 434.37s</code>, <code>EXIT=1</code> &mdash; the two gate-log cases and the presented-sha case red, which is the three recorded defects reproduced, <code>logs/base-gate.log</code>.</li>

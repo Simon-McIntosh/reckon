@@ -21,7 +21,7 @@
   <p>Reproduced before repair against the readers themselves: an otherwise complete observation with <code>completed: false</code> is reported missing by <code>suite_observation_missing_fields</code> exactly as <code>completed: null</code> is, and both <code>_head_suite_failure_ids</code> and <code>_baseline_suite_failure_ids</code> return <code>None</code> for it, as they do for null. Both lines now read:</p>
   <p><code>completed is true only when the suite ran to its summary line; false, null or absent is unreadable</code></p>
   <p>The clause is on each arm's own line, so a worker filling in either arm reads it at the key it is about to write, and it no longer names a value the gate accepts alongside those it refuses.</p>
-  <section id="measure">
+  <section id="repair-of-template-says-what-completed-holds-fe9140e26a53-measure">
     <h2>The measure</h2>
     <ul>
       <li><strong>The contract names the readers' own partition.</strong> <code>tests/test_brief_prompt.py</code> gains <code>test_the_completed_rule_agrees_with_the_readers_that_apply_it</code>, which drives <code>suite_observation_missing_fields</code> and both promotion readers over <code>completed</code> set to <code>true</code>, <code>false</code>, <code>null</code> and absent, and asserts the readable set is exactly <code>{true}</code> and the refused set exactly <code>{false, null, absent}</code>, then that the pinned rule names each of those values before its <code>is unreadable</code> clause. The prose and the code cannot drift apart unseen.</li>
@@ -31,7 +31,7 @@
     </ul>
     <p>Both arms used the same 22-file population: <code>tests/test_brief_prompt.py</code> plus every test module that imports <code>reckon.crew.prompts</code>. The base arm ran in an archived copy of the base revision; the head arm ran in this worktree, and each log's header names its revision, tree, the imported <code>module.__file__</code> and the command.</p>
   </section>
-  <section id="outside-the-delta">
+  <section id="repair-of-template-says-what-completed-holds-fe9140e26a53-outside-the-delta">
     <h2>The six red ids are not this change's</h2>
     <p>Both arms carry the same six failures &mdash; two in <code>tests/test_crew_prompts.py</code> and four in <code>tests/test_skill_contract_parity.py</code> &mdash; and the set difference between the arms is empty. They read the landing contract against skill prose outside the repository, a surface this node's fence does not reach, so they are reported under <code>follow_ons</code> rather than repaired here.</p>
   </section>

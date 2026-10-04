@@ -18,7 +18,7 @@
  <main class="plan-doc">
   <h1>A run whose worktree is gone can be promoted &mdash; evidence</h1>
   <p>A completed run's worktree is released, and its commits survive in the repository, which shares the object store. Promotion resolved every citation through the worktree path, so the first git call whose working directory no longer existed raised <code>FileNotFoundError</code>: the reproducing base run failed both new cases with <code>FileNotFoundError: [Errno 2] No such file or directory: PosixPath('&hellip;/r-reclaimed-promotes-tree')</code> from <code>subprocess</code>, and the run could not be promoted at all. The recorded workaround was to re-create the worktree at the run's head before promoting.</p>
-  <section id="change">
+  <section id="promote-a-reclaimed-run-change">
     <h2>What changed</h2>
     <ul>
       <li><code>reckon/crew/promotion.py</code> gains <code>_run_commit_directory</code>, which returns the run's worktree while it is a directory and its repository otherwise. <code>_require_gate_evidence</code> reads through it, so a reclaimed run's citations, the presented-versus-declared comparison and the unresolvable-citation refusal all resolve through the repository instead of going unmeasured.</li>
@@ -26,7 +26,7 @@
       <li>The reading that asks whether the run's own <code>HEAD</code> moved stays on the worktree: the repository's head belongs to a tree the run never worked in, and consulting it would refuse a truthful promotion on another tree's movement. With no worktree there is nothing to ask, so that guard stays silent as before.</li>
     </ul>
   </section>
-  <section id="measure">
+  <section id="promote-a-reclaimed-run-measure">
     <h2>The measure</h2>
     <p>The gate is the files that reach the change: <code>tests/test_a_short_commit_list_is_reported.py</code> and <code>tests/test_control_gate_repairs.py</code> name <code>_require_gate_evidence</code> and <code>_commit_canonical_id</code> directly, <code>tests/test_crew_promotion_scope.py</code> calls <code>crew.complete</code> over a detached worktree, and <code>tests/test_a_vanished_worktree_reads_as_no_referent.py</code> promotes runs whose worktree directory has been removed. Each arm ran with <code>-n 8 --timeout=300</code>, its own basetemp outside any repository, and its own log naming its revision, tree, command, <code>module.__file__</code> and working directory.</p>
     <ul>

@@ -18,7 +18,7 @@
  <main class="plan-doc">
   <h1>A duty raised from a stored review is one the disposition command retires</h1>
   <p><strong>Result: pass.</strong> The duty reader and the disposition command now select a run's stored review through one shared reading, so a coordinator shown a sub-floor duty row always has a command that retires it at the same record. The head arm is green over the 22-file gate population plus the new test file (<code>160 passed</code>, <code>EXIT=0</code>), the negative control is red on ids the arm does not fail (<code>3 failed</code>, <code>EXIT=1</code>), and the earlier attempt's conflict is resolved: a duty follows from a stored review that exists, whether or not the run's worktree survives, and agreement with the classifier was never the requirement.</p>
-  <section id="change">
+  <section id="one-review-head-resolver-change">
     <h2>What changed</h2>
     <p>Two readers of a run's stored review resolved the record independently. <code>_sub_floor_items_by_session</code> in <code>reckon/crew/obligations.py</code> derived a duty from a run's review whether or not its worktree survived; the <code>crew dispose</code> command in <code>reckon/cli.py</code> resolved the same run's record separately, so a row the duty reader raised for a reclaimed run could be unreachable from the command that retires it &mdash; a row the coordinator is shown and no command can dispose is worse than no row.</p>
     <p>Both now take one reading, <code>stored_review_for_run</code> in <code>reckon/crew/obligations.py</code>, with the same arguments. It resolves the head through the recovery resolver every other reader uses (<code>_review_head_and_tree</code>), so a reclaimed run is keyed to the head its own record carries rather than to the shared checkout's HEAD; a record naming no resolvable head is read through the store's newest record for the run, because a low dimension is a finding about a review that exists and a reclaimed worktree neither supplies nor retires one. <code>_sub_floor_items_by_session</code> keeps its base reading and takes it through the shared function; the <code>crew dispose</code> branch for a live pointer takes the same function and arguments. A promoted run has no live pointer and therefore no duty row, and its command path keeps the record-based head and head-first selection it had.</p>
@@ -28,7 +28,7 @@
       <figcaption>What the two readers select for the three record shapes. Each row is one assertion of <code>tests/test_one_review_head_resolver.py</code>: the duty row exists, and the record the disposition command selects is the record the duty reader selected &mdash; observed at <code>stored_review_for_run</code>, the reading they share.</figcaption>
     </figure>
   </section>
-  <section id="measure">
+  <section id="one-review-head-resolver-measure">
     <h2>The measure</h2>
     <ul>
       <li><strong>Base arm</strong> (d6017d33e2ca3e2489de9d2305667495cb5d6cc6, extracted with <code>git archive</code> to scratch and imported from that tree): the 22-file gate population, <code>157 passed in 44.08s</code>, <code>EXIT=0</code>, no failure id, <code>logs/base-arm-2.log</code>.</li>

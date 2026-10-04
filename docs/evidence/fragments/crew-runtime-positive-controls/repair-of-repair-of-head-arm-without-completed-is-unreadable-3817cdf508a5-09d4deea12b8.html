@@ -19,7 +19,7 @@
   <h1>The baseline arm reads its failure ids the way the head arm reads them &mdash; evidence</h1>
   <p>The control gate reads a red log against a suite arm. The head reader <code>_head_suite_failure_ids</code> validated the arm's <code>failure_ids</code> before using it: a non-list, or a list carrying a non-string, is unreadable and decides nothing. The baseline reader <code>_baseline_suite_failure_ids</code> did not &mdash; it iterated <code>observation.get("failure_ids") or ()</code> directly. A value recorded as a JSON string therefore iterated as its characters, and a baseline that could not name its failing tests <em>admitted</em> a control the same manifest in list form <em>refused</em>; a non-iterable value raised <code>TypeError</code> out of the gate.</p>
   <p>The baseline reader now asks the shape the way the head reader does: a list of non-empty strings, and <code>None</code> otherwise. An unreadable baseline decides nothing in every shape &mdash; the caller falls through to the head arm when one is readable and refuses when neither is, so a malformed id set is never folded into the empty arm that admits every control.</p>
-  <section id="measure">
+  <section id="repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8-measure">
     <h2>The measure</h2>
     <ul>
       <li><strong>Reproduced before repair.</strong> A probe at the base revision showed list form <em>refusing</em> the control, string form <code>verdict=matched</code> with <code>baseline_ids</code> the id's own characters, and an int form raising <code>TypeError: 'int' object is not iterable</code>. <code>logs/repro.py</code>.</li>
@@ -28,7 +28,7 @@
       <li><strong>Lint.</strong> Zero added findings on the changed paths: three pre-existing findings in <code>promotion.py</code> at both revisions and the same 27 format hunks, none in either test file.</li>
     </ul>
   </section>
-  <section id="fixture">
+  <section id="repair-of-repair-of-head-arm-without-completed-is-unreadable-3817cdf508a5-09d4deea12b8-fixture">
     <h2>The pinned refusal case is restored to the arm it names</h2>
     <p><code>tests/test_control_gate_checks_facts.py::test_a_control_that_adds_no_failure_to_the_baseline_is_refused</code> passed a <code>baseline_suite</code> with no <code>completed</code> key, so after the baseline reader asked completion the case refused through the no-readable-arm branch rather than the baseline comparison its name and docstring describe. Marking that baseline <code>completed: true</code> restores the comparison, and the assertion now names the baseline branch so the case cannot drift back to a passing refusal from the wrong arm.</p>
   </section>

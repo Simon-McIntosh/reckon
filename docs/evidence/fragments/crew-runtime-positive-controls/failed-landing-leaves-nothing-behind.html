@@ -8,7 +8,7 @@
 <body>
 <main class="doc">
 
-<section id="measure">
+<section id="failed-landing-leaves-nothing-behind-measure">
 <h2>What this node measures</h2>
 <p>When a landing's commit is refused — a peer's <code>.git/index.lock</code> is the
 measured case — the plan comment stays on the plan file's working tree on purpose,
@@ -28,7 +28,7 @@ behaviour, the green branch the repaired one.</figcaption>
 </figure>
 </section>
 
-<section id="mechanism">
+<section id="failed-landing-leaves-nothing-behind-mechanism">
 <h2>The two defects, read from the source</h2>
 <p>The rollback's restore is one index-writing call,
 <code>git restore --source=HEAD --staged --worktree</code>, and a lock another process
@@ -49,7 +49,7 @@ silent: the store keeps the refused attempt's row and never records the landed o
 guard's first test fails against this at the base revision.</p>
 </section>
 
-<section id="repair">
+<section id="failed-landing-leaves-nothing-behind-repair">
 <h2>The repair</h2>
 <p>A path HEAD never carried is now dropped from the index first, and its file is
 removed only once the entry is confirmed gone — the index is read with
@@ -61,7 +61,7 @@ attempt instead of colliding with a record of the attempt nobody accepted. The t
 path's working-tree write is left exactly as the base revision left it.</p>
 </section>
 
-<section id="arms">
+<section id="failed-landing-leaves-nothing-behind-arms">
 <h2>Gate arms</h2>
 <p>Both arms ran with <code>pytest -n 8 --timeout=300</code>, one at a time in the
 foreground, each from its own basetemp outside any repository, each to its own log
@@ -81,7 +81,7 @@ base failure id remains.</li>
 </ul>
 </section>
 
-<section id="control">
+<section id="failed-landing-leaves-nothing-behind-control">
 <h2>Negative controls</h2>
 <p>Two mutations, each applied to its own <code>git archive</code> extraction of the
 head revision under /tmp, so the promoted file was never mutated. Both logs are in
@@ -100,7 +100,7 @@ fails at the "no store row remains" assertion; exit code 1; log
 <p>Each control fails an id the head arm does not fail.</p>
 </section>
 
-<section id="scope">
+<section id="failed-landing-leaves-nothing-behind-scope">
 <h2>Scope note: the plan-file clause</h2>
 <p>Section 39's clause that the rollback must restore the plan file itself was written
 from a misreading of the 02:49Z incident: the retry does commit the attempt's recorded

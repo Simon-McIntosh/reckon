@@ -7,7 +7,7 @@
 <title>protected-bind-waits-for-its-source</title>
 </head><body>
 
-<h2 id="landing">A protected file being rewritten no longer abandons a launch</h2>
+<h2 id="protected-bind-waits-for-its-source-landing">A protected file being rewritten no longer abandons a launch</h2>
 
 <p>Landed at <code>926a9dcde281b5640cc454aabc4f92a8f5ab5785</code> on
 <code>reckon/_backends.py</code> and
@@ -21,7 +21,7 @@ layer declared stays absent past the bound, and leaves out a shipped default
 this machine does not have rather than refusing every launch on a host without
 it (this workstation has no <code>~/.netrc</code>).</p>
 
-<h3 id="reproduction">The recorded defect, reproduced in the base tree</h3>
+<h3 id="protected-bind-waits-for-its-source-reproduction">The recorded defect, reproduced in the base tree</h3>
 
 <p>Probe run against the base revision with temporary paths only
 (<code>repro-incident.txt</code> beside the gate logs): a declared protected
@@ -33,7 +33,7 @@ in the fence with <code>vanish-after-check exit: 1</code>,
 directory</code> — the launch-killing window this node closes for absence at
 composition.</p>
 
-<h3 id="gate">Gate</h3>
+<h3 id="protected-bind-waits-for-its-source-gate">Gate</h3>
 
 <p>Both arms, <code>pytest -n 8 --timeout=300</code>. Base (git archive of
 <code>9fe5d8204634a1fe3db5f118df8c83e4eee7b0dd</code> under the run's scratch
@@ -44,7 +44,7 @@ exit 0. Added failures: none.</p>
 must fail: <code>1 failed, 2 passed</code>, <code>EXIT=1</code>, failing id
 <code>tests/test_protected_bind_waits_for_its_source.py::test_a_protected_file_that_appears_after_a_delay_is_bound</code>.</p>
 
-<h3 id="unmet">Unmet within this node's write scope</h3>
+<h3 id="protected-bind-waits-for-its-source-unmet">Unmet within this node's write scope</h3>
 
 <p>The source can still vanish <em>after</em> composition and before the
 sandbox starts: the worker's argv is spawned by
