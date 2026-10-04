@@ -1067,18 +1067,20 @@ def parse_needs_help(text: str) -> dict[str, Any]:
 def _role_owes_a_commit(node: TaskNode | None) -> bool:
     """Whether the manifest's role has repository work a commit would record.
 
-    A review's whole deliverable is the record it stores beside the run it read,
-    so it has no commit to cite and a manifest that says so is complete. Asking
-    one of a review refuses the manifest the store's own reviews write. The
-    spelling is recovery's, imported rather than restated so the surfaces that
-    read the role cannot drift apart; an unknown role keeps the finding, so a
-    manifest the audit cannot attribute a role to is judged as a working run.
+    A review delivers the record it stores beside the run it read and an
+    investigation delivers findings, so neither has a commit to cite and a
+    manifest that says so is complete. Asking one of them refuses the manifest
+    the run's own delivery satisfies. The role set is promotion's, imported
+    rather than restated so the check a worker runs and the gate promotion
+    applies hours later cannot disagree about which roles promote with no
+    commits; an unknown role keeps the finding, so a manifest the audit cannot
+    attribute a role to is judged as a working run.
     """
     if node is None:
         return True
-    from reckon.crew.recovery import REVIEW_ROLE
+    from reckon.crew.promotion import _COMMITLESS_ROLES
 
-    return str(node.role or "").strip() != REVIEW_ROLE
+    return str(node.role or "").strip() not in _COMMITLESS_ROLES
 
 
 # ── A control log is judged where its writer can still repair it ─────────────
@@ -1489,6 +1491,24 @@ def _citation_tokens(entry: str) -> list[str]:
     return tokens
 
 
+def _cites_a_commit(manifest: dict[str, Any]) -> bool:
+    """Whether the ``commits`` field carries at least one revision citation.
+
+    The field is a citation list, and a spelling the list reader keeps is not
+    a citation: ``0`` parses to a non-empty list, so the field's presence
+    cannot answer the question a role that owes a commit asks. An entry cites
+    a commit when it carries an object-id shaped token — the same token reader
+    the citation check asks its stores about, so a value read as a citation
+    here is one a store can be asked about. A value that reaches this reader
+    structured rather than as a list carries no entry a store can be asked
+    about and cites nothing.
+    """
+    commits = manifest.get("commits") or ()
+    if not isinstance(commits, (list, tuple)):
+        return False
+    return any(_citation_tokens(str(entry).strip()) for entry in commits)
+
+
 def _commit_resolves_in(root: Path, revision: str) -> bool:
     """Report whether one revision names a commit object in one repository."""
     probe = subprocess.run(
@@ -1897,7 +1917,11 @@ def audit_manifest(
             findings.append(refusal)
     elif status not in ("complete", "blocked", "failed"):
         findings.append(f"status {status!r} is not complete, blocked or failed")
-    if status == "complete" and not manifest["commits"] and _role_owes_a_commit(node):
+    if (
+        status == "complete"
+        and _role_owes_a_commit(node)
+        and not _cites_a_commit(manifest)
+    ):
         findings.append("status is complete but no commit is recorded")
     if status == "complete" and not manifest.get("tests"):
         findings.append("status is complete but no test result is recorded")
