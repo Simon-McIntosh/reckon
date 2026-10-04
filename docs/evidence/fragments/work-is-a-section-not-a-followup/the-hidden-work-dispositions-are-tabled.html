@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-is-a-section-not-a-followup">
+  <meta name="plan-evidence-for" content="work-is-a-section-not-a-followup">
+  <title>The hidden-work dispositions are tabled | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>Every followup that hid work is tabled with its disposition</h1>
+      <p class="lead">85 open followups that the roadmap's predicate called hiding work are disposed. Each row names the plan that hosted the followup, its id, one of section 4's four dispositions, and the section, plan, decision or commit its work went to. The rows were assembled from the resolved followups whose outcome or plan-section text cites <code>work-is-a-section-not-a-followup</code> §4 and from commit <code>e7ae7304f</code>, plus the three held rows this section's comment names (<code>f-ifv-002</code>, <code>f-nso-002</code>, <code>f-pcg-002</code>). The dispositions: <code>section</code> &mdash; the work is a schedulable section of its own plan; <code>move</code> &mdash; it moved to a live plan, existing or new, as a section there; <code>decision</code> &mdash; an authority step recorded as an open decision the roadmap reads; <code>met</code> &mdash; the work was already done or is no longer wanted, resolved citing the commit or the reason.</p>
+    </header>
+
+    <section id="the-hidden-work-dispositions-are-tabled-measure">
+      <h2>The measure</h2>
+      <p>Read-only against this tree at <code>e85fb9cd816df6d845dc37a9e86b78a96f841ff7</code>: <code>reckon roadmap --project reckon</code> reports zero <code>followup-hides-work</code> findings (the wiring list carries 40 findings of other codes, so the scan was reading), and the predicate over the same tree classifies all 41 open followups as pointers, none as hiding work. Of the 85 disposed rows: 51 <code>section</code>, 13 <code>move</code>, 6 <code>decision</code>, 15 <code>met</code>.</p>
+      <p>An empty finding list is also what an instrument that sees nothing produces, so two positive controls carry the zero: <code>tests/test_a_followup_that_hides_work_is_found.py</code> drives <code>build_roadmap</code> over a temporary docs directory holding three hiding followups and asserts the finding list is exactly those three (<code>11 passed, EXIT=0</code> at this revision), and a direct call to <code>classify_followup</code> on a synthetic own-plan, no-section followup returns <code>hides-work (no-section)</code>. Logs: <code>positive-control-roadmap-finding.log</code>, <code>real-tree-classification.log</code> in the run directory beside this node's manifest.</p>
+      <p><code>reckon audit-doc</code> on this fragment: <code>ok, EXIT=0</code>.</p>
+    </section>
+
+    <section id="the-hidden-work-dispositions-are-tabled-table">
+      <h2>The dispositions</h2>
+      <table>
+        <thead><tr><th>Plan</th><th>Follow-up</th><th>Disposition</th><th>Where the work went</th></tr></thead>
+        <tbody>
+          <tr><td><code>a-brief-should-not-cost-what-it-names</code></td><td><code>f-bcn-001</code></td><td>section</td><td>§8</td></tr>
+          <tr><td><code>a-cutover-is-measured-against-its-baseline</code></td><td><code>f-cmb-001</code></td><td>section</td><td>§5</td></tr>
+          <tr><td><code>a-dry-run-must-resolve-what-the-real-call-resolves</code></td><td><code>f-ddr-001</code></td><td>section</td><td>§5</td></tr>
+          <tr><td><code>a-follower-keeps-your-work-in-view</code></td><td><code>f-afkywiv-001</code></td><td>section</td><td>§6</td></tr>
+          <tr><td><code>a-follower-outlives-its-monitor</code></td><td><code>f-afoim-001</code></td><td>section</td><td>§11</td></tr>
+          <tr><td><code>a-lane-can-say-where-it-stands</code></td><td><code>f-alcs-005</code></td><td>section</td><td>§7</td></tr>
+          <tr><td><code>a-live-worker-can-be-reached</code></td><td><code>land-the-inbox-and-clear-two-ledger-rows</code></td><td>section</td><td>§7</td></tr>
+          <tr><td><code>a-page-load-reads-each-file-once</code></td><td><code>f-aplref-server-serves-one-code-version</code></td><td>section</td><td>§8</td></tr>
+          <tr><td><code>a-plan-is-reviewed-before-it-is-built</code></td><td><code>f-apirbiib-build</code></td><td>section</td><td>§4</td></tr>
+          <tr><td><code>a-review-dies-where-nobody-is-looking</code></td><td><code>f-ardwnil-004</code></td><td>section</td><td>§10; the §5 rollback repair had already landed as 0bdd53a17</td></tr>
+          <tr><td><code>a-review-is-sized-to-its-risk</code></td><td><code>f-arist-001</code></td><td>section</td><td>§7</td></tr>
+          <tr><td><code>a-small-change-is-a-small-node</code></td><td><code>f-ascsn-001</code></td><td>section</td><td>§7</td></tr>
+          <tr><td><code>a-worker-cannot-write-your-home</code></td><td><code>f-awcwyh-codex-login-truncation-is-asserted</code></td><td>section</td><td>§7</td></tr>
+          <tr><td><code>a-worker-cannot-write-your-home</code></td><td><code>f-awcwyh-harness-home-carries-config</code></td><td>section</td><td>§6</td></tr>
+          <tr><td><code>a-worker-is-charged-to-a-job</code></td><td><code>f-awcj-stall-word</code></td><td>section</td><td>§8</td></tr>
+          <tr><td><code>advise-the-lane-never-force-it</code></td><td><code>f-20260922T2010-advisory-at-the-choice</code></td><td>section</td><td>§8</td></tr>
+          <tr><td><code>agent-plan-authoring</code></td><td><code>f-apa-milestone-tools</code></td><td>section</td><td>§10</td></tr>
+          <tr><td><code>an-orchestrator-can-discharge-a-refusal</code></td><td><code>f-aocdar-001</code></td><td>section</td><td>§9</td></tr>
+          <tr><td><code>an-orchestrator-can-discharge-a-refusal</code></td><td><code>f-aocdar-lane-change-strands-resume</code></td><td>section</td><td>§10</td></tr>
+          <tr><td><code>crew-observability-truth</code></td><td><code>f-cot-a-pointer-field-lags-the-authority-it-mirrors</code></td><td>section</td><td>§36 and §37</td></tr>
+          <tr><td><code>crew-observability-truth</code></td><td><code>f-cot-a-time-fence-names-its-clock</code></td><td>section</td><td>§24</td></tr>
+          <tr><td><code>crew-observability-truth</code></td><td><code>f-cot-dispatch-stdout-is-one-document</code></td><td>section</td><td>§29</td></tr>
+          <tr><td><code>crew-observability-truth</code></td><td><code>f-cot-s21-decomposed-into-five-nodes</code></td><td>section</td><td>§39, gated by decisions sub-floor-closure-count, review-rubric-home and dimension-owning-actor</td></tr>
+          <tr><td><code>crew-observability-truth</code></td><td><code>f-cot-the-review-record-outlives-only-half-of-what-it-claims</code></td><td>section</td><td>§28</td></tr>
+          <tr><td><code>crew-runtime-positive-controls</code></td><td><code>f-crpc-a-declared-unresolvable-sha-is-not-silent</code></td><td>section</td><td>§21, held by the section-scoped decision unresolvable-declared-sha</td></tr>
+          <tr><td><code>crew-runtime-positive-controls</code></td><td><code>f-crpc-a-granted-path-is-a-claim-like-any-other</code></td><td>section</td><td>§25</td></tr>
+          <tr><td><code>crew-runtime-positive-controls</code></td><td><code>f-crpc-a-guard-is-scoped-like-the-decision-that-arms-it</code></td><td>section</td><td>§23</td></tr>
+          <tr><td><code>crew-runtime-positive-controls</code></td><td><code>f-crpc-a-passed-verdict-agrees-with-its-exit-status</code></td><td>section</td><td>§26</td></tr>
+          <tr><td><code>crew-runtime-positive-controls</code></td><td><code>f-crpc-the-contract-and-the-gate-decide-alike</code></td><td>section</td><td>§24</td></tr>
+          <tr><td><code>dependency-edge-semantics</code></td><td><code>f-des-decision-recommendation-and-edges</code></td><td>section</td><td>§10</td></tr>
+          <tr><td><code>dependency-edge-semantics</code></td><td><code>f-des-section-edge-reaches-summary</code></td><td>section</td><td>§9</td></tr>
+          <tr><td><code>execution-orchestration-hardening</code></td><td><code>f-eoh-promotion-truth-remaining</code></td><td>section</td><td>§5</td></tr>
+          <tr><td><code>landed-record-at-closure</code></td><td><code>f-lrc-002</code></td><td>section</td><td>§6</td></tr>
+          <tr><td><code>new-work-gets-a-new-worker</code></td><td><code>f-nwgnw-002</code></td><td>section</td><td>§9</td></tr>
+          <tr><td><code>plan-writes-are-not-fenced</code></td><td><code>f-pwanf-commutative-append-covers-every-write</code></td><td>section</td><td>§6</td></tr>
+          <tr><td><code>scoring-should-stop-a-promotion</code></td><td><code>f-ssp-misfiled-index-sees-rewrites</code></td><td>section</td><td>§8</td></tr>
+          <tr><td><code>scoring-should-stop-a-promotion</code></td><td><code>f-ssp-recover-launches-unscoped</code></td><td>section</td><td>§12</td></tr>
+          <tr><td><code>section-contract-and-computed-impl</code></td><td><code>f-scci-001</code></td><td>section</td><td>§11</td></tr>
+          <tr><td><code>the-crew-contract-fits-one-read</code></td><td><code>f-tccfor-001</code></td><td>section</td><td>§4</td></tr>
+          <tr><td><code>the-ledger-is-one-file-per-run</code></td><td><code>f-tlioefpr-scope-measure-residuals</code></td><td>section</td><td>§5</td></tr>
+          <tr><td><code>the-ledger-is-one-file-per-run</code></td><td><code>f-tlofpr-003</code></td><td>section</td><td>§6</td></tr>
+          <tr><td><code>the-ledger-is-one-file-per-run</code></td><td><code>f-tlofpr-hold-check-rewrites-aggregate</code></td><td>section</td><td>§7</td></tr>
+          <tr><td><code>the-local-lane-is-the-default</code></td><td><code>f-tllitd-001</code></td><td>section</td><td>§13</td></tr>
+          <tr><td><code>the-local-lane-is-the-default</code></td><td><code>f-tllitd-worker-turn-endings</code></td><td>section</td><td>§14</td></tr>
+          <tr><td><code>the-page-paints-from-an-index</code></td><td><code>f-tppfai-001</code></td><td>section</td><td>§9</td></tr>
+          <tr><td><code>work-does-not-fall-to-the-coordinator</code></td><td><code>f-cdocw-three-surfaces-hold-the-fact-and-decline-to-act</code></td><td>section</td><td>§12</td></tr>
+          <tr><td><code>work-scheduling-surface</code></td><td><code>f-wss-002</code></td><td>section</td><td>§7</td></tr>
+          <tr><td><code>work-scheduling-surface</code></td><td><code>f-wss-003</code></td><td>section</td><td>§8</td></tr>
+          <tr><td><code>work-scheduling-surface</code></td><td><code>f-wss-005</code></td><td>section</td><td>§9</td></tr>
+          <tr><td><code>work-scheduling-surface</code></td><td><code>f-wss-active-sprint-two-ways</code></td><td>section</td><td>§10</td></tr>
+          <tr><td><code>worker-authors-its-own-record</code></td><td><code>f-waor-001</code></td><td>section</td><td>§5</td></tr>
+          <tr><td><code>a-refusal-is-about-the-work</code></td><td><code>f-20260928T191524372983</code></td><td>move</td><td>an-orchestrator-can-discharge-a-refusal §8</td></tr>
+          <tr><td><code>a-sprint-closes-on-completable-work</code></td><td><code>f-ascocw-003</code></td><td>move</td><td>a-held-blocker-clears-on-its-probe §1 (new plan)</td></tr>
+          <tr><td><code>a-worker-knows-it-is-on-compute</code></td><td><code>f-awkioc-nested-refusal-names-the-legitimate-route</code></td><td>move</td><td>a-worker-is-charged-to-a-job §9</td></tr>
+          <tr><td><code>crew-run-ledger</code></td><td><code>f-crl-003</code></td><td>move</td><td>new-work-gets-a-new-worker §8</td></tr>
+          <tr><td><code>crew-run-ledger</code></td><td><code>f-crl-004</code></td><td>move</td><td>a-dispatch-returns-without-its-worker §11</td></tr>
+          <tr><td><code>crew-run-ledger</code></td><td><code>f-crl-005</code></td><td>move</td><td>crew-observability-truth §30</td></tr>
+          <tr><td><code>crew-run-ledger</code></td><td><code>f-crl-007</code></td><td>move</td><td>an-orchestrator-is-bound-by-its-inbox §7</td></tr>
+          <tr><td><code>inflight-visibility</code></td><td><code>f-ifv-002</code></td><td>move</td><td>the-restarted-server-meets-its-shipped-measures §1</td></tr>
+          <tr><td><code>north-star-orientation</code></td><td><code>f-nso-002</code></td><td>move</td><td>the-restarted-server-meets-its-shipped-measures §2</td></tr>
+          <tr><td><code>promotion-consequence-gate</code></td><td><code>f-pcg-002</code></td><td>move</td><td>scoring-should-stop-a-promotion §12</td></tr>
+          <tr><td><code>reckon-schema-and-tooling</code></td><td><code>f-append-id-uniqueness</code></td><td>move</td><td>plan-writes-are-not-fenced §7</td></tr>
+          <tr><td><code>scoring-should-stop-a-promotion</code></td><td><code>f-ssp-triage-remaining-followups</code></td><td>move</td><td>work-is-a-section-not-a-followup §4 (this migration); its two rows went to scoring-should-stop-a-promotion §8 and §12</td></tr>
+          <tr><td><code>sprint-scope-and-surface</code></td><td><code>f-sss-002</code></td><td>move</td><td>the hidden-suite-failures plan in imas-codex, foreign owner</td></tr>
+          <tr><td><code>derived-gate-state</code></td><td><code>f-dgs-008</code></td><td>decision</td><td>decision <code>d-dgs-008</code> on derived-gate-state</td></tr>
+          <tr><td><code>figures-are-allocated-by-topic-directory</code></td><td><code>f-fabtd-002</code></td><td>decision</td><td>decision <code>d-fabtd-002</code> on figures-are-allocated-by-topic-directory</td></tr>
+          <tr><td><code>one-fact-has-one-reader</code></td><td><code>f-ofhor-001</code></td><td>decision</td><td>decision <code>d-ofhor-001</code> on one-fact-has-one-reader</td></tr>
+          <tr><td><code>plan-lifecycle-hygiene</code></td><td><code>f-plh-002</code></td><td>decision</td><td>decision <code>d-plh-002</code> on plan-lifecycle-hygiene</td></tr>
+          <tr><td><code>rendered-evidence-on-this-host</code></td><td><code>f-reoth-002</code></td><td>decision</td><td>decision <code>d-reoth-002</code> on rendered-evidence-on-this-host</td></tr>
+          <tr><td><code>roadmap-answers-both-shapes</code></td><td><code>f-rabs-001</code></td><td>decision</td><td>decision <code>d-rabs-001</code> on roadmap-answers-both-shapes</td></tr>
+          <tr><td><code>a-window-paces-the-lane</code></td><td><code>f-awpl-replay-guards-every-row-read</code></td><td>met</td><td>already met on main (4d2780ee7)</td></tr>
+          <tr><td><code>a-window-paces-the-lane</code></td><td><code>f-awpl-reserve-and-replay</code></td><td>met</td><td>already met on main (8512e8982, d711aee1e, d4eee48b)</td></tr>
+          <tr><td><code>a-window-paces-the-lane</code></td><td><code>f-awpl-reserve-refusal-article</code></td><td>met</td><td>already met on main (abb4f98bf, 469720867)</td></tr>
+          <tr><td><code>a-window-paces-the-lane</code></td><td><code>f-awptl-budget-group-assertion-cannot-fail</code></td><td>met</td><td>already met on main (c165a45ac)</td></tr>
+          <tr><td><code>advise-the-lane-never-force-it</code></td><td><code>f-altnfi-handoff-01</code></td><td>met</td><td>already met on main: <code>reckon/crew/dispatch.py:3491-3512</code> reads the lane document, wired at <code>reckon/crew/dispatch.py:4530-4554</code></td></tr>
+          <tr><td><code>agent-plan-authoring</code></td><td><code>f-apa-prompt</code></td><td>met</td><td>already met on main (b5012383a)</td></tr>
+          <tr><td><code>crew-observability-truth</code></td><td><code>f-cot-arrival-resume</code></td><td>met</td><td>§12 done; <code>tests/test_transition_extraction.py</code> carries the one-token row at main b4739ec79</td></tr>
+          <tr><td><code>crew-run-ledger</code></td><td><code>f-crl-006</code></td><td>met</td><td>already met on main: <code>classify_pointer</code> in <code>reckon/crew/recovery.py</code> reads the manifest's reported status</td></tr>
+          <tr><td><code>crew-runtime-positive-controls</code></td><td><code>f-crpc-exit-record-forms</code></td><td>met</td><td>already met on main (e35585e5a)</td></tr>
+          <tr><td><code>crew-runtime-positive-controls</code></td><td><code>f-wisnaf-mig-crew-runtime-positive-co</code></td><td>met</td><td>§23 done; continuation f-crpc-s21-after-decision points at §21</td></tr>
+          <tr><td><code>derived-state-parity</code></td><td><code>f-dsp-active-sprint-id-agrees-with-nothing</code></td><td>met</td><td>already met on main: <code>focus_sprint_id</code> in <code>reckon/project_state.py:1263-1295</code> consults the stored active status</td></tr>
+          <tr><td><code>reckon-schema-and-tooling</code></td><td><code>f-soak-cleanup</code></td><td>met</td><td>stale: host shipped since the pre-XDG cutover (2026-05-29), no item claimed in four months</td></tr>
+          <tr><td><code>section-contract-and-computed-impl</code></td><td><code>f-scci-thread-docs-dir-through-callers</code></td><td>met</td><td>§7 done; every <code>build_roadmap</code> caller passes docs_dir at main b4739ec79</td></tr>
+          <tr><td><code>the-restarted-server-meets-its-shipped-measures</code></td><td><code>f-trsmism-001</code></td><td>met</td><td>§1 done; the remaining measurement is carried by the scheduled §2</td></tr>
+          <tr><td><code>work-does-not-fall-to-the-coordinator</code></td><td><code>f-wisnaf-mig-work-does-not-fall-to-th</code></td><td>met</td><td>§12 done; every section of the plan is done</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="the-hidden-work-dispositions-are-tabled-landing">
+      <h2>Landing record</h2>
+      <p>This file is the node's complete deliverable and lands in its final commit, whose sha the run manifest's <code>landing:</code> line records. Every destination in the table was resolved against this tree before commit (<code>destination-resolution.log</code>, 85 rows, 0 unresolved; the same check caught 3 of 3 synthetic bad rows in <code>destination-resolution-selftest.log</code>). The node does not close the plan: the coordinator owns the driving followup and the plan's status.</p>
+    </section>
+  </main>
+</body>
+</html>
