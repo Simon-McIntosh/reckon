@@ -23,9 +23,9 @@
   <title>A plan is reviewed before it is built | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-modified" content="2026-10-04">
-<meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -99,7 +99,7 @@
 <p><code>tests/test_plan_review_store.py::test_real_plan_metadata_edits_keep_the_fingerprint_while_prose_moves_it</code> reads the live <code>docs/plans/a-plan-is-reviewed-before-it-is-built.html</code> and <code>docs/plans/reckon-mcp-plan.html</code>. Since the followup migration (f65cc8edf) gave the first a complete set of section records, its impl is derived, so the test's <code>plan-impl</code> edit no longer reaches the impl state and the case fails (<code>assert 0.0 != 0.0</code>), found by S21's closing suite at ca630c06e. A test whose outcome moves when a plan is edited is a monitor of the docs tree, not a test of the fingerprint.</p><p><strong>Done when</strong> the test reads committed fixture copies under <code>tests/fixtures/plan_review_store/</code>, one legacy plan without a named effort field and one current plan whose impl is authored, so editing any live plan cannot change its outcome; the case passes; and a second case asserts that on a plan whose impl derives from complete section records, a <code>plan-impl</code> edit leaves both the impl state and the fingerprint unchanged.</p>
 
     <h2 id="s6">§6 — A review dry run composes nothing on disk</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> <code>reckon crew review-plan --dry-run</code> previews the composed plan review without writing its report directory, brief, plan snapshot or sidecar: the composer in <code>reckon/crew/recovery.py</code> returns the fields it would write and writes them only on a real dispatch, and repeated previews mint no run directories that <code>store_delivered_report</code> never consumes. Found by the review of run r-20261004T160445080071.</p><p><strong>Done when</strong> a dry run against a committed plan leaves the plan's report root unchanged (asserted by listing it before and after in <code>tests/test_review_plan_command.py</code>), a real dispatch still writes all four files, and the negative control restores the early write and reddens the listing assertion.</p>
 
     <h2 id="s7">§7 — The settle window is declared in the defaults file</h2>
@@ -247,6 +247,9 @@ _review_is_complete reads the record as complete (no absent dimensions).</p></di
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261004T191105818907-a-review-dry-run-composes-nothing" data-who="reckon-build" data-when="2026-10-04T20:24:16.284Z">
     <div class="r-comment-body"><p>reckon:a-plan-is-reviewed-before-it-is-built#s6 — a plan review dry run composes its report directory, brief, plan snapshot and sidecar in memory and writes none of them; a real dispatch still writes all four and the plan lock. Landed at 29169bbcb on top of a1edaf4bc on top of 6b025b925.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-20261004-s6-landed" data-who="s22-coord" data-when="2026-10-04T20:43:00Z">
+    <div class="r-comment-body"><p><strong>Landed at merge 2113c8064.</strong> <code>_review_dispatch_fields</code> takes <code>write=False</code> for a preview. It returns the report directory, brief, plan snapshot and sidecar paths a real dispatch would use, plus the composed brief text, and creates none of them. <code>dispatch_review_for_run</code> answers a dry run without taking the dispatch lock, through one shared <code>_standing_plan_review</code> reader. To reach the same verdict a real dispatch reaches, the resolver digests the brief from a temporary scratch copy that is removed after the call. <code>tests/test_review_plan_command.py</code> lists the report root before and after a dry run and finds it unchanged, and asserts that a real dispatch still writes all four files. Restoring the early write reddens the case. The first review scored 87 and blocked on evidence, not code: the base-arm log lacked full test ids, so the review's reader derived 4 added failures where there were none. The worker re-recorded the base arm from a real checkout, and the re-review scored 95. The coordinator's stacked population of 176 recovery importers read 4 failed on both arms with the same ids. Follow-ons from the re-review: the preview reads <code>plan_review._REVIEW_SIDECAR_NAME</code>, a private name, across the module boundary, and the logged negative control first fails at the brief-existence assertion, one line before the listing assertion.</p></div>
 </div>
 </section>
 </main>
