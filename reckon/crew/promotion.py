@@ -8338,9 +8338,9 @@ def _remove_discarded_worktree(record: Mapping[str, Any]) -> dict[str, Any]:
 
     Reuses ``_release_run_workspace`` — the same classification and withheld
     reasons ``crew complete`` applies on release — so a discard and a promotion
-    cannot disagree about which trees are safe to remove. Only the worktree
-    fields are surfaced: the process half cannot matter here, because discard
-    has already refused a run whose recorded process is alive.
+    cannot disagree about which trees are safe to remove. Worktree and scratch
+    fields are surfaced; process fields cannot matter here, because discard has
+    already refused a run whose recorded process is alive.
     """
     try:
         release = _release_run_workspace(record)
@@ -8363,6 +8363,7 @@ def _remove_discarded_worktree(record: Mapping[str, Any]) -> dict[str, Any]:
             "scratch_path",
             "scratch_withheld",
             "scratch_bytes",
+            "scratch_removed_paths",
             "scratch_warning",
         )
         if key in release
