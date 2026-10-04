@@ -25,7 +25,9 @@ from tests.conftest import EXECUTABLE_GATE_COMMAND
 PROJECT = "proj"
 PLAN = "plan-a"
 FILE = "reckon/region.py"
-BASE = "1" * 40
+# A stored record's carried revisions are resolved against the reviewed run's
+# own repository, so the store below passes the revision the run was
+# dispatched from rather than a stand-in.
 
 
 def _git(repository: Path, *arguments: str) -> str:
@@ -141,7 +143,7 @@ def _pointer(
     _write_json(pointer_path(run_id), record)
 
 
-def _store_complete_review(run_id: str, *, head: str) -> None:
+def _store_complete_review(run_id: str, *, base: str, head: str) -> None:
     emitted = "\n".join(
         f"SCORE {dimension}: 20" for dimension in review_module.REVIEW_DIMENSIONS
     )
@@ -151,7 +153,7 @@ def _store_complete_review(run_id: str, *, head: str) -> None:
             "project": PROJECT,
             "reviewed_run_id": run_id,
             "review_run_id": f"review-of-{run_id}",
-            "reviewed_base_sha": BASE,
+            "reviewed_base_sha": base,
             "reviewed_head_sha": head,
         }
     )
@@ -262,7 +264,7 @@ def test_the_reviewed_head_is_named_as_the_commit_to_cite(
         worktree=run_tree,
         base_sha=base,
     )
-    _store_complete_review(run_id, head=reviewed_head)
+    _store_complete_review(run_id, base=base, head=reviewed_head)
 
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(run_id, root=repository, gate="passed", commits=[cited])

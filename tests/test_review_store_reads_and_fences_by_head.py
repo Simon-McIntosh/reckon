@@ -38,7 +38,9 @@ PROJECT = "head-keyed-store"
 # touching only text would resolve to the tier that owes no review, skipping
 # every gate and refusal these cases rest on.
 FILE = "reckon/region.py"
-BASE = "1" * 40
+# A stored record's carried revisions are resolved against the reviewed run's
+# own repository, so every store below passes the revision the run was
+# dispatched from rather than a stand-in.
 
 # Dates are fixed and one second apart so the commit a legacy review's
 # timestamp reconstructs is deterministic rather than incidental: a fixture
@@ -252,7 +254,7 @@ def test_the_classifier_reads_the_review_of_the_head_it_classifies(
 
     # Negative half first: a review of an earlier revision is not this run's
     # review, so the run is not called promotable on it.
-    first = _store_review(run_id, base=BASE, head=base)
+    first = _store_review(run_id, base=base, head=base)
     assert first.is_file()
     review, error = recovery._stored_review(record)
     assert review is None and not error
@@ -263,7 +265,7 @@ def test_the_classifier_reads_the_review_of_the_head_it_classifies(
 
     # Positive half: a review of the classified head is read, and the classifier
     # no longer holds the run back.
-    _store_review(run_id, base=BASE, head=head)
+    _store_review(run_id, base=base, head=head)
     review, error = recovery._stored_review(record)
     assert error == "" and review is not None
     assert review_module.carried_revision_pair(review)[3] == head
@@ -315,7 +317,7 @@ def test_a_refusal_names_two_revisions_and_never_one_twice(
     _tree, base, head = _run_with_head(repository, tmp_path, run_id)
     # A review of the base revision, then a repair: the store holds a revision
     # that disagrees with the head the promotion asserts.
-    _store_review(run_id, base=BASE, head=base)
+    _store_review(run_id, base=base, head=base)
 
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(run_id, gate="passed", commits=[head], root=repository)
@@ -331,7 +333,7 @@ def test_a_refusal_names_two_revisions_and_never_one_twice(
     # And when the store holds a review of the promoted head, no refusal is
     # produced: the guard never manufactures a disagreement and then names the
     # same revision on both sides.
-    _store_review(run_id, base=BASE, head=head)
+    _store_review(run_id, base=base, head=head)
     stored = crew.complete(run_id, gate="passed", commits=[head], root=repository)
     assert stored["record"]["review"] is not None
 
@@ -345,7 +347,7 @@ def _remedy_action(repository: Path, tmp_path: Path, run_id: str, commits: str) 
     head = _commit_run(tree, "repair", FIRST_WHEN)
     manifest = _manifest(tmp_path, run_id, commits.format(head=head))
     _pointer(repository, tree, run_id, base, manifest)
-    _store_review(run_id, base=BASE, head=head)
+    _store_review(run_id, base=base, head=head)
     row = recovery.classify_pointer(runs.read_pointer(run_id))
     assert row["classification"] == "promotable"
     return str(row["next_action"])

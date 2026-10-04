@@ -240,6 +240,84 @@ def carried_revision_pair(
     return base_carried, base_sha, head_carried, head_sha
 
 
+# ── Resolving the revisions a record carries ────────────────────────────────
+# A review record's revision pair is typed by hand more often than not, and a
+# sha that lost characters mid-value still looks like one. A record keyed to a
+# revision that names no commit matches nothing a reader compares against, so
+# the mistake survives every reader until the reviewed run's own promotion
+# fails to find the review it was promised — and the whole review has to be
+# bought again. The pair is therefore resolved against the reviewed run's own
+# repository while its tree is readable, and a carried revision that names no
+# commit there is refused at both the write and the review run's check.
+
+
+def _reviewed_run_pointer(reviewed_run_id: str) -> Mapping[str, Any] | None:
+    """The reviewed run's live pointer, or ``None`` when it is not readable.
+
+    The import is local because the run registry and the recovery reflex both
+    read this module, so a module-level edge back to them would be a cycle.
+    """
+    if not reviewed_run_id:
+        return None
+    from reckon.crew.node import CrewError
+    from reckon.crew.runs import read_pointer
+
+    try:
+        return read_pointer(reviewed_run_id)
+    except (CrewError, OSError, ValueError):
+        return None
+
+
+def unresolved_reviewed_revision(record: Mapping[str, Any]) -> str | None:
+    """The refusal a record earns when a carried revision names no commit.
+
+    The reviewed run's own live pointer supplies both facts the refusal rests
+    on: the repository the carried revisions must resolve in — the tree the
+    run worked in, whose object store holds every commit the review could have
+    read — and the head that tree actually carries, so the refusal names the
+    stored value beside the real one and the reviewer repairs its own record
+    while it still holds its turn. A record carrying no revision at all is
+    left to the gates that require the pair, and a reviewed run with no
+    readable pointer or tree is left alone: there is nothing to resolve
+    against, and a guess about a reclaimed tree would refuse records that are
+    correct. Formatting belongs to the caller, so the same sentence serves the
+    store's write and the manifest check from one definition.
+    """
+    base_carried, base_sha, head_carried, head_sha = carried_revision_pair(record)
+    carried = (
+        (REVIEWED_BASE_KEY, base_sha if base_carried else None),
+        (REVIEWED_HEAD_KEY, head_sha if head_carried else None),
+    )
+    if not any(sha for _key, sha in carried):
+        return None
+    pointer = _reviewed_run_pointer(str(record.get("reviewed_run_id") or "").strip())
+    if pointer is None:
+        return None
+    from reckon.crew.recovery import (
+        _resolve_commit,
+        _review_tree,
+        _run_head_for_review,
+    )
+
+    tree = _review_tree(pointer)
+    if tree is None:
+        return None
+    for key, sha in carried:
+        if not sha or _resolve_commit(tree, sha):
+            continue
+        head = _run_head_for_review(pointer)
+        actual = (
+            f"the reviewed worktree's head is {head!r}"
+            if head
+            else "the reviewed worktree carries no readable head"
+        )
+        return (
+            f"{key} {sha!r} does not resolve to a commit in the reviewed "
+            f"repository {str(tree)!r}; {actual}"
+        )
+    return None
+
+
 class ReviewScoreError(ValueError):
     """A score fell outside the allowed range and was refused, not clamped.
 
@@ -1347,10 +1425,14 @@ def store_review(
     file. A missing ``timestamp`` is stamped with the current UTC moment so
     every stored record carries one; an existing timestamp is preserved. The
     five legacy revision spellings are normalised onto the canonical base/head
-    pair before writing. A complete pair selects a revision-keyed path. A record
-    lacking the pair is preserved outside current-review selection under its
-    reviewing-run identity, so it can neither displace a complete review nor
-    overwrite another partial record of the same run. The write is atomic.
+    pair before writing. A carried revision that names no commit in the
+    reviewed run's own repository is refused before anything is written: a
+    record keyed to it matches no revision any reader compares against, so
+    refusing it here is what keeps the reviewer from storing a record whose
+    subject cannot be found. A complete pair selects a revision-keyed path. A
+    record lacking the pair is preserved outside current-review selection under
+    its reviewing-run identity, so it can neither displace a complete review
+    nor overwrite another partial record of the same run. The write is atomic.
 
     The added-failure derivation is not applied here. Records are annotated
     when they are read, from the reviewed run's own manifest, so a record may be
@@ -1371,6 +1453,9 @@ def store_review(
             record[REVIEWED_BASE_KEY] = base_sha
         if head_carried:
             record[REVIEWED_HEAD_KEY] = head_sha
+    refusal = unresolved_reviewed_revision(record)
+    if refusal:
+        raise ValueError(refusal)
     if not record.get("timestamp"):
         record = dict(record)
         record["timestamp"] = datetime.now(UTC).isoformat()

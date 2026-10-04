@@ -376,18 +376,33 @@ def _reviewed_run_head(record: Mapping[str, Any]) -> str:
 
 
 def _resolve_commit(tree: Path, candidate: str) -> str:
-    """The canonical object id ``candidate`` names in ``tree``, or empty."""
+    """The canonical object id ``candidate`` names in ``tree``, or empty.
+
+    ``--verify`` refuses a value that names no commit rather than echoing it
+    back, and ``--end-of-options`` keeps a candidate that begins with a dash
+    from being read as an option, so a caller can tell a revision that
+    resolved from one merely written down. The query is bounded so a
+    repository on a stalled filesystem cannot hold a caller open.
+    """
     if not candidate:
         return ""
     try:
         completed = subprocess.run(
-            ["git", "rev-parse", f"{candidate}^{{commit}}"],
+            [
+                "git",
+                "rev-parse",
+                "--verify",
+                "--quiet",
+                "--end-of-options",
+                f"{candidate}^{{commit}}",
+            ],
             cwd=tree,
             capture_output=True,
             text=True,
             check=False,
+            timeout=10,
         )
-    except OSError:
+    except (OSError, subprocess.SubprocessError):
         return ""
     sha = completed.stdout.strip()
     if completed.returncode or not re.fullmatch(r"[0-9A-Fa-f]{40,64}", sha):

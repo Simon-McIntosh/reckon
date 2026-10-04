@@ -29,7 +29,9 @@ PROJECT = "matching-project"
 # source and promotes unreviewed whatever the store holds, so it cannot
 # exercise the choice between a matching record and a stale one at all.
 FILE = "reckon/region.py"
-BASE = "1" * 40
+# A stored record's carried revisions are resolved against the reviewed run's
+# own repository, so every store below passes the revision the run was
+# dispatched from rather than a stand-in.
 
 
 def _git(repository: Path, *arguments: str) -> str:
@@ -164,8 +166,8 @@ def test_promotion_reads_the_review_of_the_revision_it_promotes(
     # earlier revision is stored last and stamped newest, so a reader that takes
     # the newest record on disk picks precisely the review that says nothing
     # about the revision being promoted.
-    matching = _store_complete_review(run_id, base=BASE, head=head, score=20)
-    stale = _store_complete_review(run_id, base=BASE, head=base, score=5)
+    matching = _store_complete_review(run_id, base=base, head=head, score=20)
+    stale = _store_complete_review(run_id, base=base, head=base, score=5)
     _age(matching, seconds=100)
     _age(stale, seconds=200)
     assert matching != stale
@@ -183,7 +185,7 @@ def test_only_a_review_of_an_earlier_head_refuses_the_promotion(
 ) -> None:
     run_id = "r-stale-head"
     _run_tree, base, head = _promoted_head(repository, tmp_path, run_id)
-    _store_complete_review(run_id, base=BASE, head=base, score=20)
+    _store_complete_review(run_id, base=base, head=base, score=20)
 
     with pytest.raises(crew.CrewError) as refusal:
         crew.complete(run_id, gate="passed", commits=[head], root=repository)
@@ -203,7 +205,7 @@ def test_a_waiver_still_lands_a_run_whose_review_is_of_an_earlier_head(
 ) -> None:
     run_id = "r-stale-head-waived"
     _run_tree, base, head = _promoted_head(repository, tmp_path, run_id)
-    _store_complete_review(run_id, base=BASE, head=base, score=20)
+    _store_complete_review(run_id, base=base, head=base, score=20)
     reason = "the review lane is unavailable and this repair is urgent"
 
     stored = crew.complete(
