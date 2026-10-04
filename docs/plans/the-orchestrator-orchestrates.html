@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="the-orchestrator-orchestrates">
+  <meta name="plan-title" content="The Orchestrator Orchestrates">
+  <meta name="plan-summary" content="A coordinator briefs a section, a design review runs before the first build node and lands a reuse map, and the build skill becomes a loop that decides between nodes.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="14.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="orchestrator">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-informs" content="a-plan-is-reviewed-before-it-is-built,the-crew-contract-fits-one-read,a-worker-reuses-before-it-writes,nova:nova-portfolio-replan">
+  <meta name="plan-north-star" content="legible-to-human-and-agent">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
+  <title>The Orchestrator Orchestrates | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: every node is verified and nothing is designed</h2>
+
+<section data-reckon="section" data-id="s1" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
+    <p>The lead's report on 4 October: workers produce duplicate, shallow implementations with wide
+      interfaces; plan-section dispatches are far too narrow; the result is busy work and half-done projects;
+      the orchestrators are not orchestrating. The 26 September review of the crew pattern reached the same
+      verdict from measurement — <em>better-verified, not better-designed; the pattern verifies nodes and nothing
+      in it owns the codebase</em>
+      (<a href="/reckon/research/orchestrator-crew-pattern-review#s6">crew pattern review §6</a>) — and its
+      eight remedy plans have since landed most of their mechanics. The readings below, taken on 4 October, say
+      why the symptom survived them.</p>
+    <p><strong>nova, 15 September to 4 October.</strong> 3,670 commits, of which 1,020 are plan or record
+      edits, 749 are promotions (296 of them reviews) and 182 are features. 777 ledger rows: 390 implement runs
+      and 342 review runs over 25 active plans, of which 16 sit between impl 0.80 and 0.9995 and none has
+      shipped since. The implement runs' done-whens run to a median 178 words — they are not under-specified,
+      they are slivers: one measured deliverable from a section, 33 minutes median wall, eighty live worktrees.
+      The record load is the busy work: <code>docs/figures</code> holds 1.2 GB and gained 141 probe and census
+      scripts in the window, and one promoted node landed 4,876,123 lines across 49 files. The pattern review's
+      nova finding stands: a public surface that barely moved while the plan and figure surface exploded.</p>
+    <p><strong>reckon, the same window.</strong> The crew package is 67,197 lines in 58 modules;
+      <code>dispatch.py</code> is 12,432 lines, <code>recovery.py</code> 11,129 and <code>promotion.py</code>
+      8,628. The <code>reckon crew</code> surface has 36 subcommands and <code>dispatch</code> takes 40
+      options. 103,571 lines were added to the package in three weeks against 18,600 deleted. 150 plans, 45
+      active, eight of them about this problem. The coordinator skill set is 37,619 words across 218 KB. Every
+      lesson became a flag, a refusal, a view or a paragraph, and the system that is meant to stop wide shallow
+      interfaces is the widest, shallowest interface on the workstation.</p>
+    <p><strong>The design review was built and has never run.</strong> <code>reckon/crew/plan_review.py</code>
+      holds a store, a fingerprint join, an answer loop and a recurrence count; two rubric prompts exist, one of
+      them the prior-art-and-depth review (<code>reuse_search</code>, <code>deep_module</code>,
+      <code>thin_wrapper</code>, <code>duplicate_owner</code>); dispatch carries a gate that reads the store.
+      Across five projects the store holds <strong>zero</strong> plan reviews. The rubric prompts are loaded by
+      nothing but their own tests. No command composes the review, nothing parses a reviewer's output into the
+      store, and the gate ships report-only because — its own comment says — the node that writes a review is
+      not built. Meanwhile the per-node code review, which has run 458 times in nova at a median score of 89,
+      is told to <em>stay inside the diff, not re-derive the implementation, not review code the node did not
+      touch</em>, so a second copy of an existing mechanism is out of its scope by construction.</p>
+    <p><strong>The coordinator cannot say what it knows.</strong> A dispatch is one <code>GOAL</code> line
+      and a plan pointer in front of about 150 lines of fences and manifest keys. <code>--brief</code> is
+      mutually exclusive with <code>--plan</code>, and the skill says <em>do not restate plan context,
+      decisions, research, or done-when criteria in the worker prompt</em>. So the one thing a coordinator
+      learns between nodes — which module to extend, which interface not to widen, what a sibling node just
+      found — has no channel to the next worker except editing the plan and committing it, a beat that costs
+      the coordinator the same bookkeeping it spends 21.6 responses per promotion on. The skill also forbids it
+      to <em>inspect implementation details beyond what scoping or review requires</em>, which is the reading a
+      design judgement needs.</p>
+    <p><strong>The unit of dispatch is the measure, not the deliverable.</strong> The eight-property contract
+      and the single-goal lint push every node to one measurable, time-boxed, exclusively scoped outcome. A plan
+      section — the thing a reader would call a deliverable — becomes three to ten nodes, each locally correct,
+      each reviewed on its own diff, with the section's design held by no one. Narrow dispatch is not a wording
+      problem; it is the contract working as written.</p>
+    <p>This plan changes four things and names what it leaves alone. A coordinator can dispatch a section with
+      a brief (§2). The design review composes, runs on the local lane and lands a record the coordinator reads
+      and answers, without the coordinator remembering to run it (§3). The code review judges reuse (§4). The
+      build skill becomes a short loop whose middle step is a decision (§5). Consolidating nova and capping
+      open work belong to the plans that already own them (§6).</p>
+
+    <h2 id="s2">§2 — A section dispatches with the coordinator's brief</h2>
+
+<section data-reckon="section" data-id="s2" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>reckon crew dispatch --plan &lt;slug&gt; --section &lt;id&gt;
+      --brief &lt;file&gt;</code> is accepted. The plan section stays the semantic authority and every gate that
+      joins a node to its committed section — base-blob visibility, the plan-review gate, the done-when
+      overlap check — runs exactly as it does today. The brief is the coordinator's voice beside it: the
+      reuse map's verdicts for this section, the module to extend and the one not to fork, the interface the
+      change must not widen, what sibling nodes found, which open question the worker may not settle. The
+      prompt carries both, in this order: <code>PLAN project:slug §N</code>, then <code>BRIEF</code> with the
+      file's bytes verbatim. The brief's sha256 and stored copy are recorded on the run and the ledger row as
+      they are for a brief-only run. Landing stays plan-carried: the record goes to the section and impl is
+      expected to move. A brief without a plan keeps its present meaning and its promotion owner requirement.</p>
+    <p><strong>Why not a plan edit instead.</strong> A plan is for what should outlive the session; a brief is
+      for what the next worker needs now. Forcing the second through the first is why coordinators stopped
+      saying it. The brief's bytes are stored on the run, so nothing a worker read is lost; a coordinator that
+      finds a brief worth keeping promotes it into the plan at the landing beat.</p>
+    <p><strong>Done when</strong> <code>validate_node</code> accepts a node naming a plan, a section and a brief;
+      <code>plan_dispatch</code> on that node reaches the committed-section gate and the plan-review gate
+      (asserted with the same spy the exclusivity test used, now expecting the call); the composed prompt carries
+      the <code>PLAN</code> line and the brief's text, and a brief-only prompt is byte-identical to today's;
+      <code>reckon crew dispatch --dry-run</code> with all three succeeds; and
+      <code>tests/test_brief_beside_a_plan_section.py</code> passes with its negative control — the pair check
+      restored in <code>validate_node</code> — turning the acceptance case red.</p>
+
+    <h2 id="s3">§3 — The design review runs before the first build node, and lands where the gate reads</h2>
+
+<section data-reckon="section" data-id="s3" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> One command, <code>reckon crew review-plan --project P --plan &lt;slug&gt;
+      --session S [--rubric design|content] [--local]</code>, composes and dispatches the plan review the store
+      was built for. It is a brief dispatch under the <code>review</code> role: the brief is the rubric prompt
+      from <code>reckon/crew/prompts/</code> with the plan's path, the codebase roots to search and the report
+      path filled in; the node id is <code>plan-review-of-&lt;slug&gt;</code>, which the gate already exempts;
+      the write path is one report directory under the crew reports root. Beside the report the dispatch writes
+      a sidecar naming the plan slug, version, blob sha and content fingerprint it composed for, so the record
+      is keyed to what the reviewer read and not to what the plan says later.</p>
+    <p>The reviewer emits the rubric's <code>RUBRIC</code> and <code>FINDING</code> lines into the report.
+      <code>plan_review.parse_review_report</code> turns them into the store's record shape — one finding per
+      line with a stable id, type, text, and the would-change verdict and reason — and
+      <code>plan_review.store_delivered_report</code> joins report and sidecar and writes through
+      <code>store_plan_review</code>. <strong>The gate stores at read.</strong> When
+      <code>require_plan_reviewed</code> finds no stored review for the plan's fingerprint, it looks for a
+      delivered report whose sidecar carries that fingerprint, stores it, and judges the result. The coordinator
+      never runs a store step and never has to remember one; it dispatches the review, and the next build
+      dispatch finds it.</p>
+    <p>The coordinator reads the review through <code>crew(project, view="plan-review", plan=&lt;slug&gt;)</code>:
+      the stored record, its unanswered findings, and any delivered report not yet stored. It answers through
+      <code>reckon crew review-plan --project P --plan &lt;slug&gt; --answer &lt;finding-id&gt; --acted|--declined
+      "&lt;reason&gt;"</code>, which is <code>record_response</code> behind one flag pair. The design rubric's
+      <code>reuse_search</code> finding is the reuse map the build skill has asked for in prose since hard rule
+      17: it names the mechanism and the file that owns it, and the coordinator's brief for each section cites it.</p>
+    <p><strong>Done when</strong> <code>reckon crew review-plan --dry-run</code> against a committed plan
+      resolves a brief dispatch whose node id is <code>plan-review-of-&lt;slug&gt;</code> and whose brief
+      contains the design rubric's four items; a fixture report with two findings parses to two findings with
+      ids, types and verdicts, and a report missing a <code>RUBRIC</code> line reports that item absent;
+      <code>require_plan_reviewed</code> in enforce mode, with no stored review and a delivered report plus
+      sidecar for the plan's fingerprint, stores the record and then refuses by the unanswered finding's name,
+      and admits the build once both findings are answered; the MCP view returns the stored record and the
+      unanswered ids; and <code>tests/test_plan_review_dispatch.py</code> passes with its negative control —
+      the store-at-read branch removed — turning the enforce-mode case red.</p>
+    <p><strong>Enforcement.</strong> The gate's mode stays <code>report</code> in the shipped defaults until
+      the first five plan reviews have landed through this path; the decision below records when it flips.</p>
+
+    <h2 id="s4">§4 — The code review judges reuse</h2>
+
+<section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The landed-node review prompt gains a reuse clause under its
+      <code>fit</code> dimension and a matching reading instruction: for each function, class or module the
+      diff adds, the reviewer searches the repository for an existing mechanism with the same capability and,
+      when one exists, emits a <code>FINDING</code> naming the owning file and whether the addition extends,
+      wraps or duplicates it. The reading bound is kept — the reviewer opens the owner it names and nothing
+      else — so the review stays ten minutes. A duplicate of an owned mechanism scores <code>fit</code> below
+      the light tier's floor, which is what makes the finding reach the coordinator rather than the archive.</p>
+    <p><strong>Done when</strong> <code>reckon/crew/prompts/review.md</code> states the reuse clause in the
+      <code>fit</code> dimension and the search instruction in the reading section, the parser still reads a
+      review emitted under the new prompt (the existing prompt-contract tests pass unchanged), and
+      <code>tests/test_review_prompt_contract.py</code> asserts the clause with a control that deletes it.</p>
+
+    <h2 id="s5">§5 — The coordinator's loop</h2>
+
+<section data-reckon="section" data-id="s5" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="orchestrator" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> <code>skills/reckon-build/SKILL.md</code> rewritten as the coordinator's
+      loop in at most 4,000 words, which is <code>the-crew-contract-fits-one-read</code> §3 brought forward
+      at the lead's direction of 4 October. The present text moves whole to
+      <code>references/coordinator-reference.md</code> so no enforced rule is lost while the core is read end to
+      end. The loop has six steps and the fourth is the one the present skill lacks:</p>
+    <ol>
+      <li><strong>Read</strong> the plan, the code it names and the prior evidence. Reading code for design is
+        the coordinator's job; writing product code is not.</li>
+      <li><strong>Review the design</strong> with <code>reckon crew review-plan</code> before the first build
+        node, and answer every finding. The reuse map is its output.</li>
+      <li><strong>Shape the wave.</strong> The unit of dispatch is the section's deliverable. A section is one
+        node unless two of its write scopes must run in parallel. Each node carries a brief citing the reuse
+        map: the module to extend, the interface not to widen, the question the worker may not settle.</li>
+      <li><strong>Decide between nodes.</strong> At each landing read the diff for design, not only for scope:
+        a new helper beside an owner, a wrapper over a mechanism that should have been extended, a widened
+        surface. Then choose one of three: accept and record; re-brief the next node; or re-plan the section
+        and say so in the plan. Nothing is dispatched on an unverified or undecided landing.</li>
+      <li><strong>Integrate</strong> the reviewed head, run the integrated gate, promote, write the plan in
+        the same beat.</li>
+      <li><strong>Close</strong> the section when its deliverable is in the tree, not when its last sliver
+        promoted; drain followups; report what changed, what remains and why.</li>
+    </ol>
+    <p>The core keeps the sentences the skill-contract tests pin and the four fences the tool enforces; it
+      drops every paragraph that restates a refusal the tool will raise. The references stay for a coordinator
+      composing a delegation by hand.</p>
+    <p><strong>Done when</strong> <code>skills/reckon-build/SKILL.md</code> is at most 4,000 words and states
+      the six steps; <code>tests/test_skill_contracts.py</code> and <code>tests/test_skill_contract_parity.py</code>
+      pass; the former text is reachable at <code>references/coordinator-reference.md</code>; and the total of
+      the skill and its references is recorded in this plan's landing against the 37,619 words measured here.</p>
+
+    <h2 id="s6">§6 — What this plan does not own</h2>
+
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="standard" data-capability-risk="low" data-attempts="0" data-status="done" data-links=""></section>
+    <p>Consolidating nova's duplicated algebra and draining its figure repairs is
+      <code>nova:nova-portfolio-replan</code> §4. Capping active plans is <code>open-work-is-capped</code>.
+      Tiering review cost is <code>a-review-is-sized-to-its-risk</code>. Narrowing the crew surface itself —
+      36 subcommands, 40 dispatch options — needs a census of callers first and is a plan of its own; this
+      plan adds one subcommand and one MCP view and names in §3 what it declines to add. The nova
+      coordinator's next session should begin by running §3's review against each of nova's 16 nearly-shipped
+      plans and closing or abandoning them before any new node is cut.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="plan-review-gate-mode" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">When does the plan-review gate move from report to enforce?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="after-five-landed">After five plan reviews have landed through review-plan</button>
+          <button class="r-opt" data-value="now">Now, with --allow-unreviewed-plan as the recorded waiver</button>
+          <button class="r-opt" data-value="per-project">Per project, in that project's flight layer</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+      <div class="r-dec" data-key="unit-of-dispatch" data-choice="" data-by="" data-when="">
+        <p class="r-dec-q">Does the single-goal lint read the section's deliverable or the node's measure?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="section-deliverable">The section's deliverable; a section is one node by default</button>
+          <button class="r-opt" data-value="node-measure">The node's measure, as today</button>
+        </p>
+        <p class="r-dec-rat"></p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-too-001" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-create" data-written-at="2026-10-04">
+        <h4 class="r-fu-title">Land the brief, the review command and the skill core</h4>
+        <div class="r-fu-body"><p>§2 and §3 are independent and §4 is small; §5 follows §3 because the loop's second step names the command. The lead directed this work inline on 4 October.</p></div>
+        <pre class="r-fu-prompt">/reckon-build the-orchestrator-orchestrates</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
