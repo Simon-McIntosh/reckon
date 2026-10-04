@@ -1764,6 +1764,17 @@ def crew_preflight(
     ),
 )
 @click.option(
+    "--allow-orchestrator-lane",
+    "orchestrator_lane_reason",
+    default=None,
+    metavar="REASON",
+    help=(
+        "Deliberately dispatch to a lane serving orchestrators and record REASON "
+        "on the run and ledger row. Background work there spends orchestrator "
+        "capacity; saturation stops every session."
+    ),
+)
+@click.option(
     "--allow-unreconciled-runs",
     is_flag=True,
     help=(
@@ -1857,6 +1868,7 @@ def crew_dispatch(
     checkout_path,
     overrides,
     allow_execution_mismatch,
+    orchestrator_lane_reason,
     allow_unreconciled_runs,
     no_watch,
     allow_unreviewed_plan,
@@ -2058,6 +2070,7 @@ def crew_dispatch(
                 repo=repo,
                 base=base,
                 execution_override=allow_execution_mismatch,
+                orchestrator_lane_reason=orchestrator_lane_reason,
                 report_live_conflicts=True,
                 local=local,
                 backend_override=backend,
@@ -2272,6 +2285,7 @@ def crew_dispatch(
             peer_scopes=node.peer_scopes,
             member=member,
             execution_override=allow_execution_mismatch,
+            orchestrator_lane_reason=orchestrator_lane_reason,
             unreconciled_override=allow_unreconciled_runs,
             unreviewed_plan_override=allow_unreviewed_plan,
             watch_required=True,

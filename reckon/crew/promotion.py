@@ -8438,6 +8438,7 @@ def _complete_locked(
         lineage=record.get("lineage"),
         shadow_patch=shadow_patch,
         unreconciled_override=record.get("unreconciled_override"),
+        orchestrator_lane_override=record.get("orchestrator_lane_override"),
         gate_check=gate_check,
         require_gate_check=require_gate_check,
         suite_delta=suite_delta,
