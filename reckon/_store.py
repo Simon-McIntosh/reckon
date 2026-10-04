@@ -1379,12 +1379,9 @@ def _write_state_locked(
         data = {**dict(data), "comments": merged_comments}
 
     new_data = dict(data)
-    # A read may carry the derived count and outcomes. Preserve only the
-    # source attribute through a state write; no caller authors the count.
+    # A read may carry the derived count and outcomes. Neither belongs in a
+    # plan write; a legacy attempts attribute is dropped by the renderer.
     if isinstance(new_data.get("sections"), list):
-        source_attempts = {
-            str(row["id"]): row["attempts"] for row in cur_state.get("sections", [])
-        }
         new_data["sections"] = [
             {
                 **{
@@ -1392,7 +1389,7 @@ def _write_state_locked(
                     for key, value in row.items()
                     if key != "attempt_outcomes"
                 },
-                "attempts": source_attempts.get(str(row.get("id") or ""), 0),
+                "attempts": 0,
             }
             for row in new_data["sections"]
         ]

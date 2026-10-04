@@ -379,7 +379,7 @@ def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]
     """Validate stored metadata; data-attempts is legacy, not the live count.
 
     The read API derives attempts from distinct crew run ids. The attribute
-    survives HTML edits for compatibility but never counts a launch.
+    is parsed for compatibility but is never emitted by plan writes.
     """
     records = []
     for element in _section_record_elements(soup):
@@ -418,6 +418,9 @@ def _read_section_records(soup: BeautifulSoup, declarations: dict) -> list[dict]
         }
         for field, convert in (("effort_hours", float), ("attempts", int)):
             value = attrs.get(f"data-{field.replace('_', '-')}")
+            if field == "attempts" and value is None:
+                record[field] = 0
+                continue
             try:
                 record[field] = convert(value)
             except (TypeError, ValueError):
@@ -802,11 +805,10 @@ def read_state_and_text_file(path: Path) -> tuple[dict, str]:
 
 
 def _section_record_attributes(record: dict) -> str:
-    """Preserve the legacy attempts attribute while rendering authored metadata."""
+    """Render authored metadata without storing the derived attempt count."""
     return (
         f' data-effort-hours="{_esc(record["effort_hours"])}"'
         + _capability_attributes(record["capability"])
-        + f' data-attempts="{record["attempts"]}"'
         + f' data-status="{_esc(record["status"])}"'
         + f' data-links="{_esc(",".join(record["links"]))}"'
     )

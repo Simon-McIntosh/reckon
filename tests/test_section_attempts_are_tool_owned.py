@@ -245,7 +245,7 @@ def test_concurrent_dispatches_leave_a_plan_edit_uncommitted(
     assert _section(root, "other")["attempts"] == 1
 
 
-def test_state_write_preserves_non_authoritative_attribute(
+def test_state_write_drops_non_authoritative_attribute(
     tmp_path: Path, monkeypatch
 ) -> None:
     root, plan = _repository(tmp_path, monkeypatch)
@@ -255,6 +255,7 @@ def test_state_write_preserves_non_authoritative_attribute(
     state["sections"][0]["attempts"] = 99
     state["summary"] = "An ordinary plan edit"
     _store.write_plan("sample", "fixture", state, version, root, artifact_type="plan")
+    assert "data-attempts" not in plan.read_text()
     assert _plan_html.read_state(plan.read_text())["sections"][0]["attempts"] == 0
     assert _section(root)["attempts"] == 1
 
