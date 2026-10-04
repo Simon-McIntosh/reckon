@@ -14,6 +14,7 @@ acceptance cases red, and the gate spies here fail if either gate is skipped.
 
 from __future__ import annotations
 
+import hashlib
 import importlib
 import json
 import subprocess
@@ -22,7 +23,9 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from click.testing import CliRunner
 
+from reckon import cli as cli_module
 from reckon import crew
 from reckon.crew.prompts import (
     BRIEF_LANDING_CONTRACT,
@@ -112,6 +115,23 @@ def test_a_section_with_a_brief_and_no_plan_is_refused_naming_the_plan(
     assert findings, "a section with no plan must be refused"
     detail = " ".join(f["detail"] for f in findings)
     assert "s2" in detail and "no plan" in detail
+
+
+def test_a_brief_with_a_plan_and_no_section_is_refused_naming_the_section(
+    brief_file: str,
+) -> None:
+    """A brief beside a plan is the instructions for a section; name it.
+
+    The plan scopes the pair to a section, so a briefed plan with no section
+    is the mirror of a section with no plan and is refused the same way.
+    """
+    findings = _authority_findings(
+        _node(plan="a-worker-can-take-a-brief", brief=brief_file)
+    )
+
+    assert findings, "a brief with a plan and no section must be refused"
+    detail = " ".join(f["detail"] for f in findings)
+    assert "a-worker-can-take-a-brief" in detail and "no section" in detail
 
 
 def test_a_node_naming_neither_is_refused() -> None:
@@ -249,3 +269,139 @@ def test_a_brief_only_prompt_is_unchanged_by_the_pair_shape() -> None:
     assert prompt.index("BRIEF\n") < prompt.index(BRIEF_TEXT)
     assert BRIEF_LANDING_CONTRACT in prompt
     assert PLAN_LANDING_CONTRACT not in prompt
+
+
+PLAN_HTML = """<!doctype html>
+<html><head>
+<meta name="docs-project" content="sample">
+<meta name="reckon-type" content="plan">
+<meta name="plan-slug" content="fixture">
+<meta name="plan-title" content="Fixture">
+<meta name="plan-status" content="active">
+<meta name="plan-impl" content="0.0">
+<meta name="plan-modified" content="2026-09-25">
+<meta name="plan-version" content="1">
+</head><body><h2 id="delivery">Delivery</h2><p>Ship one measured change.</p></body></html>
+"""
+
+IN_HARNESS_CONFIG: dict[str, Any] = {
+    "default_backend": "worker",
+    "backends": {
+        "worker": {
+            "launch": "in-harness",
+            "model": "test-model",
+            "effort": "high",
+            "sandbox": "worktree-full",
+            "time_budget": "20m",
+        }
+    },
+    "roles": {
+        role: {"backend": "worker", "execution_capable": True}
+        for role in ("implement", "investigate", "review", "test")
+    },
+    "fences": {"time_budget": "20m", "needs_help_after_failures": 2},
+}
+
+
+@pytest.fixture()
+def committed_plan_repo(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[Path, Path, Path]:
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+
+    repo = tmp_path / "repo"
+    plans = repo / "docs" / "plans"
+    plans.mkdir(parents=True)
+    scripts = repo / "skills" / "reckon-build" / "scripts"
+    scripts.mkdir(parents=True)
+    source_script = (
+        Path(__file__).parents[1]
+        / "skills"
+        / "reckon-build"
+        / "scripts"
+        / "worktree_fleet.py"
+    )
+    (scripts / "worktree_fleet.py").write_text(
+        source_script.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (plans / "fixture.html").write_text(PLAN_HTML, encoding="utf-8")
+    (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
+    for arguments in (
+        ["init", "-q", "-b", "main"],
+        ["config", "user.email", "worker@example.invalid"],
+        ["config", "user.name", "Worker"],
+        ["add", "seed.txt", "skills", "docs/plans/fixture.html"],
+        ["commit", "-q", "-m", "chore: seed fixture"],
+    ):
+        subprocess.run(["git", *arguments], cwd=repo, check=True, capture_output=True)
+    (config_home / "mounts.json").write_text(
+        json.dumps({"sample": str(repo / "docs")}), encoding="utf-8"
+    )
+    brief = tmp_path / "brief.md"
+    brief.write_text(BRIEF_TEXT, encoding="utf-8")
+    return config_home, repo, brief
+
+
+def test_a_brief_beside_a_committed_plan_section_dispatches_end_to_end(
+    committed_plan_repo: tuple[Path, Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The pair succeeds against a committed plan, not merely at argv.
+
+    The committed-section gate and the plan-review gate both key on the plan
+    being named, so with a committed plan whose section exists and the shipped
+    report-only review gate, the dry run clears every gate and resolves the
+    brief's digest onto the node — the end-to-end path the argv-only case does
+    not exercise.
+    """
+    _config_home, repo, brief = committed_plan_repo
+    monkeypatch.setattr(
+        cli_module, "_resolved_flight", lambda *_a, **_k: IN_HARNESS_CONFIG
+    )
+    monkeypatch.setattr(
+        cli_module, "_model_availability_refusal", lambda *_a, **_k: None
+    )
+
+    result = CliRunner().invoke(
+        cli_module.main,
+        [
+            "crew",
+            "dispatch",
+            "--project",
+            "sample",
+            "--plan",
+            "fixture",
+            "--section",
+            "delivery",
+            "--brief",
+            str(brief),
+            "--role",
+            "implement",
+            "--spec-level",
+            "exact",
+            "--node",
+            "briefed-plan-dry",
+            "--goal",
+            "ship one measured change",
+            "--write-path",
+            "src/change.py",
+            "--done-when",
+            "pytest reports one passing plan review gate case",
+            "--session",
+            "briefed-plan-dry-session",
+            "--repo",
+            str(repo),
+            "--dry-run",
+        ],
+    )
+
+    payload = json.loads(result.stdout.splitlines()[0])
+    assert result.exit_code == 0, result.output
+    assert payload["ok"] is True
+    assert (
+        payload["node"]["brief_sha256"]
+        == hashlib.sha256(BRIEF_TEXT.encode("utf-8")).hexdigest()
+    )
+    assert payload["node"]["plan"] == "fixture"
+    assert payload["node"]["section"] == "delivery"
