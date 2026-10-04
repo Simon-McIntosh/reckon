@@ -55,7 +55,12 @@ from reckon.mcp_views import (
     partition_live_runs,
     section_attempts_by_plan,
 )
-from reckon.project_state import focus_sprint_id, live_sprint_ids
+from reckon.project_state import (
+    ProjectStateError,
+    focus_sprint_id,
+    live_sprint_ids,
+    read_resource,
+)
 from reckon.resources import (
     read_plan_record,
     read_sprint_record,
@@ -2120,6 +2125,60 @@ def _dependency_endpoints(
     return rows
 
 
+def _plans_released_by_cleared_blockers(
+    docs_dir: Path | None,
+    project: str,
+    sprints: Iterable[Mapping[str, Any]],
+) -> set[str]:
+    """Plan slugs whose every recorded blocker is a cleared blocker resource.
+
+    Composition drops a cleared blocker from the sprint item that named it, so
+    a plan whose hold has cleared reads exactly like a plan that never carried
+    one. The raw sprint record is the one place the hold and its clear stay
+    attached to the plan, so the release is read from there; a blocker whose
+    resource is missing or still holds keeps its plan out of the set.
+    """
+
+    if docs_dir is None:
+        return set()
+    recorded: dict[str, set[str]] = defaultdict(set)
+    for sprint in sprints:
+        if sprint.get("_project") not in (None, project) or sprint.get("_unresolved"):
+            continue
+        sprint_id = str(sprint.get("id") or "")
+        if not sprint_id:
+            continue
+        try:
+            raw, _version = read_resource(docs_dir, project, "sprint", sprint_id)
+        except (OSError, ProjectStateError, ValueError):
+            continue
+        for item in raw.get("items") or []:
+            if not isinstance(item, dict) or not item.get("slug"):
+                continue
+            recorded[str(item["slug"])].update(
+                str(blocker_id) for blocker_id in item.get("blocked_by") or []
+            )
+    released: set[str] = set()
+    for slug, blocker_ids in recorded.items():
+        if not blocker_ids:
+            continue
+        for blocker_id in blocker_ids:
+            try:
+                blocker, _version = read_resource(
+                    docs_dir, project, "blocker", blocker_id
+                )
+            except (OSError, ProjectStateError, ValueError):
+                break
+            if (
+                blocker.get("status") != "cleared"
+                or not str(blocker.get("cleared_reason") or "").strip()
+            ):
+                break
+        else:
+            released.add(slug)
+    return released
+
+
 def build_roadmap(
     project: str,
     inventory: list[dict[str, Any]],
@@ -2190,6 +2249,9 @@ def _build_roadmap(
     )
     liveness = (
         sprint_liveness(project, resolved_docs) if resolved_docs is not None else {}
+    )
+    released_by_clear = _plans_released_by_cleared_blockers(
+        resolved_docs, project, sprints
     )
     active_sprint_id, open_sprint_ids = _sprint_status_buckets(
         sprints, active_sprint_id, liveness
@@ -2298,7 +2360,14 @@ def _build_roadmap(
                         slug=slug,
                     )
                 )
-        if status == "blocked" and not (plan.get("blocking") or []):
+        # A plan whose recorded hold has cleared is released, not orphaned: its
+        # blocker resource exists and carries the clear, so the status has an
+        # explanation even though no live blocker remains.
+        if (
+            status == "blocked"
+            and not (plan.get("blocking") or [])
+            and slug not in released_by_clear
+        ):
             findings.append(
                 _finding(
                     "orphaned-blocked-status",
@@ -2775,7 +2844,10 @@ def _build_roadmap(
         # the plan, so it cannot be that explanation: the guard names the same
         # plan-level list `is_blocked` tests, and a persisted blocked plan whose
         # only open decision is section-scoped keeps a visible blocker instead
-        # of reading deferred while it is stored blocked.
+        # of reading deferred while it is stored blocked. A released plan is
+        # excluded for the same reason from the other side: composition drops
+        # the cleared blocker, so synthesizing here would re-block work the
+        # probe already released.
         if (
             status == "blocked"
             and not explicit_blockers
@@ -2783,6 +2855,7 @@ def _build_roadmap(
             and not plan_dependency_blockers
             and not gate_blockers
             and not plan_holding_decisions
+            and slug not in released_by_clear
         ):
             explicit_blockers = [{"kind": "persisted", "id": "unrecorded"}]
         dispatchable, missing_dispatchability = _dispatchability(plan)
@@ -2792,7 +2865,10 @@ def _build_roadmap(
         after_hold = any(
             record.get("satisfied") is False for record in after_rows.get(slug, [])
         )
-        authorised = status in _AUTHORISED_STATUSES
+        # A legacy persisted blocked status is the open-state spelling for work
+        # whose blockers are all cleared, so a released plan is authorised like
+        # any other open work.
+        authorised = status in _AUTHORISED_STATUSES or slug in released_by_clear
         is_ready = (
             dispatchable
             and authorised
