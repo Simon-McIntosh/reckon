@@ -288,16 +288,17 @@ class CrewError(Exception):
 
 
 # The three answers a process-liveness question can give about a live pointer's
-# worker, plus the one the pointer's own phase settles without asking. Only
-# ``gone`` may release a member; the other three refuse it. ``unknown`` is a
-# distinct answer rather than a synonym for ``gone`` because the crew config home
-# is shared across login nodes, so a pid read on the wrong host, or a pointer
+# worker. Only ``gone`` may release a member; the other two refuse it. ``unknown``
+# is a distinct answer rather than a synonym for ``gone`` because the crew config
+# home is shared across login nodes, so a pid read on the wrong host, or a pointer
 # written before its worker was spawned, fabricates both verdicts — releasing on
-# either double-dispatches a member whose worker may be alive elsewhere.
+# either double-dispatches a member whose worker may be alive elsewhere. A stored
+# phase is not an answer to this question: a run that has recorded a terminal end
+# has not shown that its worker stopped writing, and a launch onto a member whose
+# session still has a live writer dies at launch.
 MEMBER_LIVENESS_ALIVE = "alive"
 MEMBER_LIVENESS_GONE = "gone"
 MEMBER_LIVENESS_UNKNOWN = "unknown"
-MEMBER_LIVENESS_TERMINAL = "terminal"
 
 
 @dataclass(frozen=True)
@@ -342,23 +343,19 @@ def _member_worker_liveness(pointer: Mapping[str, Any]) -> tuple[bool | None, st
 def member_in_flight_verdict(pointer: Mapping[str, Any]) -> MemberInFlightVerdict:
     """Report whether a live pointer still blocks the member that owns it.
 
-    A pointer whose phase is terminal releases its member without asking the
-    process table, which is the answer this guard always gave. Every other phase
-    is judged from process liveness instead: a running worker blocks, a worker
-    proven gone on this host releases, and a liveness that cannot be established
-    here blocks and is reported as ``unknown`` rather than as death. The manifest
-    is deliberately not consulted — a delivered run and an abandoned one are told
-    apart by whether a process is still running, never by what a worker wrote
-    about itself, and a phase field that lags a finished worker is exactly the
-    stale reading this predicate replaces.
+    The answer is taken from process liveness, never from the phase alone: a
+    running worker blocks, a worker proven gone on this host releases, and a
+    liveness that cannot be established here blocks and is reported as
+    ``unknown`` rather than as death. A stored terminal phase is not proof the
+    worker stopped — the run reaching an end and the process releasing the
+    session are different facts — and trusting the phase is how a dispatch
+    launches onto a member whose session still has a live writer, where the
+    backend's single-writer store then kills the launch before its first turn.
+    The manifest is deliberately not consulted either — a delivered run and an
+    abandoned one are told apart by whether a process is still running, never by
+    what a worker wrote about itself, and a phase field that lags a finished
+    worker is exactly the stale reading this predicate replaces.
     """
-    phase = str(pointer.get("phase") or "")
-    if phase in _TERMINAL_RUN_PHASES:
-        return MemberInFlightVerdict(
-            blocks=False,
-            liveness=MEMBER_LIVENESS_TERMINAL,
-            reason=f"its phase {phase!r} is terminal",
-        )
     alive, reason = _member_worker_liveness(pointer)
     if alive is True:
         return MemberInFlightVerdict(

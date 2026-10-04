@@ -16,12 +16,19 @@ so a pid read on the wrong machine answers about a process it never issued.
 Liveness is therefore three-valued and only one answer may release a member:
 
 * a worker running on this host blocks — a worker is running;
-* a terminal phase releases without asking — the answer the guard already gave;
 * a worker proven gone on this host releases — this is the case that recovers
   the lane;
 * a liveness that cannot be established here blocks and is reported as
   ``unknown`` — releasing would double-dispatch a member whose worker may be
   alive on another node.
+
+A stored phase is not one of the answers. The guard released a member whose run
+had recorded a terminal phase without asking the process table, and a run that
+reached its end while its worker still held the session was therefore launched
+onto: the next worker dies at launch against the backend's single-writer store,
+leaving a zero-length stream and no reason. The run reaching an end and the
+process releasing the session are different facts, so every phase is judged
+from liveness now and only a worker proven gone on this host releases.
 
 What the guard never reads is the manifest. *Process gone* is a true statement
 standing in for *work abandoned*, and a delivered run has also left the process
@@ -131,16 +138,28 @@ def test_unknown_is_distinct_from_gone_for_both_unprovable_shapes():
     assert no_pid.reason and foreign.reason
 
 
-def test_a_terminal_phase_releases_a_live_worker_without_asking():
+def test_a_terminal_phase_does_not_release_a_live_worker():
+    # The measured defect: the phase said the run had ended, the process still
+    # held the session, and the guard released the member onto a launch that
+    # died against the live writer.
     verdict = member_in_flight_verdict(_pointer(phase="complete", pid=os.getpid()))
+    assert verdict.blocks is True
+    assert verdict.liveness == "alive"
+
+
+def test_a_terminal_phase_releases_only_a_worker_proven_gone():
+    verdict = member_in_flight_verdict(_pointer(phase="failed", pid=_absent_pid()))
     assert verdict.blocks is False
-    assert verdict.liveness == "terminal"
+    assert verdict.liveness == "gone"
 
 
-def test_a_terminal_phase_releases_a_pointer_with_no_pid_at_all():
+def test_a_terminal_phase_with_no_pid_blocks_and_is_unknown():
+    # The phase is not proof the worker stopped, and a pointer that records no
+    # process leaves the question unanswerable here: the guard fails closed
+    # rather than dispatching onto a writer that may still live.
     verdict = member_in_flight_verdict(_pointer(phase="failed", pid=None))
-    assert verdict.blocks is False
-    assert verdict.liveness == "terminal"
+    assert verdict.blocks is True
+    assert verdict.liveness == "unknown"
 
 
 def test_the_refusal_names_the_observed_liveness_for_each_blocking_state():
