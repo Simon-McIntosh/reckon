@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="plan-slug" content="a-held-blocker-clears-on-its-probe">
+<meta name="reckon-type" content="plan">
+<title>a-held-blocker-clears-on-its-probe</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-title" content="A Held Blocker Clears On Its Probe">
+<meta name="plan-summary" content="A held blocker is cleared by hand. A named probe in this repository should check its subject and clear it, with a recorded reason, once the subject arrives.">
+<meta name="plan-status" content="active">
+<meta name="plan-sprint" content="S22">
+<meta name="plan-modified" content="2026-10-04">
+<meta name="plan-informs" content="a-sprint-closes-on-completable-work">
+<meta name="plan-version" content="1">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;}">
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="s1">§1 — A held blocker names a probe, and the probe clears it</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-attempts="0" data-status="implementable" data-links=""></section>
+<p>a-sprint-closes-on-completable-work made held a kind of blocker: a claim that nothing in the sprint can reach the work. That plan's §4 sets and clears a held blocker by hand and defers the executable check to a separate plan; this is that plan. Two locked decisions on a-sprint-closes-on-completable-work constrain it. <code>probe-execution-boundary</code>: a plan names a probe by id, and the probe is Python in this repository, reviewed and tested like any other code. It is never inline in a plan document and never evaluated in the surface. <code>who-clears-a-held-blocker</code>: clearing records a reason, so a cleared hold stays distinguishable from one that was never held.</p><p><strong>Done when</strong> a held blocker can name a probe id that resolves to a registered Python callable. Evaluating a held blocker runs its probe against the blocker's declared subject. When the probe reports the subject arrived, the blocker is cleared with the probe's id and its finding recorded as the reason. A probe id that resolves to nothing is reported, never treated as clear. A test in a temporary repository shows all three: a probe that reports arrival clears its blocker with the reason recorded, a probe that reports absence leaves it held, and an unknown probe id is reported. The negative control is the base, where no held blocker can name a probe.</p>
+
+
+<section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-ahbcoip-001" data-status="open" data-written-by="s22-coord" data-written-at="2026-10-04T10:45:00Z" data-recommends-skill="/reckon-build a-held-blocker-clears-on-its-probe" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the named probe</h4>
+    <div class="r-fu-body"><p>One section; the two decisions that constrain it are locked on a-sprint-closes-on-completable-work.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-held-blocker-clears-on-its-probe §1</pre>
+    </article>
+</section>
+</main>
+</body>
+</html>
