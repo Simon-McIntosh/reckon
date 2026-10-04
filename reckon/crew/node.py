@@ -113,6 +113,78 @@ _EVIDENCE_SIGNALS = re.compile(
     re.IGNORECASE,
 )
 
+_INDEPENDENT_READING = re.compile(
+    r"\b(?:independent|second)\s+(?:\w+\s+){0,3}(?:reading|measurement|measure)\b"
+    r"|\b(?:reading|measurement|measure)\s+(?:\w+\s+){0,3}(?:independent|second)\b",
+    re.IGNORECASE,
+)
+_NUMERIC_AGREEMENT = re.compile(
+    r"(?:\b(?:agree(?:s|ment)?|difference|disagreement)\b"
+    r".{0,45}?\b(?:within|under|below|at most|no more than|to|<=|≤)\s*"
+    r"|\btolerance\b\s*(?:of|:|=)?\s*)"
+    r"\d+(?:\.\d+)?\s*(?:%|percent|seconds?|ms|milliseconds?)",
+    re.IGNORECASE,
+)
+_ABSENCE_ALTERNATIVE = re.compile(
+    r"\bmeasured\s+or\s+(?:explicitly[- ]?)?unmeasured\b",
+    re.IGNORECASE,
+)
+_COVERAGE_FLOOR = re.compile(
+    r"\bmeasured[- ]coverage\b\s*(?:is\s+)?"
+    r"(?:at\s+least|>=|>|of\s+at\s+least)\s*(\d+(?:\.\d+)?)\s*%",
+    re.IGNORECASE,
+)
+_BASE_COUNT = re.compile(
+    r"\bbase\s+(?:count|corpus|population)\s*(?:of\s*)?(\d+)\b",
+    re.IGNORECASE,
+)
+_ABSOLUTE_GREEN_GATE = re.compile(
+    r"\bpytest\b[^.;\n]{0,160}?\btests/[\w./-]+\.py(?:\:\:[\w-]+)?\b"
+    r"[^.;\n]{0,80}?\b(?:exits?|returns?)\s+0\b",
+    re.IGNORECASE,
+)
+_BASE_REVISION_CITATION = re.compile(
+    r"\b(?:green\s+at|against)\s+base\s+[0-9a-f]{7,40}\b",
+    re.IGNORECASE,
+)
+_DELTA_AGAINST_BASE = re.compile(
+    r"\b(?:adds?\s+no\s+(?:new\s+)?failures?\s+(?:to|over|against)"
+    r"|zero\s+added\s+failures?\s+against"
+    r"|no\s+added\s+failures?(?:\s+by\s+id)?\s+against)"
+    r"\s+(?:the\s+)?base\b"
+    r"|\badds?\s+no\s+(?:new\s+)?failures?\b"
+    r"|\bno\s+regressions?\s+(?:versus|against|relative\s+to)\s+(?:the\s+)?base\b"
+    r"|\bsame\s+failures?\s+as\s+(?:the\s+)?base\b",
+    re.IGNORECASE,
+)
+_NAMED_PYTEST_CHECK = re.compile(
+    r"\btests/[\w./-]+\.py(?:\:\:[\w-]+)?\b", re.IGNORECASE
+)
+
+
+def done_when_warnings(done_when: str) -> list[dict[str, str]]:
+    """Report named absolute-green checks whose base state the text leaves unknown."""
+    if _BASE_REVISION_CITATION.search(done_when) or _DELTA_AGAINST_BASE.search(
+        done_when
+    ):
+        return []
+    checks: dict[str, None] = {}
+    for match in _ABSOLUTE_GREEN_GATE.finditer(done_when):
+        target = _NAMED_PYTEST_CHECK.search(match.group(0))
+        if target:
+            checks.setdefault(target.group(0), None)
+    return [
+        {
+            "check": check,
+            "detail": (
+                f"base state for named check {check} is unstated or uncited; "
+                "cite a green base revision or state the delta against base"
+            ),
+        }
+        for check in checks
+    ]
+
+
 # An unresolved template placeholder names nothing the worker can act on, so a
 # goal or a done-when may not carry one that survives into the brief. A quoted
 # string or a code span is the author quoting a literal, so a placeholder
@@ -1120,6 +1192,28 @@ def validate_node(
                 "done-when emits no evidence; name a test, a command output or "
                 "a numeric result against a stated bound",
             )
+        if _INDEPENDENT_READING.search(done_when) and not _NUMERIC_AGREEMENT.search(
+            done_when
+        ):
+            fail(
+                "demonstrable",
+                "an independent reading of the same quantity needs a numerical "
+                "agreement tolerance; a plausibility band cannot establish agreement",
+            )
+        if _ABSENCE_ALTERNATIVE.search(done_when):
+            floor = _COVERAGE_FLOOR.search(done_when)
+            count = _BASE_COUNT.search(done_when)
+            if (
+                not floor
+                or float(floor.group(1)) <= 0
+                or not count
+                or int(count.group(1)) <= 0
+            ):
+                fail(
+                    "demonstrable",
+                    "measured-or-unmeasured evidence can pass with universal absence; "
+                    "name a positive numerical measured-coverage floor and a base count",
+                )
 
     unlocked = [key for key in node.requires_decisions if key not in locked]
     if unlocked:
