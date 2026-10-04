@@ -14,7 +14,7 @@
 <meta name="plan-status" content="active">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-informs" content="a-sprint-closes-on-completable-work">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-10-04">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;}">
 </head>
@@ -50,6 +50,9 @@
 </div>
 <div class="r-comment" data-section="s1" data-id="c-20261004-s1-landed" data-who="s22-coord" data-when="2026-10-04T11:42:00Z">
     <div class="r-comment-body"><p><strong>Landed at merge 40291660e.</strong> <code>reckon/held_probes.py</code> registers reviewed probes by id. The first is <code>path-exists</code>, which checks a path relative to the docs root and refuses absolute paths, <code>..</code> and anything that escapes the root. A held blocker may carry a <code>probe</code> and a <code>subject</code>, and the state validator refuses either when empty. It also refuses a <code>cleared</code> status with no recorded reason. <code>evaluate_held_blocker</code>, exposed as <code>reckon probe-held-blocker</code>, runs the probe on the subject. On arrival it writes the blocker cleared, with <code>probe &lt;id&gt;: &lt;finding&gt;</code> as its reason and a timestamp. On absence the blocker stays held, and an unknown id is refused rather than read as clear. A cleared blocker no longer holds a sprint item and no longer counts at sprint close. Measured at a stacked merge of main 7c5b2bc7f over 47 importer files: 535 passed at base and 537 at head, with no failures; both new tests are red at base. Review scored 96.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261004T094224172449-a-cleared-blocker-reports-its-clear" data-who="reckon-build" data-when="2026-10-04T09:55:54.661Z">
+    <div class="r-comment-body"><p>evaluate_held_blocker in reckon/project_state.py now returns a cleared blocker&#x27;s recorded reason before resolving its probe id, so a blocker cleared while its probe was registered still reports that clear after the probe leaves the registry, while an uncleared blocker with an unknown probe id is still refused; the new test in tests/test_held_blocker_probe.py is red at 39ed4f2d8 (unknown held blocker probe id: &#x27;path-exists&#x27;) and green at c53775fdc, and the 20 test files importing reckon.project_state read 308 passed at base 39ed4f2d8 versus 309 passed at head c53775fdc with zero added failures (EXIT=0 both arms).</p></div>
 </div>
 </section>
 </main>
